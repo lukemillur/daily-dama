@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "kendama-project",
-    "slug": "kendama-project",
+    "name": "Daily Dama",
+    "slug": "daily-dama",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "kendamaproject",
+    "scheme": "dailydama",
     "userInterfaceStyle": "automatic",
     "ios": {
       "icon": "./assets/expo.icon"
