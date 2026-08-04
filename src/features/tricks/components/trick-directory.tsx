@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { SectionList, type SectionListData } from 'react-native';
+import { Pressable, SectionList, type SectionListData } from 'react-native';
 import { styled } from 'styled-components/native';
 
 import type { TrickSummary } from '@/features/tricks/model/trick';
@@ -13,7 +13,25 @@ interface TrickSection {
 
 export interface TrickDirectoryProps {
   readonly tricks: readonly TrickSummary[];
+  readonly selection?: {
+    readonly selectedTrickIds: readonly string[];
+    readonly onToggleTrick: (trickId: string) => void;
+  };
+  readonly header?: {
+    readonly eyebrow: string;
+    readonly title: string;
+    readonly introduction: string;
+  };
 }
+
+const DEFAULT_HEADER = {
+  eyebrow: 'Trick library',
+  title: 'Every trick.\nOne clear path.',
+  introduction: (trickCount: number) =>
+    `Browse all ${trickCount} Kendama Kentei challenges, ordered from foundational catches to master combinations.`,
+};
+
+const NO_SELECTED_TRICKS: readonly string[] = [];
 
 export function createTrickSections(tricks: readonly TrickSummary[]): TrickSection[] {
   const sectionsByRank = new Map<number, TrickSection>();
@@ -37,27 +55,34 @@ export function createTrickSections(tricks: readonly TrickSummary[]): TrickSecti
   return [...sectionsByRank.values()].sort((first, second) => first.rank - second.rank);
 }
 
-export function TrickDirectory({ tricks }: TrickDirectoryProps) {
+export function TrickDirectory({ tricks, selection, header }: TrickDirectoryProps) {
   const sections = useMemo(() => createTrickSections(tricks), [tricks]);
+  const selectedTrickIds = selection?.selectedTrickIds ?? NO_SELECTED_TRICKS;
+  const selectedTrickIdSet = useMemo(() => new Set(selectedTrickIds), [selectedTrickIds]);
 
   return (
     <SectionList
       sections={sections}
+      extraData={selectedTrickIds}
       keyExtractor={(trick) => trick.id}
       stickySectionHeadersEnabled
       contentContainerStyle={{ paddingBottom: 140 }}
       ListHeaderComponent={
         <DirectoryHeader>
-          <Eyebrow>Trick library</Eyebrow>
-          <Title>Every trick.{`\n`}One clear path.</Title>
-          <Introduction>
-            Browse all {tricks.length} Kendama Kentei challenges, ordered from foundational catches
-            to master combinations.
-          </Introduction>
+          <Eyebrow>{header?.eyebrow ?? DEFAULT_HEADER.eyebrow}</Eyebrow>
+          <Title>{header?.title ?? DEFAULT_HEADER.title}</Title>
+          <Introduction>{header?.introduction ?? DEFAULT_HEADER.introduction(tricks.length)}</Introduction>
         </DirectoryHeader>
       }
       renderSectionHeader={({ section }) => <SectionHeader section={section} />}
-      renderItem={({ item, index }) => <TrickRow trick={item} position={index + 1} />}
+      renderItem={({ item, index }) => (
+        <TrickRow
+          trick={item}
+          position={index + 1}
+          isSelected={selectedTrickIdSet.has(item.id)}
+          onToggle={selection ? () => selection.onToggleTrick(item.id) : undefined}
+        />
+      )}
       ItemSeparatorComponent={ItemSeparator}
       SectionSeparatorComponent={SectionSeparator}
     />
@@ -75,11 +100,43 @@ function SectionHeader({ section }: { readonly section: SectionListData<TrickSum
   );
 }
 
-function TrickRow({ trick, position }: { readonly trick: TrickSummary; readonly position: number }) {
-  return (
-    <TrickRowContainer accessibilityLabel={`${position}. ${trick.name}`}>
+interface TrickRowProps {
+  readonly trick: TrickSummary;
+  readonly position: number;
+  readonly isSelected: boolean;
+  readonly onToggle?: () => void;
+}
+
+function TrickRow({ trick, position, isSelected, onToggle }: TrickRowProps) {
+  const contents = (
+    <>
       <Position>{String(position).padStart(2, '0')}</Position>
       <TrickName>{trick.name}</TrickName>
+      {onToggle && (
+        <SelectionIndicator $selected={isSelected}>
+          <SelectionMark>{isSelected ? '✓' : ''}</SelectionMark>
+        </SelectionIndicator>
+      )}
+    </>
+  );
+
+  if (onToggle) {
+    return (
+      <SelectableTrickRow
+        $selected={isSelected}
+        accessibilityLabel={`${trick.name}, ${isSelected ? 'selected' : 'not selected'}`}
+        accessibilityRole="checkbox"
+        accessibilityState={{ checked: isSelected }}
+        onPress={onToggle}
+      >
+        {contents}
+      </SelectableTrickRow>
+    );
+  }
+
+  return (
+    <TrickRowContainer accessibilityLabel={`${position}. ${trick.name}`}>
+      {contents}
     </TrickRowContainer>
   );
 }
@@ -151,6 +208,15 @@ const TrickRowContainer = styled.View`
   background-color: #f8f1dd;
 `;
 
+const SelectableTrickRow = styled(Pressable)<{ readonly $selected: boolean }>`
+  min-height: 66px;
+  flex-direction: row;
+  align-items: center;
+  gap: 18px;
+  padding: 15px 22px;
+  background-color: ${({ $selected }) => ($selected ? '#e5edcf' : '#f8f1dd')};
+`;
+
 const Position = styled.Text`
   width: 26px;
   color: #d84929;
@@ -165,6 +231,22 @@ const TrickName = styled.Text`
   font-size: 18px;
   font-weight: 750;
   line-height: 24px;
+`;
+
+const SelectionIndicator = styled.View<{ readonly $selected: boolean }>`
+  width: 25px;
+  height: 25px;
+  align-items: center;
+  justify-content: center;
+  background-color: ${({ $selected }) => ($selected ? '#18382e' : 'transparent')};
+  border: 2px solid #18382e;
+  border-radius: 4px;
+`;
+
+const SelectionMark = styled.Text`
+  color: #f4c94d;
+  font-size: 16px;
+  font-weight: 900;
 `;
 
 const ItemSeparator = styled.View`
