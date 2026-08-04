@@ -1,98 +1,50 @@
-import * as Device from 'expo-device';
-import { Platform, StyleSheet } from 'react-native';
+import { useState } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { styled } from 'styled-components/native';
 
-import { AnimatedIcon } from '@/components/animated-icon';
-import { HintRow } from '@/components/hint-row';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { WebBadge } from '@/components/web-badge';
-import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
-
-function getDevMenuHint() {
-  if (Platform.OS === 'web') {
-    return <ThemedText type="small">use browser devtools</ThemedText>;
-  }
-  if (Device.isDevice) {
-    return (
-      <ThemedText type="small">
-        shake device or press <ThemedText type="code">m</ThemedText> in terminal
-      </ThemedText>
-    );
-  }
-  const shortcut = Platform.OS === 'android' ? 'cmd+m (or ctrl+m)' : 'cmd+d';
-  return (
-    <ThemedText type="small">
-      press <ThemedText type="code">{shortcut}</ThemedText>
-    </ThemedText>
-  );
-}
+import { TrickCarousel } from '@/features/tricks/components/trick-carousel';
+import { KENDAMA_KENTEI_TRICKS } from '@/features/tricks/data/kendama-kentei-tricks';
 
 export default function HomeScreen() {
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const currentTrick = KENDAMA_KENTEI_TRICKS[currentIndex];
+
+  const showPreviousTrick = () => {
+    setCurrentIndex((index) => Math.max(0, index - 1));
+  };
+
+  const showNextTrick = () => {
+    setCurrentIndex((index) => Math.min(KENDAMA_KENTEI_TRICKS.length - 1, index + 1));
+  };
+
   return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <ThemedView style={styles.heroSection}>
-          <AnimatedIcon />
-          <ThemedText type="title" style={styles.title}>
-            Welcome to&nbsp;Expo
-          </ThemedText>
-        </ThemedView>
-
-        <ThemedText type="code" style={styles.code}>
-          get started
-        </ThemedText>
-
-        <ThemedView type="backgroundElement" style={styles.stepContainer}>
-          <HintRow
-            title="Try editing"
-            hint={<ThemedText type="code">src/app/index.tsx</ThemedText>}
-          />
-          <HintRow title="Dev tools" hint={getDevMenuHint()} />
-          <HintRow
-            title="Fresh start"
-            hint={<ThemedText type="code">npm run reset-project</ThemedText>}
-          />
-        </ThemedView>
-
-        {Platform.OS === 'web' && <WebBadge />}
-      </SafeAreaView>
-    </ThemedView>
+    <Screen>
+      <SafeContent edges={['top', 'left', 'right']}>
+        <TrickCarousel
+          trick={currentTrick}
+          currentIndex={currentIndex}
+          totalTricks={KENDAMA_KENTEI_TRICKS.length}
+          canGoPrevious={currentIndex > 0}
+          canGoNext={currentIndex < KENDAMA_KENTEI_TRICKS.length - 1}
+          onPrevious={showPreviousTrick}
+          onNext={showNextTrick}
+        />
+      </SafeContent>
+    </Screen>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    flexDirection: 'row',
-  },
-  safeArea: {
-    flex: 1,
-    paddingHorizontal: Spacing.four,
-    alignItems: 'center',
-    gap: Spacing.three,
-    paddingBottom: BottomTabInset + Spacing.three,
-    maxWidth: MaxContentWidth,
-  },
-  heroSection: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    flex: 1,
-    paddingHorizontal: Spacing.four,
-    gap: Spacing.four,
-  },
-  title: {
-    textAlign: 'center',
-  },
-  code: {
-    textTransform: 'uppercase',
-  },
-  stepContainer: {
-    gap: Spacing.three,
-    alignSelf: 'stretch',
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.four,
-    borderRadius: Spacing.four,
-  },
-});
+const Screen = styled.View`
+  flex: 1;
+  width: 100%;
+  background-color: #f4c94d;
+`;
+
+const SafeContent = styled(SafeAreaView)`
+  flex: 1;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+  gap: 34px;
+  padding: 28px 22px 116px;
+`;
