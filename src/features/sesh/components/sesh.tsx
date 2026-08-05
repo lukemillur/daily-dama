@@ -90,8 +90,8 @@ function EmptyState() {
     <CenteredPanel>
       <Eyebrow>Nothing queued</Eyebrow>
       <DisplayTitle>Build your{`\n`}practice list.</DisplayTitle>
-      <BodyCopy>Select at least one trick in your profile before starting a focused sesh.</BodyCopy>
-      <Link href="/profile" asChild>
+      <BodyCopy>Select at least one trick in Tricks before starting a focused sesh.</BodyCopy>
+      <Link href="/tricks" asChild>
         <PrimaryButton accessibilityRole="link">
           Choose tricks
         </PrimaryButton>
@@ -165,6 +165,7 @@ function TrickPicker({ tricks, onSelect }: { readonly tricks: readonly PracticeT
               onPress={() => selectedPlan && onSelect(trick, selectedPlan)}>
               <ChoiceMeta>{trick.descriptor ?? 'Practice trick'}</ChoiceMeta>
               <ChoiceName>{trick.name}</ChoiceName>
+              <SequenceSteps trick={trick} compact />
               <ChoiceArrow>→</ChoiceArrow>
             </TrickChoice>
           ))}
@@ -199,6 +200,7 @@ function Countdown({ trick, plan, onComplete }: { readonly trick: PracticeTrick;
     <CenteredPanel>
       <Eyebrow>Get ready</Eyebrow>
       <CountdownTrick>{trick.name}</CountdownTrick>
+      <SequenceSteps trick={trick} />
       <Animated.View style={{ opacity, transform: [{ scale }] }}>
         <CountdownNumber>{count}</CountdownNumber>
       </Animated.View>
@@ -230,6 +232,7 @@ function ActiveSesh({ trick, plan, startedAt, landings, onLaced, onEnd, onTimerE
       <ActiveContent>
         <Eyebrow>Sesh in progress</Eyebrow>
         <ActiveTrick>{trick.name}</ActiveTrick>
+        <SequenceSteps trick={trick} prominent />
         <TimerLabel>{plan.kind === 'timed' ? 'Time remaining' : 'Elapsed time'}</TimerLabel>
         <Timer
           accessibilityLabel={`${plan.kind === 'timed' ? 'Time remaining' : 'Elapsed time'} ${formattedTime}`}>
@@ -286,6 +289,7 @@ function CompletedSesh({ summary, onReset }: { readonly summary: SeshSummary; re
       <ActiveContent>
         <Eyebrow>Sesh complete</Eyebrow>
         <DisplayTitle>{summary.trick.name}</DisplayTitle>
+        <SequenceSteps trick={summary.trick} />
         <SummaryGrid>
           <Metric><MetricValue>{formatDuration(summary.durationMs)}</MetricValue><MetricLabel>Total time</MetricLabel></Metric>
           <Metric><MetricValue>{summary.landings.length}</MetricValue><MetricLabel>Laces</MetricLabel></Metric>
@@ -296,6 +300,38 @@ function CompletedSesh({ summary, onReset }: { readonly summary: SeshSummary; re
         <PrimaryButton onPress={onReset}>Start another sesh</PrimaryButton>
       </ActiveContent>
     </ScrollArea>
+  );
+}
+
+function SequenceSteps({
+  trick,
+  compact = false,
+  prominent = false,
+}: {
+  readonly trick: PracticeTrick;
+  readonly compact?: boolean;
+  readonly prominent?: boolean;
+}) {
+  if (!trick.sequenceSteps) return null;
+
+  if (compact) {
+    return (
+      <CompactSequence accessibilityLabel={`Sequence steps: ${trick.sequenceSteps.join(', then ')}`}>
+        {trick.sequenceSteps.join('  →  ')}
+      </CompactSequence>
+    );
+  }
+
+  return (
+    <SequenceBlock $prominent={prominent} accessibilityLabel={`Sequence steps: ${trick.sequenceSteps.join(', then ')}`}>
+      <SequenceLabel>{prominent ? 'Your line' : 'Sequence'}</SequenceLabel>
+      {trick.sequenceSteps.map((step, index) => (
+        <SequenceRow key={`${step}-${index}`}>
+          <SequenceNumber>{String(index + 1).padStart(2, '0')}</SequenceNumber>
+          <SequenceName>{step}</SequenceName>
+        </SequenceRow>
+      ))}
+    </SequenceBlock>
   );
 }
 
@@ -323,10 +359,16 @@ const TrickChoices = styled.View`gap: 10px; margin-top: 28px;`;
 const TrickChoice = styled(Pressable)<{ $disabled: boolean }>`min-height: 82px; justify-content: center; background-color: #f8f1dd; border: 2px solid #18382e; opacity: ${({ $disabled }) => ($disabled ? 0.45 : 1)}; padding: 15px 58px 15px 18px; position: relative;`;
 const ChoiceMeta = styled.Text`color: ${AppColors.red}; font-size: 11px; font-weight: 900; letter-spacing: 1px; text-transform: uppercase;`;
 const ChoiceName = styled.Text`color: ${AppColors.ink}; font-size: 20px; font-weight: 800; margin-top: 5px;`;
+const CompactSequence = styled.Text`color: ${AppColors.textMuted}; font-size: 11px; font-weight: 700; line-height: 16px; margin-top: 5px;`;
 const ChoiceArrow = styled.Text`position: absolute; right: 20px; color: ${AppColors.ink}; font-size: 28px; font-weight: 900;`;
 const CountdownTrick = styled.Text`max-width: 560px; color: #18382e; font-size: 26px; font-weight: 900; text-align: center;`;
 const CountdownNumber = styled.Text`color: #d84929; font-size: 156px; font-weight: 900; line-height: 180px; text-align: center;`;
 const ActiveTrick = styled.Text`color: #18382e; font-size: 30px; font-weight: 900; text-align: center;`;
+const SequenceBlock = styled.View<{ readonly $prominent: boolean }>`width: 100%; max-width: 500px; gap: 4px; background-color: ${({ $prominent }) => $prominent ? '#e5edcf' : 'transparent'}; border-left-width: ${({ $prominent }) => $prominent ? '5px' : '0'}; border-left-color: ${AppColors.red}; margin-top: 16px; padding: ${({ $prominent }) => $prominent ? '14px 16px' : '0'};`;
+const SequenceLabel = styled.Text`color: ${AppColors.red}; font-size: 10px; font-weight: 900; letter-spacing: 1.2px; margin-bottom: 3px; text-transform: uppercase;`;
+const SequenceRow = styled.View`flex-direction: row; align-items: baseline; gap: 10px;`;
+const SequenceNumber = styled.Text`width: 22px; color: ${AppColors.red}; font-size: 10px; font-weight: 900;`;
+const SequenceName = styled.Text`flex: 1; color: ${AppColors.ink}; font-size: 14px; font-weight: 800; line-height: 20px;`;
 const TimerLabel = styled.Text`color: ${AppColors.red}; font-size: 12px; font-weight: 900; letter-spacing: 1.4px; margin-top: 22px; text-transform: uppercase;`;
 const Timer = styled.Text`color: #18382e; font-size: 78px; font-variant: tabular-nums; font-weight: 900; letter-spacing: -4px; margin: 4px 0 22px;`;
 const LacedButton = styled(Pressable)`width: 100%; min-height: 108px; flex-direction: row; align-items: center; justify-content: space-between; background-color: #d84929; padding: 22px 26px; border-radius: 6px;`;

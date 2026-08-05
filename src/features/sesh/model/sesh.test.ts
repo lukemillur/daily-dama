@@ -22,6 +22,7 @@ const CUSTOM_SEQUENCE: PracticeTrick = {
   id: 'custom-sequence',
   name: 'Sunrise line',
   descriptor: 'Custom sequence',
+  sequenceSteps: ['Big cup', 'Nightmare turn', 'Spike'],
 };
 
 function startSesh(

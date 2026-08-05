@@ -119,6 +119,9 @@ export function selectAvailablePracticeTricks(
       id: trick.id,
       name: trick.name,
       descriptor: trick.kind === 'sequence' ? 'Custom sequence' : 'Custom trick',
+      ...(trick.kind === 'sequence'
+        ? { sequenceSteps: trick.steps.map((step) => step.name) }
+        : {}),
     })),
   ];
 }

@@ -7,6 +7,7 @@ export interface PracticeTrick {
   readonly id: string;
   readonly name: string;
   readonly descriptor?: string;
+  readonly sequenceSteps?: readonly string[];
 }
 
 export interface TrickSummary extends PracticeTrick {

@@ -74,6 +74,7 @@ describe('profile trick directory', () => {
       id: 'custom-sequence',
       name: 'Unranked line',
       descriptor: 'Custom sequence',
+      sequenceSteps: ['Big cup', 'Spike variation'],
     });
   });
 });
