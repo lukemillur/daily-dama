@@ -14,7 +14,11 @@ export default function HomeScreen() {
   const profile = useUserProfile();
   const { tricks: customTricks } = useCustomTricks();
   const { sessions } = usePracticeHistory();
-  const [now] = useState(Date.now);
+  const [mountedAt] = useState(Date.now);
+  const summaryNow = sessions.reduce(
+    (latest, session) => Math.max(latest, session.completedAt),
+    mountedAt,
+  );
   const summary = useMemo(
     () =>
       createHomeSummary({
@@ -22,9 +26,9 @@ export default function HomeScreen() {
         standardTricks: KENDAMA_KENTEI_TRICKS,
         customTricks,
         sessions,
-        now,
+        now: summaryNow,
       }),
-    [customTricks, now, profile, sessions],
+    [customTricks, profile, sessions, summaryNow],
   );
 
   return (

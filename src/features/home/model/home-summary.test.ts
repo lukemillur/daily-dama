@@ -161,4 +161,16 @@ describe('daily home summary', () => {
       totalLaces: 4,
     });
   });
+
+  it('can advance its injected clock when a mounted Home receives a newly completed session', () => {
+    const mountedAt = NOW;
+    const newlyCompleted = session('new', 'big-cup', 'Big cup', NOW + 7_000, 7_000, 1);
+    const summaryNow = Math.max(mountedAt, newlyCompleted.completedAt);
+
+    expect(summary({ sessions: [newlyCompleted], now: summaryNow }).momentum).toEqual({
+      sessionCount: 1,
+      totalPracticeMs: 7_000,
+      totalLaces: 1,
+    });
+  });
 });
