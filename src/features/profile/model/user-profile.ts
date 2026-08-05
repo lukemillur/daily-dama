@@ -10,6 +10,7 @@ export const INITIAL_USER_PROFILE: UserProfile = {
 };
 
 export type UserProfileAction =
+  | { readonly type: 'profileRestored'; readonly profile: UserProfile }
   | { readonly type: 'selectedTrickToggled'; readonly trickId: string }
   | { readonly type: 'selectedTricksCleared' }
   | {
@@ -24,6 +25,8 @@ export function userProfileReducer(
   action: UserProfileAction,
 ): UserProfile {
   switch (action.type) {
+    case 'profileRestored':
+      return action.profile;
     case 'selectedTrickToggled': {
       const isSelected = state.selectedTrickIds.includes(action.trickId);
 
