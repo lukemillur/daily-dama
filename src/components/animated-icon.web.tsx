@@ -1,4 +1,5 @@
 import { Image } from 'expo-image';
+import { useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import Animated, { Keyframe, Easing } from 'react-native-reanimated';
 
@@ -6,8 +7,51 @@ import classes from './animated-icon.module.css';
 const DURATION = 300;
 
 export function AnimatedSplashOverlay() {
-  return null;
+  const [visible, setVisible] = useState(true);
+
+  useEffect(() => {
+    // Waiting for two paints gives runtime-generated styles a full frame to be
+    // inserted before the statically rendered cover is removed.
+    let secondFrame: number | undefined;
+    const firstFrame = requestAnimationFrame(() => {
+      secondFrame = requestAnimationFrame(() => setVisible(false));
+    });
+
+    return () => {
+      cancelAnimationFrame(firstFrame);
+      if (secondFrame !== undefined) cancelAnimationFrame(secondFrame);
+    };
+  }, []);
+
+  if (!visible) return null;
+
+  // Inline styles are intentional: this cover must be styled before any
+  // external or runtime-generated stylesheet has loaded.
+  return (
+    <div aria-hidden="true" style={webSplashStyles.overlay}>
+      <div style={webSplashStyles.wordmark}>Daily Dama</div>
+    </div>
+  );
 }
+
+const webSplashStyles = {
+  overlay: {
+    alignItems: 'center',
+    backgroundColor: '#f4c94d',
+    display: 'flex',
+    inset: 0,
+    justifyContent: 'center',
+    position: 'fixed',
+    zIndex: 1000,
+  },
+  wordmark: {
+    color: '#18382e',
+    fontFamily: 'system-ui, sans-serif',
+    fontSize: 24,
+    fontWeight: 900,
+    letterSpacing: -0.5,
+  },
+} as const;
 
 const keyframe = new Keyframe({
   0: {
