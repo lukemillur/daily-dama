@@ -61,5 +61,29 @@ export const Spacing = {
   six: 64,
 } as const;
 
+/**
+ * Product-level tokens describe visual meaning rather than a particular component.
+ * Keeping these independent from the navigation color scheme lets the prototype's
+ * intentionally art-directed palette remain consistent across platforms.
+ */
+export const AppColors = {
+  ink: '#18382e',
+  inkSoft: '#274137',
+  textMuted: '#53635d',
+  textSubtle: '#71807a',
+  paper: '#f8f1dd',
+  paperStrong: '#f6efd9',
+  cream: '#fffaf0',
+  yellow: '#f4c94d',
+  red: '#d84929',
+  sage: '#dfe8ca',
+  borderMuted: '#d8cfb7',
+} as const;
+
+export const Radii = {
+  control: 4,
+  panel: 6,
+} as const;
+
 export const BottomTabInset = Platform.select({ ios: 50, android: 80 }) ?? 0;
 export const MaxContentWidth = 800;

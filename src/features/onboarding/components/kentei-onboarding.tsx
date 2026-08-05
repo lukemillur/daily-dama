@@ -3,6 +3,9 @@ import { useReducer } from 'react';
 import { Pressable, ScrollView } from 'react-native';
 import { styled } from 'styled-components/native';
 
+import { Button } from '@/components/ui/button';
+import { BodyText, DisplayTitle, Eyebrow } from '@/components/ui/typography';
+import { AppColors, Radii } from '@/constants/theme';
 import {
   getRepresentativeTrick,
   getTricksForRank,
@@ -30,17 +33,16 @@ export function KenteiOnboarding() {
           />
           <Question>Can you land this trick?</Question>
           <AnswerControls>
-            <SecondaryAnswer
+            <AssessmentButton
               accessibilityLabel={`I cannot land ${trick.name}`}
-              accessibilityRole="button"
+              variant="secondary"
               onPress={() => dispatch({ type: 'trickNotLanded' })}>
-              <SecondaryAnswerText>Not yet</SecondaryAnswerText>
-            </SecondaryAnswer>
+              Not yet
+            </AssessmentButton>
             <AssessmentPrimaryAnswer
               accessibilityLabel={`I can land ${trick.name}`}
-              accessibilityRole="button"
               onPress={() => dispatch({ type: 'trickLanded' })}>
-              <PrimaryAnswerText>Landed it</PrimaryAnswerText>
+              Landed it
             </AssessmentPrimaryAnswer>
           </AnswerControls>
         </AssessmentContent>
@@ -82,10 +84,9 @@ export function KenteiOnboarding() {
                   : `${selectedCount} ${selectedCount === 1 ? 'trick' : 'tricks'} selected.`}
               </SelectionCount>
               <FinishButton
-                accessibilityRole="button"
                 disabled={selectedCount === 0}
                 onPress={finishOnboarding}>
-                <FinishButtonText>Start practicing</FinishButtonText>
+                Start practicing
               </FinishButton>
             </FinishArea>
           </FinishBackdrop>
@@ -111,8 +112,8 @@ export function CompletedOnboarding({ rank, selectedTrickCount, onRetake, onStar
       <CompletedCopy>
         You have {selectedTrickCount} {selectedTrickCount === 1 ? 'trick' : 'tricks'} queued for focused practice.
       </CompletedCopy>
-      <CompletedPrimaryAnswer accessibilityRole="button" onPress={onStartSesh}>
-        <PrimaryAnswerText>Start a sesh</PrimaryAnswerText>
+      <CompletedPrimaryAnswer onPress={onStartSesh}>
+        Start a sesh
       </CompletedPrimaryAnswer>
       <RetakeButton accessibilityRole="button" onPress={onRetake}>
         <RetakeText>Retake assessment</RetakeText>
@@ -125,22 +126,18 @@ const AssessmentScroll = styled(ScrollView)`flex: 1; width: 100%;`;
 const AssessmentContent = styled.View`width: 100%; max-width: 720px; flex: 1; align-self: center; justify-content: center; padding: 28px 22px 116px;`;
 const Question = styled.Text`color: #18382e; font-size: 22px; font-weight: 900; text-align: center; margin: 30px 0 16px;`;
 const AnswerControls = styled.View`flex-direction: row; gap: 12px;`;
-const PrimaryAnswer = styled(Pressable)`min-height: 56px; align-items: center; justify-content: center; background-color: #18382e; border: 2px solid #18382e; border-radius: 4px; padding: 12px 20px;`;
-const AssessmentPrimaryAnswer = styled(PrimaryAnswer)`flex: 1;`;
-const CompletedPrimaryAnswer = styled(PrimaryAnswer)`min-width: 190px;`;
-const PrimaryAnswerText = styled.Text`color: #f4c94d; font-size: 17px; font-weight: 900;`;
-const SecondaryAnswer = styled(Pressable)`min-height: 56px; flex: 1; align-items: center; justify-content: center; background-color: #f6efd9; border: 2px solid #18382e; border-radius: 4px; padding: 12px 20px;`;
-const SecondaryAnswerText = styled.Text`color: #18382e; font-size: 17px; font-weight: 900;`;
-const SelectionContent = styled.View`width: 100%; max-width: 760px; max-height: 864px; flex: 1; align-self: center; overflow: hidden; background-color: #f8f1dd; border-radius: 6px;`;
-const FinishBackdrop = styled.View`background-color: #f4c94d;`;
-const FinishArea = styled.View`align-items: center; margin-top: 54px; padding: 20px 22px 22px; background-color: #f8f1dd; border-top-width: 1px; border-top-color: #d8cfb7;`;
-const SelectionCount = styled.Text`color: #53635d; font-size: 14px; font-weight: 700; margin-bottom: 12px;`;
-const FinishButton = styled(Pressable)`width: 100%; min-height: 54px; align-items: center; justify-content: center; background-color: #18382e; border-radius: 4px; opacity: ${({ disabled }) => disabled ? 0.35 : 1};`;
-const FinishButtonText = styled.Text`color: #f4c94d; font-size: 16px; font-weight: 900;`;
+const AssessmentButton = styled(Button)`flex: 1;`;
+const AssessmentPrimaryAnswer = styled(AssessmentButton)``;
+const CompletedPrimaryAnswer = styled(Button)`min-width: 190px;`;
+const SelectionContent = styled.View`width: 100%; max-width: 760px; max-height: 864px; flex: 1; align-self: center; overflow: hidden; background-color: ${AppColors.paper}; border-radius: ${Radii.panel}px;`;
+const FinishBackdrop = styled.View`background-color: ${AppColors.yellow};`;
+const FinishArea = styled.View`align-items: center; margin-top: 54px; padding: 20px 22px 22px; background-color: ${AppColors.paper}; border-top-width: 1px; border-top-color: ${AppColors.borderMuted};`;
+const SelectionCount = styled.Text`color: ${AppColors.textMuted}; font-size: 14px; font-weight: 700; margin-bottom: 12px;`;
+const FinishButton = styled(Button).attrs({ fill: true })`min-height: 54px;`;
 const CompletedContent = styled.View`width: 100%; max-width: 620px; flex: 1; align-self: center; align-items: center; justify-content: center; padding: 40px 22px 130px;`;
-const CompletedEyebrow = styled.Text`color: #d84929; font-size: 13px; font-weight: 900; letter-spacing: 2px; text-transform: uppercase;`;
-const RankNumber = styled.Text`color: #d84929; font-size: 150px; font-weight: 900; letter-spacing: -10px; line-height: 165px;`;
-const CompletedTitle = styled.Text`color: #18382e; font-size: 40px; font-weight: 900; letter-spacing: -1px; line-height: 43px; text-align: center;`;
-const CompletedCopy = styled.Text`max-width: 440px; color: #53635d; font-size: 16px; line-height: 24px; text-align: center; margin: 16px 0 26px;`;
+const CompletedEyebrow = styled(Eyebrow)`letter-spacing: 2px;`;
+const RankNumber = styled.Text`color: ${AppColors.red}; font-size: 150px; font-weight: 900; letter-spacing: -10px; line-height: 165px;`;
+const CompletedTitle = styled(DisplayTitle)`font-size: 40px; line-height: 43px; letter-spacing: -1px; text-align: center;`;
+const CompletedCopy = styled(BodyText)`max-width: 440px; text-align: center; margin: 16px 0 26px;`;
 const RetakeButton = styled(Pressable)`padding: 16px; margin-top: 8px;`;
-const RetakeText = styled.Text`color: #18382e; font-size: 14px; font-weight: 800; text-decoration-line: underline;`;
+const RetakeText = styled.Text`color: ${AppColors.ink}; font-size: 14px; font-weight: 800; text-decoration-line: underline;`;

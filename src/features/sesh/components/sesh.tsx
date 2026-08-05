@@ -3,6 +3,9 @@ import { useEffect, useMemo, useReducer, useState } from 'react';
 import { Animated, Pressable, ScrollView } from 'react-native';
 import { styled } from 'styled-components/native';
 
+import { Button } from '@/components/ui/button';
+import { BodyText, DisplayTitle as BaseDisplayTitle, Eyebrow as BaseEyebrow } from '@/components/ui/typography';
+import { AppColors } from '@/constants/theme';
 import {
   formatDuration,
   getAverageInterval,
@@ -69,7 +72,7 @@ function EmptyState() {
       <BodyCopy>Select at least one trick in your profile before starting a focused sesh.</BodyCopy>
       <Link href="/profile" asChild>
         <PrimaryButton accessibilityRole="link">
-          <PrimaryButtonText>Choose tricks</PrimaryButtonText>
+          Choose tricks
         </PrimaryButton>
       </Link>
     </CenteredPanel>
@@ -203,7 +206,7 @@ function CompletedSesh({ summary, onReset }: { readonly summary: SeshSummary; re
           <Metric><MetricValue>{fastest === undefined ? '—' : formatDuration(fastest)}</MetricValue><MetricLabel>Fastest lace</MetricLabel></Metric>
         </SummaryGrid>
         <LandingHistory landings={summary.landings} />
-        <PrimaryButton accessibilityRole="button" onPress={onReset}><PrimaryButtonText>Start another sesh</PrimaryButtonText></PrimaryButton>
+        <PrimaryButton onPress={onReset}>Start another sesh</PrimaryButton>
       </ActiveContent>
     </ScrollArea>
   );
@@ -213,16 +216,18 @@ const ScrollArea = styled(ScrollView)`flex: 1; width: 100%;`;
 const CenteredPanel = styled.View`flex: 1; width: 100%; max-width: 680px; align-self: center; align-items: center; justify-content: center; padding: 40px 24px 140px;`;
 const PickerContent = styled.View`width: 100%; max-width: 680px; align-self: center;`;
 const ActiveContent = styled.View`width: 100%; max-width: 680px; align-self: center; align-items: center;`;
-const Eyebrow = styled.Text`color: #d84929; font-size: 13px; font-weight: 900; letter-spacing: 1.8px; text-transform: uppercase; margin-bottom: 14px;`;
-const DisplayTitle = styled.Text`color: #18382e; font-size: 42px; font-weight: 900; line-height: 44px; text-align: center; letter-spacing: -1.5px;`;
-const BodyCopy = styled.Text`max-width: 470px; color: #53635d; font-size: 16px; line-height: 24px; text-align: center; margin-top: 18px;`;
-const PrimaryButton = styled(Pressable)`min-height: 54px; align-items: center; justify-content: center; background-color: #18382e; padding: 14px 28px; margin-top: 28px; border-radius: 5px;`;
-const PrimaryButtonText = styled.Text`color: #f4c94d; font-size: 16px; font-weight: 900;`;
+const Eyebrow = styled(BaseEyebrow)`margin-bottom: 14px;`;
+const DisplayTitle = styled(BaseDisplayTitle)`text-align: center;`;
+const BodyCopy = styled(BodyText)`max-width: 470px; text-align: center; margin-top: 18px;`;
+const PrimaryButton = styled(Button).attrs({ size: 'medium' })`
+  margin-top: 28px;
+  border-radius: 5px;
+`;
 const TrickChoices = styled.View`gap: 10px; margin-top: 28px;`;
 const TrickChoice = styled(Pressable)`min-height: 82px; justify-content: center; background-color: #f8f1dd; border: 2px solid #18382e; padding: 15px 58px 15px 18px; position: relative;`;
-const ChoiceMeta = styled.Text`color: #d84929; font-size: 11px; font-weight: 900; letter-spacing: 1px; text-transform: uppercase;`;
-const ChoiceName = styled.Text`color: #18382e; font-size: 20px; font-weight: 800; margin-top: 5px;`;
-const ChoiceArrow = styled.Text`position: absolute; right: 20px; color: #18382e; font-size: 28px; font-weight: 900;`;
+const ChoiceMeta = styled.Text`color: ${AppColors.red}; font-size: 11px; font-weight: 900; letter-spacing: 1px; text-transform: uppercase;`;
+const ChoiceName = styled.Text`color: ${AppColors.ink}; font-size: 20px; font-weight: 800; margin-top: 5px;`;
+const ChoiceArrow = styled.Text`position: absolute; right: 20px; color: ${AppColors.ink}; font-size: 28px; font-weight: 900;`;
 const CountdownTrick = styled.Text`max-width: 560px; color: #18382e; font-size: 26px; font-weight: 900; text-align: center;`;
 const CountdownNumber = styled.Text`color: #d84929; font-size: 156px; font-weight: 900; line-height: 180px; text-align: center;`;
 const ActiveTrick = styled.Text`color: #18382e; font-size: 30px; font-weight: 900; text-align: center;`;
