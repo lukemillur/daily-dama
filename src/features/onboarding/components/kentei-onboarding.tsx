@@ -78,8 +78,8 @@ export function KenteiOnboarding() {
           introduction: `Select one or more Rank ${state.rank} tricks. These will become your initial Sesh practice list.`,
         }}
         footer={
-          <FinishBackdrop>
-            <FinishArea>
+          <FinishBackdrop $pinned={shouldPinSelectionChrome}>
+            <FinishArea $pinned={shouldPinSelectionChrome}>
               <SelectionCount>
                 {selectedCount === 0
                   ? 'Select at least one trick to continue.'
@@ -132,8 +132,8 @@ const AssessmentButton = styled(Button)`flex: 1;`;
 const AssessmentPrimaryAnswer = styled(AssessmentButton)``;
 const CompletedPrimaryAnswer = styled(Button)`min-width: 190px;`;
 const SelectionContent = styled.View`width: 100%; max-width: 760px; max-height: 864px; flex: 1; align-self: center; overflow: hidden; background-color: ${AppColors.paper}; border-radius: ${Radii.panel}px;`;
-const FinishBackdrop = styled.View`background-color: ${AppColors.yellow};`;
-const FinishArea = styled.View`align-items: center; margin-top: 54px; padding: 20px 22px 22px; background-color: ${AppColors.paper}; border-top-width: 1px; border-top-color: ${AppColors.borderMuted};`;
+const FinishBackdrop = styled.View<{ readonly $pinned: boolean }>`background-color: ${({ $pinned }) => $pinned ? AppColors.yellow : AppColors.paper};`;
+const FinishArea = styled.View<{ readonly $pinned: boolean }>`align-items: center; margin-top: ${({ $pinned }) => $pinned ? 54 : 0}px; padding: 20px 22px 22px; background-color: ${AppColors.paper}; border-top-width: 1px; border-top-color: ${AppColors.borderMuted};`;
 const SelectionCount = styled.Text`color: ${AppColors.textMuted}; font-size: 14px; font-weight: 700; margin-bottom: 12px;`;
 const FinishButton = styled(Button).attrs({ fill: true })`min-height: 54px;`;
 const CompletedContent = styled.View`width: 100%; max-width: 620px; flex: 1; align-self: center; align-items: center; justify-content: center; padding: 40px 22px 130px;`;
