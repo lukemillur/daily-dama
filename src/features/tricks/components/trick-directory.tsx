@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { type ReactElement, useMemo } from 'react';
 import { Pressable, SectionList, type SectionListData } from 'react-native';
 import { styled } from 'styled-components/native';
 
@@ -22,6 +22,10 @@ export interface TrickDirectoryProps {
     readonly title: string;
     readonly introduction: string;
   };
+  readonly footer?: ReactElement;
+  readonly fixedHeader?: boolean;
+  readonly fixedFooter?: boolean;
+  readonly hideScrollIndicator?: boolean;
 }
 
 const DEFAULT_HEADER = {
@@ -55,25 +59,36 @@ export function createTrickSections(tricks: readonly TrickSummary[]): TrickSecti
   return [...sectionsByRank.values()].sort((first, second) => first.rank - second.rank);
 }
 
-export function TrickDirectory({ tricks, selection, header }: TrickDirectoryProps) {
+export function TrickDirectory({
+  tricks,
+  selection,
+  header,
+  footer,
+  fixedHeader = false,
+  fixedFooter = false,
+  hideScrollIndicator = false,
+}: TrickDirectoryProps) {
   const sections = useMemo(() => createTrickSections(tricks), [tricks]);
   const selectedTrickIds = selection?.selectedTrickIds ?? NO_SELECTED_TRICKS;
   const selectedTrickIdSet = useMemo(() => new Set(selectedTrickIds), [selectedTrickIds]);
+  const directoryHeader = (
+    <DirectoryHeader $compact={fixedHeader}>
+      <Eyebrow>{header?.eyebrow ?? DEFAULT_HEADER.eyebrow}</Eyebrow>
+      <Title>{header?.title ?? DEFAULT_HEADER.title}</Title>
+      <Introduction>{header?.introduction ?? DEFAULT_HEADER.introduction(tricks.length)}</Introduction>
+    </DirectoryHeader>
+  );
 
-  return (
+  const directoryList = (
     <SectionList
       sections={sections}
       extraData={selectedTrickIds}
       keyExtractor={(trick) => trick.id}
       stickySectionHeadersEnabled
-      contentContainerStyle={{ paddingBottom: 140 }}
-      ListHeaderComponent={
-        <DirectoryHeader>
-          <Eyebrow>{header?.eyebrow ?? DEFAULT_HEADER.eyebrow}</Eyebrow>
-          <Title>{header?.title ?? DEFAULT_HEADER.title}</Title>
-          <Introduction>{header?.introduction ?? DEFAULT_HEADER.introduction(tricks.length)}</Introduction>
-        </DirectoryHeader>
-      }
+      showsVerticalScrollIndicator={!hideScrollIndicator}
+      contentContainerStyle={{ paddingBottom: fixedFooter ? 0 : 140 }}
+      ListHeaderComponent={fixedHeader ? undefined : directoryHeader}
+      ListFooterComponent={fixedFooter ? undefined : footer}
       renderSectionHeader={({ section }) => <SectionHeader section={section} />}
       renderItem={({ item, index }) => (
         <TrickRow
@@ -86,6 +101,16 @@ export function TrickDirectory({ tricks, selection, header }: TrickDirectoryProp
       ItemSeparatorComponent={ItemSeparator}
       SectionSeparatorComponent={SectionSeparator}
     />
+  );
+
+  return fixedHeader || fixedFooter ? (
+    <DirectoryLayout>
+      {fixedHeader ? directoryHeader : null}
+      <ListContainer>{directoryList}</ListContainer>
+      {fixedFooter && footer ? <FixedFooter>{footer}</FixedFooter> : null}
+    </DirectoryLayout>
+  ) : (
+    directoryList
   );
 }
 
@@ -141,9 +166,22 @@ function TrickRow({ trick, position, isSelected, onToggle }: TrickRowProps) {
   );
 }
 
-const DirectoryHeader = styled.View`
+const DirectoryLayout = styled.View`
+  flex: 1;
+`;
+
+const ListContainer = styled.View`
+  flex: 1;
+  overflow: hidden;
+`;
+
+const FixedFooter = styled.View`
+  flex-shrink: 0;
+`;
+
+const DirectoryHeader = styled.View<{ readonly $compact: boolean }>`
   gap: 14px;
-  padding: 122px 22px 48px;
+  padding: ${({ $compact }) => ($compact ? '28px 22px 32px' : '122px 22px 48px')};
 `;
 
 const Eyebrow = styled.Text`

@@ -16,6 +16,8 @@ import {
 interface UserProfileActions {
   readonly toggleSelectedTrick: (trickId: string) => void;
   readonly clearSelectedTricks: () => void;
+  readonly completeOnboarding: (kenteiRank: number, selectedTrickIds: readonly string[]) => void;
+  readonly restartOnboarding: () => void;
 }
 
 const UserProfileStateContext = createContext<UserProfile | undefined>(undefined);
@@ -32,9 +34,20 @@ export function UserProfileProvider({ children }: PropsWithChildren) {
     dispatch({ type: 'selectedTricksCleared' });
   }, []);
 
+  const completeOnboarding = useCallback(
+    (kenteiRank: number, selectedTrickIds: readonly string[]) => {
+      dispatch({ type: 'onboardingCompleted', kenteiRank, selectedTrickIds });
+    },
+    [],
+  );
+
+  const restartOnboarding = useCallback(() => {
+    dispatch({ type: 'onboardingRestarted' });
+  }, []);
+
   const actions = useMemo(
-    () => ({ toggleSelectedTrick, clearSelectedTricks }),
-    [clearSelectedTricks, toggleSelectedTrick],
+    () => ({ toggleSelectedTrick, clearSelectedTricks, completeOnboarding, restartOnboarding }),
+    [clearSelectedTricks, completeOnboarding, restartOnboarding, toggleSelectedTrick],
   );
 
   return (
