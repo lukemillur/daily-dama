@@ -1,4 +1,4 @@
-import type { TrickSummary } from '@/features/tricks/model/trick';
+import type { PracticeTrick } from '@/features/tricks/model/trick';
 
 export interface Landing {
   readonly landedAt: number;
@@ -30,7 +30,7 @@ export function createTimedSeshPlan(durationMinutes: number): SeshPlan {
 }
 
 export interface SeshSummary {
-  readonly trick: TrickSummary;
+  readonly trick: PracticeTrick;
   readonly plan: SeshPlan;
   readonly startedAt: number;
   readonly endedAt: number;
@@ -40,12 +40,12 @@ export interface SeshSummary {
 
 export type SeshState =
   | { readonly status: 'choosing' }
-  | { readonly status: 'countdown'; readonly trick: TrickSummary; readonly plan: SeshPlan }
-  | { readonly status: 'active'; readonly trick: TrickSummary; readonly plan: SeshPlan; readonly startedAt: number; readonly landings: readonly Landing[] }
+  | { readonly status: 'countdown'; readonly trick: PracticeTrick; readonly plan: SeshPlan }
+  | { readonly status: 'active'; readonly trick: PracticeTrick; readonly plan: SeshPlan; readonly startedAt: number; readonly landings: readonly Landing[] }
   | { readonly status: 'completed'; readonly summary: SeshSummary };
 
 export type SeshAction =
-  | { readonly type: 'trickSelected'; readonly trick: TrickSummary; readonly plan: SeshPlan }
+  | { readonly type: 'trickSelected'; readonly trick: PracticeTrick; readonly plan: SeshPlan }
   | { readonly type: 'countdownCompleted'; readonly now: number }
   | { readonly type: 'trickLaced'; readonly now: number }
   | { readonly type: 'seshEnded'; readonly now: number }

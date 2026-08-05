@@ -28,6 +28,10 @@ export default function AppTabs() {
         <NativeTabs.Trigger.Label>Stats</NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>
 
+      <NativeTabs.Trigger name="tricks">
+        <NativeTabs.Trigger.Label>Tricks</NativeTabs.Trigger.Label>
+      </NativeTabs.Trigger>
+
       <NativeTabs.Trigger name="profile">
         <NativeTabs.Trigger.Label>Profile</NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>

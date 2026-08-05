@@ -2,9 +2,11 @@ import { describe, expect, it } from '@jest/globals';
 
 import {
   aggregatePracticeStats,
+  createPracticeSessionRecord,
   practiceHistoryReducer,
   type PracticeSessionRecord,
 } from '@/features/stats/model/practice-history';
+import { OPEN_ENDED_SESH_PLAN, type SeshSummary } from '@/features/sesh/model/sesh';
 
 const BIG_CUP_FIRST: PracticeSessionRecord = {
   id: 'big-cup-1',
@@ -89,5 +91,38 @@ describe('practice history', () => {
 
     expect(twice).toBe(once);
     expect(twice.sessions).toHaveLength(1);
+  });
+
+  it('aggregates a custom-trick session from its completed name snapshot', () => {
+    const summary: SeshSummary = {
+      trick: { id: 'custom-stable-id', name: 'Morning line', descriptor: 'Custom sequence' },
+      plan: OPEN_ENDED_SESH_PLAN,
+      startedAt: 1_000,
+      endedAt: 31_000,
+      durationMs: 30_000,
+      landings: [{ landedAt: 21_000, elapsedMs: 20_000, intervalMs: 20_000 }],
+    };
+    const record = createPracticeSessionRecord(summary);
+
+    expect(record).toMatchObject({
+      trickId: 'custom-stable-id',
+      trickName: 'Morning line',
+      durationMs: 30_000,
+      laceCount: 1,
+    });
+    expect(aggregatePracticeStats([record]).tricks).toEqual([
+      {
+        trickId: 'custom-stable-id',
+        trickName: 'Morning line',
+        totalLaces: 1,
+        totalPracticeMs: 30_000,
+        sessionCount: 1,
+        mostRecentPracticeAt: 31_000,
+      },
+    ]);
+
+    const renamedCurrentTrick = { ...summary.trick, name: 'Renamed later' };
+    expect(renamedCurrentTrick.name).toBe('Renamed later');
+    expect(record.trickName).toBe('Morning line');
   });
 });

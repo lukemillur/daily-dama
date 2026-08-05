@@ -20,21 +20,21 @@ import {
   type SeshPlan,
   type SeshSummary,
 } from '@/features/sesh/model/sesh';
-import { KENDAMA_KENTEI_TRICKS } from '@/features/tricks/data/kendama-kentei-tricks';
-import type { TrickSummary } from '@/features/tricks/model/trick';
+import type { PracticeTrick } from '@/features/tricks/model/trick';
 import { usePracticeHistoryActions } from '@/features/stats/state/practice-history-provider';
 
 interface SeshProps {
   readonly selectedTrickIds: readonly string[];
+  readonly availableTricks: readonly PracticeTrick[];
 }
 
-export function Sesh({ selectedTrickIds }: SeshProps) {
+export function Sesh({ availableTricks, selectedTrickIds }: SeshProps) {
   const [state, dispatch] = useReducer(seshReducer, INITIAL_SESH_STATE);
   const { recordCompletedSesh } = usePracticeHistoryActions();
   const recordedSummaryId = useRef<string | undefined>(undefined);
   const selectedTricks = useMemo(
-    () => KENDAMA_KENTEI_TRICKS.filter((trick) => selectedTrickIds.includes(trick.id)),
-    [selectedTrickIds],
+    () => availableTricks.filter((trick) => selectedTrickIds.includes(trick.id)),
+    [availableTricks, selectedTrickIds],
   );
 
   useEffect(() => {
@@ -100,7 +100,7 @@ function EmptyState() {
   );
 }
 
-function TrickPicker({ tricks, onSelect }: { readonly tricks: readonly TrickSummary[]; readonly onSelect: (trick: TrickSummary, plan: SeshPlan) => void }) {
+function TrickPicker({ tricks, onSelect }: { readonly tricks: readonly PracticeTrick[]; readonly onSelect: (trick: PracticeTrick, plan: SeshPlan) => void }) {
   const [planKind, setPlanKind] = useState<SeshPlan['kind']>('openEnded');
   const [durationMinutes, setDurationMinutes] = useState('5');
   const parsedDuration = Number(durationMinutes);
@@ -163,7 +163,7 @@ function TrickPicker({ tricks, onSelect }: { readonly tricks: readonly TrickSumm
               disabled={selectedPlan === undefined}
               $disabled={selectedPlan === undefined}
               onPress={() => selectedPlan && onSelect(trick, selectedPlan)}>
-              <ChoiceMeta>Rank {trick.kenteiRank} · {trick.kenteiLevel}</ChoiceMeta>
+              <ChoiceMeta>{trick.descriptor ?? 'Practice trick'}</ChoiceMeta>
               <ChoiceName>{trick.name}</ChoiceName>
               <ChoiceArrow>→</ChoiceArrow>
             </TrickChoice>
@@ -174,7 +174,7 @@ function TrickPicker({ tricks, onSelect }: { readonly tricks: readonly TrickSumm
   );
 }
 
-function Countdown({ trick, plan, onComplete }: { readonly trick: TrickSummary; readonly plan: SeshPlan; readonly onComplete: () => void }) {
+function Countdown({ trick, plan, onComplete }: { readonly trick: PracticeTrick; readonly plan: SeshPlan; readonly onComplete: () => void }) {
   const [count, setCount] = useState(3);
   const [scale] = useState(() => new Animated.Value(0.55));
   const [opacity] = useState(() => new Animated.Value(0));
@@ -211,7 +211,7 @@ function Countdown({ trick, plan, onComplete }: { readonly trick: TrickSummary; 
   );
 }
 
-function ActiveSesh({ trick, plan, startedAt, landings, onLaced, onEnd, onTimerElapsed }: { readonly trick: TrickSummary; readonly plan: SeshPlan; readonly startedAt: number; readonly landings: readonly Landing[]; readonly onLaced: () => void; readonly onEnd: () => void; readonly onTimerElapsed: () => void }) {
+function ActiveSesh({ trick, plan, startedAt, landings, onLaced, onEnd, onTimerElapsed }: { readonly trick: PracticeTrick; readonly plan: SeshPlan; readonly startedAt: number; readonly landings: readonly Landing[]; readonly onLaced: () => void; readonly onEnd: () => void; readonly onTimerElapsed: () => void }) {
   const now = useNow(startedAt);
   const elapsedMs = now - startedAt;
   const displayedTime =

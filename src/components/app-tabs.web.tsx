@@ -29,6 +29,9 @@ export default function AppTabs() {
           <TabTrigger name="stats" href="/stats" asChild>
             <TabButton>Stats</TabButton>
           </TabTrigger>
+          <TabTrigger name="tricks" href="/tricks" asChild>
+            <TabButton>Tricks</TabButton>
+          </TabTrigger>
           <TabTrigger name="profile" href="/profile" asChild>
             <TabButton>Profile</TabButton>
           </TabTrigger>
@@ -41,13 +44,11 @@ export default function AppTabs() {
 export function TabButton({ children, isFocused, ...props }: TabTriggerSlotProps) {
   return (
     <Pressable {...props} style={({ pressed }) => pressed && styles.pressed}>
-      <ThemedView
-        type={isFocused ? 'backgroundSelected' : 'backgroundElement'}
-        style={styles.tabButtonView}>
+      <ResponsiveTabButtonView type={isFocused ? 'backgroundSelected' : 'backgroundElement'}>
         <ThemedText type="small" themeColor={isFocused ? 'text' : 'textSecondary'}>
           {children}
         </ThemedText>
-      </ThemedView>
+      </ResponsiveTabButtonView>
     </Pressable>
   );
 }
@@ -55,11 +56,11 @@ export function TabButton({ children, isFocused, ...props }: TabTriggerSlotProps
 export function CustomTabList(props: TabListProps) {
   return (
     <View {...props} style={styles.tabListContainer}>
-      <ThemedView type="backgroundElement" style={styles.innerContainer}>
+      <ResponsiveTabListInner type="backgroundElement">
         <ResponsiveBrandText type="smallBold">Daily Dama</ResponsiveBrandText>
 
         {props.children}
-      </ThemedView>
+      </ResponsiveTabListInner>
     </View>
   );
 }
@@ -70,6 +71,32 @@ const ResponsiveBrandText = styled(ThemedText)`
 
   @media (min-width: 480px) {
     display: flex;
+  }
+`;
+
+const ResponsiveTabListInner = styled(ThemedView)`
+  max-width: ${MaxContentWidth}px;
+  flex-grow: 1;
+  flex-direction: row;
+  align-items: center;
+  gap: 2px;
+  padding: ${Spacing.two}px;
+  border-radius: ${Spacing.five}px;
+
+  @media (min-width: 480px) {
+    gap: ${Spacing.two}px;
+    padding-right: ${Spacing.five}px;
+    padding-left: ${Spacing.five}px;
+  }
+`;
+
+const ResponsiveTabButtonView = styled(ThemedView)`
+  padding: ${Spacing.one}px 6px;
+  border-radius: ${Spacing.three}px;
+
+  @media (min-width: 480px) {
+    padding-right: ${Spacing.three}px;
+    padding-left: ${Spacing.three}px;
   }
 `;
 
@@ -86,22 +113,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flexDirection: 'row',
   },
-  innerContainer: {
-    paddingVertical: Spacing.two,
-    paddingHorizontal: Spacing.five,
-    borderRadius: Spacing.five,
-    flexDirection: 'row',
-    alignItems: 'center',
-    flexGrow: 1,
-    gap: Spacing.two,
-    maxWidth: MaxContentWidth,
-  },
   pressed: {
     opacity: 0.7,
-  },
-  tabButtonView: {
-    paddingVertical: Spacing.one,
-    paddingHorizontal: Spacing.three,
-    borderRadius: Spacing.three,
   },
 });

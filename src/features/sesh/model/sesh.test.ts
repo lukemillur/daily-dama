@@ -8,7 +8,7 @@ import {
   seshReducer,
   type SeshState,
 } from '@/features/sesh/model/sesh';
-import type { TrickSummary } from '@/features/tricks/model/trick';
+import type { PracticeTrick, TrickSummary } from '@/features/tricks/model/trick';
 
 const BIG_CUP: TrickSummary = {
   id: 'big-cup',
@@ -18,16 +18,39 @@ const BIG_CUP: TrickSummary = {
   kenteiClass: '3rd Class',
 };
 
-function startSesh(plan = OPEN_ENDED_SESH_PLAN, startedAt = 1_000): SeshState {
+const CUSTOM_SEQUENCE: PracticeTrick = {
+  id: 'custom-sequence',
+  name: 'Sunrise line',
+  descriptor: 'Custom sequence',
+};
+
+function startSesh(
+  plan = OPEN_ENDED_SESH_PLAN,
+  startedAt = 1_000,
+  trick: PracticeTrick = BIG_CUP,
+): SeshState {
   const countdown = seshReducer(INITIAL_SESH_STATE, {
     type: 'trickSelected',
-    trick: BIG_CUP,
+    trick,
     plan,
   });
   return seshReducer(countdown, { type: 'countdownCompleted', now: startedAt });
 }
 
 describe('sesh reducer', () => {
+  it('starts a custom trick in both open-ended and timed modes', () => {
+    expect(startSesh(OPEN_ENDED_SESH_PLAN, 1_000, CUSTOM_SEQUENCE)).toMatchObject({
+      status: 'active',
+      trick: CUSTOM_SEQUENCE,
+      plan: OPEN_ENDED_SESH_PLAN,
+    });
+    expect(startSesh(createTimedSeshPlan(5), 1_000, CUSTOM_SEQUENCE)).toMatchObject({
+      status: 'active',
+      trick: CUSTOM_SEQUENCE,
+      plan: { kind: 'timed', durationMs: 300_000 },
+    });
+  });
+
   it('preserves the open-ended flow and records actual elapsed time', () => {
     const active = startSesh();
     const withLace = seshReducer(active, { type: 'trickLaced', now: 31_000 });

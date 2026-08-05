@@ -2,17 +2,15 @@ import { type ReactElement, useMemo } from 'react';
 import { Pressable, SectionList, type SectionListData } from 'react-native';
 import { styled } from 'styled-components/native';
 
-import type { TrickSummary } from '@/features/tricks/model/trick';
-
-interface TrickSection {
-  readonly rank: number;
-  readonly level: TrickSummary['kenteiLevel'];
-  readonly className: TrickSummary['kenteiClass'];
-  readonly data: TrickSummary[];
-}
+import {
+  createTrickSections,
+  type DirectoryTrick,
+  isCustomDirectoryTrick,
+  type TrickSection,
+} from '@/features/tricks/model/trick-directory';
 
 export interface TrickDirectoryProps {
-  readonly tricks: readonly TrickSummary[];
+  readonly tricks: readonly DirectoryTrick[];
   readonly selection?: {
     readonly selectedTrickIds: readonly string[];
     readonly onToggleTrick: (trickId: string) => void;
@@ -36,28 +34,6 @@ const DEFAULT_HEADER = {
 };
 
 const NO_SELECTED_TRICKS: readonly string[] = [];
-
-export function createTrickSections(tricks: readonly TrickSummary[]): TrickSection[] {
-  const sectionsByRank = new Map<number, TrickSection>();
-
-  for (const trick of tricks) {
-    const existingSection = sectionsByRank.get(trick.kenteiRank);
-
-    if (existingSection) {
-      existingSection.data.push(trick);
-      continue;
-    }
-
-    sectionsByRank.set(trick.kenteiRank, {
-      rank: trick.kenteiRank,
-      level: trick.kenteiLevel,
-      className: trick.kenteiClass,
-      data: [trick],
-    });
-  }
-
-  return [...sectionsByRank.values()].sort((first, second) => first.rank - second.rank);
-}
 
 export function TrickDirectory({
   tricks,
@@ -114,19 +90,19 @@ export function TrickDirectory({
   );
 }
 
-function SectionHeader({ section }: { readonly section: SectionListData<TrickSummary, TrickSection> }) {
+function SectionHeader({ section }: { readonly section: SectionListData<DirectoryTrick, TrickSection> }) {
   return (
-    <SectionHeaderContainer>
-      <RankLabel>Rank {section.rank}</RankLabel>
-      <LevelLabel>
-        {section.level} · {section.className}
+    <SectionHeaderContainer $custom={section.kind === 'custom'}>
+      <RankLabel $custom={section.kind === 'custom'}>{section.kind === 'custom' ? 'Custom' : `Rank ${section.rank}`}</RankLabel>
+      <LevelLabel $custom={section.kind === 'custom'}>
+        {section.kind === 'custom' ? 'Your own progression' : `${section.level} · ${section.className}`}
       </LevelLabel>
     </SectionHeaderContainer>
   );
 }
 
 interface TrickRowProps {
-  readonly trick: TrickSummary;
+  readonly trick: DirectoryTrick;
   readonly position: number;
   readonly isSelected: boolean;
   readonly onToggle?: () => void;
@@ -136,7 +112,12 @@ function TrickRow({ trick, position, isSelected, onToggle }: TrickRowProps) {
   const contents = (
     <>
       <Position>{String(position).padStart(2, '0')}</Position>
-      <TrickName>{trick.name}</TrickName>
+      <TrickIdentity>
+        <TrickName>{trick.name}</TrickName>
+        {isCustomDirectoryTrick(trick) ? (
+          <CustomLabel>{trick.customKind === 'sequence' ? 'Custom sequence' : 'Custom trick'}</CustomLabel>
+        ) : null}
+      </TrickIdentity>
       {onToggle && (
         <SelectionIndicator $selected={isSelected}>
           <SelectionMark>{isSelected ? '✓' : ''}</SelectionMark>
@@ -209,28 +190,28 @@ const Introduction = styled.Text`
   line-height: 24px;
 `;
 
-const SectionHeaderContainer = styled.View`
+const SectionHeaderContainer = styled.View<{ readonly $custom: boolean }>`
   flex-direction: row;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
   padding: 14px 22px;
-  background-color: #f4c94d;
+  background-color: ${({ $custom }) => ($custom ? '#d84929' : '#f4c94d')};
   border-top-width: 2px;
   border-bottom-width: 2px;
   border-color: #18382e;
 `;
 
-const RankLabel = styled.Text`
-  color: #18382e;
+const RankLabel = styled.Text<{ readonly $custom: boolean }>`
+  color: ${({ $custom }) => ($custom ? '#fff8e5' : '#18382e')};
   font-size: 20px;
   font-weight: 900;
   letter-spacing: -0.4px;
 `;
 
-const LevelLabel = styled.Text`
+const LevelLabel = styled.Text<{ readonly $custom: boolean }>`
   flex-shrink: 1;
-  color: #274137;
+  color: ${({ $custom }) => ($custom ? '#fff8e5' : '#274137')};
   font-size: 13px;
   font-weight: 800;
   text-align: right;
@@ -263,12 +244,24 @@ const Position = styled.Text`
   letter-spacing: 1px;
 `;
 
-const TrickName = styled.Text`
+const TrickIdentity = styled.View`
   flex: 1;
+  gap: 3px;
+`;
+
+const TrickName = styled.Text`
   color: #18382e;
   font-size: 18px;
   font-weight: 750;
   line-height: 24px;
+`;
+
+const CustomLabel = styled.Text`
+  color: #d84929;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 1px;
+  text-transform: uppercase;
 `;
 
 const SelectionIndicator = styled.View<{ readonly $selected: boolean }>`
