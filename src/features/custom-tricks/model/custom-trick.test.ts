@@ -13,7 +13,7 @@ describe('custom tricks', () => {
     const validation = validateCustomTrickDraft({
       kind: 'standalone',
       name: '  Stilt flip  ',
-      kenteiRank: ' 8 ',
+      kenteiRank: 8,
     });
 
     expect(validation).toEqual({
@@ -54,12 +54,21 @@ describe('custom tricks', () => {
 
   it.each([
     { kind: 'standalone' as const, name: '   ' },
-    { kind: 'standalone' as const, name: 'Valid', kenteiRank: '0' },
-    { kind: 'standalone' as const, name: 'Valid', kenteiRank: '2.5' },
-    { kind: 'standalone' as const, name: 'Valid', kenteiRank: '13' },
+    { kind: 'standalone' as const, name: 'Valid', kenteiRank: 0 },
+    { kind: 'standalone' as const, name: 'Valid', kenteiRank: 2.5 },
+    { kind: 'standalone' as const, name: 'Valid', kenteiRank: 13 },
   ])('rejects invalid standalone input', (draft) => {
     expect(validateCustomTrickDraft(draft).status).toBe('invalid');
   });
+
+  it.each([undefined, ...Array.from({ length: 12 }, (_, index) => index + 1)])(
+    'accepts selectable rank %s',
+    (kenteiRank) => {
+      expect(
+        validateCustomTrickDraft({ kind: 'standalone', name: 'Valid', kenteiRank }).status,
+      ).toBe('valid');
+    },
+  );
 
   it.each([
     { kind: 'sequence' as const, name: 'Line', steps: [{ kind: 'customText' as const, name: 'Only one' }] },

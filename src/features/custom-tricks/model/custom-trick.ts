@@ -30,13 +30,13 @@ export type CustomTrickDraft =
   | {
       readonly kind: 'standalone';
       readonly name: string;
-      readonly kenteiRank?: string;
+      readonly kenteiRank?: number;
     }
   | {
       readonly kind: 'sequence';
       readonly name: string;
       readonly steps: readonly SequenceStep[];
-      readonly kenteiRank?: string;
+      readonly kenteiRank?: number;
     };
 
 export interface CustomTrickDraftErrors {
@@ -57,8 +57,7 @@ export type CustomTrickDraftValidation =
 export function validateCustomTrickDraft(draft: CustomTrickDraft): CustomTrickDraftValidation {
   const name = draft.name.trim();
   const errors: { name?: string; steps?: string; kenteiRank?: string } = {};
-  const rankText = draft.kenteiRank?.trim() ?? '';
-  const rank = rankText === '' ? undefined : Number(rankText);
+  const rank = draft.kenteiRank;
 
   if (name.length === 0) {
     errors.name = draft.kind === 'sequence' ? 'Enter a sequence name.' : 'Enter a trick name.';

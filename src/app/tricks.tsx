@@ -204,9 +204,7 @@ function CustomTrickForm({
   const { addCustomTrick, updateCustomTrick } = useCustomTrickActions();
   const { tricks: customTricks } = useCustomTricks();
   const [name, setName] = useState(initialTrick?.name ?? '');
-  const [kenteiRank, setKenteiRank] = useState(
-    initialTrick?.kenteiRank === undefined ? '' : String(initialTrick.kenteiRank),
-  );
+  const [kenteiRank, setKenteiRank] = useState<number | undefined>(initialTrick?.kenteiRank);
   const [steps, setSteps] = useState(
     initialTrick?.kind === 'sequence'
       ? [...initialTrick.steps]
@@ -389,17 +387,8 @@ function CustomTrickForm({
 
         <Field>
           <FieldLabel>Perceived Kentei rank · optional</FieldLabel>
-          <FieldHint>Enter a whole rank from 1 to 12, or leave this trick in the Custom section.</FieldHint>
-          <RankInput
-            accessibilityLabel="Perceived Kentei rank"
-            inputMode="numeric"
-            keyboardType="number-pad"
-            maxLength={2}
-            onChangeText={setKenteiRank}
-            placeholder="—"
-            placeholderTextColor={AppColors.textSubtle}
-            value={kenteiRank}
-          />
+          <FieldHint>Place it where it feels right today, or keep it unranked in your Custom section.</FieldHint>
+          <KenteiRankPicker selectedRank={kenteiRank} onSelect={setKenteiRank} />
           {errors.kenteiRank ? <ErrorText>{errors.kenteiRank}</ErrorText> : null}
         </Field>
 
@@ -411,6 +400,71 @@ function CustomTrickForm({
         </FormActions>
       </FormContent>
     </FormScroll>
+  );
+}
+
+const RANK_GROUPS = [
+  { label: 'Basic', ranks: [1, 2, 3], colors: ['#dce7a6', '#d5df8c', '#ced775'] },
+  { label: 'Advanced', ranks: [4, 5, 6], colors: ['#eccd65', '#e9bd55', '#e5aa48'] },
+  { label: 'Expert', ranks: [7, 8, 9], colors: ['#df923e', '#da7836', '#d46030'] },
+  { label: 'Master', ranks: [10, 11, 12], colors: ['#c94d2d', '#b93d2d', '#a92f2c'] },
+] as const;
+
+function KenteiRankPicker({
+  selectedRank,
+  onSelect,
+}: {
+  readonly selectedRank?: number;
+  readonly onSelect: (rank: number | undefined) => void;
+}) {
+  return (
+    <RankPicker accessibilityRole="radiogroup">
+      <UnrankedChoice
+        $selected={selectedRank === undefined}
+        accessibilityLabel="Unranked, place in the Custom section"
+        accessibilityRole="radio"
+        accessibilityState={{ checked: selectedRank === undefined }}
+        onPress={() => onSelect(undefined)}>
+        <UnrankedMark $selected={selectedRank === undefined}>
+          {selectedRank === undefined ? '✓' : '—'}
+        </UnrankedMark>
+        <UnrankedIdentity>
+          <UnrankedTitle $selected={selectedRank === undefined}>Unranked</UnrankedTitle>
+          <UnrankedCopy $selected={selectedRank === undefined}>Keep it in your own progression</UnrankedCopy>
+        </UnrankedIdentity>
+      </UnrankedChoice>
+      <RankGroups>
+        {RANK_GROUPS.map((group) => (
+          <RankGroup key={group.label}>
+            <RankGroupLabel>{group.label}</RankGroupLabel>
+            <RankChoices>
+              {group.ranks.map((rank, index) => {
+                const selected = selectedRank === rank;
+                const standardTrick = KENDAMA_KENTEI_TRICKS.find(
+                  (trick) => trick.kenteiRank === rank,
+                );
+                const descriptor = standardTrick
+                  ? `${standardTrick.kenteiLevel}, ${standardTrick.kenteiClass}`
+                  : group.label;
+                return (
+                  <RankChoice
+                    key={rank}
+                    $color={group.colors[index]}
+                    $selected={selected}
+                    accessibilityLabel={`Kentei rank ${rank}, ${descriptor}`}
+                    accessibilityRole="radio"
+                    accessibilityState={{ checked: selected }}
+                    onPress={() => onSelect(rank)}>
+                    <RankNumber $darkText={rank < 10}>{rank}</RankNumber>
+                    <RankCheck $darkText={rank < 10}>{selected ? '✓' : ''}</RankCheck>
+                  </RankChoice>
+                );
+              })}
+            </RankChoices>
+          </RankGroup>
+        ))}
+      </RankGroups>
+    </RankPicker>
   );
 }
 
@@ -485,8 +539,20 @@ const Field = styled.View`margin-top: 28px;`;
 const FieldLabel = styled.Text`color: ${AppColors.ink}; font-size: 13px; font-weight: 900; letter-spacing: 1px; text-transform: uppercase;`;
 const FieldHint = styled.Text`color: ${AppColors.textMuted}; font-size: 12px; font-weight: 650; line-height: 18px; margin-top: 5px;`;
 const FieldInput = styled(TextInput)`min-height: 56px; background-color: ${AppColors.paper}; border: 2px solid ${AppColors.ink}; color: ${AppColors.ink}; font-size: 18px; font-weight: 800; margin-top: 8px; padding: 12px 14px;`;
-const RankInput = styled(FieldInput)`width: 100px; font-variant: tabular-nums;`;
 const ErrorText = styled.Text`color: ${AppColors.red}; font-size: 12px; font-weight: 800; margin-top: 7px;`;
+const RankPicker = styled.View`gap: 14px; margin-top: 12px;`;
+const UnrankedChoice = styled(Pressable)<{ readonly $selected: boolean }>`min-height: 58px; flex-direction: row; align-items: center; gap: 12px; background-color: ${({ $selected }) => $selected ? AppColors.ink : AppColors.paper}; border: 2px solid ${AppColors.ink}; padding: 10px 13px;`;
+const UnrankedMark = styled.Text<{ readonly $selected: boolean }>`width: 24px; color: ${({ $selected }) => $selected ? AppColors.yellow : AppColors.red}; font-size: 18px; font-weight: 900; text-align: center;`;
+const UnrankedIdentity = styled.View`flex: 1;`;
+const UnrankedTitle = styled.Text<{ readonly $selected: boolean }>`color: ${({ $selected }) => $selected ? AppColors.cream : AppColors.ink}; font-size: 15px; font-weight: 900;`;
+const UnrankedCopy = styled.Text<{ readonly $selected: boolean }>`color: ${({ $selected }) => $selected ? '#d8dfcb' : AppColors.textMuted}; font-size: 11px; font-weight: 700; margin-top: 2px;`;
+const RankGroups = styled.View`flex-direction: row; flex-wrap: wrap; gap: 10px;`;
+const RankGroup = styled.View`min-width: 140px; flex: 1;`;
+const RankGroupLabel = styled.Text`color: ${AppColors.ink}; font-size: 10px; font-weight: 900; letter-spacing: 1px; margin-bottom: 5px; text-transform: uppercase;`;
+const RankChoices = styled.View`flex-direction: row; gap: 4px;`;
+const RankChoice = styled(Pressable)<{ readonly $color: string; readonly $selected: boolean }>`min-width: 42px; flex: 1; height: 52px; flex-direction: row; align-items: center; justify-content: center; background-color: ${({ $color }) => $color}; border: ${({ $selected }) => $selected ? '4px' : '1px'} solid ${AppColors.ink}; position: relative;`;
+const RankNumber = styled.Text<{ readonly $darkText: boolean }>`color: ${({ $darkText }) => $darkText ? AppColors.ink : AppColors.cream}; font-size: 17px; font-weight: 900;`;
+const RankCheck = styled.Text<{ readonly $darkText: boolean }>`position: absolute; right: 2px; top: 0; color: ${({ $darkText }) => $darkText ? AppColors.ink : AppColors.cream}; font-size: 9px; font-weight: 900;`;
 const Steps = styled.View`gap: 10px; margin-top: 10px;`;
 const StepRow = styled.View`flex-direction: row; align-items: center; gap: 8px;`;
 const StepNumber = styled.Text`width: 24px; color: ${AppColors.red}; font-size: 11px; font-weight: 900;`;
