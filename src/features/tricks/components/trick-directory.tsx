@@ -109,6 +109,11 @@ interface TrickRowProps {
 }
 
 function TrickRow({ trick, position, isSelected, onToggle }: TrickRowProps) {
+  const customDescription = isCustomDirectoryTrick(trick)
+    ? trick.customKind === 'sequence'
+      ? 'custom sequence'
+      : 'custom trick'
+    : undefined;
   const contents = (
     <>
       <Position>{String(position).padStart(2, '0')}</Position>
@@ -130,7 +135,9 @@ function TrickRow({ trick, position, isSelected, onToggle }: TrickRowProps) {
     return (
       <SelectableTrickRow
         $selected={isSelected}
-        accessibilityLabel={`${trick.name}, ${isSelected ? 'selected' : 'not selected'}`}
+        accessibilityLabel={[trick.name, customDescription, isSelected ? 'selected' : 'not selected']
+          .filter(Boolean)
+          .join(', ')}
         accessibilityRole="checkbox"
         accessibilityState={{ checked: isSelected }}
         onPress={onToggle}
@@ -141,7 +148,10 @@ function TrickRow({ trick, position, isSelected, onToggle }: TrickRowProps) {
   }
 
   return (
-    <TrickRowContainer accessibilityLabel={`${position}. ${trick.name}`}>
+    <TrickRowContainer
+      accessibilityLabel={[`${position}. ${trick.name}`, customDescription]
+        .filter(Boolean)
+        .join(', ')}>
       {contents}
     </TrickRowContainer>
   );
