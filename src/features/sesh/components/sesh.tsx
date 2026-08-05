@@ -1,18 +1,23 @@
 import { Link } from 'expo-router';
 import { useEffect, useMemo, useReducer, useRef, useState } from 'react';
-import { Animated, Pressable, ScrollView } from 'react-native';
+import { Animated, Pressable, ScrollView, TextInput } from 'react-native';
 import { styled } from 'styled-components/native';
 
 import { Button } from '@/components/ui/button';
 import { BodyText, DisplayTitle as BaseDisplayTitle, Eyebrow as BaseEyebrow } from '@/components/ui/typography';
 import { AppColors } from '@/constants/theme';
 import {
+  createTimedSeshPlan,
   formatDuration,
+  formatRemainingDuration,
   getAverageInterval,
   getFastestInterval,
   INITIAL_SESH_STATE,
+  isValidTimedSeshMinutes,
   type Landing,
+  OPEN_ENDED_SESH_PLAN,
   seshReducer,
+  type SeshPlan,
   type SeshSummary,
 } from '@/features/sesh/model/sesh';
 import { KENDAMA_KENTEI_TRICKS } from '@/features/tricks/data/kendama-kentei-tricks';
@@ -48,7 +53,7 @@ export function Sesh({ selectedTrickIds }: SeshProps) {
     ) : (
       <TrickPicker
         tricks={selectedTricks}
-        onSelect={(trick) => dispatch({ type: 'trickSelected', trick })}
+        onSelect={(trick, plan) => dispatch({ type: 'trickSelected', trick, plan })}
       />
     );
   }
@@ -57,6 +62,7 @@ export function Sesh({ selectedTrickIds }: SeshProps) {
     return (
       <Countdown
         trick={state.trick}
+        plan={state.plan}
         onComplete={() => dispatch({ type: 'countdownCompleted', now: Date.now() })}
       />
     );
@@ -66,10 +72,12 @@ export function Sesh({ selectedTrickIds }: SeshProps) {
     return (
       <ActiveSesh
         trick={state.trick}
+        plan={state.plan}
         startedAt={state.startedAt}
         landings={state.landings}
         onLaced={() => dispatch({ type: 'trickLaced', now: Date.now() })}
         onEnd={() => dispatch({ type: 'seshEnded', now: Date.now() })}
+        onTimerElapsed={() => dispatch({ type: 'timerElapsed', now: Date.now() })}
       />
     );
   }
@@ -92,20 +100,69 @@ function EmptyState() {
   );
 }
 
-function TrickPicker({ tricks, onSelect }: { readonly tricks: readonly TrickSummary[]; readonly onSelect: (trick: TrickSummary) => void }) {
+function TrickPicker({ tricks, onSelect }: { readonly tricks: readonly TrickSummary[]; readonly onSelect: (trick: TrickSummary, plan: SeshPlan) => void }) {
+  const [planKind, setPlanKind] = useState<SeshPlan['kind']>('openEnded');
+  const [durationMinutes, setDurationMinutes] = useState('5');
+  const parsedDuration = Number(durationMinutes);
+  const hasValidDuration = isValidTimedSeshMinutes(parsedDuration);
+  const selectedPlan = planKind === 'openEnded'
+    ? OPEN_ENDED_SESH_PLAN
+    : hasValidDuration
+      ? createTimedSeshPlan(parsedDuration)
+      : undefined;
+
   return (
     <ScrollArea contentContainerStyle={{ padding: 24, paddingBottom: 140 }}>
       <PickerContent>
         <Eyebrow>Start a sesh</Eyebrow>
         <DisplayTitle>What are we{`\n`}working on?</DisplayTitle>
-        <BodyCopy>Choose one of the tricks from your profile. The three-second countdown begins immediately.</BodyCopy>
+        <BodyCopy>Choose how long you want to focus, then pick one of the tricks from your profile.</BodyCopy>
+        <PlanLabel>Practice format</PlanLabel>
+        <PlanChoices>
+          <PlanChoice
+            accessibilityRole="radio"
+            accessibilityState={{ checked: planKind === 'openEnded' }}
+            $selected={planKind === 'openEnded'}
+            onPress={() => setPlanKind('openEnded')}>
+            <PlanChoiceTitle $selected={planKind === 'openEnded'}>Open-ended</PlanChoiceTitle>
+            <PlanChoiceCopy $selected={planKind === 'openEnded'}>Count up until you end the sesh.</PlanChoiceCopy>
+          </PlanChoice>
+          <PlanChoice
+            accessibilityRole="radio"
+            accessibilityState={{ checked: planKind === 'timed' }}
+            $selected={planKind === 'timed'}
+            onPress={() => setPlanKind('timed')}>
+            <PlanChoiceTitle $selected={planKind === 'timed'}>Timed</PlanChoiceTitle>
+            <PlanChoiceCopy $selected={planKind === 'timed'}>Count down to a defined finish.</PlanChoiceCopy>
+          </PlanChoice>
+        </PlanChoices>
+        {planKind === 'timed' ? (
+          <DurationField>
+            <DurationLabel>Minutes</DurationLabel>
+            <DurationInput
+              accessibilityLabel="Sesh duration in minutes"
+              inputMode="numeric"
+              keyboardType="number-pad"
+              maxLength={2}
+              onChangeText={setDurationMinutes}
+              selectTextOnFocus
+              value={durationMinutes}
+            />
+            <DurationHint $invalid={!hasValidDuration}>
+              {hasValidDuration ? 'Choose any whole minute from 1 to 60.' : 'Enter a whole number from 1 to 60.'}
+            </DurationHint>
+          </DurationField>
+        ) : null}
         <TrickChoices>
           {tricks.map((trick) => (
             <TrickChoice
               key={trick.id}
               accessibilityRole="button"
               accessibilityLabel={`Start a sesh with ${trick.name}`}
-              onPress={() => onSelect(trick)}>
+              accessibilityState={{ disabled: selectedPlan === undefined }}
+              disabled={selectedPlan === undefined}
+              $disabled={selectedPlan === undefined}
+              onPress={() => selectedPlan && onSelect(trick, selectedPlan)}>
               <ChoiceMeta>Rank {trick.kenteiRank} · {trick.kenteiLevel}</ChoiceMeta>
               <ChoiceName>{trick.name}</ChoiceName>
               <ChoiceArrow>→</ChoiceArrow>
@@ -117,7 +174,7 @@ function TrickPicker({ tricks, onSelect }: { readonly tricks: readonly TrickSumm
   );
 }
 
-function Countdown({ trick, onComplete }: { readonly trick: TrickSummary; readonly onComplete: () => void }) {
+function Countdown({ trick, plan, onComplete }: { readonly trick: TrickSummary; readonly plan: SeshPlan; readonly onComplete: () => void }) {
   const [count, setCount] = useState(3);
   const [scale] = useState(() => new Animated.Value(0.55));
   const [opacity] = useState(() => new Animated.Value(0));
@@ -145,21 +202,38 @@ function Countdown({ trick, onComplete }: { readonly trick: TrickSummary; readon
       <Animated.View style={{ opacity, transform: [{ scale }] }}>
         <CountdownNumber>{count}</CountdownNumber>
       </Animated.View>
-      <BodyCopy>The clock starts after the countdown.</BodyCopy>
+      <BodyCopy>
+        {plan.kind === 'timed'
+          ? `${formatDuration(plan.durationMs)} begins after the countdown.`
+          : 'The clock starts after the countdown.'}
+      </BodyCopy>
     </CenteredPanel>
   );
 }
 
-function ActiveSesh({ trick, startedAt, landings, onLaced, onEnd }: { readonly trick: TrickSummary; readonly startedAt: number; readonly landings: readonly Landing[]; readonly onLaced: () => void; readonly onEnd: () => void }) {
+function ActiveSesh({ trick, plan, startedAt, landings, onLaced, onEnd, onTimerElapsed }: { readonly trick: TrickSummary; readonly plan: SeshPlan; readonly startedAt: number; readonly landings: readonly Landing[]; readonly onLaced: () => void; readonly onEnd: () => void; readonly onTimerElapsed: () => void }) {
   const now = useNow(startedAt);
+  const elapsedMs = now - startedAt;
+  const displayedTime =
+    plan.kind === 'timed' ? Math.max(0, plan.durationMs - elapsedMs) : elapsedMs;
+  const formattedTime =
+    plan.kind === 'timed'
+      ? formatRemainingDuration(displayedTime)
+      : formatDuration(displayedTime);
+
+  useEffect(() => {
+    if (plan.kind === 'timed' && elapsedMs >= plan.durationMs) onTimerElapsed();
+  }, [elapsedMs, onTimerElapsed, plan]);
 
   return (
     <ScrollArea contentContainerStyle={{ padding: 24, paddingBottom: 140 }}>
       <ActiveContent>
         <Eyebrow>Sesh in progress</Eyebrow>
         <ActiveTrick>{trick.name}</ActiveTrick>
-        <Timer accessibilityLabel={`Elapsed time ${formatDuration(now - startedAt)}`}>
-          {formatDuration(now - startedAt)}
+        <TimerLabel>{plan.kind === 'timed' ? 'Time remaining' : 'Elapsed time'}</TimerLabel>
+        <Timer
+          accessibilityLabel={`${plan.kind === 'timed' ? 'Time remaining' : 'Elapsed time'} ${formattedTime}`}>
+          {formattedTime}
         </Timer>
         <LacedButton accessibilityRole="button" onPress={onLaced} accessibilityLabel="Laced">
           <LacedButtonText>Laced.</LacedButtonText>
@@ -236,15 +310,25 @@ const PrimaryButton = styled(Button).attrs({ size: 'medium' })`
   margin-top: 28px;
   border-radius: 5px;
 `;
+const PlanLabel = styled.Text`color: ${AppColors.ink}; font-size: 13px; font-weight: 900; letter-spacing: 1.2px; margin-top: 30px; text-transform: uppercase;`;
+const PlanChoices = styled.View`flex-direction: row; gap: 10px; margin-top: 10px;`;
+const PlanChoice = styled(Pressable)<{ $selected: boolean }>`flex: 1; min-height: 94px; background-color: ${({ $selected }) => ($selected ? AppColors.ink : AppColors.paper)}; border: 2px solid ${AppColors.ink}; padding: 15px;`;
+const PlanChoiceTitle = styled.Text<{ $selected: boolean }>`color: ${({ $selected }) => ($selected ? AppColors.yellow : AppColors.ink)}; font-size: 17px; font-weight: 900;`;
+const PlanChoiceCopy = styled.Text<{ $selected: boolean }>`color: ${({ $selected }) => ($selected ? AppColors.cream : AppColors.inkSoft)}; font-size: 12px; font-weight: 600; line-height: 17px; margin-top: 5px;`;
+const DurationField = styled.View`margin-top: 16px;`;
+const DurationLabel = styled.Text`color: ${AppColors.ink}; font-size: 12px; font-weight: 900; margin-bottom: 6px; text-transform: uppercase;`;
+const DurationInput = styled(TextInput)`height: 54px; width: 110px; background-color: ${AppColors.paper}; border: 2px solid ${AppColors.ink}; color: ${AppColors.ink}; font-size: 24px; font-weight: 900; padding: 8px 12px;`;
+const DurationHint = styled.Text<{ $invalid: boolean }>`color: ${({ $invalid }) => ($invalid ? AppColors.red : AppColors.textMuted)}; font-size: 12px; font-weight: 700; margin-top: 7px;`;
 const TrickChoices = styled.View`gap: 10px; margin-top: 28px;`;
-const TrickChoice = styled(Pressable)`min-height: 82px; justify-content: center; background-color: #f8f1dd; border: 2px solid #18382e; padding: 15px 58px 15px 18px; position: relative;`;
+const TrickChoice = styled(Pressable)<{ $disabled: boolean }>`min-height: 82px; justify-content: center; background-color: #f8f1dd; border: 2px solid #18382e; opacity: ${({ $disabled }) => ($disabled ? 0.45 : 1)}; padding: 15px 58px 15px 18px; position: relative;`;
 const ChoiceMeta = styled.Text`color: ${AppColors.red}; font-size: 11px; font-weight: 900; letter-spacing: 1px; text-transform: uppercase;`;
 const ChoiceName = styled.Text`color: ${AppColors.ink}; font-size: 20px; font-weight: 800; margin-top: 5px;`;
 const ChoiceArrow = styled.Text`position: absolute; right: 20px; color: ${AppColors.ink}; font-size: 28px; font-weight: 900;`;
 const CountdownTrick = styled.Text`max-width: 560px; color: #18382e; font-size: 26px; font-weight: 900; text-align: center;`;
 const CountdownNumber = styled.Text`color: #d84929; font-size: 156px; font-weight: 900; line-height: 180px; text-align: center;`;
 const ActiveTrick = styled.Text`color: #18382e; font-size: 30px; font-weight: 900; text-align: center;`;
-const Timer = styled.Text`color: #18382e; font-size: 78px; font-variant: tabular-nums; font-weight: 900; letter-spacing: -4px; margin: 22px 0;`;
+const TimerLabel = styled.Text`color: ${AppColors.red}; font-size: 12px; font-weight: 900; letter-spacing: 1.4px; margin-top: 22px; text-transform: uppercase;`;
+const Timer = styled.Text`color: #18382e; font-size: 78px; font-variant: tabular-nums; font-weight: 900; letter-spacing: -4px; margin: 4px 0 22px;`;
 const LacedButton = styled(Pressable)`width: 100%; min-height: 108px; flex-direction: row; align-items: center; justify-content: space-between; background-color: #d84929; padding: 22px 26px; border-radius: 6px;`;
 const LacedButtonText = styled.Text`color: #fff8e5; font-size: 34px; font-weight: 900;`;
 const LacedCount = styled.Text`color: #f4c94d; font-size: 40px; font-weight: 900;`;
