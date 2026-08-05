@@ -12,6 +12,7 @@ export const INITIAL_USER_PROFILE: UserProfile = {
 export type UserProfileAction =
   | { readonly type: 'profileRestored'; readonly profile: UserProfile }
   | { readonly type: 'selectedTrickToggled'; readonly trickId: string }
+  | { readonly type: 'selectedTrickRemoved'; readonly trickId: string }
   | { readonly type: 'selectedTricksCleared' }
   | {
       readonly type: 'onboardingCompleted';
@@ -37,6 +38,15 @@ export function userProfileReducer(
           : [...state.selectedTrickIds, action.trickId],
       };
     }
+    case 'selectedTrickRemoved':
+      return state.selectedTrickIds.includes(action.trickId)
+        ? {
+            ...state,
+            selectedTrickIds: state.selectedTrickIds.filter(
+              (trickId) => trickId !== action.trickId,
+            ),
+          }
+        : state;
     case 'selectedTricksCleared':
       return state.selectedTrickIds.length === 0 ? state : { ...state, selectedTrickIds: [] };
     case 'onboardingCompleted':

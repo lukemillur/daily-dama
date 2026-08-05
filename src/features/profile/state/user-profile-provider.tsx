@@ -26,6 +26,7 @@ import { createWriteQueue } from '@/shared/persistence/storage';
 
 interface UserProfileActions {
   readonly toggleSelectedTrick: (trickId: string) => void;
+  readonly removeSelectedTrick: (trickId: string) => void;
   readonly clearSelectedTricks: () => void;
   readonly completeOnboarding: (kenteiRank: number, selectedTrickIds: readonly string[]) => void;
   readonly restartOnboarding: () => void;
@@ -85,6 +86,10 @@ export function UserProfileProvider({ children }: PropsWithChildren) {
     dispatch({ type: 'selectedTricksCleared' });
   }, []);
 
+  const removeSelectedTrick = useCallback((trickId: string) => {
+    dispatch({ type: 'selectedTrickRemoved', trickId });
+  }, []);
+
   const completeOnboarding = useCallback(
     (kenteiRank: number, selectedTrickIds: readonly string[]) => {
       dispatch({ type: 'onboardingCompleted', kenteiRank, selectedTrickIds });
@@ -97,8 +102,20 @@ export function UserProfileProvider({ children }: PropsWithChildren) {
   }, []);
 
   const actions = useMemo(
-    () => ({ toggleSelectedTrick, clearSelectedTricks, completeOnboarding, restartOnboarding }),
-    [clearSelectedTricks, completeOnboarding, restartOnboarding, toggleSelectedTrick],
+    () => ({
+      toggleSelectedTrick,
+      removeSelectedTrick,
+      clearSelectedTricks,
+      completeOnboarding,
+      restartOnboarding,
+    }),
+    [
+      clearSelectedTricks,
+      completeOnboarding,
+      removeSelectedTrick,
+      restartOnboarding,
+      toggleSelectedTrick,
+    ],
   );
 
   if (!hasHydrated) {

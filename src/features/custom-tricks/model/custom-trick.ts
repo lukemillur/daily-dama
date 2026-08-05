@@ -99,7 +99,9 @@ export const INITIAL_CUSTOM_TRICKS: CustomTrickCollection = { tricks: [] };
 
 export type CustomTrickAction =
   | { readonly type: 'customTricksRestored'; readonly collection: CustomTrickCollection }
-  | { readonly type: 'customTrickAdded'; readonly trick: CustomTrick };
+  | { readonly type: 'customTrickAdded'; readonly trick: CustomTrick }
+  | { readonly type: 'customTrickUpdated'; readonly trick: CustomTrick }
+  | { readonly type: 'customTrickDeleted'; readonly trickId: string };
 
 export function customTrickReducer(
   state: CustomTrickCollection,
@@ -112,5 +114,18 @@ export function customTrickReducer(
       return state.tricks.some((trick) => trick.id === action.trick.id)
         ? state
         : { tricks: [...state.tricks, action.trick] };
+    case 'customTrickUpdated': {
+      const index = state.tricks.findIndex((trick) => trick.id === action.trick.id);
+      if (index === -1) return state;
+      return {
+        tricks: state.tricks.map((trick) =>
+          trick.id === action.trick.id ? action.trick : trick,
+        ),
+      };
+    }
+    case 'customTrickDeleted':
+      return state.tricks.some((trick) => trick.id === action.trickId)
+        ? { tricks: state.tricks.filter((trick) => trick.id !== action.trickId) }
+        : state;
   }
 }

@@ -124,5 +124,10 @@ describe('practice history', () => {
     const renamedCurrentTrick = { ...summary.trick, name: 'Renamed later' };
     expect(renamedCurrentTrick.name).toBe('Renamed later');
     expect(record.trickName).toBe('Morning line');
+
+    const historyAfterCurrentTrickDeletion = [record];
+    expect(aggregatePracticeStats(historyAfterCurrentTrickDeletion).tricks[0]?.trickName).toBe(
+      'Morning line',
+    );
   });
 });

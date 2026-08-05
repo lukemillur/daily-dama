@@ -30,12 +30,14 @@ import {
 } from '@/features/custom-tricks/persistence/custom-trick-persistence';
 import { createWriteQueue } from '@/shared/persistence/storage';
 
-type AddCustomTrickResult =
+type SaveCustomTrickResult =
   | Extract<CustomTrickDraftValidation, { status: 'invalid' }>
-  | { readonly status: 'created'; readonly trick: CustomTrick };
+  | { readonly status: 'saved'; readonly trick: CustomTrick };
 
 interface CustomTrickActions {
-  readonly addCustomTrick: (draft: CustomTrickDraft) => AddCustomTrickResult;
+  readonly addCustomTrick: (draft: CustomTrickDraft) => SaveCustomTrickResult;
+  readonly updateCustomTrick: (trickId: string, draft: CustomTrickDraft) => SaveCustomTrickResult;
+  readonly deleteCustomTrick: (trickId: string) => void;
 }
 
 const CustomTrickStateContext = createContext<CustomTrickCollection | undefined>(undefined);
@@ -83,16 +85,35 @@ export function CustomTrickProvider({ children }: PropsWithChildren) {
     void enqueueWrite(collection);
   }, [collection, enqueueWrite, hasHydrated]);
 
-  const addCustomTrick = useCallback((draft: CustomTrickDraft): AddCustomTrickResult => {
+  const addCustomTrick = useCallback((draft: CustomTrickDraft): SaveCustomTrickResult => {
     const validation = validateCustomTrickDraft(draft);
     if (validation.status === 'invalid') return validation;
 
     const trick = createCustomTrick(createCustomTrickId(), validation.value);
     dispatch({ type: 'customTrickAdded', trick });
-    return { status: 'created', trick };
+    return { status: 'saved', trick };
   }, []);
 
-  const actions = useMemo(() => ({ addCustomTrick }), [addCustomTrick]);
+  const updateCustomTrick = useCallback(
+    (trickId: string, draft: CustomTrickDraft): SaveCustomTrickResult => {
+      const validation = validateCustomTrickDraft(draft);
+      if (validation.status === 'invalid') return validation;
+
+      const trick = createCustomTrick(trickId, validation.value);
+      dispatch({ type: 'customTrickUpdated', trick });
+      return { status: 'saved', trick };
+    },
+    [],
+  );
+
+  const deleteCustomTrick = useCallback((trickId: string) => {
+    dispatch({ type: 'customTrickDeleted', trickId });
+  }, []);
+
+  const actions = useMemo(
+    () => ({ addCustomTrick, deleteCustomTrick, updateCustomTrick }),
+    [addCustomTrick, deleteCustomTrick, updateCustomTrick],
+  );
 
   if (!hasHydrated) {
     return (

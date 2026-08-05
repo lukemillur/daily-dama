@@ -15,10 +15,38 @@ import {
   useCustomTrickActions,
   useCustomTricks,
 } from '@/features/custom-tricks/state/custom-trick-provider';
+import { useUserProfileActions } from '@/features/profile/state/user-profile-provider';
 
 export default function TricksScreen() {
   const { tricks } = useCustomTricks();
   const [creationStep, setCreationStep] = useState<'list' | 'choose' | CustomTrick['kind']>('list');
+  const [editingTrick, setEditingTrick] = useState<CustomTrick | undefined>(undefined);
+  const [deletingTrick, setDeletingTrick] = useState<CustomTrick | undefined>(undefined);
+
+  if (editingTrick) {
+    return (
+      <Screen edges={['top', 'left', 'right']}>
+        <CustomTrickForm
+          initialTrick={editingTrick}
+          kind={editingTrick.kind}
+          onCancel={() => setEditingTrick(undefined)}
+          onSaved={() => setEditingTrick(undefined)}
+        />
+      </Screen>
+    );
+  }
+
+  if (deletingTrick) {
+    return (
+      <Screen edges={['top', 'left', 'right']}>
+        <DeleteConfirmation
+          trick={deletingTrick}
+          onCancel={() => setDeletingTrick(undefined)}
+          onDeleted={() => setDeletingTrick(undefined)}
+        />
+      </Screen>
+    );
+  }
 
   if (creationStep === 'choose') {
     return (
@@ -54,7 +82,15 @@ export default function TricksScreen() {
           </Introduction>
           <DefineButton onPress={() => setCreationStep('choose')}>Define new trick</DefineButton>
 
-          {tricks.length === 0 ? <EmptyState /> : <CustomTrickList tricks={tricks} />}
+          {tricks.length === 0 ? (
+            <EmptyState />
+          ) : (
+            <CustomTrickList
+              tricks={tricks}
+              onDelete={setDeletingTrick}
+              onEdit={setEditingTrick}
+            />
+          )}
         </Content>
       </ScrollArea>
     </Screen>
@@ -73,7 +109,15 @@ function EmptyState() {
   );
 }
 
-function CustomTrickList({ tricks }: { readonly tricks: readonly CustomTrick[] }) {
+function CustomTrickList({
+  tricks,
+  onDelete,
+  onEdit,
+}: {
+  readonly tricks: readonly CustomTrick[];
+  readonly onDelete: (trick: CustomTrick) => void;
+  readonly onEdit: (trick: CustomTrick) => void;
+}) {
   return (
     <ListSection>
       <SectionTitle>Defined by you</SectionTitle>
@@ -90,6 +134,20 @@ function CustomTrickList({ tricks }: { readonly tricks: readonly CustomTrick[] }
               {trick.kind === 'sequence' ? (
                 <StepPreview>{trick.steps.join('  →  ')}</StepPreview>
               ) : null}
+              <CardActions>
+                <CardAction
+                  accessibilityLabel={`Edit ${trick.name}`}
+                  accessibilityRole="button"
+                  onPress={() => onEdit(trick)}>
+                  <CardActionText>Edit</CardActionText>
+                </CardAction>
+                <CardAction
+                  accessibilityLabel={`Delete ${trick.name}`}
+                  accessibilityRole="button"
+                  onPress={() => onDelete(trick)}>
+                  <DeleteActionText>Delete</DeleteActionText>
+                </CardAction>
+              </CardActions>
             </CardContent>
           </CustomCard>
         ))}
@@ -130,18 +188,24 @@ function ChoiceScreen({
 }
 
 function CustomTrickForm({
+  initialTrick,
   kind,
   onCancel,
   onSaved,
 }: {
+  readonly initialTrick?: CustomTrick;
   readonly kind: CustomTrick['kind'];
   readonly onCancel: () => void;
   readonly onSaved: () => void;
 }) {
-  const { addCustomTrick } = useCustomTrickActions();
-  const [name, setName] = useState('');
-  const [kenteiRank, setKenteiRank] = useState('');
-  const [steps, setSteps] = useState(['', '']);
+  const { addCustomTrick, updateCustomTrick } = useCustomTrickActions();
+  const [name, setName] = useState(initialTrick?.name ?? '');
+  const [kenteiRank, setKenteiRank] = useState(
+    initialTrick?.kenteiRank === undefined ? '' : String(initialTrick.kenteiRank),
+  );
+  const [steps, setSteps] = useState(
+    initialTrick?.kind === 'sequence' ? [...initialTrick.steps] : ['', ''],
+  );
   const draft = useMemo<CustomTrickDraft>(
     () =>
       kind === 'sequence'
@@ -171,15 +235,17 @@ function CustomTrickForm({
   };
 
   const save = () => {
-    const result = addCustomTrick(draft);
-    if (result.status === 'created') onSaved();
+    const result = initialTrick
+      ? updateCustomTrick(initialTrick.id, draft)
+      : addCustomTrick(draft);
+    if (result.status === 'saved') onSaved();
   };
 
   return (
     <FormScroll keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: 120 + BottomTabInset }}>
       <FormContent>
-        <Eyebrow>New {kind === 'sequence' ? 'sequence' : 'standalone trick'}</Eyebrow>
-        <PageTitle>Name the work.</PageTitle>
+        <Eyebrow>{initialTrick ? 'Edit' : 'New'} {kind === 'sequence' ? 'sequence' : 'standalone trick'}</Eyebrow>
+        <PageTitle>{initialTrick ? 'Refine the work.' : 'Name the work.'}</PageTitle>
         <Introduction>
           {kind === 'sequence'
             ? 'Build the line in the exact order you want to practice it.'
@@ -265,11 +331,46 @@ function CustomTrickForm({
         </Field>
 
         <FormActions>
-          <Button fill disabled={validation.status === 'invalid'} onPress={save}>Save custom trick</Button>
+          <Button fill disabled={validation.status === 'invalid'} onPress={save}>
+            {initialTrick ? 'Save changes' : 'Save custom trick'}
+          </Button>
           <Button fill variant="secondary" onPress={onCancel}>Cancel</Button>
         </FormActions>
       </FormContent>
     </FormScroll>
+  );
+}
+
+function DeleteConfirmation({
+  trick,
+  onCancel,
+  onDeleted,
+}: {
+  readonly trick: CustomTrick;
+  readonly onCancel: () => void;
+  readonly onDeleted: () => void;
+}) {
+  const { deleteCustomTrick } = useCustomTrickActions();
+  const { removeSelectedTrick } = useUserProfileActions();
+
+  const confirmDelete = () => {
+    deleteCustomTrick(trick.id);
+    removeSelectedTrick(trick.id);
+    onDeleted();
+  };
+
+  return (
+    <CenteredContent>
+      <Eyebrow>Delete custom trick</Eyebrow>
+      <CenteredTitle>Remove “{trick.name}”?</CenteredTitle>
+      <CenteredCopy>
+        It will leave your trick library and current practice list. Completed Sesh records and Stats history will stay intact.
+      </CenteredCopy>
+      <DeleteActions>
+        <Button fill onPress={confirmDelete}>Delete custom trick</Button>
+        <Button fill variant="secondary" onPress={onCancel}>Keep this trick</Button>
+      </DeleteActions>
+    </CenteredContent>
   );
 }
 
@@ -291,6 +392,10 @@ const CardContent = styled.View`flex: 1;`;
 const CardMeta = styled.Text`color: ${AppColors.red}; font-size: 10px; font-weight: 900; letter-spacing: 1px; text-transform: uppercase;`;
 const CardName = styled.Text`color: ${AppColors.ink}; font-size: 22px; font-weight: 900; margin-top: 4px;`;
 const StepPreview = styled.Text`color: ${AppColors.textMuted}; font-size: 13px; font-weight: 700; line-height: 19px; margin-top: 10px;`;
+const CardActions = styled.View`flex-direction: row; gap: 16px; margin-top: 14px;`;
+const CardAction = styled(Pressable)`min-height: 44px; align-items: center; justify-content: center; padding: 6px 0;`;
+const CardActionText = styled.Text`color: ${AppColors.ink}; font-size: 12px; font-weight: 900; text-transform: uppercase;`;
+const DeleteActionText = styled(CardActionText)`color: ${AppColors.red};`;
 const CenteredContent = styled.View`flex: 1; width: 100%; max-width: 760px; align-self: center; align-items: center; justify-content: center; padding: 40px 22px 120px;`;
 const CenteredTitle = styled(DisplayTitle)`margin-top: 12px; text-align: center;`;
 const CenteredCopy = styled(BodyText)`max-width: 500px; margin-top: 16px; text-align: center;`;
@@ -319,3 +424,4 @@ const StepActionText = styled.Text`color: ${AppColors.ink}; font-size: 17px; fon
 const RemoveText = styled.Text`color: ${AppColors.red}; font-size: 22px; font-weight: 900;`;
 const AddStepButton = styled(Button)`align-self: flex-start; margin-top: 12px;`;
 const FormActions = styled.View`gap: 10px; margin-top: 36px;`;
+const DeleteActions = styled.View`width: 100%; max-width: 420px; gap: 10px; margin-top: 30px;`;

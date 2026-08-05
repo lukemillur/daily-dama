@@ -87,4 +87,33 @@ describe('custom tricks', () => {
     expect(once.tricks).toEqual([trick]);
     expect(twice).toBe(once);
   });
+
+  it('edits a custom trick without changing its stable identifier or position', () => {
+    const original = {
+      id: 'custom-stable',
+      kind: 'standalone' as const,
+      name: 'Original name',
+    };
+    const state = { tricks: [original] };
+    const updated = customTrickReducer(state, {
+      type: 'customTrickUpdated',
+      trick: { ...original, name: 'Renamed trick', kenteiRank: 7 },
+    });
+
+    expect(updated.tricks).toEqual([
+      { id: 'custom-stable', kind: 'standalone', name: 'Renamed trick', kenteiRank: 7 },
+    ]);
+  });
+
+  it('deletes only the requested custom trick', () => {
+    const first = { id: 'custom-1', kind: 'standalone' as const, name: 'First' };
+    const second = { id: 'custom-2', kind: 'standalone' as const, name: 'Second' };
+
+    expect(
+      customTrickReducer(
+        { tricks: [first, second] },
+        { type: 'customTrickDeleted', trickId: first.id },
+      ).tricks,
+    ).toEqual([second]);
+  });
 });

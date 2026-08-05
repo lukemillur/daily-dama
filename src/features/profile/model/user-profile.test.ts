@@ -16,4 +16,18 @@ describe('user profile trick selection', () => {
     expect(selected.selectedTrickIds).toEqual(['custom-stable-id']);
     expect(deselected.selectedTrickIds).toEqual([]);
   });
+
+  it('removes a deleted custom trick without affecting other selections', () => {
+    const state = {
+      ...INITIAL_USER_PROFILE,
+      selectedTrickIds: ['big-cup', 'custom-delete', 'airplane'],
+    };
+
+    expect(
+      userProfileReducer(state, {
+        type: 'selectedTrickRemoved',
+        trickId: 'custom-delete',
+      }).selectedTrickIds,
+    ).toEqual(['big-cup', 'airplane']);
+  });
 });
