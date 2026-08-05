@@ -1,5 +1,5 @@
 import { Link } from 'expo-router';
-import { useEffect, useMemo, useReducer, useState } from 'react';
+import { useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import { Animated, Pressable, ScrollView } from 'react-native';
 import { styled } from 'styled-components/native';
 
@@ -17,6 +17,7 @@ import {
 } from '@/features/sesh/model/sesh';
 import { KENDAMA_KENTEI_TRICKS } from '@/features/tricks/data/kendama-kentei-tricks';
 import type { TrickSummary } from '@/features/tricks/model/trick';
+import { usePracticeHistoryActions } from '@/features/stats/state/practice-history-provider';
 
 interface SeshProps {
   readonly selectedTrickIds: readonly string[];
@@ -24,10 +25,22 @@ interface SeshProps {
 
 export function Sesh({ selectedTrickIds }: SeshProps) {
   const [state, dispatch] = useReducer(seshReducer, INITIAL_SESH_STATE);
+  const { recordCompletedSesh } = usePracticeHistoryActions();
+  const recordedSummaryId = useRef<string | undefined>(undefined);
   const selectedTricks = useMemo(
     () => KENDAMA_KENTEI_TRICKS.filter((trick) => selectedTrickIds.includes(trick.id)),
     [selectedTrickIds],
   );
+
+  useEffect(() => {
+    if (state.status !== 'completed') return;
+
+    const summaryId = `${state.summary.startedAt}:${state.summary.endedAt}:${state.summary.trick.id}`;
+    if (recordedSummaryId.current === summaryId) return;
+
+    recordedSummaryId.current = summaryId;
+    recordCompletedSesh(state.summary);
+  }, [recordCompletedSesh, state]);
 
   if (state.status === 'choosing') {
     return selectedTricks.length === 0 ? (
