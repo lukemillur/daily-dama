@@ -30,4 +30,20 @@ describe('user profile trick selection', () => {
       }).selectedTrickIds,
     ).toEqual(['big-cup', 'airplane']);
   });
+
+  it('preserves the current practice list while an assessment is being retaken', () => {
+    const completedProfile = {
+      hasCompletedOnboarding: true,
+      kenteiRank: 4,
+      selectedTrickIds: ['big-cup', 'custom-morning-line'],
+    } as const;
+
+    expect(
+      userProfileReducer(completedProfile, { type: 'onboardingRestarted' }),
+    ).toEqual({
+      hasCompletedOnboarding: false,
+      kenteiRank: undefined,
+      selectedTrickIds: ['big-cup', 'custom-morning-line'],
+    });
+  });
 });
