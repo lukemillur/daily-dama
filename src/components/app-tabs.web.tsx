@@ -26,11 +26,11 @@ export default function AppTabs() {
           <TabTrigger name="sesh" href="/sesh" asChild>
             <TabButton>Sesh</TabButton>
           </TabTrigger>
-          <TabTrigger name="stats" href="/stats" asChild>
-            <TabButton>Stats</TabButton>
-          </TabTrigger>
           <TabTrigger name="tricks" href="/tricks" asChild>
             <TabButton>Tricks</TabButton>
+          </TabTrigger>
+          <TabTrigger name="stats" href="/stats" asChild>
+            <TabButton>Stats</TabButton>
           </TabTrigger>
           <TabTrigger name="profile" href="/profile" asChild>
             <TabButton>Profile</TabButton>

@@ -1,38 +1,16 @@
-import { useMemo } from 'react';
 import { styled } from 'styled-components/native';
 
 import { Screen } from '@/components/ui/screen';
+import { BodyText, DisplayTitle, Eyebrow } from '@/components/ui/typography';
 import { AppColors } from '@/constants/theme';
-import { useCustomTricks } from '@/features/custom-tricks/state/custom-trick-provider';
-import { useUserProfile, useUserProfileActions } from '@/features/profile/state/user-profile-provider';
-import { TrickDirectory } from '@/features/tricks/components/trick-directory';
-import { KENDAMA_KENTEI_TRICKS } from '@/features/tricks/data/kendama-kentei-tricks';
-import { createProfileDirectoryTricks } from '@/features/tricks/model/trick-directory';
 
 export default function ProfileScreen() {
-  const { selectedTrickIds } = useUserProfile();
-  const { toggleSelectedTrick } = useUserProfileActions();
-  const { tricks: customTricks } = useCustomTricks();
-  const directoryTricks = useMemo(
-    () => createProfileDirectoryTricks(KENDAMA_KENTEI_TRICKS, customTricks),
-    [customTricks],
-  );
-
   return (
-    <Screen align="center" edges={['left', 'right']} includeWebHeaderInset={false}>
+    <Screen align="center" edges={['top', 'left', 'right']}>
       <Content>
-        <TrickDirectory
-          tricks={directoryTricks}
-          selection={{ selectedTrickIds, onToggleTrick: toggleSelectedTrick }}
-          header={{
-            eyebrow: 'Your profile',
-            title: 'What are you\nworking on?',
-            introduction:
-              selectedTrickIds.length === 0
-                ? 'Select the tricks you want to focus on. Your practice list will appear here as you build it.'
-                : `${selectedTrickIds.length} ${selectedTrickIds.length === 1 ? 'trick' : 'tricks'} selected for focused practice.`,
-          }}
-        />
+        <Eyebrow>Your profile</Eyebrow>
+        <Title>Profile is{`\n`}taking shape.</Title>
+        <Copy>Your practice tools have moved to Tricks. This space is intentionally open for what comes next.</Copy>
       </Content>
     </Screen>
   );
@@ -42,6 +20,8 @@ const Content = styled.View`
   width: 100%;
   max-width: 760px;
   flex: 1;
-  overflow: hidden;
-  background-color: ${AppColors.paper};
+  justify-content: center;
+  padding: 40px 22px 140px;
 `;
+const Title = styled(DisplayTitle)`margin-top: 12px;`;
+const Copy = styled(BodyText)`max-width: 500px; margin-top: 16px; color: ${AppColors.textMuted};`;

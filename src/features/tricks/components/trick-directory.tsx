@@ -20,6 +20,11 @@ export interface TrickDirectoryProps {
     readonly title: string;
     readonly introduction: string;
   };
+  readonly headerAction?: ReactElement;
+  readonly customActions?: {
+    readonly onEdit: (trickId: string) => void;
+    readonly onDelete: (trickId: string) => void;
+  };
   readonly footer?: ReactElement;
   readonly fixedHeader?: boolean;
   readonly fixedFooter?: boolean;
@@ -39,6 +44,8 @@ export function TrickDirectory({
   tricks,
   selection,
   header,
+  headerAction,
+  customActions,
   footer,
   fixedHeader = false,
   fixedFooter = false,
@@ -52,6 +59,7 @@ export function TrickDirectory({
       <Eyebrow>{header?.eyebrow ?? DEFAULT_HEADER.eyebrow}</Eyebrow>
       <Title>{header?.title ?? DEFAULT_HEADER.title}</Title>
       <Introduction>{header?.introduction ?? DEFAULT_HEADER.introduction(tricks.length)}</Introduction>
+      {headerAction}
     </DirectoryHeader>
   );
 
@@ -72,6 +80,8 @@ export function TrickDirectory({
           position={index + 1}
           isSelected={selectedTrickIdSet.has(item.id)}
           onToggle={selection ? () => selection.onToggleTrick(item.id) : undefined}
+          onEdit={isCustomDirectoryTrick(item) && customActions ? () => customActions.onEdit(item.id) : undefined}
+          onDelete={isCustomDirectoryTrick(item) && customActions ? () => customActions.onDelete(item.id) : undefined}
         />
       )}
       ItemSeparatorComponent={ItemSeparator}
@@ -106,15 +116,17 @@ interface TrickRowProps {
   readonly position: number;
   readonly isSelected: boolean;
   readonly onToggle?: () => void;
+  readonly onEdit?: () => void;
+  readonly onDelete?: () => void;
 }
 
-function TrickRow({ trick, position, isSelected, onToggle }: TrickRowProps) {
+function TrickRow({ trick, position, isSelected, onToggle, onEdit, onDelete }: TrickRowProps) {
   const customDescription = isCustomDirectoryTrick(trick)
     ? trick.customKind === 'sequence'
       ? 'custom sequence'
       : 'custom trick'
     : undefined;
-  const contents = (
+  const identity = (
     <>
       <Position>{String(position).padStart(2, '0')}</Position>
       <TrickIdentity>
@@ -123,36 +135,35 @@ function TrickRow({ trick, position, isSelected, onToggle }: TrickRowProps) {
           <CustomLabel>{trick.customKind === 'sequence' ? 'Custom sequence' : 'Custom trick'}</CustomLabel>
         ) : null}
       </TrickIdentity>
-      {onToggle && (
-        <SelectionIndicator $selected={isSelected}>
-          <SelectionMark>{isSelected ? '✓' : ''}</SelectionMark>
-        </SelectionIndicator>
-      )}
     </>
   );
 
-  if (onToggle) {
-    return (
-      <SelectableTrickRow
-        $selected={isSelected}
-        accessibilityLabel={[trick.name, customDescription, isSelected ? 'selected' : 'not selected']
-          .filter(Boolean)
-          .join(', ')}
-        accessibilityRole="checkbox"
-        accessibilityState={{ checked: isSelected }}
-        onPress={onToggle}
-      >
-        {contents}
-      </SelectableTrickRow>
-    );
-  }
-
   return (
-    <TrickRowContainer
-      accessibilityLabel={[`${position}. ${trick.name}`, customDescription]
-        .filter(Boolean)
-        .join(', ')}>
-      {contents}
+    <TrickRowContainer $selected={isSelected}>
+      {onToggle ? (
+        <SelectableIdentity
+          accessibilityLabel={[trick.name, customDescription, isSelected ? 'selected' : 'not selected']
+            .filter(Boolean)
+            .join(', ')}
+          accessibilityRole="checkbox"
+          accessibilityState={{ checked: isSelected }}
+          onPress={onToggle}>
+          {identity}
+          <SelectionIndicator $selected={isSelected}>
+            <SelectionMark>{isSelected ? '✓' : ''}</SelectionMark>
+          </SelectionIndicator>
+        </SelectableIdentity>
+      ) : identity}
+      {onEdit && onDelete ? (
+        <RowActions>
+          <RowAction accessibilityLabel={`Edit ${trick.name}`} accessibilityRole="button" onPress={onEdit}>
+            <RowActionText>Edit</RowActionText>
+          </RowAction>
+          <RowAction accessibilityLabel={`Delete ${trick.name}`} accessibilityRole="button" onPress={onDelete}>
+            <DeleteActionText>Delete</DeleteActionText>
+          </RowAction>
+        </RowActions>
+      ) : null}
     </TrickRowContainer>
   );
 }
@@ -228,22 +239,20 @@ const LevelLabel = styled.Text<{ readonly $custom: boolean }>`
   text-transform: uppercase;
 `;
 
-const TrickRowContainer = styled.View`
+const TrickRowContainer = styled.View<{ readonly $selected: boolean }>`
   min-height: 66px;
   flex-direction: row;
   align-items: center;
-  gap: 18px;
-  padding: 15px 22px;
-  background-color: #f8f1dd;
+  background-color: ${({ $selected }) => ($selected ? '#e5edcf' : '#f8f1dd')};
 `;
 
-const SelectableTrickRow = styled(Pressable)<{ readonly $selected: boolean }>`
-  min-height: 66px;
+const SelectableIdentity = styled(Pressable)`
+  min-width: 180px;
+  flex: 1;
   flex-direction: row;
   align-items: center;
   gap: 18px;
   padding: 15px 22px;
-  background-color: ${({ $selected }) => ($selected ? '#e5edcf' : '#f8f1dd')};
 `;
 
 const Position = styled.Text`
@@ -289,6 +298,11 @@ const SelectionMark = styled.Text`
   font-size: 16px;
   font-weight: 900;
 `;
+
+const RowActions = styled.View`flex-direction: row; align-self: stretch; align-items: center; gap: 4px; padding-right: 12px;`;
+const RowAction = styled(Pressable)`min-width: 48px; min-height: 44px; align-items: center; justify-content: center; padding: 6px;`;
+const RowActionText = styled.Text`color: #18382e; font-size: 10px; font-weight: 900; text-transform: uppercase;`;
+const DeleteActionText = styled(RowActionText)`color: #d84929;`;
 
 const ItemSeparator = styled.View`
   height: 1px;

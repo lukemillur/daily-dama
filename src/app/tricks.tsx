@@ -16,15 +16,23 @@ import {
   useCustomTrickActions,
   useCustomTricks,
 } from '@/features/custom-tricks/state/custom-trick-provider';
-import { useUserProfileActions } from '@/features/profile/state/user-profile-provider';
+import { useUserProfile, useUserProfileActions } from '@/features/profile/state/user-profile-provider';
+import { TrickDirectory } from '@/features/tricks/components/trick-directory';
 import { KENDAMA_KENTEI_TRICKS } from '@/features/tricks/data/kendama-kentei-tricks';
+import { createProfileDirectoryTricks } from '@/features/tricks/model/trick-directory';
 import type { PracticeTrick } from '@/features/tricks/model/trick';
 
 export default function TricksScreen() {
   const { tricks } = useCustomTricks();
+  const { selectedTrickIds } = useUserProfile();
+  const { toggleSelectedTrick } = useUserProfileActions();
   const [creationStep, setCreationStep] = useState<'list' | 'choose' | CustomTrick['kind']>('list');
   const [editingTrick, setEditingTrick] = useState<CustomTrick | undefined>(undefined);
   const [deletingTrick, setDeletingTrick] = useState<CustomTrick | undefined>(undefined);
+  const directoryTricks = useMemo(
+    () => createProfileDirectoryTricks(KENDAMA_KENTEI_TRICKS, tricks),
+    [tricks],
+  );
 
   if (editingTrick) {
     return (
@@ -75,87 +83,29 @@ export default function TricksScreen() {
   }
 
   return (
-    <Screen edges={['top', 'left', 'right']}>
-      <ScrollArea contentContainerStyle={{ paddingBottom: 120 + BottomTabInset }}>
-        <Content>
-          <Eyebrow>Your trick lab</Eyebrow>
-          <PageTitle>Make the next{`\n`}move yours.</PageTitle>
-          <Introduction>
-            Define standalone tricks or build ordered sequences, then add them to your practice list.
-          </Introduction>
-          <DefineButton onPress={() => setCreationStep('choose')}>Define new trick</DefineButton>
-
-          {tricks.length === 0 ? (
-            <EmptyState />
-          ) : (
-            <CustomTrickList
-              tricks={tricks}
-              onDelete={setDeletingTrick}
-              onEdit={setEditingTrick}
-            />
-          )}
-        </Content>
-      </ScrollArea>
+    <Screen align="center" edges={['left', 'right']} includeWebHeaderInset={false}>
+      <DirectoryContent>
+        <TrickDirectory
+          tricks={directoryTricks}
+          selection={{ selectedTrickIds, onToggleTrick: toggleSelectedTrick }}
+          customActions={{
+            onEdit: (trickId) => setEditingTrick(tricks.find((trick) => trick.id === trickId)),
+            onDelete: (trickId) => setDeletingTrick(tricks.find((trick) => trick.id === trickId)),
+          }}
+          header={{
+            eyebrow: 'Your trick lab',
+            title: 'Choose the next\nmove.',
+            introduction:
+              selectedTrickIds.length === 0
+                ? 'Build your practice list from the Kentei library or define something entirely your own.'
+                : `${selectedTrickIds.length} ${selectedTrickIds.length === 1 ? 'trick' : 'tricks'} ready for focused practice.`,
+          }}
+          headerAction={
+            <DefineButton onPress={() => setCreationStep('choose')}>Define new trick</DefineButton>
+          }
+        />
+      </DirectoryContent>
     </Screen>
-  );
-}
-
-function EmptyState() {
-  return (
-    <EmptyPanel>
-      <EmptyMarker>01</EmptyMarker>
-      <EmptyTitle>Your first original starts here.</EmptyTitle>
-      <EmptyCopy>
-        Give a trick a name, or connect a few movements into a sequence. It will stay alongside the Kentei library without pretending to be part of it.
-      </EmptyCopy>
-    </EmptyPanel>
-  );
-}
-
-function CustomTrickList({
-  tricks,
-  onDelete,
-  onEdit,
-}: {
-  readonly tricks: readonly CustomTrick[];
-  readonly onDelete: (trick: CustomTrick) => void;
-  readonly onEdit: (trick: CustomTrick) => void;
-}) {
-  return (
-    <ListSection>
-      <SectionTitle>Defined by you</SectionTitle>
-      <Cards>
-        {tricks.map((trick, index) => (
-          <CustomCard key={trick.id}>
-            <CardNumber>{String(index + 1).padStart(2, '0')}</CardNumber>
-            <CardContent>
-              <CardMeta>
-                {trick.kind === 'sequence' ? 'Sequence' : 'Standalone'} ·{' '}
-                {trick.kenteiRank === undefined ? 'Unranked' : `Perceived rank ${trick.kenteiRank}`}
-              </CardMeta>
-              <CardName>{trick.name}</CardName>
-              {trick.kind === 'sequence' ? (
-                <StepPreview>{trick.steps.map((step) => step.name).join('  →  ')}</StepPreview>
-              ) : null}
-              <CardActions>
-                <CardAction
-                  accessibilityLabel={`Edit ${trick.name}`}
-                  accessibilityRole="button"
-                  onPress={() => onEdit(trick)}>
-                  <CardActionText>Edit</CardActionText>
-                </CardAction>
-                <CardAction
-                  accessibilityLabel={`Delete ${trick.name}`}
-                  accessibilityRole="button"
-                  onPress={() => onDelete(trick)}>
-                  <DeleteActionText>Delete</DeleteActionText>
-                </CardAction>
-              </CardActions>
-            </CardContent>
-          </CustomCard>
-        ))}
-      </Cards>
-    </ListSection>
   );
 }
 
@@ -501,28 +451,10 @@ function DeleteConfirmation({
   );
 }
 
-const ScrollArea = styled(ScrollView)`flex: 1; width: 100%;`;
-const Content = styled.View`width: 100%; max-width: 760px; align-self: center; padding: 38px 22px 0;`;
+const DirectoryContent = styled.View`width: 100%; max-width: 760px; flex: 1; overflow: hidden; background-color: ${AppColors.paper};`;
 const PageTitle = styled(DisplayTitle)`margin-top: 12px;`;
 const Introduction = styled(BodyText)`max-width: 580px; margin-top: 16px;`;
 const DefineButton = styled(Button).attrs({ size: 'medium' })`align-self: flex-start; margin-top: 26px;`;
-const EmptyPanel = styled.View`max-width: 600px; margin-top: 42px; background-color: ${AppColors.paper}; border-left-width: 6px; border-left-color: ${AppColors.red}; padding: 24px;`;
-const EmptyMarker = styled.Text`color: ${AppColors.red}; font-size: 12px; font-weight: 900; letter-spacing: 1.5px;`;
-const EmptyTitle = styled.Text`color: ${AppColors.ink}; font-size: 24px; font-weight: 900; margin-top: 8px;`;
-const EmptyCopy = styled.Text`color: ${AppColors.textMuted}; font-size: 15px; font-weight: 600; line-height: 22px; margin-top: 10px;`;
-const ListSection = styled.View`margin-top: 42px;`;
-const SectionTitle = styled.Text`color: ${AppColors.red}; font-size: 13px; font-weight: 900; letter-spacing: 1.5px; text-transform: uppercase;`;
-const Cards = styled.View`gap: 12px; margin-top: 12px;`;
-const CustomCard = styled.View`flex-direction: row; gap: 16px; background-color: ${AppColors.paper}; border: 2px solid ${AppColors.ink}; padding: 18px;`;
-const CardNumber = styled.Text`color: ${AppColors.red}; font-size: 12px; font-weight: 900; letter-spacing: 1px; margin-top: 4px;`;
-const CardContent = styled.View`flex: 1;`;
-const CardMeta = styled.Text`color: ${AppColors.red}; font-size: 10px; font-weight: 900; letter-spacing: 1px; text-transform: uppercase;`;
-const CardName = styled.Text`color: ${AppColors.ink}; font-size: 22px; font-weight: 900; margin-top: 4px;`;
-const StepPreview = styled.Text`color: ${AppColors.textMuted}; font-size: 13px; font-weight: 700; line-height: 19px; margin-top: 10px;`;
-const CardActions = styled.View`flex-direction: row; gap: 16px; margin-top: 14px;`;
-const CardAction = styled(Pressable)`min-height: 44px; align-items: center; justify-content: center; padding: 6px 0;`;
-const CardActionText = styled.Text`color: ${AppColors.ink}; font-size: 12px; font-weight: 900; text-transform: uppercase;`;
-const DeleteActionText = styled(CardActionText)`color: ${AppColors.red};`;
 const CenteredContent = styled.View`flex: 1; width: 100%; max-width: 760px; align-self: center; align-items: center; justify-content: center; padding: 40px 22px 120px;`;
 const CenteredTitle = styled(DisplayTitle)`margin-top: 12px; text-align: center;`;
 const CenteredCopy = styled(BodyText)`max-width: 500px; margin-top: 16px; text-align: center;`;
