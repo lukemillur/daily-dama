@@ -5,6 +5,7 @@ import {
   formatRemainingDuration,
   INITIAL_SESH_STATE,
   OPEN_ENDED_SESH_PLAN,
+  selectSeshPracticeTricks,
   seshReducer,
   type SeshState,
 } from '@/features/sesh/model/sesh';
@@ -24,6 +25,8 @@ const CUSTOM_SEQUENCE: PracticeTrick = {
   descriptor: 'Custom sequence',
   sequenceSteps: ['Big cup', 'Nightmare turn', 'Spike'],
 };
+
+const AIRPLANE: PracticeTrick = { id: 'airplane', name: 'Airplane' };
 
 function startSesh(
   plan = OPEN_ENDED_SESH_PLAN,
@@ -125,5 +128,32 @@ describe('sesh reducer', () => {
     expect(formatRemainingDuration(59_000)).toBe('00:59');
     expect(formatRemainingDuration(1)).toBe('00:01');
     expect(formatRemainingDuration(0)).toBe('00:00');
+  });
+});
+
+describe('preferred Sesh trick', () => {
+  const availableTricks = [BIG_CUP, AIRPLANE, CUSTOM_SEQUENCE];
+
+  it('places a valid preferred trick first while retaining the selected rotation', () => {
+    expect(
+      selectSeshPracticeTricks(
+        availableTricks,
+        [BIG_CUP.id, CUSTOM_SEQUENCE.id],
+        CUSTOM_SEQUENCE.id,
+      ),
+    ).toEqual([CUSTOM_SEQUENCE, BIG_CUP]);
+  });
+
+  it('allows an available historical trick to be practiced again when it is not selected', () => {
+    expect(selectSeshPracticeTricks(availableTricks, [BIG_CUP.id], AIRPLANE.id)).toEqual([
+      AIRPLANE,
+      BIG_CUP,
+    ]);
+  });
+
+  it('falls back to the normal selected picker for an invalid or stale trick id', () => {
+    expect(selectSeshPracticeTricks(availableTricks, [BIG_CUP.id], 'custom-deleted')).toEqual([
+      BIG_CUP,
+    ]);
   });
 });

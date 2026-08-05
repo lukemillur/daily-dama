@@ -16,6 +16,7 @@ import {
   isValidTimedSeshMinutes,
   type Landing,
   OPEN_ENDED_SESH_PLAN,
+  selectSeshPracticeTricks,
   seshReducer,
   type SeshPlan,
   type SeshSummary,
@@ -26,16 +27,22 @@ import { usePracticeHistoryActions } from '@/features/stats/state/practice-histo
 interface SeshProps {
   readonly selectedTrickIds: readonly string[];
   readonly availableTricks: readonly PracticeTrick[];
+  readonly preferredTrickId?: string;
 }
 
-export function Sesh({ availableTricks, selectedTrickIds }: SeshProps) {
+export function Sesh({ availableTricks, preferredTrickId, selectedTrickIds }: SeshProps) {
   const [state, dispatch] = useReducer(seshReducer, INITIAL_SESH_STATE);
   const { recordCompletedSesh } = usePracticeHistoryActions();
   const recordedSummaryId = useRef<string | undefined>(undefined);
-  const selectedTricks = useMemo(
-    () => availableTricks.filter((trick) => selectedTrickIds.includes(trick.id)),
-    [availableTricks, selectedTrickIds],
+  const practiceTricks = useMemo(
+    () => selectSeshPracticeTricks(availableTricks, selectedTrickIds, preferredTrickId),
+    [availableTricks, preferredTrickId, selectedTrickIds],
   );
+  const validatedPreferredTrickId = practiceTricks.some(
+    (trick) => trick.id === preferredTrickId,
+  )
+    ? preferredTrickId
+    : undefined;
 
   useEffect(() => {
     if (state.status !== 'completed') return;
@@ -48,11 +55,12 @@ export function Sesh({ availableTricks, selectedTrickIds }: SeshProps) {
   }, [recordCompletedSesh, state]);
 
   if (state.status === 'choosing') {
-    return selectedTricks.length === 0 ? (
+    return practiceTricks.length === 0 ? (
       <EmptyState />
     ) : (
       <TrickPicker
-        tricks={selectedTricks}
+        preferredTrickId={validatedPreferredTrickId}
+        tricks={practiceTricks}
         onSelect={(trick, plan) => dispatch({ type: 'trickSelected', trick, plan })}
       />
     );
@@ -100,7 +108,7 @@ function EmptyState() {
   );
 }
 
-function TrickPicker({ tricks, onSelect }: { readonly tricks: readonly PracticeTrick[]; readonly onSelect: (trick: PracticeTrick, plan: SeshPlan) => void }) {
+function TrickPicker({ preferredTrickId, tricks, onSelect }: { readonly preferredTrickId?: string; readonly tricks: readonly PracticeTrick[]; readonly onSelect: (trick: PracticeTrick, plan: SeshPlan) => void }) {
   const [planKind, setPlanKind] = useState<SeshPlan['kind']>('openEnded');
   const [durationMinutes, setDurationMinutes] = useState('5');
   const parsedDuration = Number(durationMinutes);
@@ -154,8 +162,9 @@ function TrickPicker({ tricks, onSelect }: { readonly tricks: readonly PracticeT
           </DurationField>
         ) : null}
         <TrickChoices>
-          {tricks.map((trick) => (
-            <TrickChoice
+          {tricks.map((trick) => {
+            const isPreferred = trick.id === preferredTrickId;
+            return <TrickChoice
               key={trick.id}
               accessibilityRole="button"
               accessibilityLabel={`Start a sesh with ${trick.name}`}
@@ -163,12 +172,14 @@ function TrickPicker({ tricks, onSelect }: { readonly tricks: readonly PracticeT
               disabled={selectedPlan === undefined}
               $disabled={selectedPlan === undefined}
               onPress={() => selectedPlan && onSelect(trick, selectedPlan)}>
-              <ChoiceMeta>{trick.descriptor ?? 'Practice trick'}</ChoiceMeta>
+              <ChoiceMeta $preferred={isPreferred}>
+                {isPreferred ? `Up next · ${trick.descriptor ?? 'Practice trick'}` : trick.descriptor ?? 'Practice trick'}
+              </ChoiceMeta>
               <ChoiceName>{trick.name}</ChoiceName>
               <SequenceSteps trick={trick} compact />
               <ChoiceArrow>→</ChoiceArrow>
-            </TrickChoice>
-          ))}
+            </TrickChoice>;
+          })}
         </TrickChoices>
       </PickerContent>
     </ScrollArea>
@@ -357,7 +368,7 @@ const DurationInput = styled(TextInput)`height: 54px; width: 110px; background-c
 const DurationHint = styled.Text<{ $invalid: boolean }>`color: ${({ $invalid }) => ($invalid ? AppColors.red : AppColors.textMuted)}; font-size: 12px; font-weight: 700; margin-top: 7px;`;
 const TrickChoices = styled.View`gap: 10px; margin-top: 28px;`;
 const TrickChoice = styled(Pressable)<{ $disabled: boolean }>`min-height: 82px; justify-content: center; background-color: #f8f1dd; border: 2px solid #18382e; opacity: ${({ $disabled }) => ($disabled ? 0.45 : 1)}; padding: 15px 58px 15px 18px; position: relative;`;
-const ChoiceMeta = styled.Text`color: ${AppColors.red}; font-size: 11px; font-weight: 900; letter-spacing: 1px; text-transform: uppercase;`;
+const ChoiceMeta = styled.Text<{ $preferred: boolean }>`color: ${({ $preferred }) => ($preferred ? AppColors.red : AppColors.textMuted)}; font-size: 11px; font-weight: 900; letter-spacing: 1px; text-transform: uppercase;`;
 const ChoiceName = styled.Text`color: ${AppColors.ink}; font-size: 20px; font-weight: 800; margin-top: 5px;`;
 const CompactSequence = styled.Text`color: ${AppColors.textMuted}; font-size: 11px; font-weight: 700; line-height: 16px; margin-top: 5px;`;
 const ChoiceArrow = styled.Text`position: absolute; right: 20px; color: ${AppColors.ink}; font-size: 28px; font-weight: 900;`;

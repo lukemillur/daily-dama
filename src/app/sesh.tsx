@@ -1,3 +1,4 @@
+import { useLocalSearchParams } from 'expo-router';
 import { useMemo } from 'react';
 
 import { Screen } from '@/components/ui/screen';
@@ -8,16 +9,22 @@ import { KENDAMA_KENTEI_TRICKS } from '@/features/tricks/data/kendama-kentei-tri
 import { selectAvailablePracticeTricks } from '@/features/tricks/model/trick-directory';
 
 export default function SeshScreen() {
+  const { trickId: trickIdParam } = useLocalSearchParams<{ trickId?: string | string[] }>();
   const { selectedTrickIds } = useUserProfile();
   const { tricks: customTricks } = useCustomTricks();
   const availableTricks = useMemo(
     () => selectAvailablePracticeTricks(KENDAMA_KENTEI_TRICKS, customTricks),
     [customTricks],
   );
+  const preferredTrickId = typeof trickIdParam === 'string' ? trickIdParam : undefined;
 
   return (
     <Screen edges={['top', 'left', 'right']}>
-      <Sesh availableTricks={availableTricks} selectedTrickIds={selectedTrickIds} />
+      <Sesh
+        availableTricks={availableTricks}
+        preferredTrickId={preferredTrickId}
+        selectedTrickIds={selectedTrickIds}
+      />
     </Screen>
   );
 }

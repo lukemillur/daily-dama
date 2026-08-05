@@ -135,3 +135,17 @@ export function getFastestInterval(landings: readonly Landing[]) {
   if (landings.length === 0) return undefined;
   return Math.min(...landings.map((landing) => landing.intervalMs));
 }
+
+export function selectSeshPracticeTricks(
+  availableTricks: readonly PracticeTrick[],
+  selectedTrickIds: readonly string[],
+  preferredTrickId?: string,
+) {
+  const selectedTricks = availableTricks.filter((trick) => selectedTrickIds.includes(trick.id));
+  if (!preferredTrickId) return selectedTricks;
+
+  const preferredTrick = availableTricks.find((trick) => trick.id === preferredTrickId);
+  if (!preferredTrick) return selectedTricks;
+
+  return [preferredTrick, ...selectedTricks.filter((trick) => trick.id !== preferredTrick.id)];
+}
