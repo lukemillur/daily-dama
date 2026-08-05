@@ -116,7 +116,7 @@ function TrickPicker({ tricks, onSelect }: { readonly tricks: readonly PracticeT
       <PickerContent>
         <Eyebrow>Start a sesh</Eyebrow>
         <DisplayTitle>What are we{`\n`}working on?</DisplayTitle>
-        <BodyCopy>Choose how long you want to focus, then pick one of the tricks from your profile.</BodyCopy>
+        <BodyCopy>Choose how long you want to focus, then pick one of the tricks from your practice list.</BodyCopy>
         <PlanLabel>Practice format</PlanLabel>
         <PlanChoices>
           <PlanChoice
