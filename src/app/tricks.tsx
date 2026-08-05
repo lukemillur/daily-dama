@@ -10,6 +10,7 @@ import {
   type CustomTrick,
   type CustomTrickDraft,
   type SequenceStep,
+  selectSequenceStepCandidates,
   validateCustomTrickDraft,
 } from '@/features/custom-tricks/model/custom-trick';
 import {
@@ -165,14 +166,8 @@ function CustomTrickForm({
   );
   const [trickSearch, setTrickSearch] = useState('');
   const selectableTricks = useMemo(
-    () => [
-      ...KENDAMA_KENTEI_TRICKS,
-      ...customTricks.filter(
-        (trick): trick is Extract<CustomTrick, { kind: 'standalone' }> =>
-          trick.kind === 'standalone' && trick.id !== initialTrick?.id,
-      ),
-    ],
-    [customTricks, initialTrick?.id],
+    () => selectSequenceStepCandidates(KENDAMA_KENTEI_TRICKS, customTricks),
+    [customTricks],
   );
   const filteredSelectableTricks = useMemo(() => {
     const query = trickSearch.trim().toLocaleLowerCase();

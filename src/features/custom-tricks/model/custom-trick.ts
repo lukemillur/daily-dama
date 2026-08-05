@@ -26,6 +26,18 @@ export interface SequenceCustomTrick extends CustomTrickBase {
 
 export type CustomTrick = StandaloneCustomTrick | SequenceCustomTrick;
 
+export function selectSequenceStepCandidates<StandardTrick extends PracticeTrick>(
+  standardTricks: readonly StandardTrick[],
+  customTricks: readonly CustomTrick[],
+): (StandardTrick | StandaloneCustomTrick)[] {
+  return [
+    ...standardTricks,
+    ...customTricks.filter(
+      (trick): trick is StandaloneCustomTrick => trick.kind === 'standalone',
+    ),
+  ];
+}
+
 export type CustomTrickDraft =
   | {
       readonly kind: 'standalone';

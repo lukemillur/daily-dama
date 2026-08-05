@@ -5,6 +5,7 @@ import {
   createCustomTrickId,
   customTrickReducer,
   INITIAL_CUSTOM_TRICKS,
+  selectSequenceStepCandidates,
   validateCustomTrickDraft,
 } from '@/features/custom-tricks/model/custom-trick';
 
@@ -85,6 +86,26 @@ describe('custom tricks', () => {
     expect(step.name).toBe('Original name');
     expect(step.sourceTrickId).toBe(sourceAfterRename.id);
     expect(step.name).not.toBe(sourceAfterRename.name);
+  });
+
+  it('offers standard and standalone custom tricks as steps but excludes sequences', () => {
+    const candidates = selectSequenceStepCandidates(
+      [{ id: 'big-cup', name: 'Big cup' }],
+      [
+        { id: 'custom-solo', kind: 'standalone', name: 'Moon catch' },
+        {
+          id: 'custom-sequence',
+          kind: 'sequence',
+          name: 'Sunrise line',
+          steps: [
+            { kind: 'existingTrick', sourceTrickId: 'big-cup', name: 'Big cup' },
+            { kind: 'customText', name: 'Nightmare turn' },
+          ],
+        },
+      ],
+    );
+
+    expect(candidates.map((trick) => trick.id)).toEqual(['big-cup', 'custom-solo']);
   });
 
   it('uses a stable generated identifier that does not contain the editable name', () => {
