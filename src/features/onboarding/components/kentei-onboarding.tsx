@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router';
 import { useReducer } from 'react';
-import { Pressable, ScrollView } from 'react-native';
+import { Platform, Pressable, ScrollView, useWindowDimensions } from 'react-native';
 import { styled } from 'styled-components/native';
 
 import { Button } from '@/components/ui/button';
@@ -18,8 +18,10 @@ import { TrickDirectory } from '@/features/tricks/components/trick-directory';
 
 export function KenteiOnboarding() {
   const router = useRouter();
+  const { width } = useWindowDimensions();
   const [state, dispatch] = useReducer(kenteiAssessmentReducer, INITIAL_KENTEI_ASSESSMENT);
   const { completeOnboarding } = useUserProfileActions();
+  const shouldPinSelectionChrome = Platform.OS === 'web' && width >= 768;
 
   if (state.status === 'assessing') {
     const trick = getRepresentativeTrick(state.rank);
@@ -63,8 +65,8 @@ export function KenteiOnboarding() {
     <SelectionContent>
       <TrickDirectory
         tricks={rankTricks}
-        fixedHeader
-        fixedFooter
+        fixedHeader={shouldPinSelectionChrome}
+        fixedFooter={shouldPinSelectionChrome}
         hideScrollIndicator
         selection={{
           selectedTrickIds: state.selectedTrickIds,
