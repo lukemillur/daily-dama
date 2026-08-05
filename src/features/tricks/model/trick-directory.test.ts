@@ -14,7 +14,10 @@ const CUSTOM_TRICKS: readonly CustomTrick[] = [
     id: 'custom-sequence',
     kind: 'sequence',
     name: 'Unranked line',
-    steps: ['Big cup', 'Spike'],
+    steps: [
+      { kind: 'existingTrick', sourceTrickId: 'big-cup', name: 'Big cup' },
+      { kind: 'customText', name: 'Spike variation' },
+    ],
   },
 ];
 

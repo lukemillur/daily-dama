@@ -18,7 +18,10 @@ const COLLECTION: CustomTrickCollection = {
       id: 'custom-sequence',
       kind: 'sequence',
       name: 'Morning line',
-      steps: ['Big cup', 'Airplane'],
+      steps: [
+        { kind: 'existingTrick', sourceTrickId: 'big-cup', name: 'Big cup' },
+        { kind: 'customText', name: 'Airplane variation' },
+      ],
     },
   ],
 };
@@ -62,6 +65,10 @@ describe('custom trick persistence', () => {
     JSON.stringify({
       version: CUSTOM_TRICKS_SCHEMA_VERSION,
       tricks: [{ id: 'custom-1', kind: 'sequence', name: 'Line', steps: ['Only one'] }],
+    }),
+    JSON.stringify({
+      version: CUSTOM_TRICKS_SCHEMA_VERSION,
+      tricks: [{ id: 'custom-1', kind: 'sequence', name: 'Line', steps: ['First', 'Second'] }],
     }),
     JSON.stringify({
       version: CUSTOM_TRICKS_SCHEMA_VERSION,

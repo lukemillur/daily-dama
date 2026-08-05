@@ -29,11 +29,14 @@ describe('custom tricks', () => {
     });
   });
 
-  it('creates a trimmed sequence with ordered free-text steps and no placement', () => {
+  it('creates a trimmed sequence with ordered referenced and free-text steps', () => {
     const validation = validateCustomTrickDraft({
       kind: 'sequence',
       name: '  Morning line  ',
-      steps: [' Big cup ', ' Airplane ', ' Spike '],
+      steps: [
+        { kind: 'existingTrick', sourceTrickId: 'big-cup', name: ' Big cup ' },
+        { kind: 'customText', name: ' Airplane variation ' },
+      ],
     });
 
     expect(validation).toEqual({
@@ -41,7 +44,10 @@ describe('custom tricks', () => {
       value: {
         kind: 'sequence',
         name: 'Morning line',
-        steps: ['Big cup', 'Airplane', 'Spike'],
+        steps: [
+          { kind: 'existingTrick', sourceTrickId: 'big-cup', name: 'Big cup' },
+          { kind: 'customText', name: 'Airplane variation' },
+        ],
       },
     });
   });
@@ -56,11 +62,20 @@ describe('custom tricks', () => {
   });
 
   it.each([
-    { kind: 'sequence' as const, name: 'Line', steps: ['Only one'] },
-    { kind: 'sequence' as const, name: 'Line', steps: ['First', '   '] },
-    { kind: 'sequence' as const, name: ' ', steps: ['First', 'Second'] },
+    { kind: 'sequence' as const, name: 'Line', steps: [{ kind: 'customText' as const, name: 'Only one' }] },
+    { kind: 'sequence' as const, name: 'Line', steps: [{ kind: 'customText' as const, name: 'First' }, { kind: 'customText' as const, name: '   ' }] },
+    { kind: 'sequence' as const, name: ' ', steps: [{ kind: 'customText' as const, name: 'First' }, { kind: 'customText' as const, name: 'Second' }] },
   ])('rejects invalid sequence input', (draft) => {
     expect(validateCustomTrickDraft(draft).status).toBe('invalid');
+  });
+
+  it('keeps a referenced trick name snapshot when the source changes', () => {
+    const step = { kind: 'existingTrick' as const, sourceTrickId: 'custom-source', name: 'Original name' };
+    const sourceAfterRename = { id: 'custom-source', name: 'Renamed source' };
+
+    expect(step.name).toBe('Original name');
+    expect(step.sourceTrickId).toBe(sourceAfterRename.id);
+    expect(step.name).not.toBe(sourceAfterRename.name);
   });
 
   it('uses a stable generated identifier that does not contain the editable name', () => {

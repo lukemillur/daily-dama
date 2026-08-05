@@ -2,6 +2,7 @@ import {
   INITIAL_CUSTOM_TRICKS,
   type CustomTrick,
   type CustomTrickCollection,
+  type SequenceStep,
 } from '@/features/custom-tricks/model/custom-trick';
 import type {
   KeyValueStorage,
@@ -29,6 +30,12 @@ function isOptionalKenteiRank(value: unknown) {
   return value === undefined || (Number.isInteger(value) && Number(value) >= 1 && Number(value) <= 12);
 }
 
+function isSequenceStep(value: unknown): value is SequenceStep {
+  if (!isRecord(value) || !isNormalizedText(value.name)) return false;
+  if (value.kind === 'customText') return value.sourceTrickId === undefined;
+  return value.kind === 'existingTrick' && isNormalizedText(value.sourceTrickId);
+}
+
 function isCustomTrick(value: unknown): value is CustomTrick {
   if (!isRecord(value)) return false;
 
@@ -39,7 +46,7 @@ function isCustomTrick(value: unknown): value is CustomTrick {
 
   if (kind === 'standalone') return steps === undefined;
   if (kind !== 'sequence' || !Array.isArray(steps) || steps.length < 2) return false;
-  return steps.every(isNormalizedText);
+  return steps.every(isSequenceStep);
 }
 
 export function serializeCustomTricks(collection: CustomTrickCollection) {

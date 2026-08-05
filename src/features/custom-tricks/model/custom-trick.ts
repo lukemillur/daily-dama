@@ -4,13 +4,24 @@ interface CustomTrickBase extends PracticeTrick {
   readonly kenteiRank?: number;
 }
 
+export type SequenceStep =
+  | {
+      readonly kind: 'existingTrick';
+      readonly sourceTrickId: string;
+      readonly name: string;
+    }
+  | {
+      readonly kind: 'customText';
+      readonly name: string;
+    };
+
 export interface StandaloneCustomTrick extends CustomTrickBase {
   readonly kind: 'standalone';
 }
 
 export interface SequenceCustomTrick extends CustomTrickBase {
   readonly kind: 'sequence';
-  readonly steps: readonly string[];
+  readonly steps: readonly SequenceStep[];
 }
 
 export type CustomTrick = StandaloneCustomTrick | SequenceCustomTrick;
@@ -24,7 +35,7 @@ export type CustomTrickDraft =
   | {
       readonly kind: 'sequence';
       readonly name: string;
-      readonly steps: readonly string[];
+      readonly steps: readonly SequenceStep[];
       readonly kenteiRank?: string;
     };
 
@@ -60,9 +71,9 @@ export function validateCustomTrickDraft(draft: CustomTrickDraft): CustomTrickDr
   }
 
   if (draft.kind === 'sequence') {
-    const steps = draft.steps.map((step) => step.trim());
+    const steps = draft.steps.map((step) => ({ ...step, name: step.name.trim() }));
     if (steps.length < 2) errors.steps = 'A sequence needs at least two steps.';
-    else if (steps.some((step) => step.length === 0)) {
+    else if (steps.some((step) => step.name.length === 0)) {
       errors.steps = 'Every sequence step needs a name.';
     }
 

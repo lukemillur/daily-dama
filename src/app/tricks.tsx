@@ -9,6 +9,7 @@ import { AppColors, BottomTabInset } from '@/constants/theme';
 import {
   type CustomTrick,
   type CustomTrickDraft,
+  type SequenceStep,
   validateCustomTrickDraft,
 } from '@/features/custom-tricks/model/custom-trick';
 import {
@@ -16,6 +17,8 @@ import {
   useCustomTricks,
 } from '@/features/custom-tricks/state/custom-trick-provider';
 import { useUserProfileActions } from '@/features/profile/state/user-profile-provider';
+import { KENDAMA_KENTEI_TRICKS } from '@/features/tricks/data/kendama-kentei-tricks';
+import type { PracticeTrick } from '@/features/tricks/model/trick';
 
 export default function TricksScreen() {
   const { tricks } = useCustomTricks();
@@ -132,7 +135,7 @@ function CustomTrickList({
               </CardMeta>
               <CardName>{trick.name}</CardName>
               {trick.kind === 'sequence' ? (
-                <StepPreview>{trick.steps.join('  →  ')}</StepPreview>
+                <StepPreview>{trick.steps.map((step) => step.name).join('  →  ')}</StepPreview>
               ) : null}
               <CardActions>
                 <CardAction
@@ -199,13 +202,38 @@ function CustomTrickForm({
   readonly onSaved: () => void;
 }) {
   const { addCustomTrick, updateCustomTrick } = useCustomTrickActions();
+  const { tricks: customTricks } = useCustomTricks();
   const [name, setName] = useState(initialTrick?.name ?? '');
   const [kenteiRank, setKenteiRank] = useState(
     initialTrick?.kenteiRank === undefined ? '' : String(initialTrick.kenteiRank),
   );
   const [steps, setSteps] = useState(
-    initialTrick?.kind === 'sequence' ? [...initialTrick.steps] : ['', ''],
+    initialTrick?.kind === 'sequence'
+      ? [...initialTrick.steps]
+      : [
+          { kind: 'customText', name: '' } as const,
+          { kind: 'customText', name: '' } as const,
+        ],
   );
+  const [trickSearch, setTrickSearch] = useState('');
+  const selectableTricks = useMemo(
+    () => [
+      ...KENDAMA_KENTEI_TRICKS,
+      ...customTricks.filter(
+        (trick): trick is Extract<CustomTrick, { kind: 'standalone' }> =>
+          trick.kind === 'standalone' && trick.id !== initialTrick?.id,
+      ),
+    ],
+    [customTricks, initialTrick?.id],
+  );
+  const filteredSelectableTricks = useMemo(() => {
+    const query = trickSearch.trim().toLocaleLowerCase();
+    return query.length === 0
+      ? selectableTricks.slice(0, 8)
+      : selectableTricks
+          .filter((trick) => trick.name.toLocaleLowerCase().includes(query))
+          .slice(0, 12);
+  }, [selectableTricks, trickSearch]);
   const draft = useMemo<CustomTrickDraft>(
     () =>
       kind === 'sequence'
@@ -217,7 +245,18 @@ function CustomTrickForm({
   const errors = validation.status === 'invalid' ? validation.errors : {};
 
   const updateStep = (index: number, value: string) => {
-    setSteps((current) => current.map((step, stepIndex) => stepIndex === index ? value : step));
+    setSteps((current) => current.map((step, stepIndex) =>
+      stepIndex === index && step.kind === 'customText' ? { ...step, name: value } : step,
+    ));
+  };
+
+  const addExistingStep = (trick: PracticeTrick) => {
+    const step: SequenceStep = {
+      kind: 'existingTrick',
+      sourceTrickId: trick.id,
+      name: trick.name,
+    };
+    setSteps((current) => [...current, step]);
   };
 
   const moveStep = (index: number, direction: -1 | 1) => {
@@ -269,19 +308,26 @@ function CustomTrickForm({
         {kind === 'sequence' ? (
           <Field>
             <FieldLabel>Ordered steps</FieldLabel>
-            <FieldHint>Use at least two named movements. Reorder them before saving.</FieldHint>
+            <FieldHint>Mix saved tricks with your own movements. Use at least two steps.</FieldHint>
             <Steps>
               {steps.map((step, index) => (
-                <StepRow key={index}>
+                <StepRow key={`${step.kind}-${index}`}>
                   <StepNumber>{String(index + 1).padStart(2, '0')}</StepNumber>
-                  <StepInput
-                    accessibilityLabel={`Sequence step ${index + 1}`}
-                    maxLength={80}
-                    onChangeText={(value) => updateStep(index, value)}
-                    placeholder="Movement or trick"
-                    placeholderTextColor={AppColors.textSubtle}
-                    value={step}
-                  />
+                  {step.kind === 'customText' ? (
+                    <StepInput
+                      accessibilityLabel={`Custom sequence step ${index + 1}`}
+                      maxLength={80}
+                      onChangeText={(value) => updateStep(index, value)}
+                      placeholder="Custom movement"
+                      placeholderTextColor={AppColors.textSubtle}
+                      value={step.name}
+                    />
+                  ) : (
+                    <ReferencedStep>
+                      <ReferencedMeta>Saved trick</ReferencedMeta>
+                      <ReferencedName>{step.name}</ReferencedName>
+                    </ReferencedStep>
+                  )}
                   <StepActions>
                     <StepAction
                       accessibilityLabel={`Move step ${index + 1} up`}
@@ -307,10 +353,37 @@ function CustomTrickForm({
                 </StepRow>
               ))}
             </Steps>
-            <AddStepButton variant="secondary" size="medium" onPress={() => setSteps((current) => [...current, ''])}>
-              Add step
+            <AddStepButton variant="secondary" size="medium" onPress={() => setSteps((current) => [...current, { kind: 'customText', name: '' }])}>
+              Add custom step
             </AddStepButton>
             {errors.steps ? <ErrorText>{errors.steps}</ErrorText> : null}
+
+            <ExistingPicker>
+              <FieldLabel>Choose an existing trick</FieldLabel>
+              <FieldHint>Standard tricks and standalone custom tricks are available. Sequences cannot be nested.</FieldHint>
+              <SearchInput
+                accessibilityLabel="Search existing tricks"
+                onChangeText={setTrickSearch}
+                placeholder="Search the trick library"
+                placeholderTextColor={AppColors.textSubtle}
+                value={trickSearch}
+              />
+              <SearchResults>
+                {filteredSelectableTricks.map((trick) => (
+                  <SearchResult
+                    key={trick.id}
+                    accessibilityLabel={`Add ${trick.name} to sequence`}
+                    accessibilityRole="button"
+                    onPress={() => addExistingStep(trick)}>
+                    <SearchResultIdentity>
+                      <SearchResultName>{trick.name}</SearchResultName>
+                      <SearchResultMeta>{'kind' in trick ? 'Custom trick' : `Rank ${trick.kenteiRank}`}</SearchResultMeta>
+                    </SearchResultIdentity>
+                    <SearchResultAdd>Add +</SearchResultAdd>
+                  </SearchResult>
+                ))}
+              </SearchResults>
+            </ExistingPicker>
           </Field>
         ) : null}
 
@@ -418,10 +491,21 @@ const Steps = styled.View`gap: 10px; margin-top: 10px;`;
 const StepRow = styled.View`flex-direction: row; align-items: center; gap: 8px;`;
 const StepNumber = styled.Text`width: 24px; color: ${AppColors.red}; font-size: 11px; font-weight: 900;`;
 const StepInput = styled(TextInput)`min-width: 120px; flex: 1; min-height: 48px; background-color: ${AppColors.paper}; border: 2px solid ${AppColors.ink}; color: ${AppColors.ink}; font-size: 15px; font-weight: 750; padding: 9px 11px;`;
+const ReferencedStep = styled.View`min-width: 120px; flex: 1; min-height: 48px; justify-content: center; background-color: #e5edcf; border: 2px solid ${AppColors.ink}; padding: 7px 11px;`;
+const ReferencedMeta = styled.Text`color: ${AppColors.red}; font-size: 9px; font-weight: 900; letter-spacing: 0.8px; text-transform: uppercase;`;
+const ReferencedName = styled.Text`color: ${AppColors.ink}; font-size: 15px; font-weight: 800; margin-top: 2px;`;
 const StepActions = styled.View`flex-direction: row; gap: 4px;`;
 const StepAction = styled(Pressable)`width: 34px; height: 40px; align-items: center; justify-content: center; border: 1px solid ${AppColors.ink}; opacity: ${({ disabled }) => disabled ? 0.3 : 1};`;
 const StepActionText = styled.Text`color: ${AppColors.ink}; font-size: 17px; font-weight: 900;`;
 const RemoveText = styled.Text`color: ${AppColors.red}; font-size: 22px; font-weight: 900;`;
 const AddStepButton = styled(Button)`align-self: flex-start; margin-top: 12px;`;
+const ExistingPicker = styled.View`margin-top: 26px;`;
+const SearchInput = styled(FieldInput)`min-height: 50px; font-size: 15px;`;
+const SearchResults = styled.View`gap: 6px; margin-top: 8px;`;
+const SearchResult = styled(Pressable)`min-height: 50px; flex-direction: row; align-items: center; gap: 12px; background-color: ${AppColors.paper}; border: 1px solid ${AppColors.ink}; padding: 9px 12px;`;
+const SearchResultIdentity = styled.View`flex: 1;`;
+const SearchResultName = styled.Text`color: ${AppColors.ink}; font-size: 14px; font-weight: 800;`;
+const SearchResultMeta = styled.Text`color: ${AppColors.textMuted}; font-size: 10px; font-weight: 800; margin-top: 2px; text-transform: uppercase;`;
+const SearchResultAdd = styled.Text`color: ${AppColors.red}; font-size: 12px; font-weight: 900; text-transform: uppercase;`;
 const FormActions = styled.View`gap: 10px; margin-top: 36px;`;
 const DeleteActions = styled.View`width: 100%; max-width: 420px; gap: 10px; margin-top: 30px;`;
