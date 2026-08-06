@@ -1,5 +1,17 @@
 {
   "enabledPlugins": {
     "expo@claude-plugins-official": true
+  },
+  "permissions": {
+    "allow": [
+      "Bash(yarn test:*)",
+      "Bash(yarn lint:*)",
+      "Bash(yarn tsc:*)",
+      "Bash(yarn expo export:*)",
+      "Bash(git status)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git show:*)"
+    ]
   }
 }
