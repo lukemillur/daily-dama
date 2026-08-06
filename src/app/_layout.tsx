@@ -5,6 +5,7 @@ import * as SplashScreen from 'expo-splash-screen';
 
 import { AnimatedSplashOverlay } from '@/components/animated-icon';
 import AppTabs from '@/components/app-tabs';
+import { AccessGateProvider } from '@/features/access-gate/state/access-gate-provider';
 import { CustomTrickProvider } from '@/features/custom-tricks/state/custom-trick-provider';
 import { UserProfileProvider } from '@/features/profile/state/user-profile-provider';
 import { PracticeHistoryProvider } from '@/features/stats/state/practice-history-provider';
@@ -17,13 +18,15 @@ export default function TabLayout() {
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
       <AnimatedSplashOverlay />
-      <CustomTrickProvider>
-        <UserProfileProvider>
-          <PracticeHistoryProvider>
-            <AppTabs />
-          </PracticeHistoryProvider>
-        </UserProfileProvider>
-      </CustomTrickProvider>
+      <AccessGateProvider>
+        <CustomTrickProvider>
+          <UserProfileProvider>
+            <PracticeHistoryProvider>
+              <AppTabs />
+            </PracticeHistoryProvider>
+          </UserProfileProvider>
+        </CustomTrickProvider>
+      </AccessGateProvider>
     </ThemeProvider>
   );
 }
