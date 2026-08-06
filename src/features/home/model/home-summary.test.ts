@@ -174,9 +174,9 @@ describe('daily home summary', () => {
     });
   });
 
-  it('computes the current streak using the profile threshold, defaulting to one minute', () => {
-    const today = session('today', 'big-cup', 'Big cup', NOW, 60_000, 5);
-    const yesterday = session('yesterday', 'big-cup', 'Big cup', NOW - DAY, 60_000, 5);
+  it('computes the current streak using the profile threshold, defaulting to five minutes', () => {
+    const today = session('today', 'big-cup', 'Big cup', NOW, 300_000, 5);
+    const yesterday = session('yesterday', 'big-cup', 'Big cup', NOW - DAY, 300_000, 5);
 
     expect(summary({ sessions: [today, yesterday] }).currentStreak).toBe(2);
   });

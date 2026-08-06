@@ -23,7 +23,7 @@ export default function AppTabs() {
     <Tabs>
       <TabSlot style={styles.tabSlot} />
       <TabList asChild>
-        <CustomTabList>
+        <CustomTabList hidden={!hasCompletedOnboarding}>
           <TabTrigger name="home" href="/" asChild>
             <TabButton>Home</TabButton>
           </TabTrigger>
@@ -65,9 +65,9 @@ export function TabButton({ children, isFocused, ...props }: TabTriggerSlotProps
   );
 }
 
-export function CustomTabList(props: TabListProps) {
+export function CustomTabList({ hidden, ...props }: TabListProps & { readonly hidden?: boolean }) {
   return (
-    <View {...props} style={styles.tabListContainer}>
+    <View {...props} style={[styles.tabListContainer, hidden ? styles.tabListHidden : null]}>
       <ResponsiveTabListInner type="backgroundElement">
         <ResponsiveBrandText type="smallBold">Daily Dama</ResponsiveBrandText>
 
@@ -79,7 +79,7 @@ export function CustomTabList(props: TabListProps) {
 
 const ResponsiveBrandText = styled(ThemedText)`
   display: none;
-  margin-right: auto;
+  margin-right: ${Spacing.four}px;
 
   @media (min-width: 480px) {
     display: flex;
@@ -88,7 +88,6 @@ const ResponsiveBrandText = styled(ThemedText)`
 
 const ResponsiveTabListInner = styled(ThemedView)`
   max-width: ${MaxContentWidth}px;
-  flex-grow: 1;
   flex-direction: row;
   align-items: center;
   gap: 2px;
@@ -124,6 +123,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     flexDirection: 'row',
+  },
+  tabListHidden: {
+    display: 'none',
   },
   pressed: {
     opacity: 0.7,

@@ -19,7 +19,7 @@ export interface UserProfile {
 
 export const MIN_STREAK_THRESHOLD_MINUTES = 1;
 export const MAX_STREAK_THRESHOLD_MINUTES = 60;
-export const DEFAULT_STREAK_THRESHOLD_MS = 60_000;
+export const DEFAULT_STREAK_THRESHOLD_MS = 300_000;
 
 export function isValidStreakThresholdMinutes(minutes: number) {
   return (

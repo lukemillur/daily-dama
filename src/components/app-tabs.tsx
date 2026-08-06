@@ -12,6 +12,7 @@ export default function AppTabs() {
 
   return (
     <NativeTabs
+      hidden={!hasCompletedOnboarding}
       backgroundColor={colors.background}
       indicatorColor={colors.backgroundElement}
       labelStyle={{ selected: { color: colors.text } }}>

@@ -162,7 +162,7 @@ function TrickPicker({
     liveChallengeEnabled: boolean,
   ) => void;
 }) {
-  const [planKind, setPlanKind] = useState<SeshPlan['kind']>(initialPlan?.kind ?? 'openEnded');
+  const [planKind, setPlanKind] = useState<SeshPlan['kind']>(initialPlan?.kind ?? 'timed');
   const [durationMinutes, setDurationMinutes] = useState(
     initialPlan?.kind === 'timed' ? String(initialPlan.durationMs / 60_000) : '5',
   );
@@ -196,19 +196,19 @@ function TrickPicker({
         <PlanChoices>
           <PlanChoice
             accessibilityRole="radio"
-            accessibilityState={{ checked: planKind === 'openEnded' }}
-            $selected={planKind === 'openEnded'}
-            onPress={() => setPlanKind('openEnded')}>
-            <PlanChoiceTitle $selected={planKind === 'openEnded'}>Open-ended</PlanChoiceTitle>
-            <PlanChoiceCopy $selected={planKind === 'openEnded'}>Count up until you end the sesh.</PlanChoiceCopy>
-          </PlanChoice>
-          <PlanChoice
-            accessibilityRole="radio"
             accessibilityState={{ checked: planKind === 'timed' }}
             $selected={planKind === 'timed'}
             onPress={() => setPlanKind('timed')}>
             <PlanChoiceTitle $selected={planKind === 'timed'}>Timed</PlanChoiceTitle>
             <PlanChoiceCopy $selected={planKind === 'timed'}>Count down to a defined finish.</PlanChoiceCopy>
+          </PlanChoice>
+          <PlanChoice
+            accessibilityRole="radio"
+            accessibilityState={{ checked: planKind === 'openEnded' }}
+            $selected={planKind === 'openEnded'}
+            onPress={() => setPlanKind('openEnded')}>
+            <PlanChoiceTitle $selected={planKind === 'openEnded'}>Open-ended</PlanChoiceTitle>
+            <PlanChoiceCopy $selected={planKind === 'openEnded'}>Count up until you end the sesh.</PlanChoiceCopy>
           </PlanChoice>
         </PlanChoices>
         {planKind === 'timed' ? (
