@@ -31,6 +31,23 @@ describe('user profile trick selection', () => {
     ).toEqual(['big-cup', 'airplane']);
   });
 
+  it('caches and overwrites the last specified sesh', () => {
+    const firstSesh = userProfileReducer(INITIAL_USER_PROFILE, {
+      type: 'lastSeshUpdated',
+      lastSesh: { trickId: 'big-cup', plan: { kind: 'timed', durationMinutes: 5 } },
+    });
+    expect(firstSesh.lastSesh).toEqual({
+      trickId: 'big-cup',
+      plan: { kind: 'timed', durationMinutes: 5 },
+    });
+
+    const secondSesh = userProfileReducer(firstSesh, {
+      type: 'lastSeshUpdated',
+      lastSesh: { trickId: 'airplane', plan: { kind: 'openEnded' } },
+    });
+    expect(secondSesh.lastSesh).toEqual({ trickId: 'airplane', plan: { kind: 'openEnded' } });
+  });
+
   it('preserves the current practice list while an assessment is being retaken', () => {
     const completedProfile = {
       hasCompletedOnboarding: true,

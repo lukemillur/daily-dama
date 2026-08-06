@@ -23,16 +23,19 @@ import {
 } from '@/features/sesh/model/sesh';
 import type { PracticeTrick } from '@/features/tricks/model/trick';
 import { usePracticeHistoryActions } from '@/features/stats/state/practice-history-provider';
+import { useUserProfileActions } from '@/features/profile/state/user-profile-provider';
 
 interface SeshProps {
   readonly selectedTrickIds: readonly string[];
   readonly availableTricks: readonly PracticeTrick[];
   readonly preferredTrickId?: string;
+  readonly initialPlan?: SeshPlan;
 }
 
-export function Sesh({ availableTricks, preferredTrickId, selectedTrickIds }: SeshProps) {
+export function Sesh({ availableTricks, initialPlan, preferredTrickId, selectedTrickIds }: SeshProps) {
   const [state, dispatch] = useReducer(seshReducer, INITIAL_SESH_STATE);
   const { recordCompletedSesh } = usePracticeHistoryActions();
+  const { setLastSesh } = useUserProfileActions();
   const recordedSummaryId = useRef<string | undefined>(undefined);
   const practiceTricks = useMemo(
     () => selectSeshPracticeTricks(availableTricks, selectedTrickIds, preferredTrickId),
@@ -59,9 +62,13 @@ export function Sesh({ availableTricks, preferredTrickId, selectedTrickIds }: Se
       <EmptyState />
     ) : (
       <TrickPicker
+        initialPlan={initialPlan}
         preferredTrickId={validatedPreferredTrickId}
         tricks={practiceTricks}
-        onSelect={(trick, plan) => dispatch({ type: 'trickSelected', trick, plan })}
+        onSelect={(trick, plan) => {
+          dispatch({ type: 'trickSelected', trick, plan });
+          setLastSesh(trick.id, plan);
+        }}
       />
     );
   }
@@ -94,7 +101,16 @@ export function Sesh({ availableTricks, preferredTrickId, selectedTrickIds }: Se
     );
   }
 
-  return <CompletedSesh summary={state.summary} onReset={() => dispatch({ type: 'seshReset' })} />;
+  return (
+    <CompletedSesh
+      summary={state.summary}
+      onReset={() => dispatch({ type: 'seshReset' })}
+      onRepeat={() => {
+        dispatch({ type: 'trickSelected', trick: state.summary.trick, plan: state.summary.plan });
+        setLastSesh(state.summary.trick.id, state.summary.plan);
+      }}
+    />
+  );
 }
 
 function EmptyState() {
@@ -112,9 +128,21 @@ function EmptyState() {
   );
 }
 
-function TrickPicker({ preferredTrickId, tricks, onSelect }: { readonly preferredTrickId?: string; readonly tricks: readonly PracticeTrick[]; readonly onSelect: (trick: PracticeTrick, plan: SeshPlan) => void }) {
-  const [planKind, setPlanKind] = useState<SeshPlan['kind']>('openEnded');
-  const [durationMinutes, setDurationMinutes] = useState('5');
+function TrickPicker({
+  initialPlan,
+  preferredTrickId,
+  tricks,
+  onSelect,
+}: {
+  readonly initialPlan?: SeshPlan;
+  readonly preferredTrickId?: string;
+  readonly tricks: readonly PracticeTrick[];
+  readonly onSelect: (trick: PracticeTrick, plan: SeshPlan) => void;
+}) {
+  const [planKind, setPlanKind] = useState<SeshPlan['kind']>(initialPlan?.kind ?? 'openEnded');
+  const [durationMinutes, setDurationMinutes] = useState(
+    initialPlan?.kind === 'timed' ? String(initialPlan.durationMs / 60_000) : '5',
+  );
   const parsedDuration = Number(durationMinutes);
   const hasValidDuration = isValidTimedSeshMinutes(parsedDuration);
   const selectedPlan = planKind === 'openEnded'
@@ -335,7 +363,15 @@ function LandingHistory({ landings }: { readonly landings: readonly Landing[] })
   );
 }
 
-function CompletedSesh({ summary, onReset }: { readonly summary: SeshSummary; readonly onReset: () => void }) {
+function CompletedSesh({
+  summary,
+  onReset,
+  onRepeat,
+}: {
+  readonly summary: SeshSummary;
+  readonly onReset: () => void;
+  readonly onRepeat: () => void;
+}) {
   const average = getAverageInterval(summary.landings);
   const fastest = getFastestInterval(summary.landings);
 
@@ -352,7 +388,8 @@ function CompletedSesh({ summary, onReset }: { readonly summary: SeshSummary; re
           <Metric><MetricValue>{fastest === undefined ? '—' : formatDuration(fastest)}</MetricValue><MetricLabel>Fastest lace</MetricLabel></Metric>
         </SummaryGrid>
         <LandingHistory landings={summary.landings} />
-        <PrimaryButton onPress={onReset}>Start another sesh</PrimaryButton>
+        <PrimaryButton onPress={onRepeat}>Repeat sesh</PrimaryButton>
+        <SecondaryButton variant="secondary" onPress={onReset}>Start another sesh</SecondaryButton>
       </ActiveContent>
     </ScrollArea>
   );
@@ -399,6 +436,10 @@ const DisplayTitle = styled(BaseDisplayTitle)`text-align: center;`;
 const BodyCopy = styled(BodyText)`max-width: 470px; text-align: center; margin-top: 18px;`;
 const PrimaryButton = styled(Button).attrs({ size: 'medium' })`
   margin-top: 28px;
+  border-radius: 5px;
+`;
+const SecondaryButton = styled(Button).attrs({ size: 'medium' })`
+  margin-top: 12px;
   border-radius: 5px;
 `;
 const PlanLabel = styled.Text`color: ${AppColors.ink}; font-size: 13px; font-weight: 900; letter-spacing: 1.2px; margin-top: 30px; text-transform: uppercase;`;

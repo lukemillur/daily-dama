@@ -1,7 +1,26 @@
+import type { SeshPlan } from '@/features/sesh/model/sesh';
+
+export type LastSeshPlan =
+  | { readonly kind: 'openEnded' }
+  | { readonly kind: 'timed'; readonly durationMinutes: number };
+
+export interface LastSesh {
+  readonly trickId: string;
+  readonly plan: LastSeshPlan;
+}
+
 export interface UserProfile {
   readonly selectedTrickIds: readonly string[];
   readonly kenteiRank?: number;
   readonly hasCompletedOnboarding: boolean;
+  readonly lastSesh?: LastSesh;
+}
+
+export function createLastSesh(trickId: string, plan: SeshPlan): LastSesh {
+  return {
+    trickId,
+    plan: plan.kind === 'timed' ? { kind: 'timed', durationMinutes: plan.durationMs / 60_000 } : { kind: 'openEnded' },
+  };
 }
 
 export const INITIAL_USER_PROFILE: UserProfile = {
@@ -14,6 +33,7 @@ export type UserProfileAction =
   | { readonly type: 'selectedTrickToggled'; readonly trickId: string }
   | { readonly type: 'selectedTrickRemoved'; readonly trickId: string }
   | { readonly type: 'selectedTricksCleared' }
+  | { readonly type: 'lastSeshUpdated'; readonly lastSesh: LastSesh }
   | {
       readonly type: 'onboardingCompleted';
       readonly kenteiRank: number;
@@ -49,6 +69,8 @@ export function userProfileReducer(
         : state;
     case 'selectedTricksCleared':
       return state.selectedTrickIds.length === 0 ? state : { ...state, selectedTrickIds: [] };
+    case 'lastSeshUpdated':
+      return { ...state, lastSesh: action.lastSesh };
     case 'onboardingCompleted':
       return {
         ...state,

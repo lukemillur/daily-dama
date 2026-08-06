@@ -14,6 +14,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { AppColors } from '@/constants/theme';
 import {
+  createLastSesh,
   INITIAL_USER_PROFILE,
   type UserProfile,
   userProfileReducer,
@@ -22,12 +23,14 @@ import {
   loadUserProfile,
   saveUserProfile,
 } from '@/features/profile/persistence/user-profile-persistence';
+import type { SeshPlan } from '@/features/sesh/model/sesh';
 import { createWriteQueue } from '@/shared/persistence/storage';
 
 interface UserProfileActions {
   readonly toggleSelectedTrick: (trickId: string) => void;
   readonly removeSelectedTrick: (trickId: string) => void;
   readonly clearSelectedTricks: () => void;
+  readonly setLastSesh: (trickId: string, plan: SeshPlan) => void;
   readonly completeOnboarding: (kenteiRank: number, selectedTrickIds: readonly string[]) => void;
   readonly restartOnboarding: () => void;
 }
@@ -90,6 +93,10 @@ export function UserProfileProvider({ children }: PropsWithChildren) {
     dispatch({ type: 'selectedTrickRemoved', trickId });
   }, []);
 
+  const setLastSesh = useCallback((trickId: string, plan: SeshPlan) => {
+    dispatch({ type: 'lastSeshUpdated', lastSesh: createLastSesh(trickId, plan) });
+  }, []);
+
   const completeOnboarding = useCallback(
     (kenteiRank: number, selectedTrickIds: readonly string[]) => {
       dispatch({ type: 'onboardingCompleted', kenteiRank, selectedTrickIds });
@@ -106,6 +113,7 @@ export function UserProfileProvider({ children }: PropsWithChildren) {
       toggleSelectedTrick,
       removeSelectedTrick,
       clearSelectedTricks,
+      setLastSesh,
       completeOnboarding,
       restartOnboarding,
     }),
@@ -114,6 +122,7 @@ export function UserProfileProvider({ children }: PropsWithChildren) {
       completeOnboarding,
       removeSelectedTrick,
       restartOnboarding,
+      setLastSesh,
       toggleSelectedTrick,
     ],
   );

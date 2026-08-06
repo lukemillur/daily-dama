@@ -1,5 +1,6 @@
-import type { UserProfile } from '@/features/profile/model/user-profile';
+import type { LastSesh, UserProfile } from '@/features/profile/model/user-profile';
 import { INITIAL_USER_PROFILE } from '@/features/profile/model/user-profile';
+import { isValidTimedSeshMinutes } from '@/features/sesh/model/sesh';
 import type {
   KeyValueStorage,
   PersistenceLoadResult,
@@ -30,21 +31,37 @@ function isKenteiRank(value: unknown): value is number {
   return Number.isInteger(value) && Number(value) >= 1 && Number(value) <= 12;
 }
 
+function isLastSesh(value: unknown): value is LastSesh {
+  if (!isRecord(value)) return false;
+
+  const { trickId, plan } = value;
+  if (typeof trickId !== 'string' || trickId.length === 0 || !isRecord(plan)) return false;
+
+  if (plan.kind === 'openEnded') return Object.keys(plan).length === 1;
+  if (plan.kind === 'timed') {
+    return isValidTimedSeshMinutes(Number(plan.durationMinutes)) && Object.keys(plan).length === 2;
+  }
+  return false;
+}
+
 function parseUserProfile(value: unknown): UserProfile | undefined {
   if (!isRecord(value)) return undefined;
 
-  const { hasCompletedOnboarding, kenteiRank, selectedTrickIds } = value;
+  const { hasCompletedOnboarding, kenteiRank, selectedTrickIds, lastSesh } = value;
   if (typeof hasCompletedOnboarding !== 'boolean' || !isStringArray(selectedTrickIds)) {
     return undefined;
   }
+  if (lastSesh !== undefined && !isLastSesh(lastSesh)) return undefined;
+
+  const lastSeshField = lastSesh === undefined ? {} : { lastSesh: lastSesh as LastSesh };
 
   if (hasCompletedOnboarding) {
     if (!isKenteiRank(kenteiRank)) return undefined;
-    return { hasCompletedOnboarding, kenteiRank, selectedTrickIds };
+    return { hasCompletedOnboarding, kenteiRank, selectedTrickIds, ...lastSeshField };
   }
 
   if (kenteiRank !== undefined) return undefined;
-  return { hasCompletedOnboarding, selectedTrickIds };
+  return { hasCompletedOnboarding, selectedTrickIds, ...lastSeshField };
 }
 
 export function serializeUserProfile(profile: UserProfile) {

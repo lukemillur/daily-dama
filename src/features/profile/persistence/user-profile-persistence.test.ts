@@ -34,6 +34,48 @@ describe('user profile persistence', () => {
     expect(deserializeUserProfile(serialized)).toEqual(COMPLETE_PROFILE);
   });
 
+  it('round-trips a profile with a cached last sesh', () => {
+    const profileWithLastSesh = {
+      ...COMPLETE_PROFILE,
+      lastSesh: { trickId: 'big-cup', plan: { kind: 'timed', durationMinutes: 5 } },
+    } as const;
+
+    const serialized = serializeUserProfile(profileWithLastSesh);
+
+    expect(deserializeUserProfile(serialized)).toEqual(profileWithLastSesh);
+  });
+
+  it('round-trips an open-ended cached last sesh', () => {
+    const profileWithLastSesh = {
+      ...COMPLETE_PROFILE,
+      lastSesh: { trickId: 'airplane', plan: { kind: 'openEnded' } },
+    } as const;
+
+    const serialized = serializeUserProfile(profileWithLastSesh);
+
+    expect(deserializeUserProfile(serialized)).toEqual(profileWithLastSesh);
+  });
+
+  it('still loads an older document with no cached last sesh', async () => {
+    const result = await loadUserProfile(createStorage(serializeUserProfile(COMPLETE_PROFILE)));
+
+    expect(result).toEqual({ status: 'loaded', value: COMPLETE_PROFILE });
+  });
+
+  it.each([
+    { trickId: 'big-cup', plan: { kind: 'timed', durationMinutes: 0 } },
+    { trickId: 'big-cup', plan: { kind: 'timed', durationMinutes: 61 } },
+    { trickId: 'big-cup', plan: { kind: 'unknown' } },
+    { trickId: '', plan: { kind: 'openEnded' } },
+  ])('rejects a malformed cached last sesh', (lastSesh) => {
+    const serialized = JSON.stringify({
+      version: USER_PROFILE_SCHEMA_VERSION,
+      profile: { ...COMPLETE_PROFILE, lastSesh },
+    });
+
+    expect(deserializeUserProfile(serialized)).toBeUndefined();
+  });
+
   it('loads a valid persisted profile', async () => {
     const result = await loadUserProfile(createStorage(serializeUserProfile(COMPLETE_PROFILE)));
 

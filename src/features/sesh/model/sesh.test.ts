@@ -155,6 +155,15 @@ describe('sesh reducer', () => {
     });
   });
 
+  it('lets a Repeat sesh restart directly from a completed state', () => {
+    const plan = createTimedSeshPlan(1);
+    const completed = seshReducer(startSesh(plan), { type: 'seshEnded', now: 30_000 });
+
+    const repeated = seshReducer(completed, { type: 'trickSelected', trick: BIG_CUP, plan });
+
+    expect(repeated).toEqual({ status: 'countdown', trick: BIG_CUP, plan });
+  });
+
   it('accepts only whole-minute timed plans from 1 through 60', () => {
     expect(createTimedSeshPlan(1)).toEqual({ kind: 'timed', durationMs: 60_000 });
     expect(createTimedSeshPlan(60)).toEqual({ kind: 'timed', durationMs: 3_600_000 });
