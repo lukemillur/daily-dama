@@ -1,4 +1,3 @@
-import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { TextInput } from 'react-native';
 import { styled } from 'styled-components/native';
@@ -13,49 +12,37 @@ import {
   isValidStreakThresholdMinutes,
 } from '@/features/profile/model/user-profile';
 import { useUserProfile, useUserProfileActions } from '@/features/profile/state/user-profile-provider';
+import { useRequireOnboarding } from '@/features/onboarding/state/require-onboarding';
 
 export default function ProfileScreen() {
-  const router = useRouter();
-  const { hasCompletedOnboarding, kenteiRank, selectedTrickIds, streakThresholdMs } = useUserProfile();
+  const isOnboardingComplete = useRequireOnboarding();
+  const { kenteiRank, selectedTrickIds, streakThresholdMs } = useUserProfile();
   const { restartOnboarding, setStreakThresholdMs } = useUserProfileActions();
 
-  const retakeAssessment = () => {
-    restartOnboarding();
-    router.push('/');
-  };
+  if (!isOnboardingComplete || !kenteiRank) return null;
 
   return (
     <Screen align="center" edges={['top', 'left', 'right']}>
       <Content>
         <Eyebrow>Your profile</Eyebrow>
-        {hasCompletedOnboarding && kenteiRank ? (
-          <>
-            <RankLine>
-              <RankNumber>{String(kenteiRank).padStart(2, '0')}</RankNumber>
-              <RankIdentity>
-                <RankLabel>Assessed Kentei rank</RankLabel>
-                <RankContext>
-                  Your current frontier, with {selectedTrickIds.length}{' '}
-                  {selectedTrickIds.length === 1 ? 'trick' : 'tricks'} in rotation.
-                </RankContext>
-              </RankIdentity>
-            </RankLine>
-            <Divider />
-            <SectionLabel>Assessment</SectionLabel>
-            <Title>Ready to check{`\n`}your level again?</Title>
-            <Copy>
-              Retaking the assessment updates your rank and recommended starting point. Your
-              custom tricks and practice history stay exactly where they are.
-            </Copy>
-            <RetakeButton onPress={retakeAssessment}>Retake assessment</RetakeButton>
-          </>
-        ) : (
-          <>
-            <Title>Assessment{`\n`}in progress.</Title>
-            <Copy>Finish the Kentei assessment on Home to establish your current frontier.</Copy>
-            <ReturnButton onPress={() => router.push('/')}>Return to assessment</ReturnButton>
-          </>
-        )}
+        <RankLine>
+          <RankNumber>{String(kenteiRank).padStart(2, '0')}</RankNumber>
+          <RankIdentity>
+            <RankLabel>Assessed Kentei rank</RankLabel>
+            <RankContext>
+              Your current frontier, with {selectedTrickIds.length}{' '}
+              {selectedTrickIds.length === 1 ? 'trick' : 'tricks'} in rotation.
+            </RankContext>
+          </RankIdentity>
+        </RankLine>
+        <Divider />
+        <SectionLabel>Assessment</SectionLabel>
+        <Title>Ready to check{`\n`}your level again?</Title>
+        <Copy>
+          Retaking the assessment updates your rank and recommended starting point. Your
+          custom tricks and practice history stay exactly where they are.
+        </Copy>
+        <RetakeButton onPress={restartOnboarding}>Retake assessment</RetakeButton>
         <Divider />
         <StreakSettings
           streakThresholdMs={streakThresholdMs}
@@ -127,7 +114,6 @@ const SectionLabel = styled(Eyebrow)`font-size: 11px;`;
 const Title = styled(DisplayTitle)`margin-top: 10px;`;
 const Copy = styled(BodyText)`max-width: 500px; margin-top: 16px; color: ${AppColors.textMuted};`;
 const RetakeButton = styled(Button).attrs({ variant: 'secondary', size: 'medium' })`align-self: flex-start; margin-top: 26px;`;
-const ReturnButton = styled(Button).attrs({ size: 'medium' })`align-self: flex-start; margin-top: 26px;`;
 const DurationField = styled.View`margin-top: 22px;`;
 const DurationLabel = styled.Text`color: ${AppColors.ink}; font-size: 12px; font-weight: 900; margin-bottom: 6px; text-transform: uppercase;`;
 const DurationInput = styled(TextInput)`height: 54px; width: 110px; background-color: ${AppColors.paper}; border: 2px solid ${AppColors.ink}; color: ${AppColors.ink}; font-size: 24px; font-weight: 900; padding: 8px 12px;`;

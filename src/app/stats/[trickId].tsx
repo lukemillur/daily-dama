@@ -8,11 +8,13 @@ import { Screen } from '@/components/ui/screen';
 import { BodyText, DisplayTitle, Eyebrow } from '@/components/ui/typography';
 import { formatPracticeDate } from '@/app/stats/index';
 import { AppColors, BottomTabInset } from '@/constants/theme';
+import { useRequireOnboarding } from '@/features/onboarding/state/require-onboarding';
 import { formatDuration } from '@/features/sesh/model/sesh';
 import { getPersonalBest } from '@/features/stats/model/practice-history';
 import { usePracticeHistory } from '@/features/stats/state/practice-history-provider';
 
 export default function TrickDetailScreen() {
+  const isOnboardingComplete = useRequireOnboarding();
   const { trickId } = useLocalSearchParams<{ trickId: string }>();
   const { sessions } = usePracticeHistory();
 
@@ -33,6 +35,8 @@ export default function TrickDetailScreen() {
       .sort((a, b) => a - b)
       .map((durationMs) => ({ durationMs, best: getPersonalBest(sessions, trickId, durationMs) ?? 0 }));
   }, [sessions, trickId, trickSessions]);
+
+  if (!isOnboardingComplete) return null;
 
   if (trickSessions.length === 0) {
     return (

@@ -17,6 +17,7 @@ import {
   useCustomTrickActions,
   useCustomTricks,
 } from '@/features/custom-tricks/state/custom-trick-provider';
+import { useRequireOnboarding } from '@/features/onboarding/state/require-onboarding';
 import {
   useUserProfile,
   useUserProfileActions,
@@ -27,6 +28,7 @@ import { createProfileDirectoryTricks } from '@/features/tricks/model/trick-dire
 import type { PracticeTrick } from '@/features/tricks/model/trick';
 
 export default function TricksScreen() {
+  const isOnboardingComplete = useRequireOnboarding();
   const { tricks } = useCustomTricks();
   const { selectedTrickIds } = useUserProfile();
   const { toggleSelectedTrick } = useUserProfileActions();
@@ -37,6 +39,8 @@ export default function TricksScreen() {
     () => createProfileDirectoryTricks(KENDAMA_KENTEI_TRICKS, tricks),
     [tricks],
   );
+
+  if (!isOnboardingComplete) return null;
 
   if (editingTrick) {
     return (

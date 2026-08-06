@@ -125,3 +125,8 @@ export const KENDAMA_KENTEI_TRICKS: readonly TrickSummary[] = groups.flatMap((gr
     kenteiClass: group.className,
   })),
 );
+
+export function getKenteiRankRangeForLevel(level: KenteiLevel): { readonly first: number; readonly last: number } {
+  const ranksForLevel = groups.filter((group) => group.level === level).map((group) => group.rank);
+  return { first: Math.min(...ranksForLevel), last: Math.max(...ranksForLevel) };
+}

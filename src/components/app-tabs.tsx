@@ -1,11 +1,14 @@
 import { NativeTabs } from 'expo-router/unstable-native-tabs';
 
 import { Colors } from '@/constants/theme';
+import { useUserProfile } from '@/features/profile/state/user-profile-provider';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 
 export default function AppTabs() {
   const scheme = useColorScheme();
   const colors = Colors[scheme === 'unspecified' ? 'light' : scheme];
+  const profile = useUserProfile();
+  const hasCompletedOnboarding = profile.hasCompletedOnboarding && profile.kenteiRank !== undefined;
 
   return (
     <NativeTabs
@@ -20,19 +23,19 @@ export default function AppTabs() {
         />
       </NativeTabs.Trigger>
 
-      <NativeTabs.Trigger name="sesh">
+      <NativeTabs.Trigger hidden={!hasCompletedOnboarding} name="sesh">
         <NativeTabs.Trigger.Label>Sesh</NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>
 
-      <NativeTabs.Trigger name="tricks">
+      <NativeTabs.Trigger hidden={!hasCompletedOnboarding} name="tricks">
         <NativeTabs.Trigger.Label>Tricks</NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>
 
-      <NativeTabs.Trigger name="stats">
+      <NativeTabs.Trigger hidden={!hasCompletedOnboarding} name="stats">
         <NativeTabs.Trigger.Label>Stats</NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>
 
-      <NativeTabs.Trigger name="profile">
+      <NativeTabs.Trigger hidden={!hasCompletedOnboarding} name="profile">
         <NativeTabs.Trigger.Label>Profile</NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>
     </NativeTabs>

@@ -6,13 +6,17 @@ import { Button } from '@/components/ui/button';
 import { Screen } from '@/components/ui/screen';
 import { BodyText, DisplayTitle, Eyebrow } from '@/components/ui/typography';
 import { AppColors, BottomTabInset } from '@/constants/theme';
+import { useRequireOnboarding } from '@/features/onboarding/state/require-onboarding';
 import { formatDuration } from '@/features/sesh/model/sesh';
 import { aggregatePracticeStats } from '@/features/stats/model/practice-history';
 import { usePracticeHistory } from '@/features/stats/state/practice-history-provider';
 
 export default function StatsScreen() {
+  const isOnboardingComplete = useRequireOnboarding();
   const { sessions } = usePracticeHistory();
   const stats = aggregatePracticeStats(sessions);
+
+  if (!isOnboardingComplete) return null;
 
   return (
     <Screen edges={['top', 'left', 'right']}>

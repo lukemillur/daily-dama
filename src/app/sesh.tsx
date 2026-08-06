@@ -3,6 +3,7 @@ import { useMemo } from 'react';
 
 import { Screen } from '@/components/ui/screen';
 import { useCustomTricks } from '@/features/custom-tricks/state/custom-trick-provider';
+import { useRequireOnboarding } from '@/features/onboarding/state/require-onboarding';
 import { Sesh } from '@/features/sesh/components/sesh';
 import { useUserProfile } from '@/features/profile/state/user-profile-provider';
 import { createTimedSeshPlan, OPEN_ENDED_SESH_PLAN, type SeshPlan } from '@/features/sesh/model/sesh';
@@ -10,6 +11,7 @@ import { KENDAMA_KENTEI_TRICKS } from '@/features/tricks/data/kendama-kentei-tri
 import { selectAvailablePracticeTricks } from '@/features/tricks/model/trick-directory';
 
 export default function SeshScreen() {
+  const isOnboardingComplete = useRequireOnboarding();
   const { trickId: trickIdParam, plannedDurationMs: plannedDurationMsParam } = useLocalSearchParams<{
     trickId?: string | string[];
     plannedDurationMs?: string | string[];
@@ -31,6 +33,8 @@ export default function SeshScreen() {
         ? createTimedSeshPlan(lastSesh.plan.durationMinutes)
         : OPEN_ENDED_SESH_PLAN
       : undefined;
+
+  if (!isOnboardingComplete) return null;
 
   return (
     <Screen edges={['top', 'left', 'right']}>

@@ -13,8 +13,12 @@ import { ThemedText } from './themed-text';
 import { ThemedView } from './themed-view';
 
 import { MaxContentWidth, Spacing } from '@/constants/theme';
+import { useUserProfile } from '@/features/profile/state/user-profile-provider';
 
 export default function AppTabs() {
+  const profile = useUserProfile();
+  const hasCompletedOnboarding = profile.hasCompletedOnboarding && profile.kenteiRank !== undefined;
+
   return (
     <Tabs>
       <TabSlot style={styles.tabSlot} />
@@ -23,18 +27,26 @@ export default function AppTabs() {
           <TabTrigger name="home" href="/" asChild>
             <TabButton>Home</TabButton>
           </TabTrigger>
-          <TabTrigger name="sesh" href="/sesh" asChild>
-            <TabButton>Sesh</TabButton>
-          </TabTrigger>
-          <TabTrigger name="tricks" href="/tricks" asChild>
-            <TabButton>Tricks</TabButton>
-          </TabTrigger>
-          <TabTrigger name="stats" href="/stats" asChild>
-            <TabButton>Stats</TabButton>
-          </TabTrigger>
-          <TabTrigger name="profile" href="/profile" asChild>
-            <TabButton>Profile</TabButton>
-          </TabTrigger>
+          {hasCompletedOnboarding && (
+            <TabTrigger name="sesh" href="/sesh" asChild>
+              <TabButton>Sesh</TabButton>
+            </TabTrigger>
+          )}
+          {hasCompletedOnboarding && (
+            <TabTrigger name="tricks" href="/tricks" asChild>
+              <TabButton>Tricks</TabButton>
+            </TabTrigger>
+          )}
+          {hasCompletedOnboarding && (
+            <TabTrigger name="stats" href="/stats" asChild>
+              <TabButton>Stats</TabButton>
+            </TabTrigger>
+          )}
+          {hasCompletedOnboarding && (
+            <TabTrigger name="profile" href="/profile" asChild>
+              <TabButton>Profile</TabButton>
+            </TabTrigger>
+          )}
         </CustomTabList>
       </TabList>
     </Tabs>
