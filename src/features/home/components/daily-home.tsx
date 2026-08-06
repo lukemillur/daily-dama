@@ -13,9 +13,17 @@ export function DailyHome({ summary }: { readonly summary: HomeSummary }) {
     <HomeScroll contentContainerStyle={{ paddingBottom: 110 + BottomTabInset }}>
       <HomeContent>
         <HomeHeader>
-          <Brand>Daily Dama</Brand>
-          {summary.kenteiRank ? (
-            <RankContext>Current frontier · Rank {summary.kenteiRank}</RankContext>
+          <BrandBlock>
+            <Brand>Daily Dama</Brand>
+            {summary.kenteiRank ? (
+              <RankContext>Current frontier · Rank {summary.kenteiRank}</RankContext>
+            ) : null}
+          </BrandBlock>
+          {summary.currentStreak > 0 ? (
+            <StreakBadge accessibilityLabel={`${summary.currentStreak} day practice streak`}>
+              <StreakValue>{summary.currentStreak}</StreakValue>
+              <StreakLabel>day streak</StreakLabel>
+            </StreakBadge>
           ) : null}
         </HomeHeader>
 
@@ -173,8 +181,12 @@ function getTrickContext(trick: HomePracticeTrick) {
 const HomeScroll = styled(ScrollView)`flex: 1; width: 100%;`;
 const HomeContent = styled.View`width: 100%; max-width: 820px; align-self: center; padding: 28px 20px 0;`;
 const HomeHeader = styled.View`flex-direction: row; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 24px;`;
+const BrandBlock = styled.View`gap: 4px;`;
 const Brand = styled.Text`color: ${AppColors.ink}; font-size: 18px; font-weight: 900; letter-spacing: -0.4px;`;
 const RankContext = styled.Text`color: ${AppColors.inkSoft}; font-size: 12px; font-weight: 800; text-transform: uppercase;`;
+const StreakBadge = styled.View`flex-direction: row; align-items: baseline; gap: 6px; background-color: ${AppColors.ink}; padding: 8px 14px; border-radius: 20px;`;
+const StreakValue = styled.Text`color: ${AppColors.yellow}; font-size: 18px; font-weight: 900; font-variant: tabular-nums;`;
+const StreakLabel = styled.Text`color: ${AppColors.cream}; font-size: 10px; font-weight: 800; text-transform: uppercase;`;
 const Hero = styled.View`min-height: 320px; justify-content: center; background-color: ${AppColors.yellow}; border-bottom-width: 7px; border-bottom-color: ${AppColors.red}; padding: 34px 26px 38px;`;
 const HeroMarker = styled(Eyebrow)`margin-bottom: 13px;`;
 const HeroTitle = styled(DisplayTitle)`max-width: 620px; font-size: 48px; line-height: 49px;`;

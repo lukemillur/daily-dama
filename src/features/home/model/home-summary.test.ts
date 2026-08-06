@@ -173,4 +173,28 @@ describe('daily home summary', () => {
       totalLaces: 1,
     });
   });
+
+  it('computes the current streak using the profile threshold, defaulting to one minute', () => {
+    const today = session('today', 'big-cup', 'Big cup', NOW, 60_000, 5);
+    const yesterday = session('yesterday', 'big-cup', 'Big cup', NOW - DAY, 60_000, 5);
+
+    expect(summary({ sessions: [today, yesterday] }).currentStreak).toBe(2);
+  });
+
+  it('respects a custom streak threshold from the profile', () => {
+    const shortToday = session('short-today', 'big-cup', 'Big cup', NOW, 30_000, 5);
+
+    expect(
+      summary({
+        profile: { ...PROFILE, streakThresholdMs: 60_000 },
+        sessions: [shortToday],
+      }).currentStreak,
+    ).toBe(0);
+    expect(
+      summary({
+        profile: { ...PROFILE, streakThresholdMs: 30_000 },
+        sessions: [shortToday],
+      }).currentStreak,
+    ).toBe(1);
+  });
 });

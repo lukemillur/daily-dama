@@ -1,6 +1,7 @@
 import type { CustomTrick } from '@/features/custom-tricks/model/custom-trick';
-import type { UserProfile } from '@/features/profile/model/user-profile';
+import { DEFAULT_STREAK_THRESHOLD_MS, type UserProfile } from '@/features/profile/model/user-profile';
 import type { PracticeSessionRecord } from '@/features/stats/model/practice-history';
+import { calculateStreak } from '@/features/stats/model/streak';
 import type { TrickSummary } from '@/features/tricks/model/trick';
 
 const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1_000;
@@ -30,6 +31,7 @@ export interface HomeSummary {
   readonly recentSession?: HomeRecentSession;
   readonly selectedTricks: readonly HomePracticeTrick[];
   readonly momentum: HomeMomentum;
+  readonly currentStreak: number;
 }
 
 interface CreateHomeSummaryInput {
@@ -82,6 +84,8 @@ export function createHomeSummary({
       }),
       { sessionCount: 0, totalPracticeMs: 0, totalLaces: 0 },
     ),
+    currentStreak: calculateStreak(sessions, profile.streakThresholdMs ?? DEFAULT_STREAK_THRESHOLD_MS, now)
+      .currentStreak,
   };
 }
 

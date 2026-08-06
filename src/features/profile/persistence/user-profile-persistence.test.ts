@@ -56,6 +56,26 @@ describe('user profile persistence', () => {
     expect(deserializeUserProfile(serialized)).toEqual(profileWithLastSesh);
   });
 
+  it('round-trips a profile with a custom streak threshold', () => {
+    const profileWithThreshold = { ...COMPLETE_PROFILE, streakThresholdMs: 300_000 } as const;
+
+    const serialized = serializeUserProfile(profileWithThreshold);
+
+    expect(deserializeUserProfile(serialized)).toEqual(profileWithThreshold);
+  });
+
+  it.each([0, -60_000, 61 * 60_000, 90_000, 1.5 * 60_000, '60000'])(
+    'rejects a malformed streak threshold: %p',
+    (streakThresholdMs) => {
+      const serialized = JSON.stringify({
+        version: USER_PROFILE_SCHEMA_VERSION,
+        profile: { ...COMPLETE_PROFILE, streakThresholdMs },
+      });
+
+      expect(deserializeUserProfile(serialized)).toBeUndefined();
+    },
+  );
+
   it('still loads an older document with no cached last sesh', async () => {
     const result = await loadUserProfile(createStorage(serializeUserProfile(COMPLETE_PROFILE)));
 

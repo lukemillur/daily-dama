@@ -31,6 +31,7 @@ interface UserProfileActions {
   readonly removeSelectedTrick: (trickId: string) => void;
   readonly clearSelectedTricks: () => void;
   readonly setLastSesh: (trickId: string, plan: SeshPlan) => void;
+  readonly setStreakThresholdMs: (thresholdMs: number) => void;
   readonly completeOnboarding: (kenteiRank: number, selectedTrickIds: readonly string[]) => void;
   readonly restartOnboarding: () => void;
 }
@@ -97,6 +98,10 @@ export function UserProfileProvider({ children }: PropsWithChildren) {
     dispatch({ type: 'lastSeshUpdated', lastSesh: createLastSesh(trickId, plan) });
   }, []);
 
+  const setStreakThresholdMs = useCallback((thresholdMs: number) => {
+    dispatch({ type: 'streakThresholdUpdated', thresholdMs });
+  }, []);
+
   const completeOnboarding = useCallback(
     (kenteiRank: number, selectedTrickIds: readonly string[]) => {
       dispatch({ type: 'onboardingCompleted', kenteiRank, selectedTrickIds });
@@ -114,6 +119,7 @@ export function UserProfileProvider({ children }: PropsWithChildren) {
       removeSelectedTrick,
       clearSelectedTricks,
       setLastSesh,
+      setStreakThresholdMs,
       completeOnboarding,
       restartOnboarding,
     }),
@@ -123,6 +129,7 @@ export function UserProfileProvider({ children }: PropsWithChildren) {
       removeSelectedTrick,
       restartOnboarding,
       setLastSesh,
+      setStreakThresholdMs,
       toggleSelectedTrick,
     ],
   );

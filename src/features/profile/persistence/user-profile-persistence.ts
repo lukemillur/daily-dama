@@ -1,5 +1,5 @@
 import type { LastSesh, UserProfile } from '@/features/profile/model/user-profile';
-import { INITIAL_USER_PROFILE } from '@/features/profile/model/user-profile';
+import { INITIAL_USER_PROFILE, isValidStreakThresholdMinutes } from '@/features/profile/model/user-profile';
 import { isValidTimedSeshMinutes } from '@/features/sesh/model/sesh';
 import type {
   KeyValueStorage,
@@ -44,24 +44,36 @@ function isLastSesh(value: unknown): value is LastSesh {
   return false;
 }
 
+function isStreakThresholdMs(value: unknown): value is number {
+  return (
+    typeof value === 'number' &&
+    Number.isInteger(value) &&
+    value % 60_000 === 0 &&
+    isValidStreakThresholdMinutes(value / 60_000)
+  );
+}
+
 function parseUserProfile(value: unknown): UserProfile | undefined {
   if (!isRecord(value)) return undefined;
 
-  const { hasCompletedOnboarding, kenteiRank, selectedTrickIds, lastSesh } = value;
+  const { hasCompletedOnboarding, kenteiRank, selectedTrickIds, lastSesh, streakThresholdMs } = value;
   if (typeof hasCompletedOnboarding !== 'boolean' || !isStringArray(selectedTrickIds)) {
     return undefined;
   }
   if (lastSesh !== undefined && !isLastSesh(lastSesh)) return undefined;
+  if (streakThresholdMs !== undefined && !isStreakThresholdMs(streakThresholdMs)) return undefined;
 
   const lastSeshField = lastSesh === undefined ? {} : { lastSesh: lastSesh as LastSesh };
+  const streakThresholdField =
+    streakThresholdMs === undefined ? {} : { streakThresholdMs: streakThresholdMs as number };
 
   if (hasCompletedOnboarding) {
     if (!isKenteiRank(kenteiRank)) return undefined;
-    return { hasCompletedOnboarding, kenteiRank, selectedTrickIds, ...lastSeshField };
+    return { hasCompletedOnboarding, kenteiRank, selectedTrickIds, ...lastSeshField, ...streakThresholdField };
   }
 
   if (kenteiRank !== undefined) return undefined;
-  return { hasCompletedOnboarding, selectedTrickIds, ...lastSeshField };
+  return { hasCompletedOnboarding, selectedTrickIds, ...lastSeshField, ...streakThresholdField };
 }
 
 export function serializeUserProfile(profile: UserProfile) {

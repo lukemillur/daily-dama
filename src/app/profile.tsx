@@ -1,16 +1,23 @@
 import { useRouter } from 'expo-router';
+import { useState } from 'react';
+import { TextInput } from 'react-native';
 import { styled } from 'styled-components/native';
 
 import { Button } from '@/components/ui/button';
 import { Screen } from '@/components/ui/screen';
 import { BodyText, DisplayTitle, Eyebrow } from '@/components/ui/typography';
 import { AppColors } from '@/constants/theme';
+import {
+  createStreakThresholdMs,
+  DEFAULT_STREAK_THRESHOLD_MS,
+  isValidStreakThresholdMinutes,
+} from '@/features/profile/model/user-profile';
 import { useUserProfile, useUserProfileActions } from '@/features/profile/state/user-profile-provider';
 
 export default function ProfileScreen() {
   const router = useRouter();
-  const { hasCompletedOnboarding, kenteiRank, selectedTrickIds } = useUserProfile();
-  const { restartOnboarding } = useUserProfileActions();
+  const { hasCompletedOnboarding, kenteiRank, selectedTrickIds, streakThresholdMs } = useUserProfile();
+  const { restartOnboarding, setStreakThresholdMs } = useUserProfileActions();
 
   const retakeAssessment = () => {
     restartOnboarding();
@@ -49,8 +56,57 @@ export default function ProfileScreen() {
             <ReturnButton onPress={() => router.push('/')}>Return to assessment</ReturnButton>
           </>
         )}
+        <Divider />
+        <StreakSettings
+          streakThresholdMs={streakThresholdMs}
+          onSave={setStreakThresholdMs}
+        />
       </Content>
     </Screen>
+  );
+}
+
+function StreakSettings({
+  streakThresholdMs,
+  onSave,
+}: {
+  readonly streakThresholdMs?: number;
+  readonly onSave: (thresholdMs: number) => void;
+}) {
+  const persistedMinutes = (streakThresholdMs ?? DEFAULT_STREAK_THRESHOLD_MS) / 60_000;
+  const [minutesText, setMinutesText] = useState(String(persistedMinutes));
+  const parsedMinutes = Number(minutesText);
+  const hasValidMinutes = isValidStreakThresholdMinutes(parsedMinutes);
+  const isDirty = hasValidMinutes && parsedMinutes !== persistedMinutes;
+
+  return (
+    <>
+      <SectionLabel>Daily streak</SectionLabel>
+      <Title>How much practice{`\n`}counts as a day?</Title>
+      <Copy>
+        Log at least this much sesh time in a day to keep your streak alive.
+      </Copy>
+      <DurationField>
+        <DurationLabel>Minutes</DurationLabel>
+        <DurationInput
+          accessibilityLabel="Streak threshold in minutes"
+          inputMode="numeric"
+          keyboardType="number-pad"
+          maxLength={2}
+          onChangeText={setMinutesText}
+          selectTextOnFocus
+          value={minutesText}
+        />
+        <DurationHint $invalid={!hasValidMinutes}>
+          {hasValidMinutes ? 'Choose any whole minute from 1 to 60.' : 'Enter a whole number from 1 to 60.'}
+        </DurationHint>
+      </DurationField>
+      <SaveButton
+        disabled={!isDirty}
+        onPress={() => hasValidMinutes && onSave(createStreakThresholdMs(parsedMinutes))}>
+        Save
+      </SaveButton>
+    </>
   );
 }
 
@@ -72,3 +128,8 @@ const Title = styled(DisplayTitle)`margin-top: 10px;`;
 const Copy = styled(BodyText)`max-width: 500px; margin-top: 16px; color: ${AppColors.textMuted};`;
 const RetakeButton = styled(Button).attrs({ variant: 'secondary', size: 'medium' })`align-self: flex-start; margin-top: 26px;`;
 const ReturnButton = styled(Button).attrs({ size: 'medium' })`align-self: flex-start; margin-top: 26px;`;
+const DurationField = styled.View`margin-top: 22px;`;
+const DurationLabel = styled.Text`color: ${AppColors.ink}; font-size: 12px; font-weight: 900; margin-bottom: 6px; text-transform: uppercase;`;
+const DurationInput = styled(TextInput)`height: 54px; width: 110px; background-color: ${AppColors.paper}; border: 2px solid ${AppColors.ink}; color: ${AppColors.ink}; font-size: 24px; font-weight: 900; padding: 8px 12px;`;
+const DurationHint = styled.Text<{ $invalid: boolean }>`color: ${({ $invalid }) => ($invalid ? AppColors.red : AppColors.textMuted)}; font-size: 12px; font-weight: 700; margin-top: 7px;`;
+const SaveButton = styled(Button).attrs({ size: 'medium' })`align-self: flex-start; margin-top: 20px;`;

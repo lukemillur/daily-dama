@@ -48,6 +48,20 @@ describe('user profile trick selection', () => {
     expect(secondSesh.lastSesh).toEqual({ trickId: 'airplane', plan: { kind: 'openEnded' } });
   });
 
+  it('overwrites the streak threshold on update', () => {
+    const updated = userProfileReducer(INITIAL_USER_PROFILE, {
+      type: 'streakThresholdUpdated',
+      thresholdMs: 300_000,
+    });
+    expect(updated.streakThresholdMs).toBe(300_000);
+
+    const overwritten = userProfileReducer(updated, {
+      type: 'streakThresholdUpdated',
+      thresholdMs: 60_000,
+    });
+    expect(overwritten.streakThresholdMs).toBe(60_000);
+  });
+
   it('preserves the current practice list while an assessment is being retaken', () => {
     const completedProfile = {
       hasCompletedOnboarding: true,

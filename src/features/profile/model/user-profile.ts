@@ -14,6 +14,26 @@ export interface UserProfile {
   readonly kenteiRank?: number;
   readonly hasCompletedOnboarding: boolean;
   readonly lastSesh?: LastSesh;
+  readonly streakThresholdMs?: number;
+}
+
+export const MIN_STREAK_THRESHOLD_MINUTES = 1;
+export const MAX_STREAK_THRESHOLD_MINUTES = 60;
+export const DEFAULT_STREAK_THRESHOLD_MS = 60_000;
+
+export function isValidStreakThresholdMinutes(minutes: number) {
+  return (
+    Number.isInteger(minutes) &&
+    minutes >= MIN_STREAK_THRESHOLD_MINUTES &&
+    minutes <= MAX_STREAK_THRESHOLD_MINUTES
+  );
+}
+
+export function createStreakThresholdMs(minutes: number): number {
+  if (!isValidStreakThresholdMinutes(minutes)) {
+    throw new RangeError('A streak threshold must be a whole number of minutes from 1 to 60.');
+  }
+  return minutes * 60_000;
 }
 
 export function createLastSesh(trickId: string, plan: SeshPlan): LastSesh {
@@ -34,6 +54,7 @@ export type UserProfileAction =
   | { readonly type: 'selectedTrickRemoved'; readonly trickId: string }
   | { readonly type: 'selectedTricksCleared' }
   | { readonly type: 'lastSeshUpdated'; readonly lastSesh: LastSesh }
+  | { readonly type: 'streakThresholdUpdated'; readonly thresholdMs: number }
   | {
       readonly type: 'onboardingCompleted';
       readonly kenteiRank: number;
@@ -71,6 +92,8 @@ export function userProfileReducer(
       return state.selectedTrickIds.length === 0 ? state : { ...state, selectedTrickIds: [] };
     case 'lastSeshUpdated':
       return { ...state, lastSesh: action.lastSesh };
+    case 'streakThresholdUpdated':
+      return { ...state, streakThresholdMs: action.thresholdMs };
     case 'onboardingCompleted':
       return {
         ...state,
