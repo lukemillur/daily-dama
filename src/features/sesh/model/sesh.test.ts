@@ -114,6 +114,47 @@ describe('sesh reducer', () => {
     expect(seshReducer(active, { type: 'trickLaced', now: 61_000 })).toBe(active);
   });
 
+  it('excludes paused time from elapsed and pace, and extends a timed deadline', () => {
+    const plan = createTimedSeshPlan(1);
+    const active = startSesh(plan);
+    const paused = seshReducer(active, { type: 'seshPaused', now: 10_000 });
+    expect(paused).toMatchObject({ status: 'active', pausedAt: 10_000, pausedDurationMs: 0 });
+
+    // The timer would have elapsed at 61_000 if not paused; while paused it must not complete.
+    expect(seshReducer(paused, { type: 'timerElapsed', now: 61_000 })).toBe(paused);
+    // Laces are ignored while paused.
+    expect(seshReducer(paused, { type: 'trickLaced', now: 15_000 })).toBe(paused);
+
+    const resumed = seshReducer(paused, { type: 'seshResumed', now: 40_000 });
+    expect(resumed).toMatchObject({ status: 'active', pausedAt: undefined, pausedDurationMs: 30_000 });
+
+    // Original deadline (61_000) has passed, but the 30s pause pushes it to 91_000.
+    expect(seshReducer(resumed, { type: 'timerElapsed', now: 61_000 })).toBe(resumed);
+
+    const withLace = seshReducer(resumed, { type: 'trickLaced', now: 51_000 });
+    expect(withLace).toMatchObject({
+      landings: [{ landedAt: 51_000, elapsedMs: 20_000, intervalMs: 20_000 }],
+    });
+
+    const completed = seshReducer(withLace, { type: 'timerElapsed', now: 91_000 });
+    expect(completed).toMatchObject({
+      status: 'completed',
+      summary: { startedAt: 1_000, endedAt: 91_000, durationMs: 60_000 },
+    });
+  });
+
+  it('accounts for an in-progress pause when a sesh is ended while paused', () => {
+    const active = startSesh(OPEN_ENDED_SESH_PLAN, 1_000);
+    const paused = seshReducer(active, { type: 'seshPaused', now: 20_000 });
+
+    const completed = seshReducer(paused, { type: 'seshEnded', now: 25_000 });
+
+    expect(completed).toMatchObject({
+      status: 'completed',
+      summary: { startedAt: 1_000, endedAt: 25_000, durationMs: 19_000 },
+    });
+  });
+
   it('accepts only whole-minute timed plans from 1 through 60', () => {
     expect(createTimedSeshPlan(1)).toEqual({ kind: 'timed', durationMs: 60_000 });
     expect(createTimedSeshPlan(60)).toEqual({ kind: 'timed', durationMs: 3_600_000 });

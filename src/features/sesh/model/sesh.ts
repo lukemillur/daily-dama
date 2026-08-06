@@ -41,13 +41,23 @@ export interface SeshSummary {
 export type SeshState =
   | { readonly status: 'choosing' }
   | { readonly status: 'countdown'; readonly trick: PracticeTrick; readonly plan: SeshPlan }
-  | { readonly status: 'active'; readonly trick: PracticeTrick; readonly plan: SeshPlan; readonly startedAt: number; readonly landings: readonly Landing[] }
+  | {
+      readonly status: 'active';
+      readonly trick: PracticeTrick;
+      readonly plan: SeshPlan;
+      readonly startedAt: number;
+      readonly landings: readonly Landing[];
+      readonly pausedAt?: number;
+      readonly pausedDurationMs: number;
+    }
   | { readonly status: 'completed'; readonly summary: SeshSummary };
 
 export type SeshAction =
   | { readonly type: 'trickSelected'; readonly trick: PracticeTrick; readonly plan: SeshPlan }
   | { readonly type: 'countdownCompleted'; readonly now: number }
   | { readonly type: 'trickLaced'; readonly now: number }
+  | { readonly type: 'seshPaused'; readonly now: number }
+  | { readonly type: 'seshResumed'; readonly now: number }
   | { readonly type: 'seshEnded'; readonly now: number }
   | { readonly type: 'timerElapsed'; readonly now: number }
   | { readonly type: 'seshReset' };
@@ -60,46 +70,71 @@ export function seshReducer(state: SeshState, action: SeshAction): SeshState {
       return { status: 'countdown', trick: action.trick, plan: action.plan };
     case 'countdownCompleted':
       return state.status === 'countdown'
-        ? { status: 'active', trick: state.trick, plan: state.plan, startedAt: action.now, landings: [] }
+        ? {
+            status: 'active',
+            trick: state.trick,
+            plan: state.plan,
+            startedAt: action.now,
+            landings: [],
+            pausedDurationMs: 0,
+          }
         : state;
     case 'trickLaced': {
-      if (state.status !== 'active') return state;
+      if (state.status !== 'active' || state.pausedAt !== undefined) return state;
 
       if (
         action.now < state.startedAt ||
-        (state.plan.kind === 'timed' && action.now >= state.startedAt + state.plan.durationMs)
+        (state.plan.kind === 'timed' &&
+          action.now >= state.startedAt + state.plan.durationMs + state.pausedDurationMs)
       ) {
         return state;
       }
 
-      const previousAt = state.landings.at(-1)?.landedAt ?? state.startedAt;
+      const elapsedMs = action.now - state.startedAt - state.pausedDurationMs;
+      const previousElapsedMs = state.landings.at(-1)?.elapsedMs ?? 0;
       return {
         ...state,
         landings: [
           ...state.landings,
           {
             landedAt: action.now,
-            elapsedMs: action.now - state.startedAt,
-            intervalMs: action.now - previousAt,
+            elapsedMs,
+            intervalMs: elapsedMs - previousElapsedMs,
           },
         ],
       };
     }
+    case 'seshPaused':
+      if (state.status !== 'active' || state.pausedAt !== undefined) return state;
+      return { ...state, pausedAt: action.now };
+    case 'seshResumed':
+      if (state.status !== 'active' || state.pausedAt === undefined) return state;
+      return {
+        ...state,
+        pausedDurationMs: state.pausedDurationMs + Math.max(0, action.now - state.pausedAt),
+        pausedAt: undefined,
+      };
     case 'seshEnded':
       if (state.status !== 'active') return state;
       return completeSesh(state, Math.max(state.startedAt, action.now));
     case 'timerElapsed':
-      if (state.status !== 'active' || state.plan.kind !== 'timed') return state;
-      if (action.now < state.startedAt + state.plan.durationMs) return state;
-      return completeSesh(state, state.startedAt + state.plan.durationMs);
+      if (state.status !== 'active' || state.plan.kind !== 'timed' || state.pausedAt !== undefined) {
+        return state;
+      }
+      if (action.now < state.startedAt + state.plan.durationMs + state.pausedDurationMs) return state;
+      return completeSesh(state, state.startedAt + state.plan.durationMs + state.pausedDurationMs);
     case 'seshReset':
       return INITIAL_SESH_STATE;
   }
 }
 
 function completeSesh(state: Extract<SeshState, { status: 'active' }>, requestedEndAt: number): SeshState {
+  const totalPausedMs =
+    state.pausedDurationMs + (state.pausedAt !== undefined ? Math.max(0, requestedEndAt - state.pausedAt) : 0);
   const deadline =
-    state.plan.kind === 'timed' ? state.startedAt + state.plan.durationMs : requestedEndAt;
+    state.plan.kind === 'timed'
+      ? state.startedAt + state.plan.durationMs + totalPausedMs
+      : requestedEndAt;
   const endedAt = Math.min(requestedEndAt, deadline);
 
   return {
@@ -109,7 +144,7 @@ function completeSesh(state: Extract<SeshState, { status: 'active' }>, requested
       plan: state.plan,
       startedAt: state.startedAt,
       endedAt,
-      durationMs: endedAt - state.startedAt,
+      durationMs: endedAt - state.startedAt - totalPausedMs,
       landings: state.landings,
     },
   };

@@ -83,7 +83,11 @@ export function Sesh({ availableTricks, preferredTrickId, selectedTrickIds }: Se
         plan={state.plan}
         startedAt={state.startedAt}
         landings={state.landings}
+        pausedAt={state.pausedAt}
+        pausedDurationMs={state.pausedDurationMs}
         onLaced={() => dispatch({ type: 'trickLaced', now: Date.now() })}
+        onPause={() => dispatch({ type: 'seshPaused', now: Date.now() })}
+        onResume={() => dispatch({ type: 'seshResumed', now: Date.now() })}
         onEnd={() => dispatch({ type: 'seshEnded', now: Date.now() })}
         onTimerElapsed={() => dispatch({ type: 'timerElapsed', now: Date.now() })}
       />
@@ -224,9 +228,35 @@ function Countdown({ trick, plan, onComplete }: { readonly trick: PracticeTrick;
   );
 }
 
-function ActiveSesh({ trick, plan, startedAt, landings, onLaced, onEnd, onTimerElapsed }: { readonly trick: PracticeTrick; readonly plan: SeshPlan; readonly startedAt: number; readonly landings: readonly Landing[]; readonly onLaced: () => void; readonly onEnd: () => void; readonly onTimerElapsed: () => void }) {
-  const now = useNow(startedAt);
-  const elapsedMs = now - startedAt;
+function ActiveSesh({
+  trick,
+  plan,
+  startedAt,
+  landings,
+  pausedAt,
+  pausedDurationMs,
+  onLaced,
+  onPause,
+  onResume,
+  onEnd,
+  onTimerElapsed,
+}: {
+  readonly trick: PracticeTrick;
+  readonly plan: SeshPlan;
+  readonly startedAt: number;
+  readonly landings: readonly Landing[];
+  readonly pausedAt?: number;
+  readonly pausedDurationMs: number;
+  readonly onLaced: () => void;
+  readonly onPause: () => void;
+  readonly onResume: () => void;
+  readonly onEnd: () => void;
+  readonly onTimerElapsed: () => void;
+}) {
+  const isPaused = pausedAt !== undefined;
+  const now = useNow(startedAt, isPaused);
+  const totalPausedMs = pausedDurationMs + (isPaused ? Math.max(0, now - pausedAt) : 0);
+  const elapsedMs = now - startedAt - totalPausedMs;
   const displayedTime =
     plan.kind === 'timed' ? Math.max(0, plan.durationMs - elapsedMs) : elapsedMs;
   const formattedTime =
@@ -235,13 +265,13 @@ function ActiveSesh({ trick, plan, startedAt, landings, onLaced, onEnd, onTimerE
       : formatDuration(displayedTime);
 
   useEffect(() => {
-    if (plan.kind === 'timed' && elapsedMs >= plan.durationMs) onTimerElapsed();
-  }, [elapsedMs, onTimerElapsed, plan]);
+    if (!isPaused && plan.kind === 'timed' && elapsedMs >= plan.durationMs) onTimerElapsed();
+  }, [elapsedMs, isPaused, onTimerElapsed, plan]);
 
   return (
     <ScrollArea contentContainerStyle={{ padding: 24, paddingBottom: 140 }}>
       <ActiveContent>
-        <Eyebrow>Sesh in progress</Eyebrow>
+        <Eyebrow>{isPaused ? 'Sesh paused' : 'Sesh in progress'}</Eyebrow>
         <ActiveTrick>{trick.name}</ActiveTrick>
         <SequenceSteps trick={trick} prominent />
         <TimerLabel>{plan.kind === 'timed' ? 'Time remaining' : 'Elapsed time'}</TimerLabel>
@@ -249,23 +279,37 @@ function ActiveSesh({ trick, plan, startedAt, landings, onLaced, onEnd, onTimerE
           accessibilityLabel={`${plan.kind === 'timed' ? 'Time remaining' : 'Elapsed time'} ${formattedTime}`}>
           {formattedTime}
         </Timer>
-        <LacedButton accessibilityRole="button" onPress={onLaced} accessibilityLabel="Laced">
+        <LacedButton
+          accessibilityRole="button"
+          accessibilityState={{ disabled: isPaused }}
+          disabled={isPaused}
+          $disabled={isPaused}
+          onPress={onLaced}
+          accessibilityLabel="Laced">
           <LacedButtonText>Laced.</LacedButtonText>
           <LacedCount>{landings.length}</LacedCount>
         </LacedButton>
         <LandingHistory landings={landings} />
-        <EndButton accessibilityRole="button" onPress={onEnd}><EndButtonText>End Sesh</EndButtonText></EndButton>
+        <SecondaryActions>
+          <PauseButton
+            accessibilityRole="button"
+            onPress={isPaused ? onResume : onPause}>
+            <PauseButtonText>{isPaused ? 'Resume Sesh' : 'Pause Sesh'}</PauseButtonText>
+          </PauseButton>
+          <EndButton accessibilityRole="button" onPress={onEnd}><EndButtonText>End Sesh</EndButtonText></EndButton>
+        </SecondaryActions>
       </ActiveContent>
     </ScrollArea>
   );
 }
 
-function useNow(initialTime: number) {
+function useNow(initialTime: number, isPaused: boolean) {
   const [now, setNow] = useState(initialTime);
   useEffect(() => {
+    if (isPaused) return;
     const interval = setInterval(() => setNow(Date.now()), 250);
     return () => clearInterval(interval);
-  }, []);
+  }, [isPaused]);
   return now;
 }
 
@@ -382,7 +426,7 @@ const SequenceNumber = styled.Text`width: 22px; color: ${AppColors.red}; font-si
 const SequenceName = styled.Text`flex: 1; color: ${AppColors.ink}; font-size: 14px; font-weight: 800; line-height: 20px;`;
 const TimerLabel = styled.Text`color: ${AppColors.red}; font-size: 12px; font-weight: 900; letter-spacing: 1.4px; margin-top: 22px; text-transform: uppercase;`;
 const Timer = styled.Text`color: #18382e; font-size: 78px; font-variant: tabular-nums; font-weight: 900; letter-spacing: -4px; margin: 4px 0 22px;`;
-const LacedButton = styled(Pressable)`width: 100%; min-height: 108px; flex-direction: row; align-items: center; justify-content: space-between; background-color: #d84929; padding: 22px 26px; border-radius: 6px;`;
+const LacedButton = styled(Pressable)<{ $disabled: boolean }>`width: 100%; min-height: 108px; flex-direction: row; align-items: center; justify-content: space-between; background-color: #d84929; opacity: ${({ $disabled }) => ($disabled ? 0.45 : 1)}; padding: 22px 26px; border-radius: 6px;`;
 const LacedButtonText = styled.Text`color: #fff8e5; font-size: 34px; font-weight: 900;`;
 const LacedCount = styled.Text`color: #f4c94d; font-size: 40px; font-weight: 900;`;
 const History = styled.View`width: 100%; margin-top: 28px;`;
@@ -392,7 +436,10 @@ const LandingRow = styled.View`min-height: 50px; flex-direction: row; align-item
 const LandingNumber = styled.Text`width: 54px; color: #d84929; font-size: 13px; font-weight: 900;`;
 const LandingTime = styled.Text`flex: 1; color: #18382e; font-size: 20px; font-variant: tabular-nums; font-weight: 800;`;
 const LandingInterval = styled.Text`color: #53635d; font-size: 14px; font-variant: tabular-nums; font-weight: 700;`;
-const EndButton = styled(Pressable)`min-height: 48px; align-items: center; justify-content: center; padding: 12px 24px; margin-top: 28px; border: 2px solid #18382e; border-radius: 5px;`;
+const SecondaryActions = styled.View`flex-direction: row; gap: 10px; margin-top: 28px;`;
+const PauseButton = styled(Pressable)`min-height: 48px; flex: 1; align-items: center; justify-content: center; padding: 12px 24px; background-color: #18382e; border: 2px solid #18382e; border-radius: 5px;`;
+const PauseButtonText = styled.Text`color: #f4c94d; font-size: 15px; font-weight: 900;`;
+const EndButton = styled(Pressable)`min-height: 48px; flex: 1; align-items: center; justify-content: center; padding: 12px 24px; border: 2px solid #18382e; border-radius: 5px;`;
 const EndButtonText = styled.Text`color: #18382e; font-size: 15px; font-weight: 900;`;
 const SummaryGrid = styled.View`width: 100%; flex-direction: row; flex-wrap: wrap; gap: 10px; margin-top: 28px;`;
 const Metric = styled.View`min-width: 46%; flex-grow: 1; background-color: #f8f1dd; border-top-width: 5px; border-top-color: #d84929; padding: 18px;`;
