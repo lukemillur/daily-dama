@@ -29,6 +29,7 @@ export interface TrickDirectoryProps {
   readonly fixedHeader?: boolean;
   readonly fixedFooter?: boolean;
   readonly hideScrollIndicator?: boolean;
+  readonly showFocusedSection?: boolean;
 }
 
 const DEFAULT_HEADER = {
@@ -50,9 +51,13 @@ export function TrickDirectory({
   fixedHeader = false,
   fixedFooter = false,
   hideScrollIndicator = false,
+  showFocusedSection = false,
 }: TrickDirectoryProps) {
-  const sections = useMemo(() => createTrickSections(tricks), [tricks]);
   const selectedTrickIds = selection?.selectedTrickIds ?? NO_SELECTED_TRICKS;
+  const sections = useMemo(
+    () => createTrickSections(tricks, showFocusedSection ? selectedTrickIds : undefined),
+    [tricks, showFocusedSection, selectedTrickIds],
+  );
   const selectedTrickIdSet = useMemo(() => new Set(selectedTrickIds), [selectedTrickIds]);
   const directoryHeader = (
     <DirectoryHeader $compact={fixedHeader}>
@@ -74,6 +79,9 @@ export function TrickDirectory({
       ListHeaderComponent={fixedHeader ? undefined : directoryHeader}
       ListFooterComponent={fixedFooter ? undefined : footer}
       renderSectionHeader={({ section }) => <SectionHeader section={section} />}
+      renderSectionFooter={({ section }) =>
+        section.kind === 'focused' && section.data.length === 0 ? <FocusedEmptyState /> : null
+      }
       renderItem={({ item, index }) => (
         <TrickRow
           trick={item}
@@ -101,13 +109,30 @@ export function TrickDirectory({
 }
 
 function SectionHeader({ section }: { readonly section: SectionListData<DirectoryTrick, TrickSection> }) {
+  const isCustom = section.kind === 'custom';
   return (
-    <SectionHeaderContainer $custom={section.kind === 'custom'}>
-      <RankLabel $custom={section.kind === 'custom'}>{section.kind === 'custom' ? 'Custom' : `Rank ${section.rank}`}</RankLabel>
-      <LevelLabel $custom={section.kind === 'custom'}>
-        {section.kind === 'custom' ? 'Your own progression' : `${section.level} · ${section.className}`}
+    <SectionHeaderContainer $custom={isCustom}>
+      <RankLabel $custom={isCustom}>
+        {section.kind === 'custom' ? 'Custom' : section.kind === 'focused' ? 'Focused tricks' : `Rank ${section.rank}`}
+      </RankLabel>
+      <LevelLabel $custom={isCustom}>
+        {section.kind === 'custom'
+          ? 'Your own progression'
+          : section.kind === 'focused'
+            ? `${section.data.length} in rotation`
+            : `${section.level} · ${section.className}`}
       </LevelLabel>
     </SectionHeaderContainer>
+  );
+}
+
+function FocusedEmptyState() {
+  return (
+    <FocusedEmptyContainer>
+      <FocusedEmptyText>
+        No focused tricks yet. Tap a trick below to add it to your practice list.
+      </FocusedEmptyText>
+    </FocusedEmptyContainer>
   );
 }
 
@@ -237,6 +262,18 @@ const LevelLabel = styled.Text<{ readonly $custom: boolean }>`
   font-weight: 800;
   text-align: right;
   text-transform: uppercase;
+`;
+
+const FocusedEmptyContainer = styled.View`
+  padding: 18px 22px;
+  background-color: #f8f1dd;
+`;
+
+const FocusedEmptyText = styled.Text`
+  color: #53635d;
+  font-size: 14px;
+  font-weight: 650;
+  line-height: 20px;
 `;
 
 const TrickRowContainer = styled.View<{ readonly $selected: boolean }>`

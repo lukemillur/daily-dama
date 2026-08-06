@@ -28,7 +28,12 @@ export interface CustomTrickSection {
   readonly data: DirectoryTrick[];
 }
 
-export type TrickSection = RankedTrickSection | CustomTrickSection;
+export interface FocusedTrickSection {
+  readonly kind: 'focused';
+  readonly data: DirectoryTrick[];
+}
+
+export type TrickSection = RankedTrickSection | CustomTrickSection | FocusedTrickSection;
 
 export function isCustomDirectoryTrick(trick: DirectoryTrick) {
   return 'customKind' in trick;
@@ -62,7 +67,20 @@ export function createProfileDirectoryTricks(
   return [...standardTricks, ...customDirectoryTricks];
 }
 
-export function createTrickSections(tricks: readonly DirectoryTrick[]): TrickSection[] {
+export function createTrickSections(
+  tricks: readonly DirectoryTrick[],
+  focusedTrickIds?: readonly string[],
+): TrickSection[] {
+  const focusedSection: FocusedTrickSection[] =
+    focusedTrickIds === undefined
+      ? []
+      : [
+          {
+            kind: 'focused',
+            data: tricks.filter((trick) => focusedTrickIds.includes(trick.id)),
+          },
+        ];
+
   const sectionsByRank = new Map<number, RankedTrickSection>();
   const unrankedCustomTricks: DirectoryTrick[] = [];
 
@@ -100,9 +118,12 @@ export function createTrickSections(tricks: readonly DirectoryTrick[]): TrickSec
       }),
     }));
 
-  return unrankedCustomTricks.length === 0
-    ? rankedSections
-    : [...rankedSections, { kind: 'custom', data: unrankedCustomTricks }];
+  const trailingSections: TrickSection[] =
+    unrankedCustomTricks.length === 0
+      ? rankedSections
+      : [...rankedSections, { kind: 'custom', data: unrankedCustomTricks }];
+
+  return [...focusedSection, ...trailingSections];
 }
 
 export function selectAvailablePracticeTricks(

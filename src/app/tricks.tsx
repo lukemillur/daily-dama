@@ -95,6 +95,8 @@ export default function TricksScreen() {
       <DirectoryContent>
         <TrickDirectory
           tricks={directoryTricks}
+          hideScrollIndicator
+          showFocusedSection
           selection={{ selectedTrickIds, onToggleTrick: toggleSelectedTrick }}
           customActions={{
             onEdit: (trickId) => setEditingTrick(tricks.find((trick) => trick.id === trickId)),

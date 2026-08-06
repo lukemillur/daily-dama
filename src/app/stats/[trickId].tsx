@@ -42,6 +42,9 @@ export default function TrickDetailScreen() {
     return (
       <Screen edges={['top', 'left', 'right']}>
         <EmptyContent>
+          <Link href="/stats" asChild>
+            <BackLink accessibilityRole="link">← Back to Stats</BackLink>
+          </Link>
           <StyledEyebrow>Trick history</StyledEyebrow>
           <CenteredTitle>No seshes{`\n`}on this trick yet.</CenteredTitle>
           <Link href="/stats" asChild>
@@ -58,6 +61,9 @@ export default function TrickDetailScreen() {
     <Screen edges={['top', 'left', 'right']}>
       <DetailScroll contentContainerStyle={{ paddingBottom: 120 + BottomTabInset }}>
         <DetailContent>
+          <Link href="/stats" asChild>
+            <BackLink accessibilityRole="link">← Back to Stats</BackLink>
+          </Link>
           <StyledEyebrow>Trick history</StyledEyebrow>
           <Title>{trickName}</Title>
 
@@ -102,6 +108,7 @@ export default function TrickDetailScreen() {
 const DetailScroll = styled(ScrollView)`flex: 1; width: 100%;`;
 const DetailContent = styled.View`width: 100%; max-width: 760px; align-self: center; padding: 36px 22px 0;`;
 const EmptyContent = styled.View`width: 100%; max-width: 620px; flex: 1; align-self: center; align-items: center; justify-content: center; padding: 40px 22px 130px;`;
+const BackLink = styled.Text`align-self: flex-start; padding: 8px 0; margin-bottom: 10px; color: ${AppColors.ink}; font-size: 13px; font-weight: 900; text-decoration-line: underline;`;
 const StyledEyebrow = styled(Eyebrow)`margin-bottom: 14px;`;
 const CenteredTitle = styled(DisplayTitle)`text-align: center;`;
 const StartButton = styled(Button).attrs({ size: 'medium' })`margin-top: 28px;`;
