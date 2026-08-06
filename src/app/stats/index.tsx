@@ -1,5 +1,5 @@
-import { Link } from 'expo-router';
-import { ScrollView } from 'react-native';
+import { Link, useRouter } from 'expo-router';
+import { Pressable, ScrollView } from 'react-native';
 import { styled } from 'styled-components/native';
 
 import { Button } from '@/components/ui/button';
@@ -39,6 +39,8 @@ function EmptyStats() {
 type Stats = ReturnType<typeof aggregatePracticeStats>;
 
 function PopulatedStats({ stats }: { readonly stats: Stats }) {
+  const router = useRouter();
+
   return (
     <StatsScroll contentContainerStyle={{ paddingBottom: 120 + BottomTabInset }}>
       <StatsContent>
@@ -63,7 +65,11 @@ function PopulatedStats({ stats }: { readonly stats: Stats }) {
         <SectionLabel>By trick</SectionLabel>
         <TrickList>
           {stats.tricks.map((trick) => (
-            <TrickStat key={trick.trickId}>
+            <TrickStat
+              key={trick.trickId}
+              accessibilityRole="button"
+              accessibilityLabel={`View history for ${trick.trickName}`}
+              onPress={() => router.push(`/stats/${trick.trickId}`)}>
               <TrickHeader>
                 <TrickName>{trick.trickName}</TrickName>
                 <LastPracticed>{formatPracticeDate(trick.mostRecentPracticeAt)}</LastPracticed>
@@ -90,7 +96,7 @@ function PopulatedStats({ stats }: { readonly stats: Stats }) {
   );
 }
 
-function formatPracticeDate(timestamp: number) {
+export function formatPracticeDate(timestamp: number) {
   return new Intl.DateTimeFormat(undefined, {
     month: 'short',
     day: 'numeric',
@@ -112,7 +118,7 @@ const OverviewValue = styled.Text`color: ${AppColors.yellow}; font-size: 30px; f
 const OverviewLabel = styled.Text`color: ${AppColors.cream}; font-size: 12px; font-weight: 800; margin-top: 4px; text-transform: uppercase;`;
 const SectionLabel = styled.Text`color: ${AppColors.red}; font-size: 13px; font-weight: 900; letter-spacing: 1.8px; margin: 38px 0 12px; text-transform: uppercase;`;
 const TrickList = styled.View`gap: 12px;`;
-const TrickStat = styled.View`background-color: ${AppColors.paper}; border-left-width: 5px; border-left-color: ${AppColors.red}; padding: 18px;`;
+const TrickStat = styled(Pressable)`background-color: ${AppColors.paper}; border-left-width: 5px; border-left-color: ${AppColors.red}; padding: 18px;`;
 const TrickHeader = styled.View`flex-direction: row; align-items: baseline; justify-content: space-between; gap: 16px;`;
 const TrickName = styled.Text`flex: 1; color: ${AppColors.ink}; font-size: 22px; font-weight: 900;`;
 const LastPracticed = styled.Text`color: ${AppColors.textMuted}; font-size: 12px; font-weight: 700;`;

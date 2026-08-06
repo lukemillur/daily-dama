@@ -3,10 +3,12 @@ import { describe, expect, it } from '@jest/globals';
 import {
   aggregatePracticeStats,
   createPracticeSessionRecord,
+  getPersonalBest,
+  isEligibleTimedAttempt,
   practiceHistoryReducer,
   type PracticeSessionRecord,
 } from '@/features/stats/model/practice-history';
-import { OPEN_ENDED_SESH_PLAN, type SeshSummary } from '@/features/sesh/model/sesh';
+import { OPEN_ENDED_SESH_PLAN, type Landing, type SeshSummary } from '@/features/sesh/model/sesh';
 
 const BIG_CUP_FIRST: PracticeSessionRecord = {
   id: 'big-cup-1',
@@ -37,6 +39,26 @@ const AIRPLANE_ZERO_LACES: PracticeSessionRecord = {
   durationMs: 90_000,
   laceCount: 0,
 };
+
+function landings(count: number): readonly Landing[] {
+  return Array.from({ length: count }, (_, index) => ({
+    landedAt: 1_000 + index * 1_000,
+    elapsedMs: index * 1_000,
+    intervalMs: 1_000,
+  }));
+}
+
+function makeSummary(overrides: Partial<SeshSummary> = {}): SeshSummary {
+  return {
+    trick: { id: 'big-cup', name: 'Big cup' },
+    plan: OPEN_ENDED_SESH_PLAN,
+    startedAt: 1_000,
+    endedAt: 61_000,
+    durationMs: 60_000,
+    landings: landings(8),
+    ...overrides,
+  };
+}
 
 describe('practice history', () => {
   it('aggregates multiple sessions per trick and totals across tricks', () => {
@@ -80,14 +102,9 @@ describe('practice history', () => {
   });
 
   it('does not duplicate a completed session with the same operation id', () => {
-    const once = practiceHistoryReducer(
-      { sessions: [] },
-      { type: 'sessionRecorded', session: BIG_CUP_FIRST },
-    );
-    const twice = practiceHistoryReducer(once, {
-      type: 'sessionRecorded',
-      session: BIG_CUP_FIRST,
-    });
+    const summary = makeSummary();
+    const once = practiceHistoryReducer({ sessions: [] }, { type: 'sessionRecorded', summary });
+    const twice = practiceHistoryReducer(once, { type: 'sessionRecorded', summary });
 
     expect(twice).toBe(once);
     expect(twice.sessions).toHaveLength(1);
@@ -102,7 +119,7 @@ describe('practice history', () => {
       durationMs: 30_000,
       landings: [{ landedAt: 21_000, elapsedMs: 20_000, intervalMs: 20_000 }],
     };
-    const record = createPracticeSessionRecord(summary);
+    const record = createPracticeSessionRecord(summary, undefined);
 
     expect(record).toMatchObject({
       trickId: 'custom-stable-id',
@@ -129,5 +146,134 @@ describe('practice history', () => {
     expect(aggregatePracticeStats(historyAfterCurrentTrickDeletion).tricks[0]?.trickName).toBe(
       'Morning line',
     );
+  });
+});
+
+describe('isEligibleTimedAttempt', () => {
+  it('is never eligible for an open-ended sesh', () => {
+    const summary = makeSummary({ plan: OPEN_ENDED_SESH_PLAN });
+    expect(isEligibleTimedAttempt(summary, undefined)).toBe(false);
+    expect(isEligibleTimedAttempt(summary, 2)).toBe(false);
+  });
+
+  it('is eligible when the timed sesh reaches its full planned duration', () => {
+    const summary = makeSummary({
+      plan: { kind: 'timed', durationMs: 300_000 },
+      durationMs: 300_000,
+    });
+    expect(isEligibleTimedAttempt(summary, undefined)).toBe(true);
+    expect(isEligibleTimedAttempt(summary, 20)).toBe(true);
+  });
+
+  it('is not eligible when ended early and below the previous best', () => {
+    const summary = makeSummary({
+      plan: { kind: 'timed', durationMs: 300_000 },
+      durationMs: 243_000,
+      landings: landings(6),
+    });
+    expect(isEligibleTimedAttempt(summary, 8)).toBe(false);
+    expect(isEligibleTimedAttempt(summary, undefined)).toBe(false);
+  });
+
+  it('is eligible when ended early but the lace count already exceeds the previous best', () => {
+    const summary = makeSummary({
+      plan: { kind: 'timed', durationMs: 300_000 },
+      durationMs: 243_000,
+      landings: landings(9),
+    });
+    expect(isEligibleTimedAttempt(summary, 8)).toBe(true);
+  });
+});
+
+describe('sessionRecorded reducer (plannedDurationMs eligibility)', () => {
+  it('records plannedDurationMs for a completed timed sesh', () => {
+    const summary = makeSummary({
+      trick: { id: 'whirlwind', name: 'Whirlwind' },
+      plan: { kind: 'timed', durationMs: 300_000 },
+      durationMs: 300_000,
+      landings: landings(8),
+    });
+    const result = practiceHistoryReducer({ sessions: [] }, { type: 'sessionRecorded', summary });
+
+    expect(result.sessions[0]?.plannedDurationMs).toBe(300_000);
+  });
+
+  it('omits plannedDurationMs for an early-ended timed sesh that did not beat the standing best', () => {
+    const priorBest = makeSummary({
+      trick: { id: 'whirlwind', name: 'Whirlwind' },
+      plan: { kind: 'timed', durationMs: 300_000 },
+      durationMs: 300_000,
+      landings: landings(8),
+      startedAt: 1_000,
+      endedAt: 301_000,
+    });
+    const afterFirst = practiceHistoryReducer({ sessions: [] }, { type: 'sessionRecorded', summary: priorBest });
+
+    const earlyEnded = makeSummary({
+      trick: { id: 'whirlwind', name: 'Whirlwind' },
+      plan: { kind: 'timed', durationMs: 300_000 },
+      durationMs: 243_000,
+      landings: landings(6),
+      startedAt: 500_000,
+      endedAt: 743_000,
+    });
+    const result = practiceHistoryReducer(afterFirst, { type: 'sessionRecorded', summary: earlyEnded });
+
+    expect(result.sessions[1]?.plannedDurationMs).toBeUndefined();
+    expect(getPersonalBest(result.sessions, 'whirlwind', 300_000)).toBe(8);
+  });
+
+  it('records plannedDurationMs for an early-ended timed sesh that already beat the standing best', () => {
+    const priorBest = makeSummary({
+      trick: { id: 'whirlwind', name: 'Whirlwind' },
+      plan: { kind: 'timed', durationMs: 300_000 },
+      durationMs: 300_000,
+      landings: landings(8),
+      startedAt: 1_000,
+      endedAt: 301_000,
+    });
+    const afterFirst = practiceHistoryReducer({ sessions: [] }, { type: 'sessionRecorded', summary: priorBest });
+
+    const earlyEndedBeatsBest = makeSummary({
+      trick: { id: 'whirlwind', name: 'Whirlwind' },
+      plan: { kind: 'timed', durationMs: 300_000 },
+      durationMs: 243_000,
+      landings: landings(9),
+      startedAt: 500_000,
+      endedAt: 743_000,
+    });
+    const result = practiceHistoryReducer(afterFirst, {
+      type: 'sessionRecorded',
+      summary: earlyEndedBeatsBest,
+    });
+
+    expect(result.sessions[1]?.plannedDurationMs).toBe(300_000);
+    expect(getPersonalBest(result.sessions, 'whirlwind', 300_000)).toBe(9);
+  });
+});
+
+describe('getPersonalBest', () => {
+  const sessions: readonly PracticeSessionRecord[] = [
+    { ...BIG_CUP_FIRST, plannedDurationMs: 300_000 },
+    { ...BIG_CUP_SECOND, plannedDurationMs: 300_000, laceCount: 6 },
+    { ...AIRPLANE_ZERO_LACES, plannedDurationMs: undefined },
+    { ...BIG_CUP_FIRST, id: 'big-cup-3', plannedDurationMs: 600_000, laceCount: 20 },
+  ];
+
+  it('returns the max lace count matching the exact trick and planned duration', () => {
+    expect(getPersonalBest(sessions, 'big-cup', 300_000)).toBe(8);
+  });
+
+  it('ignores sessions with a different planned duration', () => {
+    expect(getPersonalBest(sessions, 'big-cup', 600_000)).toBe(20);
+  });
+
+  it('ignores open-ended (undefined plannedDurationMs) sessions', () => {
+    expect(getPersonalBest(sessions, 'airplane', 90_000)).toBeUndefined();
+  });
+
+  it('returns undefined when there is no match', () => {
+    expect(getPersonalBest(sessions, 'big-cup', 120_000)).toBeUndefined();
+    expect(getPersonalBest(sessions, 'unknown-trick', 300_000)).toBeUndefined();
   });
 });

@@ -50,6 +50,31 @@ describe('practice history persistence', () => {
     });
   });
 
+  it('accepts pre-existing records that predate plannedDurationMs (backward compatibility)', () => {
+    const serialized = JSON.stringify({
+      version: PRACTICE_HISTORY_SCHEMA_VERSION,
+      sessions: HISTORY.sessions,
+    });
+
+    expect(deserializePracticeHistory(serialized)).toEqual(HISTORY);
+  });
+
+  it('accepts records with a valid plannedDurationMs and rejects an invalid one', () => {
+    const withPlannedDuration = {
+      version: PRACTICE_HISTORY_SCHEMA_VERSION,
+      sessions: [{ ...HISTORY.sessions[0], plannedDurationMs: 300_000 }],
+    };
+    expect(deserializePracticeHistory(JSON.stringify(withPlannedDuration))).toEqual({
+      sessions: withPlannedDuration.sessions,
+    });
+
+    const withInvalidPlannedDuration = {
+      version: PRACTICE_HISTORY_SCHEMA_VERSION,
+      sessions: [{ ...HISTORY.sessions[0], plannedDurationMs: 0 }],
+    };
+    expect(deserializePracticeHistory(JSON.stringify(withInvalidPlannedDuration))).toBeUndefined();
+  });
+
   it('uses empty history when storage has no document', async () => {
     await expect(loadPracticeHistory(createStorage())).resolves.toEqual({
       status: 'empty',

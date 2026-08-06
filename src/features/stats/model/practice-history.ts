@@ -8,6 +8,9 @@ export interface PracticeSessionRecord {
   readonly completedAt: number;
   readonly durationMs: number;
   readonly laceCount: number;
+  // Set only when this session is a comparable timed attempt (see isEligibleTimedAttempt);
+  // absent for open-ended seshes and for timed seshes that don't qualify.
+  readonly plannedDurationMs?: number;
 }
 
 export interface PracticeHistory {
@@ -18,7 +21,7 @@ export const INITIAL_PRACTICE_HISTORY: PracticeHistory = { sessions: [] };
 
 export type PracticeHistoryAction =
   | { readonly type: 'historyRestored'; readonly history: PracticeHistory }
-  | { readonly type: 'sessionRecorded'; readonly session: PracticeSessionRecord };
+  | { readonly type: 'sessionRecorded'; readonly summary: SeshSummary };
 
 export function practiceHistoryReducer(
   state: PracticeHistory,
@@ -27,14 +30,34 @@ export function practiceHistoryReducer(
   switch (action.type) {
     case 'historyRestored':
       return action.history;
-    case 'sessionRecorded':
-      return state.sessions.some((session) => session.id === action.session.id)
+    case 'sessionRecorded': {
+      const previousBest =
+        action.summary.plan.kind === 'timed'
+          ? getPersonalBest(state.sessions, action.summary.trick.id, action.summary.plan.durationMs)
+          : undefined;
+      const session = createPracticeSessionRecord(action.summary, previousBest);
+      return state.sessions.some((existing) => existing.id === session.id)
         ? state
-        : { sessions: [...state.sessions, action.session] };
+        : { sessions: [...state.sessions, session] };
+    }
   }
 }
 
-export function createPracticeSessionRecord(summary: SeshSummary): PracticeSessionRecord {
+// A timed sesh only counts as a comparable attempt at its planned duration if it either ran the
+// full duration, or the user had already beaten the standing best before ending early — an early
+// stop shouldn't erase a genuine achievement, but it also shouldn't let an arbitrary short attempt
+// become (or beat) a best on its own.
+export function isEligibleTimedAttempt(summary: SeshSummary, previousBest: number | undefined): boolean {
+  if (summary.plan.kind !== 'timed') return false;
+  const reachedFullDuration = summary.durationMs >= summary.plan.durationMs;
+  const exceededPreviousBest = previousBest !== undefined && summary.landings.length > previousBest;
+  return reachedFullDuration || exceededPreviousBest;
+}
+
+export function createPracticeSessionRecord(
+  summary: SeshSummary,
+  previousBest: number | undefined,
+): PracticeSessionRecord {
   return {
     id: `${summary.startedAt}:${summary.endedAt}:${summary.trick.id}`,
     trickId: summary.trick.id,
@@ -43,7 +66,24 @@ export function createPracticeSessionRecord(summary: SeshSummary): PracticeSessi
     completedAt: summary.endedAt,
     durationMs: summary.durationMs,
     laceCount: summary.landings.length,
+    plannedDurationMs:
+      summary.plan.kind === 'timed' && isEligibleTimedAttempt(summary, previousBest)
+        ? summary.plan.durationMs
+        : undefined,
   };
+}
+
+export function getPersonalBest(
+  sessions: readonly PracticeSessionRecord[],
+  trickId: string,
+  plannedDurationMs: number,
+): number | undefined {
+  return sessions
+    .filter((session) => session.trickId === trickId && session.plannedDurationMs === plannedDurationMs)
+    .reduce<number | undefined>(
+      (best, session) => (best === undefined ? session.laceCount : Math.max(best, session.laceCount)),
+      undefined,
+    );
 }
 
 export interface TrickPracticeStats {

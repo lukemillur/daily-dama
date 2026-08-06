@@ -15,7 +15,6 @@ import { StyleSheet, Text, View } from 'react-native';
 import { AppColors } from '@/constants/theme';
 import type { SeshSummary } from '@/features/sesh/model/sesh';
 import {
-  createPracticeSessionRecord,
   INITIAL_PRACTICE_HISTORY,
   type PracticeHistory,
   practiceHistoryReducer,
@@ -76,7 +75,7 @@ export function PracticeHistoryProvider({ children }: PropsWithChildren) {
   }, [enqueueWrite, hasHydrated, history]);
 
   const recordCompletedSesh = useCallback((summary: SeshSummary) => {
-    dispatch({ type: 'sessionRecorded', session: createPracticeSessionRecord(summary) });
+    dispatch({ type: 'sessionRecorded', summary });
   }, []);
 
   const actions = useMemo(() => ({ recordCompletedSesh }), [recordCompletedSesh]);

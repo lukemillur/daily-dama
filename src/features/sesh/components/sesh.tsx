@@ -22,7 +22,8 @@ import {
   type SeshSummary,
 } from '@/features/sesh/model/sesh';
 import type { PracticeTrick } from '@/features/tricks/model/trick';
-import { usePracticeHistoryActions } from '@/features/stats/state/practice-history-provider';
+import { getPersonalBest, type PracticeSessionRecord } from '@/features/stats/model/practice-history';
+import { usePracticeHistory, usePracticeHistoryActions } from '@/features/stats/state/practice-history-provider';
 import { useUserProfileActions } from '@/features/profile/state/user-profile-provider';
 
 interface SeshProps {
@@ -34,9 +35,12 @@ interface SeshProps {
 
 export function Sesh({ availableTricks, initialPlan, preferredTrickId, selectedTrickIds }: SeshProps) {
   const [state, dispatch] = useReducer(seshReducer, INITIAL_SESH_STATE);
+  const { sessions } = usePracticeHistory();
   const { recordCompletedSesh } = usePracticeHistoryActions();
   const { setLastSesh } = useUserProfileActions();
   const recordedSummaryId = useRef<string | undefined>(undefined);
+  const [personalBest, setPersonalBest] = useState<number | undefined>(undefined);
+  const [liveChallengeEnabled, setLiveChallengeEnabled] = useState(false);
   const practiceTricks = useMemo(
     () => selectSeshPracticeTricks(availableTricks, selectedTrickIds, preferredTrickId),
     [availableTricks, preferredTrickId, selectedTrickIds],
@@ -65,7 +69,10 @@ export function Sesh({ availableTricks, initialPlan, preferredTrickId, selectedT
         initialPlan={initialPlan}
         preferredTrickId={validatedPreferredTrickId}
         tricks={practiceTricks}
-        onSelect={(trick, plan) => {
+        sessions={sessions}
+        onSelect={(trick, plan, best, liveChallenge) => {
+          setPersonalBest(best);
+          setLiveChallengeEnabled(liveChallenge);
           dispatch({ type: 'trickSelected', trick, plan });
           setLastSesh(trick.id, plan);
         }}
@@ -92,6 +99,8 @@ export function Sesh({ availableTricks, initialPlan, preferredTrickId, selectedT
         landings={state.landings}
         pausedAt={state.pausedAt}
         pausedDurationMs={state.pausedDurationMs}
+        personalBest={personalBest}
+        liveChallengeEnabled={liveChallengeEnabled}
         onLaced={() => dispatch({ type: 'trickLaced', now: Date.now() })}
         onPause={() => dispatch({ type: 'seshPaused', now: Date.now() })}
         onResume={() => dispatch({ type: 'seshResumed', now: Date.now() })}
@@ -104,8 +113,15 @@ export function Sesh({ availableTricks, initialPlan, preferredTrickId, selectedT
   return (
     <CompletedSesh
       summary={state.summary}
+      personalBest={personalBest}
       onReset={() => dispatch({ type: 'seshReset' })}
       onRepeat={() => {
+        const best =
+          state.summary.plan.kind === 'timed'
+            ? getPersonalBest(sessions, state.summary.trick.id, state.summary.plan.durationMs)
+            : undefined;
+        setPersonalBest(best);
+        setLiveChallengeEnabled(false);
         dispatch({ type: 'trickSelected', trick: state.summary.trick, plan: state.summary.plan });
         setLastSesh(state.summary.trick.id, state.summary.plan);
       }}
@@ -132,17 +148,25 @@ function TrickPicker({
   initialPlan,
   preferredTrickId,
   tricks,
+  sessions,
   onSelect,
 }: {
   readonly initialPlan?: SeshPlan;
   readonly preferredTrickId?: string;
   readonly tricks: readonly PracticeTrick[];
-  readonly onSelect: (trick: PracticeTrick, plan: SeshPlan) => void;
+  readonly sessions: readonly PracticeSessionRecord[];
+  readonly onSelect: (
+    trick: PracticeTrick,
+    plan: SeshPlan,
+    personalBest: number | undefined,
+    liveChallengeEnabled: boolean,
+  ) => void;
 }) {
   const [planKind, setPlanKind] = useState<SeshPlan['kind']>(initialPlan?.kind ?? 'openEnded');
   const [durationMinutes, setDurationMinutes] = useState(
     initialPlan?.kind === 'timed' ? String(initialPlan.durationMs / 60_000) : '5',
   );
+  const [liveChallengeEnabled, setLiveChallengeEnabled] = useState(false);
   const parsedDuration = Number(durationMinutes);
   const hasValidDuration = isValidTimedSeshMinutes(parsedDuration);
   const selectedPlan = planKind === 'openEnded'
@@ -150,6 +174,17 @@ function TrickPicker({
     : hasValidDuration
       ? createTimedSeshPlan(parsedDuration)
       : undefined;
+
+  const personalBestsByTrickId = useMemo(() => {
+    const bests = new Map<string, number>();
+    if (selectedPlan?.kind !== 'timed') return bests;
+    tricks.forEach((trick) => {
+      const best = getPersonalBest(sessions, trick.id, selectedPlan.durationMs);
+      if (best !== undefined) bests.set(trick.id, best);
+    });
+    return bests;
+  }, [selectedPlan, sessions, tricks]);
+  const hasAnyPersonalBest = personalBestsByTrickId.size > 0;
 
   return (
     <ScrollArea contentContainerStyle={{ padding: 24, paddingBottom: 140 }}>
@@ -193,9 +228,33 @@ function TrickPicker({
             </DurationHint>
           </DurationField>
         ) : null}
+        {hasAnyPersonalBest ? (
+          <ChallengeField>
+            <PlanLabel>When you beat your best</PlanLabel>
+            <ChallengeChoices>
+              <ChallengeChoice
+                accessibilityRole="radio"
+                accessibilityState={{ checked: !liveChallengeEnabled }}
+                $selected={!liveChallengeEnabled}
+                onPress={() => setLiveChallengeEnabled(false)}>
+                <ChallengeChoiceTitle $selected={!liveChallengeEnabled}>Reveal at the end</ChallengeChoiceTitle>
+                <ChallengeChoiceCopy $selected={!liveChallengeEnabled}>See how you did once the sesh is over.</ChallengeChoiceCopy>
+              </ChallengeChoice>
+              <ChallengeChoice
+                accessibilityRole="radio"
+                accessibilityState={{ checked: liveChallengeEnabled }}
+                $selected={liveChallengeEnabled}
+                onPress={() => setLiveChallengeEnabled(true)}>
+                <ChallengeChoiceTitle $selected={liveChallengeEnabled}>Show live progress</ChallengeChoiceTitle>
+                <ChallengeChoiceCopy $selected={liveChallengeEnabled}>Track it against your best as you go.</ChallengeChoiceCopy>
+              </ChallengeChoice>
+            </ChallengeChoices>
+          </ChallengeField>
+        ) : null}
         <TrickChoices>
           {tricks.map((trick) => {
             const isPreferred = trick.id === preferredTrickId;
+            const personalBest = personalBestsByTrickId.get(trick.id);
             return <TrickChoice
               key={trick.id}
               accessibilityRole="button"
@@ -203,12 +262,15 @@ function TrickPicker({
               accessibilityState={{ disabled: selectedPlan === undefined }}
               disabled={selectedPlan === undefined}
               $disabled={selectedPlan === undefined}
-              onPress={() => selectedPlan && onSelect(trick, selectedPlan)}>
+              onPress={() => selectedPlan && onSelect(trick, selectedPlan, personalBest, liveChallengeEnabled)}>
               <ChoiceMeta $preferred={isPreferred}>
                 {isPreferred ? `Up next · ${trick.descriptor ?? 'Practice trick'}` : trick.descriptor ?? 'Practice trick'}
               </ChoiceMeta>
               <ChoiceName>{trick.name}</ChoiceName>
               <SequenceSteps trick={trick} compact />
+              {personalBest !== undefined ? (
+                <ChoiceBest>Best at {durationMinutes}:00 — {personalBest} {personalBest === 1 ? 'lace' : 'laces'}</ChoiceBest>
+              ) : null}
               <ChoiceArrow>→</ChoiceArrow>
             </TrickChoice>;
           })}
@@ -263,6 +325,8 @@ function ActiveSesh({
   landings,
   pausedAt,
   pausedDurationMs,
+  personalBest,
+  liveChallengeEnabled,
   onLaced,
   onPause,
   onResume,
@@ -275,12 +339,16 @@ function ActiveSesh({
   readonly landings: readonly Landing[];
   readonly pausedAt?: number;
   readonly pausedDurationMs: number;
+  readonly personalBest?: number;
+  readonly liveChallengeEnabled: boolean;
   readonly onLaced: () => void;
   readonly onPause: () => void;
   readonly onResume: () => void;
   readonly onEnd: () => void;
   readonly onTimerElapsed: () => void;
 }) {
+  const showChallenge = liveChallengeEnabled && personalBest !== undefined;
+  const hasBeatenBest = showChallenge && landings.length > personalBest;
   const isPaused = pausedAt !== undefined;
   const now = useNow(startedAt, isPaused);
   const totalPausedMs = pausedDurationMs + (isPaused ? Math.max(0, now - pausedAt) : 0);
@@ -317,6 +385,11 @@ function ActiveSesh({
           <LacedButtonText>Laced.</LacedButtonText>
           <LacedCount>{landings.length}</LacedCount>
         </LacedButton>
+        {showChallenge ? (
+          <ChallengeStatus $beaten={hasBeatenBest}>
+            {hasBeatenBest ? `New best — past ${personalBest}!` : `${landings.length} of ${personalBest} to beat your best`}
+          </ChallengeStatus>
+        ) : null}
         <LandingHistory landings={landings} />
         <SecondaryActions>
           <PauseButton
@@ -365,15 +438,26 @@ function LandingHistory({ landings }: { readonly landings: readonly Landing[] })
 
 function CompletedSesh({
   summary,
+  personalBest,
   onReset,
   onRepeat,
 }: {
   readonly summary: SeshSummary;
+  readonly personalBest?: number;
   readonly onReset: () => void;
   readonly onRepeat: () => void;
 }) {
   const average = getAverageInterval(summary.landings);
   const fastest = getFastestInterval(summary.landings);
+  const laceCount = summary.landings.length;
+  const challengeResult =
+    personalBest === undefined
+      ? undefined
+      : laceCount > personalBest
+        ? { $beaten: true as const, text: `New best! Previous best was ${personalBest}.` }
+        : laceCount === personalBest
+          ? { $beaten: false as const, text: `Tied your best of ${personalBest}.` }
+          : { $beaten: false as const, text: `${personalBest - laceCount} short of your best of ${personalBest}.` };
 
   return (
     <ScrollArea contentContainerStyle={{ padding: 24, paddingBottom: 140 }}>
@@ -381,6 +465,9 @@ function CompletedSesh({
         <Eyebrow>Sesh complete</Eyebrow>
         <DisplayTitle>{summary.trick.name}</DisplayTitle>
         <SequenceSteps trick={summary.trick} />
+        {challengeResult ? (
+          <ResultBanner $beaten={challengeResult.$beaten}>{challengeResult.text}</ResultBanner>
+        ) : null}
         <SummaryGrid>
           <Metric><MetricValue>{formatDuration(summary.durationMs)}</MetricValue><MetricLabel>Total time</MetricLabel></Metric>
           <Metric><MetricValue>{summary.landings.length}</MetricValue><MetricLabel>Laces</MetricLabel></Metric>
@@ -451,10 +538,16 @@ const DurationField = styled.View`margin-top: 16px;`;
 const DurationLabel = styled.Text`color: ${AppColors.ink}; font-size: 12px; font-weight: 900; margin-bottom: 6px; text-transform: uppercase;`;
 const DurationInput = styled(TextInput)`height: 54px; width: 110px; background-color: ${AppColors.paper}; border: 2px solid ${AppColors.ink}; color: ${AppColors.ink}; font-size: 24px; font-weight: 900; padding: 8px 12px;`;
 const DurationHint = styled.Text<{ $invalid: boolean }>`color: ${({ $invalid }) => ($invalid ? AppColors.red : AppColors.textMuted)}; font-size: 12px; font-weight: 700; margin-top: 7px;`;
+const ChallengeField = styled.View`margin-top: 16px;`;
+const ChallengeChoices = styled.View`flex-direction: row; gap: 10px; margin-top: 10px;`;
+const ChallengeChoice = styled(Pressable)<{ $selected: boolean }>`flex: 1; min-height: 82px; background-color: ${({ $selected }) => ($selected ? AppColors.ink : AppColors.paper)}; border: 2px solid ${AppColors.ink}; padding: 15px;`;
+const ChallengeChoiceTitle = styled.Text<{ $selected: boolean }>`color: ${({ $selected }) => ($selected ? AppColors.yellow : AppColors.ink)}; font-size: 15px; font-weight: 900;`;
+const ChallengeChoiceCopy = styled.Text<{ $selected: boolean }>`color: ${({ $selected }) => ($selected ? AppColors.cream : AppColors.inkSoft)}; font-size: 12px; font-weight: 600; line-height: 17px; margin-top: 5px;`;
 const TrickChoices = styled.View`gap: 10px; margin-top: 28px;`;
 const TrickChoice = styled(Pressable)<{ $disabled: boolean }>`min-height: 82px; justify-content: center; background-color: #f8f1dd; border: 2px solid #18382e; opacity: ${({ $disabled }) => ($disabled ? 0.45 : 1)}; padding: 15px 58px 15px 18px; position: relative;`;
 const ChoiceMeta = styled.Text<{ $preferred: boolean }>`color: ${({ $preferred }) => ($preferred ? AppColors.red : AppColors.textMuted)}; font-size: 11px; font-weight: 900; letter-spacing: 1px; text-transform: uppercase;`;
 const ChoiceName = styled.Text`color: ${AppColors.ink}; font-size: 20px; font-weight: 800; margin-top: 5px;`;
+const ChoiceBest = styled.Text`color: ${AppColors.red}; font-size: 12px; font-weight: 800; margin-top: 6px;`;
 const CompactSequence = styled.Text`color: ${AppColors.textMuted}; font-size: 11px; font-weight: 700; line-height: 16px; margin-top: 5px;`;
 const ChoiceArrow = styled.Text`position: absolute; right: 20px; color: ${AppColors.ink}; font-size: 28px; font-weight: 900;`;
 const CountdownTrick = styled.Text`max-width: 560px; color: #18382e; font-size: 26px; font-weight: 900; text-align: center;`;
@@ -470,6 +563,7 @@ const Timer = styled.Text`color: #18382e; font-size: 78px; font-variant: tabular
 const LacedButton = styled(Pressable)<{ $disabled: boolean }>`width: 100%; min-height: 108px; flex-direction: row; align-items: center; justify-content: space-between; background-color: #d84929; opacity: ${({ $disabled }) => ($disabled ? 0.45 : 1)}; padding: 22px 26px; border-radius: 6px;`;
 const LacedButtonText = styled.Text`color: #fff8e5; font-size: 34px; font-weight: 900;`;
 const LacedCount = styled.Text`color: #f4c94d; font-size: 40px; font-weight: 900;`;
+const ChallengeStatus = styled.Text<{ $beaten: boolean }>`width: 100%; text-align: center; margin-top: 12px; color: ${({ $beaten }) => ($beaten ? AppColors.red : AppColors.ink)}; font-size: 15px; font-weight: 900;`;
 const History = styled.View`width: 100%; margin-top: 28px;`;
 const HistoryTitle = styled.Text`color: #18382e; font-size: 14px; font-weight: 900; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 8px;`;
 const HistoryEmpty = styled.Text`width: 100%; color: #71807a; font-size: 15px; text-align: center; padding: 30px 0 12px;`;
@@ -482,6 +576,7 @@ const PauseButton = styled(Pressable)`min-height: 48px; flex: 1; align-items: ce
 const PauseButtonText = styled.Text`color: #f4c94d; font-size: 15px; font-weight: 900;`;
 const EndButton = styled(Pressable)`min-height: 48px; flex: 1; align-items: center; justify-content: center; padding: 12px 24px; border: 2px solid #18382e; border-radius: 5px;`;
 const EndButtonText = styled.Text`color: #18382e; font-size: 15px; font-weight: 900;`;
+const ResultBanner = styled.Text<{ $beaten: boolean }>`width: 100%; text-align: center; margin-top: 18px; padding: 12px 16px; background-color: ${({ $beaten }) => ($beaten ? '#e5edcf' : '#f8f1dd')}; border-left-width: 5px; border-left-color: ${({ $beaten }) => ($beaten ? AppColors.red : AppColors.ink)}; color: ${AppColors.ink}; font-size: 15px; font-weight: 900;`;
 const SummaryGrid = styled.View`width: 100%; flex-direction: row; flex-wrap: wrap; gap: 10px; margin-top: 28px;`;
 const Metric = styled.View`min-width: 46%; flex-grow: 1; background-color: #f8f1dd; border-top-width: 5px; border-top-color: #d84929; padding: 18px;`;
 const MetricValue = styled.Text`color: #18382e; font-size: 30px; font-variant: tabular-nums; font-weight: 900;`;
