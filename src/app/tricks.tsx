@@ -17,7 +17,10 @@ import {
   useCustomTrickActions,
   useCustomTricks,
 } from '@/features/custom-tricks/state/custom-trick-provider';
-import { useUserProfile, useUserProfileActions } from '@/features/profile/state/user-profile-provider';
+import {
+  useUserProfile,
+  useUserProfileActions,
+} from '@/features/profile/state/user-profile-provider';
 import { TrickDirectory } from '@/features/tricks/components/trick-directory';
 import { KENDAMA_KENTEI_TRICKS } from '@/features/tricks/data/kendama-kentei-tricks';
 import { createProfileDirectoryTricks } from '@/features/tricks/model/trick-directory';
@@ -154,8 +157,13 @@ function CustomTrickForm({
 }) {
   const { addCustomTrick, updateCustomTrick } = useCustomTrickActions();
   const { tricks: customTricks } = useCustomTricks();
+  const { selectedTrickIds } = useUserProfile();
+  const { toggleSelectedTrick, removeSelectedTrick } = useUserProfileActions();
   const [name, setName] = useState(initialTrick?.name ?? '');
   const [kenteiRank, setKenteiRank] = useState<number | undefined>(initialTrick?.kenteiRank);
+  const [addToFocusedTricks, setAddToFocusedTricks] = useState(
+    initialTrick ? selectedTrickIds.includes(initialTrick.id) : true,
+  );
   const [steps, setSteps] = useState(
     initialTrick?.kind === 'sequence'
       ? [...initialTrick.steps]
@@ -220,7 +228,13 @@ function CustomTrickForm({
     const result = initialTrick
       ? updateCustomTrick(initialTrick.id, draft)
       : addCustomTrick(draft);
-    if (result.status === 'saved') onSaved();
+    if (result.status !== 'saved') return;
+
+    const isCurrentlyFocused = selectedTrickIds.includes(result.trick.id);
+    if (addToFocusedTricks && !isCurrentlyFocused) toggleSelectedTrick(result.trick.id);
+    else if (!addToFocusedTricks && isCurrentlyFocused) removeSelectedTrick(result.trick.id);
+
+    onSaved();
   };
 
   return (
@@ -337,6 +351,15 @@ function CustomTrickForm({
           {errors.kenteiRank ? <ErrorText>{errors.kenteiRank}</ErrorText> : null}
         </Field>
 
+        <Field>
+          <FieldLabel>Focused tricks</FieldLabel>
+          <FieldHint>Focused tricks appear in your Sesh practice list.</FieldHint>
+          <FocusedTrickToggle
+            addToFocusedTricks={addToFocusedTricks}
+            onToggle={() => setAddToFocusedTricks((current) => !current)}
+          />
+        </Field>
+
         <FormActions>
           <Button fill disabled={validation.status === 'invalid'} onPress={save}>
             {initialTrick ? 'Save changes' : 'Save custom trick'}
@@ -364,20 +387,20 @@ function KenteiRankPicker({
 }) {
   return (
     <RankPicker accessibilityRole="radiogroup">
-      <UnrankedChoice
+      <ToggleRow
         $selected={selectedRank === undefined}
         accessibilityLabel="Unranked, place in the Custom section"
         accessibilityRole="radio"
         accessibilityState={{ checked: selectedRank === undefined }}
         onPress={() => onSelect(undefined)}>
-        <UnrankedMark $selected={selectedRank === undefined}>
+        <ToggleMark $selected={selectedRank === undefined}>
           {selectedRank === undefined ? '✓' : '—'}
-        </UnrankedMark>
-        <UnrankedIdentity>
-          <UnrankedTitle $selected={selectedRank === undefined}>Unranked</UnrankedTitle>
-          <UnrankedCopy $selected={selectedRank === undefined}>Keep it in your own progression</UnrankedCopy>
-        </UnrankedIdentity>
-      </UnrankedChoice>
+        </ToggleMark>
+        <ToggleIdentity>
+          <ToggleTitle $selected={selectedRank === undefined}>Unranked</ToggleTitle>
+          <ToggleCopy $selected={selectedRank === undefined}>Keep it in your own progression</ToggleCopy>
+        </ToggleIdentity>
+      </ToggleRow>
       <RankGroups>
         {RANK_GROUPS.map((group) => (
           <RankGroup key={group.label}>
@@ -410,6 +433,39 @@ function KenteiRankPicker({
         ))}
       </RankGroups>
     </RankPicker>
+  );
+}
+
+function FocusedTrickToggle({
+  addToFocusedTricks,
+  onToggle,
+}: {
+  readonly addToFocusedTricks: boolean;
+  readonly onToggle: () => void;
+}) {
+  return (
+    <FocusedToggleRow
+      $selected={addToFocusedTricks}
+      accessibilityLabel={
+        addToFocusedTricks
+          ? 'Added to focused tricks. Double tap to remove.'
+          : 'Not added to focused tricks. Double tap to add.'
+      }
+      accessibilityRole="switch"
+      accessibilityState={{ checked: addToFocusedTricks }}
+      onPress={onToggle}>
+      <ToggleMark $selected={addToFocusedTricks}>{addToFocusedTricks ? '✓' : '—'}</ToggleMark>
+      <ToggleIdentity>
+        <ToggleTitle $selected={addToFocusedTricks}>
+          {addToFocusedTricks ? 'Added to focused tricks' : 'Not in focused tricks'}
+        </ToggleTitle>
+        <ToggleCopy $selected={addToFocusedTricks}>
+          {addToFocusedTricks
+            ? 'It will show up in your Sesh practice list.'
+            : 'Keep it in your library without queuing it for practice.'}
+        </ToggleCopy>
+      </ToggleIdentity>
+    </FocusedToggleRow>
   );
 }
 
@@ -468,11 +524,12 @@ const FieldHint = styled.Text`color: ${AppColors.textMuted}; font-size: 12px; fo
 const FieldInput = styled(TextInput)`min-height: 56px; background-color: ${AppColors.paper}; border: 2px solid ${AppColors.ink}; color: ${AppColors.ink}; font-size: 18px; font-weight: 800; margin-top: 8px; padding: 12px 14px;`;
 const ErrorText = styled.Text`color: ${AppColors.red}; font-size: 12px; font-weight: 800; margin-top: 7px;`;
 const RankPicker = styled.View`gap: 14px; margin-top: 12px;`;
-const UnrankedChoice = styled(Pressable)<{ readonly $selected: boolean }>`min-height: 58px; flex-direction: row; align-items: center; gap: 12px; background-color: ${({ $selected }) => $selected ? AppColors.ink : AppColors.paper}; border: 2px solid ${AppColors.ink}; padding: 10px 13px;`;
-const UnrankedMark = styled.Text<{ readonly $selected: boolean }>`width: 24px; color: ${({ $selected }) => $selected ? AppColors.yellow : AppColors.red}; font-size: 18px; font-weight: 900; text-align: center;`;
-const UnrankedIdentity = styled.View`flex: 1;`;
-const UnrankedTitle = styled.Text<{ readonly $selected: boolean }>`color: ${({ $selected }) => $selected ? AppColors.cream : AppColors.ink}; font-size: 15px; font-weight: 900;`;
-const UnrankedCopy = styled.Text<{ readonly $selected: boolean }>`color: ${({ $selected }) => $selected ? '#d8dfcb' : AppColors.textMuted}; font-size: 11px; font-weight: 700; margin-top: 2px;`;
+const ToggleRow = styled(Pressable)<{ readonly $selected: boolean }>`min-height: 58px; flex-direction: row; align-items: center; gap: 12px; background-color: ${({ $selected }) => $selected ? AppColors.ink : AppColors.paper}; border: 2px solid ${AppColors.ink}; padding: 10px 13px;`;
+const FocusedToggleRow = styled(ToggleRow)`margin-top: 12px;`;
+const ToggleMark = styled.Text<{ readonly $selected: boolean }>`width: 24px; color: ${({ $selected }) => $selected ? AppColors.yellow : AppColors.red}; font-size: 18px; font-weight: 900; text-align: center;`;
+const ToggleIdentity = styled.View`flex: 1;`;
+const ToggleTitle = styled.Text<{ readonly $selected: boolean }>`color: ${({ $selected }) => $selected ? AppColors.cream : AppColors.ink}; font-size: 15px; font-weight: 900;`;
+const ToggleCopy = styled.Text<{ readonly $selected: boolean }>`color: ${({ $selected }) => $selected ? '#d8dfcb' : AppColors.textMuted}; font-size: 11px; font-weight: 700; margin-top: 2px;`;
 const RankGroups = styled.View`flex-direction: row; flex-wrap: wrap; gap: 10px;`;
 const RankGroup = styled.View`min-width: 140px; flex: 1;`;
 const RankGroupLabel = styled.Text`color: ${AppColors.ink}; font-size: 10px; font-weight: 900; letter-spacing: 1px; margin-bottom: 5px; text-transform: uppercase;`;
