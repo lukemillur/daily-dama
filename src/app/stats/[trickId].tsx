@@ -63,8 +63,15 @@ export default function TrickDetailScreen() {
               <BestList>
                 {bestsByDuration.map(({ durationMs, best }) => (
                   <BestRow key={durationMs}>
-                    <BestDuration>{formatDuration(durationMs)}</BestDuration>
-                    <BestValue>{best} {best === 1 ? 'lace' : 'laces'}</BestValue>
+                    <BestRowInfo>
+                      <BestDuration>{formatDuration(durationMs)}</BestDuration>
+                      <BestValue>{best} {best === 1 ? 'lace' : 'laces'}</BestValue>
+                    </BestRowInfo>
+                    <Link
+                      href={{ pathname: '/sesh', params: { trickId, plannedDurationMs: durationMs } }}
+                      asChild>
+                      <ChallengeButton accessibilityRole="link">Challenge</ChallengeButton>
+                    </Link>
                   </BestRow>
                 ))}
               </BestList>
@@ -98,6 +105,8 @@ const Title = styled(DisplayTitle)``;
 const SectionLabel = styled.Text`color: ${AppColors.red}; font-size: 13px; font-weight: 900; letter-spacing: 1.8px; margin: 32px 0 12px; text-transform: uppercase;`;
 const BestList = styled.View`gap: 10px;`;
 const BestRow = styled.View`flex-direction: row; align-items: center; justify-content: space-between; background-color: ${AppColors.ink}; padding: 16px 18px; border-radius: 4px;`;
+const BestRowInfo = styled.View``;
+const ChallengeButton = styled(Button).attrs({ size: 'medium', variant: 'secondary' })`min-height: 40px; padding: 8px 16px;`;
 const BestDuration = styled.Text`color: ${AppColors.cream}; font-size: 15px; font-weight: 800;`;
 const BestValue = styled.Text`color: ${AppColors.yellow}; font-size: 18px; font-weight: 900; font-variant: tabular-nums;`;
 const SessionList = styled.View`gap: 10px;`;

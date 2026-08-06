@@ -10,7 +10,10 @@ import { KENDAMA_KENTEI_TRICKS } from '@/features/tricks/data/kendama-kentei-tri
 import { selectAvailablePracticeTricks } from '@/features/tricks/model/trick-directory';
 
 export default function SeshScreen() {
-  const { trickId: trickIdParam } = useLocalSearchParams<{ trickId?: string | string[] }>();
+  const { trickId: trickIdParam, plannedDurationMs: plannedDurationMsParam } = useLocalSearchParams<{
+    trickId?: string | string[];
+    plannedDurationMs?: string | string[];
+  }>();
   const { lastSesh, selectedTrickIds } = useUserProfile();
   const { tricks: customTricks } = useCustomTricks();
   const availableTricks = useMemo(
@@ -19,11 +22,15 @@ export default function SeshScreen() {
   );
   const preferredTrickId =
     (typeof trickIdParam === 'string' ? trickIdParam : undefined) ?? lastSesh?.trickId;
-  const initialPlan: SeshPlan | undefined = lastSesh
-    ? lastSesh.plan.kind === 'timed'
-      ? createTimedSeshPlan(lastSesh.plan.durationMinutes)
-      : OPEN_ENDED_SESH_PLAN
-    : undefined;
+  const challengeDurationMs =
+    typeof plannedDurationMsParam === 'string' ? Number(plannedDurationMsParam) : undefined;
+  const initialPlan: SeshPlan | undefined = challengeDurationMs
+    ? createTimedSeshPlan(challengeDurationMs / 60_000)
+    : lastSesh
+      ? lastSesh.plan.kind === 'timed'
+        ? createTimedSeshPlan(lastSesh.plan.durationMinutes)
+        : OPEN_ENDED_SESH_PLAN
+      : undefined;
 
   return (
     <Screen edges={['top', 'left', 'right']}>
