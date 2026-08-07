@@ -13,7 +13,29 @@ export default function RootHtml({ children }: PropsWithChildren) {
         <ScrollViewStyleReset />
         <style dangerouslySetInnerHTML={{ __html: 'html,body{background:#f4c94d}' }} />
       </head>
-      <body>{children}</body>
+      <body>
+        {/* Off-screen (not display:none) so Chrome's language detector has real English
+            text to work with on first paint, before the app hydrates. Static routes render
+            little to no visible text until then, which was causing false "Translate from
+            Arabic?" prompts. */}
+        <span
+          style={{
+            position: 'absolute',
+            width: 1,
+            height: 1,
+            padding: 0,
+            margin: -1,
+            overflow: 'hidden',
+            clip: 'rect(0, 0, 0, 0)',
+            whiteSpace: 'nowrap',
+            border: 0,
+          }}
+        >
+          Daily Dama is a kendama trick practice tracker. Log your practice sessions, track
+          which tricks you have landed, and follow your progress over time.
+        </span>
+        {children}
+      </body>
     </html>
   );
 }

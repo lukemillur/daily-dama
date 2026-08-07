@@ -14,8 +14,11 @@ const AccessGateActionsContext = createContext<AccessGateActions | undefined>(un
 
 export function AccessGateProvider({ children }: PropsWithChildren) {
   const configuredPassword = getConfiguredAccessPassword();
-  const [isUnlocked, setIsUnlocked] = useState(configuredPassword === undefined);
-  const [hasHydrated, setHasHydrated] = useState(configuredPassword === undefined);
+  // The gate is skipped entirely in local development so it doesn't get in
+  // the way of iterating; production/preview builds are unaffected.
+  const isGateActive = !__DEV__ && configuredPassword !== undefined;
+  const [isUnlocked, setIsUnlocked] = useState(!isGateActive);
+  const [hasHydrated, setHasHydrated] = useState(!isGateActive);
   const shouldSkipInitialWrite = useRef(true);
   const [enqueueWrite] = useState(() =>
     createWriteQueue(async (unlocked: boolean) => {
@@ -27,7 +30,7 @@ export function AccessGateProvider({ children }: PropsWithChildren) {
   );
 
   useEffect(() => {
-    if (configuredPassword === undefined) return;
+    if (!isGateActive) return;
 
     let isCurrent = true;
 
@@ -45,12 +48,10 @@ export function AccessGateProvider({ children }: PropsWithChildren) {
     return () => {
       isCurrent = false;
     };
-    // Only the presence of a configured password should re-run hydration, not its value.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [configuredPassword !== undefined]);
+  }, [isGateActive]);
 
   useEffect(() => {
-    if (!hasHydrated || configuredPassword === undefined) return;
+    if (!hasHydrated || !isGateActive) return;
 
     if (shouldSkipInitialWrite.current) {
       shouldSkipInitialWrite.current = false;
@@ -58,17 +59,17 @@ export function AccessGateProvider({ children }: PropsWithChildren) {
     }
 
     void enqueueWrite(isUnlocked);
-  }, [configuredPassword, enqueueWrite, hasHydrated, isUnlocked]);
+  }, [enqueueWrite, hasHydrated, isGateActive, isUnlocked]);
 
   const attemptUnlock = useCallback(
     (passwordAttempt: string) => {
-      if (configuredPassword === undefined) return true;
+      if (!isGateActive || configuredPassword === undefined) return true;
       if (!isCorrectAccessPassword(passwordAttempt, configuredPassword)) return false;
 
       setIsUnlocked(true);
       return true;
     },
-    [configuredPassword],
+    [configuredPassword, isGateActive],
   );
 
   const actions = useMemo(() => ({ attemptUnlock }), [attemptUnlock]);

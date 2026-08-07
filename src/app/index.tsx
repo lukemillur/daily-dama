@@ -1,4 +1,6 @@
+import { Link } from 'expo-router';
 import { useMemo, useState } from 'react';
+import { StyleSheet } from 'react-native';
 
 import { Screen } from '@/components/ui/screen';
 import { AppColors } from '@/constants/theme';
@@ -37,6 +39,21 @@ export default function HomeScreen() {
       edges={['top', 'left', 'right']}
       webBottomInset={24}>
       {profile.hasCompletedOnboarding && profile.kenteiRank ? <DailyHome summary={summary} /> : <KenteiOnboarding />}
+      {__DEV__ ? (
+        <Link href="/stats/trick-viz-sandbox" style={styles.devLink}>
+          Trick viz sandbox
+        </Link>
+      ) : null}
     </Screen>
   );
 }
+
+const styles = StyleSheet.create({
+  devLink: {
+    position: 'absolute',
+    bottom: 8,
+    right: 12,
+    fontSize: 11,
+    opacity: 0.5,
+  },
+});
