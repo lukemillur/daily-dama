@@ -2,7 +2,7 @@ import { Matrix4, Vector3 } from 'three';
 
 import { KENDAMA_LAYOUT } from './kendama-geometry';
 import type { Capsule } from './rope';
-import type { Vec3 } from './keyframes';
+import type { Vec3 } from './body';
 
 type CupLayout = {
   center: Vec3;

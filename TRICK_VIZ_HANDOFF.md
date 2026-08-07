@@ -1,6 +1,6 @@
-# Daily Dama — Trick Visualization Handoff (Big Cup)
+# Daily Dama — Trick Visualization Handoff
 
-Written 2026-08-07 so a fresh context can continue the procedural 3D trick visualization without re-deriving the geometry or re-discovering the traps. Big Cup (ozara) renders and animates correctly in the dev sandbox; nothing is wired into the real app UI yet.
+Written so a fresh context can add tricks without re-deriving the geometry or re-discovering the traps. Rewritten 2026-08-07 when the one hand-derived trick (Big Cup) was rebuilt on a reusable vocabulary; five tricks now render in the dev sandbox and nothing is wired into the real app UI yet.
 
 Full project context (state boundaries, product shape, collaboration style) lives in [AGENTS.md](AGENTS.md) — read that first if anything here is ambiguous.
 
@@ -8,41 +8,55 @@ Full project context (state boundaries, product shape, collaboration style) live
 
 Procedural 3D kendama trick visualizations — built from primitives, no licensed or imported assets, keyframed rather than physics-simulated. Rendered with `react-three-fiber` + `expo-gl`. Currently a standalone dev sandbox at `src/app/stats/trick-viz-sandbox.tsx`.
 
-Web is the only surface exercised so far. The `expo-gl` path is **untested on native**.
+Web is the only surface exercised. The `expo-gl` path is **untested on native**.
 
 ## 2. Where things live
 
 ```
 src/features/trick-viz/
   model/
-    kendama-geometry.ts    KENDAMA_LAYOUT — all ken-local dimensions
-    ken-pose.ts            KenPose, localToWorld, localDirectionToWorld, kenEuler
-    keyframes.ts           interpolator, easings, bakeKeyframes
-    framing.ts             viewDirectionFor, frameSubjects
-    rope.ts                verlet string sim + toCurvePoints
-    kendama-colliders.ts   capsule colliders derived from KENDAMA_LAYOUT
-    tricks/bigCup.ts       Big Cup pose, ken keyframes, tama path
+    body.ts               BodyPose (authoring, Euler) / RigidPose (runtime, quaternion)
+    kendama-geometry.ts   KENDAMA_LAYOUT — ken-local dimensions, seatOffset
+    tama-geometry.ts      TAMA_LAYOUT — radius, spike hole, bore depth
+    sockets.ts            KEN_SOCKETS / TAMA_SOCKETS — named contact points
+    mate.ts               the catch solver (cup / spike / stand)
+    ballistics.ts         tossArc, tossPositionAt, swingDirection, TRICK_GRAVITY
+    beats.ts              hang / toss / ride — the reusable blocks
+    timeline.ts           TrickState, buildTrick, concatTricks, sampling, stall check
+    easing.ts             easings, for hand gestures only
+    framing.ts            viewDirectionFor, viewForState, frameSubjects
+    rope.ts               verlet string sim + toCurvePoints
+    kendama-colliders.ts  capsule colliders derived from KENDAMA_LAYOUT
+    tricks/
+      cupCatches.ts       Big cup, Small cup
+      pullUpSpike.ts      Pull up spike, spin and no-spin
+      airplane.ts         Airplane
+      index.ts            TRICK_VISUALIZATIONS, keyed by Kentei trick IDs
   components/
-    Ken.tsx                static primitive ken (was KendamaModel.tsx)
-    Tama.tsx               animated ball
-    String.tsx             rope-driven string
-    TrickScene.tsx         Canvas composition, playback state, camera rig
-src/app/stats/trick-viz-sandbox.tsx   dev-only viewer
+    Ken.tsx               static primitive ken, pose-free
+    Tama.tsx              static primitive tama, pose-free — hole + spin mark
+    String.tsx            rope-driven string
+    TrickScene.tsx        Canvas composition, playback, camera rig
+src/app/stats/trick-viz-sandbox.tsx   dev-only viewer with picker + scrubber
 ```
 
-## 3. The central abstraction: ken pose
+Tests: `mate.test.ts`, `ballistics.test.ts`, `timeline.test.ts`, `tricks/tricks.test.ts` — 67 tests. These are pure functions and they are where the geometry bugs that cost days on Big Cup actually live. Run them before trusting a screenshot.
 
-The load-bearing idea. Previously the model was hardcoded at identity and trick keyframes were authored in world space, so no trick that holds the ken differently could be expressed — which is nearly all of them.
+## 3. The central abstraction: two bodies, one held
 
-`KENDAMA_LAYOUT` is entirely **ken-local**, describing the ken in its neutral pose (spike up, base cup down). A trick declares a `KenPose` and maps landmarks into world space via `localToWorld`. Rotation order is pinned to **`'YZX'`** so a pose reads as named rotations rather than depending on the default `'XYZ'`.
+**At any moment one body is *held* — its motion is authored, it is the player's hand — and the other is *free*, flying ballistically or riding a contact.**
 
-Both the landmark math and the rendered group build their rotation from `kenEuler`, so they cannot drift apart. Keep that property.
+That inversion is the load-bearing idea. The first implementation modelled the ken as a fixed grip with optional position offsets and the tama as a position-only track with no orientation, which made every tama-held trick (airplane, trapeze, lighthouse, frying pan) literally inexpressible. Both bodies now carry the same `BodyPose` and the same local-frame convention.
 
-Naming: **"ken"** means the whole assembly (shaft + serato + cups + spike); **"shaft"** means only the grip below the serato. That is why the topmost point is `spikeTip`, not `shaftTop`. `handle*` was renamed `shaft*`.
+`TrickState` is `{ held, ken, tama, contact }`. A `Beat` consumes one and produces another, so a trick's end state is a valid start state for whatever follows — which is what makes compound Kentei tricks one continuous run rather than clips cut together.
+
+Grips are **authored** as Euler triples in order `'YZX'` (`POSE_ROTATION_ORDER`), because that is how a player describes one. Everything downstream of `toRigid` uses **quaternions**, and interpolation **slerps**. Component-wise Euler lerp was harmless while nothing rotated and is wrong the moment a ken flips.
+
+Naming: **"ken"** is the whole assembly (shaft + serato + cups + spike); **"shaft"** is only the grip below the serato. That is why the topmost point is `spikeTip`, not `shaftTop`.
 
 ## 4. Big Cup geometry — verified, do not re-derive
 
-Pose is `rotation: [0, -Math.PI/2, Math.PI/2]` in `'YZX'`: roll the big cup from +X up to +Y, then swing the base cup round to +Z (facing the player). Net local→world map is **`(x, y, z) → (-z, y, x)`**.
+Pose is `rotation: [0, -Math.PI/2, Math.PI/2]` in `'YZX'`: roll the big cup from +X up to +Y, then swing the base cup round to +Z (facing the player).
 
 | Part | Local axis | World axis |
 |---|---|---|
@@ -52,73 +66,123 @@ Pose is `rotation: [0, -Math.PI/2, Math.PI/2]` in `'YZX'`: roll the big cup from
 | Small cup | −X | **−Y** (down) |
 | String hole | local `[0, 0.08, 0.08]` | **`[-0.08, 0, -0.08]`** |
 
-Two consequences drive everything else. Both were learned by getting them wrong first:
+The net local→world map is **`(x, y, z) → (-z, x, -y)`**. *(A previous version of this document said `(-z, y, x)`; that was wrong, though the named-axis table above was always right. `mate.test.ts` now asserts the table directly, so the two cannot disagree again.)* The big cup mouth therefore lands at world `[0, 0.4, -0.1]`, and the seat at `[0, 0.509, -0.1]`.
 
-1. **The tama cannot enter the big cup from below.** Directly beneath it sit the serato bar and the small cup facing straight down. It must pass the ken's level *beside* it and drop in from above — which is also what real ozara looks like.
-2. **It must swing on the same side the string exits** (world −X here). Rising on the far side drags the string around the outside of the ken. `SWING_SIDE` is derived as `Math.sign(stringHoleWorld[0])`, never hardcoded.
+Two consequences drive everything, both learned by getting them wrong first:
 
-The seat is derived, not placed: the tama (r 0.25) is wider than the cup mouth (r 0.225), so it rests **on the rim** at `sqrt(r_tama² − r_mouth²)` ≈ 0.109 above the mouth plane (`seatOffset` in `kendama-geometry.ts`). It never enters the cup, so it cannot clip through the wall.
+1. **The tama cannot enter the big cup from below.** Directly beneath it sit the serato bar and the small cup facing straight down. It must pass the ken's level *beside* it and drop in from above — which is what real ozara looks like.
+2. **It must swing on the same side the string exits**, and *across* the ken rather than along it. `swingDirection` derives both from the string hole's own offset with the component along the ken's axis projected out. Never hardcode it.
 
-## 5. Motion — the most important lesson
+The seat is derived, not placed: the tama (r 0.25) is wider than the big cup mouth (r 0.225), so it rests **on the rim** at `sqrt(r_tama² − r_mouth²)` ≈ 0.109 above the mouth plane. It never enters the cup, so it cannot clip through a wall.
 
-**Easing functions that end at zero velocity put a stall at that keyframe.** Chaining two `easeOutQuad` segments made the tama come to a complete stop twice mid-flight; that was the "two-step floaty" feel. Zero velocity is only correct at the apex.
+## 5. The mate solver
 
-The flight is now **one continuous function** baked into ~40 samples with `linear` easing via `bakeKeyframes`:
+`mate.ts` replaces the page of inline trigonometry Big Cup used to carry. It states the constraint — *this landmark goes here, facing this way* — instead of answering it for one cup under one grip.
 
-- **Vertical**: a single parabola from launch to catch.
-- **Lateral**: an independent sine swing, peaking mid-flight so the tama is at its widest exactly as it passes the ken.
+- `seatTamaInCup` — rim math via `seatOffset`. Rotation is carried, since a sphere on a rim has no meaningful orientation.
+- `spearTamaOnSpike` — hole anti-aligned with the spike, tip buried `holeDepth` inside. Rotation fully determined up to spin, which is a parameter (the graded difference in "Pull up spike (Spin or No spin)").
+- `spearKenIntoTama` — the same rendezvous solved for the *other* body. Airplane.
+- `standKenOnTama` — lighthouse. Not yet used by a trick; the rim-on-sphere chord is the *same* `seatOffset` read the other way round.
 
-Driving the two axes separately is what makes it read as one gesture — neither has to pause for the other. The apex split is derived (under gravity, time ∝ √height, so the peak sits late at u ≈ 0.77), and the parabola's endpoint provably equals the seat exactly (the √ terms cancel), so there is no seam where flight hands off to the cushion.
+## 6. Motion — the most important lesson
 
-**Do not "improve" this by reintroducing eased waypoints.**
+**Easing functions that end at zero velocity put a stall at that keyframe.** Chaining two `easeOutQuad` segments made the tama come to a complete stop twice mid-flight; that was the "two-step floaty" feel. Zero velocity is only correct at an apex or at the very end of a trick.
 
-The tama also hangs from the string hole *as the hole moves*, so the player's initial load shows up automatically rather than being faked with a separate downward nudge.
+Free-body motion therefore comes from `ballistics.ts` as **one continuous function**, baked at 60Hz with linear interpolation:
 
-## 6. String: verlet rope with collision
+- **Vertical**: a single parabola. Its endpoints are *provably exactly* the launch and the landing — the √ terms in the apex split cancel — so there is no seam where flight hands off to the catch.
+- **Lateral**: an independent smooth swing peaking mid-flight, so the free body is at its widest exactly as it passes.
+- The apex split is derived (`√h` timing, u ≈ 0.77 for Big Cup), not authored.
 
-The string is a 28-particle inextensible verlet rope (`rope.ts`) that collides with six tapered-capsule proxies for the ken (`kendama-colliders.ts`, derived from `KENDAMA_LAYOUT` so retuning a cup moves its collider).
+**Do not "improve" this by reintroducing eased waypoints.** Easings belong to the *hand* — `hang`'s load, `toss`'s rise, `ride`'s cushion — layered over the flight, never chopping it up.
 
-Distance-constraint and collision passes are **interleaved**, not sequential: solving all distances then all collisions lets the final collision push leave the rope stretched.
+`ride` re-solves the mate every frame rather than freezing the catch position, which is what keeps the tama glued into the cup through the cushion instead of drifting out of it.
 
-Colliders are transformed to world once per frame — cheaper than converting every particle to ken-local and back, and valid only because the ken is never scaled.
+### The stall detector
 
-Cup colliders are **solid, not hollow**. Fine here (the string never needs to sit inside a cup) but wrong for any trick where it should.
+`buildTrick` warns in `__DEV__` when a beat boundary brings the action to a halt and then restarts it, and `Trick.joins` exposes the boundary indices so tests can assert the same thing. Two details matter:
 
-`stringRestLength: 2.7` is **true scale** and a deliberate choice — do not "fix" it back to a shorter stylized value.
+- It is a **stall** detector, not a continuity check. A pull that launches a toss is a legitimate impulse; flagging it would train everyone to ignore the warning.
+- Each side of a join is judged against **its own** window. A hang followed by a hard pull is slow-then-fast but nothing decelerated; a stall is a side that *was* moving and then wasn't.
+- Only check at joins. The inside of a beat is continuous by construction, and a wide window placed mid-beat will see a legitimate launch several samples away and cry wolf.
 
-## 7. Camera
+It has already earned its keep: it caught a dead stop in the `ride` cushion (two eased halves) that no one would have spotted by eye.
 
-`viewDirectionFor` composes the view direction from the pose itself: base-cup axis (near side, toward the player) + string-hole offset (the "inside" face) + elevation. For Big Cup that resolves to `[-1, ~0.35, +1]`. Viewing from the opposite side puts the ken between camera and action, so the catch happens behind the model.
+## 7. Time is in seconds, and gravity sets it
 
-`CameraRig` in `TrickScene.tsx` reframes tama + ken every frame and eases toward it with a framerate-independent exponential (`1 - Math.exp(-dt/τ)`, τ = 0.32s). It deliberately **trails** the action — a camera welded exactly to the tama reads as the tama standing still while the world moves. It **snaps on the first frame**, both so the opening shot is framed and because the real viewport aspect is not known until there is a frame.
+`TRICK_GRAVITY = 4.4` in `ballistics.ts`, far below real gravity (~75 units/s² at this scale) and below the rope solver's own tuned 26. Deliberately slow-motion: a real Big Cup takes well under a second and the point is legibility.
 
-`followAction` hands the camera to `canvasExtras` (OrbitControls) when false; the rig and the controls would otherwise both write the camera every frame. The sandbox exposes this as a "Free look" toggle.
+What matters is that it is *a* gravity rather than a set of typed durations — toss length then scales as √height automatically, so a big toss and a small one in the same sequence keep their relative timing. The absolute value is a style knob, calibrated so Big Cup's flight lands on the ~1.7s that was originally tuned by eye (total trick ≈ 2.23s, against the old 2.2s).
 
-## 8. Traps — do not rediscover these
+`TrickScene`'s `speed` prop is a playback *rate*, not the authority on length.
 
-1. **React Compiler is enabled** (`transform.reactCompiler=true`). A module-scope helper function defined inside a *component* file threw `ReferenceError: not defined` at runtime despite `tsc` passing. Moving it to a non-component module fixed it. If you hit an impossible ReferenceError, this is why.
-2. **The browser console buffer persists across navigations.** Several rounds were wasted "fixing" errors that were stale entries. Verify a symbol still exists (`grep`) before believing an error that names it. Better: install `window.addEventListener('error', …)` after load and count live errors.
-3. **Same-URL navigation does not remount the route.** OrbitControls retained a camera nudged by an earlier stray click, which read as the pose drifting. Use `window.location.href` with a changed query string for a real reload.
-4. **`fov` is vertical.** The preview pane is tall (630×1329); at aspect 0.47 the horizontal FOV is under half the vertical, so width binds before height. Framing must use the real `camera.aspect`. This bug is invisible on a wide viewport.
-5. **Lint rules `react-hooks/refs` and `react-hooks/immutability` are strict.** No reading or writing refs during render, no mutating `useMemo` values. Do play-token reset logic inside `useFrame`; use `useRef` (not `useMemo`) for mutable scratch, or allocate inside the frame callback.
-6. **Slack rope collapses points** → zero tangent → `CatmullRomCurve3` NaNs its arc-length table → `points[NaN].x` crash every frame. `toCurvePoints` drops coincident neighbours and guards non-finite particles. Keep it.
-7. **Sandbox access is gated.** Non-Home tab routes require completed onboarding. Set `localStorage` key `daily-dama:user-profile` to `{"version":1,"profile":{"hasCompletedOnboarding":true,"kenteiRank":1,"selectedTrickIds":[]}}` — the versioned wrapper is required and `kenteiRank` is a **number** 1–12. The route is nested under `/stats/` because the web tab router silently redirects unregistered top-level routes to Home.
-8. **`AccessGateProvider` skips the password gate whenever `__DEV__`** — an interim change, production unaffected.
-9. **`eslint.config.js` has a scoped `react/no-unknown-property` override** for `src/features/trick-viz/**/*.tsx`, needed because eslint-plugin-react does not know r3f's JSX intrinsics.
+## 8. Camera
 
-## 9. Verification workflow that worked
+`viewDirectionFor` composes the direction from the ken's pose: base-cup axis (near side) + string-hole offset (the "inside" face) + elevation. For Big Cup that resolves to `[-1, 0.32, +1]`.
 
-Temporarily set `durationSeconds={20}` in the sandbox to inspect individual phases — screenshots take 1–2s against a 2.2s animation — then revert. A temporary `globalThis.__kenDebug` written from `useFrame` settled an ambiguous "is the camera drifting?" question in one call; numbers beat eyeballing screenshots.
+**With the ken upright** (airplane, pull up spike) the base cup opens straight down and contributes no horizontal hint, so the shot collapses onto the string side alone — which is the *same* axis the free body swings clear on. The throw then happens directly toward the camera and reads as nothing moving. `viewDirectionFor` turns a quarter round off that axis in this case; airplane is unwatchable without it.
 
-Always `grep` for `durationSeconds={20}` and `__kenDebug` before finishing.
+The view direction is sampled per beat and eased with a longer τ (0.6s) than the position follow (0.32s), so a grip change pans instead of whipping. The rig **snaps on the first frame of a run**, both so the opening shot is framed and because the real viewport aspect is not known until there is a frame.
 
-Dev server: `preview_start({name: "daily-dama-web"})` on port 8091 — **not** the `web` entry in this repo's own `.claude/launch.json`.
+`followAction` hands the camera to `canvasExtras` (OrbitControls) when false; the rig and the controls would otherwise both write the camera every frame.
 
-Standard checks for this feature are `yarn tsc --noEmit` and `yarn lint`. There are no unit tests for trick-viz yet.
+## 9. String
 
-## 10. Not started
+A 28-particle inextensible verlet rope colliding with six tapered-capsule proxies for the ken, derived from `KENDAMA_LAYOUT` so retuning a cup moves its collider. Distance-constraint and collision passes are **interleaved**, not sequential. Colliders are transformed to world once per frame, valid only because the ken is never scaled. Cup colliders are **solid, not hollow** — fine here, wrong for any trick where the string should sit inside a cup.
 
-- Integration into the real Tricks/Sesh UI — this is still sandbox-only.
-- Additional tricks beyond Big Cup.
-- Tama spin / hole orientation; the tama is a plain sphere with no spike hole.
+`stringRestLength: 2.7` is **true scale** and deliberate. It hangs the tama far outside any static frame, which is exactly why `frameSubjects` fits tama + ken *per frame*. Do not shorten it to make a static camera work.
+
+The string always runs ken-hole ↔ tama, so `String.tsx` needed no change for tama-held tricks. Its rope continuity across a run is a feature; it re-lays only on `runToken` change.
+
+## 10. Traps — do not rediscover these
+
+1. **A keyed `<Canvas>` loses the WebGL context.** Remounting to reset playback blanks the scene (`THREE.WebGLRenderer: Context Lost`). Everything resettable watches a `runToken` string inside `useFrame` instead — clock, rope, and camera snap.
+2. **React Compiler is enabled.** A module-scope helper defined inside a *component* file threw `ReferenceError: not defined` at runtime despite `tsc` passing. Keep helpers in non-component modules.
+3. **The app's web tab nav floats a full-width hit area across the top of the route.** Controls placed near the top of the sandbox look clickable and silently are not — `elementFromPoint` shows the nav container on top. All sandbox controls live in one bottom stack for this reason.
+4. **An absolutely positioned View has no width of its own.** A wrapping row inside one puts every chip on its own line and pushes the stack off-screen. The HUD uses `left: 0; right: 0`.
+5. **The browser console buffer persists across navigations.** Verify a symbol still exists (`grep`) before believing an error that names it.
+6. **Same-URL navigation does not remount the route.** Use a changed query string for a real reload.
+7. **`fov` is vertical.** At a tall aspect the horizontal FOV is much smaller, so width binds before height. `frameSubjects` must use the real `camera.aspect`. Invisible on a wide viewport.
+8. **Lint rules `react-hooks/refs` and `react-hooks/immutability` are strict.** No reading or writing refs during render. Do reset logic inside `useFrame`.
+9. **Slack rope collapses points** → zero tangent → `CatmullRomCurve3` NaNs → crash every frame. `toCurvePoints` drops coincident neighbours and guards non-finite particles. Keep it.
+10. **Sandbox access is gated.** Set `localStorage['daily-dama:user-profile']` to `{"version":1,"profile":{"hasCompletedOnboarding":true,"kenteiRank":1,"selectedTrickIds":[]}}` — the versioned wrapper is required and `kenteiRank` is a **number** 1–12. The route is nested under `/stats/` because the web tab router silently redirects unregistered top-level routes to Home.
+11. **`AccessGateProvider` skips the password gate whenever `__DEV__`** — interim, production unaffected.
+12. **`eslint.config.js` has a scoped `react/no-unknown-property` override** for `src/features/trick-viz/**/*.tsx`, needed because eslint-plugin-react does not know r3f's JSX intrinsics.
+
+## 11. Adding a trick
+
+A trick is now a dozen declarative lines. `cupCatches.ts` is the shortest example — Big Cup and Small Cup are one function called twice.
+
+```ts
+export const someTrick = buildTrick({
+  id: 'kentei-trick-id',          // reuse the app's generated ID
+  name: 'Some trick',
+  start: startHanging('ken', GRIP),
+  beats: [
+    hang({ seconds: 0.22, load: 0.05 }),
+    toss({ target: { kind: 'cup', socket: 'bigCup' }, apexRise: 0.35, clearance: 0.55,
+           gesture: { rise: 0.23 } }),
+    ride({ seconds: 0.3, gesture: { cushion: 0.15, settle: -0.11 } }),
+  ],
+  viewFor: viewForState,
+});
+```
+
+Register it in `tricks/index.ts`. Gesture offsets are relative to where the hand already is, so a preceding load does not have to be added back in.
+
+## 12. Verification workflow
+
+Dev server: `preview_start({name: "daily-dama-web"})` on port 8091 — **not** the `web` entry, which is 8081.
+
+Use the sandbox's **scrubber** (0/25/50/75/100%) to inspect phases. This replaces the old workflow of temporarily setting `durationSeconds={20}` and remembering to revert it. Still worth a final `grep` for `durationSeconds={20}` and `__kenDebug`.
+
+Standard checks: `yarn test --runInBand`, `yarn lint`, `yarn tsc --noEmit`.
+
+## 13. Not started
+
+- **Stage 2 tricks**: Base cup, Moshikame (a `toss` loop between two sockets — nearly free from this architecture, so `x5`/`x10`/`x20` are a repeat count, not three tricks), Baseball, Trapeze, Frying pan, Lighthouse. Lighthouse is the riskiest: it is a balance with no catch, and the only user of `standKenOnTama` and the `stalled` contact.
+- **The `swap` beat** — role reversal mid-trick, needed by compound tricks like "Airplane, Base cup, Downspike".
+- **Kentei compound sequences.** `concatTricks` exists and is tested, but no sequence is defined yet; each element must be built from the previous element's `end` state, not a fresh hang, and `concatTricks` throws if it isn't.
+- Integration into the real Tricks/Sesh UI. `TRICK_VISUALIZATIONS` is keyed by the app's own trick IDs so this is a lookup, not a mapping table.
 - Native (iOS/Android) verification of the `expo-gl` path.
+- Airplane's `apexRise` sends the spike slightly above the hole before it drops in; it clears the tama laterally and reads fine, but a smaller rise would be truer to the real throw.

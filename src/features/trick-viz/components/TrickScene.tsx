@@ -1,30 +1,34 @@
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { useMemo, useRef, useState } from 'react';
-import { Vector3, type Group, type Mesh } from 'three';
+import { Vector3, type Group } from 'three';
 
-import { frameSubjects, viewDirectionFor, type Framing } from '../model/framing';
-import { sampleAtTime, type Keyframe, type Vec3 } from '../model/keyframes';
-import { KENDAMA_LAYOUT } from '../model/kendama-geometry';
-import { kenEuler, type KenPose } from '../model/ken-pose';
+import { frameSubjects, type Framing } from '../model/framing';
+import { sampleTrackInto, sampleView, type Trick } from '../model/timeline';
+import { TAMA_LAYOUT } from '../model/tama-geometry';
 import { Ken } from './Ken';
-import { Tama } from './Tama';
 import { KendamaString } from './String';
+import { Tama } from './Tama';
 
 export type TrickSceneHandle = {
   isPlaying: boolean;
   replay: () => void;
+  durationSeconds: number;
 };
 
 type TrickSceneProps = {
-  keyframes: readonly Keyframe[];
-  /** How the player holds the ken for this trick. */
-  kenPose: KenPose;
+  trick: Trick;
   /**
-   * Optional ken movement (a pull, a catch cushion) layered on top of the
-   * pose. Omit for tricks where the ken is effectively still.
+   * Playback rate. The trick's own length comes from its beats — a toss is
+   * as long as its height makes it — so this scales that rather than
+   * replacing it.
    */
-  kenKeyframes?: readonly Keyframe[];
-  durationSeconds?: number;
+  speed?: number;
+  /**
+   * Freezes the trick at a fraction of its length instead of playing it.
+   * Inspecting one moment of a two-second animation used to mean temporarily
+   * stretching the whole trick to twenty seconds and reverting afterwards.
+   */
+  scrub?: number | null;
   /** Render prop for a HUD (e.g. Play/Replay button) driven by scene state. */
   children?: (handle: TrickSceneHandle) => React.ReactNode;
   /**
@@ -42,66 +46,6 @@ type TrickSceneProps = {
   followAction?: boolean;
 };
 
-type PosedKenProps = {
-  pose: KenPose;
-  keyframes?: readonly Keyframe[];
-  durationSeconds: number;
-  isPlaying: boolean;
-  playToken: number;
-  groupRef: React.RefObject<Group | null>;
-};
-
-/**
- * The ken under its trick grip, translated each frame by the trick's ken
- * keyframes. Rotation comes from `kenEuler` — the same helper the trick's
- * landmark math uses — so the rendered grip and the computed cup positions
- * cannot disagree.
- */
-function PosedKen({
-  pose,
-  keyframes,
-  durationSeconds,
-  isPlaying,
-  playToken,
-  groupRef,
-}: PosedKenProps) {
-  const elapsedRef = useRef(0);
-  const lastPlayToken = useRef(playToken);
-  const euler = useMemo(() => kenEuler(pose), [pose]);
-
-  useFrame((_, delta) => {
-    const group = groupRef.current;
-    if (!group) return;
-
-    // Restart detection lives here rather than in render: refs must not be
-    // read or written during render, and the next frame is soon enough.
-    if (lastPlayToken.current !== playToken) {
-      lastPlayToken.current = playToken;
-      elapsedRef.current = 0;
-    }
-
-    if (isPlaying) {
-      elapsedRef.current = Math.min(elapsedRef.current + delta, durationSeconds);
-    }
-
-    const [x, y, z] = pose.position;
-    if (!keyframes) {
-      group.position.set(x, y, z);
-      return;
-    }
-
-    const t = durationSeconds === 0 ? 1 : elapsedRef.current / durationSeconds;
-    const offset = sampleAtTime(keyframes, t).position;
-    group.position.set(x + offset[0], y + offset[1], z + offset[2]);
-  });
-
-  return (
-    <group ref={groupRef} rotation={euler}>
-      <Ken />
-    </group>
-  );
-}
-
 const CAMERA_FOV = 45;
 
 /**
@@ -109,15 +53,82 @@ const CAMERA_FOV = 45;
  *
  * The camera should trail the action rather than being welded to it — a
  * shot locked exactly onto the tama reads as the tama standing still while
- * the world moves. Long enough to feel like an operator following a throw,
- * short enough to keep up with a 2.2s trick.
+ * the world moves.
  */
 const CAMERA_SMOOTHING = 0.32;
 
-type CameraRigProps = {
-  tamaRef: React.RefObject<Mesh | null>;
+/**
+ * The same, for the direction it watches from.
+ *
+ * Slower on purpose. Position tracks a body and has to keep up; direction
+ * only changes when the grip does, and snapping round to a new side mid-run
+ * is disorienting in a way that trailing a throw is not.
+ */
+const VIEW_SMOOTHING = 0.6;
+
+type ClockProps = {
+  trick: Trick;
+  speed: number;
+  scrub: number | null;
+  isPlaying: boolean;
+  runToken: string;
   kenRef: React.RefObject<Group | null>;
-  direction: Vec3;
+  tamaRef: React.RefObject<Group | null>;
+  timeRef: React.RefObject<number>;
+};
+
+/**
+ * Drives both bodies from the trick's track.
+ *
+ * Both — that is the change. The ken used to be a fixed grip with an
+ * optional position offset and the tama a position-only track, so a rotating
+ * ken silently rendered as a still one. Position and orientation now come
+ * from the same sampler for both, and orientation is slerped rather than
+ * lerped component-wise on Euler angles.
+ */
+function TrickBodies({
+  trick,
+  speed,
+  scrub,
+  isPlaying,
+  runToken,
+  kenRef,
+  tamaRef,
+  timeRef,
+}: ClockProps) {
+  const elapsed = useRef(0);
+  const lastRunToken = useRef(runToken);
+
+  useFrame((_, delta) => {
+    const ken = kenRef.current;
+    const tama = tamaRef.current;
+    if (!ken || !tama) return;
+
+    // Restart detection lives here rather than in render: refs must not be
+    // read or written during render, and the next frame is soon enough.
+    if (lastRunToken.current !== runToken) {
+      lastRunToken.current = runToken;
+      elapsed.current = 0;
+    }
+
+    if (scrub === null && isPlaying) {
+      elapsed.current = Math.min(elapsed.current + delta * speed, trick.durationSeconds);
+    }
+
+    const t = scrub === null ? elapsed.current : scrub * trick.durationSeconds;
+    timeRef.current = t;
+    sampleTrackInto(trick.samples, t, ken, tama);
+  });
+
+  return null;
+}
+
+type CameraRigProps = {
+  trick: Trick;
+  runToken: string;
+  kenRef: React.RefObject<Group | null>;
+  tamaRef: React.RefObject<Group | null>;
+  timeRef: React.RefObject<number>;
   initial: Framing;
 };
 
@@ -127,37 +138,54 @@ type CameraRigProps = {
  * The Canvas `camera` prop only ever places the camera once and never aims
  * it, so both the position and the look-at are driven here.
  */
-function CameraRig({ tamaRef, kenRef, direction, initial }: CameraRigProps) {
+function CameraRig({ trick, runToken, kenRef, tamaRef, timeRef, initial }: CameraRigProps) {
   const camera = useThree((state) => state.camera);
   const target = useRef(new Vector3(...initial.target));
+  const direction = useRef(new Vector3(...initial.position).sub(new Vector3(...initial.target)));
   const desiredPosition = useRef(new Vector3());
   const desiredTarget = useRef(new Vector3());
+  const desiredDirection = useRef(new Vector3());
   const hasFramed = useRef(false);
+  const lastRunToken = useRef(runToken);
 
   useFrame((_, delta) => {
-    const tama = tamaRef.current;
     const ken = kenRef.current;
-    if (!tama || !ken) return;
+    const tama = tamaRef.current;
+    if (!ken || !tama) return;
+
+    // A new trick opens on a new shot rather than swinging round from the
+    // old one, which is a cut, not a camera move.
+    if (lastRunToken.current !== runToken) {
+      lastRunToken.current = runToken;
+      hasFramed.current = false;
+    }
+
+    // Framerate-independent exponential ease: the same fraction of the
+    // remaining distance per unit time, whatever the frame length. The first
+    // frame snaps instead — the opening shot should already be framed, and
+    // only here is the real viewport aspect known.
+    const snap = !hasFramed.current;
+    hasFramed.current = true;
+
+    desiredDirection.current.set(...sampleView(trick.views, timeRef.current)).normalize();
+    direction.current.lerp(
+      desiredDirection.current,
+      snap ? 1 : 1 - Math.exp(-delta / VIEW_SMOOTHING),
+    );
 
     const framing = frameSubjects(
       [tama.position.x, tama.position.y, tama.position.z],
-      KENDAMA_LAYOUT.tamaRadius,
+      TAMA_LAYOUT.radius,
       [ken.position.x, ken.position.y, ken.position.z],
       CAMERA_FOV,
-      direction,
+      [direction.current.x, direction.current.y, direction.current.z],
       'aspect' in camera ? (camera.aspect as number) : 1,
     );
 
     desiredPosition.current.set(...framing.position);
     desiredTarget.current.set(...framing.target);
 
-    // Framerate-independent exponential ease: the same fraction of the
-    // remaining distance per unit time, whatever the frame length. The first
-    // frame snaps instead — the opening shot should already be framed, and
-    // only here is the real viewport aspect known.
-    const alpha = hasFramed.current ? 1 - Math.exp(-delta / CAMERA_SMOOTHING) : 1;
-    hasFramed.current = true;
-
+    const alpha = snap ? 1 : 1 - Math.exp(-delta / CAMERA_SMOOTHING);
     camera.position.lerp(desiredPosition.current, alpha);
     target.current.lerp(desiredTarget.current, alpha);
     camera.lookAt(target.current);
@@ -167,42 +195,47 @@ function CameraRig({ tamaRef, kenRef, direction, initial }: CameraRigProps) {
 }
 
 /**
- * Composes the posed kendama with an animated tama and dynamic string
- * inside a Canvas. Playback state lives here; visualization components
- * below only read refs/props, no shared store needed at this scale.
+ * Composes the two posed bodies and a dynamic string inside a Canvas.
+ * Playback state lives here; visualization components below only read
+ * refs/props, no shared store needed at this scale.
  */
 export function TrickScene({
-  keyframes,
-  kenPose,
-  kenKeyframes,
-  durationSeconds = 2.2,
+  trick,
+  speed = 1,
+  scrub = null,
   children,
   canvasExtras,
   followAction = true,
 }: TrickSceneProps) {
-  const tamaRef = useRef<Mesh>(null);
   const kenRef = useRef<Group>(null);
+  const tamaRef = useRef<Group>(null);
+  const timeRef = useRef(0);
   const [isPlaying, setIsPlaying] = useState(true);
   const [playToken, setPlayToken] = useState(0);
 
-  const viewDirection = useMemo(
-    () => viewDirectionFor(kenPose, KENDAMA_LAYOUT.stringHoleLocal),
-    [kenPose],
-  );
+  /**
+   * Identifies one playthrough, so switching tricks restarts the clock, the
+   * rope and the shot without remounting anything.
+   *
+   * Remounting would be the obvious way to reset all three, and it costs the
+   * WebGL context: a keyed `<Canvas>` tears down its renderer and the scene
+   * comes back blank. Everything resettable therefore watches this token
+   * inside `useFrame` instead.
+   */
+  const runToken = `${trick.id}#${playToken}`;
 
-  // Opens on the trick's first pose, so the shot starts correctly framed
+  // Opens on the trick's first sample, so the shot starts correctly framed
   // instead of easing in from wherever the camera happened to be placed.
-  const framing = useMemo(
-    () =>
-      frameSubjects(
-        keyframes[0].position,
-        KENDAMA_LAYOUT.tamaRadius,
-        kenPose.position,
-        CAMERA_FOV,
-        viewDirection,
-      ),
-    [keyframes, kenPose, viewDirection],
-  );
+  const framing = useMemo(() => {
+    const first = trick.samples[0];
+    return frameSubjects(
+      first.tama.position,
+      TAMA_LAYOUT.radius,
+      first.ken.position,
+      CAMERA_FOV,
+      sampleView(trick.views, 0),
+    );
+  }, [trick]);
 
   const replay = () => {
     setPlayToken((token) => token + 1);
@@ -212,43 +245,38 @@ export function TrickScene({
   return (
     <>
       <Canvas camera={{ position: [...framing.position], fov: CAMERA_FOV }}>
+        <TrickBodies
+          trick={trick}
+          speed={speed}
+          scrub={scrub}
+          isPlaying={isPlaying}
+          runToken={runToken}
+          kenRef={kenRef}
+          tamaRef={tamaRef}
+          timeRef={timeRef}
+        />
         {followAction ? (
           <CameraRig
-            tamaRef={tamaRef}
+            trick={trick}
+            runToken={runToken}
             kenRef={kenRef}
-            direction={viewDirection}
+            tamaRef={tamaRef}
+            timeRef={timeRef}
             initial={framing}
           />
         ) : null}
         <ambientLight intensity={0.6} />
         <directionalLight position={[2, 3, 2]} intensity={1.1} />
-        <PosedKen
-          pose={kenPose}
-          keyframes={kenKeyframes}
-          durationSeconds={durationSeconds}
-          isPlaying={isPlaying}
-          playToken={playToken}
-          groupRef={kenRef}
-        />
-        <Tama
-          ref={tamaRef}
-          keyframes={keyframes}
-          radius={KENDAMA_LAYOUT.tamaRadius}
-          durationSeconds={durationSeconds}
-          isPlaying={isPlaying}
-          playToken={playToken}
-        />
-        <KendamaString
-          kenRef={kenRef}
-          anchorLocal={KENDAMA_LAYOUT.stringHoleLocal}
-          restLength={KENDAMA_LAYOUT.stringRestLength}
-          tamaRef={tamaRef}
-          tamaRadius={KENDAMA_LAYOUT.tamaRadius}
-          playToken={playToken}
-        />
+        <group ref={kenRef}>
+          <Ken />
+        </group>
+        <group ref={tamaRef}>
+          <Tama />
+        </group>
+        <KendamaString kenRef={kenRef} tamaRef={tamaRef} runToken={runToken} />
         {canvasExtras?.(framing)}
       </Canvas>
-      {children?.({ isPlaying, replay })}
+      {children?.({ isPlaying, replay, durationSeconds: trick.durationSeconds })}
     </>
   );
 }

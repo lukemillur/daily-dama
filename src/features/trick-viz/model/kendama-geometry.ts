@@ -1,4 +1,4 @@
-import type { Vec3 } from "./keyframes";
+import type { Vec3 } from "./body";
 
 /**
  * Shared layout constants for the primitive-built kendama model and its
@@ -63,14 +63,13 @@ export const KENDAMA_LAYOUT = {
    */
   stringHoleLocal: [0, 0.2 - 0.12, 0.08] as Vec3,
 
-  tamaRadius: 0.25,
-
   /**
-   * Deliberately stylized. Scaled against these ken/tama proportions a
-   * real kendama string (~35cm against a ~16cm ken) would be roughly 2.7
-   * units, which hangs the tama far outside any frame that still shows
-   * the ken at a readable size. 1.2 reads as a kendama string while
-   * keeping the whole trick in view.
+   * True scale, not stylized: a real kendama string (~35cm against a ~16cm
+   * ken) is roughly 2.7 units at these proportions. It hangs the tama far
+   * outside any fixed frame that also shows the ken at a readable size,
+   * which is exactly why the camera fits tama and ken *per frame* rather
+   * than to a static box (see `frameSubjects`). Do not shorten this back to
+   * a stylized value to make a static camera work.
    */
   stringRestLength: 2.7,
 };

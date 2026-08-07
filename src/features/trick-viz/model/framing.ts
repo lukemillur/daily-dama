@@ -1,5 +1,6 @@
-import type { Vec3 } from './keyframes';
-import { localDirectionToWorld, type KenPose } from './ken-pose';
+import { localDirectionToWorld, type BodyPose, type Vec3 } from './body';
+import { KENDAMA_LAYOUT } from './kendama-geometry';
+import type { TrickState } from './timeline';
 
 /**
  * A rough radius for the ken around its pose origin, so framing accounts for
@@ -27,7 +28,7 @@ export type Framing = {
  * model. Composing the direction from the pose keeps that true for any grip
  * instead of encoding one trick's answer as a constant.
  */
-export function viewDirectionFor(pose: KenPose, stringHoleLocal: Vec3): Vec3 {
+export function viewDirectionFor(pose: BodyPose, stringHoleLocal: Vec3): Vec3 {
   // The base cup opens toward the player, so that is the near side.
   const playerSide = localDirectionToWorld([0, -1, 0], pose);
 
@@ -38,11 +39,42 @@ export function viewDirectionFor(pose: KenPose, stringHoleLocal: Vec3): Vec3 {
     ? localDirectionToWorld(lateralLocal, pose)
     : ([0, 0, 0] as Vec3);
 
-  return [
+  const horizontal: [number, number] = [
     playerSide[0] + stringSide[0],
-    ELEVATION,
     playerSide[2] + stringSide[2],
   ];
+
+  // With the ken upright — airplane, pull up spike — the base cup opens
+  // straight down and contributes no horizontal hint at all, so the shot
+  // collapses onto the string side alone. That is the *same* side the free
+  // body swings clear on, which means watching the throw end-on: the arc
+  // that makes the trick legible happens directly toward the camera and
+  // reads as nothing moving. Turning a quarter round off that axis gives
+  // the three-quarter view the other grips get for free.
+  const playerSideIsVertical = Math.hypot(playerSide[0], playerSide[2]) < 1e-3;
+  if (playerSideIsVertical && hasLateral) {
+    const cos = Math.SQRT1_2;
+    return [
+      horizontal[0] * cos + horizontal[1] * cos,
+      ELEVATION,
+      -horizontal[0] * cos + horizontal[1] * cos,
+    ];
+  }
+
+  return [horizontal[0], ELEVATION, horizontal[1]];
+}
+
+/**
+ * The camera direction for a moment in a trick.
+ *
+ * Always read off the *ken*, whether or not the ken is the body being held:
+ * the anatomy this composition understands — a base cup that opens toward
+ * the player, a string hole on one face — only exists on the ken. Evaluated
+ * once per beat rather than per frame, so a grip change pans the shot
+ * instead of the camera chasing a body that is mid-flight.
+ */
+export function viewForState(state: TrickState): Vec3 {
+  return viewDirectionFor(state.ken, KENDAMA_LAYOUT.stringHoleLocal);
 }
 
 /**

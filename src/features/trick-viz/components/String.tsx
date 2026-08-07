@@ -3,8 +3,9 @@ import { useRef } from 'react';
 import { CatmullRomCurve3, Group, Mesh, TubeGeometry, Vector3 } from 'three';
 
 import { createWorldColliderBuffer, toWorldColliders } from '../model/kendama-colliders';
-import type { Vec3 } from '../model/keyframes';
+import { KENDAMA_LAYOUT } from '../model/kendama-geometry';
 import { createRope, stepRope, toCurvePoints, type RopeState } from '../model/rope';
+import { TAMA_LAYOUT } from '../model/tama-geometry';
 
 /** Light, like a real kendama string — and legible on a dark scene. */
 const STRING_COLOR = '#ded5c4';
@@ -19,14 +20,10 @@ const PARTICLE_COUNT = 28;
 type StringProps = {
   /** The ken group, so the anchor and colliders track it as it moves. */
   kenRef: React.RefObject<Group | null>;
-  /** String hole position in ken-local space. */
-  anchorLocal: Vec3;
-  /** Total length of the string. */
-  restLength: number;
-  tamaRef: React.RefObject<Mesh | null>;
-  tamaRadius: number;
-  /** Bumped by the parent to re-lay the rope straight on replay. */
-  playToken: number;
+  /** The tama group. The string runs hole-to-ball whoever is holding what. */
+  tamaRef: React.RefObject<Group | null>;
+  /** Changes when a new run starts, to re-lay the rope straight. */
+  runToken: string;
 };
 
 /**
@@ -38,17 +35,14 @@ type StringProps = {
  * natural drape from the same solve, and needs no per-trick routing: it
  * reacts to wherever the ken and tama happen to be.
  */
-export function KendamaString({
-  kenRef,
-  anchorLocal,
-  restLength,
-  tamaRef,
-  tamaRadius,
-  playToken,
-}: StringProps) {
+export function KendamaString({ kenRef, tamaRef, runToken }: StringProps) {
+  const anchorLocal = KENDAMA_LAYOUT.stringHoleLocal;
+  const restLength = KENDAMA_LAYOUT.stringRestLength;
+  const tamaRadius = TAMA_LAYOUT.radius;
+
   const meshRef = useRef<Mesh>(null);
   const ropeRef = useRef<RopeState | null>(null);
-  const lastPlayToken = useRef(playToken);
+  const lastRunToken = useRef(runToken);
   const collidersRef = useRef(createWorldColliderBuffer());
   const anchorRef = useRef(new Vector3());
   const endRef = useRef(new Vector3());
@@ -69,8 +63,8 @@ export function KendamaString({
     if (span < 1e-6) end.set(0, tamaRadius, 0).add(tama.position);
     else end.multiplyScalar(tamaRadius / span).add(tama.position);
 
-    if (!ropeRef.current || lastPlayToken.current !== playToken) {
-      lastPlayToken.current = playToken;
+    if (!ropeRef.current || lastRunToken.current !== runToken) {
+      lastRunToken.current = runToken;
       ropeRef.current = createRope(PARTICLE_COUNT, anchor, end, restLength);
     }
 
