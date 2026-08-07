@@ -5,6 +5,12 @@ export type Keyframe = {
   t: number;
   position: Vec3;
   rotation?: Vec3;
+  /**
+   * Easing for the segment *arriving at* this keyframe. Falls back to the
+   * sequence default, so only segments that need a specific feel (a toss
+   * decelerating under gravity, a catch cushioning) have to say so.
+   */
+  easing?: Easing;
 };
 
 export type Easing = (t: number) => number;
@@ -13,6 +19,19 @@ export const easeInOutQuad: Easing = (t) =>
   t < 0.5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2;
 
 export const linear: Easing = (t) => t;
+
+/**
+ * Decelerating — the shape of a body rising against gravity. Quadratic
+ * because constant acceleration traces a parabola, so this is physically
+ * right for a toss rather than merely a stylistic choice.
+ */
+export const easeOutQuad: Easing = (t) => 1 - (1 - t) ** 2;
+
+/** Accelerating: the falling half of that same parabola. */
+export const easeInQuad: Easing = (t) => t * t;
+
+/** Soft arrival, for settles and catch cushions. */
+export const easeOutCubic: Easing = (t) => 1 - (1 - t) ** 3;
 
 function lerp(a: number, b: number, t: number): number {
   return a + (b - a) * t;
@@ -24,12 +43,13 @@ function lerpVec3(a: Vec3, b: Vec3, t: number): Vec3 {
 
 /**
  * Samples position/rotation at normalized time `t` by finding the surrounding
- * keyframe pair and interpolating between them with the given easing.
+ * keyframe pair and interpolating between them. Each segment uses the easing
+ * declared on the keyframe it arrives at, falling back to `defaultEasing`.
  */
 export function sampleAtTime(
   keyframes: readonly Keyframe[],
   t: number,
-  easing: Easing = easeInOutQuad,
+  defaultEasing: Easing = easeInOutQuad,
 ): { position: Vec3; rotation: Vec3 } {
   const clamped = Math.min(Math.max(t, keyframes[0].t), keyframes.at(-1)!.t);
 
@@ -44,7 +64,8 @@ export function sampleAtTime(
   }
 
   const span = to.t - from.t;
-  const localT = span === 0 ? 0 : easing((clamped - from.t) / span);
+  const ease = to.easing ?? defaultEasing;
+  const localT = span === 0 ? 0 : ease((clamped - from.t) / span);
 
   return {
     position: lerpVec3(from.position, to.position, localT),

@@ -1,18 +1,21 @@
-import { useState } from 'react';
-import { TextInput } from 'react-native';
-import { styled } from 'styled-components/native';
+import { useState } from "react";
+import { TextInput } from "react-native";
+import { styled } from "styled-components/native";
 
-import { Button } from '@/components/ui/button';
-import { Screen } from '@/components/ui/screen';
-import { BodyText, DisplayTitle, Eyebrow } from '@/components/ui/typography';
-import { AppColors } from '@/constants/theme';
+import { Button } from "@/components/ui/button";
+import { Screen } from "@/components/ui/screen";
+import { BodyText, DisplayTitle, Eyebrow } from "@/components/ui/typography";
+import { AppColors } from "@/constants/theme";
+import { useRequireOnboarding } from "@/features/onboarding/state/require-onboarding";
 import {
   createStreakThresholdMs,
   DEFAULT_STREAK_THRESHOLD_MS,
   isValidStreakThresholdMinutes,
-} from '@/features/profile/model/user-profile';
-import { useUserProfile, useUserProfileActions } from '@/features/profile/state/user-profile-provider';
-import { useRequireOnboarding } from '@/features/onboarding/state/require-onboarding';
+} from "@/features/profile/model/user-profile";
+import {
+  useUserProfile,
+  useUserProfileActions,
+} from "@/features/profile/state/user-profile-provider";
 
 export default function ProfileScreen() {
   const isOnboardingComplete = useRequireOnboarding();
@@ -22,16 +25,16 @@ export default function ProfileScreen() {
   if (!isOnboardingComplete || !kenteiRank) return null;
 
   return (
-    <Screen align="center" edges={['top', 'left', 'right']}>
+    <Screen align="center" edges={["top", "left", "right"]}>
       <Content>
         <Eyebrow>Your profile</Eyebrow>
         <RankLine>
-          <RankNumber>{String(kenteiRank).padStart(2, '0')}</RankNumber>
+          <RankNumber>{String(kenteiRank).padStart(2, "0")}</RankNumber>
           <RankIdentity>
             <RankLabel>Assessed Kentei rank</RankLabel>
             <RankContext>
-              Your current frontier, with {selectedTrickIds.length}{' '}
-              {selectedTrickIds.length === 1 ? 'trick' : 'tricks'} in rotation.
+              Your current frontier, with {selectedTrickIds.length}{" "}
+              {selectedTrickIds.length === 1 ? "trick" : "tricks"} in rotation.
             </RankContext>
           </RankIdentity>
         </RankLine>
@@ -39,10 +42,13 @@ export default function ProfileScreen() {
         <SectionLabel>Assessment</SectionLabel>
         <Title>Ready to check{`\n`}your level again?</Title>
         <Copy>
-          Retaking the assessment updates your rank and recommended starting point. Your
-          custom tricks and practice history stay exactly where they are.
+          Retaking the assessment updates your rank and recommended starting
+          point. Your custom tricks and practice history stay exactly where they
+          are.
         </Copy>
-        <RetakeButton onPress={restartOnboarding}>Retake assessment</RetakeButton>
+        <RetakeButton onPress={restartOnboarding}>
+          Retake assessment
+        </RetakeButton>
         <Divider />
         <StreakSettings
           streakThresholdMs={streakThresholdMs}
@@ -60,7 +66,8 @@ function StreakSettings({
   readonly streakThresholdMs?: number;
   readonly onSave: (thresholdMs: number) => void;
 }) {
-  const persistedMinutes = (streakThresholdMs ?? DEFAULT_STREAK_THRESHOLD_MS) / 60_000;
+  const persistedMinutes =
+    (streakThresholdMs ?? DEFAULT_STREAK_THRESHOLD_MS) / 60_000;
   const [minutesText, setMinutesText] = useState(String(persistedMinutes));
   const parsedMinutes = Number(minutesText);
   const hasValidMinutes = isValidStreakThresholdMinutes(parsedMinutes);
@@ -85,12 +92,17 @@ function StreakSettings({
           value={minutesText}
         />
         <DurationHint $invalid={!hasValidMinutes}>
-          {hasValidMinutes ? 'Choose any whole minute from 1 to 60.' : 'Enter a whole number from 1 to 60.'}
+          {hasValidMinutes
+            ? "Choose any whole minute from 1 to 60."
+            : "Enter a whole number from 1 to 60."}
         </DurationHint>
       </DurationField>
       <SaveButton
         disabled={!isDirty}
-        onPress={() => hasValidMinutes && onSave(createStreakThresholdMs(parsedMinutes))}>
+        onPress={() =>
+          hasValidMinutes && onSave(createStreakThresholdMs(parsedMinutes))
+        }
+      >
         Save
       </SaveButton>
     </>
@@ -104,18 +116,83 @@ const Content = styled.View`
   justify-content: center;
   padding: 40px 22px 130px;
 `;
-const RankLine = styled.View`flex-direction: row; align-items: center; gap: 22px; margin-top: 18px;`;
-const RankNumber = styled.Text`color: ${AppColors.red}; font-size: 78px; font-weight: 900; letter-spacing: -5px; line-height: 84px;`;
-const RankIdentity = styled.View`flex: 1;`;
-const RankLabel = styled.Text`color: ${AppColors.ink}; font-size: 17px; font-weight: 900; text-transform: uppercase;`;
-const RankContext = styled(BodyText)`font-size: 14px; line-height: 20px; margin-top: 5px;`;
-const Divider = styled.View`height: 2px; background-color: ${AppColors.ink}; margin: 28px 0 30px;`;
-const SectionLabel = styled(Eyebrow)`font-size: 11px;`;
-const Title = styled(DisplayTitle)`margin-top: 10px;`;
-const Copy = styled(BodyText)`max-width: 500px; margin-top: 16px; color: ${AppColors.textMuted};`;
-const RetakeButton = styled(Button).attrs({ variant: 'secondary', size: 'medium' })`align-self: flex-start; margin-top: 26px;`;
-const DurationField = styled.View`margin-top: 22px;`;
-const DurationLabel = styled.Text`color: ${AppColors.ink}; font-size: 12px; font-weight: 900; margin-bottom: 6px; text-transform: uppercase;`;
-const DurationInput = styled(TextInput)`height: 54px; width: 110px; background-color: ${AppColors.paper}; border: 2px solid ${AppColors.ink}; color: ${AppColors.ink}; font-size: 24px; font-weight: 900; padding: 8px 12px;`;
-const DurationHint = styled.Text<{ $invalid: boolean }>`color: ${({ $invalid }) => ($invalid ? AppColors.red : AppColors.textMuted)}; font-size: 12px; font-weight: 700; margin-top: 7px;`;
-const SaveButton = styled(Button).attrs({ size: 'medium' })`align-self: flex-start; margin-top: 20px;`;
+const RankLine = styled.View`
+  flex-direction: row;
+  align-items: center;
+  gap: 22px;
+  margin-top: 18px;
+`;
+const RankNumber = styled.Text`
+  color: ${AppColors.red};
+  font-size: 78px;
+  font-weight: 900;
+  letter-spacing: -5px;
+  line-height: 84px;
+`;
+const RankIdentity = styled.View`
+  flex: 1;
+`;
+const RankLabel = styled.Text`
+  color: ${AppColors.ink};
+  font-size: 17px;
+  font-weight: 900;
+  text-transform: uppercase;
+`;
+const RankContext = styled(BodyText)`
+  font-size: 14px;
+  line-height: 20px;
+  margin-top: 5px;
+`;
+const Divider = styled.View`
+  height: 2px;
+  background-color: ${AppColors.ink};
+  margin: 28px 0 30px;
+`;
+const SectionLabel = styled(Eyebrow)`
+  font-size: 11px;
+`;
+const Title = styled(DisplayTitle)`
+  margin-top: 10px;
+`;
+const Copy = styled(BodyText)`
+  max-width: 500px;
+  margin-top: 16px;
+  color: ${AppColors.textMuted};
+`;
+const RetakeButton = styled(Button).attrs({
+  variant: "secondary",
+  size: "medium",
+})`
+  align-self: flex-start;
+  margin-top: 26px;
+`;
+const DurationField = styled.View`
+  margin-top: 22px;
+`;
+const DurationLabel = styled.Text`
+  color: ${AppColors.ink};
+  font-size: 12px;
+  font-weight: 900;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+`;
+const DurationInput = styled(TextInput)`
+  height: 54px;
+  width: 110px;
+  background-color: ${AppColors.paper};
+  border: 2px solid ${AppColors.ink};
+  color: ${AppColors.ink};
+  font-size: 24px;
+  font-weight: 900;
+  padding: 8px 12px;
+`;
+const DurationHint = styled.Text<{ $invalid: boolean }>`
+  color: ${({ $invalid }) => ($invalid ? AppColors.red : AppColors.textMuted)};
+  font-size: 12px;
+  font-weight: 700;
+  margin-top: 7px;
+`;
+const SaveButton = styled(Button).attrs({ size: "medium" })`
+  align-self: flex-start;
+  margin-top: 20px;
+`;

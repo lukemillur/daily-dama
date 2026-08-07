@@ -4,7 +4,11 @@ import { StyleSheet, View } from 'react-native';
 
 import { Button } from '@/components/ui/button';
 import { TrickScene } from '@/features/trick-viz/components/TrickScene';
-import { BIG_CUP_KEYFRAMES } from '@/features/trick-viz/model/tricks/bigCup';
+import {
+  BIG_CUP_KEN_KEYFRAMES,
+  BIG_CUP_KEN_POSE,
+  BIG_CUP_KEYFRAMES,
+} from '@/features/trick-viz/model/tricks/bigCup';
 
 /**
  * Dev-only sandbox for the procedural trick visualization work. Nested
@@ -21,7 +25,12 @@ export default function TrickVizSandbox() {
 
   return (
     <View style={styles.root}>
-      <TrickScene keyframes={BIG_CUP_KEYFRAMES} canvasExtras={<OrbitControls />}>
+      <TrickScene
+        keyframes={BIG_CUP_KEYFRAMES}
+        kenPose={BIG_CUP_KEN_POSE}
+        kenKeyframes={BIG_CUP_KEN_KEYFRAMES}
+        canvasExtras={<OrbitControls target={[0, 0.1, 0]} />}
+      >
         {({ replay }) => (
           <View style={styles.hud}>
             <Button size="medium" onPress={replay}>

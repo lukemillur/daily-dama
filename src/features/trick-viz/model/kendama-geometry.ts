@@ -5,20 +5,31 @@ import type { Vec3 } from "./keyframes";
  * trick keyframes, so trick authors can reference cup/spike positions
  * without duplicating magic numbers.
  *
+ * These are all **ken-local** coordinates, describing the ken in its
+ * neutral pose: spike up, serato horizontal, base cup down. Tricks hold
+ * the ken at all sorts of angles, so a trick declares a `KenPose` and maps
+ * these landmarks into world space via `localToWorld` (see `ken-pose.ts`)
+ * rather than hardcoding world coordinates that only hold for one grip.
+ *
  * Anatomy (facing the kendama, string hole toward the viewer): the spike
  * sits at the top, where the dama rests. Just below it, the serato
  * (crosspiece) forms a T — big cup on the right arm facing right, small
- * cup on the left arm facing left. The handle descends from the serato
+ * cup on the left arm facing left. The shaft descends from the serato
  * to the base cup at the very bottom, facing down/outward. Each cup's
  * neck radius matches the shaft it tapers from (the serato bar for the
- * side cups, the handle for the base cup) so the taper reads as one
+ * side cups, the grip shaft for the base cup) so the taper reads as one
  * continuous piece of wood rather than a shaft poking through a cap.
+ *
+ * Naming note: "ken" means the whole assembly (shaft + serato + cups +
+ * spike); "shaft" means just the grip section below the serato. That's
+ * why the topmost point is `spikeTip` and not `shaftTop` — the spike
+ * extends above where the shaft ends.
  */
 export const KENDAMA_LAYOUT = {
   seratoY: 0.1,
-  handleTop: 0.375,
-  handleBottom: -0.62,
-  handleRadius: 0.08,
+  shaftTop: 0.375,
+  shaftBottom: -0.62,
+  shaftRadius: 0.08,
   spikeTip: [0, 0.6, 0] as Vec3,
 
   seratoBarRadius: 0.08,
@@ -43,9 +54,36 @@ export const KENDAMA_LAYOUT = {
     height: 0.2,
   },
 
-  // Where the dama comes to rest when caught in the big cup, used by the
-  // Big Cup trick's landing keyframe.
-  bigCupRest: [0.58, 0.14, 0] as Vec3,
+  /**
+   * Where the string exits the ken: through the shaft just below the
+   * serato, not at the spike tip. Sits on the shaft *surface* (+Z, the
+   * face toward the viewer in the neutral frame) rather than on its axis,
+   * so the string reads as leaving a drilled hole instead of emerging
+   * from inside solid wood.
+   */
+  stringHoleLocal: [0, 0.2 - 0.12, 0.08] as Vec3,
+
   tamaRadius: 0.25,
-  stringRestLength: 0.7,
+
+  /**
+   * Deliberately stylized. Scaled against these ken/tama proportions a
+   * real kendama string (~35cm against a ~16cm ken) would be roughly 2.7
+   * units, which hangs the tama far outside any frame that still shows
+   * the ken at a readable size. 1.2 reads as a kendama string while
+   * keeping the whole trick in view.
+   */
+  stringRestLength: 1.2,
 };
+
+/**
+ * How far a tama's center sits from a cup's mouth plane when seated.
+ *
+ * A tama is wider than the cup mouth, so it rests *on the rim* rather
+ * than sinking in: the rim circle cuts a chord across the sphere, and the
+ * center floats this far along the cup's axis beyond the mouth plane.
+ * Returns 0 for a mouth wide enough to swallow the tama entirely.
+ */
+export function seatOffset(tamaRadius: number, mouthRadius: number): number {
+  if (mouthRadius >= tamaRadius) return 0;
+  return Math.sqrt(tamaRadius ** 2 - mouthRadius ** 2);
+}

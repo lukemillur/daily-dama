@@ -26,26 +26,31 @@ function Cup({ position, mouthRadius, neckRadius, height, rotation = [0, 0, 0] }
 }
 
 /**
- * Static primitive-built ken body. Top to bottom: spike, serato (crosspiece
- * with small cup facing left and big cup facing right), handle, base cup
- * facing down.
+ * The ken: the whole stick assembly the player holds. Top to bottom in its
+ * neutral local frame — spike, serato (crosspiece with small cup facing
+ * left and big cup facing right), grip shaft, base cup facing down.
+ *
+ * Deliberately pose-free. Tricks hold the ken at wildly different angles,
+ * so the grip lives in a `KenPose` applied by `TrickScene`; keeping this
+ * component at identity means `KENDAMA_LAYOUT` stays the single local
+ * frame that both the geometry and the trick landmarks are written in.
  */
-export function KendamaModel() {
+export function Ken() {
   const { smallCup, bigCup, baseCup } = KENDAMA_LAYOUT;
-  // The spike's base starts exactly where the handle ends, at the handle's
+  // The spike's base starts exactly where the shaft ends, at the shaft's
   // own radius, so it reads as one continuous taper rather than a thin
   // point erupting partway up a thicker shaft.
-  const spikeHeight = KENDAMA_LAYOUT.spikeTip[1] - KENDAMA_LAYOUT.handleTop;
+  const spikeHeight = KENDAMA_LAYOUT.spikeTip[1] - KENDAMA_LAYOUT.shaftTop;
 
   return (
     <group>
-      {/* Handle */}
-      <mesh position={[0, (KENDAMA_LAYOUT.handleBottom + KENDAMA_LAYOUT.handleTop) / 2, 0]}>
+      {/* Grip shaft */}
+      <mesh position={[0, (KENDAMA_LAYOUT.shaftBottom + KENDAMA_LAYOUT.shaftTop) / 2, 0]}>
         <cylinderGeometry
           args={[
-            KENDAMA_LAYOUT.handleRadius,
-            KENDAMA_LAYOUT.handleRadius,
-            KENDAMA_LAYOUT.handleTop - KENDAMA_LAYOUT.handleBottom,
+            KENDAMA_LAYOUT.shaftRadius,
+            KENDAMA_LAYOUT.shaftRadius,
+            KENDAMA_LAYOUT.shaftTop - KENDAMA_LAYOUT.shaftBottom,
             16,
           ]}
         />
@@ -78,7 +83,7 @@ export function KendamaModel() {
         rotation={[0, 0, -Math.PI / 2]}
       />
 
-      {/* Base cup: tapers from the handle, opens down (-Y) */}
+      {/* Base cup: tapers from the shaft, opens down (-Y) */}
       <Cup
         position={baseCup.center}
         mouthRadius={baseCup.mouthRadius}
@@ -87,9 +92,9 @@ export function KendamaModel() {
         rotation={[Math.PI, 0, 0]}
       />
 
-      {/* Spike, tapering from the top of the handle up to its tip */}
-      <mesh position={[0, KENDAMA_LAYOUT.handleTop + spikeHeight / 2, 0]}>
-        <coneGeometry args={[KENDAMA_LAYOUT.handleRadius, spikeHeight, 16]} />
+      {/* Spike, tapering from the top of the shaft up to its tip */}
+      <mesh position={[0, KENDAMA_LAYOUT.shaftTop + spikeHeight / 2, 0]}>
+        <coneGeometry args={[KENDAMA_LAYOUT.shaftRadius, spikeHeight, 16]} />
         <meshStandardMaterial color="#8a5a2b" />
       </mesh>
     </group>
