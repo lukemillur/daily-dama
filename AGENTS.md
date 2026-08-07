@@ -94,6 +94,13 @@ The five-link web navigation has been measured to fit a 320 px viewport. Recheck
 
 Web is the current first verification surface. iOS and Android remain required eventual targets, but this iteration has not yet received deliberate device hardening.
 
-## Git state expectations
+## Feature-specific handoffs
+
+Some areas have their own root-level handoff document. Read the relevant one before working in that area rather than re-deriving it:
+
+- [TRICK_VIZ_HANDOFF.md](TRICK_VIZ_HANDOFF.md) — procedural 3D trick visualization (`src/features/trick-viz/`). Verified kendama geometry, the ken-pose abstraction, keyframe/easing pitfalls, the verlet string, and environment traps (React Compiler, stale console buffers, sandbox access gating).
+- [DEPLOYMENT_HANDOFF.md](DEPLOYMENT_HANDOFF.md) — web deploy to dailydama.com.
+
+# Git state expectations
 
 Focused local commits are welcome and make agent work easier to audit. Never push automatically. Preserve unrelated work and inspect `git status` before editing. Recent persistence, custom-trick, Tricks-route, and Sesh work is intentionally split into focused commits, so consult `git log` when the reasoning behind a boundary is unclear.
