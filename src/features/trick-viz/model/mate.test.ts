@@ -1,13 +1,18 @@
 import { describe, expect, it } from '@jest/globals';
 
 import { localDirectionToWorld, localToWorld, type BodyPose, type Vec3 } from '@/features/trick-viz/model/body';
-import { KENDAMA_LAYOUT, seatOffset } from '@/features/trick-viz/model/kendama-geometry';
 import {
+  KENDAMA_LAYOUT,
+  SPIKE_LENGTH,
+  seatOffset,
+} from '@/features/trick-viz/model/kendama-geometry';
+import {
+  insertionDepth,
   seatTamaInCup,
   spearTamaOnSpike,
   standKenOnTama,
 } from '@/features/trick-viz/model/mate';
-import { KEN_SOCKETS, toWorldSocket } from '@/features/trick-viz/model/sockets';
+import { KEN_SOCKETS, TAMA_SOCKETS, toWorldSocket } from '@/features/trick-viz/model/sockets';
 import { TAMA_LAYOUT } from '@/features/trick-viz/model/tama-geometry';
 
 /**
@@ -95,25 +100,43 @@ describe('spearTamaOnSpike', () => {
     ]);
   });
 
-  it('buries the tip inside the ball rather than balancing it on the point', () => {
+  it('swallows the whole spike, so none of it is left showing', () => {
     const spike = toWorldSocket(KEN_SOCKETS.spike, { position: [0, 0, 0], rotation: [0, 0, 0] });
     const pose = spearTamaOnSpike(spike);
 
-    // Spike points up, so the centre sits radius-minus-depth above the tip.
+    // The tama goes on until the spike bottoms out, which here is the
+    // spike's own length rather than the (deeper) bore.
+    expect(insertionDepth(KEN_SOCKETS.spike, TAMA_SOCKETS.hole)).toBeCloseTo(SPIKE_LENGTH, 10);
     expectVec3(pose.position, [
       0,
-      KENDAMA_LAYOUT.spikeTip[1] + TAMA_LAYOUT.radius - TAMA_LAYOUT.holeDepth,
+      KENDAMA_LAYOUT.spikeTip[1] + TAMA_LAYOUT.radius - SPIKE_LENGTH,
       0,
     ]);
 
-    const tipDepthInsideSurface =
-      TAMA_LAYOUT.radius -
-      Math.hypot(
-        pose.position[0] - spike.point[0],
-        pose.position[1] - spike.point[1],
-        pose.position[2] - spike.point[2],
-      );
-    expect(tipDepthInsideSurface).toBeCloseTo(TAMA_LAYOUT.holeDepth, 6);
+    // Every point along the spike sits inside the ball...
+    for (let i = 0; i <= 20; i += 1) {
+      const y = KENDAMA_LAYOUT.shaftTop + (SPIKE_LENGTH * i) / 20;
+      expect(Math.abs(pose.position[1] - y)).toBeLessThanOrEqual(TAMA_LAYOUT.radius + 1e-9);
+    }
+
+    // ...and the hole's mouth comes to rest exactly where it leaves the shaft.
+    expect(pose.position[1] + TAMA_LAYOUT.holeLocal[1]).toBeCloseTo(KENDAMA_LAYOUT.shaftTop, 10);
+  });
+
+  it('leaves the string hole and its paint on the far side from the spike', () => {
+    const spike = toWorldSocket(KEN_SOCKETS.spike, { position: [0, 0, 0], rotation: [0, 0, 0] });
+    const pose = spearTamaOnSpike(spike);
+
+    // A landed tama sits at neutral rotation with its painted top upward,
+    // which is how the frame is oriented and how it looks in life.
+    expectVec3(localDirectionToWorld(TAMA_LAYOUT.stringHoleAxisLocal, pose), [0, 1, 0]);
+  });
+
+  it('would stop short of burying a spike longer than the bore', () => {
+    // Guards the other direction: a ken that outreaches the cavity must not
+    // be driven through the ball.
+    const longSpike = { ...KEN_SOCKETS.spike, depth: TAMA_LAYOUT.holeDepth + 1 };
+    expect(insertionDepth(longSpike, TAMA_SOCKETS.hole)).toBe(TAMA_LAYOUT.holeDepth);
   });
 
   it('holds the mate while spinning the tama about the spike', () => {

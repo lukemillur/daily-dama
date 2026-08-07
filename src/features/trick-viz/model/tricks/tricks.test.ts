@@ -2,7 +2,11 @@ import { describe, expect, it } from '@jest/globals';
 import { Quaternion, Vector3 } from 'three';
 
 import type { Vec3 } from '@/features/trick-viz/model/body';
-import { KENDAMA_LAYOUT, seatOffset } from '@/features/trick-viz/model/kendama-geometry';
+import {
+  KENDAMA_LAYOUT,
+  SPIKE_LENGTH,
+  seatOffset,
+} from '@/features/trick-viz/model/kendama-geometry';
 import { findStallAt, type Sample, type Trick } from '@/features/trick-viz/model/timeline';
 import { TAMA_LAYOUT } from '@/features/trick-viz/model/tama-geometry';
 import {
@@ -72,10 +76,20 @@ describe.each(TRICK_VISUALIZATIONS.map((trick) => [trick.name, trick] as const))
         )
         .add(position(first, 'ken'));
 
-      expect(hole.distanceTo(position(first, 'tama'))).toBeCloseTo(
-        KENDAMA_LAYOUT.stringRestLength,
-        4,
-      );
+      // Measured to the tama's own string hole, not its centre: the string
+      // is threaded through a real hole at the top of the ball.
+      const tamaHole = new Vector3(...TAMA_LAYOUT.stringHoleLocal)
+        .applyQuaternion(
+          new Quaternion(
+            first.tama.quaternion[0],
+            first.tama.quaternion[1],
+            first.tama.quaternion[2],
+            first.tama.quaternion[3],
+          ),
+        )
+        .add(position(first, 'tama'));
+
+      expect(hole.distanceTo(tamaHole)).toBeCloseTo(KENDAMA_LAYOUT.stringRestLength, 4);
     });
   },
 );
@@ -172,14 +186,37 @@ describe('Pull up spike', () => {
     expect(holeAxis.y).toBeCloseTo(-1, 4);
   });
 
-  it('puts the spike tip inside the ball, not under it', () => {
+  it('hides the spike in its entirety inside the dama', () => {
+    // The point of the hollow interior. Sampled along the whole spike, from
+    // where it leaves the shaft to its tip, every point must be inside the
+    // ball — the tama comes to rest against the ken with no spike showing.
     const end = last(pullUpSpikeNoSpin);
-    const tip = new Vector3(...KENDAMA_LAYOUT.spikeTip).add(position(end, 'ken'));
+    const centre = position(end, 'tama');
 
-    expect(position(end, 'tama').distanceTo(tip)).toBeCloseTo(
-      TAMA_LAYOUT.radius - TAMA_LAYOUT.holeDepth,
-      4,
-    );
+    for (let i = 0; i <= 20; i += 1) {
+      const y = KENDAMA_LAYOUT.shaftTop + (SPIKE_LENGTH * i) / 20;
+      const along = new Vector3(0, y, 0).add(position(end, 'ken'));
+      expect(centre.distanceTo(along)).toBeLessThanOrEqual(TAMA_LAYOUT.radius + 1e-9);
+    }
+  });
+
+  it('rests the hole’s mouth exactly where the spike leaves the shaft', () => {
+    const end = last(pullUpSpikeNoSpin);
+    const mouth = new Vector3(...TAMA_LAYOUT.holeLocal).add(position(end, 'tama'));
+
+    expect(mouth.y).toBeCloseTo(position(end, 'ken').y + KENDAMA_LAYOUT.shaftTop, 4);
+  });
+
+  it('keeps the cavity deeper than the spike is long', () => {
+    // If this ever inverts, the ken would bottom out with its base showing.
+    expect(TAMA_LAYOUT.holeDepth).toBeGreaterThanOrEqual(SPIKE_LENGTH);
+  });
+
+  it('leaves the string hole and its paint on top, clear of the ken', () => {
+    const end = last(pullUpSpikeNoSpin);
+    const stringHole = direction(end, 'tama', TAMA_LAYOUT.stringHoleAxisLocal);
+
+    expect(stringHole.y).toBeCloseTo(1, 4);
   });
 
   it('turns the tama on the spin variant and not on the other', () => {
@@ -211,7 +248,7 @@ describe('Airplane', () => {
     expect(tamaTravel).toBeLessThan(0.3);
   });
 
-  it('lands the spike in the held tama’s hole', () => {
+  it('lands the spike in the held tama’s hole, fully buried', () => {
     const end = last(airplane);
     const tip = new Vector3(...KENDAMA_LAYOUT.spikeTip)
       .applyQuaternion(
@@ -224,8 +261,10 @@ describe('Airplane', () => {
       )
       .add(position(end, 'ken'));
 
+    // The tip ends up one spike-length in from the hole's mouth, which puts
+    // it just short of the ball's centre.
     expect(position(end, 'tama').distanceTo(tip)).toBeCloseTo(
-      TAMA_LAYOUT.radius - TAMA_LAYOUT.holeDepth,
+      TAMA_LAYOUT.radius - SPIKE_LENGTH,
       4,
     );
   });

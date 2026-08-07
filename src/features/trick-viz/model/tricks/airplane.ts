@@ -20,13 +20,13 @@ import { buildTrick } from '../timeline';
  */
 
 /**
- * The tama held with its hole pointing at the floor: a half turn about X
- * takes the hole's local +Y round to world -Y. Held a little above the
- * origin so the ken has somewhere to hang.
+ * The tama held with its big hole pointing at the floor, ready to receive
+ * the spike — which is its neutral pose, since the tama's local frame is
+ * oriented by that hole. Held at the origin, with the ken hanging below.
  */
 export const AIRPLANE_TAMA_GRIP: BodyPose = {
   position: [0, 0, 0],
-  rotation: [Math.PI, 0, 0],
+  rotation: [0, 0, 0],
 };
 
 export const airplane = buildTrick({

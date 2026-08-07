@@ -69,10 +69,10 @@ function stringEnds(state: TrickState): { anchorWorld: Vec3; freeAttachLocal: Ve
   return state.held === 'ken'
     ? {
         anchorWorld: localToWorld(KENDAMA_LAYOUT.stringHoleLocal, state.ken),
-        freeAttachLocal: [0, 0, 0],
+        freeAttachLocal: TAMA_LAYOUT.stringHoleLocal,
       }
     : {
-        anchorWorld: state.tama.position,
+        anchorWorld: localToWorld(TAMA_LAYOUT.stringHoleLocal, state.tama),
         freeAttachLocal: KENDAMA_LAYOUT.stringHoleLocal,
       };
 }

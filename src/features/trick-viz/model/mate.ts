@@ -82,17 +82,31 @@ export function seatTamaInCup(cup: WorldSocket, carriedRotation: Vec3 = [0, 0, 0
 }
 
 /**
+ * How far a spike goes into a hole: as far as it can, which is the shorter
+ * of the spike and the bore.
+ *
+ * A real tama is hollowed out deeper than the spike is long, so a landed
+ * spike vanishes inside it completely — the tama comes to rest against the
+ * ken where the spike leaves the shaft. Taking the minimum makes that a
+ * consequence of the two bodies' dimensions rather than a tuned number, and
+ * keeps the ken from spearing straight through a shallower ball.
+ */
+export function insertionDepth(spike: Socket, hole: Socket): number {
+  return Math.min(spike.depth ?? 0, hole.depth ?? 0);
+}
+
+/**
  * The tama speared on the spike.
  *
- * The hole faces back down the spike, so its axis is the spike's reversed.
- * The hole's mouth sits `holeDepth` short of the tip along the spike, which
- * puts the tip inside the ball rather than the ball balanced on the point.
+ * The hole faces back down the spike, so its axis is the spike's reversed,
+ * and its mouth sits one insertion short of the tip — which puts the whole
+ * spike inside the ball rather than the ball perched on the point.
  */
 export function spearTamaOnSpike(spike: WorldSocket, spin = 0): BodyPose {
   return alignedPose(
     TAMA_SOCKETS.hole,
     scaleVec3(spike.axis, -1),
-    addScaledVec3(spike.point, spike.axis, -TAMA_LAYOUT.holeDepth),
+    addScaledVec3(spike.point, spike.axis, -insertionDepth(spike, TAMA_SOCKETS.hole)),
     spin,
   );
 }
@@ -108,15 +122,14 @@ export function spearTamaOnSpike(spike: WorldSocket, spin = 0): BodyPose {
  */
 export function spearKenIntoTama(tama: BodyPose, spin = 0): BodyPose {
   const hole = toWorldSocket(TAMA_SOCKETS.hole, tama);
+  const insertion = insertionDepth(KEN_SOCKETS.spike, TAMA_SOCKETS.hole);
 
+  // The tip ends up one insertion in from the hole's mouth, and the mouth
+  // is on the ball's surface.
   return alignedPose(
     KEN_SOCKETS.spike,
     scaleVec3(hole.axis, -1),
-    addScaledVec3(
-      tama.position,
-      hole.axis,
-      TAMA_LAYOUT.radius - TAMA_LAYOUT.holeDepth,
-    ),
+    addScaledVec3(hole.point, hole.axis, -insertion),
     spin,
   );
 }

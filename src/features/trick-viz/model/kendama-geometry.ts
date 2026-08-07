@@ -75,6 +75,15 @@ export const KENDAMA_LAYOUT = {
 };
 
 /**
+ * Length of the spike, from where it leaves the shaft to its tip.
+ *
+ * Derived rather than restated: `Ken` builds the cone from the same two
+ * numbers, and the tama's cavity has to be at least this deep for a landed
+ * spike to disappear inside it.
+ */
+export const SPIKE_LENGTH = KENDAMA_LAYOUT.spikeTip[1] - KENDAMA_LAYOUT.shaftTop;
+
+/**
  * How far a tama's center sits from a cup's mouth plane when seated.
  *
  * A tama is wider than the cup mouth, so it rests *on the rim* rather

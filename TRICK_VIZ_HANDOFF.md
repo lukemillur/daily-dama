@@ -75,12 +75,32 @@ Two consequences drive everything, both learned by getting them wrong first:
 
 The seat is derived, not placed: the tama (r 0.25) is wider than the big cup mouth (r 0.225), so it rests **on the rim** at `sqrt(r_tama² − r_mouth²)` ≈ 0.109 above the mouth plane. It never enters the cup, so it cannot clip through a wall.
 
+## 4b. Tama anatomy — verified, do not simplify
+
+The tama's local frame is oriented by its **big hole (ana), which faces −Y**. A tama landed on an upright spike therefore sits at neutral rotation with its painted top upward, which is how it looks in life and makes airplane's grip the identity pose.
+
+| Feature | Local | Notes |
+|---|---|---|
+| Big hole mouth | `[0, -0.25, 0]`, axis −Y | radius 0.088 — true to a ~2.1cm hole in a ~6cm ball, and a shade wider than the ken's 0.08 shaft |
+| Cavity depth | 0.24 | must exceed `SPIKE_LENGTH` (0.225) |
+| String hole | `[0, 0.25, 0]`, axis +Y | radius 0.022, the opposite pole |
+| Knot | inside, at the top of the cavity | what stops the string pulling back through |
+| Painted circle | spherical cap, radius 0.11 | centred on the string hole, on top |
+
+Three things follow, and all three were wrong in the first version:
+
+1. **The interior is hollow and the spike disappears into it.** `insertionDepth` takes the smaller of the spike's length and the bore's depth, so the tama goes on until the spike bottoms out — the hole's mouth comes to rest exactly at `shaftTop`, where the spike leaves the shaft, and no spike is left showing. This is a consequence of the two bodies' dimensions, not a tuned constant.
+2. **The string attaches at the string hole, not the ball's centre.** Both `stringEnds` in `beats.ts` and the rope's far end in `String.tsx` use `TAMA_LAYOUT.stringHoleLocal`. Hang length is measured hole-to-hole.
+3. **The ball is rendered with the bottom cap genuinely omitted** (`sphereGeometry` with `thetaLength = π − holeAngle`), lined with a double-sided tube and capped at the blind end. A dark spot painted on a solid sphere would not let you see into the cavity, and back faces are culled, so without the lining the opening would read as a window through the ball.
+
+**Consequence to know about:** the tama is now fully axisymmetric — sphere, both holes, knot, and paint all sit on one axis. Spin about that axis is therefore invisible except through the string. `Pull up spike (Spin)` and `(No spin)` are geometrically different and asserted as such in tests, but they look alike. A maker's logo printed on the side (which real tamas carry) would fix it; not added, because it wasn't asked for.
+
 ## 5. The mate solver
 
 `mate.ts` replaces the page of inline trigonometry Big Cup used to carry. It states the constraint — *this landmark goes here, facing this way* — instead of answering it for one cup under one grip.
 
 - `seatTamaInCup` — rim math via `seatOffset`. Rotation is carried, since a sphere on a rim has no meaningful orientation.
-- `spearTamaOnSpike` — hole anti-aligned with the spike, tip buried `holeDepth` inside. Rotation fully determined up to spin, which is a parameter (the graded difference in "Pull up spike (Spin or No spin)").
+- `spearTamaOnSpike` — hole anti-aligned with the spike, inserted by `insertionDepth` so the spike vanishes inside (see §4b). Rotation fully determined up to spin, which is a parameter (the graded difference in "Pull up spike (Spin or No spin)").
 - `spearKenIntoTama` — the same rendezvous solved for the *other* body. Airplane.
 - `standKenOnTama` — lighthouse. Not yet used by a trick; the rim-on-sphere chord is the *same* `seatOffset` read the other way round.
 
@@ -132,7 +152,7 @@ A 28-particle inextensible verlet rope colliding with six tapered-capsule proxie
 
 `stringRestLength: 2.7` is **true scale** and deliberate. It hangs the tama far outside any static frame, which is exactly why `frameSubjects` fits tama + ken *per frame*. Do not shorten it to make a static camera work.
 
-The string always runs ken-hole ↔ tama, so `String.tsx` needed no change for tama-held tricks. Its rope continuity across a run is a feature; it re-lays only on `runToken` change.
+The string always runs ken-hole ↔ tama-hole, so `String.tsx` needs no per-trick routing and none for tama-held tricks either. Its rope continuity across a run is a feature; it re-lays only on `runToken` change. Endpoints are pinned and excluded from the collision passes, which is why pinning the far end exactly on the tama's surface is safe.
 
 ## 10. Traps — do not rediscover these
 

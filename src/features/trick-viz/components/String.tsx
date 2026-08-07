@@ -54,14 +54,16 @@ export function KendamaString({ kenRef, tamaRef, runToken }: StringProps) {
     if (!mesh || !tama || !ken) return;
 
     ken.updateMatrixWorld();
+    tama.updateMatrixWorld();
     const anchor = anchorRef.current.set(...anchorLocal).applyMatrix4(ken.matrixWorld);
 
-    // The string meets the tama at its surface, on the side facing the
-    // hole, so the tube stops at the ball rather than spearing its centre.
-    const end = endRef.current.subVectors(anchor, tama.position);
-    const span = end.length();
-    if (span < 1e-6) end.set(0, tamaRadius, 0).add(tama.position);
-    else end.multiplyScalar(tamaRadius / span).add(tama.position);
+    // The string ends at the tama's own string hole — a real drilled hole at
+    // the top of the ball, knotted on the inside. It used to end at
+    // whichever point of the surface happened to face the ken, which looked
+    // right only because there was nothing there to contradict it.
+    const end = endRef.current
+      .set(...TAMA_LAYOUT.stringHoleLocal)
+      .applyMatrix4(tama.matrixWorld);
 
     if (!ropeRef.current || lastRunToken.current !== runToken) {
       lastRunToken.current = runToken;

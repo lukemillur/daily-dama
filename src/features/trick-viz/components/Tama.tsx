@@ -1,51 +1,84 @@
-import { TAMA_LAYOUT } from '../model/tama-geometry';
+import { TAMA_LAYOUT, TAMA_MARK_ANGLE } from '../model/tama-geometry';
 
 const TAMA_COLOR = '#f2e4c9';
-const HOLE_COLOR = '#2b2118';
+const CAVITY_COLOR = '#3a2c1e';
+const BORE_COLOR = '#241a12';
 const MARK_COLOR = '#b5462f';
+const KNOT_COLOR = '#ded5c4';
 
 /**
- * The tama: the ball, in its neutral local frame with the spike hole facing
- * up (+Y).
+ * The tama (dama), in its neutral local frame: big hole down, painted top up.
  *
  * Deliberately pose-free, exactly like `Ken` — the trick's track supplies
  * position and orientation, so `TAMA_LAYOUT` stays the single local frame
  * that both the geometry and the trick landmarks are written in.
  *
- * It used to be a plain sphere driven by a position track, which was enough
- * while every trick caught it in a cup: a ball on a rim looks the same
- * whichever way it is turned. A spike catch fixes its orientation
- * completely, so the hole has to be visible or the catch reads as the ball
- * balancing on a point.
+ * The ball is a sphere with the bottom cap **actually omitted**, not a solid
+ * sphere with a dark spot painted where a hole should be. That matters for
+ * more than looks: the cavity behind the opening is what swallows the spike,
+ * and being able to see into it is what makes a landed spike read as landed
+ * rather than balanced.
  */
 export function Tama() {
-  const { radius, holeRadius, holeDepth } = TAMA_LAYOUT;
+  const { radius, holeRadius, holeDepth, stringHoleRadius, knotRadius } = TAMA_LAYOUT;
 
-  // Where a flat disc of the hole's radius meets the sphere, so the bore's
-  // mouth sits in the surface rather than floating above or sunk below it.
-  const mouthY = Math.sqrt(radius ** 2 - holeRadius ** 2);
+  // Where the opening cuts the sphere, measured from the top pole. The ring
+  // it leaves has exactly `holeRadius`, so the bore lining meets it seamlessly.
+  const holeAngle = Math.asin(holeRadius / radius);
+  const mouthY = -radius * Math.cos(holeAngle);
+  const cavityTop = mouthY + holeDepth;
+
+  const stringHoleAngle = Math.asin(stringHoleRadius / radius);
 
   return (
     <group>
+      {/* The ball, less the cap at the bottom pole. */}
       <mesh>
-        <sphereGeometry args={[radius, 32, 32]} />
+        <sphereGeometry args={[radius, 40, 32, 0, Math.PI * 2, 0, Math.PI - holeAngle]} />
         <meshStandardMaterial color={TAMA_COLOR} />
       </mesh>
 
-      {/* The spike hole, sunk into the top. */}
-      <mesh position={[0, mouthY - holeDepth / 2, 0]}>
-        <cylinderGeometry args={[holeRadius, holeRadius * 0.75, holeDepth, 16]} />
-        <meshStandardMaterial color={HOLE_COLOR} />
+      {/*
+        The hollow. Lining it with a double-sided tube is what stops the
+        opening reading as a window straight through the ball: back faces of
+        the sphere are culled, so without this you would see the background.
+      */}
+      <mesh position={[0, (mouthY + cavityTop) / 2, 0]}>
+        <cylinderGeometry args={[holeRadius, holeRadius, holeDepth, 32, 1, true]} />
+        <meshStandardMaterial color={CAVITY_COLOR} side={2} />
+      </mesh>
+
+      {/* The blind end of the bore, seen looking up into the hole. */}
+      <mesh position={[0, cavityTop, 0]} rotation={[Math.PI / 2, 0, 0]}>
+        <circleGeometry args={[holeRadius, 32]} />
+        <meshStandardMaterial color={BORE_COLOR} side={2} />
       </mesh>
 
       {/*
-        A painted mark on one side. Not decoration: a sphere spinning about
-        its own axis is invisible without one, and whether the tama turns on
-        the way up is the graded difference between the two pull-up spikes.
+        The knot. It sits at the inner end of the string channel, bearing
+        against the top of the cavity — that is what stops the string pulling
+        back out through the hole. Only visible looking into the big hole,
+        which is exactly where it should be.
       */}
-      <mesh position={[0, 0, radius * 0.94]} rotation={[Math.PI / 2, 0, 0]}>
-        <cylinderGeometry args={[radius * 0.3, radius * 0.3, radius * 0.16, 24]} />
+      <mesh position={[0, cavityTop - knotRadius * 0.7, 0]}>
+        <sphereGeometry args={[knotRadius, 12, 12]} />
+        <meshStandardMaterial color={KNOT_COLOR} />
+      </mesh>
+
+      {/*
+        The painted circle, centred on the string hole. A spherical cap
+        rather than a disc stuck to the top: a flat disc of this radius would
+        sink into the ball at its edges.
+      */}
+      <mesh>
+        <sphereGeometry args={[radius * 1.003, 40, 16, 0, Math.PI * 2, 0, TAMA_MARK_ANGLE]} />
         <meshStandardMaterial color={MARK_COLOR} />
+      </mesh>
+
+      {/* The string hole itself, in the middle of the paint. */}
+      <mesh>
+        <sphereGeometry args={[radius * 1.006, 24, 8, 0, Math.PI * 2, 0, stringHoleAngle]} />
+        <meshStandardMaterial color={BORE_COLOR} />
       </mesh>
     </group>
   );

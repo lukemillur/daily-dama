@@ -1,5 +1,5 @@
 import { addScaledVec3, localDirectionToWorld, localToWorld, type BodyPose, type Vec3 } from './body';
-import { KENDAMA_LAYOUT } from './kendama-geometry';
+import { KENDAMA_LAYOUT, SPIKE_LENGTH } from './kendama-geometry';
 import { TAMA_LAYOUT } from './tama-geometry';
 
 /**
@@ -30,6 +30,14 @@ export type Socket = {
   kind: SocketKind;
   /** Mouth radius for a cup or flat, tip radius for a spike, bore for a hole. */
   radius: number;
+  /**
+   * For a spike, how far it can enter; for a hole, how deep it goes.
+   *
+   * A spike/hole mate inserts by the smaller of the two, which is what
+   * makes "the spike disappears inside the tama" a consequence of the two
+   * bodies' dimensions rather than a tuned constant.
+   */
+  depth?: number;
 };
 
 /** The same socket resolved through a pose. */
@@ -76,6 +84,7 @@ export const KEN_SOCKETS = {
     axis: [0, 1, 0],
     kind: 'spike',
     radius: 0.012,
+    depth: SPIKE_LENGTH,
   },
 } as const satisfies Record<string, Socket>;
 
@@ -85,6 +94,19 @@ export const TAMA_SOCKETS = {
     axis: TAMA_LAYOUT.holeAxisLocal,
     kind: 'hole',
     radius: TAMA_LAYOUT.holeRadius,
+    depth: TAMA_LAYOUT.holeDepth,
+  },
+
+  /**
+   * Where the string leaves the tama. Not the ball's centre, which is what
+   * the string used to be pinned to — a visible difference now that the
+   * hole is modelled, and a real one at the top of a hang.
+   */
+  stringHole: {
+    point: TAMA_LAYOUT.stringHoleLocal,
+    axis: TAMA_LAYOUT.stringHoleAxisLocal,
+    kind: 'hole',
+    radius: TAMA_LAYOUT.stringHoleRadius,
   },
 } as const satisfies Record<string, Socket>;
 
