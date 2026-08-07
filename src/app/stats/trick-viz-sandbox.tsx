@@ -1,5 +1,6 @@
 import { OrbitControls } from '@react-three/drei';
 import { Redirect } from 'expo-router';
+import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { Button } from '@/components/ui/button';
@@ -19,6 +20,10 @@ import {
  * of how the URL is reached.
  */
 export default function TrickVizSandbox() {
+  // Free look hands the camera to OrbitControls; the follow rig and the
+  // controls would otherwise both write to the camera every frame.
+  const [freeLook, setFreeLook] = useState(false);
+
   if (!__DEV__) {
     return <Redirect href="/" />;
   }
@@ -29,12 +34,18 @@ export default function TrickVizSandbox() {
         keyframes={BIG_CUP_KEYFRAMES}
         kenPose={BIG_CUP_KEN_POSE}
         kenKeyframes={BIG_CUP_KEN_KEYFRAMES}
-        canvasExtras={<OrbitControls target={[0, 0.1, 0]} />}
+        followAction={!freeLook}
+        canvasExtras={({ target }) =>
+          freeLook ? <OrbitControls target={target} /> : null
+        }
       >
         {({ replay }) => (
           <View style={styles.hud}>
             <Button size="medium" onPress={replay}>
               Replay
+            </Button>
+            <Button size="medium" onPress={() => setFreeLook((on) => !on)}>
+              {freeLook ? 'Follow cam' : 'Free look'}
             </Button>
           </View>
         )}
@@ -52,5 +63,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 32,
     alignSelf: 'center',
+    flexDirection: 'row',
+    gap: 12,
   },
 });

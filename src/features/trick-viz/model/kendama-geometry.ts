@@ -72,7 +72,7 @@ export const KENDAMA_LAYOUT = {
    * the ken at a readable size. 1.2 reads as a kendama string while
    * keeping the whole trick in view.
    */
-  stringRestLength: 1.2,
+  stringRestLength: 2.7,
 };
 
 /**

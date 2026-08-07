@@ -42,6 +42,32 @@ function lerpVec3(a: Vec3, b: Vec3, t: number): Vec3 {
 }
 
 /**
+ * Bakes a continuous path into evenly spaced keyframes.
+ *
+ * Some motion is better written as a formula than as poses — a toss under
+ * gravity is one parabola, not a set of waypoints. Sampling it densely and
+ * interpolating linearly reproduces the curve exactly, and sidesteps the
+ * trap that eased segments create: every easing that starts or ends at zero
+ * velocity puts a stall at that keyframe, so a path built from several eased
+ * hops reads as a series of steps rather than one movement.
+ */
+export function bakeKeyframes(
+  from: number,
+  to: number,
+  steps: number,
+  at: (t: number) => Vec3,
+): Keyframe[] {
+  const baked: Keyframe[] = [];
+
+  for (let i = 0; i <= steps; i += 1) {
+    const t = from + ((to - from) * i) / steps;
+    baked.push({ t, position: at(t), easing: linear });
+  }
+
+  return baked;
+}
+
+/**
  * Samples position/rotation at normalized time `t` by finding the surrounding
  * keyframe pair and interpolating between them. Each segment uses the easing
  * declared on the keyframe it arrives at, falling back to `defaultEasing`.

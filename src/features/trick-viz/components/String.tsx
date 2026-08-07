@@ -2,59 +2,98 @@ import { useFrame } from '@react-three/fiber';
 import { useRef } from 'react';
 import { CatmullRomCurve3, Group, Mesh, TubeGeometry, Vector3 } from 'three';
 
+import { createWorldColliderBuffer, toWorldColliders } from '../model/kendama-colliders';
 import type { Vec3 } from '../model/keyframes';
+import { createRope, stepRope, toCurvePoints, type RopeState } from '../model/rope';
 
 /** Light, like a real kendama string — and legible on a dark scene. */
 const STRING_COLOR = '#ded5c4';
 const STRING_RADIUS = 0.012;
-/** How much of the slack turns into visible droop. */
-const SAG_FACTOR = 0.55;
+
+/**
+ * Rope particles. Enough that the string can curve around a cup rim without
+ * cutting the corner, few enough that ten solver passes stay cheap.
+ */
+const PARTICLE_COUNT = 28;
 
 type StringProps = {
-  /** The ken group, so the anchor tracks the ken as it moves. */
+  /** The ken group, so the anchor and colliders track it as it moves. */
   kenRef: React.RefObject<Group | null>;
   /** String hole position in ken-local space. */
   anchorLocal: Vec3;
-  /** Length of the string; anything shorter than this hangs slack. */
+  /** Total length of the string. */
   restLength: number;
   tamaRef: React.RefObject<Mesh | null>;
+  tamaRadius: number;
+  /** Bumped by the parent to re-lay the rope straight on replay. */
+  playToken: number;
 };
 
 /**
- * Recomputes a thin tube each frame between the string hole (tracked
- * through the ken's live transform, since the ken moves during a trick)
- * and the tama's live position.
+ * The string, simulated as a verlet rope that collides with the ken.
  *
- * When the tama is closer to the hole than the string is long, the excess
- * has to go somewhere — the midpoint is bowed downward in proportion to
- * the slack. Without this the string reads as a rigid rod at the catch,
- * where roughly half its length is spare.
+ * The previous version drew a fixed three-point curve with a hardcoded sag,
+ * which had no way to avoid anything — at full string length it hung
+ * straight through the model. A rope with real segments gets collision and
+ * natural drape from the same solve, and needs no per-trick routing: it
+ * reacts to wherever the ken and tama happen to be.
  */
-export function KendamaString({ kenRef, anchorLocal, restLength, tamaRef }: StringProps) {
+export function KendamaString({
+  kenRef,
+  anchorLocal,
+  restLength,
+  tamaRef,
+  tamaRadius,
+  playToken,
+}: StringProps) {
   const meshRef = useRef<Mesh>(null);
+  const ropeRef = useRef<RopeState | null>(null);
+  const lastPlayToken = useRef(playToken);
+  const collidersRef = useRef(createWorldColliderBuffer());
+  const anchorRef = useRef(new Vector3());
+  const endRef = useRef(new Vector3());
 
-  useFrame(() => {
+  useFrame((_, delta) => {
     const mesh = meshRef.current;
     const tama = tamaRef.current;
     const ken = kenRef.current;
     if (!mesh || !tama || !ken) return;
 
-    // Allocated per frame rather than hoisted: the tube geometry below is
-    // rebuilt every frame anyway, so a few vectors are noise, and it keeps
-    // this free of render-scoped mutable state.
     ken.updateMatrixWorld();
-    const anchor = new Vector3(...anchorLocal).applyMatrix4(ken.matrixWorld);
+    const anchor = anchorRef.current.set(...anchorLocal).applyMatrix4(ken.matrixWorld);
 
-    const distance = anchor.distanceTo(tama.position);
-    const slack = Math.max(restLength - distance, 0);
+    // The string meets the tama at its surface, on the side facing the
+    // hole, so the tube stops at the ball rather than spearing its centre.
+    const end = endRef.current.subVectors(anchor, tama.position);
+    const span = end.length();
+    if (span < 1e-6) end.set(0, tamaRadius, 0).add(tama.position);
+    else end.multiplyScalar(tamaRadius / span).add(tama.position);
 
-    const mid = new Vector3()
-      .addVectors(anchor, tama.position)
-      .multiplyScalar(0.5)
-      .setY((anchor.y + tama.position.y) / 2 - slack * SAG_FACTOR);
+    if (!ropeRef.current || lastPlayToken.current !== playToken) {
+      lastPlayToken.current = playToken;
+      ropeRef.current = createRope(PARTICLE_COUNT, anchor, end, restLength);
+    }
 
-    const curve = new CatmullRomCurve3([anchor, mid, tama.position.clone()]);
-    const nextGeometry = new TubeGeometry(curve, 16, STRING_RADIUS, 6, false);
+    stepRope(ropeRef.current, {
+      anchor,
+      end,
+      colliders: toWorldColliders(ken.matrixWorld, collidersRef.current),
+      tamaCenter: tama.position,
+      tamaRadius,
+      skin: STRING_RADIUS,
+      dt: delta,
+    });
+
+    const points = toCurvePoints(ropeRef.current.positions, anchor, end);
+    if (!points) {
+      // A non-finite particle would poison the whole tube; re-lay the rope
+      // straight and pick up again next frame.
+      ropeRef.current = createRope(PARTICLE_COUNT, anchor, end, restLength);
+      return;
+    }
+
+    const curve = new CatmullRomCurve3(points);
+    const nextGeometry = new TubeGeometry(curve, PARTICLE_COUNT * 2, STRING_RADIUS, 6, false);
 
     mesh.geometry.dispose();
     mesh.geometry = nextGeometry;
@@ -63,7 +102,7 @@ export function KendamaString({ kenRef, anchorLocal, restLength, tamaRef }: Stri
   return (
     <mesh ref={meshRef}>
       <tubeGeometry
-        args={[new CatmullRomCurve3([new Vector3(), new Vector3()]), 16, STRING_RADIUS, 6, false]}
+        args={[new CatmullRomCurve3([new Vector3(), new Vector3()]), 8, STRING_RADIUS, 6, false]}
       />
       <meshStandardMaterial color={STRING_COLOR} />
     </mesh>
