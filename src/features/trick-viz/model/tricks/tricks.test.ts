@@ -117,7 +117,7 @@ describe('Big Cup', () => {
   });
 
   it('passes the ken beside it rather than rising into the cup from below', () => {
-    // Everything directly under the big cup is occupied — serato bar, then
+    // Everything directly under the big cup is occupied — sarado bar, then
     // the small cup facing down — so the tama has to clear the ken's width
     // at the moment it crosses the cup's height.
     const seatHeight = last(bigCup).tama.position[1];

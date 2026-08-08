@@ -152,7 +152,7 @@ export type TossOptions = {
    * How far it swings clear of the held body on the way past.
    *
    * With the ken held horizontal, everything directly under the big cup is
-   * occupied — the serato bar, then the small cup facing straight down — so
+   * occupied — the sarado bar, then the small cup facing straight down — so
    * the tama cannot rise into the cup from below. It has to pass the ken's
    * level *beside* it and drop in from above, which is what the real trick
    * looks like. Zero for a straight vertical toss onto the spike.

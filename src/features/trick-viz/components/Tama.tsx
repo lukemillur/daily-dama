@@ -1,6 +1,15 @@
-import { TAMA_LAYOUT, TAMA_MARK_ANGLE } from '../model/tama-geometry';
+import { useMemo } from 'react';
 
-const TAMA_COLOR = '#f2e4c9';
+import { TAMA_LAYOUT, TAMA_MARK_ANGLE } from '../model/tama-geometry';
+import { createWoodTexture } from '../model/wood-texture';
+
+/**
+ * The ball is turned from the same kind of wood as the ken, so it takes the
+ * same grain — fainter, because a tama is sanded and finished smoother, and
+ * banded rather than lengthwise: it is turned on the axis its two holes sit
+ * on, so the growth rings show as bands around it.
+ */
+const TAMA_GRAIN = { base: '#f0e0c2', grain: '#d8bf99' };
 const CAVITY_COLOR = '#3a2c1e';
 const BORE_COLOR = '#241a12';
 const MARK_COLOR = '#b5462f';
@@ -30,12 +39,17 @@ export function Tama() {
 
   const stringHoleAngle = Math.asin(stringHoleRadius / radius);
 
+  const wood = useMemo(
+    () => createWoodTexture({ ...TAMA_GRAIN, strength: 0.14, lines: 7, direction: 'concentric' }),
+    [],
+  );
+
   return (
     <group>
       {/* The ball, less the cap at the bottom pole. */}
       <mesh>
         <sphereGeometry args={[radius, 40, 32, 0, Math.PI * 2, 0, Math.PI - holeAngle]} />
-        <meshStandardMaterial color={TAMA_COLOR} />
+        <meshStandardMaterial map={wood} roughness={0.55} metalness={0} />
       </mesh>
 
       {/*

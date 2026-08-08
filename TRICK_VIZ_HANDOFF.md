@@ -19,6 +19,8 @@ src/features/trick-viz/
     kendama-geometry.ts   KENDAMA_LAYOUT — ken-local dimensions, seatOffset
     tama-geometry.ts      TAMA_LAYOUT — radius, spike hole, bore depth
     sockets.ts            KEN_SOCKETS / TAMA_SOCKETS — named contact points
+    ken-profile.ts        lathe profiles for the ken's mesh (shape only)
+    wood-texture.ts       procedural grain, generated as a DataTexture
     mate.ts               the catch solver (cup / spike / stand)
     ballistics.ts         tossArc, tossPositionAt, swingDirection, TRICK_GRAVITY
     beats.ts              hang / toss / ride — the reusable blocks
@@ -33,14 +35,14 @@ src/features/trick-viz/
       airplane.ts         Airplane
       index.ts            TRICK_VISUALIZATIONS, keyed by Kentei trick IDs
   components/
-    Ken.tsx               static primitive ken, pose-free
-    Tama.tsx              static primitive tama, pose-free — hole + spin mark
+    Ken.tsx               lathe-built ken, pose-free
+    Tama.tsx              tama, pose-free — real opening, cavity, knot, paint
     String.tsx            rope-driven string
     TrickScene.tsx        Canvas composition, playback, camera rig
 src/app/stats/trick-viz-sandbox.tsx   dev-only viewer with picker + scrubber
 ```
 
-Tests: `mate.test.ts`, `ballistics.test.ts`, `timeline.test.ts`, `tricks/tricks.test.ts` — 67 tests. These are pure functions and they are where the geometry bugs that cost days on Big Cup actually live. Run them before trusting a screenshot.
+Tests: `mate.test.ts`, `ballistics.test.ts`, `timeline.test.ts`, `tricks/tricks.test.ts` — 75 tests. These are pure functions and they are where the geometry bugs that cost days on Big Cup actually live. Run them before trusting a screenshot.
 
 ## 3. The central abstraction: two bodies, one held
 
@@ -52,7 +54,7 @@ That inversion is the load-bearing idea. The first implementation modelled the k
 
 Grips are **authored** as Euler triples in order `'YZX'` (`POSE_ROTATION_ORDER`), because that is how a player describes one. Everything downstream of `toRigid` uses **quaternions**, and interpolation **slerps**. Component-wise Euler lerp was harmless while nothing rotated and is wrong the moment a ken flips.
 
-Naming: **"ken"** is the whole assembly (shaft + serato + cups + spike); **"shaft"** is only the grip below the serato. That is why the topmost point is `spikeTip`, not `shaftTop`.
+Naming: **"ken"** is the whole assembly (shaft + sarado + cups + spike); **"shaft"** is only the grip below the sarado. That is why the topmost point is `spikeTip`, not `shaftTop`.
 
 ## 4. Big Cup geometry — verified, do not re-derive
 
@@ -70,7 +72,7 @@ The net local→world map is **`(x, y, z) → (-z, x, -y)`**. *(A previous versi
 
 Two consequences drive everything, both learned by getting them wrong first:
 
-1. **The tama cannot enter the big cup from below.** Directly beneath it sit the serato bar and the small cup facing straight down. It must pass the ken's level *beside* it and drop in from above — which is what real ozara looks like.
+1. **The tama cannot enter the big cup from below.** Directly beneath it sit the sarado bar and the small cup facing straight down. It must pass the ken's level *beside* it and drop in from above — which is what real ozara looks like.
 2. **It must swing on the same side the string exits**, and *across* the ken rather than along it. `swingDirection` derives both from the string hole's own offset with the component along the ken's axis projected out. Never hardcode it.
 
 The seat is derived, not placed: the tama (r 0.25) is wider than the big cup mouth (r 0.225), so it rests **on the rim** at `sqrt(r_tama² − r_mouth²)` ≈ 0.109 above the mouth plane. It never enters the cup, so it cannot clip through a wall.
@@ -94,6 +96,30 @@ Three things follow, and all three were wrong in the first version:
 3. **The ball is rendered with the bottom cap genuinely omitted** (`sphereGeometry` with `thetaLength = π − holeAngle`), lined with a double-sided tube and capped at the blind end. A dark spot painted on a solid sphere would not let you see into the cavity, and back faces are culled, so without the lining the opening would read as a window through the ball.
 
 **Consequence to know about:** the tama is now fully axisymmetric — sphere, both holes, knot, and paint all sit on one axis. Spin about that axis is therefore invisible except through the string. `Pull up spike (Spin)` and `(No spin)` are geometrically different and asserted as such in tests, but they look alike. A maker's logo printed on the side (which real tamas carry) would fix it; not added, because it wasn't asked for.
+
+## 4c. How the ken is built — shape only, never dimensions
+
+**The hard line: `ken-profile.ts` changes how the ken *looks*, never where its landmarks *are*.** Every number the tricks are built against — cup centres, mouth radii, cup heights, `shaftTop`, `spikeTip`, the string hole — still lives in `KENDAMA_LAYOUT` and is unchanged. If a realism pass ever needs to move one of those, that is a geometry change and the trick tests are the gate.
+
+A kendama is a turned object, so the mesh is built from lathe profiles rather than primitives:
+
+- **One lathe for the body** — base cup, grip, sarado hub, neck and spike, all on the same axis, as one piece. It *is* one piece, and building it from separate cylinders is what produced the visible joins where a shaft poked through a cup cap.
+- **One lathe per side cup**, each including the arm that carries it, so the arm swells continuously into the bowl.
+
+Three details are load-bearing rather than decorative:
+
+1. **`mouthRadius` is the aperture, so the wall thickness goes on the *outside*.** Putting it inside (the obvious first move) shrinks the opening to `mouthRadius − wall` while `seatOffset` still seats the ball on `mouthRadius` — the ball then intersects its own rim, which showed up as a dotted z-fighting seam around the catch.
+2. **A cup's inside is an arc of the ball's own radius** (`cradleArc`, radius `CRADLE_RADIUS` = tama radius + clearance). Forced, not chosen: the ball reaches 0.141 below the rim of the big cup, and *any* interior narrower than the ball's cross-section at that depth gets intersected. A real cup's inside approximates the same arc.
+3. **The neck below the spike widens to a shoulder** slightly wider than the tama's bore, so a landed spike looks supported rather than floating. It sits just below `shaftTop`, so it never obstructs the insertion.
+
+**Crisp edges**: `LatheGeometry` derives normals from the direction between adjacent profile points, so it smooths every corner — a rim would look rolled over. Repeating a point offset by `EDGE` (0.0008) gives the corner two normals. Do **not** duplicate a point exactly: a zero-length tangent gets normalized and poisons the geometry with NaNs.
+
+**Grain** (`wood-texture.ts`) is generated into a `DataTexture` as raw bytes — not drawn on a canvas, because `document` does not exist on native. Two rules learned by getting them wrong:
+
+- The noise must be **periodic in `u`**, or the wrap shows as a stripe down the ken.
+- Grain runs `lengthwise` on the body but must be `concentric` on a cup. In a cup's lathe UVs `u` goes around the *bowl's* axis, so lengthwise grain renders as spokes radiating from the centre — the one pattern wood never makes. It looked like corduroy.
+
+Subtlety matters more than detail here: the first attempt at `strength 0.5` with hard lines looked markedly worse than flat colour. The slow tone wander does most of the work; the lines should be what you notice second.
 
 ## 5. The mate solver
 
@@ -146,6 +172,8 @@ The view direction is sampled per beat and eased with a longer τ (0.6s) than th
 
 `followAction` hands the camera to `canvasExtras` (OrbitControls) when false; the rig and the controls would otherwise both write the camera every frame.
 
+**Lighting is three lights, not one.** A single key against heavy ambient flattens a turned object into a silhouette, and the beads, cup rims and grip taper are all read from how the shading falls across them. Key from above-front, a cool fill opposite so shadows do not go black, and a low warm back light so the model separates from the dark background.
+
 ## 9. String
 
 A 28-particle inextensible verlet rope colliding with six tapered-capsule proxies for the ken, derived from `KENDAMA_LAYOUT` so retuning a cup moves its collider. Distance-constraint and collision passes are **interleaved**, not sequential. Colliders are transformed to world once per frame, valid only because the ken is never scaled. Cup colliders are **solid, not hollow** — fine here, wrong for any trick where the string should sit inside a cup.
@@ -168,6 +196,7 @@ The string always runs ken-hole ↔ tama-hole, so `String.tsx` needs no per-tric
 10. **Sandbox access is gated.** Set `localStorage['daily-dama:user-profile']` to `{"version":1,"profile":{"hasCompletedOnboarding":true,"kenteiRank":1,"selectedTrickIds":[]}}` — the versioned wrapper is required and `kenteiRank` is a **number** 1–12. The route is nested under `/stats/` because the web tab router silently redirects unregistered top-level routes to Home.
 11. **`AccessGateProvider` skips the password gate whenever `__DEV__`** — interim, production unaffected.
 12. **`eslint.config.js` has a scoped `react/no-unknown-property` override** for `src/features/trick-viz/**/*.tsx`, needed because eslint-plugin-react does not know r3f's JSX intrinsics.
+13. **The colliders are coarser than the mesh now.** `saradoBarRadius` is 0.08 while the lathed hub swells to ~0.10, so the string can graze the hub's widest point. Harmless at string thickness; widen the collider if a trick ever routes the string tightly across the sarado.
 
 ## 11. Adding a trick
 

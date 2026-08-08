@@ -3,7 +3,7 @@ import { Vector3 } from 'three';
 /**
  * A tapered capsule: the segment `a`→`b` swept by a radius that lerps from
  * `radiusA` to `radiusB`. One primitive covers every part of the ken — the
- * shaft and serato bar are untapered, the spike tapers to a point, and a
+ * shaft and sarado bar are untapered, the spike tapers to a point, and a
  * cup tapers from its neck to its mouth.
  *
  * It treats a cup as solid rather than hollow, so the string drapes over a

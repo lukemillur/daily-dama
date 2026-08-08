@@ -265,8 +265,18 @@ export function TrickScene({
             initial={framing}
           />
         ) : null}
-        <ambientLight intensity={0.6} />
-        <directionalLight position={[2, 3, 2]} intensity={1.1} />
+        {/*
+          Three lights rather than one. A single key against heavy ambient
+          flattens a turned object into a silhouette — the beads, the rim of
+          a cup and the taper of the grip are all read from the way the
+          shading falls across them, and there was not enough of it before.
+        */}
+        <ambientLight intensity={0.32} />
+        <directionalLight position={[3, 4.5, 2.5]} intensity={1.15} />
+        {/* Cool fill from the opposite side, to keep shadows from going flat black. */}
+        <directionalLight position={[-3.5, 1, -2]} intensity={0.4} color="#cddcf0" />
+        {/* Low back light, so the model separates from a dark background. */}
+        <directionalLight position={[0, -2, -3]} intensity={0.28} color="#ffd9a8" />
         <group ref={kenRef}>
           <Ken />
         </group>

@@ -6,34 +6,34 @@ import type { Vec3 } from "./body";
  * without duplicating magic numbers.
  *
  * These are all **ken-local** coordinates, describing the ken in its
- * neutral pose: spike up, serato horizontal, base cup down. Tricks hold
+ * neutral pose: spike up, sarado horizontal, base cup down. Tricks hold
  * the ken at all sorts of angles, so a trick declares a `KenPose` and maps
  * these landmarks into world space via `localToWorld` (see `ken-pose.ts`)
  * rather than hardcoding world coordinates that only hold for one grip.
  *
  * Anatomy (facing the kendama, string hole toward the viewer): the spike
- * sits at the top, where the dama rests. Just below it, the serato
+ * sits at the top, where the dama rests. Just below it, the sarado
  * (crosspiece) forms a T — big cup on the right arm facing right, small
- * cup on the left arm facing left. The shaft descends from the serato
+ * cup on the left arm facing left. The shaft descends from the sarado
  * to the base cup at the very bottom, facing down/outward. Each cup's
- * neck radius matches the shaft it tapers from (the serato bar for the
+ * neck radius matches the shaft it tapers from (the sarado bar for the
  * side cups, the grip shaft for the base cup) so the taper reads as one
  * continuous piece of wood rather than a shaft poking through a cap.
  *
- * Naming note: "ken" means the whole assembly (shaft + serato + cups +
- * spike); "shaft" means just the grip section below the serato. That's
+ * Naming note: "ken" means the whole assembly (shaft + sarado + cups +
+ * spike); "shaft" means just the grip section below the sarado. That's
  * why the topmost point is `spikeTip` and not `shaftTop` — the spike
  * extends above where the shaft ends.
  */
 export const KENDAMA_LAYOUT = {
-  seratoY: 0.1,
+  saradoY: 0.1,
   shaftTop: 0.375,
   shaftBottom: -0.62,
   shaftRadius: 0.08,
   spikeTip: [0, 0.6, 0] as Vec3,
 
-  seratoBarRadius: 0.08,
-  seratoBarHalfSpan: 0.2,
+  saradoBarRadius: 0.08,
+  saradoBarHalfSpan: 0.2,
 
   smallCup: {
     center: [-0.3, 0.1, 0] as Vec3,
@@ -56,7 +56,7 @@ export const KENDAMA_LAYOUT = {
 
   /**
    * Where the string exits the ken: through the shaft just below the
-   * serato, not at the spike tip. Sits on the shaft *surface* (+Z, the
+   * sarado, not at the spike tip. Sits on the shaft *surface* (+Z, the
    * face toward the viewer in the neutral frame) rather than on its axis,
    * so the string reads as leaving a drilled hole instead of emerging
    * from inside solid wood.

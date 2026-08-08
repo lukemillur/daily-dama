@@ -33,7 +33,7 @@ export const airplane = buildTrick({
   id: 'airplane',
   name: 'Airplane',
   // A ken hanging from its string hole sits spike-up: the hole is just below
-  // the serato, and almost all the weight — shaft, base cup — is below that.
+  // the sarado, and almost all the weight — shaft, base cup — is below that.
   start: startHanging('tama', AIRPLANE_TAMA_GRIP, [0, 0, 0]),
   beats: [
     hang({ seconds: 0.25, load: 0.04 }),

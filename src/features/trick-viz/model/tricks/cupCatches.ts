@@ -40,7 +40,7 @@ type CupCatchOptions = {
   /**
    * How far the tama swings clear of the ken on the way past.
    *
-   * It cannot rise into the cup from below — the serato bar and the opposite
+   * It cannot rise into the cup from below — the sarado bar and the opposite
    * cup are directly underneath — so it passes the ken's level beside it and
    * drops in from above, which is also what the real trick looks like. Wide
    * enough to clear the cup mouth plus the tama's own radius, with margin.
