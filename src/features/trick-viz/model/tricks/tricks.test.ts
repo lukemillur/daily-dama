@@ -4,11 +4,11 @@ import { Quaternion, Vector3 } from 'three';
 import type { Vec3 } from '@/features/trick-viz/model/body';
 import {
   KENDAMA_LAYOUT,
-  SPIKE_LENGTH,
+  SPIKE_SEAT_CLEARANCE,
   seatOffset,
 } from '@/features/trick-viz/model/kendama-geometry';
 import { findStallAt, type Sample, type Trick } from '@/features/trick-viz/model/timeline';
-import { TAMA_LAYOUT } from '@/features/trick-viz/model/tama-geometry';
+import { TAMA_HOLE_MOUTH_Y, TAMA_LAYOUT } from '@/features/trick-viz/model/tama-geometry';
 import {
   airplane,
   bigCup,
@@ -187,29 +187,39 @@ describe('Pull up spike', () => {
   });
 
   it('hides the spike in its entirety inside the dama', () => {
-    // The point of the hollow interior. Sampled along the whole spike, from
-    // where it leaves the shaft to its tip, every point must be inside the
-    // ball — the tama comes to rest against the ken with no spike showing.
+    // The point of the hollow interior. Sampled along everything the ken
+    // stands above the sarado — neck as well as cone — every point must be
+    // inside the ball, with no spike left showing.
     const end = last(pullUpSpikeNoSpin);
     const centre = position(end, 'tama');
+    const exposed = KENDAMA_LAYOUT.spikeTip[1] - KENDAMA_LAYOUT.saradoTop;
 
     for (let i = 0; i <= 20; i += 1) {
-      const y = KENDAMA_LAYOUT.shaftTop + (SPIKE_LENGTH * i) / 20;
+      const y = KENDAMA_LAYOUT.saradoTop + (exposed * i) / 20;
       const along = new Vector3(0, y, 0).add(position(end, 'ken'));
       expect(centre.distanceTo(along)).toBeLessThanOrEqual(TAMA_LAYOUT.radius + 1e-9);
     }
   });
 
-  it('rests the hole’s mouth exactly where the spike leaves the shaft', () => {
+  it('rests the dama down on the sarado', () => {
     const end = last(pullUpSpikeNoSpin);
-    const mouth = new Vector3(...TAMA_LAYOUT.holeLocal).add(position(end, 'tama'));
+    const mouth = new Vector3(0, TAMA_HOLE_MOUTH_Y, 0).add(position(end, 'tama'));
 
-    expect(mouth.y).toBeCloseTo(position(end, 'ken').y + KENDAMA_LAYOUT.shaftTop, 4);
+    expect(mouth.y).toBeCloseTo(
+      position(end, 'ken').y + KENDAMA_LAYOUT.saradoTop + SPIKE_SEAT_CLEARANCE,
+      4,
+    );
   });
 
-  it('keeps the cavity deeper than the spike is long', () => {
-    // If this ever inverts, the ken would bottom out with its base showing.
-    expect(TAMA_LAYOUT.holeDepth).toBeGreaterThanOrEqual(SPIKE_LENGTH);
+  it('bottoms the tip out in the bore as the ball lands on the sarado', () => {
+    // The bore is cut to the spike's exposed length, so the two contacts of a
+    // real landing happen together. `tama-geometry.test.ts` holds the pair;
+    // this checks it survives all the way through a built trick.
+    const end = last(pullUpSpikeNoSpin);
+    const tip = new Vector3(...KENDAMA_LAYOUT.spikeTip).add(position(end, 'ken'));
+    const boreEnd = position(end, 'tama').y + TAMA_HOLE_MOUTH_Y + TAMA_LAYOUT.holeDepth;
+
+    expect(boreEnd - tip.y).toBeCloseTo(SPIKE_SEAT_CLEARANCE, 4);
   });
 
   it('leaves the string hole and its paint on top, clear of the ken', () => {
@@ -261,12 +271,16 @@ describe('Airplane', () => {
       )
       .add(position(end, 'ken'));
 
-    // The tip ends up one spike-length in from the hole's mouth, which puts
-    // it just short of the ball's centre.
-    expect(position(end, 'tama').distanceTo(tip)).toBeCloseTo(
-      TAMA_LAYOUT.radius - SPIKE_LENGTH,
-      4,
-    );
+    // The same landing as pull up spike, solved for the other body: the tip
+    // comes to rest a seating clearance short of the bore's blind end, which
+    // on this spike is well past the ball's centre.
+    const boreEnd = direction(end, 'tama', [
+      0,
+      TAMA_HOLE_MOUTH_Y + TAMA_LAYOUT.holeDepth,
+      0,
+    ]).add(position(end, 'tama'));
+
+    expect(boreEnd.distanceTo(tip)).toBeCloseTo(SPIKE_SEAT_CLEARANCE, 4);
   });
 
   it('brings the ken up spike-first into a hole that faces the floor', () => {

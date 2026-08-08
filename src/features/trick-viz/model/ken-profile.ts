@@ -1,6 +1,12 @@
 import { Vector2 } from 'three';
 
-import { KENDAMA_LAYOUT } from './kendama-geometry';
+import {
+  cupLipHeight,
+  cupLipOuterRadius,
+  cupLipRise,
+  KENDAMA_LAYOUT,
+  SPIKE_PROFILE,
+} from './kendama-geometry';
 import { TAMA_LAYOUT } from './tama-geometry';
 
 /**
@@ -113,6 +119,47 @@ function cradleArc(
 }
 
 /**
+ * The bead standing proud of a cup's mouth, which a tama's hole hooks over
+ * in the perch balances.
+ *
+ * A flush rim gives a hole nothing to catch on — it slides straight off — so
+ * the wood has to stand above the mouth plane. The trap is that the ball a
+ * cup *catches* sits on that same mouth circle, and anything rising at the
+ * aperture would be inside it.
+ *
+ * What buys the room is that the ball's surface climbs away from the mouth
+ * plane as it goes outward. `cupLipRise` reads that climb off the ball
+ * itself, so the lip's inner face is the ball's own curve dropped by a
+ * clearance and it cannot intersect a catch — not by being tuned not to, but
+ * by construction. Where the curve outruns the height we want, the top goes
+ * flat and the rest of the climb is left as headroom.
+ *
+ * Returned from the outer wall, up over the bead and back down to the
+ * aperture, ending a hair short of it so `cradleArc` can supply that point
+ * and the edge comes out crisp. `opening` matches `cradleArc`'s.
+ */
+function rimLip(mouthRadius: number, mouthY: number, opening: 1 | -1, steps: number): Vector2[] {
+  const outer = cupLipOuterRadius(mouthRadius);
+  const height = cupLipHeight(TAMA_LAYOUT.radius, mouthRadius);
+
+  const face = (radius: number) => {
+    const rise = cupLipRise(TAMA_LAYOUT.radius, mouthRadius, radius);
+    return new Vector2(radius, mouthY + opening * Math.min(Math.max(rise, 0), height));
+  };
+
+  return [
+    // Out past the wall, leaving the small overhang a hole's rim bears on.
+    new Vector2(outer, mouthY + opening * EDGE),
+    // Up the outside of the bead.
+    new Vector2(outer, mouthY + opening * height),
+    // And back down its inner face, following the ball.
+    ...Array.from({ length: steps }, (_, i) =>
+      face(outer - EDGE - (outer - EDGE - mouthRadius - EDGE) * (i / (steps - 1))),
+    ),
+  ];
+}
+
+/**
  * A side cup and the arm carrying it, as one profile revolved about the
  * cup's own axis.
  *
@@ -142,8 +189,8 @@ export function sideCupProfile(cup: CupLayout, armReach: number, cradleRadius: n
       16,
       0.72,
     ),
-    // The rim's flat edge, stepping in to the aperture.
-    new Vector2(cup.mouthRadius, mouthY - EDGE),
+    // The rim's lip, out over the wall and back in to the aperture.
+    ...rimLip(cup.mouthRadius, mouthY, 1, 10),
     // Inside of the bowl.
     ...cradleArc(cup.mouthRadius, mouthY, cradleRadius, 1, 16),
   ];
@@ -159,7 +206,7 @@ export function sideCupProfile(cup: CupLayout, armReach: number, cradleRadius: n
  * poked out of a cup.
  */
 export function kenBodyProfile(cradleRadius: number): Vector2[] {
-  const { baseCup, shaftBottom, shaftTop, spikeTip, saradoY } = KENDAMA_LAYOUT;
+  const { baseCup, shaftBottom, shaftTop, spikeTip, saradoY, saradoTop } = KENDAMA_LAYOUT;
 
   const baseMouthY = baseCup.center[1] - baseCup.height / 2;
   const baseNeckY = baseCup.center[1] + baseCup.height / 2;
@@ -169,7 +216,10 @@ export function kenBodyProfile(cradleRadius: number): Vector2[] {
     // Reversed, because the profile has to run bottom-to-top overall and
     // this cup opens downward.
     ...cradleArc(baseCup.mouthRadius, baseMouthY, cradleRadius, -1, 14).reverse(),
-    // The rim's flat edge, then back up the outside to the neck.
+    // Its lip, mirrored: the same bead read from the aperture outward,
+    // because this cup's profile runs the other way.
+    ...rimLip(baseCup.mouthRadius, baseMouthY, -1, 10).reverse(),
+    // The overhang back to the wall, then up the outside to the neck.
     new Vector2(baseCup.mouthRadius + CUP_WALL, baseMouthY + EDGE),
     ...wall(
       { r: baseCup.mouthRadius + CUP_WALL, y: baseMouthY },
@@ -188,24 +238,30 @@ export function kenBodyProfile(cradleRadius: number): Vector2[] {
     new Vector2(0.083, shaftBottom + 0.12),
     new Vector2(0.074, saradoY - 0.08),
 
-    // The sarado hub: a squat collar the two arms grow out of.
+    // The sarado hub: a squat collar the two arms grow out of, finished flat
+    // on top. That face is what a landed tama comes to rest on, so it is a
+    // real surface here and a named landmark in `KENDAMA_LAYOUT`, not the
+    // incidental end of a taper it used to be.
     new Vector2(0.1, saradoY - 0.05),
-    new Vector2(0.102, saradoY + 0.05),
-    new Vector2(0.072, saradoY + 0.1),
+    new Vector2(0.102, saradoTop - EDGE),
+    new Vector2(0.102, saradoTop),
 
-    // The neck above the sarado.
-    new Vector2(0.066, shaftTop - 0.09),
-
-    // The shoulder the tama's hole comes to rest on. Wider than the tama's
-    // bore, which is what stops the ball and is why a landed spike looks
-    // supported instead of floating.
-    new Vector2(0.096, shaftTop - 0.012),
-    new Vector2(0.096, shaftTop - 0.004),
-
-    // The spike: an ogive rather than a straight cone, so it reads as
-    // turned rather than machined.
-    new Vector2(0.058, shaftTop + EDGE),
-    ...wall({ r: 0.058, y: shaftTop }, { r: 0.004, y: spikeTip[1] }, 18, 1.35),
+    // The neck, and then the spike: an ogive rather than a straight cone, so
+    // it reads as turned rather than machined.
+    //
+    // Nothing from here to the tip may be wider than a tama's bore. The ball
+    // rides all the way down this stick to the sarado, and a single proud
+    // shoulder — there used to be one, at radius 0.096 — hangs it up two
+    // thirds of the way and leaves the spike showing. `ken-profile.test.ts`
+    // holds the line.
+    new Vector2(SPIKE_PROFILE.neckRadius, saradoTop + EDGE),
+    new Vector2(SPIKE_PROFILE.baseRadius, shaftTop),
+    ...wall(
+      { r: SPIKE_PROFILE.baseRadius, y: shaftTop },
+      { r: SPIKE_PROFILE.tipRadius, y: spikeTip[1] },
+      22,
+      SPIKE_PROFILE.power,
+    ),
     new Vector2(0, spikeTip[1]),
   ];
 }

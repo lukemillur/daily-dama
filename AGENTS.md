@@ -86,7 +86,7 @@ yarn tsc --noEmit
 yarn expo export --platform web --output-dir /tmp/daily-dama-web-export
 ```
 
-At the time of this handoff, the suite contains 9 test suites and 78 behavioral tests. Update this note if the suite structure changes materially; do not treat the exact count as a quality target.
+At the time of this handoff, the suite contains 18 test suites and 234 behavioral tests. Update this note if the suite structure changes materially; do not treat the exact count as a quality target.
 
 For browser verification, run the Expo development server rather than serving the static export with a generic file server. Expo Router's extensionless routes such as `/tricks` need appropriate fallback/routing behavior. If the usual port is occupied, select another explicit port instead of assuming the page at that port belongs to this repository.
 

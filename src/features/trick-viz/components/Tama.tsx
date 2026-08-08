@@ -1,6 +1,12 @@
 import { useMemo } from 'react';
 
-import { TAMA_LAYOUT, TAMA_MARK_ANGLE } from '../model/tama-geometry';
+import {
+  TAMA_BORE_STEP_DEPTH,
+  TAMA_BORE_TIP_RADIUS,
+  TAMA_HOLE_MOUTH_Y,
+  TAMA_LAYOUT,
+  TAMA_MARK_ANGLE,
+} from '../model/tama-geometry';
 import { createWoodTexture } from '../model/wood-texture';
 
 /**
@@ -11,6 +17,12 @@ import { createWoodTexture } from '../model/wood-texture';
  */
 const TAMA_GRAIN = { base: '#f0e0c2', grain: '#d8bf99' };
 const CAVITY_COLOR = '#3a2c1e';
+/**
+ * The shoulder where the wide bore stops. Cut end grain facing straight out
+ * of the hole, so it catches more light than the walls beside it — which is
+ * what makes the two stages read as two stages rather than one dark hole.
+ */
+const BORE_STEP_COLOR = '#4a3826';
 const BORE_COLOR = '#241a12';
 const MARK_COLOR = '#b5462f';
 const KNOT_COLOR = '#ded5c4';
@@ -32,10 +44,17 @@ export function Tama() {
   const { radius, holeRadius, holeDepth, stringHoleRadius, knotRadius } = TAMA_LAYOUT;
 
   // Where the opening cuts the sphere, measured from the top pole. The ring
-  // it leaves has exactly `holeRadius`, so the bore lining meets it seamlessly.
+  // it leaves has exactly `holeRadius`, so the bore lining meets it seamlessly
+  // — and it cuts at `TAMA_HOLE_MOUTH_Y`, which is the same plane the hole's
+  // socket sits on, so a landed ball touches the sarado in the model and in
+  // the mesh alike.
   const holeAngle = Math.asin(holeRadius / radius);
-  const mouthY = -radius * Math.cos(holeAngle);
-  const cavityTop = mouthY + holeDepth;
+  const cavityTop = TAMA_HOLE_MOUTH_Y + holeDepth;
+
+  // Where the wide bore gives way to the narrow one. Both stages are real
+  // here rather than one deep cylinder, because a spike this long bored at
+  // full width the whole way would leave the ball a shell.
+  const stepY = TAMA_HOLE_MOUTH_Y + TAMA_BORE_STEP_DEPTH;
 
   const stringHoleAngle = Math.asin(stringHoleRadius / radius);
 
@@ -53,18 +72,42 @@ export function Tama() {
       </mesh>
 
       {/*
-        The hollow. Lining it with a double-sided tube is what stops the
-        opening reading as a window straight through the ball: back faces of
-        the sphere are culled, so without this you would see the background.
+        The wide stage, which takes the body of the spike. Lining it with a
+        double-sided tube is what stops the opening reading as a window
+        straight through the ball: back faces of the sphere are culled, so
+        without this you would see the background.
       */}
-      <mesh position={[0, (mouthY + cavityTop) / 2, 0]}>
-        <cylinderGeometry args={[holeRadius, holeRadius, holeDepth, 32, 1, true]} />
+      <mesh position={[0, (TAMA_HOLE_MOUTH_Y + stepY) / 2, 0]}>
+        <cylinderGeometry
+          args={[holeRadius, holeRadius, TAMA_BORE_STEP_DEPTH, 32, 1, true]}
+        />
         <meshStandardMaterial color={CAVITY_COLOR} side={2} />
       </mesh>
 
-      {/* The blind end of the bore, seen looking up into the hole. */}
+      {/* The shoulder the wide bore stops on. */}
+      <mesh position={[0, stepY, 0]} rotation={[Math.PI / 2, 0, 0]}>
+        <ringGeometry args={[TAMA_BORE_TIP_RADIUS, holeRadius, 32]} />
+        <meshStandardMaterial color={BORE_STEP_COLOR} side={2} />
+      </mesh>
+
+      {/* The narrow stage, carrying on for the point. */}
+      <mesh position={[0, (stepY + cavityTop) / 2, 0]}>
+        <cylinderGeometry
+          args={[
+            TAMA_BORE_TIP_RADIUS,
+            TAMA_BORE_TIP_RADIUS,
+            cavityTop - stepY,
+            24,
+            1,
+            true,
+          ]}
+        />
+        <meshStandardMaterial color={BORE_COLOR} side={2} />
+      </mesh>
+
+      {/* The blind end, seen looking up into the hole. */}
       <mesh position={[0, cavityTop, 0]} rotation={[Math.PI / 2, 0, 0]}>
-        <circleGeometry args={[holeRadius, 32]} />
+        <circleGeometry args={[TAMA_BORE_TIP_RADIUS, 24]} />
         <meshStandardMaterial color={BORE_COLOR} side={2} />
       </mesh>
 

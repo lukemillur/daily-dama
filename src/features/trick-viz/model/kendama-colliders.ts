@@ -1,6 +1,6 @@
 import { Matrix4, Vector3 } from 'three';
 
-import { KENDAMA_LAYOUT } from './kendama-geometry';
+import { cupLipOuterRadius, KENDAMA_LAYOUT } from './kendama-geometry';
 import type { Capsule } from './rope';
 import type { Vec3 } from './body';
 
@@ -25,7 +25,9 @@ function cupCapsule(cup: CupLayout, opensToward: Vec3): Capsule {
     a: center.clone().addScaledVector(axis, -half),
     b: center.clone().addScaledVector(axis, half),
     radiusA: cup.neckRadius,
-    radiusB: cup.mouthRadius,
+    // The lip, not the aperture: the bead is the widest wood at the mouth and
+    // the outermost thing the string can catch on.
+    radiusB: cupLipOuterRadius(cup.mouthRadius),
   };
 }
 
@@ -41,14 +43,17 @@ function cupCapsule(cup: CupLayout, opensToward: Vec3): Capsule {
 export const KEN_COLLIDERS: readonly Capsule[] = [
   {
     a: new Vector3(0, KENDAMA_LAYOUT.shaftBottom, 0),
-    b: new Vector3(0, KENDAMA_LAYOUT.shaftTop, 0),
+    b: new Vector3(0, KENDAMA_LAYOUT.saradoTop, 0),
     radiusA: KENDAMA_LAYOUT.shaftRadius,
     radiusB: KENDAMA_LAYOUT.shaftRadius,
   },
   {
-    a: new Vector3(0, KENDAMA_LAYOUT.shaftTop, 0),
+    // Above the sarado the wood is much thinner than the grip — it has to be,
+    // to fit a tama's bore — so this capsule starts at the neck's radius
+    // rather than the shaft's.
+    a: new Vector3(0, KENDAMA_LAYOUT.saradoTop, 0),
     b: new Vector3(...KENDAMA_LAYOUT.spikeTip),
-    radiusA: KENDAMA_LAYOUT.shaftRadius,
+    radiusA: 0.07,
     radiusB: 0.012,
   },
   {

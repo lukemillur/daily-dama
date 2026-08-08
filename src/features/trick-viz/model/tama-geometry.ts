@@ -1,4 +1,5 @@
 import type { Vec3 } from './body';
+import { KENDAMA_LAYOUT, SPIKE_EXPOSED, spikeHeightAtRadius } from './kendama-geometry';
 
 /**
  * The tama (dama), in its own neutral local frame.
@@ -25,8 +26,11 @@ import type { Vec3 } from './body';
 export const TAMA_LAYOUT = {
   radius: 0.25,
 
-  /** The big hole, at the bottom pole of the neutral frame. */
-  holeLocal: [0, -0.25, 0] as Vec3,
+  /**
+   * The big hole faces the bottom of the neutral frame. Where its mouth
+   * *is* is `TAMA_HOLE_MOUTH_LOCAL` below — boring the hole cuts the ball
+   * off short of the pole, so the two are not the same point.
+   */
   holeAxisLocal: [0, -1, 0] as Vec3,
 
   /**
@@ -41,11 +45,15 @@ export const TAMA_LAYOUT = {
   /**
    * How deep the cavity runs from the mouth.
    *
-   * Must be at least the ken's spike length or the spike would bottom out
-   * with its base still showing; `mate.ts` clamps the insertion to the
-   * smaller of the two, and `tama.test.ts` asserts this one is the larger.
+   * **Bored to the length of the ken's spike**, because that is how a real
+   * pair is made — the tip reaches the bottom of the bore at the same moment
+   * the ball's rim reaches the sarado. Derived rather than chosen so the two
+   * cannot drift: lengthen the spike and the hole follows it.
+   *
+   * The ball is what limits how far that can go. `tama-geometry.test.ts`
+   * holds the cavity clear of the string hole with real wood between them.
    */
-  holeDepth: 0.24,
+  holeDepth: SPIKE_EXPOSED,
 
   /** The string hole, at the top pole. */
   stringHoleLocal: [0, 0.25, 0] as Vec3,
@@ -66,3 +74,46 @@ export const TAMA_LAYOUT = {
  * flat disc stuck to the top — a disc would cut into the ball at its edges.
  */
 export const TAMA_MARK_ANGLE = Math.asin(TAMA_LAYOUT.markRadius / TAMA_LAYOUT.radius);
+
+/**
+ * The plane the big hole actually opens on, which is **not** the bottom pole.
+ *
+ * Boring a hole of `holeRadius` into a ball cuts it off short of the pole —
+ * the same chord across a sphere that seats a tama on a cup rim, read from
+ * the other side. The difference is only 0.016, and it did not matter while
+ * a landed ball floated clear of the ken; it matters now that the ball is
+ * meant to touch the sarado, because the pole is 0.016 of thin air below the
+ * lowest wood on the ball.
+ *
+ * `Tama` cuts the sphere here and `TAMA_SOCKETS.hole` sits here, so the mesh
+ * and the mate cannot disagree about where the opening is.
+ */
+export const TAMA_HOLE_MOUTH_Y = -Math.sqrt(TAMA_LAYOUT.radius ** 2 - TAMA_LAYOUT.holeRadius ** 2);
+
+/** The big hole's mouth, on its own axis at the plane it truly opens on. */
+export const TAMA_HOLE_MOUTH_LOCAL: Vec3 = [0, TAMA_HOLE_MOUTH_Y, 0];
+
+/**
+ * The hole is bored in **two stages**, the way a real tama's is: a wide one
+ * at the mouth that takes the body of the spike, then a narrower one that
+ * carries on for the point.
+ *
+ * It is not decoration. A spike this long bored at full width the whole way
+ * would hollow the ball into a shell — the narrow stage is what buys the
+ * depth back, and it is why the bore can match the spike at all.
+ */
+export const TAMA_BORE_TIP_RADIUS = 0.042;
+
+/** How much the narrow bore is cut wider than the spike it takes. */
+export const TAMA_BORE_CLEARANCE = 0.006;
+
+/**
+ * How deep the wide bore runs before it steps down, measured from the mouth.
+ *
+ * **Derived from the ken**, not chosen: the step goes exactly where the spike
+ * has tapered down to what the narrow bore can clear. Cut it any shallower
+ * and the spike fouls the step; any deeper and the narrow stage is not
+ * earning the wood it saves.
+ */
+export const TAMA_BORE_STEP_DEPTH =
+  spikeHeightAtRadius(TAMA_BORE_TIP_RADIUS - TAMA_BORE_CLEARANCE) - KENDAMA_LAYOUT.saradoTop;

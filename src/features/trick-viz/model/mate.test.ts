@@ -3,7 +3,8 @@ import { describe, expect, it } from '@jest/globals';
 import { localDirectionToWorld, localToWorld, type BodyPose, type Vec3 } from '@/features/trick-viz/model/body';
 import {
   KENDAMA_LAYOUT,
-  SPIKE_LENGTH,
+  SPIKE_INSERTION,
+  SPIKE_SEAT_CLEARANCE,
   seatOffset,
 } from '@/features/trick-viz/model/kendama-geometry';
 import {
@@ -13,7 +14,10 @@ import {
   standKenOnTama,
 } from '@/features/trick-viz/model/mate';
 import { KEN_SOCKETS, TAMA_SOCKETS, toWorldSocket } from '@/features/trick-viz/model/sockets';
-import { TAMA_LAYOUT } from '@/features/trick-viz/model/tama-geometry';
+import {
+  TAMA_HOLE_MOUTH_Y,
+  TAMA_LAYOUT,
+} from '@/features/trick-viz/model/tama-geometry';
 
 /**
  * The grip verified by eye during the Big Cup work: roll the big cup up to
@@ -100,27 +104,31 @@ describe('spearTamaOnSpike', () => {
     ]);
   });
 
-  it('swallows the whole spike, so none of it is left showing', () => {
+  it('rides all the way down the spike to the sarado', () => {
     const spike = toWorldSocket(KEN_SOCKETS.spike, { position: [0, 0, 0], rotation: [0, 0, 0] });
     const pose = spearTamaOnSpike(spike);
 
-    // The tama goes on until the spike bottoms out, which here is the
-    // spike's own length rather than the (deeper) bore.
-    expect(insertionDepth(KEN_SOCKETS.spike, TAMA_SOCKETS.hole)).toBeCloseTo(SPIKE_LENGTH, 10);
-    expectVec3(pose.position, [
-      0,
-      KENDAMA_LAYOUT.spikeTip[1] + TAMA_LAYOUT.radius - SPIKE_LENGTH,
-      0,
-    ]);
+    // The ball goes on until the sarado stops it, not until the tip bottoms
+    // out — the bore is the deeper of the two, deliberately.
+    expect(insertionDepth(KEN_SOCKETS.spike, TAMA_SOCKETS.hole)).toBeCloseTo(SPIKE_INSERTION, 10);
+    expect(TAMA_LAYOUT.holeDepth).toBeGreaterThan(SPIKE_INSERTION);
 
-    // Every point along the spike sits inside the ball...
+    // Every point of the exposed ken — neck as well as cone — sits inside
+    // the ball, so none of it is left showing.
     for (let i = 0; i <= 20; i += 1) {
-      const y = KENDAMA_LAYOUT.shaftTop + (SPIKE_LENGTH * i) / 20;
+      const y =
+        KENDAMA_LAYOUT.saradoTop +
+        ((KENDAMA_LAYOUT.spikeTip[1] - KENDAMA_LAYOUT.saradoTop) * i) / 20;
       expect(Math.abs(pose.position[1] - y)).toBeLessThanOrEqual(TAMA_LAYOUT.radius + 1e-9);
     }
 
-    // ...and the hole's mouth comes to rest exactly where it leaves the shaft.
-    expect(pose.position[1] + TAMA_LAYOUT.holeLocal[1]).toBeCloseTo(KENDAMA_LAYOUT.shaftTop, 10);
+    // And the hole's mouth comes to rest on the sarado's top face, a hair
+    // off the wood, with the ball centred on the ken's axis.
+    expectVec3(pose.position, [
+      0,
+      KENDAMA_LAYOUT.saradoTop + SPIKE_SEAT_CLEARANCE - TAMA_HOLE_MOUTH_Y,
+      0,
+    ]);
   });
 
   it('leaves the string hole and its paint on the far side from the spike', () => {
