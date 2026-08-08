@@ -1,8 +1,10 @@
 # Daily Dama — Trick Visualization Handoff
 
-Written so a fresh context can add tricks without re-deriving the geometry or re-discovering the traps. Rewritten 2026-08-07 when the one hand-derived trick (Big Cup) was rebuilt on a reusable vocabulary; five tricks now render in the dev sandbox and nothing is wired into the real app UI yet.
+Written so a fresh context can add tricks without re-deriving the geometry or re-discovering the traps. Rewritten 2026-08-07 when the one hand-derived trick (Big Cup) was rebuilt on a reusable vocabulary; five tricks render in the dev sandbox and nothing is wired into the real app UI yet.
 
 Full project context (state boundaries, product shape, collaboration style) lives in [AGENTS.md](AGENTS.md) — read that first if anything here is ambiguous.
+
+> **Continuing the render-realism pass?** Read §4b, §4c and then **§14**, which is the live entry point for that work. §14 lists what is still weak, what it costs, and the rules a realism change must not break.
 
 ## 1. What this is
 
@@ -42,7 +44,7 @@ src/features/trick-viz/
 src/app/stats/trick-viz-sandbox.tsx   dev-only viewer with picker + scrubber
 ```
 
-Tests: `mate.test.ts`, `ballistics.test.ts`, `timeline.test.ts`, `tricks/tricks.test.ts` — 75 tests. These are pure functions and they are where the geometry bugs that cost days on Big Cup actually live. Run them before trusting a screenshot.
+Tests: `mate.test.ts`, `ballistics.test.ts`, `timeline.test.ts`, `tricks/tricks.test.ts` — 72 tests. These are pure functions and they are where the geometry bugs that cost days on Big Cup actually live. Run them before trusting a screenshot.
 
 ## 3. The central abstraction: two bodies, one held
 
@@ -235,3 +237,61 @@ Standard checks: `yarn test --runInBand`, `yarn lint`, `yarn tsc --noEmit`.
 - Integration into the real Tricks/Sesh UI. `TRICK_VISUALIZATIONS` is keyed by the app's own trick IDs so this is a lookup, not a mapping table.
 - Native (iOS/Android) verification of the `expo-gl` path.
 - Airplane's `apexRise` sends the spike slightly above the hole before it drops in; it clears the tama laterally and reads fine, but a smaller rise would be truer to the real throw.
+
+## 14. Render realism — live entry point for the next pass
+
+Everything in this section is about how the kendama **looks**. It is deliberately separate from the trick geometry, and the separation is the single rule that must not break (see "Rules" below).
+
+### Where this pass stopped
+
+The ken was rebuilt from lathe profiles, the tama was given its real anatomy, both got procedural wood grain, and the lighting went from one flat key to a three-light rig. §4b describes the tama's anatomy, §4c how the ken's mesh is built and the two bugs that surfaced on the way. Verified in the sandbox across all five tricks; `KENDAMA_LAYOUT` was not touched and all trick tests still pass unchanged.
+
+The user's verdict on that pass: "looking good, terrific touch with the wood grain" — so the direction is right. This next pass is refinement, not a rethink.
+
+### The user's items for this pass
+
+<!-- FILL THIS IN. The user has specific things in mind that were not captured
+     before the context was cleared. Ask for them first; treat the list below
+     as candidates only, not as a plan. -->
+
+_(empty — ask)_
+
+### Candidate improvements, roughly by impact per unit of effort
+
+Ranked on my own read, not the user's. Do not start any of these without checking against their list first.
+
+1. **Contact shadows.** Nothing casts or receives anything. A ball resting in a cup with no shadow under it is the strongest remaining "this is CG" signal — stronger than any texture detail. Needs `castShadow`/`receiveShadow` on the meshes and a shadow-mapped directional light. Cheap to try, and the one thing most likely to move the needle. Watch the cost on native, which is still unverified.
+2. **Ambient occlusion in the crevices.** Cup interiors, the sarado junctions and the tama's bore are all lit as brightly as the exposed surfaces, which is why the bowls read a little flat. Real AO needs a post pass; a cheap approximation is to darken the inner-wall vertices via `aoMap` or vertex colours generated alongside the lathe profile — the profile already knows which points are inside a cup.
+3. **Any environment reflection at all.** `meshStandardMaterial` with no `envMap` gets zero specular, so finished wood looks like matte plastic. A tiny procedurally generated environment (even a 2-colour gradient cube) plus a low `envMapIntensity` would give the rims and the tama a sheen. No external HDRI — that would break the no-imported-assets rule.
+4. **Grain spacing is in UV space, not object space.** On the body lathe `u` wraps around the circumference, so the grain is denser on the narrow neck than on the wide base cup — the opposite of real wood, where spacing is constant in space. Fixing it properly means triplanar or object-space mapping in a custom shader; a cheap partial fix is to vary the texture repeat per part.
+5. **The string is a flat-coloured tube.** Uniform radius, no braid, no fibre. Real kendama string is visibly braided and slightly fuzzy. Lowest-risk place to add detail since nothing depends on its appearance.
+6. **No roughness or normal variation.** The grain is colour-only. The same texture driving `roughnessMap` (grain slightly rougher than the surrounding wood) is nearly free and reads well under a moving light.
+7. **Eased cup rims.** The rims are geometrically sharp. Real turned rims are slightly rounded, which catches a highlight and is a big part of why wood reads as wood. Two extra profile points per rim.
+8. **A painted sarado.** Most modern kendamas have a brightly coloured sarado against natural wood. Currently a subtle shade difference. This is a *product* choice as much as a realism one — worth raising rather than deciding.
+9. **Proportions.** The cup mouths are proportionally wider relative to the tama than a real kendama (big cup mouth / tama radius is 0.9 here, ~0.72 in life). This is the one item on this list that **is** a `KENDAMA_LAYOUT` change, so it is a geometry change, not a realism change — it moves every seat and clearance. Do it deliberately with the trick tests as the gate, or not at all.
+
+### Rules a realism change must not break
+
+- **Mesh changes never touch `KENDAMA_LAYOUT`.** Cup centres, mouth radii, cup heights, `shaftTop`, `spikeTip` and the string hole are the contract the tricks are built on. `ken-profile.ts` fills in shape *between* those landmarks. If a change needs to move one, that is a geometry change and `tricks.test.ts` plus `mate.test.ts` are the gate.
+- **`mouthRadius` is the aperture.** Wall thickness goes outside it. Putting it inside shrinks the opening while `seatOffset` still seats the ball on the nominal radius, and the ball intersects its own rim.
+- **A cup's inside must be at least the ball's own arc** (`cradleArc`). The ball reaches well below the rim; anything narrower gets intersected at depth.
+- **Never duplicate a lathe profile point exactly** — offset it by `EDGE`. An exact duplicate gives a zero-length tangent, which gets normalized and fills the geometry with NaNs.
+- **Wood-texture noise must stay periodic in `u`**, or the wrap shows as a stripe down the piece. And grain runs `concentric` on a cup, never `lengthwise` — a cup's `u` goes around the bowl's own axis, so lengthwise grain renders as spokes.
+- **Subtlety beats detail.** The first grain attempt (`strength 0.5`, hard lines) looked markedly *worse* than flat colour. The slow tone wander does most of the work.
+- **Helpers live outside component files.** React Compiler is enabled; a module-scope helper defined in a component file throws an impossible-looking `ReferenceError` at runtime despite `tsc` passing.
+- **Keep it procedural.** No downloaded models, textures or HDRIs.
+
+### Looking at your own work
+
+The follow camera is framed for the *trick*, not for inspecting the model, so some of what you see is misleading:
+
+- On **pull up spike**, the camera ends up almost exactly level with the tama, so the painted top is edge-on and looks absent. It is there. To see the top, use **Big cup at 25%** (the ball is large and low in frame) or free look.
+- **Free look** orbits the *framing target*, not the body you want to look at. On Big cup at 0% the target sits well above the hanging tama, so dragging down gets you under the ball; on tricks where the body is near the target, orbiting walks it off screen quickly.
+- The HUD covers the bottom of the viewport. The hanging tama at 0% sits behind it on most tricks.
+- Same-URL navigation does not remount the route — bump a query string for a real reload.
+
+Reference used for the last pass (visual reference only, nothing downloaded): <https://sketchfab.com/3d-models/maple-kendama-d4ee8f80dbf946f598520d5fd40b7bd4>
+
+### State at handoff
+
+`yarn tsc --noEmit`, `yarn lint` and `yarn test --runInBand` (221 tests, 16 suites) all pass. Sandbox verified across all five tricks with no console errors. The realism pass is uncommitted on top of `81abe01 Improvements made to tama anatomy`; the `serato` → `sarado` rename is part of that same uncommitted change.
