@@ -30,6 +30,8 @@ interface UserProfileActions {
   readonly toggleSelectedTrick: (trickId: string) => void;
   readonly removeSelectedTrick: (trickId: string) => void;
   readonly clearSelectedTricks: () => void;
+  readonly toggleManualUnlock: (trickId: string) => void;
+  readonly removeManualUnlock: (trickId: string) => void;
   readonly setLastSesh: (trickId: string, plan: SeshPlan) => void;
   readonly setStreakThresholdMs: (thresholdMs: number) => void;
   readonly completeOnboarding: (kenteiRank: number, selectedTrickIds: readonly string[]) => void;
@@ -94,6 +96,14 @@ export function UserProfileProvider({ children }: PropsWithChildren) {
     dispatch({ type: 'selectedTrickRemoved', trickId });
   }, []);
 
+  const toggleManualUnlock = useCallback((trickId: string) => {
+    dispatch({ type: 'manualUnlockToggled', trickId });
+  }, []);
+
+  const removeManualUnlock = useCallback((trickId: string) => {
+    dispatch({ type: 'manualUnlockRemoved', trickId });
+  }, []);
+
   const setLastSesh = useCallback((trickId: string, plan: SeshPlan) => {
     dispatch({ type: 'lastSeshUpdated', lastSesh: createLastSesh(trickId, plan) });
   }, []);
@@ -118,6 +128,8 @@ export function UserProfileProvider({ children }: PropsWithChildren) {
       toggleSelectedTrick,
       removeSelectedTrick,
       clearSelectedTricks,
+      toggleManualUnlock,
+      removeManualUnlock,
       setLastSesh,
       setStreakThresholdMs,
       completeOnboarding,
@@ -126,10 +138,12 @@ export function UserProfileProvider({ children }: PropsWithChildren) {
     [
       clearSelectedTricks,
       completeOnboarding,
+      removeManualUnlock,
       removeSelectedTrick,
       restartOnboarding,
       setLastSesh,
       setStreakThresholdMs,
+      toggleManualUnlock,
       toggleSelectedTrick,
     ],
   );

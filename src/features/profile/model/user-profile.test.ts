@@ -62,6 +62,34 @@ describe('user profile trick selection', () => {
     expect(overwritten.streakThresholdMs).toBe(60_000);
   });
 
+  it('toggles a manual unlock flag on and off', () => {
+    const set = userProfileReducer(INITIAL_USER_PROFILE, {
+      type: 'manualUnlockToggled',
+      trickId: 'big-cup',
+    });
+    expect(set.manuallyUnlockedTrickIds).toEqual(['big-cup']);
+
+    const cleared = userProfileReducer(set, {
+      type: 'manualUnlockToggled',
+      trickId: 'big-cup',
+    });
+    expect(cleared.manuallyUnlockedTrickIds).toEqual([]);
+  });
+
+  it('removes a manual unlock flag without affecting other flagged tricks', () => {
+    const state = {
+      ...INITIAL_USER_PROFILE,
+      manuallyUnlockedTrickIds: ['big-cup', 'custom-delete', 'airplane'],
+    };
+
+    expect(
+      userProfileReducer(state, {
+        type: 'manualUnlockRemoved',
+        trickId: 'custom-delete',
+      }).manuallyUnlockedTrickIds,
+    ).toEqual(['big-cup', 'airplane']);
+  });
+
   it('preserves the current practice list while an assessment is being retaken', () => {
     const completedProfile = {
       hasCompletedOnboarding: true,

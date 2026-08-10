@@ -27,6 +27,7 @@ import { TrickDirectory } from '@/features/tricks/components/trick-directory';
 import { KENDAMA_KENTEI_TRICKS } from '@/features/tricks/data/kendama-kentei-tricks';
 import {
   createProfileDirectoryTricks,
+  selectEffectiveUnlockedTrickIds,
   selectLacedCountByTrickId,
   selectUnlockedTrickIds,
 } from '@/features/tricks/model/trick-directory';
@@ -35,8 +36,8 @@ import type { PracticeTrick } from '@/features/tricks/model/trick';
 export default function TricksScreen() {
   const isOnboardingComplete = useRequireOnboarding();
   const { tricks } = useCustomTricks();
-  const { selectedTrickIds } = useUserProfile();
-  const { toggleSelectedTrick } = useUserProfileActions();
+  const { selectedTrickIds, manuallyUnlockedTrickIds = [] } = useUserProfile();
+  const { toggleSelectedTrick, toggleManualUnlock } = useUserProfileActions();
   const { sessions } = usePracticeHistory();
   const [creationStep, setCreationStep] = useState<'list' | 'choose' | CustomTrick['kind']>('list');
   const [editingTrick, setEditingTrick] = useState<CustomTrick | undefined>(undefined);
@@ -46,7 +47,11 @@ export default function TricksScreen() {
     [tricks],
   );
   const lacedCountByTrickId = useMemo(() => selectLacedCountByTrickId(sessions), [sessions]);
-  const unlockedTrickIds = useMemo(() => selectUnlockedTrickIds(sessions), [sessions]);
+  const lacedUnlockedTrickIds = useMemo(() => selectUnlockedTrickIds(sessions), [sessions]);
+  const unlockedTrickIds = useMemo(
+    () => selectEffectiveUnlockedTrickIds(lacedUnlockedTrickIds, manuallyUnlockedTrickIds),
+    [lacedUnlockedTrickIds, manuallyUnlockedTrickIds],
+  );
 
   if (!isOnboardingComplete) return null;
 
@@ -107,6 +112,7 @@ export default function TricksScreen() {
           showFocusedSection
           lacedCountByTrickId={lacedCountByTrickId}
           unlockedTrickIds={unlockedTrickIds}
+          manualUnlock={{ manuallyUnlockedTrickIds, onToggle: toggleManualUnlock }}
           selection={{ selectedTrickIds, onToggleTrick: toggleSelectedTrick }}
           customActions={{
             onEdit: (trickId) => setEditingTrick(tricks.find((trick) => trick.id === trickId)),
@@ -495,11 +501,12 @@ function DeleteConfirmation({
   readonly onDeleted: () => void;
 }) {
   const { deleteCustomTrick } = useCustomTrickActions();
-  const { removeSelectedTrick } = useUserProfileActions();
+  const { removeSelectedTrick, removeManualUnlock } = useUserProfileActions();
 
   const confirmDelete = () => {
     deleteCustomTrick(trick.id);
     removeSelectedTrick(trick.id);
+    removeManualUnlock(trick.id);
     onDeleted();
   };
 
