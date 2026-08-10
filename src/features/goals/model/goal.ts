@@ -1,3 +1,5 @@
+import type { PracticeSessionRecord } from '@/features/stats/model/practice-history';
+
 export const MIN_GOAL_TARGET_COUNT = 1;
 export const MAX_GOAL_TARGET_COUNT = 100_000;
 export const MIN_GOAL_TARGET_MINUTES = 1;
@@ -132,4 +134,24 @@ export function selectGoalsForTrick(goals: readonly Goal[], trickId: string): re
     .filter((goal) => goal.trickId === trickId)
     .slice()
     .sort((a, b) => b.createdAt - a.createdAt);
+}
+
+export interface GoalProgress {
+  readonly goal: Goal;
+  readonly current: number;
+  readonly target: number;
+  readonly achieved: boolean;
+}
+
+export function selectGoalProgress(
+  goal: Goal,
+  sessions: readonly PracticeSessionRecord[],
+): GoalProgress {
+  const trickSessions = sessions.filter((session) => session.trickId === goal.trickId);
+  const current =
+    goal.kind === 'count'
+      ? trickSessions.reduce((sum, session) => sum + session.laceCount, 0)
+      : trickSessions.reduce((sum, session) => sum + session.durationMs, 0);
+  const target = goal.kind === 'count' ? goal.targetCount : goal.targetMs;
+  return { goal, current, target, achieved: current >= target };
 }

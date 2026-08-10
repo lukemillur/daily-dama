@@ -103,25 +103,6 @@ _Raw ideas land here — a name and a one-line description, nothing more. Discus
 
 ## Backlog
 
-### [T011] Custom practice goals
-
-- **Area:** Tricks / persistence (new domain)
-- **Priority:** High
-- **Status:** Not started — umbrella entry, no exit criteria of its own; `Done` only once both children are `Done`.
-- **Description:** Let the user define a standing goal for a specific trick — either a cumulative lace-count target ("land Whirlwind 25 times") or a cumulative practice-time target ("practice Whirlwind for 30 minutes") — with progress tracked automatically across sessions from practice history.
-- **Notes:** Decisions resolved during scoping:
-  - No streak/"in a row" goal type. Ruled out because there's no failed-attempt tracking, and there deliberately won't be one — a "not landed" confirmation would break practice flow. Goals are cumulative (count or time), not streak-based.
-  - "Generic improvement goals" resolved to the time-based variant of the same per-trick mechanic ("practice X for Y time") — not a separate, broader category.
-  - Both goal types are scoped to a single trick for v1, not an overall/non-trick-specific goal.
-  - Progress is derived from practice history at read time (sum of landings, or sum of sesh duration, for that trick ID) — not stored as a separately-maintained running counter. Same "derive, don't cache" principle Stats already follows, to avoid drift.
-  - A goal record needs a trick-name snapshot alongside the trick ID, same convention as T010's Notes, so a goal for a later-deleted or renamed custom trick doesn't break.
-
-#### [T011.2] Goal progress and achievement
-
-- **Status:** Not started
-- **Description:** Compute each goal's progress by deriving it from practice history (summed landings, or summed sesh duration, for that trick), and mark the goal achieved once the target is reached. Depends on T011.1.
-- **Exit criteria:** Test confirms a count-based goal's progress reflects the trick's total lace count from history and marks achieved once it reaches the target; a time-based goal's progress reflects cumulative sesh duration for that trick and marks achieved the same way.
-
 ### [T012] Multi-trick sequential practice (shared core)
 
 - **Area:** Sesh
