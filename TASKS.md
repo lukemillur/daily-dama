@@ -103,15 +103,6 @@ _Raw ideas land here — a name and a one-line description, nothing more. Discus
 
 ## Backlog
 
-### [T003] Link directly into Sesh from any trick in Tricks list
-
-- **Area:** Tricks / Sesh
-- **Priority:** High
-- **Status:** Not started
-- **Description:** Add an action on each trick-list item that starts a Sesh containing that trick, regardless of whether it's currently in the user's focused/selected tricks.
-- **Exit criteria:** Tapping the action for any trick — focused or not — navigates to Sesh with that trick loaded and ready to practice; verified in-browser for one focused and one unfocused trick.
-- **Notes:** Check whether Sesh's entry points currently assume the trick is in `selectedTrickIds` (`src/app/sesh.tsx` / Sesh state machine) before implementing.
-
 ### [T004] Display trick unlocked status derived from lace history
 
 - **Area:** Tricks
