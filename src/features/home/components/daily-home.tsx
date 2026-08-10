@@ -7,6 +7,7 @@ import { BodyText, DisplayTitle, Eyebrow } from '@/components/ui/typography';
 import { AppColors, BottomTabInset } from '@/constants/theme';
 import type { HomePracticeTrick, HomeSummary } from '@/features/home/model/home-summary';
 import { formatDuration } from '@/features/sesh/model/sesh';
+import type { TimeLoggedWindowKey } from '@/features/stats/model/time-logged';
 
 export function DailyHome({ summary }: { readonly summary: HomeSummary }) {
   return (
@@ -29,6 +30,7 @@ export function DailyHome({ summary }: { readonly summary: HomeSummary }) {
 
         <PrimaryPractice summary={summary} />
         <PracticeQueue tricks={summary.selectedTricks} />
+        <TimeLogged summary={summary} />
         <Momentum summary={summary} />
       </HomeContent>
     </HomeScroll>
@@ -138,6 +140,32 @@ function PracticeQueue({ tricks }: { readonly tricks: readonly HomePracticeTrick
   );
 }
 
+const TIME_LOGGED_LABELS: Record<TimeLoggedWindowKey, string> = {
+  day: 'Today',
+  week: 'This week',
+  month: 'This month',
+  year: 'This year',
+};
+
+function TimeLogged({ summary }: { readonly summary: HomeSummary }) {
+  const { timeLoggedWindows } = summary;
+
+  return (
+    <TimeLoggedSection>
+      <SectionEyebrow>Time on the string</SectionEyebrow>
+      <TimeLoggedIntro>How much you’ve logged.</TimeLoggedIntro>
+      <TimeLoggedGrid>
+        {timeLoggedWindows.map((window) => (
+          <TimeLoggedTile key={window.key}>
+            <TimeLoggedValue>{formatDuration(window.totalMs)}</TimeLoggedValue>
+            <TimeLoggedLabel>{TIME_LOGGED_LABELS[window.key]}</TimeLoggedLabel>
+          </TimeLoggedTile>
+        ))}
+      </TimeLoggedGrid>
+    </TimeLoggedSection>
+  );
+}
+
 function Momentum({ summary }: { readonly summary: HomeSummary }) {
   const { momentum } = summary;
 
@@ -213,6 +241,12 @@ const QueueEmpty = styled.View`background-color: ${AppColors.paper}; border-left
 const EmptyTitle = styled.Text`color: ${AppColors.ink}; font-size: 22px; font-weight: 900;`;
 const EmptyCopy = styled(BodyText)`max-width: 500px; margin-top: 8px;`;
 const ChooseButton = styled(Button)`align-self: flex-start; margin-top: 20px;`;
+const TimeLoggedSection = styled.View`margin-top: 42px;`;
+const TimeLoggedIntro = styled.Text`color: ${AppColors.ink}; font-size: 22px; font-weight: 900; margin-top: 7px;`;
+const TimeLoggedGrid = styled.View`flex-direction: row; flex-wrap: wrap; gap: 10px; margin-top: 15px;`;
+const TimeLoggedTile = styled.View`flex-grow: 1; flex-basis: 130px; background-color: ${AppColors.paper}; border-left-width: 6px; border-left-color: ${AppColors.red}; padding: 16px 14px;`;
+const TimeLoggedValue = styled.Text`color: ${AppColors.ink}; font-size: 22px; font-weight: 900; font-variant: tabular-nums;`;
+const TimeLoggedLabel = styled.Text`color: ${AppColors.inkSoft}; font-size: 11px; font-weight: 800; margin-top: 4px; text-transform: uppercase;`;
 const MomentumSection = styled.View`margin-top: 46px;`;
 const MomentumIntro = styled.Text`color: ${AppColors.ink}; font-size: 22px; font-weight: 900; margin-top: 7px;`;
 const MomentumStrip = styled.View`flex-direction: row; align-items: stretch; background-color: ${AppColors.ink}; margin-top: 15px; padding: 20px 8px;`;

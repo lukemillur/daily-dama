@@ -103,15 +103,6 @@ _Raw ideas land here — a name and a one-line description, nothing more. Discus
 
 ## Backlog
 
-### [T009] Home-screen time logged (day/week/month/year)
-
-- **Area:** Home / Stats
-- **Priority:** Medium
-- **Status:** In progress
-- **Description:** Home screen shows total practice time logged for day, week, month, and year. A longer window only renders once enough real time has passed since the user's first recorded practice for that window to be meaningful.
-- **Exit criteria:** With practice history spanning less than a window's natural period since the first record, that window is hidden; once enough real time has elapsed, it renders with the correct total — verified by test.
-- **Notes:** Decision resolved during scoping — gated on elapsed real time since first use, not merely on a record existing in the window. Reasonable default thresholds, measured from the first practice-history record: hide "week" before 7 days of history, "month" before ~30 days, "year" before ~365 days. Confirm before implementing if these don't match intent.
-
 ### [T010] Sesh/trick notes
 
 - **Area:** Tricks / persistence (new domain)
