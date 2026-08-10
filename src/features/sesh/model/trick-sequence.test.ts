@@ -2,6 +2,7 @@ import { describe, expect, it } from '@jest/globals';
 
 import {
   advanceTrickSequence,
+  advanceTrickSequenceToIndex,
   createTrickSequence,
   getCurrentSequenceTrick,
   isTrickSequenceFinished,
@@ -52,5 +53,33 @@ describe('trick sequence', () => {
     const sequence = createTrickSequence([]);
     expect(isTrickSequenceFinished(sequence)).toBe(true);
     expect(getCurrentSequenceTrick(sequence)).toBeUndefined();
+  });
+
+  describe('advanceTrickSequenceToIndex', () => {
+    it('jumps forward to the given index', () => {
+      const sequence = createTrickSequence(TRICKS);
+      const jumped = advanceTrickSequenceToIndex(sequence, 2);
+      expect(getCurrentSequenceTrick(jumped)).toBe(SPIKE);
+      expect(isTrickSequenceFinished(jumped)).toBe(false);
+    });
+
+    it('clamps at tricks.length, finishing the sequence', () => {
+      const sequence = createTrickSequence(TRICKS);
+      const jumped = advanceTrickSequenceToIndex(sequence, 99);
+      expect(isTrickSequenceFinished(jumped)).toBe(true);
+      expect(getCurrentSequenceTrick(jumped)).toBeUndefined();
+    });
+
+    it('does not move backward when given an index at or before the current one', () => {
+      let sequence = createTrickSequence(TRICKS);
+      sequence = advanceTrickSequenceToIndex(sequence, 2);
+      expect(getCurrentSequenceTrick(sequence)).toBe(SPIKE);
+
+      const notMoved = advanceTrickSequenceToIndex(sequence, 0);
+      expect(getCurrentSequenceTrick(notMoved)).toBe(SPIKE);
+
+      const stayed = advanceTrickSequenceToIndex(sequence, 2);
+      expect(getCurrentSequenceTrick(stayed)).toBe(SPIKE);
+    });
   });
 });

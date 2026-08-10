@@ -4,6 +4,7 @@ import { KENDAMA_KENTEI_TRICKS } from '@/features/tricks/data/kendama-kentei-tri
 import {
   selectAssessmentRankBounds,
   selectAssessmentTricks,
+  selectNextRankStartIndex,
 } from '@/features/sesh/model/kentei-assessment-run';
 
 describe('selectAssessmentTricks', () => {
@@ -58,5 +59,40 @@ describe('selectAssessmentRankBounds', () => {
     const ranks = KENDAMA_KENTEI_TRICKS.map((trick) => trick.kenteiRank);
     expect(bounds.minRank).toBe(Math.min(...ranks));
     expect(bounds.maxRank).toBe(Math.max(...ranks));
+  });
+});
+
+describe('selectNextRankStartIndex', () => {
+  it('skipping from the middle of a rank lands on the first trick of the next rank', () => {
+    const rank5Start = KENDAMA_KENTEI_TRICKS.findIndex((trick) => trick.kenteiRank === 5);
+    const rank6Start = KENDAMA_KENTEI_TRICKS.findIndex((trick) => trick.kenteiRank === 6);
+
+    const result = selectNextRankStartIndex(KENDAMA_KENTEI_TRICKS, rank5Start + 2);
+
+    expect(result).toBe(rank6Start);
+    expect(KENDAMA_KENTEI_TRICKS[result].kenteiRank).toBe(6);
+  });
+
+  it('skipping from the second-to-last trick of a rank still lands on the next rank (off-by-one check)', () => {
+    const rank6Start = KENDAMA_KENTEI_TRICKS.findIndex((trick) => trick.kenteiRank === 6);
+    const secondToLastOfRank5 = rank6Start - 2;
+
+    const result = selectNextRankStartIndex(KENDAMA_KENTEI_TRICKS, secondToLastOfRank5);
+
+    expect(result).toBe(rank6Start);
+  });
+
+  it('skipping from the last rank returns tricks.length', () => {
+    const lastRankStart = KENDAMA_KENTEI_TRICKS.findIndex((trick) => trick.kenteiRank === 12);
+
+    const result = selectNextRankStartIndex(KENDAMA_KENTEI_TRICKS, lastRankStart);
+
+    expect(result).toBe(KENDAMA_KENTEI_TRICKS.length);
+  });
+
+  it('returns tricks.length when fromIndex is already past the end', () => {
+    const result = selectNextRankStartIndex(KENDAMA_KENTEI_TRICKS, KENDAMA_KENTEI_TRICKS.length + 5);
+
+    expect(result).toBe(KENDAMA_KENTEI_TRICKS.length);
   });
 });

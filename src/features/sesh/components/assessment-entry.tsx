@@ -10,6 +10,7 @@ import {
   type AssessmentFlow,
   selectAssessmentRankBounds,
   selectAssessmentTricks,
+  selectNextRankStartIndex,
 } from '@/features/sesh/model/kentei-assessment-run';
 import { OPEN_ENDED_SESH_PLAN } from '@/features/sesh/model/sesh';
 import { KENDAMA_KENTEI_TRICKS } from '@/features/tricks/data/kendama-kentei-tricks';
@@ -40,11 +41,17 @@ export function AssessmentEntry() {
 
   if (step.kind === 'running') {
     const tricks = selectAssessmentTricks(step.flow, KENDAMA_KENTEI_TRICKS);
+    // Skipping only makes sense when there's a rank above the current one to
+    // jump to — `currentRankOnly` covers a single rank, so "skip this rank"
+    // would just mean abandoning the run, a different, unrequested action.
+    const isMultiRankFlow = step.flow.kind !== 'currentRankOnly';
     return (
       <MultiTrickSesh
         tricks={tricks}
         plan={OPEN_ENDED_SESH_PLAN}
         onFinished={() => router.replace('/profile')}
+        showAttemptsReminder
+        skipTarget={isMultiRankFlow ? (index) => selectNextRankStartIndex(tricks, index) : undefined}
       />
     );
   }

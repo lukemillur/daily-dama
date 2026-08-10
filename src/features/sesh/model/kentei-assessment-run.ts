@@ -44,3 +44,26 @@ export function selectAssessmentRankBounds(standardTricks: readonly TrickSummary
   const ranks = standardTricks.map((trick) => trick.kenteiRank);
   return { minRank: Math.min(...ranks), maxRank: Math.max(...ranks) };
 }
+
+/**
+ * The index of the first trick belonging to the next rank after
+ * `tricks[fromIndex]`'s rank — i.e. where a "skip this rank" action during
+ * an assessment run should land. Relies on the invariant (guaranteed by
+ * `selectAssessmentTricks`, itself derived from `standardTricks`' own
+ * declaration order) that ranks appear in ascending order, so this only
+ * needs to scan forward for the first strictly-greater rank rather than
+ * re-sorting or grouping.
+ *
+ * Returns `tricks.length` (i.e. "assessment finished") once there's no
+ * higher rank left to skip to, including when `fromIndex` is already past
+ * the end of the list.
+ */
+export function selectNextRankStartIndex(
+  tricks: readonly TrickSummary[],
+  fromIndex: number,
+): number {
+  if (fromIndex >= tricks.length) return tricks.length;
+  const currentRank = tricks[fromIndex].kenteiRank;
+  const nextIndex = tricks.findIndex((trick, index) => index > fromIndex && trick.kenteiRank > currentRank);
+  return nextIndex === -1 ? tricks.length : nextIndex;
+}

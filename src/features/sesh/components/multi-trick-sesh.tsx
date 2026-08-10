@@ -13,6 +13,7 @@ import {
 } from '@/features/sesh/model/sesh';
 import {
   advanceTrickSequence,
+  advanceTrickSequenceToIndex,
   createTrickSequence,
   getCurrentSequenceTrick,
   isTrickSequenceFinished,
@@ -27,6 +28,16 @@ interface MultiTrickSeshProps {
   readonly tricks: readonly PracticeTrick[];
   readonly plan: SeshPlan;
   readonly onFinished?: () => void;
+  /**
+   * When provided, renders a "Skip this rank" control and, when pressed,
+   * jumps the sequence forward to the index this returns (given the current
+   * index). Opaque to this component — it knows nothing about ranks, only
+   * that skipping means jumping to an index without recording anything for
+   * the tricks in between. Omit to disable skipping entirely.
+   */
+  readonly skipTarget?: (currentIndex: number) => number;
+  /** Shows the static "You have 5 attempts." reminder on every trick. */
+  readonly showAttemptsReminder?: boolean;
 }
 
 /**
@@ -42,7 +53,7 @@ interface MultiTrickSeshProps {
  * initializers below) — this component drives one run through a fixed
  * list, not a list that can change mid-run.
  */
-export function MultiTrickSesh({ tricks, plan, onFinished }: MultiTrickSeshProps) {
+export function MultiTrickSesh({ tricks, plan, onFinished, skipTarget, showAttemptsReminder }: MultiTrickSeshProps) {
   const [sequence, setSequence] = useState(() => createTrickSequence(tricks));
   const [state, dispatch] = useReducer(
     seshReducer,
@@ -104,12 +115,28 @@ export function MultiTrickSesh({ tricks, plan, onFinished }: MultiTrickSeshProps
     };
   }, [state.status]);
 
+  const handleSkipRank = () => {
+    if (!skipTarget) return;
+
+    const nextSequence = advanceTrickSequenceToIndex(sequence, skipTarget(sequence.currentIndex));
+    setSequence(nextSequence);
+
+    const nextTrick = getCurrentSequenceTrick(nextSequence);
+    if (nextTrick) {
+      dispatch({ type: 'trickSelected', trick: nextTrick, plan });
+    } else {
+      dispatch({ type: 'seshReset' });
+    }
+  };
+
   if (state.status === 'countdown') {
     return (
       <Countdown
         trick={state.trick}
         plan={state.plan}
         onComplete={() => dispatch({ type: 'countdownCompleted', now: Date.now() })}
+        attemptsReminder={showAttemptsReminder}
+        onSkipRank={skipTarget ? handleSkipRank : undefined}
       />
     );
   }
@@ -130,6 +157,8 @@ export function MultiTrickSesh({ tricks, plan, onFinished }: MultiTrickSeshProps
         onResume={() => dispatch({ type: 'seshResumed', now: Date.now() })}
         onEnd={() => dispatch({ type: 'seshEnded', now: Date.now() })}
         onTimerElapsed={() => dispatch({ type: 'timerElapsed', now: Date.now() })}
+        attemptsReminder={showAttemptsReminder}
+        onSkipRank={skipTarget ? handleSkipRank : undefined}
       />
     );
   }
