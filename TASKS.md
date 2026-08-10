@@ -113,7 +113,7 @@ _Raw ideas land here — a name and a one-line description, nothing more. Discus
 
 #### [T005.1] Define a sesh-end target before starting
 
-- **Status:** Not started
+- **Status:** In progress
 - **Description:** Open-ended sesh setup lets the user optionally define a target trick + landing count before starting.
 - **Exit criteria:** Starting an open-ended sesh with a defined target stores it on the sesh's initial state; starting without one behaves exactly as today — verified by test.
 
