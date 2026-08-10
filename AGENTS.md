@@ -86,13 +86,15 @@ yarn tsc --noEmit
 yarn expo export --platform web --output-dir /tmp/daily-dama-web-export
 ```
 
-At the time of this handoff, the suite contains 18 test suites and 234 behavioral tests. Update this note if the suite structure changes materially; do not treat the exact count as a quality target.
-
 For browser verification, run the Expo development server rather than serving the static export with a generic file server. Expo Router's extensionless routes such as `/tricks` need appropriate fallback/routing behavior. If the usual port is occupied, select another explicit port instead of assuming the page at that port belongs to this repository.
 
-The five-link web navigation has been measured to fit a 320 px viewport. Recheck that width whenever labels, gaps, or padding change. Existing React Native Web development warnings include the animated `useNativeDriver` fallback and styled-components/native media-query warnings; neither currently prevents the verified layout from functioning, but new warnings or runtime errors should not be dismissed as the same issue without checking.
+The five-link web navigation has been measured to fit a 320 px viewport. Recheck that width whenever labels, gaps, or padding change. Two known-benign warnings exist (`useNativeDriver` fallback, styled-components/native media-query) — don't assume a *new* warning or runtime error is one of these without checking.
 
 Web is the current first verification surface. iOS and Android remain required eventual targets, but this iteration has not yet received deliberate device hardening.
+
+## Active work
+
+Core-functionality work in progress is tracked in [TASKS.md](TASKS.md) — check it before starting session work in this area. It's the checkpoint mechanism across context compaction and new sessions: read it top to bottom, verify a task's exit criteria before touching code, and update it in the same commit that closes a task. Trick visualization is deliberately excluded from it; see below.
 
 ## Feature-specific handoffs
 
