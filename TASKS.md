@@ -113,7 +113,7 @@ _Raw ideas land here — a name and a one-line description, nothing more. Discus
 
 #### [T005.2] Track progress and gate the end action
 
-- **Status:** Not started
+- **Status:** In progress
 - **Description:** Sesh tracks progress toward the defined target through the active session and gates the primary end action until it's met.
 - **Exit criteria:** With an unmet target, the primary end action is disabled and a separate "end anyway" action ends the sesh; once the target is met, the primary end action is enabled — verified by test.
 
