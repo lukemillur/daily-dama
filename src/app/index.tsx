@@ -40,9 +40,14 @@ export default function HomeScreen() {
       webBottomInset={24}>
       {profile.hasCompletedOnboarding && profile.kenteiRank ? <DailyHome summary={summary} /> : <KenteiOnboarding />}
       {__DEV__ ? (
-        <Link href="/stats/trick-viz-sandbox" style={styles.devLink}>
-          Trick viz sandbox
-        </Link>
+        <>
+          <Link href="/stats/trick-viz-sandbox" style={styles.devLink}>
+            Trick viz sandbox
+          </Link>
+          <Link href="/stats/sesh-sequence-sandbox" style={styles.devLinkSecondary}>
+            Sesh sequence sandbox
+          </Link>
+        </>
       ) : null}
     </Screen>
   );
@@ -50,6 +55,13 @@ export default function HomeScreen() {
 
 const styles = StyleSheet.create({
   devLink: {
+    position: 'absolute',
+    bottom: 26,
+    right: 12,
+    fontSize: 11,
+    opacity: 0.5,
+  },
+  devLinkSecondary: {
     position: 'absolute',
     bottom: 8,
     right: 12,
