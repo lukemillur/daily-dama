@@ -118,7 +118,7 @@ _Raw ideas land here — a name and a one-line description, nothing more. Discus
 
 #### [T011.1] Goals domain and goal-creation UI
 
-- **Status:** Not started
+- **Status:** In progress
 - **Description:** Add a persistent Goals domain, and UI to create a goal for a trick: either a target lace count or a target cumulative practice time.
 - **Exit criteria:** Test confirms creating a count-based goal and a time-based goal each store the trick ID, trick-name snapshot, goal type, and target value correctly; verified in-browser.
 
