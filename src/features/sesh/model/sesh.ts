@@ -64,6 +64,15 @@ export type SeshAction =
 
 export const INITIAL_SESH_STATE: SeshState = { status: 'choosing' };
 
+/**
+ * Whether the device screen should be kept awake for the given Sesh status.
+ * True for the countdown and active states, since those are the states where
+ * the user is expected to be hands-on with the kendama rather than the screen.
+ */
+export function shouldKeepScreenAwake(status: SeshState['status']): boolean {
+  return status === 'countdown' || status === 'active';
+}
+
 export function seshReducer(state: SeshState, action: SeshAction): SeshState {
   switch (action.type) {
     case 'trickSelected':

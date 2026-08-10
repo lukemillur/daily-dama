@@ -1,3 +1,4 @@
+import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
 import { Link } from 'expo-router';
 import { useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import { Animated, Pressable, ScrollView, TextInput } from 'react-native';
@@ -19,12 +20,15 @@ import {
   selectSeshPracticeTricks,
   seshReducer,
   type SeshPlan,
+  shouldKeepScreenAwake,
   type SeshSummary,
 } from '@/features/sesh/model/sesh';
 import type { PracticeTrick } from '@/features/tricks/model/trick';
 import { getPersonalBest, type PracticeSessionRecord } from '@/features/stats/model/practice-history';
 import { usePracticeHistory, usePracticeHistoryActions } from '@/features/stats/state/practice-history-provider';
 import { useUserProfileActions } from '@/features/profile/state/user-profile-provider';
+
+const SESH_KEEP_AWAKE_TAG = 'sesh-active';
 
 interface SeshProps {
   readonly selectedTrickIds: readonly string[];
@@ -60,6 +64,22 @@ export function Sesh({ availableTricks, initialPlan, preferredTrickId, selectedT
     recordedSummaryId.current = summaryId;
     recordCompletedSesh(state.summary);
   }, [recordCompletedSesh, state]);
+
+  useEffect(() => {
+    if (!shouldKeepScreenAwake(state.status)) return;
+
+    activateKeepAwakeAsync(SESH_KEEP_AWAKE_TAG).catch(() => {
+      // Best-effort: some browsers reject the wake-lock request (e.g. no
+      // user gesture yet, or unsupported). Screen-sleep prevention is a
+      // nice-to-have, not a blocker for practicing.
+    });
+
+    return () => {
+      deactivateKeepAwake(SESH_KEEP_AWAKE_TAG).catch(() => {
+        // Nothing to release if activation above never succeeded.
+      });
+    };
+  }, [state.status]);
 
   if (state.status === 'choosing') {
     return practiceTricks.length === 0 ? (
