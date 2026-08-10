@@ -17,6 +17,7 @@ import {
   useCustomTrickActions,
   useCustomTricks,
 } from '@/features/custom-tricks/state/custom-trick-provider';
+import { TrickNotesScreen } from '@/features/notes/components/trick-notes-screen';
 import { useRequireOnboarding } from '@/features/onboarding/state/require-onboarding';
 import {
   useUserProfile,
@@ -27,6 +28,7 @@ import { TrickDirectory } from '@/features/tricks/components/trick-directory';
 import { KENDAMA_KENTEI_TRICKS } from '@/features/tricks/data/kendama-kentei-tricks';
 import {
   createProfileDirectoryTricks,
+  type DirectoryTrick,
   selectEffectiveUnlockedTrickIds,
   selectLacedCountByTrickId,
   selectUnlockedTrickIds,
@@ -42,6 +44,7 @@ export default function TricksScreen() {
   const [creationStep, setCreationStep] = useState<'list' | 'choose' | CustomTrick['kind']>('list');
   const [editingTrick, setEditingTrick] = useState<CustomTrick | undefined>(undefined);
   const [deletingTrick, setDeletingTrick] = useState<CustomTrick | undefined>(undefined);
+  const [notesTrick, setNotesTrick] = useState<DirectoryTrick | undefined>(undefined);
   const directoryTricks = useMemo(
     () => createProfileDirectoryTricks(KENDAMA_KENTEI_TRICKS, tricks),
     [tricks],
@@ -75,6 +78,18 @@ export default function TricksScreen() {
           trick={deletingTrick}
           onCancel={() => setDeletingTrick(undefined)}
           onDeleted={() => setDeletingTrick(undefined)}
+        />
+      </Screen>
+    );
+  }
+
+  if (notesTrick) {
+    return (
+      <Screen edges={['top', 'left', 'right']}>
+        <TrickNotesScreen
+          trickId={notesTrick.id}
+          trickName={notesTrick.name}
+          onClose={() => setNotesTrick(undefined)}
         />
       </Screen>
     );
@@ -118,6 +133,7 @@ export default function TricksScreen() {
             onEdit: (trickId) => setEditingTrick(tricks.find((trick) => trick.id === trickId)),
             onDelete: (trickId) => setDeletingTrick(tricks.find((trick) => trick.id === trickId)),
           }}
+          notesAction={{ onOpen: setNotesTrick }}
           header={{
             eyebrow: 'Your trick lab',
             title: 'Choose the next\nmove.',

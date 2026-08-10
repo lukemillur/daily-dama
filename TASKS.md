@@ -115,12 +115,6 @@ _Raw ideas land here — a name and a one-line description, nothing more. Discus
   - A note optionally carries a practice-history record ID, for notes born from a specific sesh (see T010.2). General trick notes omit it.
   - The Notes domain itself is **not** immutable — the immutability invariant protects Stats derivation specifically; notes don't feed any derived calculation, so editing/deleting a note later is fine.
 
-#### [T010.1] Notes domain and basic note CRUD on a trick
-
-- **Status:** Not started
-- **Description:** Add the Notes persistence domain and a minimal UI to create, view, edit, and delete a note attached to a trick, with an optional sesh reference.
-- **Exit criteria:** Test confirms: creating a trick-only note stores the trick ID and name snapshot; creating one with a sesh reference also stores the practice-history record ID; editing and deleting both work; renaming or deleting the source custom trick afterward leaves the note displaying its snapshotted name rather than breaking.
-
 #### [T010.2] Auto-prompt for a note on a no-lace timed sesh
 
 - **Status:** Not started
