@@ -29,6 +29,9 @@ export interface TrickDirectoryProps {
   readonly notesAction?: {
     readonly onOpen: (trick: DirectoryTrick) => void;
   };
+  readonly goalsAction?: {
+    readonly onOpen: (trick: DirectoryTrick) => void;
+  };
   readonly footer?: ReactElement;
   readonly fixedHeader?: boolean;
   readonly fixedFooter?: boolean;
@@ -58,6 +61,7 @@ export function TrickDirectory({
   headerAction,
   customActions,
   notesAction,
+  goalsAction,
   footer,
   fixedHeader = false,
   fixedFooter = false,
@@ -85,7 +89,7 @@ export function TrickDirectory({
   const directoryList = (
     <SectionList
       sections={sections}
-      extraData={{ selectedTrickIds, lacedCountByTrickId, unlockedTrickIds, manualUnlock, notesAction }}
+      extraData={{ selectedTrickIds, lacedCountByTrickId, unlockedTrickIds, manualUnlock, notesAction, goalsAction }}
       keyExtractor={(trick) => trick.id}
       stickySectionHeadersEnabled
       showsVerticalScrollIndicator={!hideScrollIndicator}
@@ -105,6 +109,7 @@ export function TrickDirectory({
           onEdit={isCustomDirectoryTrick(item) && customActions ? () => customActions.onEdit(item.id) : undefined}
           onDelete={isCustomDirectoryTrick(item) && customActions ? () => customActions.onDelete(item.id) : undefined}
           onOpenNotes={notesAction ? () => notesAction.onOpen(item) : undefined}
+          onOpenGoals={goalsAction ? () => goalsAction.onOpen(item) : undefined}
           showLacedCount={lacedCountByTrickId !== undefined}
           lacedCount={lacedCountByTrickId?.get(item.id) ?? 0}
           showUnlockedStatus={unlockedTrickIds !== undefined}
@@ -165,6 +170,7 @@ interface TrickRowProps {
   readonly onEdit?: () => void;
   readonly onDelete?: () => void;
   readonly onOpenNotes?: () => void;
+  readonly onOpenGoals?: () => void;
   readonly showLacedCount?: boolean;
   readonly lacedCount?: number;
   readonly showUnlockedStatus?: boolean;
@@ -181,6 +187,7 @@ function TrickRow({
   onEdit,
   onDelete,
   onOpenNotes,
+  onOpenGoals,
   showLacedCount = false,
   lacedCount = 0,
   showUnlockedStatus = false,
@@ -268,6 +275,11 @@ function TrickRow({
         {onOpenNotes ? (
           <RowAction accessibilityLabel={`Notes for ${trick.name}`} accessibilityRole="button" onPress={onOpenNotes}>
             <RowActionText>Notes</RowActionText>
+          </RowAction>
+        ) : null}
+        {onOpenGoals ? (
+          <RowAction accessibilityLabel={`Goals for ${trick.name}`} accessibilityRole="button" onPress={onOpenGoals}>
+            <RowActionText>Goals</RowActionText>
           </RowAction>
         ) : null}
         <Link asChild href={{ pathname: '/sesh', params: { trickId: trick.id } }}>

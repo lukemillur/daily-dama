@@ -7,6 +7,7 @@ import { AnimatedSplashOverlay } from '@/components/animated-icon';
 import AppTabs from '@/components/app-tabs';
 import { AccessGateProvider } from '@/features/access-gate/state/access-gate-provider';
 import { CustomTrickProvider } from '@/features/custom-tricks/state/custom-trick-provider';
+import { GoalProvider } from '@/features/goals/state/goal-provider';
 import { NoteProvider } from '@/features/notes/state/note-provider';
 import { KenteiRankAutoPromotion } from '@/features/profile/state/kentei-rank-auto-promotion';
 import { UserProfileProvider } from '@/features/profile/state/user-profile-provider';
@@ -25,8 +26,10 @@ export default function TabLayout() {
           <UserProfileProvider>
             <PracticeHistoryProvider>
               <NoteProvider>
-                <KenteiRankAutoPromotion />
-                <AppTabs />
+                <GoalProvider>
+                  <KenteiRankAutoPromotion />
+                  <AppTabs />
+                </GoalProvider>
               </NoteProvider>
             </PracticeHistoryProvider>
           </UserProfileProvider>
