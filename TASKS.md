@@ -8,7 +8,7 @@ Working backlog for Daily Dama **core-functionality** work. This file is the che
 
 **Picking up work:**
 1. Read this file top to bottom before touching code.
-2. Take the first `Backlog` entry with status `Not started` or `In progress`.
+2. Take the first `Backlog` entry with status `Not started` or `In progress`. Before claiming it, follow the branch-check protocol in *Working across multiple agents* below — this file's status field is a human-readable picture, not the authoritative claim signal.
 3. Read its exit criteria before writing anything — that's the definition of done, not a vibe check.
 4. If the exit criteria depend on something no longer true (file moved, API changed, decision superseded), stop and flag it rather than guessing.
 
@@ -17,7 +17,7 @@ Working backlog for Daily Dama **core-functionality** work. This file is the che
 2. Run the task's own exit criteria yourself — don't mark it done on assumption.
 3. Run the project's standard verification sequence (`yarn test --runInBand`, `yarn lint`, `yarn tsc --noEmit` — see [AGENTS.md](AGENTS.md)). A task isn't done if it breaks the baseline, even when its own criteria pass.
 4. Commit the change on its own, referencing the task ID in the message. Focused commits, never pushed automatically (see AGENTS.md § Git state expectations).
-5. In that same commit, move the entry from `Backlog` to `Done` in this file and flip its status.
+5. In that same commit, move the entry from `Backlog` in this file to [TASKS_DONE.md](TASKS_DONE.md), flipping its status to `Done`.
 
 **Getting stuck:**
 - If a task turns out bigger than scoped, don't silently expand it. Split it into new entries and mark the original `Blocked` with a one-line reason.
@@ -28,7 +28,7 @@ Working backlog for Daily Dama **core-functionality** work. This file is the che
 - `Not started`
 - `In progress` — being actively worked. If you find a task already in this state at the start of a session, verify how far it actually got (check the commit log) rather than trusting the label alone.
 - `Blocked` — reason required, one line, specific enough to unblock without a meeting.
-- `Done` — moved to the Done section, not left in Backlog.
+- `Done` — moved to [TASKS_DONE.md](TASKS_DONE.md), not left in Backlog.
 
 ## Task template
 
@@ -66,6 +66,24 @@ If an idea fails any check, either split it into entries that each pass all four
 - **M — a chain of S's.** Only for genuinely sequential steps that can't be reordered or done independently. Written as a parent entry (`[T010]`) plus numbered children (`[T010.1]`, `[T010.2]`, ...), each S-sized with its own exit criteria. The parent is an umbrella only — it has no exit criteria of its own and is marked `Done` when every child is `Done`.
 
 Nothing else is a valid size. An idea that doesn't reduce to S or a numbered M-chain isn't scoped yet — leave it in `Needs scoping` and keep discussing it rather than forcing it into a template.
+
+## Working across multiple agents
+
+Tasks here may be picked up by more than one agent at a time — possibly different harnesses, possibly different machines. Real-time coordination happens through git, not through this file: a pushed branch is the authoritative claim, and this file's `Status` field is the human-readable picture that catches up whenever that branch eventually merges. Don't trust `Status` alone to mean a task is actually free.
+
+**Before claiming a task:**
+1. Pull latest `main`.
+2. Check whether a branch already exists for it: `git ls-remote origin 'refs/heads/task/T0NN-*'` (substitute the real ID, e.g. `T003` or a child like `T005.1`). If one exists, it's already claimed — pick a different task.
+3. If the task notes a dependency (e.g. T013 depends on T012), confirm that dependency is actually in [TASKS_DONE.md](TASKS_DONE.md), not just referenced as resolved in a conversation. From another agent's perspective, only a merged, archived task is really done.
+
+**Claiming and working:**
+1. Create a branch named `task/T0NN-short-slug`, using the task's own ID.
+2. Push the branch immediately, *before* starting the actual work — this push is the claim (see the narrow exception to "never push automatically" in AGENTS.md § Git state expectations). If the push is rejected because the branch name already exists, someone beat you to it — stop and pick another task. Never `--force` here; a rejected push is the collision detector working as intended, not an obstacle to push through.
+3. Do the work on that branch. Everything under *Completing a task* above still applies — including that moving the entry to `TASKS_DONE.md` happens in a commit on this branch, not a direct edit on `main`.
+4. Open a PR into `main` when ready. CI runs the standard verification sequence on it.
+5. Pushing further commits to your own branch, and opening the PR, are also covered by working normally on a task — but merging into `main` is not automatic and still needs the usual confirmation.
+
+**Stale claims:** a pushed branch with no activity and no PR is an abandoned claim, not a real one. Deleting it releases the task — ordinary git housekeeping, no special protocol required.
 
 ## Needs scoping
 
@@ -270,4 +288,4 @@ _Raw ideas land here — a name and a one-line description, nothing more. Discus
 
 ## Done
 
-_Nothing completed yet._
+Completed entries live in [TASKS_DONE.md](TASKS_DONE.md) — not part of the top-to-bottom read above; see step 5 under *Completing a task*.

@@ -1,6 +1,14 @@
 # Daily Dama — Deployment Handoff (dailydama.com)
 
-Written 2026-08-06 so a fresh context can pick up the web deploy without re-discovering the project. Nothing has been deployed yet — no hosting provider or DNS has been touched. This is prep, not a completed migration.
+Written 2026-08-06, updated 2026-08-10 once deployment actually happened. **This is no longer prep** — Vercel is connected and a live Production deployment exists. The rest of this document is still accurate about build/gate mechanics, but §4, §5, and §7 have been corrected to match what's actually live rather than what was originally planned.
+
+## Current deploy model — read this first
+
+As of 2026-08-10, Vercel's GitHub integration is connected (deployments show `vercel[bot]` as creator) and `vercel.json` exists in the repo with the build command, output directory, and the `/stats/:trickId` rewrite (see §2). **Production deploys are no longer triggered by pushing to `main`.** `production` is a separate branch, set as Vercel's Production Branch; only a merge into `production` triggers a deploy to the live domain.
+
+`main` accumulates ordinary work — including task branches merging in per the multi-agent protocol in [TASKS.md](TASKS.md) — and only reaches production when a PR from `main` into `production` is opened and merged deliberately. This is intentional: it means agents merging task PRs into `main` never accidentally ship straight to the public domain.
+
+This was configured directly in the Vercel dashboard, not from anything in this repo, so if deploy behavior ever seems off, check Vercel's Project Settings → Git → Production Branch before assuming the config here is wrong.
 
 ## 1. What this project is
 
@@ -42,7 +50,7 @@ dist/
 - **Vercel** (`vercel.json`): a `rewrites` entry mapping `/stats/:trickId` → `/stats/[trickId].html`
 - **Cloudflare Pages**: same idea via a `_redirects` file
 
-None of these config files exist in the repo yet — whichever host gets picked needs this added, and it should be verified post-deploy (see checklist below).
+`vercel.json` now exists in the repo with exactly this rewrite (`/stats/:trickId` → `/stats/[trickId].html`), plus the build command and output directory. Still worth verifying post-deploy (see checklist below) rather than trusting the config alone.
 
 ## 3. The access gate — read before deploying
 
@@ -53,20 +61,18 @@ None of these config files exist in the repo yet — whichever host gets picked 
 
 ## 4. What's genuinely undecided (needs your input, not mine)
 
-I did not pick a host or touch DNS — these are calls only you can make:
-
-- **Hosting provider.** No `vercel.json`, `netlify.toml`, `eas.json`, or `.github/workflows` exist in the repo — nothing has been chosen. Static-export-friendly options that support the `/stats/[trickId]` rewrite: Vercel, Netlify, Cloudflare Pages. (EAS Hosting is also an option — `app.json` already has an `eas.projectId`, but that's from `expo-router`/EAS Update tooling being installed, not evidence a hosting decision was made.)
-- **DNS for dailydama.com.** I don't know your registrar or current DNS setup. Once a host is chosen, you'll point an A/ALIAS or CNAME record at it per that host's instructions, and most of the above providers auto-provision HTTPS via Let's Encrypt once the custom domain is added and DNS propagates.
-- **Whether the access-gate password should rotate for a public domain.** Currently `sillyGoose!2026` (unchanged from prototype setup). Worth deciding whether that's fine to ship as-is or should change now that it's reachable at a real domain — I didn't change it.
+- **Hosting provider — decided.** Vercel, connected via its GitHub App, with `vercel.json` in the repo. See *Current deploy model* above.
+- **DNS for dailydama.com.** Still not independently verified from this side — I haven't confirmed the custom domain is actually pointed at Vercel and resolving, as opposed to a deployment simply existing at Vercel's own `*.vercel.app` URL. Check before assuming `dailydama.com` itself is live.
+- **Whether the access-gate password should rotate for a public domain.** Still open, as far as I know — currently `sillyGoose!2026`, unchanged from prototype setup. Worth deciding now that production deploys are real, not hypothetical.
 
 ## 5. Suggested next steps
 
-1. Pick a host (Vercel/Netlify/Cloudflare Pages are the closest fits given the static + rewrite-rule requirement).
-2. Connect the GitHub repo, set the build command (`yarn expo export --platform web --output-dir dist` or equivalent per platform convention) and output/publish directory (`dist`).
-3. Add `EXPO_PUBLIC_ACCESS_PASSWORD` as a build-time env var on the host, matching local `.env`.
-4. Add the `/stats/*` → `/stats/[trickId].html` rewrite rule for that host.
-5. Point `dailydama.com` DNS at the host and let it provision HTTPS.
-6. Run the verification checklist below against the live domain.
+1. ~~Pick a host~~ — done, Vercel.
+2. ~~Connect the GitHub repo, set build command and output directory~~ — done, see `vercel.json`.
+3. Confirm `EXPO_PUBLIC_ACCESS_PASSWORD` is actually set as a **build-time** env var on Vercel, matching local `.env` — not independently verified from this side; §3 explains why this one is easy to get silently wrong.
+4. ~~Add the `/stats/*` rewrite rule~~ — done, in `vercel.json`.
+5. Confirm `dailydama.com` DNS actually points at Vercel and HTTPS is provisioned — not independently verified, see §4.
+6. Run the verification checklist below against the live domain — not yet done from this side.
 
 ## 6. Post-deploy verification checklist
 
@@ -80,7 +86,7 @@ Beyond the project's standard local verification sequence (in AGENTS.md — `yar
 
 ## 7. What I did *not* do
 
-- Did not create any hosting account, config file, or DNS record.
-- Did not push anything beyond what was already on `origin/main`.
+- The hosting account, `vercel.json`, the `production` branch, and the Vercel Production Branch setting were all set up directly by the project owner, not by an agent — none of it came from work in this repo.
 - Did not change the access-gate password.
-- Did not add `generateStaticParams` or a rewrite-rule config file for `/stats/[trickId]` — flagged above instead, since fixing it depends on which host you pick.
+- Did not add `generateStaticParams` for `/stats/[trickId]` — the rewrite rule in `vercel.json` covers the direct-hit 404 case (§2), but per-trick static generation for that route still isn't implemented.
+- Have not independently verified DNS or the build-time env var are actually correct in Vercel (see §4) — flagging rather than assuming.
