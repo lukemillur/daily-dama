@@ -107,7 +107,7 @@ _Raw ideas land here — a name and a one-line description, nothing more. Discus
 
 - **Area:** Tricks / persistence
 - **Priority:** High
-- **Status:** Not started
+- **Status:** In progress
 - **Description:** Allow the user to manually mark a trick as unlocked independent of lace history, as a togglable flag layered on top of (not replacing) T004's lace-derived status.
 - **Exit criteria:** Setting the manual flag on a trick with no lace history shows it unlocked; clearing the flag returns it to lace-derived status; a trick with real lace history stays unlocked regardless of the flag — verified by test.
 - **Notes:** Decision resolved during scoping — toggle, not a one-way override. Depends on T004 landing first.
