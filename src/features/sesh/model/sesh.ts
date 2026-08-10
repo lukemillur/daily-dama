@@ -63,6 +63,24 @@ export function createOpenEndedSeshPlan(landingCount?: number): SeshPlan {
   return { kind: 'openEnded', target: { landingCount } };
 }
 
+/**
+ * The landing count a sesh's plan is targeting, if any. Undefined for timed
+ * plans and for untargeted open-ended plans.
+ */
+export function getSeshTargetLandingCount(plan: SeshPlan): number | undefined {
+  return plan.kind === 'openEnded' ? plan.target?.landingCount : undefined;
+}
+
+/**
+ * Whether the given landing count satisfies the plan's target. Plans without
+ * a target (timed, or untargeted open-ended) are always considered met, so
+ * callers can gate the primary end action on this unconditionally.
+ */
+export function isSeshTargetMet(plan: SeshPlan, landingCount: number): boolean {
+  const target = getSeshTargetLandingCount(plan);
+  return target === undefined || landingCount >= target;
+}
+
 export interface SeshSummary {
   readonly trick: PracticeTrick;
   readonly plan: SeshPlan;

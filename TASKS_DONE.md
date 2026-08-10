@@ -48,3 +48,20 @@ Entries keep their content as it was at completion. Don't retroactively edit a d
 - **Description:** Open-ended sesh setup lets the user optionally define a target trick + landing count before starting.
 - **Exit criteria:** Starting an open-ended sesh with a defined target stores it on the sesh's initial state; starting without one behaves exactly as today — verified by test.
 - **Notes:** Parent [T005] stays `Not started` — [T005.2] (gating the end action on the target) is still outstanding. Implementation: `src/features/sesh/model/sesh.ts` adds a `SeshTarget` (`{ landingCount }`) carried as an optional `target` on the `openEnded` `SeshPlan` variant, plus `createOpenEndedSeshPlan(landingCount?)` (mirrors `createTimedSeshPlan`'s validation pattern, 1–999 whole laces) and `isValidSeshTargetLandingCount`. No reducer changes were needed — `SeshPlan` already flows unchanged from `trickSelected` through to the `active`/`completed` states, so a defined target lands on the sesh's initial state for free. `TrickPicker` in `src/features/sesh/components/sesh.tsx` gained an optional "Target laces" field shown only for the open-ended format; leaving it blank reproduces today's untargeted plan exactly. T005.2 is left to read `state.plan.target` and `landings.length` to compute progress and gate the end action — nothing here computes or displays progress yet.
+
+### [T005] End-of-sesh target criteria (open-ended flow)
+
+- **Area:** Sesh
+- **Priority:** High
+- **Status:** Done
+- **Description:** In the open-ended sesh flow, let the user define a target before starting (land Trick X, Y times) and gate ending the sesh on meeting it, with an explicit override always available.
+- **Notes:** Decision resolved during scoping — hard gate with override: the primary end action is disabled until the target is met, but an "end anyway" action is always present. Both children ([T005.1], [T005.2]) are now `Done`.
+
+### [T005.2] Track progress and gate the end action
+
+- **Area:** Sesh
+- **Priority:** High
+- **Status:** Done
+- **Description:** Sesh tracks progress toward the defined target through the active session and gates the primary end action until it's met.
+- **Exit criteria:** With an unmet target, the primary end action is disabled and a separate "end anyway" action ends the sesh; once the target is met, the primary end action is enabled — verified by test.
+- **Notes:** Implementation: `src/features/sesh/model/sesh.ts` adds two pure derivations — `getSeshTargetLandingCount(plan)` (the plan's target landing count, or `undefined` for timed/untargeted plans) and `isSeshTargetMet(plan, landingCount)` (always `true` when there's no target, so the UI can apply it unconditionally). No reducer changes — this is a UI-only gate; "end anyway" dispatches the same `seshEnded` action as the primary button. `ActiveSesh` in `src/features/sesh/components/sesh.tsx` computes `targetLandingCount`/`targetMet` from these, disables `EndButton` (`disabled`, `accessibilityState`, `$disabled` opacity, mirroring the existing `LacedButton`/`TrickChoice` pattern) until met, renders a progress readout (`TargetStatus`, modeled on `ChallengeStatus`'s boolean color swap) only when a target exists, and shows an always-functional "End anyway" text action beneath the secondary-actions row only while a target is set and unmet. Verified by new `sesh.test.ts` cases covering both derivations' boundaries (timed plans, untargeted open-ended, and a targeted plan at 0/9/10/11 against a target of 10), plus in-browser spot-check via the Expo dev server confirming the disabled → enabled transition and "End anyway" visibility.

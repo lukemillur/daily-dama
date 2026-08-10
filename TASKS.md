@@ -103,20 +103,6 @@ _Raw ideas land here — a name and a one-line description, nothing more. Discus
 
 ## Backlog
 
-### [T005] End-of-sesh target criteria (open-ended flow)
-
-- **Area:** Sesh
-- **Priority:** High
-- **Status:** Not started — umbrella entry, no exit criteria of its own; `Done` only once both children are `Done`.
-- **Description:** In the open-ended sesh flow, let the user define a target before starting (land Trick X, Y times) and gate ending the sesh on meeting it, with an explicit override always available.
-- **Notes:** Decision resolved during scoping — **hard gate with override**: the primary end action is disabled until the target is met, but an "end anyway" action is always present.
-
-#### [T005.2] Track progress and gate the end action
-
-- **Status:** Not started
-- **Description:** Sesh tracks progress toward the defined target through the active session and gates the primary end action until it's met.
-- **Exit criteria:** With an unmet target, the primary end action is disabled and a separate "end anyway" action ends the sesh; once the target is met, the primary end action is enabled — verified by test.
-
 ### [T006] Manual trick-unlock override
 
 - **Area:** Tricks / persistence

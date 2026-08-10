@@ -4,7 +4,9 @@ import {
   createOpenEndedSeshPlan,
   createTimedSeshPlan,
   formatRemainingDuration,
+  getSeshTargetLandingCount,
   INITIAL_SESH_STATE,
+  isSeshTargetMet,
   OPEN_ENDED_SESH_PLAN,
   selectSeshPracticeTricks,
   seshReducer,
@@ -199,6 +201,28 @@ describe('sesh reducer', () => {
 
     expect(active).toMatchObject({ status: 'active', plan: { kind: 'openEnded' } });
     expect((active as { plan: { target?: unknown } }).plan.target).toBeUndefined();
+  });
+
+  it('considers a timed plan\'s target always met, regardless of landing count', () => {
+    const plan = createTimedSeshPlan(5);
+    expect(getSeshTargetLandingCount(plan)).toBeUndefined();
+    expect(isSeshTargetMet(plan, 0)).toBe(true);
+    expect(isSeshTargetMet(plan, 100)).toBe(true);
+  });
+
+  it('considers an untargeted open-ended plan always met, regardless of landing count', () => {
+    expect(getSeshTargetLandingCount(OPEN_ENDED_SESH_PLAN)).toBeUndefined();
+    expect(isSeshTargetMet(OPEN_ENDED_SESH_PLAN, 0)).toBe(true);
+    expect(isSeshTargetMet(OPEN_ENDED_SESH_PLAN, 100)).toBe(true);
+  });
+
+  it('gates a targeted open-ended plan on reaching the target landing count', () => {
+    const plan = createOpenEndedSeshPlan(10);
+    expect(getSeshTargetLandingCount(plan)).toBe(10);
+    expect(isSeshTargetMet(plan, 0)).toBe(false);
+    expect(isSeshTargetMet(plan, 9)).toBe(false);
+    expect(isSeshTargetMet(plan, 10)).toBe(true);
+    expect(isSeshTargetMet(plan, 11)).toBe(true);
   });
 
   it('does not display zero before a countdown has actually finished', () => {

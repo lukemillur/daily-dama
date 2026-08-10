@@ -14,7 +14,9 @@ import {
   formatRemainingDuration,
   getAverageInterval,
   getFastestInterval,
+  getSeshTargetLandingCount,
   INITIAL_SESH_STATE,
+  isSeshTargetMet,
   isValidSeshTargetLandingCount,
   isValidTimedSeshMinutes,
   type Landing,
@@ -402,6 +404,8 @@ function ActiveSesh({
   const showChallenge = liveChallengeEnabled && personalBest !== undefined;
   const hasBeatenBest = showChallenge && landings.length > personalBest;
   const isPaused = pausedAt !== undefined;
+  const targetLandingCount = getSeshTargetLandingCount(plan);
+  const targetMet = isSeshTargetMet(plan, landings.length);
   const now = useNow(startedAt, isPaused);
   const totalPausedMs = pausedDurationMs + (isPaused ? Math.max(0, now - pausedAt) : 0);
   const elapsedMs = now - startedAt - totalPausedMs;
@@ -442,6 +446,13 @@ function ActiveSesh({
             {hasBeatenBest ? `New best — past ${personalBest}!` : `${landings.length} of ${personalBest} to beat your best`}
           </ChallengeStatus>
         ) : null}
+        {targetLandingCount !== undefined ? (
+          <TargetStatus $met={targetMet}>
+            {targetMet
+              ? 'Target met — end the sesh whenever you\'re ready.'
+              : `${landings.length} of ${targetLandingCount} to hit your target`}
+          </TargetStatus>
+        ) : null}
         <LandingHistory landings={landings} />
         <SecondaryActions>
           <PauseButton
@@ -449,8 +460,20 @@ function ActiveSesh({
             onPress={isPaused ? onResume : onPause}>
             <PauseButtonText>{isPaused ? 'Resume Sesh' : 'Pause Sesh'}</PauseButtonText>
           </PauseButton>
-          <EndButton accessibilityRole="button" onPress={onEnd}><EndButtonText>End Sesh</EndButtonText></EndButton>
+          <EndButton
+            accessibilityRole="button"
+            accessibilityState={{ disabled: !targetMet }}
+            disabled={!targetMet}
+            $disabled={!targetMet}
+            onPress={onEnd}>
+            <EndButtonText>End Sesh</EndButtonText>
+          </EndButton>
         </SecondaryActions>
+        {targetLandingCount !== undefined && !targetMet ? (
+          <EndAnywayButton accessibilityRole="button" onPress={onEnd}>
+            <EndAnywayButtonText>End anyway</EndAnywayButtonText>
+          </EndAnywayButton>
+        ) : null}
       </ActiveContent>
     </ScrollArea>
   );
@@ -626,8 +649,11 @@ const LandingInterval = styled.Text`color: #53635d; font-size: 14px; font-varian
 const SecondaryActions = styled.View`flex-direction: row; gap: 10px; margin-top: 28px;`;
 const PauseButton = styled(Pressable)`min-height: 48px; flex: 1; align-items: center; justify-content: center; padding: 12px 24px; background-color: #18382e; border: 2px solid #18382e; border-radius: 5px;`;
 const PauseButtonText = styled.Text`color: #f4c94d; font-size: 15px; font-weight: 900;`;
-const EndButton = styled(Pressable)`min-height: 48px; flex: 1; align-items: center; justify-content: center; padding: 12px 24px; border: 2px solid #18382e; border-radius: 5px;`;
+const EndButton = styled(Pressable)<{ $disabled: boolean }>`min-height: 48px; flex: 1; align-items: center; justify-content: center; opacity: ${({ $disabled }) => ($disabled ? 0.45 : 1)}; padding: 12px 24px; border: 2px solid #18382e; border-radius: 5px;`;
 const EndButtonText = styled.Text`color: #18382e; font-size: 15px; font-weight: 900;`;
+const EndAnywayButton = styled(Pressable)`min-height: 40px; align-items: center; justify-content: center; margin-top: 10px; padding: 8px 24px;`;
+const EndAnywayButtonText = styled.Text`color: ${AppColors.textMuted}; font-size: 13px; font-weight: 800; text-decoration-line: underline;`;
+const TargetStatus = styled.Text<{ $met: boolean }>`width: 100%; text-align: center; margin-top: 12px; color: ${({ $met }) => ($met ? AppColors.red : AppColors.ink)}; font-size: 15px; font-weight: 900;`;
 const ResultBanner = styled.Text<{ $beaten: boolean }>`width: 100%; text-align: center; margin-top: 18px; padding: 12px 16px; background-color: ${({ $beaten }) => ($beaten ? '#e5edcf' : '#f8f1dd')}; border-left-width: 5px; border-left-color: ${({ $beaten }) => ($beaten ? AppColors.red : AppColors.ink)}; color: ${AppColors.ink}; font-size: 15px; font-weight: 900;`;
 const SummaryGrid = styled.View`width: 100%; flex-direction: row; flex-wrap: wrap; gap: 10px; margin-top: 28px;`;
 const Metric = styled.View`min-width: 46%; flex-grow: 1; background-color: #f8f1dd; border-top-width: 5px; border-top-color: #d84929; padding: 18px;`;
