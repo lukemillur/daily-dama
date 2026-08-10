@@ -117,7 +117,7 @@ _Raw ideas land here — a name and a one-line description, nothing more. Discus
 
 #### [T010.1] Notes domain and basic note CRUD on a trick
 
-- **Status:** Not started
+- **Status:** In progress
 - **Description:** Add the Notes persistence domain and a minimal UI to create, view, edit, and delete a note attached to a trick, with an optional sesh reference.
 - **Exit criteria:** Test confirms: creating a trick-only note stores the trick ID and name snapshot; creating one with a sesh reference also stores the practice-history record ID; editing and deleting both work; renaming or deleting the source custom trick afterward leaves the note displaying its snapshotted name rather than breaking.
 
