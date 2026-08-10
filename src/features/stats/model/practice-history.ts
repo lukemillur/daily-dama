@@ -67,12 +67,16 @@ export function isFirstLaceForTrick(
   );
 }
 
+export function createPracticeSessionRecordId(summary: SeshSummary): string {
+  return `${summary.startedAt}:${summary.endedAt}:${summary.trick.id}`;
+}
+
 export function createPracticeSessionRecord(
   summary: SeshSummary,
   previousBest: number | undefined,
 ): PracticeSessionRecord {
   return {
-    id: `${summary.startedAt}:${summary.endedAt}:${summary.trick.id}`,
+    id: createPracticeSessionRecordId(summary),
     trickId: summary.trick.id,
     trickName: summary.trick.name,
     startedAt: summary.startedAt,

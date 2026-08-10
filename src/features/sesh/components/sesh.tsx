@@ -24,16 +24,19 @@ import {
   seshReducer,
   type SeshPlan,
   shouldKeepScreenAwake,
+  shouldPromptSeshNote,
   type SeshSummary,
 } from '@/features/sesh/model/sesh';
 import type { PracticeTrick } from '@/features/tricks/model/trick';
 import {
+  createPracticeSessionRecordId,
   getPersonalBest,
   isFirstLaceForTrick,
   type PracticeSessionRecord,
 } from '@/features/stats/model/practice-history';
 import { usePracticeHistory, usePracticeHistoryActions } from '@/features/stats/state/practice-history-provider';
 import { useUserProfileActions } from '@/features/profile/state/user-profile-provider';
+import { useNoteActions } from '@/features/notes/state/note-provider';
 
 const SESH_KEEP_AWAKE_TAG = 'sesh-active';
 
@@ -66,7 +69,7 @@ export function Sesh({ availableTricks, initialPlan, preferredTrickId, selectedT
   useEffect(() => {
     if (state.status !== 'completed') return;
 
-    const summaryId = `${state.summary.startedAt}:${state.summary.endedAt}:${state.summary.trick.id}`;
+    const summaryId = createPracticeSessionRecordId(state.summary);
     if (recordedSummaryId.current === summaryId) return;
 
     recordedSummaryId.current = summaryId;
@@ -559,6 +562,7 @@ function CompletedSesh({
   const average = getAverageInterval(summary.landings);
   const fastest = getFastestInterval(summary.landings);
   const laceCount = summary.landings.length;
+  const promptForNote = shouldPromptSeshNote(summary);
   const challengeResult =
     personalBest === undefined
       ? undefined
@@ -585,10 +589,81 @@ function CompletedSesh({
           <Metric><MetricValue>{fastest === undefined ? '—' : formatDuration(fastest)}</MetricValue><MetricLabel>Fastest lace</MetricLabel></Metric>
         </SummaryGrid>
         <LandingHistory landings={summary.landings} />
+        {promptForNote ? <SeshNotePrompt summary={summary} /> : null}
         <PrimaryButton onPress={onRepeat}>Repeat sesh</PrimaryButton>
         <SecondaryButton variant="secondary" onPress={onReset}>Start another sesh</SecondaryButton>
       </ActiveContent>
     </ScrollArea>
+  );
+}
+
+function SeshNotePrompt({ summary }: { readonly summary: SeshSummary }) {
+  const { addNote } = useNoteActions();
+  const [step, setStep] = useState<'idle' | 'writing' | 'saved' | 'dismissed'>('idle');
+  const [body, setBody] = useState('');
+  const trimmedIsEmpty = body.trim().length === 0;
+
+  if (step === 'dismissed') return null;
+
+  if (step === 'saved') {
+    return (
+      <NotePromptCard>
+        <NotePromptTitle>Note saved.</NotePromptTitle>
+        <NotePromptCopy>You can find it alongside {summary.trick.name}&apos;s other notes.</NotePromptCopy>
+      </NotePromptCard>
+    );
+  }
+
+  if (step === 'writing') {
+    return (
+      <NotePromptCard>
+        <NotePromptTitle>What happened?</NotePromptTitle>
+        <NotePromptInput
+          accessibilityLabel="Note body"
+          multiline
+          onChangeText={setBody}
+          placeholder="What did you notice?"
+          placeholderTextColor={AppColors.textSubtle}
+          value={body}
+        />
+        <NotePromptActions>
+          <NotePromptButton
+            accessibilityRole="button"
+            accessibilityState={{ disabled: trimmedIsEmpty }}
+            disabled={trimmedIsEmpty}
+            $disabled={trimmedIsEmpty}
+            onPress={() => {
+              const result = addNote({
+                trickId: summary.trick.id,
+                trickName: summary.trick.name,
+                body,
+                practiceSessionId: createPracticeSessionRecordId(summary),
+              });
+              if (result.status === 'saved') setStep('saved');
+            }}>
+            <NotePromptButtonText>Save note</NotePromptButtonText>
+          </NotePromptButton>
+          <NotePromptSecondaryButton accessibilityRole="button" onPress={() => setStep('dismissed')}>
+            <NotePromptSecondaryButtonText>Cancel</NotePromptSecondaryButtonText>
+          </NotePromptSecondaryButton>
+        </NotePromptActions>
+      </NotePromptCard>
+    );
+  }
+
+  return (
+    <NotePromptCard>
+      <NotePromptTitle>Didn&apos;t land it this time.</NotePromptTitle>
+      <NotePromptCopy>Add a note while it&apos;s fresh — what to try differently next sesh.</NotePromptCopy>
+      <NotePromptActions>
+        <NotePromptButton accessibilityRole="button" onPress={() => setStep('writing')}>
+          <NotePromptButtonText>Add a note</NotePromptButtonText>
+        </NotePromptButton>
+        <NotePromptSecondaryButton accessibilityRole="button" onPress={() => setStep('dismissed')}>
+          <NotePromptSecondaryButtonText>Not now</NotePromptSecondaryButtonText>
+        </NotePromptSecondaryButton>
+      </NotePromptActions>
+    </NotePromptCard>
   );
 }
 
@@ -693,6 +768,15 @@ const ResultBanner = styled.Text<{ $beaten: boolean }>`width: 100%; text-align: 
 const FirstLaceBannerCard = styled.View`width: 100%; max-width: 500px; align-items: center; background-color: ${AppColors.yellow}; border: 3px solid ${AppColors.ink}; border-radius: 6px; padding: 18px 20px; margin-bottom: 20px;`;
 const FirstLaceBannerEyebrow = styled.Text`color: ${AppColors.red}; font-size: 12px; font-weight: 900; letter-spacing: 1.6px; text-transform: uppercase;`;
 const FirstLaceBannerTitle = styled.Text`color: ${AppColors.ink}; font-size: 20px; font-weight: 900; text-align: center; margin-top: 6px; line-height: 26px;`;
+const NotePromptCard = styled.View`width: 100%; max-width: 500px; background-color: #f8f1dd; border: 2px solid ${AppColors.ink}; padding: 18px; margin-top: 20px;`;
+const NotePromptTitle = styled.Text`color: ${AppColors.ink}; font-size: 17px; font-weight: 900;`;
+const NotePromptCopy = styled.Text`color: ${AppColors.inkSoft}; font-size: 13px; font-weight: 650; line-height: 19px; margin-top: 6px;`;
+const NotePromptInput = styled(TextInput)`min-height: 110px; background-color: ${AppColors.paper}; border: 2px solid ${AppColors.ink}; color: ${AppColors.ink}; font-size: 15px; font-weight: 650; margin-top: 12px; padding: 12px 14px; text-align-vertical: top;`;
+const NotePromptActions = styled.View`flex-direction: row; gap: 10px; margin-top: 14px;`;
+const NotePromptButton = styled(Pressable)<{ $disabled?: boolean }>`min-height: 44px; flex: 1; align-items: center; justify-content: center; opacity: ${({ $disabled }) => ($disabled ? 0.45 : 1)}; background-color: ${AppColors.ink}; padding: 10px 18px; border-radius: 5px;`;
+const NotePromptButtonText = styled.Text`color: ${AppColors.yellow}; font-size: 14px; font-weight: 900;`;
+const NotePromptSecondaryButton = styled(Pressable)`min-height: 44px; flex: 1; align-items: center; justify-content: center; padding: 10px 18px; border: 2px solid ${AppColors.ink}; border-radius: 5px;`;
+const NotePromptSecondaryButtonText = styled.Text`color: ${AppColors.ink}; font-size: 14px; font-weight: 900;`;
 const SummaryGrid = styled.View`width: 100%; flex-direction: row; flex-wrap: wrap; gap: 10px; margin-top: 28px;`;
 const Metric = styled.View`min-width: 46%; flex-grow: 1; background-color: #f8f1dd; border-top-width: 5px; border-top-color: #d84929; padding: 18px;`;
 const MetricValue = styled.Text`color: #18382e; font-size: 30px; font-variant: tabular-nums; font-weight: 900;`;

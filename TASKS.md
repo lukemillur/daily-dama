@@ -103,24 +103,6 @@ _Raw ideas land here — a name and a one-line description, nothing more. Discus
 
 ## Backlog
 
-### [T010] Sesh/trick notes
-
-- **Area:** Tricks / persistence (new domain)
-- **Priority:** Medium
-- **Status:** Not started — umbrella entry, no exit criteria of its own; `Done` only once both children are `Done`.
-- **Description:** Let the user attach a note to a trick, optionally tied to the specific sesh that prompted it, without touching the immutability of practice-history records.
-- **Notes:** Decisions resolved during scoping:
-  - New standalone "Notes" domain (own reducer/validation/persistence adapter, per the existing per-concern pattern) — not merged into practice history or custom tricks.
-  - A note requires a trick ID **and** a trick-name snapshot captured at write time (same convention practice-history already uses), so it survives a later rename or deletion of a custom trick. Standard Kentei tricks can't be deleted, so this only bites for custom tricks, but the record shape doesn't need to special-case that.
-  - A note optionally carries a practice-history record ID, for notes born from a specific sesh (see T010.2). General trick notes omit it.
-  - The Notes domain itself is **not** immutable — the immutability invariant protects Stats derivation specifically; notes don't feed any derived calculation, so editing/deleting a note later is fine.
-
-#### [T010.2] Auto-prompt for a note on a no-lace timed sesh
-
-- **Status:** In progress
-- **Description:** When a timed sesh completes without landing its trick, prompt the user to add a note, pre-linked to that sesh via its practice-history record ID. Depends on T010.1.
-- **Exit criteria:** A timed sesh ending without a lace triggers the prompt, and a note created from it carries the correct sesh reference; a timed sesh that ends with a lace, and any open-ended sesh, never trigger the prompt — verified by test.
-
 ### [T011] Custom practice goals
 
 - **Area:** Tricks / persistence (new domain)
