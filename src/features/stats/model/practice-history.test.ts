@@ -3,6 +3,7 @@ import { describe, expect, it } from '@jest/globals';
 import {
   aggregatePracticeStats,
   createPracticeSessionRecord,
+  createPracticeSessionRecordId,
   getPersonalBest,
   isEligibleTimedAttempt,
   isFirstLaceForTrick,
@@ -146,6 +147,15 @@ describe('practice history', () => {
     const historyAfterCurrentTrickDeletion = [record];
     expect(aggregatePracticeStats(historyAfterCurrentTrickDeletion).tricks[0]?.trickName).toBe(
       'Morning line',
+    );
+  });
+});
+
+describe('createPracticeSessionRecordId', () => {
+  it('matches the id createPracticeSessionRecord assigns for the same summary', () => {
+    const summary = makeSummary();
+    expect(createPracticeSessionRecordId(summary)).toBe(
+      createPracticeSessionRecord(summary, undefined).id,
     );
   });
 });

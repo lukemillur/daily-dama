@@ -7,10 +7,13 @@ import {
   getSeshTargetLandingCount,
   INITIAL_SESH_STATE,
   isSeshTargetMet,
+  type Landing,
   OPEN_ENDED_SESH_PLAN,
   selectSeshPracticeTricks,
   seshReducer,
+  type SeshSummary,
   shouldKeepScreenAwake,
+  shouldPromptSeshNote,
   type SeshState,
 } from '@/features/sesh/model/sesh';
 import type { PracticeTrick, TrickSummary } from '@/features/tricks/model/trick';
@@ -284,5 +287,58 @@ describe('shouldKeepScreenAwake', () => {
 
     state = seshReducer(state, { type: 'seshEnded', now: 2_000 });
     expect(shouldKeepScreenAwake(state.status)).toBe(false);
+  });
+});
+
+function landing(elapsedMs: number): Landing {
+  return { landedAt: 1_000 + elapsedMs, elapsedMs, intervalMs: elapsedMs };
+}
+
+function makeSeshSummary(overrides: Partial<SeshSummary> = {}): SeshSummary {
+  return {
+    trick: BIG_CUP,
+    plan: createTimedSeshPlan(5),
+    startedAt: 1_000,
+    endedAt: 301_000,
+    durationMs: 300_000,
+    landings: [],
+    ...overrides,
+  };
+}
+
+describe('shouldPromptSeshNote', () => {
+  it('triggers for a timed sesh that ended without landing the trick', () => {
+    expect(shouldPromptSeshNote(makeSeshSummary({ landings: [] }))).toBe(true);
+  });
+
+  it('does not trigger for a timed sesh that landed the trick at least once', () => {
+    expect(shouldPromptSeshNote(makeSeshSummary({ landings: [landing(1_000)] }))).toBe(false);
+    expect(
+      shouldPromptSeshNote(makeSeshSummary({ landings: [landing(1_000), landing(2_000)] })),
+    ).toBe(false);
+  });
+
+  it('never triggers for an open-ended sesh, regardless of target or landings', () => {
+    expect(
+      shouldPromptSeshNote(makeSeshSummary({ plan: OPEN_ENDED_SESH_PLAN, landings: [] })),
+    ).toBe(false);
+    expect(
+      shouldPromptSeshNote(
+        makeSeshSummary({ plan: OPEN_ENDED_SESH_PLAN, landings: [landing(1_000)] }),
+      ),
+    ).toBe(false);
+    expect(
+      shouldPromptSeshNote(
+        makeSeshSummary({ plan: createOpenEndedSeshPlan(5), landings: [] }),
+      ),
+    ).toBe(false);
+    expect(
+      shouldPromptSeshNote(
+        makeSeshSummary({
+          plan: createOpenEndedSeshPlan(5),
+          landings: [landing(1_000), landing(2_000), landing(3_000), landing(4_000), landing(5_000)],
+        }),
+      ),
+    ).toBe(false);
   });
 });

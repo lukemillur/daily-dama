@@ -232,6 +232,16 @@ export function getFastestInterval(landings: readonly Landing[]) {
   return Math.min(...landings.map((landing) => landing.intervalMs));
 }
 
+/**
+ * Whether a completed sesh should prompt the user to add a note: only timed
+ * seshes that ended without landing the trick even once. Open-ended seshes
+ * (any target/landing combo) and any timed sesh with at least one landing
+ * never trigger the prompt.
+ */
+export function shouldPromptSeshNote(summary: SeshSummary): boolean {
+  return summary.plan.kind === 'timed' && summary.landings.length === 0;
+}
+
 export function selectSeshPracticeTricks(
   availableTricks: readonly PracticeTrick[],
   selectedTrickIds: readonly string[],
