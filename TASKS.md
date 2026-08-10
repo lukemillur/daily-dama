@@ -18,6 +18,7 @@ Working backlog for Daily Dama **core-functionality** work. This file is the che
 3. Run the project's standard verification sequence (`yarn test --runInBand`, `yarn lint`, `yarn tsc --noEmit` — see [AGENTS.md](AGENTS.md)). A task isn't done if it breaks the baseline, even when its own criteria pass.
 4. Commit the change on its own, referencing the task ID in the message. Focused commits, never pushed automatically (see AGENTS.md § Git state expectations).
 5. In that same commit, move the entry from `Backlog` in this file to [TASKS_DONE.md](TASKS_DONE.md), flipping its status to `Done`.
+6. Open a PR into `development` and squash-merge it immediately — no review gate, this is pre-authorized (see [AGENTS.md](AGENTS.md) § Git state expectations). `development`, not `main`, is where task branches land; promoting `development` into `main` is a separate, manual step outside this protocol.
 
 **Getting stuck:**
 - If a task turns out bigger than scoped, don't silently expand it. Split it into new entries and mark the original `Blocked` with a one-line reason.
@@ -72,16 +73,16 @@ Nothing else is a valid size. An idea that doesn't reduce to S or a numbered M-c
 Tasks here may be picked up by more than one agent at a time — possibly different harnesses, possibly different machines. Real-time coordination happens through git, not through this file: a pushed branch is the authoritative claim, and this file's `Status` field is the human-readable picture that catches up whenever that branch eventually merges. Don't trust `Status` alone to mean a task is actually free.
 
 **Before claiming a task:**
-1. Pull latest `main`.
+1. Pull latest `development`.
 2. Check whether a branch already exists for it: `git ls-remote origin 'refs/heads/task/T0NN-*'` (substitute the real ID, e.g. `T003` or a child like `T005.1`). If one exists, it's already claimed — pick a different task.
 3. If the task notes a dependency (e.g. T013 depends on T012), confirm that dependency is actually in [TASKS_DONE.md](TASKS_DONE.md), not just referenced as resolved in a conversation. From another agent's perspective, only a merged, archived task is really done.
 
 **Claiming and working:**
-1. Create a branch named `task/T0NN-short-slug`, using the task's own ID.
+1. Create a branch named `task/T0NN-short-slug`, using the task's own ID, branched from `development`.
 2. Push the branch immediately, *before* starting the actual work — this push is the claim (see the narrow exception to "never push automatically" in AGENTS.md § Git state expectations). If the push is rejected because the branch name already exists, someone beat you to it — stop and pick another task. Never `--force` here; a rejected push is the collision detector working as intended, not an obstacle to push through.
-3. Do the work on that branch. Everything under *Completing a task* above still applies — including that moving the entry to `TASKS_DONE.md` happens in a commit on this branch, not a direct edit on `main`.
-4. Open a PR into `main` when ready. CI runs the standard verification sequence on it.
-5. Pushing further commits to your own branch, and opening the PR, are also covered by working normally on a task — but merging into `main` is not automatic and still needs the usual confirmation.
+3. Do the work on that branch. Everything under *Completing a task* above still applies — including that moving the entry to `TASKS_DONE.md` happens in a commit on this branch, not a direct edit on `development`.
+4. Open a PR into `development` when ready and squash-merge it immediately — this is pre-authorized, no review gate (see AGENTS.md § Git state expectations). CI runs the standard verification sequence on the PR, but the merge itself does not wait on it.
+5. Pushing further commits to your own branch, opening the PR, and squash-merging it into `development` are all covered by working normally on a task. Promoting `development` into `main` is a separate, manual step and still needs the usual confirmation.
 
 **Stale claims:** a pushed branch with no activity and no PR is an abandoned claim, not a real one. Deleting it releases the task — ordinary git housekeeping, no special protocol required.
 

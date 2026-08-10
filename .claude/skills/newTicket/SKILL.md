@@ -1,41 +1,31 @@
 ---
 name: newTicket
-description: Claims a Daily Dama backlog task — a specific one if named, otherwise the next available one — and drives it end-to-end: plans it with a high-effort Sonnet 5 planner, implements it with a medium-effort Sonnet 5 implementer, and opens a PR. No plan-approval gate.
-allowed-tools: Read, Edit, Bash, Agent
+description: Claims a Daily Dama backlog task — a specific one if named, otherwise the next available one — and drives it end-to-end against `development` via the ticket-cycle agent (plan, implement, merge). No plan-approval gate. When no task is named, keeps going: drives one task after another, each in a fresh subagent so context never accumulates, until the backlog is exhausted, a blocker is hit, or the session's usage limit is reached.
+allowed-tools: Read, Agent
 ---
 
-Claim and drive one task from `TASKS.md` to a PR, following its own documented conventions rather than reinventing them. Read `TASKS.md` in full before doing anything else, especially § *Working across multiple agents* and § *Completing a task* — the steps below assume that protocol and don't restate it.
+Drive task(s) from `TASKS.md` to merged PRs against `development`. All the actual work — selecting, claiming, planning, implementing, merging — happens inside the `ticket-cycle` subagent (`.claude/agents/ticket-cycle.md`), invoked fresh for every task. This skill itself is just the calling loop: it never touches git or `TASKS.md` directly.
 
-## 1. Select a candidate task
+## Usage-limit handling
+
+There's no way to proactively check remaining usage before starting a cycle — this session has no tool that exposes the 5-hour window's remaining capacity. The guard is reactive instead: `ticket-cycle` watches its own calls to the planner and implementer subagents and reports `STATUS: usage-limit` if either one fails or indicates the session hit its usage/rate limit, rather than retrying or pushing on into a half-done task. Treat that status as a stop signal, not a blocker — the task stays claimed for a future session to resume, nothing is wrong with the task itself.
+
+## Named task vs. continuous mode
 
 Check whether a specific task was named when this skill was invoked — e.g. `/newTicket T003`, `/newTicket T005.2`, or plain language like "work on the laced count task." There's no special argument syntax to parse for this; just read what the user actually said.
 
-- **If a specific task was named:** look it up directly in `Backlog` by ID. If it doesn't exist there, or names a bare parent entry rather than a standalone task or a specific child, say so plainly and stop — don't silently substitute a different task. Otherwise, that's the candidate; skip the scan below.
-- **If no task was named:** scan `Backlog` top to bottom for the first actionable entry with status `Not started`:
-  - A bare parent entry (umbrella, no exit criteria of its own) is never itself actionable — consider its first `Not started` child instead.
-  - Skip any candidate whose stated dependency isn't yet present in `TASKS_DONE.md`.
+**If a specific task was named:** invoke `ticket-cycle` once (`Agent` tool, `subagent_type: "ticket-cycle"`, foreground), passing it that task ID. Report its outcome and stop — regardless of `STATUS`.
 
-## 2. Confirm it isn't already claimed
+**If no task was named (continuous mode):** repeatedly invoke `ticket-cycle` (foreground, no task ID — let it select the next actionable task itself) in a loop:
 
-Run `git ls-remote origin 'refs/heads/task/<ID>-*'` for the candidate's ID. If a branch already exists, it's claimed — go back to step 1 and try the next candidate. If none are left, report that plainly and stop; do not create a branch.
+1. Invoke `ticket-cycle` with no task ID.
+2. Read its `STATUS` line and append the outcome (task ID, PR URL if merged, or blocker/limit detail) to a running tally you keep in your own reply text — not in any file.
+3. If `STATUS: success` — go back to step 1 and start the next cycle immediately, with no pause for confirmation (this is pre-authorized, matching the rest of the protocol's no-review-gate design).
+4. If `STATUS: backlog-exhausted` — stop the loop. This isn't an error; report the full tally of everything completed this run.
+5. If `STATUS: blocked` or `STATUS: usage-limit` — stop the loop immediately. Never skip a blocked task and move to the next one. Report the full tally plus the blocker/limit detail from the cycle that stopped it.
 
-## 3. Claim it
+Each cycle is a fresh subagent with no memory of prior cycles, by design — this keeps context from accumulating across a long continuous run. Don't try to shortcut that by doing the work inline yourself instead of delegating to `ticket-cycle`.
 
-1. Pull latest `main`.
-2. Branch from it as `task/<ID>-<short-kebab-slug>`, the slug drawn from the task's title.
-3. Edit `TASKS.md`: flip the entry's status to `In progress`. Commit that alone ("Claim `<ID>`").
-4. Push the branch immediately — this is the claim, and it's pre-authorized (see `AGENTS.md` § Git state expectations). If the push is rejected because the branch name already exists, someone beat you to it: delete your local branch, go back to step 1, and try another candidate rather than forcing anything.
+## Report
 
-## 4. Plan
-
-Invoke the `ticket-planner` subagent (`Agent` tool, `subagent_type: "ticket-planner"`, run in the foreground — the next step depends on its output). Give it the full task entry (Area, Description, Exit criteria, Notes) and the branch name.
-
-If it reports a blocker instead of a plan, stop here and report the blocker plainly. Do not proceed to implementation on a plan that doesn't exist.
-
-## 5. Implement
-
-Invoke the `ticket-implementer` subagent (`Agent` tool, `subagent_type: "ticket-implementer"`, foreground), passing it the task entry and the plan from step 4. It handles the rest of `TASKS.md`'s *Completing a task* steps itself, including opening the PR.
-
-## 6. Report
-
-Summarize plainly: which task was claimed, the branch name, the PR URL — or the blocker and where things stopped, if step 4 or 5 didn't complete.
+Summarize plainly. Single-task mode: which task, the branch name, the PR URL — or the blocker/usage-limit detail if it didn't finish. Continuous mode: the full tally of every task's outcome this run, and why the loop stopped.
