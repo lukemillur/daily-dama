@@ -10,9 +10,11 @@ import {
   createGoalId,
   goalReducer,
   INITIAL_GOALS,
+  selectGoalProgress,
   selectGoalsForTrick,
   validateGoalCreation,
 } from '@/features/goals/model/goal';
+import type { PracticeSessionRecord } from '@/features/stats/model/practice-history';
 
 describe('goals', () => {
   it('creates a count-based goal storing the trick id, trick name snapshot, and target lace count', () => {
@@ -201,5 +203,107 @@ describe('goals', () => {
     expect(goalState.goals).toEqual([goal]);
     expect(goalState.goals[0]).toBe(goal);
     expect(goalState.goals[0]?.trickName).toBe('Stilt flip');
+  });
+});
+
+function session(overrides: Partial<PracticeSessionRecord>): PracticeSessionRecord {
+  return {
+    id: 'session-1',
+    trickId: 'big-cup',
+    trickName: 'Big cup',
+    startedAt: 1_000,
+    completedAt: 61_000,
+    durationMs: 60_000,
+    laceCount: 0,
+    ...overrides,
+  };
+}
+
+describe('selectGoalProgress', () => {
+  it('sums lace count from history for a count-based goal and marks it achieved at target', () => {
+    const validation = validateGoalCreation({
+      kind: 'count',
+      trickId: 'big-cup',
+      trickName: 'Big cup',
+      targetCount: 10,
+    });
+    if (validation.status !== 'valid') throw new Error('Expected a valid draft.');
+    const goal = createGoal('goal-1', validation.value, 1);
+
+    const belowTarget = [
+      session({ id: 's-1', trickId: 'big-cup', laceCount: 4 }),
+      session({ id: 's-2', trickId: 'big-cup', laceCount: 3 }),
+      session({ id: 's-3', trickId: 'airplane', laceCount: 100 }),
+    ];
+    expect(selectGoalProgress(goal, belowTarget)).toEqual({
+      goal,
+      current: 7,
+      target: 10,
+      achieved: false,
+    });
+
+    const atTarget = [
+      session({ id: 's-1', trickId: 'big-cup', laceCount: 4 }),
+      session({ id: 's-2', trickId: 'big-cup', laceCount: 6 }),
+    ];
+    expect(selectGoalProgress(goal, atTarget)).toEqual({
+      goal,
+      current: 10,
+      target: 10,
+      achieved: true,
+    });
+  });
+
+  it('sums practice duration from history for a time-based goal and marks it achieved at target', () => {
+    const validation = validateGoalCreation({
+      kind: 'time',
+      trickId: 'big-cup',
+      trickName: 'Big cup',
+      targetMinutes: 2,
+    });
+    if (validation.status !== 'valid') throw new Error('Expected a valid draft.');
+    const goal = createGoal('goal-1', validation.value, 1);
+
+    const belowTarget = [
+      session({ id: 's-1', trickId: 'big-cup', durationMs: 30_000 }),
+      session({ id: 's-2', trickId: 'big-cup', durationMs: 40_000 }),
+      session({ id: 's-3', trickId: 'airplane', durationMs: 500_000 }),
+    ];
+    expect(selectGoalProgress(goal, belowTarget)).toEqual({
+      goal,
+      current: 70_000,
+      target: 120_000,
+      achieved: false,
+    });
+
+    const atTarget = [
+      session({ id: 's-1', trickId: 'big-cup', durationMs: 90_000 }),
+      session({ id: 's-2', trickId: 'big-cup', durationMs: 30_000 }),
+    ];
+    expect(selectGoalProgress(goal, atTarget)).toEqual({
+      goal,
+      current: 120_000,
+      target: 120_000,
+      achieved: true,
+    });
+  });
+
+  it('returns zero progress and not achieved when no sessions match the goal trick', () => {
+    const validation = validateGoalCreation({
+      kind: 'count',
+      trickId: 'big-cup',
+      trickName: 'Big cup',
+      targetCount: 5,
+    });
+    if (validation.status !== 'valid') throw new Error('Expected a valid draft.');
+    const goal = createGoal('goal-1', validation.value, 1);
+
+    const sessions = [session({ id: 's-1', trickId: 'airplane', laceCount: 50 })];
+    expect(selectGoalProgress(goal, sessions)).toEqual({
+      goal,
+      current: 0,
+      target: 5,
+      achieved: false,
+    });
   });
 });

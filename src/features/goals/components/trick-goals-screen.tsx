@@ -5,9 +5,17 @@ import { styled } from 'styled-components/native';
 import { Button } from '@/components/ui/button';
 import { BodyText, DisplayTitle, Eyebrow } from '@/components/ui/typography';
 import { AppColors, BottomTabInset } from '@/constants/theme';
-import { selectGoalsForTrick, validateGoalCreation, type Goal, type GoalCreationInput } from '@/features/goals/model/goal';
+import {
+  selectGoalProgress,
+  selectGoalsForTrick,
+  validateGoalCreation,
+  type Goal,
+  type GoalCreationInput,
+  type GoalProgress,
+} from '@/features/goals/model/goal';
 import { useGoalActions, useGoals } from '@/features/goals/state/goal-provider';
 import { formatDuration } from '@/features/sesh/model/sesh';
+import { usePracticeHistory } from '@/features/stats/state/practice-history-provider';
 
 interface TrickGoalsScreenProps {
   readonly trickId: string;
@@ -20,8 +28,13 @@ type ScreenStep = { readonly kind: 'list' } | { readonly kind: 'add' };
 export function TrickGoalsScreen({ trickId, trickName, onClose }: TrickGoalsScreenProps) {
   const { goals } = useGoals();
   const { addGoal, deleteGoal } = useGoalActions();
+  const { sessions } = usePracticeHistory();
   const [step, setStep] = useState<ScreenStep>({ kind: 'list' });
   const trickGoals = useMemo(() => selectGoalsForTrick(goals, trickId), [goals, trickId]);
+  const goalProgressList = useMemo(
+    () => trickGoals.map((goal) => selectGoalProgress(goal, sessions)),
+    [trickGoals, sessions],
+  );
 
   if (step.kind === 'add') {
     return (
@@ -53,8 +66,8 @@ export function TrickGoalsScreen({ trickId, trickName, onClose }: TrickGoalsScre
         </AddButton>
 
         <GoalList>
-          {trickGoals.map((goal) => (
-            <GoalRow key={goal.id} goal={goal} onDelete={() => deleteGoal(goal.id)} />
+          {goalProgressList.map((progress) => (
+            <GoalRow key={progress.goal.id} progress={progress} onDelete={() => deleteGoal(progress.goal.id)} />
           ))}
         </GoalList>
 
@@ -74,7 +87,20 @@ function formatGoalTarget(goal: Goal) {
     : formatDuration(goal.targetMs);
 }
 
-function GoalRow({ goal, onDelete }: { readonly goal: Goal; readonly onDelete: () => void }) {
+function formatGoalProgress(progress: GoalProgress) {
+  return progress.goal.kind === 'count'
+    ? `${progress.current} / ${progress.target} ${progress.target === 1 ? 'lace' : 'laces'}`
+    : `${formatDuration(progress.current)} / ${formatDuration(progress.target)}`;
+}
+
+function GoalRow({
+  progress,
+  onDelete,
+}: {
+  readonly progress: GoalProgress;
+  readonly onDelete: () => void;
+}) {
+  const { goal } = progress;
   const [confirmingDelete, setConfirmingDelete] = useState(false);
 
   if (confirmingDelete) {
@@ -104,8 +130,12 @@ function GoalRow({ goal, onDelete }: { readonly goal: Goal; readonly onDelete: (
 
   return (
     <GoalCard>
-      <GoalMeta>{goal.kind === 'count' ? 'Lace count goal' : 'Practice time goal'}</GoalMeta>
+      <GoalMetaRow>
+        <GoalMeta>{goal.kind === 'count' ? 'Lace count goal' : 'Practice time goal'}</GoalMeta>
+        {progress.achieved ? <AchievedBadge>Achieved</AchievedBadge> : null}
+      </GoalMetaRow>
       <GoalBody>{formatGoalTarget(goal)}</GoalBody>
+      <ProgressText>{formatGoalProgress(progress)}</ProgressText>
       <GoalActionsRow>
         <GoalAction
           accessibilityLabel="Delete goal"
@@ -211,8 +241,11 @@ const Introduction = styled(BodyText)`max-width: 580px; margin-top: 16px;`;
 const AddButton = styled(Button)`align-self: flex-start; margin-top: 26px;`;
 const GoalList = styled.View`gap: 12px; margin-top: 28px;`;
 const GoalCard = styled.View`background-color: ${AppColors.paper}; border: 2px solid ${AppColors.ink}; padding: 16px;`;
+const GoalMetaRow = styled.View`flex-direction: row; align-items: center; justify-content: space-between; gap: 10px;`;
 const GoalMeta = styled.Text`color: ${AppColors.red}; font-size: 11px; font-weight: 900; letter-spacing: 0.8px; text-transform: uppercase;`;
+const AchievedBadge = styled.Text`overflow: hidden; padding: 4px 8px; color: ${AppColors.paper}; background-color: ${AppColors.ink}; border-radius: 3px; font-size: 10px; font-weight: 900; letter-spacing: 0.8px; text-transform: uppercase;`;
 const GoalBody = styled.Text`color: ${AppColors.ink}; font-size: 16px; font-weight: 650; line-height: 23px; margin-top: 8px;`;
+const ProgressText = styled.Text`color: ${AppColors.inkSoft}; font-size: 13px; font-weight: 700; margin-top: 6px;`;
 const GoalActionsRow = styled.View`flex-direction: row; gap: 14px; margin-top: 12px;`;
 const GoalAction = styled(Pressable)`min-height: 36px; justify-content: center;`;
 const GoalActionText = styled.Text`color: ${AppColors.ink}; font-size: 12px; font-weight: 900; text-transform: uppercase;`;
