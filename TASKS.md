@@ -107,7 +107,7 @@ _Raw ideas land here — a name and a one-line description, nothing more. Discus
 
 - **Area:** Sesh
 - **Priority:** High
-- **Status:** Not started
+- **Status:** In progress
 - **Description:** Prevent the device screen from sleeping while a sesh is in the active (or countdown) state; restore normal sleep behavior once the sesh ends or isn't active.
 - **Exit criteria:** Keep-awake engages on entering the active sesh state and releases on leaving it — verified via a state-transition test; screen-stays-on behavior confirmed manually on-device, since actual screen-sleep isn't something an automated test can observe.
 - **Notes:** Manual on-device check is a necessary supplement to the automated test here, not a substitute for it.
