@@ -22,9 +22,13 @@ import {
   useUserProfile,
   useUserProfileActions,
 } from '@/features/profile/state/user-profile-provider';
+import { usePracticeHistory } from '@/features/stats/state/practice-history-provider';
 import { TrickDirectory } from '@/features/tricks/components/trick-directory';
 import { KENDAMA_KENTEI_TRICKS } from '@/features/tricks/data/kendama-kentei-tricks';
-import { createProfileDirectoryTricks } from '@/features/tricks/model/trick-directory';
+import {
+  createProfileDirectoryTricks,
+  selectLacedCountByTrickId,
+} from '@/features/tricks/model/trick-directory';
 import type { PracticeTrick } from '@/features/tricks/model/trick';
 
 export default function TricksScreen() {
@@ -32,6 +36,7 @@ export default function TricksScreen() {
   const { tricks } = useCustomTricks();
   const { selectedTrickIds } = useUserProfile();
   const { toggleSelectedTrick } = useUserProfileActions();
+  const { sessions } = usePracticeHistory();
   const [creationStep, setCreationStep] = useState<'list' | 'choose' | CustomTrick['kind']>('list');
   const [editingTrick, setEditingTrick] = useState<CustomTrick | undefined>(undefined);
   const [deletingTrick, setDeletingTrick] = useState<CustomTrick | undefined>(undefined);
@@ -39,6 +44,7 @@ export default function TricksScreen() {
     () => createProfileDirectoryTricks(KENDAMA_KENTEI_TRICKS, tricks),
     [tricks],
   );
+  const lacedCountByTrickId = useMemo(() => selectLacedCountByTrickId(sessions), [sessions]);
 
   if (!isOnboardingComplete) return null;
 
@@ -97,6 +103,7 @@ export default function TricksScreen() {
           tricks={directoryTricks}
           hideScrollIndicator
           showFocusedSection
+          lacedCountByTrickId={lacedCountByTrickId}
           selection={{ selectedTrickIds, onToggleTrick: toggleSelectedTrick }}
           customActions={{
             onEdit: (trickId) => setEditingTrick(tricks.find((trick) => trick.id === trickId)),

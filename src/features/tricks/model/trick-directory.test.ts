@@ -1,11 +1,13 @@
 import { describe, expect, it } from '@jest/globals';
 
 import type { CustomTrick } from '@/features/custom-tricks/model/custom-trick';
+import type { PracticeSessionRecord } from '@/features/stats/model/practice-history';
 import { KENDAMA_KENTEI_TRICKS } from '@/features/tricks/data/kendama-kentei-tricks';
 import {
   createProfileDirectoryTricks,
   createTrickSections,
   selectAvailablePracticeTricks,
+  selectLacedCountByTrickId,
 } from '@/features/tricks/model/trick-directory';
 
 const CUSTOM_TRICKS: readonly CustomTrick[] = [
@@ -76,5 +78,56 @@ describe('profile trick directory', () => {
       descriptor: 'Custom sequence',
       sequenceSteps: ['Big cup', 'Spike variation'],
     });
+  });
+});
+
+function session(overrides: Partial<PracticeSessionRecord>): PracticeSessionRecord {
+  return {
+    id: 'session-1',
+    trickId: 'big-cup',
+    trickName: 'Big cup',
+    startedAt: 1_000,
+    completedAt: 61_000,
+    durationMs: 60_000,
+    laceCount: 0,
+    ...overrides,
+  };
+}
+
+describe('selectLacedCountByTrickId', () => {
+  it('sums laceCount across multiple sessions for the same trick', () => {
+    const counts = selectLacedCountByTrickId([
+      session({ id: 'big-cup-1', trickId: 'big-cup', laceCount: 8 }),
+      session({ id: 'big-cup-2', trickId: 'big-cup', laceCount: 3 }),
+    ]);
+
+    expect(counts.get('big-cup')).toBe(11);
+  });
+
+  it('keeps a trick with a zero-lace session in the map at value 0', () => {
+    const counts = selectLacedCountByTrickId([
+      session({ id: 'airplane-1', trickId: 'airplane', laceCount: 0 }),
+    ]);
+
+    expect(counts.has('airplane')).toBe(true);
+    expect(counts.get('airplane')).toBe(0);
+  });
+
+  it('leaves a trick with no sessions absent from the map', () => {
+    const counts = selectLacedCountByTrickId([
+      session({ id: 'big-cup-1', trickId: 'big-cup', laceCount: 5 }),
+    ]);
+
+    expect(counts.has('never-practiced')).toBe(false);
+  });
+
+  it('does not let unrelated trick IDs bleed into each other', () => {
+    const counts = selectLacedCountByTrickId([
+      session({ id: 'big-cup-1', trickId: 'big-cup', laceCount: 8 }),
+      session({ id: 'airplane-1', trickId: 'airplane', laceCount: 2 }),
+    ]);
+
+    expect(counts.get('big-cup')).toBe(8);
+    expect(counts.get('airplane')).toBe(2);
   });
 });

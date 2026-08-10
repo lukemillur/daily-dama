@@ -1,4 +1,5 @@
 import type { CustomTrick } from '@/features/custom-tricks/model/custom-trick';
+import type { PracticeSessionRecord } from '@/features/stats/model/practice-history';
 import type {
   KenteiClass,
   KenteiLevel,
@@ -124,6 +125,16 @@ export function createTrickSections(
       : [...rankedSections, { kind: 'custom', data: unrankedCustomTricks }];
 
   return [...focusedSection, ...trailingSections];
+}
+
+export function selectLacedCountByTrickId(
+  sessions: readonly PracticeSessionRecord[],
+): ReadonlyMap<string, number> {
+  const counts = new Map<string, number>();
+  for (const session of sessions) {
+    counts.set(session.trickId, (counts.get(session.trickId) ?? 0) + session.laceCount);
+  }
+  return counts;
 }
 
 export function selectAvailablePracticeTricks(

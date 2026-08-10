@@ -102,15 +102,6 @@ _Raw ideas land here — a name and a one-line description, nothing more. Discus
 
 ## Backlog
 
-### [T001] Add laced count to trick list
-
-- **Area:** Tricks
-- **Priority:** High
-- **Status:** In progress
-- **Description:** Trick list items display how many times each trick has been laced (landed), derived from practice history.
-- **Exit criteria:** Test confirms the trick list renders the correct laced count per trick from a given set of practice-history records; spot-checked in-browser against real data.
-- **Notes:** Purely derived/display — no new persistence.
-
 ### [T002] Keep device awake during active sesh
 
 - **Area:** Sesh
