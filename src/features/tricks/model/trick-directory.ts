@@ -137,6 +137,15 @@ export function selectLacedCountByTrickId(
   return counts;
 }
 
+// Unlocked means at least one completed practice-history record exists for the trick ID,
+// regardless of whether that record actually landed a lace (see selectLacedCountByTrickId,
+// which already keeps zero-lace sessions in its map for the same reason).
+export function selectUnlockedTrickIds(
+  sessions: readonly PracticeSessionRecord[],
+): ReadonlySet<string> {
+  return new Set(sessions.map((session) => session.trickId));
+}
+
 export function selectAvailablePracticeTricks(
   standardTricks: readonly TrickSummary[],
   customTricks: readonly CustomTrick[],

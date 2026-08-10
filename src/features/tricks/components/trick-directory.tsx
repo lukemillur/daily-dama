@@ -32,6 +32,7 @@ export interface TrickDirectoryProps {
   readonly hideScrollIndicator?: boolean;
   readonly showFocusedSection?: boolean;
   readonly lacedCountByTrickId?: ReadonlyMap<string, number>;
+  readonly unlockedTrickIds?: ReadonlySet<string>;
 }
 
 const DEFAULT_HEADER = {
@@ -55,6 +56,7 @@ export function TrickDirectory({
   hideScrollIndicator = false,
   showFocusedSection = false,
   lacedCountByTrickId,
+  unlockedTrickIds,
 }: TrickDirectoryProps) {
   const selectedTrickIds = selection?.selectedTrickIds ?? NO_SELECTED_TRICKS;
   const sections = useMemo(
@@ -74,7 +76,7 @@ export function TrickDirectory({
   const directoryList = (
     <SectionList
       sections={sections}
-      extraData={{ selectedTrickIds, lacedCountByTrickId }}
+      extraData={{ selectedTrickIds, lacedCountByTrickId, unlockedTrickIds }}
       keyExtractor={(trick) => trick.id}
       stickySectionHeadersEnabled
       showsVerticalScrollIndicator={!hideScrollIndicator}
@@ -95,6 +97,8 @@ export function TrickDirectory({
           onDelete={isCustomDirectoryTrick(item) && customActions ? () => customActions.onDelete(item.id) : undefined}
           showLacedCount={lacedCountByTrickId !== undefined}
           lacedCount={lacedCountByTrickId?.get(item.id) ?? 0}
+          showUnlockedStatus={unlockedTrickIds !== undefined}
+          isUnlocked={unlockedTrickIds?.has(item.id) ?? false}
         />
       )}
       ItemSeparatorComponent={ItemSeparator}
@@ -150,6 +154,8 @@ interface TrickRowProps {
   readonly onDelete?: () => void;
   readonly showLacedCount?: boolean;
   readonly lacedCount?: number;
+  readonly showUnlockedStatus?: boolean;
+  readonly isUnlocked?: boolean;
 }
 
 function TrickRow({
@@ -161,6 +167,8 @@ function TrickRow({
   onDelete,
   showLacedCount = false,
   lacedCount = 0,
+  showUnlockedStatus = false,
+  isUnlocked = false,
 }: TrickRowProps) {
   const customDescription = isCustomDirectoryTrick(trick)
     ? trick.customKind === 'sequence'
@@ -171,7 +179,16 @@ function TrickRow({
     <>
       <Position>{String(position).padStart(2, '0')}</Position>
       <TrickIdentity>
-        <TrickName>{trick.name}</TrickName>
+        <TrickNameRow>
+          <TrickName>{trick.name}</TrickName>
+          {showUnlockedStatus ? (
+            <UnlockBadge
+              $unlocked={isUnlocked}
+              accessibilityLabel={isUnlocked ? 'Unlocked' : 'Locked'}>
+              {isUnlocked ? 'Unlocked' : 'Locked'}
+            </UnlockBadge>
+          ) : null}
+        </TrickNameRow>
         {isCustomDirectoryTrick(trick) || showLacedCount ? (
           <TrickMetaRow>
             {isCustomDirectoryTrick(trick) ? (
@@ -338,11 +355,29 @@ const TrickIdentity = styled.View`
   gap: 3px;
 `;
 
+const TrickNameRow = styled.View`
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+`;
+
 const TrickName = styled.Text`
   color: #18382e;
   font-size: 18px;
   font-weight: 750;
   line-height: 24px;
+`;
+
+const UnlockBadge = styled.Text<{ readonly $unlocked: boolean }>`
+  overflow: hidden;
+  padding: 2px 7px;
+  color: ${({ $unlocked }) => ($unlocked ? '#274137' : '#8a7a52')};
+  background-color: ${({ $unlocked }) => ($unlocked ? '#d5e2b8' : '#efe2b8')};
+  border-radius: 3px;
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
 `;
 
 const TrickMetaRow = styled.View`

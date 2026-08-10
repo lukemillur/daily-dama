@@ -8,6 +8,7 @@ import {
   createTrickSections,
   selectAvailablePracticeTricks,
   selectLacedCountByTrickId,
+  selectUnlockedTrickIds,
 } from '@/features/tricks/model/trick-directory';
 
 const CUSTOM_TRICKS: readonly CustomTrick[] = [
@@ -129,5 +130,31 @@ describe('selectLacedCountByTrickId', () => {
 
     expect(counts.get('big-cup')).toBe(8);
     expect(counts.get('airplane')).toBe(2);
+  });
+});
+
+describe('selectUnlockedTrickIds', () => {
+  it('marks a trick with at least one practice-history record as unlocked', () => {
+    const unlocked = selectUnlockedTrickIds([
+      session({ id: 'big-cup-1', trickId: 'big-cup', laceCount: 4 }),
+    ]);
+
+    expect(unlocked.has('big-cup')).toBe(true);
+  });
+
+  it('unlocks a trick even when its only record has zero laces', () => {
+    const unlocked = selectUnlockedTrickIds([
+      session({ id: 'airplane-1', trickId: 'airplane', laceCount: 0 }),
+    ]);
+
+    expect(unlocked.has('airplane')).toBe(true);
+  });
+
+  it('leaves a trick with no practice-history records locked', () => {
+    const unlocked = selectUnlockedTrickIds([
+      session({ id: 'big-cup-1', trickId: 'big-cup', laceCount: 5 }),
+    ]);
+
+    expect(unlocked.has('never-practiced')).toBe(false);
   });
 });
