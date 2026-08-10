@@ -117,7 +117,7 @@ _Raw ideas land here — a name and a one-line description, nothing more. Discus
 
 #### [T010.2] Auto-prompt for a note on a no-lace timed sesh
 
-- **Status:** Not started
+- **Status:** In progress
 - **Description:** When a timed sesh completes without landing its trick, prompt the user to add a note, pre-linked to that sesh via its practice-history record ID. Depends on T010.1.
 - **Exit criteria:** A timed sesh ending without a lace triggers the prompt, and a note created from it carries the correct sesh reference; a timed sesh that ends with a lace, and any open-ended sesh, never trigger the prompt — verified by test.
 
