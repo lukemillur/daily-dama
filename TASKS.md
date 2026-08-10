@@ -107,7 +107,7 @@ _Raw ideas land here — a name and a one-line description, nothing more. Discus
 
 - **Area:** Tricks
 - **Priority:** High
-- **Status:** Not started
+- **Status:** In progress
 - **Description:** Trick list shows a locked/unlocked indicator per trick, where unlocked means at least one completed practice-history record exists for that trick ID.
 - **Exit criteria:** A trick with ≥1 practice-history record renders unlocked; a trick with none renders locked — verified by test.
 - **Notes:** Derived half only. T006 layers a manual override on top of this.
