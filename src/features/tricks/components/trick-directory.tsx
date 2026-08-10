@@ -1,3 +1,4 @@
+import { Link } from 'expo-router';
 import { type ReactElement, useMemo } from 'react';
 import { Pressable, SectionList, type SectionListData } from 'react-native';
 import { styled } from 'styled-components/native';
@@ -204,16 +205,23 @@ function TrickRow({
           </SelectionIndicator>
         </SelectableIdentity>
       ) : identity}
-      {onEdit && onDelete ? (
-        <RowActions>
-          <RowAction accessibilityLabel={`Edit ${trick.name}`} accessibilityRole="button" onPress={onEdit}>
-            <RowActionText>Edit</RowActionText>
+      <RowActions>
+        {onEdit && onDelete ? (
+          <>
+            <RowAction accessibilityLabel={`Edit ${trick.name}`} accessibilityRole="button" onPress={onEdit}>
+              <RowActionText>Edit</RowActionText>
+            </RowAction>
+            <RowAction accessibilityLabel={`Delete ${trick.name}`} accessibilityRole="button" onPress={onDelete}>
+              <DeleteActionText>Delete</DeleteActionText>
+            </RowAction>
+          </>
+        ) : null}
+        <Link asChild href={{ pathname: '/sesh', params: { trickId: trick.id } }}>
+          <RowAction accessibilityLabel={`Practice ${trick.name}`} accessibilityRole="button">
+            <PracticeActionText>Practice</PracticeActionText>
           </RowAction>
-          <RowAction accessibilityLabel={`Delete ${trick.name}`} accessibilityRole="button" onPress={onDelete}>
-            <DeleteActionText>Delete</DeleteActionText>
-          </RowAction>
-        </RowActions>
-      ) : null}
+        </Link>
+      </RowActions>
     </TrickRowContainer>
   );
 }
@@ -383,6 +391,7 @@ const RowActions = styled.View`flex-direction: row; align-self: stretch; align-i
 const RowAction = styled(Pressable)`min-width: 48px; min-height: 44px; align-items: center; justify-content: center; padding: 6px;`;
 const RowActionText = styled.Text`color: #18382e; font-size: 10px; font-weight: 900; text-transform: uppercase;`;
 const DeleteActionText = styled(RowActionText)`color: #d84929;`;
+const PracticeActionText = styled(RowActionText)`color: #274137;`;
 
 const ItemSeparator = styled.View`
   height: 1px;
