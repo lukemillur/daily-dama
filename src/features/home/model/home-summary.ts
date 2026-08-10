@@ -2,9 +2,8 @@ import type { CustomTrick } from '@/features/custom-tricks/model/custom-trick';
 import { DEFAULT_STREAK_THRESHOLD_MS, type UserProfile } from '@/features/profile/model/user-profile';
 import type { PracticeSessionRecord } from '@/features/stats/model/practice-history';
 import { calculateStreak } from '@/features/stats/model/streak';
+import { calculateTimeLogged, WEEK_MS, type TimeLoggedWindow } from '@/features/stats/model/time-logged';
 import type { TrickSummary } from '@/features/tricks/model/trick';
-
-const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1_000;
 
 export interface HomePracticeTrick {
   readonly id: string;
@@ -32,6 +31,7 @@ export interface HomeSummary {
   readonly selectedTricks: readonly HomePracticeTrick[];
   readonly momentum: HomeMomentum;
   readonly currentStreak: number;
+  readonly timeLoggedWindows: readonly TimeLoggedWindow[];
 }
 
 interface CreateHomeSummaryInput {
@@ -57,7 +57,7 @@ export function createHomeSummary({
         : mostRecent,
     undefined,
   );
-  const windowStart = now - SEVEN_DAYS_MS;
+  const windowStart = now - WEEK_MS;
   const recentSessions = sessions.filter(
     (session) => session.completedAt >= windowStart && session.completedAt <= now,
   );
@@ -86,6 +86,7 @@ export function createHomeSummary({
     ),
     currentStreak: calculateStreak(sessions, profile.streakThresholdMs ?? DEFAULT_STREAK_THRESHOLD_MS, now)
       .currentStreak,
+    timeLoggedWindows: calculateTimeLogged(sessions, now),
   };
 }
 
