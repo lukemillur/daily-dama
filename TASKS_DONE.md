@@ -14,3 +14,12 @@ Entries keep their content as it was at completion. Don't retroactively edit a d
 - **Description:** Trick list items display how many times each trick has been laced (landed), derived from practice history.
 - **Exit criteria:** Test confirms the trick list renders the correct laced count per trick from a given set of practice-history records; spot-checked in-browser against real data.
 - **Notes:** Purely derived/display — no new persistence.
+
+### [T002] Keep device awake during active sesh
+
+- **Area:** Sesh
+- **Priority:** High
+- **Status:** Done
+- **Description:** Prevent the device screen from sleeping while a sesh is in the active (or countdown) state; restore normal sleep behavior once the sesh ends or isn't active.
+- **Exit criteria:** Keep-awake engages on entering the active sesh state and releases on leaving it — verified via a state-transition test; screen-stays-on behavior confirmed manually on-device, since actual screen-sleep isn't something an automated test can observe.
+- **Notes:** Manual on-device check is a necessary supplement to the automated test here, not a substitute for it. Web-verified (Screen Wake Lock API) via the dev server across the full countdown → active → completed lifecycle, with no console errors; iOS/Android on-device screen-sleep behavior is still an open verification item consistent with the project's overall "web first" posture (see AGENTS.md § Verification and local development). Implementation: `shouldKeepScreenAwake` in `src/features/sesh/model/sesh.ts` derives whether the screen should stay awake from Sesh status (countdown/active); `src/features/sesh/components/sesh.tsx` drives `expo-keep-awake`'s `activateKeepAwakeAsync`/`deactivateKeepAwake` off that derivation, tagged `sesh-active`, with `.catch` no-ops since wake-lock support/permission varies by browser and is a best-effort enhancement, not a blocker for practicing.

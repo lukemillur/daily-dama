@@ -7,6 +7,7 @@ import {
   OPEN_ENDED_SESH_PLAN,
   selectSeshPracticeTricks,
   seshReducer,
+  shouldKeepScreenAwake,
   type SeshState,
 } from '@/features/sesh/model/sesh';
 import type { PracticeTrick, TrickSummary } from '@/features/tricks/model/trick';
@@ -205,5 +206,31 @@ describe('preferred Sesh trick', () => {
     expect(selectSeshPracticeTricks(availableTricks, [BIG_CUP.id], 'custom-deleted')).toEqual([
       BIG_CUP,
     ]);
+  });
+});
+
+describe('shouldKeepScreenAwake', () => {
+  it('engages during the countdown and active states', () => {
+    expect(shouldKeepScreenAwake('countdown')).toBe(true);
+    expect(shouldKeepScreenAwake('active')).toBe(true);
+  });
+
+  it('releases outside the countdown and active states', () => {
+    expect(shouldKeepScreenAwake('choosing')).toBe(false);
+    expect(shouldKeepScreenAwake('completed')).toBe(false);
+  });
+
+  it('transitions correctly across a full sesh lifecycle', () => {
+    let state: SeshState = INITIAL_SESH_STATE;
+    expect(shouldKeepScreenAwake(state.status)).toBe(false);
+
+    state = seshReducer(state, { type: 'trickSelected', trick: AIRPLANE, plan: OPEN_ENDED_SESH_PLAN });
+    expect(shouldKeepScreenAwake(state.status)).toBe(true);
+
+    state = seshReducer(state, { type: 'countdownCompleted', now: 1_000 });
+    expect(shouldKeepScreenAwake(state.status)).toBe(true);
+
+    state = seshReducer(state, { type: 'seshEnded', now: 2_000 });
+    expect(shouldKeepScreenAwake(state.status)).toBe(false);
   });
 });
