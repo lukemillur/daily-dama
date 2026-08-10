@@ -348,7 +348,7 @@ function TrickPicker({
   );
 }
 
-function Countdown({ trick, plan, onComplete }: { readonly trick: PracticeTrick; readonly plan: SeshPlan; readonly onComplete: () => void }) {
+export function Countdown({ trick, plan, onComplete }: { readonly trick: PracticeTrick; readonly plan: SeshPlan; readonly onComplete: () => void }) {
   const [count, setCount] = useState(3);
   const [scale] = useState(() => new Animated.Value(0.55));
   const [opacity] = useState(() => new Animated.Value(0));
@@ -386,7 +386,7 @@ function Countdown({ trick, plan, onComplete }: { readonly trick: PracticeTrick;
   );
 }
 
-function ActiveSesh({
+export function ActiveSesh({
   trick,
   plan,
   startedAt,
