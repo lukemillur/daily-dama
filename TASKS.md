@@ -38,6 +38,7 @@ Copy this shape for every new entry. Keep exit criteria mechanical — a test th
 ### [T###] Short imperative title
 
 - **Area:** e.g. Sesh, Stats, Tricks, persistence, navigation
+- **Priority:** High / Medium / Low
 - **Status:** Not started
 - **Description:** What changes and why, in 1-3 sentences — enough for a fresh session to start without re-deriving intent.
 - **Exit criteria:** Mechanical and checkable.
@@ -70,9 +71,202 @@ Nothing else is a valid size. An idea that doesn't reduce to S or a numbered M-c
 
 _Raw ideas land here — a name and a one-line description, nothing more. Discuss and apply the promotion checklist above before moving an entry down to Backlog._
 
+- **Custom app theming** (Medium) — undecided: what's themeable, curated presets vs. full customization, where preferences persist.
+- **Lesson programs** (Medium) — structured content moving a user from one rank to the next; content model and authoring are entirely undefined.
+- **First-lace "extra flashy" tiering** (Medium, follow-on to T008) — escalate the celebration based on time/attempts/sessions spent before landing; thresholds undefined.
+- **Competition mode** (Low) — trick lists by competition skill level, portable into sesh mode.
+- **Longest-grind-per-trick metric** (Low) — time-to-first-lace per trick; display surface (Stats?) undecided.
+- **Double-digit lace animation** (Low) — animation design undefined.
+- **Buzzer-beater lace animation** (Low) — landing with under 10s remaining; threshold is clear, animation design is not.
+- **Time-of-day success correlation** (Low) — surface whether the user lands more in morning vs. night seshes; what counts as a meaningful difference is undefined.
+- **Line generator** (Low) — random line of tricks; trick pool source (all / unlocked / selected) undecided.
+- **Collection management** (Low) — photos + metadata for physical kendama collection, with kendama-specific lace lists. Likely a new persistence domain; substantial scope on its own.
+
 ## Backlog
 
-_Empty — to be populated._
+### [T001] Add laced count to trick list
+
+- **Area:** Tricks
+- **Priority:** High
+- **Status:** Not started
+- **Description:** Trick list items display how many times each trick has been laced (landed), derived from practice history.
+- **Exit criteria:** Test confirms the trick list renders the correct laced count per trick from a given set of practice-history records; spot-checked in-browser against real data.
+- **Notes:** Purely derived/display — no new persistence.
+
+### [T002] Keep device awake during active sesh
+
+- **Area:** Sesh
+- **Priority:** High
+- **Status:** Not started
+- **Description:** Prevent the device screen from sleeping while a sesh is in the active (or countdown) state; restore normal sleep behavior once the sesh ends or isn't active.
+- **Exit criteria:** Keep-awake engages on entering the active sesh state and releases on leaving it — verified via a state-transition test; screen-stays-on behavior confirmed manually on-device, since actual screen-sleep isn't something an automated test can observe.
+- **Notes:** Manual on-device check is a necessary supplement to the automated test here, not a substitute for it.
+
+### [T003] Link directly into Sesh from any trick in Tricks list
+
+- **Area:** Tricks / Sesh
+- **Priority:** High
+- **Status:** Not started
+- **Description:** Add an action on each trick-list item that starts a Sesh containing that trick, regardless of whether it's currently in the user's focused/selected tricks.
+- **Exit criteria:** Tapping the action for any trick — focused or not — navigates to Sesh with that trick loaded and ready to practice; verified in-browser for one focused and one unfocused trick.
+- **Notes:** Check whether Sesh's entry points currently assume the trick is in `selectedTrickIds` (`src/app/sesh.tsx` / Sesh state machine) before implementing.
+
+### [T004] Display trick unlocked status derived from lace history
+
+- **Area:** Tricks
+- **Priority:** High
+- **Status:** Not started
+- **Description:** Trick list shows a locked/unlocked indicator per trick, where unlocked means at least one completed practice-history record exists for that trick ID.
+- **Exit criteria:** A trick with ≥1 practice-history record renders unlocked; a trick with none renders locked — verified by test.
+- **Notes:** Derived half only. T006 layers a manual override on top of this.
+
+### [T005] End-of-sesh target criteria (open-ended flow)
+
+- **Area:** Sesh
+- **Priority:** High
+- **Status:** Not started — umbrella entry, no exit criteria of its own; `Done` only once both children are `Done`.
+- **Description:** In the open-ended sesh flow, let the user define a target before starting (land Trick X, Y times) and gate ending the sesh on meeting it, with an explicit override always available.
+- **Notes:** Decision resolved during scoping — **hard gate with override**: the primary end action is disabled until the target is met, but an "end anyway" action is always present.
+
+#### [T005.1] Define a sesh-end target before starting
+
+- **Status:** Not started
+- **Description:** Open-ended sesh setup lets the user optionally define a target trick + landing count before starting.
+- **Exit criteria:** Starting an open-ended sesh with a defined target stores it on the sesh's initial state; starting without one behaves exactly as today — verified by test.
+
+#### [T005.2] Track progress and gate the end action
+
+- **Status:** Not started
+- **Description:** Sesh tracks progress toward the defined target through the active session and gates the primary end action until it's met.
+- **Exit criteria:** With an unmet target, the primary end action is disabled and a separate "end anyway" action ends the sesh; once the target is met, the primary end action is enabled — verified by test.
+
+### [T006] Manual trick-unlock override
+
+- **Area:** Tricks / persistence
+- **Priority:** High
+- **Status:** Not started
+- **Description:** Allow the user to manually mark a trick as unlocked independent of lace history, as a togglable flag layered on top of (not replacing) T004's lace-derived status.
+- **Exit criteria:** Setting the manual flag on a trick with no lace history shows it unlocked; clearing the flag returns it to lace-derived status; a trick with real lace history stays unlocked regardless of the flag — verified by test.
+- **Notes:** Decision resolved during scoping — toggle, not a one-way override. Depends on T004 landing first.
+
+### [T007] Auto-promote Kentei rank on completing current rank
+
+- **Area:** Profile / Tricks
+- **Priority:** Medium
+- **Status:** Not started
+- **Description:** When the user has laced every trick in their currently assessed Kentei rank, update the profile's assessed rank to the next one automatically.
+- **Exit criteria:** Lacing the last remaining trick in the current rank updates `profile.kenteiRank` to the next rank with no confirmation step — verified by test.
+- **Notes:** Decision resolved during scoping — automatic and silent, not confirmation-gated.
+
+### [T008] First-lace celebration
+
+- **Area:** Sesh / Tricks
+- **Priority:** Medium
+- **Status:** Not started
+- **Description:** When a trick is laced for the first time ever (no prior practice-history record for that trick ID), show a distinct celebratory UI moment.
+- **Exit criteria:** Completing a sesh that lands a trick with zero prior laces triggers the celebration UI; a trick with prior laces does not — verified by test.
+- **Notes:** "Extra flashy" tiering by time/attempts spent before landing is a separate, unscoped idea — see Needs scoping.
+
+### [T009] Home-screen time logged (day/week/month/year)
+
+- **Area:** Home / Stats
+- **Priority:** Medium
+- **Status:** Not started
+- **Description:** Home screen shows total practice time logged for day, week, month, and year. A longer window only renders once enough real time has passed since the user's first recorded practice for that window to be meaningful.
+- **Exit criteria:** With practice history spanning less than a window's natural period since the first record, that window is hidden; once enough real time has elapsed, it renders with the correct total — verified by test.
+- **Notes:** Decision resolved during scoping — gated on elapsed real time since first use, not merely on a record existing in the window. Reasonable default thresholds, measured from the first practice-history record: hide "week" before 7 days of history, "month" before ~30 days, "year" before ~365 days. Confirm before implementing if these don't match intent.
+
+### [T010] Sesh/trick notes
+
+- **Area:** Tricks / persistence (new domain)
+- **Priority:** Medium
+- **Status:** Not started — umbrella entry, no exit criteria of its own; `Done` only once both children are `Done`.
+- **Description:** Let the user attach a note to a trick, optionally tied to the specific sesh that prompted it, without touching the immutability of practice-history records.
+- **Notes:** Decisions resolved during scoping:
+  - New standalone "Notes" domain (own reducer/validation/persistence adapter, per the existing per-concern pattern) — not merged into practice history or custom tricks.
+  - A note requires a trick ID **and** a trick-name snapshot captured at write time (same convention practice-history already uses), so it survives a later rename or deletion of a custom trick. Standard Kentei tricks can't be deleted, so this only bites for custom tricks, but the record shape doesn't need to special-case that.
+  - A note optionally carries a practice-history record ID, for notes born from a specific sesh (see T010.2). General trick notes omit it.
+  - The Notes domain itself is **not** immutable — the immutability invariant protects Stats derivation specifically; notes don't feed any derived calculation, so editing/deleting a note later is fine.
+
+#### [T010.1] Notes domain and basic note CRUD on a trick
+
+- **Status:** Not started
+- **Description:** Add the Notes persistence domain and a minimal UI to create, view, edit, and delete a note attached to a trick, with an optional sesh reference.
+- **Exit criteria:** Test confirms: creating a trick-only note stores the trick ID and name snapshot; creating one with a sesh reference also stores the practice-history record ID; editing and deleting both work; renaming or deleting the source custom trick afterward leaves the note displaying its snapshotted name rather than breaking.
+
+#### [T010.2] Auto-prompt for a note on a no-lace timed sesh
+
+- **Status:** Not started
+- **Description:** When a timed sesh completes without landing its trick, prompt the user to add a note, pre-linked to that sesh via its practice-history record ID. Depends on T010.1.
+- **Exit criteria:** A timed sesh ending without a lace triggers the prompt, and a note created from it carries the correct sesh reference; a timed sesh that ends with a lace, and any open-ended sesh, never trigger the prompt — verified by test.
+
+### [T011] Custom practice goals
+
+- **Area:** Tricks / persistence (new domain)
+- **Priority:** High
+- **Status:** Not started — umbrella entry, no exit criteria of its own; `Done` only once both children are `Done`.
+- **Description:** Let the user define a standing goal for a specific trick — either a cumulative lace-count target ("land Whirlwind 25 times") or a cumulative practice-time target ("practice Whirlwind for 30 minutes") — with progress tracked automatically across sessions from practice history.
+- **Notes:** Decisions resolved during scoping:
+  - No streak/"in a row" goal type. Ruled out because there's no failed-attempt tracking, and there deliberately won't be one — a "not landed" confirmation would break practice flow. Goals are cumulative (count or time), not streak-based.
+  - "Generic improvement goals" resolved to the time-based variant of the same per-trick mechanic ("practice X for Y time") — not a separate, broader category.
+  - Both goal types are scoped to a single trick for v1, not an overall/non-trick-specific goal.
+  - Progress is derived from practice history at read time (sum of landings, or sum of sesh duration, for that trick ID) — not stored as a separately-maintained running counter. Same "derive, don't cache" principle Stats already follows, to avoid drift.
+  - A goal record needs a trick-name snapshot alongside the trick ID, same convention as T010's Notes, so a goal for a later-deleted or renamed custom trick doesn't break.
+
+#### [T011.1] Goals domain and goal-creation UI
+
+- **Status:** Not started
+- **Description:** Add a persistent Goals domain, and UI to create a goal for a trick: either a target lace count or a target cumulative practice time.
+- **Exit criteria:** Test confirms creating a count-based goal and a time-based goal each store the trick ID, trick-name snapshot, goal type, and target value correctly; verified in-browser.
+
+#### [T011.2] Goal progress and achievement
+
+- **Status:** Not started
+- **Description:** Compute each goal's progress by deriving it from practice history (summed landings, or summed sesh duration, for that trick), and mark the goal achieved once the target is reached. Depends on T011.1.
+- **Exit criteria:** Test confirms a count-based goal's progress reflects the trick's total lace count from history and marks achieved once it reaches the target; a time-based goal's progress reflects cumulative sesh duration for that trick and marks achieved the same way.
+
+### [T012] Multi-trick sequential practice (shared core)
+
+- **Area:** Sesh
+- **Priority:** High
+- **Status:** Not started
+- **Description:** A sequencing layer that steps through an ordered list of tricks one at a time, reusing the existing single-trick practice mechanics for each trick (land it, or move on without landing), auto-advancing without requiring the user to manually restart between tricks. Each trick's outcome is recorded as its own practice-history record, exactly as today's single-trick Sesh already does — no change to the practice-history record shape.
+- **Exit criteria:** Test confirms that, given an ordered list of 3 tricks, landing or moving past each in turn produces 3 separate practice-history records in the same order, and the run ends after the last trick — verified in-browser.
+- **Notes:** Both T013 and T014 depend on this landing first. Resolved during scoping: this is a thin sequencing layer around the existing single-trick mechanics, not a reimplementation of countdown/landing logic and not a change to the Sesh reducer used by regular practice.
+
+### [T013] Kentei assessment
+
+- **Area:** Sesh / Profile
+- **Priority:** High
+- **Status:** Not started — umbrella entry, no exit criteria of its own; `Done` only once both children are `Done`. Depends on T012.
+- **Description:** Formal rank assessment built on T012's shared sequencing core. Three entry flows: full bottom-to-top through all ranks, bottom-to-top starting at a chosen rank, or the user's current rank only. Ranks can be skipped during a run. Each trick shows a static "you have 5 attempts" reminder — no attempt counting or fail state in the app.
+- **Notes:** Decisions resolved during scoping:
+  - Built on T012, not a reimplementation of practice mechanics.
+  - Landings during assessment write to the same practice-history domain as regular practice — T007's existing auto-promotion logic fires naturally on a full rank pass; no assessment-specific promotion wiring needed.
+  - Skipping a rank leaves it unassessed — not treated as passed, doesn't touch the user's recorded rank.
+  - Must be completed in one sitting for v1 — no persisted in-progress assessment state.
+  - "5 attempts" is purely informational text, not a counted or enforced limit — there is no "failed attempt" input anywhere in this feature.
+
+#### [T013.1] Assessment entry flows and trick-list construction
+
+- **Status:** Not started
+- **Description:** Entry UI to choose one of the three flows (full bottom-to-top, bottom-to-top from a chosen rank, current rank only), and logic to build the correct ordered trick list to hand to T012 from that choice.
+- **Exit criteria:** Test confirms each of the three flows produces the correct ordered trick list — e.g. current-rank-only produces exactly that rank's tricks in order, full bottom-to-top produces every rank's tricks concatenated in rank order — verified in-browser for at least one flow.
+
+#### [T013.2] Rank skipping and attempt messaging
+
+- **Status:** Not started
+- **Description:** During a bottom-to-top run, let the user skip an entire rank without attempting it; display the static "5 attempts" reminder per trick during the run. Depends on T013.1.
+- **Exit criteria:** Test confirms skipping a rank advances to the next rank's tricks without writing any practice-history records for the skipped tricks and without affecting the user's kentei rank; the attempt-count message renders per trick — verified in-browser.
+
+### [T014] Multi-trick sesh variant
+
+- **Area:** Sesh
+- **Priority:** High
+- **Status:** Not started. Depends on T012.
+- **Description:** A casual practice mode built on T012's shared sequencing core, where the user selects an arbitrary set of tricks (not rank-based) to step through in one run.
+- **Exit criteria:** Test confirms selecting N arbitrary tricks and running them through the sequencing core produces N practice-history records, one per trick attempted — verified in-browser.
+- **Notes:** Trick-selection UI is left as an implementation-time detail — likely reuses the existing trick-selection UI already used for focused tricks.
 
 ## Done
 
