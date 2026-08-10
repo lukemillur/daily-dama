@@ -5,6 +5,7 @@ import {
   createPracticeSessionRecord,
   getPersonalBest,
   isEligibleTimedAttempt,
+  isFirstLaceForTrick,
   practiceHistoryReducer,
   type PracticeSessionRecord,
 } from '@/features/stats/model/practice-history';
@@ -249,6 +250,28 @@ describe('sessionRecorded reducer (plannedDurationMs eligibility)', () => {
 
     expect(result.sessions[1]?.plannedDurationMs).toBe(300_000);
     expect(getPersonalBest(result.sessions, 'whirlwind', 300_000)).toBe(9);
+  });
+});
+
+describe('isFirstLaceForTrick', () => {
+  it('is true when there is no prior session for the trick', () => {
+    const summary = makeSummary({ trick: { id: 'big-cup', name: 'Big cup' } });
+    expect(isFirstLaceForTrick([], summary)).toBe(true);
+  });
+
+  it('is true when the only prior session for the trick had zero laces', () => {
+    const summary = makeSummary({ trick: { id: 'airplane', name: 'Airplane' } });
+    expect(isFirstLaceForTrick([AIRPLANE_ZERO_LACES], summary)).toBe(true);
+  });
+
+  it('is false when a prior session for the trick already has laces', () => {
+    const summary = makeSummary({ trick: { id: 'big-cup', name: 'Big cup' } });
+    expect(isFirstLaceForTrick([BIG_CUP_FIRST], summary)).toBe(false);
+  });
+
+  it('is false when this sesh itself landed zero laces', () => {
+    const summary = makeSummary({ trick: { id: 'whirlwind', name: 'Whirlwind' }, landings: [] });
+    expect(isFirstLaceForTrick([], summary)).toBe(false);
   });
 });
 

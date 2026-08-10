@@ -27,7 +27,11 @@ import {
   type SeshSummary,
 } from '@/features/sesh/model/sesh';
 import type { PracticeTrick } from '@/features/tricks/model/trick';
-import { getPersonalBest, type PracticeSessionRecord } from '@/features/stats/model/practice-history';
+import {
+  getPersonalBest,
+  isFirstLaceForTrick,
+  type PracticeSessionRecord,
+} from '@/features/stats/model/practice-history';
 import { usePracticeHistory, usePracticeHistoryActions } from '@/features/stats/state/practice-history-provider';
 import { useUserProfileActions } from '@/features/profile/state/user-profile-provider';
 
@@ -48,6 +52,7 @@ export function Sesh({ availableTricks, initialPlan, preferredTrickId, selectedT
   const recordedSummaryId = useRef<string | undefined>(undefined);
   const [personalBest, setPersonalBest] = useState<number | undefined>(undefined);
   const [liveChallengeEnabled, setLiveChallengeEnabled] = useState(false);
+  const [firstLaceCelebration, setFirstLaceCelebration] = useState(false);
   const practiceTricks = useMemo(
     () => selectSeshPracticeTricks(availableTricks, selectedTrickIds, preferredTrickId),
     [availableTricks, preferredTrickId, selectedTrickIds],
@@ -65,8 +70,9 @@ export function Sesh({ availableTricks, initialPlan, preferredTrickId, selectedT
     if (recordedSummaryId.current === summaryId) return;
 
     recordedSummaryId.current = summaryId;
+    setFirstLaceCelebration(isFirstLaceForTrick(sessions, state.summary));
     recordCompletedSesh(state.summary);
-  }, [recordCompletedSesh, state]);
+  }, [recordCompletedSesh, sessions, state]);
 
   useEffect(() => {
     if (!shouldKeepScreenAwake(state.status)) return;
@@ -137,7 +143,11 @@ export function Sesh({ availableTricks, initialPlan, preferredTrickId, selectedT
     <CompletedSesh
       summary={state.summary}
       personalBest={personalBest}
-      onReset={() => dispatch({ type: 'seshReset' })}
+      isFirstLace={firstLaceCelebration}
+      onReset={() => {
+        setFirstLaceCelebration(false);
+        dispatch({ type: 'seshReset' });
+      }}
       onRepeat={() => {
         const best =
           state.summary.plan.kind === 'timed'
@@ -145,6 +155,7 @@ export function Sesh({ availableTricks, initialPlan, preferredTrickId, selectedT
             : undefined;
         setPersonalBest(best);
         setLiveChallengeEnabled(false);
+        setFirstLaceCelebration(false);
         dispatch({ type: 'trickSelected', trick: state.summary.trick, plan: state.summary.plan });
         setLastSesh(state.summary.trick.id, state.summary.plan);
       }}
@@ -511,14 +522,37 @@ function LandingHistory({ landings }: { readonly landings: readonly Landing[] })
   );
 }
 
+function FirstLaceBanner({ trickName }: { readonly trickName: string }) {
+  const [scale] = useState(() => new Animated.Value(0.55));
+  const [opacity] = useState(() => new Animated.Value(0));
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.spring(scale, { toValue: 1, damping: 9, stiffness: 180, useNativeDriver: true }),
+      Animated.timing(opacity, { toValue: 1, duration: 180, useNativeDriver: true }),
+    ]).start();
+  }, [opacity, scale]);
+
+  return (
+    <Animated.View style={{ opacity, transform: [{ scale }] }}>
+      <FirstLaceBannerCard accessibilityLabel={`First lace ever on ${trickName}`}>
+        <FirstLaceBannerEyebrow>First lace ever</FirstLaceBannerEyebrow>
+        <FirstLaceBannerTitle>You just landed{`\n`}{trickName} for the first time!</FirstLaceBannerTitle>
+      </FirstLaceBannerCard>
+    </Animated.View>
+  );
+}
+
 function CompletedSesh({
   summary,
   personalBest,
+  isFirstLace,
   onReset,
   onRepeat,
 }: {
   readonly summary: SeshSummary;
   readonly personalBest?: number;
+  readonly isFirstLace: boolean;
   readonly onReset: () => void;
   readonly onRepeat: () => void;
 }) {
@@ -537,6 +571,7 @@ function CompletedSesh({
   return (
     <ScrollArea contentContainerStyle={{ padding: 24, paddingBottom: 140 }}>
       <ActiveContent>
+        {isFirstLace ? <FirstLaceBanner trickName={summary.trick.name} /> : null}
         <Eyebrow>Sesh complete</Eyebrow>
         <DisplayTitle>{summary.trick.name}</DisplayTitle>
         <SequenceSteps trick={summary.trick} />
@@ -655,6 +690,9 @@ const EndAnywayButton = styled(Pressable)`min-height: 40px; align-items: center;
 const EndAnywayButtonText = styled.Text`color: ${AppColors.textMuted}; font-size: 13px; font-weight: 800; text-decoration-line: underline;`;
 const TargetStatus = styled.Text<{ $met: boolean }>`width: 100%; text-align: center; margin-top: 12px; color: ${({ $met }) => ($met ? AppColors.red : AppColors.ink)}; font-size: 15px; font-weight: 900;`;
 const ResultBanner = styled.Text<{ $beaten: boolean }>`width: 100%; text-align: center; margin-top: 18px; padding: 12px 16px; background-color: ${({ $beaten }) => ($beaten ? '#e5edcf' : '#f8f1dd')}; border-left-width: 5px; border-left-color: ${({ $beaten }) => ($beaten ? AppColors.red : AppColors.ink)}; color: ${AppColors.ink}; font-size: 15px; font-weight: 900;`;
+const FirstLaceBannerCard = styled.View`width: 100%; max-width: 500px; align-items: center; background-color: ${AppColors.yellow}; border: 3px solid ${AppColors.ink}; border-radius: 6px; padding: 18px 20px; margin-bottom: 20px;`;
+const FirstLaceBannerEyebrow = styled.Text`color: ${AppColors.red}; font-size: 12px; font-weight: 900; letter-spacing: 1.6px; text-transform: uppercase;`;
+const FirstLaceBannerTitle = styled.Text`color: ${AppColors.ink}; font-size: 20px; font-weight: 900; text-align: center; margin-top: 6px; line-height: 26px;`;
 const SummaryGrid = styled.View`width: 100%; flex-direction: row; flex-wrap: wrap; gap: 10px; margin-top: 28px;`;
 const Metric = styled.View`min-width: 46%; flex-grow: 1; background-color: #f8f1dd; border-top-width: 5px; border-top-color: #d84929; padding: 18px;`;
 const MetricValue = styled.Text`color: #18382e; font-size: 30px; font-variant: tabular-nums; font-weight: 900;`;

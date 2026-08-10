@@ -103,15 +103,6 @@ _Raw ideas land here — a name and a one-line description, nothing more. Discus
 
 ## Backlog
 
-### [T008] First-lace celebration
-
-- **Area:** Sesh / Tricks
-- **Priority:** Medium
-- **Status:** Not started
-- **Description:** When a trick is laced for the first time ever (no prior practice-history record for that trick ID), show a distinct celebratory UI moment.
-- **Exit criteria:** Completing a sesh that lands a trick with zero prior laces triggers the celebration UI; a trick with prior laces does not — verified by test.
-- **Notes:** "Extra flashy" tiering by time/attempts spent before landing is a separate, unscoped idea — see Needs scoping.
-
 ### [T009] Home-screen time logged (day/week/month/year)
 
 - **Area:** Home / Stats
