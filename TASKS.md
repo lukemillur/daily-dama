@@ -103,15 +103,6 @@ _Raw ideas land here — a name and a one-line description, nothing more. Discus
 
 ## Backlog
 
-### [T007] Auto-promote Kentei rank on completing current rank
-
-- **Area:** Profile / Tricks
-- **Priority:** Medium
-- **Status:** Not started
-- **Description:** When the user has laced every trick in their currently assessed Kentei rank, update the profile's assessed rank to the next one automatically.
-- **Exit criteria:** Lacing the last remaining trick in the current rank updates `profile.kenteiRank` to the next rank with no confirmation step — verified by test.
-- **Notes:** Decision resolved during scoping — automatic and silent, not confirmation-gated.
-
 ### [T008] First-lace celebration
 
 - **Area:** Sesh / Tricks

@@ -63,7 +63,8 @@ export type UserProfileAction =
       readonly kenteiRank: number;
       readonly selectedTrickIds: readonly string[];
     }
-  | { readonly type: 'onboardingRestarted' };
+  | { readonly type: 'onboardingRestarted' }
+  | { readonly type: 'kenteiRankAdvanced'; readonly rank: number };
 
 export function userProfileReducer(
   state: UserProfile,
@@ -132,5 +133,7 @@ export function userProfileReducer(
         kenteiRank: undefined,
         hasCompletedOnboarding: false,
       };
+    case 'kenteiRankAdvanced':
+      return state.kenteiRank === action.rank ? state : { ...state, kenteiRank: action.rank };
   }
 }

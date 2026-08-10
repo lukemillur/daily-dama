@@ -105,4 +105,19 @@ describe('user profile trick selection', () => {
       selectedTrickIds: ['big-cup', 'custom-morning-line'],
     });
   });
+
+  it('advances the assessed Kentei rank', () => {
+    const state = { ...INITIAL_USER_PROFILE, kenteiRank: 1 };
+
+    expect(
+      userProfileReducer(state, { type: 'kenteiRankAdvanced', rank: 2 }).kenteiRank,
+    ).toBe(2);
+  });
+
+  it('is a no-op when advancing to the already-current rank', () => {
+    const state = { ...INITIAL_USER_PROFILE, kenteiRank: 3 };
+    const result = userProfileReducer(state, { type: 'kenteiRankAdvanced', rank: 3 });
+
+    expect(result).toBe(state);
+  });
 });
