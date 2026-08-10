@@ -111,12 +111,6 @@ _Raw ideas land here — a name and a one-line description, nothing more. Discus
 - **Description:** In the open-ended sesh flow, let the user define a target before starting (land Trick X, Y times) and gate ending the sesh on meeting it, with an explicit override always available.
 - **Notes:** Decision resolved during scoping — **hard gate with override**: the primary end action is disabled until the target is met, but an "end anyway" action is always present.
 
-#### [T005.1] Define a sesh-end target before starting
-
-- **Status:** In progress
-- **Description:** Open-ended sesh setup lets the user optionally define a target trick + landing count before starting.
-- **Exit criteria:** Starting an open-ended sesh with a defined target stores it on the sesh's initial state; starting without one behaves exactly as today — verified by test.
-
 #### [T005.2] Track progress and gate the end action
 
 - **Status:** Not started
