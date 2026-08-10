@@ -118,7 +118,7 @@ _Raw ideas land here — a name and a one-line description, nothing more. Discus
 
 #### [T013.1] Assessment entry flows and trick-list construction
 
-- **Status:** Not started
+- **Status:** In progress
 - **Description:** Entry UI to choose one of the three flows (full bottom-to-top, bottom-to-top from a chosen rank, current rank only), and logic to build the correct ordered trick list to hand to T012 from that choice.
 - **Exit criteria:** Test confirms each of the three flows produces the correct ordered trick list — e.g. current-rank-only produces exactly that rank's tricks in order, full bottom-to-top produces every rank's tricks concatenated in rank order — verified in-browser for at least one flow.
 
