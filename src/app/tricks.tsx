@@ -28,6 +28,7 @@ import { KENDAMA_KENTEI_TRICKS } from '@/features/tricks/data/kendama-kentei-tri
 import {
   createProfileDirectoryTricks,
   selectLacedCountByTrickId,
+  selectUnlockedTrickIds,
 } from '@/features/tricks/model/trick-directory';
 import type { PracticeTrick } from '@/features/tricks/model/trick';
 
@@ -45,6 +46,7 @@ export default function TricksScreen() {
     [tricks],
   );
   const lacedCountByTrickId = useMemo(() => selectLacedCountByTrickId(sessions), [sessions]);
+  const unlockedTrickIds = useMemo(() => selectUnlockedTrickIds(sessions), [sessions]);
 
   if (!isOnboardingComplete) return null;
 
@@ -104,6 +106,7 @@ export default function TricksScreen() {
           hideScrollIndicator
           showFocusedSection
           lacedCountByTrickId={lacedCountByTrickId}
+          unlockedTrickIds={unlockedTrickIds}
           selection={{ selectedTrickIds, onToggleTrick: toggleSelectedTrick }}
           customActions={{
             onEdit: (trickId) => setEditingTrick(tricks.find((trick) => trick.id === trickId)),

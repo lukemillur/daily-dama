@@ -103,15 +103,6 @@ _Raw ideas land here — a name and a one-line description, nothing more. Discus
 
 ## Backlog
 
-### [T004] Display trick unlocked status derived from lace history
-
-- **Area:** Tricks
-- **Priority:** High
-- **Status:** In progress
-- **Description:** Trick list shows a locked/unlocked indicator per trick, where unlocked means at least one completed practice-history record exists for that trick ID.
-- **Exit criteria:** A trick with ≥1 practice-history record renders unlocked; a trick with none renders locked — verified by test.
-- **Notes:** Derived half only. T006 layers a manual override on top of this.
-
 ### [T005] End-of-sesh target criteria (open-ended flow)
 
 - **Area:** Sesh
