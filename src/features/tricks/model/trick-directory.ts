@@ -127,6 +127,35 @@ export function createTrickSections(
   return [...focusedSection, ...trailingSections];
 }
 
+// A rank is complete once every standard trick assigned to it has at least one lace. A rank
+// with no standard tricks assigned is never considered complete (guards against a stray rank
+// number promoting on an empty set).
+export function isKenteiRankComplete(
+  rank: number,
+  standardTricks: readonly TrickSummary[],
+  lacedCountByTrickId: ReadonlyMap<string, number>,
+): boolean {
+  const tricksInRank = standardTricks.filter((trick) => trick.kenteiRank === rank);
+  if (tricksInRank.length === 0) return false;
+  return tricksInRank.every((trick) => (lacedCountByTrickId.get(trick.id) ?? 0) > 0);
+}
+
+// Starting at the currently assessed rank, advances one rank at a time while the current rank
+// is fully laced, cascading through multiple ranks in a single call if several are already
+// complete. Never advances past the highest rank present in standardTricks.
+export function selectPromotedKenteiRank(
+  currentRank: number,
+  standardTricks: readonly TrickSummary[],
+  lacedCountByTrickId: ReadonlyMap<string, number>,
+): number {
+  const maxRank = Math.max(...standardTricks.map((trick) => trick.kenteiRank));
+  let rank = currentRank;
+  while (rank < maxRank && isKenteiRankComplete(rank, standardTricks, lacedCountByTrickId)) {
+    rank += 1;
+  }
+  return rank;
+}
+
 export function selectLacedCountByTrickId(
   sessions: readonly PracticeSessionRecord[],
 ): ReadonlyMap<string, number> {

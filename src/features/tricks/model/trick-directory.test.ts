@@ -6,9 +6,11 @@ import { KENDAMA_KENTEI_TRICKS } from '@/features/tricks/data/kendama-kentei-tri
 import {
   createProfileDirectoryTricks,
   createTrickSections,
+  isKenteiRankComplete,
   selectAvailablePracticeTricks,
   selectEffectiveUnlockedTrickIds,
   selectLacedCountByTrickId,
+  selectPromotedKenteiRank,
   selectUnlockedTrickIds,
 } from '@/features/tricks/model/trick-directory';
 
@@ -157,6 +159,72 @@ describe('selectUnlockedTrickIds', () => {
     ]);
 
     expect(unlocked.has('never-practiced')).toBe(false);
+  });
+});
+
+function lacedCountsForRankOne(excludingTrickId?: string): Map<string, number> {
+  const rankOneIds = KENDAMA_KENTEI_TRICKS.filter((trick) => trick.kenteiRank === 1).map(
+    (trick) => trick.id,
+  );
+  const counts = new Map<string, number>();
+  for (const trickId of rankOneIds) {
+    if (trickId === excludingTrickId) continue;
+    counts.set(trickId, 1);
+  }
+  return counts;
+}
+
+describe('isKenteiRankComplete', () => {
+  it('is false when every rank-1 trick but one has been laced', () => {
+    const lastRankOneId = KENDAMA_KENTEI_TRICKS.filter((trick) => trick.kenteiRank === 1).at(
+      -1,
+    )!.id;
+
+    expect(
+      isKenteiRankComplete(1, KENDAMA_KENTEI_TRICKS, lacedCountsForRankOne(lastRankOneId)),
+    ).toBe(false);
+  });
+
+  it('is true once every rank-1 trick has been laced', () => {
+    expect(isKenteiRankComplete(1, KENDAMA_KENTEI_TRICKS, lacedCountsForRankOne())).toBe(true);
+  });
+
+  it('is false for a rank with no standard tricks assigned', () => {
+    expect(isKenteiRankComplete(999, KENDAMA_KENTEI_TRICKS, new Map())).toBe(false);
+  });
+});
+
+describe('selectPromotedKenteiRank', () => {
+  it('does not promote while a trick in the current rank is still unlaced', () => {
+    const lastRankOneId = KENDAMA_KENTEI_TRICKS.filter((trick) => trick.kenteiRank === 1).at(
+      -1,
+    )!.id;
+
+    expect(
+      selectPromotedKenteiRank(1, KENDAMA_KENTEI_TRICKS, lacedCountsForRankOne(lastRankOneId)),
+    ).toBe(1);
+  });
+
+  it('promotes to the next rank once the last trick in the current rank is laced', () => {
+    expect(selectPromotedKenteiRank(1, KENDAMA_KENTEI_TRICKS, lacedCountsForRankOne())).toBe(2);
+  });
+
+  it('does not advance past the highest rank present even if fully laced', () => {
+    const maxRank = Math.max(...KENDAMA_KENTEI_TRICKS.map((trick) => trick.kenteiRank));
+    const counts = new Map(KENDAMA_KENTEI_TRICKS.map((trick) => [trick.id, 1]));
+
+    expect(selectPromotedKenteiRank(maxRank, KENDAMA_KENTEI_TRICKS, counts)).toBe(maxRank);
+  });
+
+  it('cascades through multiple already-complete ranks in one call', () => {
+    const counts = new Map(
+      KENDAMA_KENTEI_TRICKS.filter((trick) => trick.kenteiRank <= 3).map((trick) => [
+        trick.id,
+        1,
+      ]),
+    );
+
+    expect(selectPromotedKenteiRank(1, KENDAMA_KENTEI_TRICKS, counts)).toBe(4);
   });
 });
 

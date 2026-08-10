@@ -36,6 +36,7 @@ interface UserProfileActions {
   readonly setStreakThresholdMs: (thresholdMs: number) => void;
   readonly completeOnboarding: (kenteiRank: number, selectedTrickIds: readonly string[]) => void;
   readonly restartOnboarding: () => void;
+  readonly advanceKenteiRank: (rank: number) => void;
 }
 
 const UserProfileStateContext = createContext<UserProfile | undefined>(undefined);
@@ -123,6 +124,10 @@ export function UserProfileProvider({ children }: PropsWithChildren) {
     dispatch({ type: 'onboardingRestarted' });
   }, []);
 
+  const advanceKenteiRank = useCallback((rank: number) => {
+    dispatch({ type: 'kenteiRankAdvanced', rank });
+  }, []);
+
   const actions = useMemo(
     () => ({
       toggleSelectedTrick,
@@ -134,8 +139,10 @@ export function UserProfileProvider({ children }: PropsWithChildren) {
       setStreakThresholdMs,
       completeOnboarding,
       restartOnboarding,
+      advanceKenteiRank,
     }),
     [
+      advanceKenteiRank,
       clearSelectedTricks,
       completeOnboarding,
       removeManualUnlock,
