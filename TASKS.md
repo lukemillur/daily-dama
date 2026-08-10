@@ -116,12 +116,6 @@ _Raw ideas land here — a name and a one-line description, nothing more. Discus
   - Progress is derived from practice history at read time (sum of landings, or sum of sesh duration, for that trick ID) — not stored as a separately-maintained running counter. Same "derive, don't cache" principle Stats already follows, to avoid drift.
   - A goal record needs a trick-name snapshot alongside the trick ID, same convention as T010's Notes, so a goal for a later-deleted or renamed custom trick doesn't break.
 
-#### [T011.1] Goals domain and goal-creation UI
-
-- **Status:** Not started
-- **Description:** Add a persistent Goals domain, and UI to create a goal for a trick: either a target lace count or a target cumulative practice time.
-- **Exit criteria:** Test confirms creating a count-based goal and a time-based goal each store the trick ID, trick-name snapshot, goal type, and target value correctly; verified in-browser.
-
 #### [T011.2] Goal progress and achievement
 
 - **Status:** Not started

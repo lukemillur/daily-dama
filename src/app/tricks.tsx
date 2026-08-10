@@ -17,6 +17,7 @@ import {
   useCustomTrickActions,
   useCustomTricks,
 } from '@/features/custom-tricks/state/custom-trick-provider';
+import { TrickGoalsScreen } from '@/features/goals/components/trick-goals-screen';
 import { TrickNotesScreen } from '@/features/notes/components/trick-notes-screen';
 import { useRequireOnboarding } from '@/features/onboarding/state/require-onboarding';
 import {
@@ -45,6 +46,7 @@ export default function TricksScreen() {
   const [editingTrick, setEditingTrick] = useState<CustomTrick | undefined>(undefined);
   const [deletingTrick, setDeletingTrick] = useState<CustomTrick | undefined>(undefined);
   const [notesTrick, setNotesTrick] = useState<DirectoryTrick | undefined>(undefined);
+  const [goalsTrick, setGoalsTrick] = useState<DirectoryTrick | undefined>(undefined);
   const directoryTricks = useMemo(
     () => createProfileDirectoryTricks(KENDAMA_KENTEI_TRICKS, tricks),
     [tricks],
@@ -95,6 +97,18 @@ export default function TricksScreen() {
     );
   }
 
+  if (goalsTrick) {
+    return (
+      <Screen edges={['top', 'left', 'right']}>
+        <TrickGoalsScreen
+          trickId={goalsTrick.id}
+          trickName={goalsTrick.name}
+          onClose={() => setGoalsTrick(undefined)}
+        />
+      </Screen>
+    );
+  }
+
   if (creationStep === 'choose') {
     return (
       <Screen edges={['top', 'left', 'right']}>
@@ -134,6 +148,7 @@ export default function TricksScreen() {
             onDelete: (trickId) => setDeletingTrick(tricks.find((trick) => trick.id === trickId)),
           }}
           notesAction={{ onOpen: setNotesTrick }}
+          goalsAction={{ onOpen: setGoalsTrick }}
           header={{
             eyebrow: 'Your trick lab',
             title: 'Choose the next\nmove.',
