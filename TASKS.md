@@ -118,7 +118,7 @@ _Raw ideas land here — a name and a one-line description, nothing more. Discus
 
 #### [T013.2] Rank skipping and attempt messaging
 
-- **Status:** Not started
+- **Status:** In progress
 - **Description:** During a bottom-to-top run, let the user skip an entire rank without attempting it; display the static "5 attempts" reminder per trick during the run. Depends on T013.1.
 - **Exit criteria:** Test confirms skipping a rank advances to the next rank's tricks without writing any practice-history records for the skipped tricks and without affecting the user's kentei rank; the attempt-count message renders per trick — verified in-browser.
 
