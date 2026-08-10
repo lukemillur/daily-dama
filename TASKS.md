@@ -107,7 +107,7 @@ _Raw ideas land here — a name and a one-line description, nothing more. Discus
 
 - **Area:** Tricks / Sesh
 - **Priority:** High
-- **Status:** Not started
+- **Status:** In progress
 - **Description:** Add an action on each trick-list item that starts a Sesh containing that trick, regardless of whether it's currently in the user's focused/selected tricks.
 - **Exit criteria:** Tapping the action for any trick — focused or not — navigates to Sesh with that trick loaded and ready to practice; verified in-browser for one focused and one unfocused trick.
 - **Notes:** Check whether Sesh's entry points currently assume the trick is in `selectedTrickIds` (`src/app/sesh.tsx` / Sesh state machine) before implementing.
