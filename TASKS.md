@@ -107,7 +107,7 @@ _Raw ideas land here — a name and a one-line description, nothing more. Discus
 
 - **Area:** Sesh
 - **Priority:** High
-- **Status:** Not started
+- **Status:** In progress
 - **Description:** A sequencing layer that steps through an ordered list of tricks one at a time, reusing the existing single-trick practice mechanics for each trick (land it, or move on without landing), auto-advancing without requiring the user to manually restart between tricks. Each trick's outcome is recorded as its own practice-history record, exactly as today's single-trick Sesh already does — no change to the practice-history record shape.
 - **Exit criteria:** Test confirms that, given an ordered list of 3 tricks, landing or moving past each in turn produces 3 separate practice-history records in the same order, and the run ends after the last trick — verified in-browser.
 - **Notes:** Both T013 and T014 depend on this landing first. Resolved during scoping: this is a thin sequencing layer around the existing single-trick mechanics, not a reimplementation of countdown/landing logic and not a change to the Sesh reducer used by regular practice.
