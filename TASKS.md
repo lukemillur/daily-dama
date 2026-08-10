@@ -118,7 +118,7 @@ _Raw ideas land here — a name and a one-line description, nothing more. Discus
 
 #### [T011.2] Goal progress and achievement
 
-- **Status:** Not started
+- **Status:** In progress
 - **Description:** Compute each goal's progress by deriving it from practice history (summed landings, or summed sesh duration, for that trick), and mark the goal achieved once the target is reached. Depends on T011.1.
 - **Exit criteria:** Test confirms a count-based goal's progress reflects the trick's total lace count from history and marks achieved once it reaches the target; a time-based goal's progress reflects cumulative sesh duration for that trick and marks achieved the same way.
 
