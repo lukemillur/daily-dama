@@ -7,6 +7,7 @@ import {
   createProfileDirectoryTricks,
   createTrickSections,
   selectAvailablePracticeTricks,
+  selectEffectiveUnlockedTrickIds,
   selectLacedCountByTrickId,
   selectUnlockedTrickIds,
 } from '@/features/tricks/model/trick-directory';
@@ -156,5 +157,27 @@ describe('selectUnlockedTrickIds', () => {
     ]);
 
     expect(unlocked.has('never-practiced')).toBe(false);
+  });
+});
+
+describe('selectEffectiveUnlockedTrickIds', () => {
+  it('shows a trick as unlocked when the manual flag is set despite no lace history', () => {
+    const effective = selectEffectiveUnlockedTrickIds(new Set(), ['never-practiced']);
+
+    expect(effective.has('never-practiced')).toBe(true);
+  });
+
+  it('returns a trick to lace-derived status once the manual flag is cleared', () => {
+    const effective = selectEffectiveUnlockedTrickIds(new Set(), []);
+
+    expect(effective.has('never-practiced')).toBe(false);
+  });
+
+  it('keeps a trick with real lace history unlocked regardless of the manual flag', () => {
+    const withManualFlagCleared = selectEffectiveUnlockedTrickIds(new Set(['big-cup']), []);
+    const withManualFlagSet = selectEffectiveUnlockedTrickIds(new Set(['big-cup']), ['big-cup']);
+
+    expect(withManualFlagCleared.has('big-cup')).toBe(true);
+    expect(withManualFlagSet.has('big-cup')).toBe(true);
   });
 });

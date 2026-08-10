@@ -56,24 +56,51 @@ function isStreakThresholdMs(value: unknown): value is number {
 function parseUserProfile(value: unknown): UserProfile | undefined {
   if (!isRecord(value)) return undefined;
 
-  const { hasCompletedOnboarding, kenteiRank, selectedTrickIds, lastSesh, streakThresholdMs } = value;
+  const {
+    hasCompletedOnboarding,
+    kenteiRank,
+    selectedTrickIds,
+    lastSesh,
+    streakThresholdMs,
+    manuallyUnlockedTrickIds,
+  } = value;
   if (typeof hasCompletedOnboarding !== 'boolean' || !isStringArray(selectedTrickIds)) {
     return undefined;
   }
   if (lastSesh !== undefined && !isLastSesh(lastSesh)) return undefined;
   if (streakThresholdMs !== undefined && !isStreakThresholdMs(streakThresholdMs)) return undefined;
+  if (manuallyUnlockedTrickIds !== undefined && !isStringArray(manuallyUnlockedTrickIds)) {
+    return undefined;
+  }
 
   const lastSeshField = lastSesh === undefined ? {} : { lastSesh: lastSesh as LastSesh };
   const streakThresholdField =
     streakThresholdMs === undefined ? {} : { streakThresholdMs: streakThresholdMs as number };
+  const manuallyUnlockedTrickIdsField =
+    manuallyUnlockedTrickIds === undefined
+      ? {}
+      : { manuallyUnlockedTrickIds: manuallyUnlockedTrickIds as string[] };
 
   if (hasCompletedOnboarding) {
     if (!isKenteiRank(kenteiRank)) return undefined;
-    return { hasCompletedOnboarding, kenteiRank, selectedTrickIds, ...lastSeshField, ...streakThresholdField };
+    return {
+      hasCompletedOnboarding,
+      kenteiRank,
+      selectedTrickIds,
+      ...lastSeshField,
+      ...streakThresholdField,
+      ...manuallyUnlockedTrickIdsField,
+    };
   }
 
   if (kenteiRank !== undefined) return undefined;
-  return { hasCompletedOnboarding, selectedTrickIds, ...lastSeshField, ...streakThresholdField };
+  return {
+    hasCompletedOnboarding,
+    selectedTrickIds,
+    ...lastSeshField,
+    ...streakThresholdField,
+    ...manuallyUnlockedTrickIdsField,
+  };
 }
 
 export function serializeUserProfile(profile: UserProfile) {

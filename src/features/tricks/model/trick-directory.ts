@@ -146,6 +146,16 @@ export function selectUnlockedTrickIds(
   return new Set(sessions.map((session) => session.trickId));
 }
 
+// Layers the manual-unlock override on top of lace-derived unlock status. A trick unlocked
+// by either source stays unlocked; this is a toggle, not a one-way override, so clearing the
+// manual flag on a trick with no lace history reverts it to locked.
+export function selectEffectiveUnlockedTrickIds(
+  lacedUnlockedTrickIds: ReadonlySet<string>,
+  manuallyUnlockedTrickIds: readonly string[],
+): ReadonlySet<string> {
+  return new Set([...lacedUnlockedTrickIds, ...manuallyUnlockedTrickIds]);
+}
+
 export function selectAvailablePracticeTricks(
   standardTricks: readonly TrickSummary[],
   customTricks: readonly CustomTrick[],
