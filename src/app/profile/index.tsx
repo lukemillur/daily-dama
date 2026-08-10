@@ -1,3 +1,4 @@
+import { useRouter } from "expo-router";
 import { useState } from "react";
 import { TextInput } from "react-native";
 import { styled } from "styled-components/native";
@@ -19,6 +20,7 @@ import {
 
 export default function ProfileScreen() {
   const isOnboardingComplete = useRequireOnboarding();
+  const router = useRouter();
   const { kenteiRank, selectedTrickIds, streakThresholdMs } = useUserProfile();
   const { restartOnboarding, setStreakThresholdMs } = useUserProfileActions();
 
@@ -48,6 +50,16 @@ export default function ProfileScreen() {
         </Copy>
         <RetakeButton onPress={restartOnboarding}>
           Retake assessment
+        </RetakeButton>
+        <SectionLabel>Kentei assessment</SectionLabel>
+        <Title>Put it to{`\n`}the test.</Title>
+        <Copy>
+          Run a real, timed assessment through your tricks. Every landing counts
+          as practice history, so a full pass through a rank promotes you
+          automatically.
+        </Copy>
+        <RetakeButton onPress={() => router.push("/profile/kentei-assessment")}>
+          Start Kentei assessment
         </RetakeButton>
         <Divider />
         <StreakSettings
