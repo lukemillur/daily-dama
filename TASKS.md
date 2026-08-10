@@ -103,25 +103,6 @@ _Raw ideas land here — a name and a one-line description, nothing more. Discus
 
 ## Backlog
 
-### [T013] Kentei assessment
-
-- **Area:** Sesh / Profile
-- **Priority:** High
-- **Status:** Not started — umbrella entry, no exit criteria of its own; `Done` only once both children are `Done`. Depends on T012.
-- **Description:** Formal rank assessment built on T012's shared sequencing core. Three entry flows: full bottom-to-top through all ranks, bottom-to-top starting at a chosen rank, or the user's current rank only. Ranks can be skipped during a run. Each trick shows a static "you have 5 attempts" reminder — no attempt counting or fail state in the app.
-- **Notes:** Decisions resolved during scoping:
-  - Built on T012, not a reimplementation of practice mechanics.
-  - Landings during assessment write to the same practice-history domain as regular practice — T007's existing auto-promotion logic fires naturally on a full rank pass; no assessment-specific promotion wiring needed.
-  - Skipping a rank leaves it unassessed — not treated as passed, doesn't touch the user's recorded rank.
-  - Must be completed in one sitting for v1 — no persisted in-progress assessment state.
-  - "5 attempts" is purely informational text, not a counted or enforced limit — there is no "failed attempt" input anywhere in this feature.
-
-#### [T013.2] Rank skipping and attempt messaging
-
-- **Status:** Not started
-- **Description:** During a bottom-to-top run, let the user skip an entire rank without attempting it; display the static "5 attempts" reminder per trick during the run. Depends on T013.1.
-- **Exit criteria:** Test confirms skipping a rank advances to the next rank's tricks without writing any practice-history records for the skipped tricks and without affecting the user's kentei rank; the attempt-count message renders per trick — verified in-browser.
-
 ### [T014] Multi-trick sesh variant
 
 - **Area:** Sesh

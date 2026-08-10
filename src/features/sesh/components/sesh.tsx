@@ -348,7 +348,19 @@ function TrickPicker({
   );
 }
 
-export function Countdown({ trick, plan, onComplete }: { readonly trick: PracticeTrick; readonly plan: SeshPlan; readonly onComplete: () => void }) {
+export function Countdown({
+  trick,
+  plan,
+  onComplete,
+  attemptsReminder,
+  onSkipRank,
+}: {
+  readonly trick: PracticeTrick;
+  readonly plan: SeshPlan;
+  readonly onComplete: () => void;
+  readonly attemptsReminder?: boolean;
+  readonly onSkipRank?: () => void;
+}) {
   const [count, setCount] = useState(3);
   const [scale] = useState(() => new Animated.Value(0.55));
   const [opacity] = useState(() => new Animated.Value(0));
@@ -374,6 +386,7 @@ export function Countdown({ trick, plan, onComplete }: { readonly trick: Practic
       <Eyebrow>Get ready</Eyebrow>
       <CountdownTrick>{trick.name}</CountdownTrick>
       <SequenceSteps trick={trick} />
+      {attemptsReminder ? <AttemptsReminder>You have 5 attempts.</AttemptsReminder> : null}
       <Animated.View style={{ opacity, transform: [{ scale }] }}>
         <CountdownNumber>{count}</CountdownNumber>
       </Animated.View>
@@ -382,6 +395,11 @@ export function Countdown({ trick, plan, onComplete }: { readonly trick: Practic
           ? `${formatDuration(plan.durationMs)} begins after the countdown.`
           : 'The clock starts after the countdown.'}
       </BodyCopy>
+      {onSkipRank ? (
+        <SkipRankButton accessibilityRole="button" onPress={onSkipRank}>
+          <SkipRankButtonText>Skip this rank</SkipRankButtonText>
+        </SkipRankButton>
+      ) : null}
     </CenteredPanel>
   );
 }
@@ -400,6 +418,8 @@ export function ActiveSesh({
   onResume,
   onEnd,
   onTimerElapsed,
+  attemptsReminder,
+  onSkipRank,
 }: {
   readonly trick: PracticeTrick;
   readonly plan: SeshPlan;
@@ -414,6 +434,8 @@ export function ActiveSesh({
   readonly onResume: () => void;
   readonly onEnd: () => void;
   readonly onTimerElapsed: () => void;
+  readonly attemptsReminder?: boolean;
+  readonly onSkipRank?: () => void;
 }) {
   const showChallenge = liveChallengeEnabled && personalBest !== undefined;
   const hasBeatenBest = showChallenge && landings.length > personalBest;
@@ -440,6 +462,7 @@ export function ActiveSesh({
         <Eyebrow>{isPaused ? 'Sesh paused' : 'Sesh in progress'}</Eyebrow>
         <ActiveTrick>{trick.name}</ActiveTrick>
         <SequenceSteps trick={trick} prominent />
+        {attemptsReminder ? <AttemptsReminder>You have 5 attempts.</AttemptsReminder> : null}
         <TimerLabel>{plan.kind === 'timed' ? 'Time remaining' : 'Elapsed time'}</TimerLabel>
         <Timer
           accessibilityLabel={`${plan.kind === 'timed' ? 'Time remaining' : 'Elapsed time'} ${formattedTime}`}>
@@ -487,6 +510,11 @@ export function ActiveSesh({
           <EndAnywayButton accessibilityRole="button" onPress={onEnd}>
             <EndAnywayButtonText>End anyway</EndAnywayButtonText>
           </EndAnywayButton>
+        ) : null}
+        {onSkipRank ? (
+          <SkipRankButton accessibilityRole="button" onPress={onSkipRank}>
+            <SkipRankButtonText>Skip this rank</SkipRankButtonText>
+          </SkipRankButton>
         ) : null}
       </ActiveContent>
     </ScrollArea>
@@ -763,6 +791,9 @@ const EndButton = styled(Pressable)<{ $disabled: boolean }>`min-height: 48px; fl
 const EndButtonText = styled.Text`color: #18382e; font-size: 15px; font-weight: 900;`;
 const EndAnywayButton = styled(Pressable)`min-height: 40px; align-items: center; justify-content: center; margin-top: 10px; padding: 8px 24px;`;
 const EndAnywayButtonText = styled.Text`color: ${AppColors.textMuted}; font-size: 13px; font-weight: 800; text-decoration-line: underline;`;
+const AttemptsReminder = styled.Text`width: 100%; text-align: center; color: ${AppColors.textMuted}; font-size: 12px; font-weight: 800; letter-spacing: 0.4px; margin-top: 10px; text-transform: uppercase;`;
+const SkipRankButton = styled(Pressable)`min-height: 40px; align-items: center; justify-content: center; margin-top: 14px; padding: 8px 24px;`;
+const SkipRankButtonText = styled.Text`color: ${AppColors.textMuted}; font-size: 13px; font-weight: 800; text-decoration-line: underline;`;
 const TargetStatus = styled.Text<{ $met: boolean }>`width: 100%; text-align: center; margin-top: 12px; color: ${({ $met }) => ($met ? AppColors.red : AppColors.ink)}; font-size: 15px; font-weight: 900;`;
 const ResultBanner = styled.Text<{ $beaten: boolean }>`width: 100%; text-align: center; margin-top: 18px; padding: 12px 16px; background-color: ${({ $beaten }) => ($beaten ? '#e5edcf' : '#f8f1dd')}; border-left-width: 5px; border-left-color: ${({ $beaten }) => ($beaten ? AppColors.red : AppColors.ink)}; color: ${AppColors.ink}; font-size: 15px; font-weight: 900;`;
 const FirstLaceBannerCard = styled.View`width: 100%; max-width: 500px; align-items: center; background-color: ${AppColors.yellow}; border: 3px solid ${AppColors.ink}; border-radius: 6px; padding: 18px 20px; margin-bottom: 20px;`;

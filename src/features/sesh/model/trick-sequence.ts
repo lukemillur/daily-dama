@@ -40,3 +40,17 @@ export function advanceTrickSequence(state: TrickSequenceState): TrickSequenceSt
   if (isTrickSequenceFinished(state)) return state;
   return { ...state, currentIndex: state.currentIndex + 1 };
 }
+
+/**
+ * Jumps forward to an arbitrary index — e.g. skipping over an entire rank's
+ * worth of tricks in one step. Clamped in both directions: never moves
+ * backward from the current position, and never past the end of the
+ * sequence. Rank-agnostic — callers decide what index means what.
+ */
+export function advanceTrickSequenceToIndex(
+  state: TrickSequenceState,
+  index: number,
+): TrickSequenceState {
+  const clamped = Math.max(state.currentIndex, Math.min(index, state.tricks.length));
+  return { ...state, currentIndex: clamped };
+}
