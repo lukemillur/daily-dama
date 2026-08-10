@@ -1,30 +1,52 @@
 ---
 name: newTicket
-description: Claims a Daily Dama backlog task — a specific one if named, otherwise the next available one — and drives it end-to-end against `development` via the ticket-cycle agent (plan, implement, merge). No plan-approval gate. When no task is named, keeps going: drives one task after another, each in a fresh subagent so context never accumulates, until the backlog is exhausted, a blocker is hit, or the session's usage limit is reached.
+description: Claims a Daily Dama backlog task — a specific one if named, otherwise the next available one — and drives it end-to-end against `development` via the ticket-claim, ticket-planner, and ticket-implementer agents (claim, plan, implement, merge). No plan-approval gate. When no task is named, keeps going: drives one task after another, each in fresh subagents so context never accumulates, until the backlog is exhausted, a blocker is hit, or the session's usage limit is reached.
 allowed-tools: Read, Agent
 ---
 
-Drive task(s) from `TASKS.md` to merged PRs against `development`. All the actual work — selecting, claiming, planning, implementing, merging — happens inside the `ticket-cycle` subagent (`.claude/agents/ticket-cycle.md`), invoked fresh for every task. This skill itself is just the calling loop: it never touches git or `TASKS.md` directly.
+Drive task(s) from `TASKS.md` to merged PRs against `development`. All the actual work — selecting, claiming, planning, implementing, merging — happens inside three subagents (`.claude/agents/ticket-claim.md`, `ticket-planner.md`, `ticket-implementer.md`), each invoked fresh for every task. This skill itself is the orchestrator: it never touches git or `TASKS.md` directly, and it never does planning or implementation work itself.
+
+**Call all three subagents directly from this top-level session, in sequence, for each task.** Do not route the calls through an intermediate subagent that itself tries to call `Agent` — nested subagent-to-subagent delegation has failed in practice (the inner agent reported it couldn't reach the `Agent` tool and fell back to doing the work inline, which broke the fresh-context guarantee and let one call silently process multiple tasks). This top-level session is the only place `Agent` gets called.
+
+## One cycle
+
+A "cycle" is exactly one task, taken through claim → plan → implement, via three separate `Agent` calls you make yourself.
+
+**Progress updates:** since these calls are foreground and sequential, you're the only place a status is visible while a cycle is running — the subagents' internal work isn't shown to the user. Post a short, plain one-line status message (no headers, no emoji) as its own message at each checkpoint below, so the user can see progress at a glance without reading full reports. Keep each line to the task ID and what just happened, e.g. `T003: claimed (branch task/T003-...)`.
+
+1. **Claim.** Post `T00x: claiming next task…` (or `T00x: claiming…` if a specific ID was given). Invoke `ticket-claim` (`Agent` tool, `subagent_type: "ticket-claim"`, foreground), passing a task ID if one was named, otherwise nothing.
+   - `STATUS: blocked` or `STATUS: backlog-exhausted` — post `T00x: blocked — <reason>` or `no actionable tasks left in backlog`, and the cycle ends here; nothing to plan or implement. Carry the status forward to the cycle's outcome.
+   - `STATUS: claimed` — post `T00x: claimed (branch <branch-name>) — <one-line task description>`, where the description is a concise paraphrase (not a verbatim dump) of the task's title/description from the entry `ticket-claim` returned, enough for the user to know what the task is at a glance. Take the task entry and branch name from its report, and continue to step 2.
+2. **Plan.** Post `T00x: planning…`. Invoke `ticket-planner` (`Agent` tool, `subagent_type: "ticket-planner"`, foreground), giving it the full task entry and branch name from step 1.
+   - If it reports a blocker instead of a plan, post `T00x: blocked at planning — <reason>`. The cycle ends with `STATUS: blocked` — the branch stays claimed for a future session. Do not proceed to implementation on a plan that doesn't exist.
+   - If this `Agent` call itself fails, errors out, or its result indicates the session hit its usage/rate limit (phrasing like "usage limit", "rate limit", "quota exceeded", "5-hour limit", or the call being rejected for capacity reasons — not a normal tool error) — do not retry and do not do the planning yourself inline. Post `T00x: usage limit hit during planning`. The cycle ends with `STATUS: usage-limit`, noting planning is where it hit. The branch stays claimed and pushed; that's a recognized, recoverable state per `TASKS.md` § *Working across multiple agents* → *Stale claims*.
+   - Otherwise post `T00x: plan ready`.
+3. **Implement.** Post `T00x: implementing…`. Invoke `ticket-implementer` (`Agent` tool, `subagent_type: "ticket-implementer"`, foreground), passing the task entry and the plan from step 2. It handles the rest of `TASKS.md`'s *Completing a task* steps itself, including opening the PR into `development` and squash-merging it.
+   - Same usage-limit check as step 2, applied to this call: if it fails or indicates the limit was hit, don't do the implementation yourself inline. Post `T00x: usage limit hit during implementation`. The cycle ends with `STATUS: usage-limit`, noting implementation is where it hit. Include the full plan from step 2 in the cycle's outcome so it isn't lost.
+   - If it reports a scoping/blocker problem instead of a finished PR, post `T00x: blocked during implementation — <reason>`. The cycle ends with `STATUS: blocked`.
+   - Otherwise, its report will confirm the PR was opened and merged — this only becomes known once the whole call returns, so post both as two short lines back to back: `T00x: PR opened (<PR URL>)` then `T00x: merged into development`. The cycle ends with `STATUS: success`.
+
+A cycle's outcome is always exactly one of `success | blocked | usage-limit | backlog-exhausted`, and covers exactly one task. Never let a single cycle span more than one task, and never substitute your own inline work for a subagent call that failed or was unreachable — that defeats the fresh-context design and the usage-limit guard.
 
 ## Usage-limit handling
 
-There's no way to proactively check remaining usage before starting a cycle — this session has no tool that exposes the 5-hour window's remaining capacity. The guard is reactive instead: `ticket-cycle` watches its own calls to the planner and implementer subagents and reports `STATUS: usage-limit` if either one fails or indicates the session hit its usage/rate limit, rather than retrying or pushing on into a half-done task. Treat that status as a stop signal, not a blocker — the task stays claimed for a future session to resume, nothing is wrong with the task itself.
+There's no way to proactively check remaining usage before starting a cycle — this session has no tool that exposes the 5-hour window's remaining capacity. The guard is reactive instead: watch your own calls to `ticket-planner` and `ticket-implementer` (see steps 2–3 above) and treat `usage-limit` as a stop signal, not a blocker — the task stays claimed for a future session to resume, nothing is wrong with the task itself.
 
 ## Named task vs. continuous mode
 
 Check whether a specific task was named when this skill was invoked — e.g. `/newTicket T003`, `/newTicket T005.2`, or plain language like "work on the laced count task." There's no special argument syntax to parse for this; just read what the user actually said.
 
-**If a specific task was named:** invoke `ticket-cycle` once (`Agent` tool, `subagent_type: "ticket-cycle"`, foreground), passing it that task ID. Report its outcome and stop — regardless of `STATUS`.
+**If a specific task was named:** run one cycle with that task ID. Report its outcome and stop — regardless of status.
 
-**If no task was named (continuous mode):** repeatedly invoke `ticket-cycle` (foreground, no task ID — let it select the next actionable task itself) in a loop:
+**If no task was named (continuous mode):** run cycles back to back:
 
-1. Invoke `ticket-cycle` with no task ID.
-2. Read its `STATUS` line and append the outcome (task ID, PR URL if merged, or blocker/limit detail) to a running tally you keep in your own reply text — not in any file.
-3. If `STATUS: success` — go back to step 1 and start the next cycle immediately, with no pause for confirmation (this is pre-authorized, matching the rest of the protocol's no-review-gate design).
-4. If `STATUS: backlog-exhausted` — stop the loop. This isn't an error; report the full tally of everything completed this run.
-5. If `STATUS: blocked` or `STATUS: usage-limit` — stop the loop immediately. Never skip a blocked task and move to the next one. Report the full tally plus the blocker/limit detail from the cycle that stopped it.
+1. Run one cycle with no task ID (`ticket-claim` selects the next actionable task itself).
+2. Append the cycle's outcome (task ID, PR URL if merged, or blocker/limit detail) to a running tally you keep in your own reply text — not in any file.
+3. If the cycle's outcome was `success` — start the next cycle immediately, with no pause for confirmation (this is pre-authorized, matching the rest of the protocol's no-review-gate design).
+4. If `backlog-exhausted` — stop the loop. This isn't an error; report the full tally of everything completed this run.
+5. If `blocked` or `usage-limit` — stop the loop immediately. Never skip a blocked task and move to the next one. Report the full tally plus the blocker/limit detail from the cycle that stopped it.
 
-Each cycle is a fresh subagent with no memory of prior cycles, by design — this keeps context from accumulating across a long continuous run. Don't try to shortcut that by doing the work inline yourself instead of delegating to `ticket-cycle`.
+Each cycle's three subagent calls are fresh, with no memory of prior cycles, by design — this keeps context from accumulating across a long continuous run.
 
 ## Report
 
