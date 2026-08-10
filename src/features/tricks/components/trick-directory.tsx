@@ -30,6 +30,7 @@ export interface TrickDirectoryProps {
   readonly fixedFooter?: boolean;
   readonly hideScrollIndicator?: boolean;
   readonly showFocusedSection?: boolean;
+  readonly lacedCountByTrickId?: ReadonlyMap<string, number>;
 }
 
 const DEFAULT_HEADER = {
@@ -52,6 +53,7 @@ export function TrickDirectory({
   fixedFooter = false,
   hideScrollIndicator = false,
   showFocusedSection = false,
+  lacedCountByTrickId,
 }: TrickDirectoryProps) {
   const selectedTrickIds = selection?.selectedTrickIds ?? NO_SELECTED_TRICKS;
   const sections = useMemo(
@@ -71,7 +73,7 @@ export function TrickDirectory({
   const directoryList = (
     <SectionList
       sections={sections}
-      extraData={selectedTrickIds}
+      extraData={{ selectedTrickIds, lacedCountByTrickId }}
       keyExtractor={(trick) => trick.id}
       stickySectionHeadersEnabled
       showsVerticalScrollIndicator={!hideScrollIndicator}
@@ -90,6 +92,8 @@ export function TrickDirectory({
           onToggle={selection ? () => selection.onToggleTrick(item.id) : undefined}
           onEdit={isCustomDirectoryTrick(item) && customActions ? () => customActions.onEdit(item.id) : undefined}
           onDelete={isCustomDirectoryTrick(item) && customActions ? () => customActions.onDelete(item.id) : undefined}
+          showLacedCount={lacedCountByTrickId !== undefined}
+          lacedCount={lacedCountByTrickId?.get(item.id) ?? 0}
         />
       )}
       ItemSeparatorComponent={ItemSeparator}
@@ -143,9 +147,20 @@ interface TrickRowProps {
   readonly onToggle?: () => void;
   readonly onEdit?: () => void;
   readonly onDelete?: () => void;
+  readonly showLacedCount?: boolean;
+  readonly lacedCount?: number;
 }
 
-function TrickRow({ trick, position, isSelected, onToggle, onEdit, onDelete }: TrickRowProps) {
+function TrickRow({
+  trick,
+  position,
+  isSelected,
+  onToggle,
+  onEdit,
+  onDelete,
+  showLacedCount = false,
+  lacedCount = 0,
+}: TrickRowProps) {
   const customDescription = isCustomDirectoryTrick(trick)
     ? trick.customKind === 'sequence'
       ? 'custom sequence'
@@ -156,8 +171,18 @@ function TrickRow({ trick, position, isSelected, onToggle, onEdit, onDelete }: T
       <Position>{String(position).padStart(2, '0')}</Position>
       <TrickIdentity>
         <TrickName>{trick.name}</TrickName>
-        {isCustomDirectoryTrick(trick) ? (
-          <CustomLabel>{trick.customKind === 'sequence' ? 'Custom sequence' : 'Custom trick'}</CustomLabel>
+        {isCustomDirectoryTrick(trick) || showLacedCount ? (
+          <TrickMetaRow>
+            {isCustomDirectoryTrick(trick) ? (
+              <CustomLabel>{trick.customKind === 'sequence' ? 'Custom sequence' : 'Custom trick'}</CustomLabel>
+            ) : null}
+            {isCustomDirectoryTrick(trick) && showLacedCount ? <MetaDivider>·</MetaDivider> : null}
+            {showLacedCount ? (
+              <LacedCountLabel>
+                {lacedCount} {lacedCount === 1 ? 'lace' : 'laces'}
+              </LacedCountLabel>
+            ) : null}
+          </TrickMetaRow>
         ) : null}
       </TrickIdentity>
     </>
@@ -312,12 +337,30 @@ const TrickName = styled.Text`
   line-height: 24px;
 `;
 
+const TrickMetaRow = styled.View`
+  flex-direction: row;
+  align-items: center;
+  gap: 5px;
+`;
+
 const CustomLabel = styled.Text`
   color: #d84929;
   font-size: 10px;
   font-weight: 900;
   letter-spacing: 1px;
   text-transform: uppercase;
+`;
+
+const MetaDivider = styled.Text`
+  color: #53635d;
+  font-size: 10px;
+  font-weight: 900;
+`;
+
+const LacedCountLabel = styled.Text`
+  color: #53635d;
+  font-size: 11px;
+  font-weight: 700;
 `;
 
 const SelectionIndicator = styled.View<{ readonly $selected: boolean }>`
