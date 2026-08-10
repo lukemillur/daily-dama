@@ -1,6 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
 
 import {
+  createOpenEndedSeshPlan,
   createTimedSeshPlan,
   formatRemainingDuration,
   INITIAL_SESH_STATE,
@@ -171,6 +172,33 @@ describe('sesh reducer', () => {
     expect(() => createTimedSeshPlan(0)).toThrow(RangeError);
     expect(() => createTimedSeshPlan(1.5)).toThrow(RangeError);
     expect(() => createTimedSeshPlan(61)).toThrow(RangeError);
+  });
+
+  it('accepts a whole-number open-ended target from 1 through 999', () => {
+    expect(createOpenEndedSeshPlan(1)).toEqual({ kind: 'openEnded', target: { landingCount: 1 } });
+    expect(createOpenEndedSeshPlan(999)).toEqual({ kind: 'openEnded', target: { landingCount: 999 } });
+    expect(() => createOpenEndedSeshPlan(0)).toThrow(RangeError);
+    expect(() => createOpenEndedSeshPlan(1.5)).toThrow(RangeError);
+    expect(() => createOpenEndedSeshPlan(1000)).toThrow(RangeError);
+  });
+
+  it('omits the target entirely when none is given, matching the untargeted default', () => {
+    expect(createOpenEndedSeshPlan()).toEqual(OPEN_ENDED_SESH_PLAN);
+    expect(createOpenEndedSeshPlan()).toEqual({ kind: 'openEnded' });
+  });
+
+  it('stores a defined open-ended target on the sesh initial state once active', () => {
+    const targeted = createOpenEndedSeshPlan(10);
+    const active = startSesh(targeted);
+
+    expect(active).toMatchObject({ status: 'active', plan: { kind: 'openEnded', target: { landingCount: 10 } } });
+  });
+
+  it('starting an open-ended sesh with no target behaves exactly as before', () => {
+    const active = startSesh(OPEN_ENDED_SESH_PLAN);
+
+    expect(active).toMatchObject({ status: 'active', plan: { kind: 'openEnded' } });
+    expect((active as { plan: { target?: unknown } }).plan.target).toBeUndefined();
   });
 
   it('does not display zero before a countdown has actually finished', () => {

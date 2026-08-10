@@ -8,15 +8,16 @@ import { Button } from '@/components/ui/button';
 import { BodyText, DisplayTitle as BaseDisplayTitle, Eyebrow as BaseEyebrow } from '@/components/ui/typography';
 import { AppColors } from '@/constants/theme';
 import {
+  createOpenEndedSeshPlan,
   createTimedSeshPlan,
   formatDuration,
   formatRemainingDuration,
   getAverageInterval,
   getFastestInterval,
   INITIAL_SESH_STATE,
+  isValidSeshTargetLandingCount,
   isValidTimedSeshMinutes,
   type Landing,
-  OPEN_ENDED_SESH_PLAN,
   selectSeshPracticeTricks,
   seshReducer,
   type SeshPlan,
@@ -186,11 +187,22 @@ function TrickPicker({
   const [durationMinutes, setDurationMinutes] = useState(
     initialPlan?.kind === 'timed' ? String(initialPlan.durationMs / 60_000) : '5',
   );
+  const [targetLandingCount, setTargetLandingCount] = useState(
+    initialPlan?.kind === 'openEnded' && initialPlan.target
+      ? String(initialPlan.target.landingCount)
+      : '',
+  );
   const [liveChallengeEnabled, setLiveChallengeEnabled] = useState(false);
   const parsedDuration = Number(durationMinutes);
   const hasValidDuration = isValidTimedSeshMinutes(parsedDuration);
+  const parsedTargetLandingCount = Number(targetLandingCount);
+  const hasTargetLandingCount = targetLandingCount.trim().length > 0;
+  const hasValidTargetLandingCount =
+    !hasTargetLandingCount || isValidSeshTargetLandingCount(parsedTargetLandingCount);
   const selectedPlan = planKind === 'openEnded'
-    ? OPEN_ENDED_SESH_PLAN
+    ? hasValidTargetLandingCount
+      ? createOpenEndedSeshPlan(hasTargetLandingCount ? parsedTargetLandingCount : undefined)
+      : undefined
     : hasValidDuration
       ? createTimedSeshPlan(parsedDuration)
       : undefined;
@@ -245,6 +257,26 @@ function TrickPicker({
             />
             <DurationHint $invalid={!hasValidDuration}>
               {hasValidDuration ? 'Choose any whole minute from 1 to 60.' : 'Enter a whole number from 1 to 60.'}
+            </DurationHint>
+          </DurationField>
+        ) : null}
+        {planKind === 'openEnded' ? (
+          <DurationField>
+            <DurationLabel>Target laces (optional)</DurationLabel>
+            <DurationInput
+              accessibilityLabel="Target lace count"
+              inputMode="numeric"
+              keyboardType="number-pad"
+              maxLength={3}
+              onChangeText={setTargetLandingCount}
+              placeholder="—"
+              selectTextOnFocus
+              value={targetLandingCount}
+            />
+            <DurationHint $invalid={!hasValidTargetLandingCount}>
+              {hasValidTargetLandingCount
+                ? 'Leave blank to just count up, or set a lace count to hit.'
+                : 'Enter a whole number from 1 to 999, or leave it blank.'}
             </DurationHint>
           </DurationField>
         ) : null}
