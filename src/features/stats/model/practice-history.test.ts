@@ -6,6 +6,7 @@ import {
   createPracticeSessionRecordId,
   getPersonalBest,
   isEligibleTimedAttempt,
+  hasPriorLaceForTrick,
   isFirstLaceForTrick,
   practiceHistoryReducer,
   type PracticeSessionRecord,
@@ -282,6 +283,24 @@ describe('isFirstLaceForTrick', () => {
   it('is false when this sesh itself landed zero laces', () => {
     const summary = makeSummary({ trick: { id: 'whirlwind', name: 'Whirlwind' }, landings: [] });
     expect(isFirstLaceForTrick([], summary)).toBe(false);
+  });
+});
+
+describe('hasPriorLaceForTrick', () => {
+  it('is false for an empty history', () => {
+    expect(hasPriorLaceForTrick([], 'big-cup')).toBe(false);
+  });
+
+  it('is false when the only record for the trick has zero laces', () => {
+    expect(hasPriorLaceForTrick([AIRPLANE_ZERO_LACES], 'airplane')).toBe(false);
+  });
+
+  it('is true when a record for the trick has laces', () => {
+    expect(hasPriorLaceForTrick([BIG_CUP_FIRST], 'big-cup')).toBe(true);
+  });
+
+  it('is false when only a different trick has laces', () => {
+    expect(hasPriorLaceForTrick([BIG_CUP_FIRST], 'airplane')).toBe(false);
   });
 });
 
