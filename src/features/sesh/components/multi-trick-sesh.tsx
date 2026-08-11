@@ -1,5 +1,5 @@
 import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
-import { useEffect, useReducer, useRef, useState } from 'react';
+import { useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import { styled } from 'styled-components/native';
 
 import { BodyText, DisplayTitle as BaseDisplayTitle, Eyebrow as BaseEyebrow } from '@/components/ui/typography';
@@ -21,6 +21,8 @@ import {
 import type { PracticeTrick } from '@/features/tricks/model/trick';
 import { createPracticeSessionRecordId } from '@/features/stats/model/practice-history';
 import { usePracticeHistoryActions } from '@/features/stats/state/practice-history-provider';
+import { selectNotesForTrick } from '@/features/notes/model/note';
+import { useNotes } from '@/features/notes/state/note-provider';
 
 const MULTI_TRICK_SESH_KEEP_AWAKE_TAG = 'multi-trick-sesh-active';
 
@@ -64,9 +66,16 @@ export function MultiTrickSesh({ tricks, plan, onFinished, skipTarget, showAttem
     },
   );
   const { recordCompletedSesh } = usePracticeHistoryActions();
+  const { notes } = useNotes();
   const recordedSummaryId = useRef<string | undefined>(undefined);
 
   const hasReportedEmptySequence = useRef(false);
+
+  const activeTrickId = state.status === 'active' ? state.trick.id : undefined;
+  const trickNotes = useMemo(
+    () => (activeTrickId ? selectNotesForTrick(notes, activeTrickId) : []),
+    [notes, activeTrickId],
+  );
 
   useEffect(() => {
     // An empty trick list starts already finished (state stays 'choosing',
@@ -152,6 +161,7 @@ export function MultiTrickSesh({ tricks, plan, onFinished, skipTarget, showAttem
         pausedDurationMs={state.pausedDurationMs}
         personalBest={undefined}
         liveChallengeEnabled={false}
+        trickNotes={trickNotes}
         onLaced={() => dispatch({ type: 'trickLaced', now: Date.now() })}
         onPause={() => dispatch({ type: 'seshPaused', now: Date.now() })}
         onResume={() => dispatch({ type: 'seshResumed', now: Date.now() })}

@@ -37,7 +37,8 @@ import {
 } from '@/features/stats/model/practice-history';
 import { usePracticeHistory, usePracticeHistoryActions } from '@/features/stats/state/practice-history-provider';
 import { useUserProfileActions } from '@/features/profile/state/user-profile-provider';
-import { useNoteActions } from '@/features/notes/state/note-provider';
+import { selectNotesForTrick, type Note } from '@/features/notes/model/note';
+import { useNoteActions, useNotes } from '@/features/notes/state/note-provider';
 
 const SESH_KEEP_AWAKE_TAG = 'sesh-active';
 
@@ -53,6 +54,7 @@ export function Sesh({ availableTricks, initialPlan, preferredTrickId, selectedT
   const { sessions } = usePracticeHistory();
   const { recordCompletedSesh } = usePracticeHistoryActions();
   const { setLastSesh } = useUserProfileActions();
+  const { notes } = useNotes();
   const recordedSummaryId = useRef<string | undefined>(undefined);
   const [personalBest, setPersonalBest] = useState<number | undefined>(undefined);
   const [liveChallengeEnabled, setLiveChallengeEnabled] = useState(false);
@@ -67,6 +69,11 @@ export function Sesh({ availableTricks, initialPlan, preferredTrickId, selectedT
   )
     ? preferredTrickId
     : undefined;
+  const activeTrickId = state.status === 'active' ? state.trick.id : undefined;
+  const trickNotes = useMemo(
+    () => (activeTrickId ? selectNotesForTrick(notes, activeTrickId) : []),
+    [notes, activeTrickId],
+  );
 
   useEffect(() => {
     if (state.status !== 'completed') return;
@@ -137,6 +144,7 @@ export function Sesh({ availableTricks, initialPlan, preferredTrickId, selectedT
         personalBest={personalBest}
         liveChallengeEnabled={liveChallengeEnabled}
         hadPriorLaceAtSeshStart={hadPriorLaceAtSeshStart}
+        trickNotes={trickNotes}
         onLaced={() => dispatch({ type: 'trickLaced', now: Date.now() })}
         onPause={() => dispatch({ type: 'seshPaused', now: Date.now() })}
         onResume={() => dispatch({ type: 'seshResumed', now: Date.now() })}
@@ -423,6 +431,7 @@ export function ActiveSesh({
   personalBest,
   liveChallengeEnabled,
   hadPriorLaceAtSeshStart,
+  trickNotes,
   onLaced,
   onPause,
   onResume,
@@ -440,6 +449,7 @@ export function ActiveSesh({
   readonly personalBest?: number;
   readonly liveChallengeEnabled: boolean;
   readonly hadPriorLaceAtSeshStart?: boolean;
+  readonly trickNotes?: readonly Note[];
   readonly onLaced: () => void;
   readonly onPause: () => void;
   readonly onResume: () => void;
@@ -448,6 +458,7 @@ export function ActiveSesh({
   readonly attemptsReminder?: boolean;
   readonly onSkipRank?: () => void;
 }) {
+  const notesToShow = trickNotes ?? [];
   const showChallenge = liveChallengeEnabled && personalBest !== undefined;
   const hasBeatenBest = showChallenge && landings.length > personalBest;
   const showFirstLaceCelebration = hadPriorLaceAtSeshStart === false && landings.length === 1;
@@ -476,6 +487,7 @@ export function ActiveSesh({
         <ActiveTrick>{trick.name}</ActiveTrick>
         <SequenceSteps trick={trick} prominent />
         {attemptsReminder ? <AttemptsReminder>You have 5 attempts.</AttemptsReminder> : null}
+        <TrickNotesPanel trickNotes={notesToShow} />
         <TimerLabel>{plan.kind === 'timed' ? 'Time remaining' : 'Elapsed time'}</TimerLabel>
         <Timer
           accessibilityLabel={`${plan.kind === 'timed' ? 'Time remaining' : 'Elapsed time'} ${formattedTime}`}>
@@ -531,6 +543,31 @@ export function ActiveSesh({
         ) : null}
       </ActiveContent>
     </ScrollArea>
+  );
+}
+
+const TRICK_NOTES_DISPLAY_CAP = 2;
+
+function TrickNotesPanel({ trickNotes }: { readonly trickNotes: readonly Note[] }) {
+  if (trickNotes.length === 0) return null;
+
+  const notesToDisplay = trickNotes.slice(0, TRICK_NOTES_DISPLAY_CAP);
+  const hiddenCount = trickNotes.length - notesToDisplay.length;
+
+  return (
+    <TrickNotesCard accessibilityLabel="Notes from previous sessions">
+      <TrickNotesTitle>From your notes</TrickNotesTitle>
+      {notesToDisplay.map((note) => (
+        <TrickNoteBody key={note.id} numberOfLines={4} ellipsizeMode="tail">
+          {note.body}
+        </TrickNoteBody>
+      ))}
+      {hiddenCount > 0 ? (
+        <TrickNotesHiddenCount>
+          +{hiddenCount} earlier note{hiddenCount === 1 ? '' : 's'} not shown
+        </TrickNotesHiddenCount>
+      ) : null}
+    </TrickNotesCard>
   );
 }
 
@@ -836,6 +873,10 @@ const ResultBanner = styled.Text<{ $beaten: boolean }>`width: 100%; text-align: 
 const FirstLaceBannerCard = styled.View`width: 100%; max-width: 500px; align-items: center; background-color: ${AppColors.yellow}; border: 3px solid ${AppColors.ink}; border-radius: 6px; padding: 18px 20px; margin-bottom: 20px;`;
 const FirstLaceBannerEyebrow = styled.Text`color: ${AppColors.red}; font-size: 12px; font-weight: 900; letter-spacing: 1.6px; text-transform: uppercase;`;
 const FirstLaceBannerTitle = styled.Text`color: ${AppColors.ink}; font-size: 20px; font-weight: 900; text-align: center; margin-top: 6px; line-height: 26px;`;
+const TrickNotesCard = styled.View`width: 100%; max-width: 500px; background-color: ${AppColors.paper}; border: 2px solid ${AppColors.ink}; padding: 16px 18px; margin-top: 16px;`;
+const TrickNotesTitle = styled.Text`color: ${AppColors.ink}; font-size: 11px; font-weight: 900; letter-spacing: 1.2px; margin-bottom: 8px; text-transform: uppercase;`;
+const TrickNoteBody = styled.Text`color: ${AppColors.ink}; font-size: 14px; font-weight: 650; line-height: 20px; margin-bottom: 8px;`;
+const TrickNotesHiddenCount = styled.Text`color: ${AppColors.textMuted}; font-size: 12px; font-weight: 700;`;
 const NotePromptCard = styled.View`width: 100%; max-width: 500px; background-color: #f8f1dd; border: 2px solid ${AppColors.ink}; padding: 18px; margin-top: 20px;`;
 const NotePromptTitle = styled.Text`color: ${AppColors.ink}; font-size: 17px; font-weight: 900;`;
 const NotePromptCopy = styled.Text`color: ${AppColors.inkSoft}; font-size: 13px; font-weight: 650; line-height: 19px; margin-top: 6px;`;
