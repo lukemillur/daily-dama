@@ -120,15 +120,6 @@ The first pass used **locked/unlocked** for "the user can land this trick." User
   - Toggling stays a plain set union with lace-derived status (`selectEffectiveUnlockedTrickIds`), unchanged from [T006]. A trick with real sesh history reads laced regardless of the manual flag; that's existing behavior and is correct.
   - Trick rows show nothing at all for an unlaced trick — no badge, no "0 laces". There's no reason to tell someone they haven't done something yet.
 
-### [T017] Seed laced state from onboarding
-
-- **Area:** Onboarding / Profile
-- **Priority:** High
-- **Status:** In progress
-- **Description:** Onboarding already asks the user, trick by trick, whether they've landed it — but throws those answers away. Carry them into the profile so a user who answered "landed it" during onboarding starts with those tricks laced, and a user who started at an advanced level starts with every trick below their starting rank laced.
-- **Exit criteria:** Test confirms the onboarding reducer accumulates the trick IDs answered "landed it", and that completing onboarding at a starting rank above the minimum persists every standard trick below that rank plus every landed trick as manually unlocked — verified in-browser by completing onboarding at an advanced level and checking the laced grid.
-- **Notes:** `kenteiAssessmentReducer` (`src/features/onboarding/model/kentei-assessment.ts`) currently carries only `rank`/`trickIndex` through `assessing`, so `trickLanded` has to start recording which trick it was answering about — that's the real work here. The profile side reuses [T006]'s existing `manuallyUnlockedTrickIds` field; extend the `onboardingCompleted` action to carry the seed list rather than firing a burst of `manualUnlockToggled` dispatches, so the whole seed lands in one persisted write. Assumption: tricks below the starting rank are seeded because the level choice asserts competence at everything beneath it — the same premise the placement quiz already runs on.
-
 ### [T018] Count manually-laced tricks toward Kentei rank promotion
 
 - **Area:** Profile / Tricks

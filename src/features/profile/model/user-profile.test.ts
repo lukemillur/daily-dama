@@ -90,6 +90,43 @@ describe('user profile trick selection', () => {
     ).toEqual(['big-cup', 'airplane']);
   });
 
+  it('seeds manuallyUnlockedTrickIds from lacedTrickIds when none existed before', () => {
+    const result = userProfileReducer(INITIAL_USER_PROFILE, {
+      type: 'onboardingCompleted',
+      kenteiRank: 4,
+      selectedTrickIds: ['big-cup'],
+      lacedTrickIds: ['trick-a', 'trick-b'],
+    });
+
+    expect(result.manuallyUnlockedTrickIds).toEqual(['trick-a', 'trick-b']);
+  });
+
+  it('unions lacedTrickIds with a pre-existing manuallyUnlockedTrickIds instead of clobbering it', () => {
+    const state = { ...INITIAL_USER_PROFILE, manuallyUnlockedTrickIds: ['existing-trick'] };
+
+    const result = userProfileReducer(state, {
+      type: 'onboardingCompleted',
+      kenteiRank: 4,
+      selectedTrickIds: ['big-cup'],
+      lacedTrickIds: ['trick-a'],
+    });
+
+    expect(result.manuallyUnlockedTrickIds).toEqual(['existing-trick', 'trick-a']);
+  });
+
+  it('de-duplicates when lacedTrickIds overlaps existing manuallyUnlockedTrickIds', () => {
+    const state = { ...INITIAL_USER_PROFILE, manuallyUnlockedTrickIds: ['trick-a', 'existing-trick'] };
+
+    const result = userProfileReducer(state, {
+      type: 'onboardingCompleted',
+      kenteiRank: 4,
+      selectedTrickIds: ['big-cup'],
+      lacedTrickIds: ['trick-a', 'trick-b'],
+    });
+
+    expect(result.manuallyUnlockedTrickIds).toEqual(['trick-a', 'existing-trick', 'trick-b']);
+  });
+
   it('preserves the current practice list while an assessment is being retaken', () => {
     const completedProfile = {
       hasCompletedOnboarding: true,
