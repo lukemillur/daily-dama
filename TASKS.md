@@ -120,15 +120,6 @@ The first pass used **locked/unlocked** for "the user can land this trick." User
   - Toggling stays a plain set union with lace-derived status (`selectEffectiveUnlockedTrickIds`), unchanged from [T006]. A trick with real sesh history reads laced regardless of the manual flag; that's existing behavior and is correct.
   - Trick rows show nothing at all for an unlaced trick — no badge, no "0 laces". There's no reason to tell someone they haven't done something yet.
 
-### [T016.2] Passive laced treatment on trick rows
-
-- **Area:** Tricks
-- **Priority:** High (inherited from parent T016)
-- **Status:** Not started
-- **Description:** Replace the LOCKED/UNLOCKED badge and the MANUAL toggle in the trick row with a whole-row treatment: a laced row gets a tinted background plus a left rule, and its position number is replaced by a check glyph. An unlaced row renders as it did before any of this landed — no badge, no toggle, and no "0 laces" meta line. Depends on [T016.1].
-- **Exit criteria:** Test confirms a laced trick row renders the laced treatment and no badge/toggle element, an unlaced row renders neither the treatment nor a laced-count line, and a trick with ≥1 lace still renders its count; verified in-browser at 375 px that no row wraps or overlaps (the failure in the T004 screenshot).
-- **Notes:** Delete the `manualUnlock` prop from `TrickDirectory` entirely rather than leaving it unused — marking now lives in [T016.1]. Keep the `unlockedTrickIds` prop; only its rendering changes. The laced-count line is now conditional on `lacedCount > 0`, not on `showLacedCount` alone. Recheck the 320 px navigation fit noted in AGENTS.md if row padding changes.
-
 ### [T017] Seed laced state from onboarding
 
 - **Area:** Onboarding / Profile

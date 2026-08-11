@@ -156,7 +156,6 @@ export default function TricksScreen() {
           showFocusedSection
           lacedCountByTrickId={lacedCountByTrickId}
           unlockedTrickIds={unlockedTrickIds}
-          manualUnlock={{ manuallyUnlockedTrickIds, onToggle: toggleManualUnlock }}
           selection={{ selectedTrickIds, onToggleTrick: toggleSelectedTrick }}
           customActions={{
             onEdit: (trickId) => setEditingTrick(tricks.find((trick) => trick.id === trickId)),
