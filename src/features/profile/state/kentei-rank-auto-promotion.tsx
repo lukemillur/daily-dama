@@ -1,5 +1,6 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
+import { RankUpCelebrationModal } from '@/features/profile/components/rank-up-celebration-modal';
 import { useUserProfile, useUserProfileActions } from '@/features/profile/state/user-profile-provider';
 import { usePracticeHistory } from '@/features/stats/state/practice-history-provider';
 import { KENDAMA_KENTEI_TRICKS } from '@/features/tricks/data/kendama-kentei-tricks';
@@ -29,17 +30,38 @@ export function KenteiRankAutoPromotion() {
     [lacedTrickIds, manuallyUnlockedTrickIds],
   );
 
+  const promotedRank =
+    kenteiRank === undefined
+      ? undefined
+      : selectPromotedKenteiRank(kenteiRank, KENDAMA_KENTEI_TRICKS, effectiveLacedTrickIds);
+
   useEffect(() => {
-    if (kenteiRank === undefined) return;
+    if (promotedRank !== undefined && promotedRank !== kenteiRank) {
+      advanceKenteiRank(promotedRank);
+    }
+  }, [advanceKenteiRank, kenteiRank, promotedRank]);
 
-    const promotedRank = selectPromotedKenteiRank(
-      kenteiRank,
-      KENDAMA_KENTEI_TRICKS,
-      effectiveLacedTrickIds,
-    );
+  // Detects an actual advance in the committed kenteiRank (as opposed to the useEffect above,
+  // which only requests it) by comparing against the previous render, using React's
+  // adjust-state-while-rendering pattern instead of a setState-in-effect. Seeding
+  // `previousKenteiRank` from the first render's value — whatever that is, including an
+  // already-hydrated high rank — is what keeps hydration of an already-advanced profile from
+  // firing the celebration: there's no "previous" render to differ from yet.
+  const [previousKenteiRank, setPreviousKenteiRank] = useState(kenteiRank);
+  const [celebratingRank, setCelebratingRank] = useState<number | undefined>(undefined);
 
-    if (promotedRank !== kenteiRank) advanceKenteiRank(promotedRank);
-  }, [advanceKenteiRank, kenteiRank, effectiveLacedTrickIds]);
+  if (kenteiRank !== previousKenteiRank) {
+    setPreviousKenteiRank(kenteiRank);
+    if (
+      previousKenteiRank !== undefined &&
+      kenteiRank !== undefined &&
+      kenteiRank > previousKenteiRank
+    ) {
+      setCelebratingRank(kenteiRank);
+    }
+  }
 
-  return null;
+  return celebratingRank === undefined ? null : (
+    <RankUpCelebrationModal rank={celebratingRank} onDismiss={() => setCelebratingRank(undefined)} />
+  );
 }

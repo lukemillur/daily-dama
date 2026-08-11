@@ -8,26 +8,34 @@ import { AppColors } from '@/constants/theme';
 export function OnboardingRankRevealStep({
   rank,
   onContinue,
+  eyebrow = 'Assessment complete',
+  title = `Your current\nKentei rank.`,
+  copy = `Next, choose a few Rank ${rank} tricks to start practicing.`,
+  buttonLabel = 'Choose tricks',
 }: {
   readonly rank: number;
   readonly onContinue: () => void;
+  readonly eyebrow?: string;
+  readonly title?: string;
+  readonly copy?: string;
+  readonly buttonLabel?: string;
 }) {
   return (
     <Content>
       <Animated.View entering={FadeIn.duration(400)}>
-        <Eyebrow>Assessment complete</Eyebrow>
+        <Eyebrow>{eyebrow}</Eyebrow>
       </Animated.View>
       <RankStage entering={ZoomIn.duration(650).springify().damping(11)}>
         <RankNumber>{rank}</RankNumber>
       </RankStage>
       <Animated.View entering={FadeIn.duration(400).delay(350)}>
-        <RevealTitle>Your current{`\n`}Kentei rank.</RevealTitle>
+        <RevealTitle>{title}</RevealTitle>
       </Animated.View>
       <Animated.View entering={FadeIn.duration(400).delay(450)}>
-        <RevealCopy>Next, choose a few Rank {rank} tricks to start practicing.</RevealCopy>
+        <RevealCopy>{copy}</RevealCopy>
       </Animated.View>
       <Animated.View entering={FadeIn.duration(400).delay(550)}>
-        <ContinueButton onPress={onContinue}>Choose tricks</ContinueButton>
+        <ContinueButton onPress={onContinue}>{buttonLabel}</ContinueButton>
       </Animated.View>
     </Content>
   );
