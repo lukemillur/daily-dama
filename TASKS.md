@@ -124,7 +124,7 @@ The first pass used **locked/unlocked** for "the user can land this trick." User
 
 - **Area:** Profile / Tricks
 - **Priority:** High
-- **Status:** Not started
+- **Status:** In progress
 - **Description:** Corrects [T007], which does not work as intended. `KenteiRankAutoPromotion` derives rank completion purely from practice-history lace counts (`selectLacedCountByTrickId`), so tricks the user marked laced by hand never contribute and the rank never advances. Promotion should consider a trick complete if it's laced by either source.
 - **Exit criteria:** Test confirms that marking the last unlaced trick in the current rank as manually laced — with no practice history for it — advances `profile.kenteiRank` to the next rank; verified in-browser.
 - **Notes:** `selectEffectiveUnlockedTrickIds` already computes the union; the gap is that `isKenteiRankComplete`/`selectPromotedKenteiRank` take a lace-count map instead of a set of "can land it" trick IDs. Changing those two selectors to take the effective set is the smaller, more honest fix than teaching the component to merge two shapes. `KenteiRankAutoPromotion` already reads both providers, so no new cross-domain wiring is needed. Was out of scope for T007's original ticket; it's in scope now.
