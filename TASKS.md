@@ -124,7 +124,7 @@ The first pass used **locked/unlocked** for "the user can land this trick." User
 
 - **Area:** Sesh
 - **Priority:** Medium
-- **Status:** Not started
+- **Status:** In progress
 - **Description:** Extends [T008]. The first-lace celebration currently appears only on the wrap-up screen. Show it in the active sesh at the moment it happens, reading "You just landed {trick} for the first time!", and keep it on the wrap-up screen with past-tense copy: "You landed {trick} for the first time".
 - **Exit criteria:** Test confirms the in-sesh celebration renders on the landing that takes a trick from zero prior laces to one and not on subsequent landings in the same sesh; verified in-browser across both the in-sesh and wrap-up appearances.
 - **Notes:** `isFirstLaceForTrick` is currently evaluated once at sesh completion, against history as it stood before recording. In-sesh it has to be evaluated at the landing instead — capture "did this trick have prior laces when the sesh started" once at sesh start and combine it with `landings.length === 1`, rather than re-querying history mid-sesh. Reuse `FirstLaceBanner` from `sesh.tsx` with parameterised copy; don't build a second banner component.
