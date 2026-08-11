@@ -133,7 +133,7 @@ The first pass used **locked/unlocked** for "the user can land this trick." User
 
 - **Area:** Tricks / Notes
 - **Priority:** Low
-- **Status:** Not started
+- **Status:** In progress
 - **Description:** The Notes row action on a trick reads "NOTES — 2" when that trick has notes, and plain "NOTES" when it has none.
 - **Exit criteria:** Test confirms the label includes the count for a trick with ≥1 note and omits the separator and number entirely for a trick with none; verified in-browser.
 - **Notes:** Pass a count map into `TrickDirectory` following the `lacedCountByTrickId` precedent rather than having the row query the Notes provider — `TrickDirectory` currently reads no providers and shouldn't start.
