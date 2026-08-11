@@ -39,6 +39,7 @@ export interface TrickDirectoryProps {
   readonly hideScrollIndicator?: boolean;
   readonly showFocusedSection?: boolean;
   readonly lacedCountByTrickId?: ReadonlyMap<string, number>;
+  readonly noteCountByTrickId?: ReadonlyMap<string, number>;
   readonly unlockedTrickIds?: ReadonlySet<string>;
 }
 
@@ -66,6 +67,7 @@ export function TrickDirectory({
   hideScrollIndicator = false,
   showFocusedSection = false,
   lacedCountByTrickId,
+  noteCountByTrickId,
   unlockedTrickIds,
 }: TrickDirectoryProps) {
   const selectedTrickIds = selection?.selectedTrickIds ?? NO_SELECTED_TRICKS;
@@ -89,6 +91,7 @@ export function TrickDirectory({
       extraData={{
         selectedTrickIds,
         lacedCountByTrickId,
+        noteCountByTrickId,
         unlockedTrickIds,
         notesAction,
         goalsAction,
@@ -116,6 +119,7 @@ export function TrickDirectory({
           onOpenGoals={goalsAction ? () => goalsAction.onOpen(item) : undefined}
           showPracticeAction={Boolean(practiceAction)}
           lacedCount={lacedCountByTrickId?.get(item.id) ?? 0}
+          noteCount={noteCountByTrickId?.get(item.id) ?? 0}
           isLaced={unlockedTrickIds?.has(item.id) ?? false}
         />
       )}
@@ -174,6 +178,7 @@ interface TrickRowProps {
   readonly onOpenGoals?: () => void;
   readonly showPracticeAction?: boolean;
   readonly lacedCount?: number;
+  readonly noteCount?: number;
   readonly isLaced?: boolean;
 }
 
@@ -188,6 +193,7 @@ function TrickRow({
   onOpenGoals,
   showPracticeAction = false,
   lacedCount = 0,
+  noteCount = 0,
   isLaced = false,
 }: TrickRowProps) {
   const customDescription = isCustomDirectoryTrick(trick)
@@ -248,7 +254,7 @@ function TrickRow({
         ) : null}
         {onOpenNotes ? (
           <RowAction accessibilityLabel={`Notes for ${trick.name}`} accessibilityRole="button" onPress={onOpenNotes}>
-            <RowActionText>Notes</RowActionText>
+            <RowActionText>{noteCount > 0 ? `Notes — ${noteCount}` : 'Notes'}</RowActionText>
           </RowAction>
         ) : null}
         {onOpenGoals ? (

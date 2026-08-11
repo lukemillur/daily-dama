@@ -1,6 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
 
 import type { CustomTrick } from '@/features/custom-tricks/model/custom-trick';
+import type { Note } from '@/features/notes/model/note';
 import type { PracticeSessionRecord } from '@/features/stats/model/practice-history';
 import { KENDAMA_KENTEI_TRICKS } from '@/features/tricks/data/kendama-kentei-tricks';
 import {
@@ -10,6 +11,7 @@ import {
   selectAvailablePracticeTricks,
   selectEffectiveUnlockedTrickIds,
   selectLacedCountByTrickId,
+  selectNoteCountByTrickId,
   selectPromotedKenteiRank,
   selectUnlockedTrickIds,
 } from '@/features/tricks/model/trick-directory';
@@ -132,6 +134,46 @@ describe('selectLacedCountByTrickId', () => {
     ]);
 
     expect(counts.get('big-cup')).toBe(8);
+    expect(counts.get('airplane')).toBe(2);
+  });
+});
+
+function note(overrides: Partial<Note>): Note {
+  return {
+    id: 'note-1',
+    trickId: 'big-cup',
+    trickName: 'Big cup',
+    body: 'Keep the elbow tucked.',
+    createdAt: 1_000,
+    updatedAt: 1_000,
+    ...overrides,
+  };
+}
+
+describe('selectNoteCountByTrickId', () => {
+  it('sums multiple notes for the same trick', () => {
+    const counts = selectNoteCountByTrickId([
+      note({ id: 'note-1', trickId: 'big-cup' }),
+      note({ id: 'note-2', trickId: 'big-cup' }),
+    ]);
+
+    expect(counts.get('big-cup')).toBe(2);
+  });
+
+  it('leaves a trick with zero notes absent from the map', () => {
+    const counts = selectNoteCountByTrickId([note({ id: 'note-1', trickId: 'big-cup' })]);
+
+    expect(counts.has('airplane')).toBe(false);
+  });
+
+  it('does not let unrelated trick IDs bleed into each other', () => {
+    const counts = selectNoteCountByTrickId([
+      note({ id: 'note-1', trickId: 'big-cup' }),
+      note({ id: 'note-2', trickId: 'airplane' }),
+      note({ id: 'note-3', trickId: 'airplane' }),
+    ]);
+
+    expect(counts.get('big-cup')).toBe(1);
     expect(counts.get('airplane')).toBe(2);
   });
 });
