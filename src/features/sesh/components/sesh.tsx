@@ -679,6 +679,7 @@ function SeshNotePrompt({ summary }: { readonly summary: SeshSummary }) {
         />
         <NotePromptActions>
           <NotePromptButton
+            accessibilityLabel="Save note"
             accessibilityRole="button"
             accessibilityState={{ disabled: trimmedIsEmpty }}
             disabled={trimmedIsEmpty}
@@ -694,7 +695,10 @@ function SeshNotePrompt({ summary }: { readonly summary: SeshSummary }) {
             }}>
             <NotePromptButtonText>Save note</NotePromptButtonText>
           </NotePromptButton>
-          <NotePromptSecondaryButton accessibilityRole="button" onPress={() => setStep('dismissed')}>
+          <NotePromptSecondaryButton
+            accessibilityLabel="Cancel note"
+            accessibilityRole="button"
+            onPress={() => setStep('dismissed')}>
             <NotePromptSecondaryButtonText>Cancel</NotePromptSecondaryButtonText>
           </NotePromptSecondaryButton>
         </NotePromptActions>
@@ -702,15 +706,24 @@ function SeshNotePrompt({ summary }: { readonly summary: SeshSummary }) {
     );
   }
 
+  const isLaced = summary.landings.length > 0;
+
   return (
     <NotePromptCard>
-      <NotePromptTitle>Didn&apos;t land it this time.</NotePromptTitle>
-      <NotePromptCopy>Add a note while it&apos;s fresh — what to try differently next sesh.</NotePromptCopy>
+      <NotePromptTitle>{isLaced ? 'Landed it.' : "Didn't land it this time."}</NotePromptTitle>
+      <NotePromptCopy>
+        {isLaced
+          ? "Add a note while it's fresh — what worked this time?"
+          : "Add a note while it's fresh — what to try differently next sesh."}
+      </NotePromptCopy>
       <NotePromptActions>
-        <NotePromptButton accessibilityRole="button" onPress={() => setStep('writing')}>
+        <NotePromptButton accessibilityLabel="Add a note" accessibilityRole="button" onPress={() => setStep('writing')}>
           <NotePromptButtonText>Add a note</NotePromptButtonText>
         </NotePromptButton>
-        <NotePromptSecondaryButton accessibilityRole="button" onPress={() => setStep('dismissed')}>
+        <NotePromptSecondaryButton
+          accessibilityLabel="Dismiss note prompt"
+          accessibilityRole="button"
+          onPress={() => setStep('dismissed')}>
           <NotePromptSecondaryButtonText>Not now</NotePromptSecondaryButtonText>
         </NotePromptSecondaryButton>
       </NotePromptActions>

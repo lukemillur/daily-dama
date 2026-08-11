@@ -129,15 +129,6 @@ The first pass used **locked/unlocked** for "the user can land this trick." User
 - **Exit criteria:** Test confirms the celebration fires on the landing that exceeds an existing personal best, and does not fire when no prior comparable attempt exists or when the count merely ties the best; verified in-browser.
 - **Notes:** The data is already there — `getPersonalBest` returns `undefined` when there's no comparable prior attempt, which is exactly the "don't celebrate" signal, and `ActiveSesh` already computes `hasBeatenBest` for the live-challenge readout. The work is turning that from a passive status line into a celebration moment, and making it fire regardless of whether the user opted into live challenge display. Note `getPersonalBest` is scoped to timed seshes at a matching planned duration, so open-ended seshes have no personal best by construction — that's existing, deliberate behavior (see `isEligibleTimedAttempt`), not a gap to close here.
 
-### [T022] Prompt for a note at the end of every timed sesh
-
-- **Area:** Sesh / Notes
-- **Priority:** Medium
-- **Status:** Not started
-- **Description:** Extends [T010.2]. Today a note can only be added from the wrap-up screen of a timed sesh that landed nothing, which means the user has no way to capture a thought after a sesh that went well. Prompt on every completed timed sesh, with copy that differs depending on whether the trick was laced.
-- **Exit criteria:** Test confirms the prompt appears for a timed sesh with landings and for one without, with different copy for each, and that the note created carries the correct practice-session reference in both cases; verified in-browser.
-- **Notes:** `shouldPromptSeshNote` currently returns true only for `timed` + zero landings; widen it to all timed seshes and let `SeshNotePrompt` pick copy from the landing count. Open-ended seshes deliberately stay unprompted — that was the explicit answer during scoping, not an oversight.
-
 ### [T023] Show a trick's existing notes during the sesh
 
 - **Area:** Sesh / Notes

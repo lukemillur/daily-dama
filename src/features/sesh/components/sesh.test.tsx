@@ -1,8 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
+import type { ReactElement } from 'react';
+import { Text } from 'react-native';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 
+import { NoteProvider, useNotes } from '@/features/notes/state/note-provider';
 import { ActiveSesh, CompletedSesh } from '@/features/sesh/components/sesh';
 import { createTimedSeshPlan, type Landing, type SeshSummary } from '@/features/sesh/model/sesh';
+import { createPracticeSessionRecordId } from '@/features/stats/model/practice-history';
 import type { PracticeTrick } from '@/features/tricks/model/trick';
 
 // ActiveSesh/CompletedSesh are re-exported from a module that also (transitively) imports
@@ -29,6 +33,36 @@ function landing(elapsedMs: number): Landing {
 }
 
 function noop() {}
+
+function pressByAccessibilityLabel(root: ReactTestRenderer, label: string) {
+  const [match] = root.root.findAll(
+    (node) => node.props.accessibilityLabel === label && typeof node.props.onPress === 'function',
+  );
+  match.props.onPress();
+}
+
+function findByAccessibilityLabel(root: ReactTestRenderer, label: string) {
+  return root.root.findAll((node) => node.props.accessibilityLabel === label);
+}
+
+// Renders the latest note's practiceSessionId behind an accessibilityLabel so tests can assert
+// on it after driving the save flow, mirroring the Harness pattern in
+// kentei-rank-auto-promotion.test.tsx.
+function LatestNotePracticeSessionId() {
+  const { notes } = useNotes();
+  const latest = notes[notes.length - 1];
+  return (
+    <Text accessibilityLabel={`latest-note-practice-session-id:${latest?.practiceSessionId ?? ''}`} />
+  );
+}
+
+async function mountWithNoteProvider(children: ReactElement) {
+  let root!: ReactTestRenderer;
+  await act(async () => {
+    root = create(<NoteProvider>{children}</NoteProvider>);
+  });
+  return root;
+}
 
 describe('ActiveSesh first-lace celebration', () => {
   // ActiveSesh runs a real setInterval (via useNow) to tick the on-screen timer. Fake timers
@@ -150,27 +184,91 @@ describe('CompletedSesh first-lace celebration', () => {
     landings: [landing(1000)],
   };
 
-  it('shows the past-tense banner when isFirstLace is true', () => {
-    let root!: ReactTestRenderer;
-    act(() => {
-      root = create(
-        <CompletedSesh summary={summary} isFirstLace={true} onReset={noop} onRepeat={noop} />,
-      );
-    });
+  it('shows the past-tense banner when isFirstLace is true', async () => {
+    const root = await mountWithNoteProvider(
+      <CompletedSesh summary={summary} isFirstLace={true} onReset={noop} onRepeat={noop} />,
+    );
 
     expect(findBanner(root).length).toBeGreaterThan(0);
     expect(JSON.stringify(root.toJSON())).toContain('You landed');
     expect(JSON.stringify(root.toJSON())).not.toContain('You just landed');
   });
 
-  it('shows no banner when isFirstLace is false', () => {
-    let root!: ReactTestRenderer;
-    act(() => {
-      root = create(
-        <CompletedSesh summary={summary} isFirstLace={false} onReset={noop} onRepeat={noop} />,
-      );
-    });
+  it('shows no banner when isFirstLace is false', async () => {
+    const root = await mountWithNoteProvider(
+      <CompletedSesh summary={summary} isFirstLace={false} onReset={noop} onRepeat={noop} />,
+    );
 
     expect(findBanner(root)).toHaveLength(0);
+  });
+});
+
+describe('CompletedSesh note prompt', () => {
+  const lacedSummary: SeshSummary = {
+    trick: TRICK,
+    plan: PLAN,
+    startedAt: 0,
+    endedAt: 5000,
+    durationMs: 5000,
+    landings: [landing(1000)],
+  };
+
+  const unlacedSummary: SeshSummary = {
+    trick: TRICK,
+    plan: PLAN,
+    startedAt: 0,
+    endedAt: 5000,
+    durationMs: 5000,
+    landings: [],
+  };
+
+  it('shows laced copy for a timed sesh with at least one landing', async () => {
+    const root = await mountWithNoteProvider(
+      <CompletedSesh summary={lacedSummary} isFirstLace={false} onReset={noop} onRepeat={noop} />,
+    );
+
+    const text = JSON.stringify(root.toJSON());
+    expect(text).toContain('Landed it.');
+    expect(text).not.toContain("Didn't land it this time.");
+  });
+
+  it('shows no-lace copy for a timed sesh with zero landings', async () => {
+    const root = await mountWithNoteProvider(
+      <CompletedSesh summary={unlacedSummary} isFirstLace={false} onReset={noop} onRepeat={noop} />,
+    );
+
+    const text = JSON.stringify(root.toJSON());
+    expect(text).toContain("Didn't land it this time.");
+    expect(text).not.toContain('Landed it.');
+  });
+
+  it.each([
+    ['a laced sesh', lacedSummary],
+    ['an unlaced sesh', unlacedSummary],
+  ])('carries the correct practice-session reference for %s', async (_label, summary) => {
+    const root = await mountWithNoteProvider(
+      <>
+        <CompletedSesh summary={summary} isFirstLace={false} onReset={noop} onRepeat={noop} />
+        <LatestNotePracticeSessionId />
+      </>,
+    );
+
+    act(() => {
+      pressByAccessibilityLabel(root, 'Add a note');
+    });
+
+    const [input] = findByAccessibilityLabel(root, 'Note body');
+    act(() => {
+      input.props.onChangeText('What worked and what didn\'t.');
+    });
+
+    act(() => {
+      pressByAccessibilityLabel(root, 'Save note');
+    });
+
+    const expectedId = createPracticeSessionRecordId(summary);
+    expect(
+      findByAccessibilityLabel(root, `latest-note-practice-session-id:${expectedId}`).length,
+    ).toBeGreaterThan(0);
   });
 });
