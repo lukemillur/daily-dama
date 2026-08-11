@@ -124,7 +124,7 @@ The first pass used **locked/unlocked** for "the user can land this trick." User
 
 - **Area:** Tricks
 - **Priority:** High (inherited from parent T016)
-- **Status:** Not started
+- **Status:** In progress
 - **Description:** A new screen reachable from the Tricks route via a "Laced tricks" action, rendering tricks as compact cards flowing left-to-right (wrapping rows, not one-per-line), each showing only its name and a laced/unlaced state. Tapping a card toggles it.
 - **Exit criteria:** Test confirms tapping an unlaced card dispatches the manual-unlock toggle for that trick ID and the card re-renders laced, and that a trick with lace history renders laced without any manual flag; verified in-browser that the toggle survives a page reload.
 - **Notes:** This is a new presentation, not a new prop on `TrickDirectory` — that component is a vertical `SectionList` row layout and bending it into a wrapping grid would make it worse for both callers. New component under `src/features/tricks/components/`, reusing `createProfileDirectoryTricks` + `selectEffectiveUnlockedTrickIds` for data. Wire it as a screen-swap in `src/app/tricks.tsx` alongside the existing `notesTrick`/`goalsTrick` pattern.
