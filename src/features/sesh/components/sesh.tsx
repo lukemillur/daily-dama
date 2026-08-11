@@ -8,6 +8,17 @@ import { Button } from '@/components/ui/button';
 import { BodyText, DisplayTitle as BaseDisplayTitle, Eyebrow as BaseEyebrow } from '@/components/ui/typography';
 import { AppColors } from '@/constants/theme';
 import {
+  formatGoalProgress,
+  formatGoalTarget,
+} from '@/features/goals/components/trick-goals-screen';
+import {
+  selectGoalProgress,
+  selectGoalsForTrick,
+  type Goal,
+  type GoalProgress,
+} from '@/features/goals/model/goal';
+import { useGoals } from '@/features/goals/state/goal-provider';
+import {
   createOpenEndedSeshPlan,
   createTimedSeshPlan,
   formatDuration,
@@ -52,6 +63,7 @@ interface SeshProps {
 export function Sesh({ availableTricks, initialPlan, preferredTrickId, selectedTrickIds }: SeshProps) {
   const [state, dispatch] = useReducer(seshReducer, INITIAL_SESH_STATE);
   const { sessions } = usePracticeHistory();
+  const { goals } = useGoals();
   const { recordCompletedSesh } = usePracticeHistoryActions();
   const { setLastSesh } = useUserProfileActions();
   const { notes } = useNotes();
@@ -158,6 +170,8 @@ export function Sesh({ availableTricks, initialPlan, preferredTrickId, selectedT
     <CompletedSesh
       summary={state.summary}
       personalBest={personalBest}
+      goals={goals}
+      sessions={sessions}
       isFirstLace={firstLaceCelebration}
       onReset={() => {
         setFirstLaceCelebration(false);
@@ -637,12 +651,16 @@ function FirstLaceBanner({
 export function CompletedSesh({
   summary,
   personalBest,
+  goals = [],
+  sessions = [],
   isFirstLace,
   onReset,
   onRepeat,
 }: {
   readonly summary: SeshSummary;
   readonly personalBest?: number;
+  readonly goals?: readonly Goal[];
+  readonly sessions?: readonly PracticeSessionRecord[];
   readonly isFirstLace: boolean;
   readonly onReset: () => void;
   readonly onRepeat: () => void;
@@ -651,6 +669,14 @@ export function CompletedSesh({
   const fastest = getFastestInterval(summary.landings);
   const laceCount = summary.landings.length;
   const promptForNote = shouldPromptSeshNote(summary);
+  const trickGoals = useMemo(
+    () => selectGoalsForTrick(goals, summary.trick.id),
+    [goals, summary.trick.id],
+  );
+  const goalProgressList = useMemo(
+    () => trickGoals.map((goal) => selectGoalProgress(goal, sessions)),
+    [trickGoals, sessions],
+  );
   const challengeResult =
     personalBest === undefined
       ? undefined
@@ -677,11 +703,34 @@ export function CompletedSesh({
           <Metric><MetricValue>{fastest === undefined ? '—' : formatDuration(fastest)}</MetricValue><MetricLabel>Fastest lace</MetricLabel></Metric>
         </SummaryGrid>
         <LandingHistory landings={summary.landings} />
+        {goalProgressList.length > 0 ? <SeshGoalsPanel goalProgressList={goalProgressList} /> : null}
         {promptForNote ? <SeshNotePrompt summary={summary} /> : null}
         <PrimaryButton onPress={onRepeat}>Repeat sesh</PrimaryButton>
         <SecondaryButton variant="secondary" onPress={onReset}>Start another sesh</SecondaryButton>
       </ActiveContent>
     </ScrollArea>
+  );
+}
+
+function SeshGoalsPanel({
+  goalProgressList,
+}: {
+  readonly goalProgressList: readonly GoalProgress[];
+}) {
+  return (
+    <GoalsSection>
+      <GoalsTitle>Goals</GoalsTitle>
+      {goalProgressList.map((progress) => (
+        <GoalsRow key={progress.goal.id}>
+          <GoalsRowHeader>
+            <GoalsKind>{progress.goal.kind === 'count' ? 'Lace count goal' : 'Practice time goal'}</GoalsKind>
+            {progress.achieved ? <GoalsAchievedBadge>Achieved</GoalsAchievedBadge> : null}
+          </GoalsRowHeader>
+          <GoalsTarget>{formatGoalTarget(progress.goal)}</GoalsTarget>
+          <GoalsProgress>{formatGoalProgress(progress)}</GoalsProgress>
+        </GoalsRow>
+      ))}
+    </GoalsSection>
   );
 }
 
@@ -857,6 +906,14 @@ const LandingRow = styled.View`min-height: 50px; flex-direction: row; align-item
 const LandingNumber = styled.Text`width: 54px; color: #d84929; font-size: 13px; font-weight: 900;`;
 const LandingTime = styled.Text`flex: 1; color: #18382e; font-size: 20px; font-variant: tabular-nums; font-weight: 800;`;
 const LandingInterval = styled.Text`color: #53635d; font-size: 14px; font-variant: tabular-nums; font-weight: 700;`;
+const GoalsSection = styled.View`width: 100%; margin-top: 28px;`;
+const GoalsTitle = styled.Text`color: #18382e; font-size: 14px; font-weight: 900; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 8px;`;
+const GoalsRow = styled.View`background-color: ${AppColors.paper}; border: 2px solid ${AppColors.ink}; padding: 14px 16px; margin-top: 10px;`;
+const GoalsRowHeader = styled.View`flex-direction: row; align-items: center; justify-content: space-between; gap: 10px;`;
+const GoalsKind = styled.Text`color: ${AppColors.red}; font-size: 11px; font-weight: 900; letter-spacing: 0.8px; text-transform: uppercase;`;
+const GoalsAchievedBadge = styled.Text`overflow: hidden; padding: 4px 8px; color: ${AppColors.paper}; background-color: ${AppColors.ink}; border-radius: 3px; font-size: 10px; font-weight: 900; letter-spacing: 0.8px; text-transform: uppercase;`;
+const GoalsTarget = styled.Text`color: ${AppColors.ink}; font-size: 16px; font-weight: 650; line-height: 23px; margin-top: 6px;`;
+const GoalsProgress = styled.Text`color: #53635d; font-size: 13px; font-weight: 700; margin-top: 6px;`;
 const SecondaryActions = styled.View`flex-direction: row; gap: 10px; margin-top: 28px;`;
 const PauseButton = styled(Pressable)`min-height: 48px; flex: 1; align-items: center; justify-content: center; padding: 12px 24px; background-color: #18382e; border: 2px solid #18382e; border-radius: 5px;`;
 const PauseButtonText = styled.Text`color: #f4c94d; font-size: 15px; font-weight: 900;`;

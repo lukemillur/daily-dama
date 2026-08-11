@@ -129,15 +129,6 @@ The first pass used **locked/unlocked** for "the user can land this trick." User
 - **Exit criteria:** Test confirms the celebration fires on the landing that exceeds an existing personal best, and does not fire when no prior comparable attempt exists or when the count merely ties the best; verified in-browser.
 - **Notes:** The data is already there — `getPersonalBest` returns `undefined` when there's no comparable prior attempt, which is exactly the "don't celebrate" signal, and `ActiveSesh` already computes `hasBeatenBest` for the live-challenge readout. The work is turning that from a passive status line into a celebration moment, and making it fire regardless of whether the user opted into live challenge display. Note `getPersonalBest` is scoped to timed seshes at a matching planned duration, so open-ended seshes have no personal best by construction — that's existing, deliberate behavior (see `isEligibleTimedAttempt`), not a gap to close here.
 
-### [T025] Show a trick's goals on the sesh wrap-up screen
-
-- **Area:** Sesh / Goals
-- **Priority:** Medium
-- **Status:** In progress
-- **Description:** Goals set for a trick currently exist in isolation from the practice they describe. Render the practiced trick's goals, with their derived progress, on the sesh wrap-up screen.
-- **Exit criteria:** Test confirms the wrap-up renders each goal for the practiced trick with progress reflecting history including the just-completed sesh, and renders no goals section for a trick with none; verified in-browser.
-- **Notes:** `selectGoalProgress(goal, sessions)` already derives everything needed. The ordering trap: the wrap-up must read history *after* the completed sesh is recorded, or progress will be stale by exactly one sesh — `recordCompletedSesh` runs in an effect on entering `completed`, so re-read `sessions` from the provider at render rather than reusing anything captured at the transition.
-
 ### [T026] Celebrate goal achievement in the sesh and on the wrap-up
 
 - **Area:** Sesh / Goals
