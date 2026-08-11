@@ -1,6 +1,6 @@
 import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
 import { Link } from 'expo-router';
-import { useEffect, useMemo, useReducer, useRef, useState } from 'react';
+import { useEffect, useMemo, useReducer, useRef, useState, type ReactNode } from 'react';
 import { Animated, Pressable, ScrollView, TextInput } from 'react-native';
 import { styled } from 'styled-components/native';
 
@@ -12,6 +12,8 @@ import {
   formatGoalTarget,
 } from '@/features/goals/components/trick-goals-screen';
 import {
+  getGoalContribution,
+  isGoalNewlyAchieved,
   selectGoalProgress,
   selectGoalsForTrick,
   type Goal,
@@ -72,6 +74,8 @@ export function Sesh({ availableTricks, initialPlan, preferredTrickId, selectedT
   const [liveChallengeEnabled, setLiveChallengeEnabled] = useState(false);
   const [firstLaceCelebration, setFirstLaceCelebration] = useState(false);
   const [hadPriorLaceAtSeshStart, setHadPriorLaceAtSeshStart] = useState(false);
+  const [goalBaselines, setGoalBaselines] = useState<readonly GoalProgress[]>([]);
+  const [justAchievedGoals, setJustAchievedGoals] = useState<readonly Goal[]>([]);
   const practiceTricks = useMemo(
     () => selectSeshPracticeTricks(availableTricks, selectedTrickIds, preferredTrickId),
     [availableTricks, preferredTrickId, selectedTrickIds],
@@ -95,8 +99,19 @@ export function Sesh({ availableTricks, initialPlan, preferredTrickId, selectedT
 
     recordedSummaryId.current = summaryId;
     setFirstLaceCelebration(isFirstLaceForTrick(sessions, state.summary));
+    setJustAchievedGoals(
+      selectGoalsForTrick(goals, state.summary.trick.id).filter((goal) => {
+        const baseline = selectGoalProgress(goal, sessions);
+        const contribution = getGoalContribution(
+          goal,
+          state.summary.landings.length,
+          state.summary.durationMs,
+        );
+        return isGoalNewlyAchieved(goal, baseline.current, contribution);
+      }),
+    );
     recordCompletedSesh(state.summary);
-  }, [recordCompletedSesh, sessions, state]);
+  }, [goals, recordCompletedSesh, sessions, state]);
 
   useEffect(() => {
     if (!shouldKeepScreenAwake(state.status)) return;
@@ -127,6 +142,9 @@ export function Sesh({ availableTricks, initialPlan, preferredTrickId, selectedT
           setPersonalBest(best);
           setLiveChallengeEnabled(liveChallenge);
           setHadPriorLaceAtSeshStart(hasPriorLaceForTrick(sessions, trick.id));
+          setGoalBaselines(
+            selectGoalsForTrick(goals, trick.id).map((goal) => selectGoalProgress(goal, sessions)),
+          );
           dispatch({ type: 'trickSelected', trick, plan });
           setLastSesh(trick.id, plan);
         }}
@@ -157,6 +175,7 @@ export function Sesh({ availableTricks, initialPlan, preferredTrickId, selectedT
         liveChallengeEnabled={liveChallengeEnabled}
         hadPriorLaceAtSeshStart={hadPriorLaceAtSeshStart}
         trickNotes={trickNotes}
+        goalBaselines={goalBaselines}
         onLaced={() => dispatch({ type: 'trickLaced', now: Date.now() })}
         onPause={() => dispatch({ type: 'seshPaused', now: Date.now() })}
         onResume={() => dispatch({ type: 'seshResumed', now: Date.now() })}
@@ -173,9 +192,11 @@ export function Sesh({ availableTricks, initialPlan, preferredTrickId, selectedT
       goals={goals}
       sessions={sessions}
       isFirstLace={firstLaceCelebration}
+      justAchievedGoals={justAchievedGoals}
       onReset={() => {
         setFirstLaceCelebration(false);
         setHadPriorLaceAtSeshStart(false);
+        setJustAchievedGoals([]);
         dispatch({ type: 'seshReset' });
       }}
       onRepeat={() => {
@@ -186,7 +207,13 @@ export function Sesh({ availableTricks, initialPlan, preferredTrickId, selectedT
         setPersonalBest(best);
         setLiveChallengeEnabled(false);
         setFirstLaceCelebration(false);
+        setJustAchievedGoals([]);
         setHadPriorLaceAtSeshStart(hasPriorLaceForTrick(sessions, state.summary.trick.id));
+        setGoalBaselines(
+          selectGoalsForTrick(goals, state.summary.trick.id).map((goal) =>
+            selectGoalProgress(goal, sessions),
+          ),
+        );
         dispatch({ type: 'trickSelected', trick: state.summary.trick, plan: state.summary.plan });
         setLastSesh(state.summary.trick.id, state.summary.plan);
       }}
@@ -446,6 +473,7 @@ export function ActiveSesh({
   liveChallengeEnabled,
   hadPriorLaceAtSeshStart,
   trickNotes,
+  goalBaselines = [],
   onLaced,
   onPause,
   onResume,
@@ -464,6 +492,7 @@ export function ActiveSesh({
   readonly liveChallengeEnabled: boolean;
   readonly hadPriorLaceAtSeshStart?: boolean;
   readonly trickNotes?: readonly Note[];
+  readonly goalBaselines?: readonly GoalProgress[];
   readonly onLaced: () => void;
   readonly onPause: () => void;
   readonly onResume: () => void;
@@ -489,6 +518,46 @@ export function ActiveSesh({
       ? formatRemainingDuration(displayedTime)
       : formatDuration(displayedTime);
 
+  const countGoalCelebrations = goalBaselines.filter(
+    (baseline) =>
+      baseline.goal.kind === 'count' &&
+      isGoalNewlyAchieved(baseline.goal, baseline.current, landings.length) &&
+      !isGoalNewlyAchieved(baseline.goal, baseline.current, landings.length - 1),
+  );
+
+  const crossedTimeGoalIds = useMemo(
+    () =>
+      new Set(
+        goalBaselines
+          .filter(
+            (baseline) =>
+              baseline.goal.kind === 'time' &&
+              isGoalNewlyAchieved(baseline.goal, baseline.current, elapsedMs),
+          )
+          .map((baseline) => baseline.goal.id),
+      ),
+    [goalBaselines, elapsedMs],
+  );
+  const celebratedTimeGoalIdsRef = useRef<Set<string>>(new Set());
+  const [celebratingTimeGoalIds, setCelebratingTimeGoalIds] = useState<readonly string[]>([]);
+
+  useEffect(() => {
+    const newlyCrossed: string[] = [];
+    crossedTimeGoalIds.forEach((goalId) => {
+      if (!celebratedTimeGoalIdsRef.current.has(goalId)) {
+        celebratedTimeGoalIdsRef.current.add(goalId);
+        newlyCrossed.push(goalId);
+      }
+    });
+    if (newlyCrossed.length > 0) {
+      setCelebratingTimeGoalIds((current) => [...current, ...newlyCrossed]);
+    }
+  }, [crossedTimeGoalIds]);
+
+  const timeGoalCelebrations = goalBaselines.filter(
+    (baseline) => baseline.goal.kind === 'time' && celebratingTimeGoalIds.includes(baseline.goal.id),
+  );
+
   useEffect(() => {
     if (!isPaused && plan.kind === 'timed' && elapsedMs >= plan.durationMs) onTimerElapsed();
   }, [elapsedMs, isPaused, onTimerElapsed, plan]);
@@ -496,6 +565,12 @@ export function ActiveSesh({
   return (
     <ScrollArea contentContainerStyle={{ padding: 24, paddingBottom: 140 }}>
       <ActiveContent>
+        {countGoalCelebrations.map((baseline) => (
+          <GoalCelebrationBanner key={baseline.goal.id} goal={baseline.goal} tense="inSesh" />
+        ))}
+        {timeGoalCelebrations.map((baseline) => (
+          <GoalCelebrationBanner key={baseline.goal.id} goal={baseline.goal} tense="inSesh" />
+        ))}
         {showFirstLaceCelebration ? <FirstLaceBanner trickName={trick.name} tense="inSesh" /> : null}
         <Eyebrow>{isPaused ? 'Sesh paused' : 'Sesh in progress'}</Eyebrow>
         <ActiveTrick>{trick.name}</ActiveTrick>
@@ -617,12 +692,14 @@ function LandingHistory({ landings }: { readonly landings: readonly Landing[] })
   );
 }
 
-function FirstLaceBanner({
-  trickName,
-  tense,
+function CelebrationBanner({
+  accessibilityLabel,
+  eyebrow,
+  title,
 }: {
-  readonly trickName: string;
-  readonly tense: 'inSesh' | 'wrapUp';
+  readonly accessibilityLabel: string;
+  readonly eyebrow: string;
+  readonly title: ReactNode;
 }) {
   const [scale] = useState(() => new Animated.Value(0.55));
   const [opacity] = useState(() => new Animated.Value(0));
@@ -636,15 +713,55 @@ function FirstLaceBanner({
 
   return (
     <Animated.View style={{ opacity, transform: [{ scale }] }}>
-      <FirstLaceBannerCard accessibilityLabel={`First lace ever on ${trickName}`}>
-        <FirstLaceBannerEyebrow>First lace ever</FirstLaceBannerEyebrow>
-        <FirstLaceBannerTitle>
+      <CelebrationBannerCard accessibilityLabel={accessibilityLabel}>
+        <CelebrationBannerEyebrow>{eyebrow}</CelebrationBannerEyebrow>
+        <CelebrationBannerTitle>{title}</CelebrationBannerTitle>
+      </CelebrationBannerCard>
+    </Animated.View>
+  );
+}
+
+function FirstLaceBanner({
+  trickName,
+  tense,
+}: {
+  readonly trickName: string;
+  readonly tense: 'inSesh' | 'wrapUp';
+}) {
+  return (
+    <CelebrationBanner
+      accessibilityLabel={`First lace ever on ${trickName}`}
+      eyebrow="First lace ever"
+      title={
+        <>
           {tense === 'inSesh' ? 'You just landed' : 'You landed'}
           {`\n`}
           {trickName} for the first time{tense === 'inSesh' ? '!' : ''}
-        </FirstLaceBannerTitle>
-      </FirstLaceBannerCard>
-    </Animated.View>
+        </>
+      }
+    />
+  );
+}
+
+function GoalCelebrationBanner({
+  goal,
+  tense,
+}: {
+  readonly goal: Goal;
+  readonly tense: 'inSesh' | 'wrapUp';
+}) {
+  return (
+    <CelebrationBanner
+      accessibilityLabel={`Goal achieved for ${goal.trickName}: ${formatGoalTarget(goal)}`}
+      eyebrow="Goal achieved"
+      title={
+        <>
+          {tense === 'inSesh' ? 'You just reached your goal' : 'You reached your goal'}
+          {`\n`}
+          {formatGoalTarget(goal)}
+        </>
+      }
+    />
   );
 }
 
@@ -654,6 +771,7 @@ export function CompletedSesh({
   goals = [],
   sessions = [],
   isFirstLace,
+  justAchievedGoals = [],
   onReset,
   onRepeat,
 }: {
@@ -662,6 +780,7 @@ export function CompletedSesh({
   readonly goals?: readonly Goal[];
   readonly sessions?: readonly PracticeSessionRecord[];
   readonly isFirstLace: boolean;
+  readonly justAchievedGoals?: readonly Goal[];
   readonly onReset: () => void;
   readonly onRepeat: () => void;
 }) {
@@ -690,6 +809,9 @@ export function CompletedSesh({
     <ScrollArea contentContainerStyle={{ padding: 24, paddingBottom: 140 }}>
       <ActiveContent>
         {isFirstLace ? <FirstLaceBanner trickName={summary.trick.name} tense="wrapUp" /> : null}
+        {justAchievedGoals.map((goal) => (
+          <GoalCelebrationBanner key={goal.id} goal={goal} tense="wrapUp" />
+        ))}
         <Eyebrow>Sesh complete</Eyebrow>
         <DisplayTitle>{summary.trick.name}</DisplayTitle>
         <SequenceSteps trick={summary.trick} />
@@ -927,9 +1049,9 @@ const SkipRankButtonText = styled.Text`color: ${AppColors.textMuted}; font-size:
 const MultiTrickLink = styled.Text`margin-top: 14px; color: ${AppColors.textMuted}; font-size: 13px; font-weight: 800; text-decoration-line: underline;`;
 const TargetStatus = styled.Text<{ $met: boolean }>`width: 100%; text-align: center; margin-top: 12px; color: ${({ $met }) => ($met ? AppColors.red : AppColors.ink)}; font-size: 15px; font-weight: 900;`;
 const ResultBanner = styled.Text<{ $beaten: boolean }>`width: 100%; text-align: center; margin-top: 18px; padding: 12px 16px; background-color: ${({ $beaten }) => ($beaten ? '#e5edcf' : '#f8f1dd')}; border-left-width: 5px; border-left-color: ${({ $beaten }) => ($beaten ? AppColors.red : AppColors.ink)}; color: ${AppColors.ink}; font-size: 15px; font-weight: 900;`;
-const FirstLaceBannerCard = styled.View`width: 100%; max-width: 500px; align-items: center; background-color: ${AppColors.yellow}; border: 3px solid ${AppColors.ink}; border-radius: 6px; padding: 18px 20px; margin-bottom: 20px;`;
-const FirstLaceBannerEyebrow = styled.Text`color: ${AppColors.red}; font-size: 12px; font-weight: 900; letter-spacing: 1.6px; text-transform: uppercase;`;
-const FirstLaceBannerTitle = styled.Text`color: ${AppColors.ink}; font-size: 20px; font-weight: 900; text-align: center; margin-top: 6px; line-height: 26px;`;
+const CelebrationBannerCard = styled.View`width: 100%; max-width: 500px; align-items: center; background-color: ${AppColors.yellow}; border: 3px solid ${AppColors.ink}; border-radius: 6px; padding: 18px 20px; margin-bottom: 20px;`;
+const CelebrationBannerEyebrow = styled.Text`color: ${AppColors.red}; font-size: 12px; font-weight: 900; letter-spacing: 1.6px; text-transform: uppercase;`;
+const CelebrationBannerTitle = styled.Text`color: ${AppColors.ink}; font-size: 20px; font-weight: 900; text-align: center; margin-top: 6px; line-height: 26px;`;
 const TrickNotesCard = styled.View`width: 100%; max-width: 500px; background-color: ${AppColors.paper}; border: 2px solid ${AppColors.ink}; padding: 16px 18px; margin-top: 16px;`;
 const TrickNotesTitle = styled.Text`color: ${AppColors.ink}; font-size: 11px; font-weight: 900; letter-spacing: 1.2px; margin-bottom: 8px; text-transform: uppercase;`;
 const TrickNoteBody = styled.Text`color: ${AppColors.ink}; font-size: 14px; font-weight: 650; line-height: 20px; margin-bottom: 8px;`;

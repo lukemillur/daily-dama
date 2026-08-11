@@ -155,3 +155,12 @@ export function selectGoalProgress(
   const target = goal.kind === 'count' ? goal.targetCount : goal.targetMs;
   return { goal, current, target, achieved: current >= target };
 }
+
+export function getGoalContribution(goal: Goal, landingCount: number, durationMs: number): number {
+  return goal.kind === 'count' ? landingCount : durationMs;
+}
+
+export function isGoalNewlyAchieved(goal: Goal, baselineCurrent: number, contribution: number): boolean {
+  const target = goal.kind === 'count' ? goal.targetCount : goal.targetMs;
+  return baselineCurrent < target && baselineCurrent + contribution >= target;
+}

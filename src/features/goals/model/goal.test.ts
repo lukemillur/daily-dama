@@ -8,8 +8,10 @@ import {
 import {
   createGoal,
   createGoalId,
+  getGoalContribution,
   goalReducer,
   INITIAL_GOALS,
+  isGoalNewlyAchieved,
   selectGoalProgress,
   selectGoalsForTrick,
   validateGoalCreation,
@@ -305,5 +307,85 @@ describe('selectGoalProgress', () => {
       target: 5,
       achieved: false,
     });
+  });
+});
+
+describe('getGoalContribution', () => {
+  it('uses the landing count for a count-based goal and the duration for a time-based goal', () => {
+    const countValidation = validateGoalCreation({
+      kind: 'count',
+      trickId: 'big-cup',
+      trickName: 'Big cup',
+      targetCount: 10,
+    });
+    if (countValidation.status !== 'valid') throw new Error('Expected a valid draft.');
+    const countGoal = createGoal('goal-count', countValidation.value, 1);
+
+    const timeValidation = validateGoalCreation({
+      kind: 'time',
+      trickId: 'big-cup',
+      trickName: 'Big cup',
+      targetMinutes: 2,
+    });
+    if (timeValidation.status !== 'valid') throw new Error('Expected a valid draft.');
+    const timeGoal = createGoal('goal-time', timeValidation.value, 1);
+
+    expect(getGoalContribution(countGoal, 3, 45_000)).toBe(3);
+    expect(getGoalContribution(timeGoal, 3, 45_000)).toBe(45_000);
+  });
+});
+
+describe('isGoalNewlyAchieved', () => {
+  it('returns false when the contribution does not cross the target', () => {
+    const validation = validateGoalCreation({
+      kind: 'count',
+      trickId: 'big-cup',
+      trickName: 'Big cup',
+      targetCount: 5,
+    });
+    if (validation.status !== 'valid') throw new Error('Expected a valid draft.');
+    const goal = createGoal('goal-1', validation.value, 1);
+
+    expect(isGoalNewlyAchieved(goal, 2, 1)).toBe(false);
+  });
+
+  it('returns true when the contribution exactly crosses the target', () => {
+    const validation = validateGoalCreation({
+      kind: 'count',
+      trickId: 'big-cup',
+      trickName: 'Big cup',
+      targetCount: 5,
+    });
+    if (validation.status !== 'valid') throw new Error('Expected a valid draft.');
+    const goal = createGoal('goal-1', validation.value, 1);
+
+    expect(isGoalNewlyAchieved(goal, 4, 1)).toBe(true);
+  });
+
+  it('returns true when the contribution overshoots past the target', () => {
+    const validation = validateGoalCreation({
+      kind: 'time',
+      trickId: 'big-cup',
+      trickName: 'Big cup',
+      targetMinutes: 2,
+    });
+    if (validation.status !== 'valid') throw new Error('Expected a valid draft.');
+    const goal = createGoal('goal-1', validation.value, 1);
+
+    expect(isGoalNewlyAchieved(goal, 90_000, 60_000)).toBe(true);
+  });
+
+  it('returns false when the goal was already achieved before this contribution, regardless of contribution size', () => {
+    const validation = validateGoalCreation({
+      kind: 'count',
+      trickId: 'big-cup',
+      trickName: 'Big cup',
+      targetCount: 5,
+    });
+    if (validation.status !== 'valid') throw new Error('Expected a valid draft.');
+    const goal = createGoal('goal-1', validation.value, 1);
+
+    expect(isGoalNewlyAchieved(goal, 5, 0)).toBe(false);
+    expect(isGoalNewlyAchieved(goal, 10, 100)).toBe(false);
   });
 });

@@ -3,11 +3,13 @@ import type { ReactElement } from 'react';
 import { Pressable, Text } from 'react-native';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 
-import type { Goal } from '@/features/goals/model/goal';
+import { formatGoalTarget } from '@/features/goals/components/trick-goals-screen';
+import type { Goal, GoalProgress } from '@/features/goals/model/goal';
 import { useGoalActions, useGoals, GoalProvider } from '@/features/goals/state/goal-provider';
 import { NoteProvider, useNotes } from '@/features/notes/state/note-provider';
 import type { Note } from '@/features/notes/model/note';
-import { ActiveSesh, CompletedSesh } from '@/features/sesh/components/sesh';
+import { UserProfileProvider } from '@/features/profile/state/user-profile-provider';
+import { Sesh, ActiveSesh, CompletedSesh } from '@/features/sesh/components/sesh';
 import { createTimedSeshPlan, type Landing, type SeshSummary } from '@/features/sesh/model/sesh';
 import {
   createPracticeSessionRecordId,
@@ -39,6 +41,11 @@ function findBanner(root: ReactTestRenderer) {
   );
 }
 
+function findGoalBanner(root: ReactTestRenderer, goal: Goal) {
+  const label = `Goal achieved for ${goal.trickName}: ${formatGoalTarget(goal)}`;
+  return root.root.findAll((node) => node.props.accessibilityLabel === label);
+}
+
 function landing(elapsedMs: number): Landing {
   return { landedAt: elapsedMs, elapsedMs, intervalMs: elapsedMs };
 }
@@ -66,6 +73,19 @@ function pressByAccessibilityLabel(root: ReactTestRenderer, label: string) {
 
 function findByAccessibilityLabel(root: ReactTestRenderer, label: string) {
   return root.root.findAll((node) => node.props.accessibilityLabel === label);
+}
+
+// Some buttons (e.g. "End Sesh") only carry visible text, no accessibilityLabel. Find the text
+// node and climb to the nearest ancestor exposing an onPress handler.
+function pressByVisibleText(root: ReactTestRenderer, text: string) {
+  const [textNode] = root.root.findAll((node) => node.props.children === text);
+  if (!textNode) throw new Error(`No node found with text: ${text}`);
+  let current: typeof textNode | null = textNode;
+  while (current && typeof current.props.onPress !== 'function') {
+    current = current.parent;
+  }
+  if (!current) throw new Error(`No pressable ancestor found for text: ${text}`);
+  current.props.onPress();
 }
 
 // Renders the latest note's practiceSessionId behind an accessibilityLabel so tests can assert
@@ -308,6 +328,18 @@ function buildCountGoal(overrides: Partial<Goal> = {}): Goal {
   } as Goal;
 }
 
+function buildTimeGoal(overrides: Partial<Goal> = {}): Goal {
+  return {
+    id: 'goal-time-1',
+    trickId: TRICK.id,
+    trickName: TRICK.name,
+    createdAt: 1000,
+    kind: 'time',
+    targetMs: 10_000,
+    ...overrides,
+  } as Goal;
+}
+
 function buildSessionRecord(overrides: Partial<PracticeSessionRecord> = {}): PracticeSessionRecord {
   return {
     id: 'session-1',
@@ -517,5 +549,317 @@ describe('ActiveSesh trick notes', () => {
     act(() => {
       root.unmount();
     });
+  });
+});
+
+describe('ActiveSesh goal celebration - count-based goals', () => {
+  beforeEach(() => {
+    jest.useFakeTimers();
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  it('shows the banner on the landing that crosses the target, and not on later landings', () => {
+    const goal = buildCountGoal({ targetCount: 3 });
+    const baseline: GoalProgress = { goal, current: 2, target: 3, achieved: false };
+
+    let root!: ReactTestRenderer;
+    act(() => {
+      root = create(
+        <ActiveSesh
+          trick={TRICK}
+          plan={PLAN}
+          startedAt={Date.now()}
+          landings={[]}
+          pausedDurationMs={0}
+          liveChallengeEnabled={false}
+          hadPriorLaceAtSeshStart={true}
+          goalBaselines={[baseline]}
+          onLaced={noop}
+          onPause={noop}
+          onResume={noop}
+          onEnd={noop}
+          onTimerElapsed={noop}
+        />,
+      );
+    });
+
+    expect(findGoalBanner(root, goal)).toHaveLength(0);
+
+    act(() => {
+      root.update(
+        <ActiveSesh
+          trick={TRICK}
+          plan={PLAN}
+          startedAt={Date.now()}
+          landings={[landing(1000)]}
+          pausedDurationMs={0}
+          liveChallengeEnabled={false}
+          hadPriorLaceAtSeshStart={true}
+          goalBaselines={[baseline]}
+          onLaced={noop}
+          onPause={noop}
+          onResume={noop}
+          onEnd={noop}
+          onTimerElapsed={noop}
+        />,
+      );
+    });
+
+    expect(findGoalBanner(root, goal).length).toBeGreaterThan(0);
+    expect(JSON.stringify(root.toJSON())).toContain('You just reached your goal');
+
+    act(() => {
+      root.update(
+        <ActiveSesh
+          trick={TRICK}
+          plan={PLAN}
+          startedAt={Date.now()}
+          landings={[landing(1000), landing(2000)]}
+          pausedDurationMs={0}
+          liveChallengeEnabled={false}
+          hadPriorLaceAtSeshStart={true}
+          goalBaselines={[baseline]}
+          onLaced={noop}
+          onPause={noop}
+          onResume={noop}
+          onEnd={noop}
+          onTimerElapsed={noop}
+        />,
+      );
+    });
+
+    expect(findGoalBanner(root, goal)).toHaveLength(0);
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  it('never celebrates a goal that was already achieved before the sesh started', () => {
+    const goal = buildCountGoal({ targetCount: 3 });
+    const baseline: GoalProgress = { goal, current: 3, target: 3, achieved: true };
+
+    let root!: ReactTestRenderer;
+    act(() => {
+      root = create(
+        <ActiveSesh
+          trick={TRICK}
+          plan={PLAN}
+          startedAt={Date.now()}
+          landings={[landing(1000), landing(2000), landing(3000)]}
+          pausedDurationMs={0}
+          liveChallengeEnabled={false}
+          hadPriorLaceAtSeshStart={true}
+          goalBaselines={[baseline]}
+          onLaced={noop}
+          onPause={noop}
+          onResume={noop}
+          onEnd={noop}
+          onTimerElapsed={noop}
+        />,
+      );
+    });
+
+    expect(findGoalBanner(root, goal)).toHaveLength(0);
+
+    act(() => {
+      root.unmount();
+    });
+  });
+});
+
+describe('ActiveSesh goal celebration - time-based goals', () => {
+  beforeEach(() => {
+    jest.useFakeTimers();
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  it('shows the banner exactly once when elapsed time crosses the target, with no re-flicker on later ticks', () => {
+    const goal = buildTimeGoal({ targetMs: 10_000 });
+    const baseline: GoalProgress = { goal, current: 9_000, target: 10_000, achieved: false };
+    const startedAt = Date.now();
+
+    let root!: ReactTestRenderer;
+    act(() => {
+      root = create(
+        <ActiveSesh
+          trick={TRICK}
+          plan={PLAN}
+          startedAt={startedAt}
+          landings={[]}
+          pausedDurationMs={0}
+          liveChallengeEnabled={false}
+          hadPriorLaceAtSeshStart={true}
+          goalBaselines={[baseline]}
+          onLaced={noop}
+          onPause={noop}
+          onResume={noop}
+          onEnd={noop}
+          onTimerElapsed={noop}
+        />,
+      );
+    });
+
+    expect(findGoalBanner(root, goal)).toHaveLength(0);
+
+    // Elapsed time is under the 1,000ms needed to cross the goal — no celebration yet.
+    act(() => {
+      jest.advanceTimersByTime(500);
+    });
+    expect(findGoalBanner(root, goal)).toHaveLength(0);
+
+    // Crossing the target with no user action (no landings) should latch the celebration.
+    act(() => {
+      jest.advanceTimersByTime(1_000);
+    });
+    const bannerCountAfterCrossing = findGoalBanner(root, goal).length;
+    expect(bannerCountAfterCrossing).toBeGreaterThan(0);
+    expect(JSON.stringify(root.toJSON())).toContain('You just reached your goal');
+
+    // Further ticks (the timer keeps crossing the already-met target every render) must not
+    // re-add or duplicate the celebration.
+    act(() => {
+      jest.advanceTimersByTime(2_000);
+    });
+    expect(findGoalBanner(root, goal)).toHaveLength(bannerCountAfterCrossing);
+
+    act(() => {
+      root.unmount();
+    });
+  });
+});
+
+describe('CompletedSesh goal celebration', () => {
+  const summary: SeshSummary = {
+    trick: TRICK,
+    plan: PLAN,
+    startedAt: 0,
+    endedAt: 5000,
+    durationMs: 5000,
+    landings: [landing(1000)],
+  };
+
+  it('shows the past-tense wrap-up banner for a goal in justAchievedGoals', async () => {
+    const goal = buildCountGoal({ targetCount: 3 });
+    const root = await mountWithNoteProvider(
+      <CompletedSesh
+        summary={summary}
+        isFirstLace={false}
+        justAchievedGoals={[goal]}
+        onReset={noop}
+        onRepeat={noop}
+      />,
+    );
+
+    expect(findGoalBanner(root, goal).length).toBeGreaterThan(0);
+    expect(JSON.stringify(root.toJSON())).toContain('You reached your goal');
+    expect(JSON.stringify(root.toJSON())).not.toContain('You just reached your goal');
+  });
+
+  it('shows no wrap-up celebration for a goal already achieved before this sesh', async () => {
+    const goal = buildCountGoal({ targetCount: 3 });
+    const root = await mountWithNoteProvider(
+      <CompletedSesh
+        summary={summary}
+        isFirstLace={false}
+        justAchievedGoals={[]}
+        onReset={noop}
+        onRepeat={noop}
+      />,
+    );
+
+    expect(findGoalBanner(root, goal)).toHaveLength(0);
+  });
+});
+
+describe('Sesh wiring - goal celebration ordering (regression)', () => {
+  // Regression coverage for computing the wrap-up celebration from a stale baseline: Sesh's
+  // completion effect must read `sessions` as they were *before* recordCompletedSesh runs for
+  // this sesh, mirroring the ordering guarantee isFirstLaceForTrick relies on. If the baseline
+  // were (incorrectly) computed from post-record sessions, a goal crossed entirely within this
+  // sesh would look "already achieved" and never celebrate.
+
+  function Harness() {
+    const { addGoal } = useGoalActions();
+    return (
+      <>
+        <Pressable
+          accessibilityLabel="add-count-goal"
+          onPress={() =>
+            addGoal({ kind: 'count', trickId: TRICK.id, trickName: TRICK.name, targetCount: 3 })
+          }
+        />
+        <Sesh availableTricks={[TRICK]} selectedTrickIds={[TRICK.id]} />
+      </>
+    );
+  }
+
+  async function mountHarness() {
+    let root!: ReactTestRenderer;
+    await act(async () => {
+      root = create(
+        <NoteProvider>
+          <GoalProvider>
+            <PracticeHistoryProvider>
+              <UserProfileProvider>
+                <Harness />
+              </UserProfileProvider>
+            </PracticeHistoryProvider>
+          </GoalProvider>
+        </NoteProvider>,
+      );
+    });
+    return root;
+  }
+
+  it('celebrates a goal crossed entirely within this sesh, computed from pre-sesh history', async () => {
+    jest.useFakeTimers();
+    try {
+      const root = await mountHarness();
+
+      act(() => {
+        pressByAccessibilityLabel(root, 'add-count-goal');
+      });
+
+      act(() => {
+        pressByAccessibilityLabel(root, `Start a sesh with ${TRICK.name}`);
+      });
+
+      // Countdown ticks down from 3, one setTimeout(1000ms) step at a time.
+      act(() => {
+        jest.advanceTimersByTime(1000);
+      });
+      act(() => {
+        jest.advanceTimersByTime(1000);
+      });
+      act(() => {
+        jest.advanceTimersByTime(1000);
+      });
+
+      act(() => {
+        pressByAccessibilityLabel(root, 'Laced');
+      });
+      act(() => {
+        pressByAccessibilityLabel(root, 'Laced');
+      });
+      act(() => {
+        pressByAccessibilityLabel(root, 'Laced');
+      });
+
+      act(() => {
+        pressByVisibleText(root, 'End Sesh');
+      });
+
+      const text = JSON.stringify(root.toJSON());
+      expect(text).toContain('You reached your goal');
+    } finally {
+      jest.useRealTimers();
+    }
   });
 });
