@@ -133,7 +133,7 @@ The first pass used **locked/unlocked** for "the user can land this trick." User
 
 - **Area:** Sesh / Notes
 - **Priority:** Medium
-- **Status:** Not started
+- **Status:** In progress
 - **Description:** When practicing a trick the user has already written notes for, render those notes in the sesh flow so they can be read at a glance. Static text only — not editable, not tappable. The point is to surface the reminders that were written to make the next sesh go better.
 - **Exit criteria:** Test confirms a trick with existing notes renders them in the active sesh and a trick with none renders no notes section; verified in-browser.
 - **Notes:** `selectNotesForTrick` already exists in the Notes domain. Read via `useNotes()` in the Sesh component and pass down — don't have `ActiveSesh` reach into a provider itself, since it's also driven by `MultiTrickSesh` and the assessment run and should stay a presentational component. Worth deciding during implementation whether long note lists need truncation; a scrolling wall of text mid-sesh defeats "at a glance."
