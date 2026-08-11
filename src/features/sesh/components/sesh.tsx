@@ -31,6 +31,7 @@ import type { PracticeTrick } from '@/features/tricks/model/trick';
 import {
   createPracticeSessionRecordId,
   getPersonalBest,
+  hasPriorLaceForTrick,
   isFirstLaceForTrick,
   type PracticeSessionRecord,
 } from '@/features/stats/model/practice-history';
@@ -56,6 +57,7 @@ export function Sesh({ availableTricks, initialPlan, preferredTrickId, selectedT
   const [personalBest, setPersonalBest] = useState<number | undefined>(undefined);
   const [liveChallengeEnabled, setLiveChallengeEnabled] = useState(false);
   const [firstLaceCelebration, setFirstLaceCelebration] = useState(false);
+  const [hadPriorLaceAtSeshStart, setHadPriorLaceAtSeshStart] = useState(false);
   const practiceTricks = useMemo(
     () => selectSeshPracticeTricks(availableTricks, selectedTrickIds, preferredTrickId),
     [availableTricks, preferredTrickId, selectedTrickIds],
@@ -105,6 +107,7 @@ export function Sesh({ availableTricks, initialPlan, preferredTrickId, selectedT
         onSelect={(trick, plan, best, liveChallenge) => {
           setPersonalBest(best);
           setLiveChallengeEnabled(liveChallenge);
+          setHadPriorLaceAtSeshStart(hasPriorLaceForTrick(sessions, trick.id));
           dispatch({ type: 'trickSelected', trick, plan });
           setLastSesh(trick.id, plan);
         }}
@@ -133,6 +136,7 @@ export function Sesh({ availableTricks, initialPlan, preferredTrickId, selectedT
         pausedDurationMs={state.pausedDurationMs}
         personalBest={personalBest}
         liveChallengeEnabled={liveChallengeEnabled}
+        hadPriorLaceAtSeshStart={hadPriorLaceAtSeshStart}
         onLaced={() => dispatch({ type: 'trickLaced', now: Date.now() })}
         onPause={() => dispatch({ type: 'seshPaused', now: Date.now() })}
         onResume={() => dispatch({ type: 'seshResumed', now: Date.now() })}
@@ -149,6 +153,7 @@ export function Sesh({ availableTricks, initialPlan, preferredTrickId, selectedT
       isFirstLace={firstLaceCelebration}
       onReset={() => {
         setFirstLaceCelebration(false);
+        setHadPriorLaceAtSeshStart(false);
         dispatch({ type: 'seshReset' });
       }}
       onRepeat={() => {
@@ -159,6 +164,7 @@ export function Sesh({ availableTricks, initialPlan, preferredTrickId, selectedT
         setPersonalBest(best);
         setLiveChallengeEnabled(false);
         setFirstLaceCelebration(false);
+        setHadPriorLaceAtSeshStart(hasPriorLaceForTrick(sessions, state.summary.trick.id));
         dispatch({ type: 'trickSelected', trick: state.summary.trick, plan: state.summary.plan });
         setLastSesh(state.summary.trick.id, state.summary.plan);
       }}
@@ -416,6 +422,7 @@ export function ActiveSesh({
   pausedDurationMs,
   personalBest,
   liveChallengeEnabled,
+  hadPriorLaceAtSeshStart,
   onLaced,
   onPause,
   onResume,
@@ -432,6 +439,7 @@ export function ActiveSesh({
   readonly pausedDurationMs: number;
   readonly personalBest?: number;
   readonly liveChallengeEnabled: boolean;
+  readonly hadPriorLaceAtSeshStart?: boolean;
   readonly onLaced: () => void;
   readonly onPause: () => void;
   readonly onResume: () => void;
@@ -442,6 +450,7 @@ export function ActiveSesh({
 }) {
   const showChallenge = liveChallengeEnabled && personalBest !== undefined;
   const hasBeatenBest = showChallenge && landings.length > personalBest;
+  const showFirstLaceCelebration = hadPriorLaceAtSeshStart === false && landings.length === 1;
   const isPaused = pausedAt !== undefined;
   const targetLandingCount = getSeshTargetLandingCount(plan);
   const targetMet = isSeshTargetMet(plan, landings.length);
@@ -462,6 +471,7 @@ export function ActiveSesh({
   return (
     <ScrollArea contentContainerStyle={{ padding: 24, paddingBottom: 140 }}>
       <ActiveContent>
+        {showFirstLaceCelebration ? <FirstLaceBanner trickName={trick.name} tense="inSesh" /> : null}
         <Eyebrow>{isPaused ? 'Sesh paused' : 'Sesh in progress'}</Eyebrow>
         <ActiveTrick>{trick.name}</ActiveTrick>
         <SequenceSteps trick={trick} prominent />
@@ -556,7 +566,13 @@ function LandingHistory({ landings }: { readonly landings: readonly Landing[] })
   );
 }
 
-function FirstLaceBanner({ trickName }: { readonly trickName: string }) {
+function FirstLaceBanner({
+  trickName,
+  tense,
+}: {
+  readonly trickName: string;
+  readonly tense: 'inSesh' | 'wrapUp';
+}) {
   const [scale] = useState(() => new Animated.Value(0.55));
   const [opacity] = useState(() => new Animated.Value(0));
 
@@ -571,13 +587,17 @@ function FirstLaceBanner({ trickName }: { readonly trickName: string }) {
     <Animated.View style={{ opacity, transform: [{ scale }] }}>
       <FirstLaceBannerCard accessibilityLabel={`First lace ever on ${trickName}`}>
         <FirstLaceBannerEyebrow>First lace ever</FirstLaceBannerEyebrow>
-        <FirstLaceBannerTitle>You just landed{`\n`}{trickName} for the first time!</FirstLaceBannerTitle>
+        <FirstLaceBannerTitle>
+          {tense === 'inSesh' ? 'You just landed' : 'You landed'}
+          {`\n`}
+          {trickName} for the first time{tense === 'inSesh' ? '!' : ''}
+        </FirstLaceBannerTitle>
       </FirstLaceBannerCard>
     </Animated.View>
   );
 }
 
-function CompletedSesh({
+export function CompletedSesh({
   summary,
   personalBest,
   isFirstLace,
@@ -606,7 +626,7 @@ function CompletedSesh({
   return (
     <ScrollArea contentContainerStyle={{ padding: 24, paddingBottom: 140 }}>
       <ActiveContent>
-        {isFirstLace ? <FirstLaceBanner trickName={summary.trick.name} /> : null}
+        {isFirstLace ? <FirstLaceBanner trickName={summary.trick.name} tense="wrapUp" /> : null}
         <Eyebrow>Sesh complete</Eyebrow>
         <DisplayTitle>{summary.trick.name}</DisplayTitle>
         <SequenceSteps trick={summary.trick} />

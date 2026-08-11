@@ -120,15 +120,6 @@ The first pass used **locked/unlocked** for "the user can land this trick." User
   - Toggling stays a plain set union with lace-derived status (`selectEffectiveUnlockedTrickIds`), unchanged from [T006]. A trick with real sesh history reads laced regardless of the manual flag; that's existing behavior and is correct.
   - Trick rows show nothing at all for an unlaced trick — no badge, no "0 laces". There's no reason to tell someone they haven't done something yet.
 
-### [T020] Show the first-lace celebration during the sesh
-
-- **Area:** Sesh
-- **Priority:** Medium
-- **Status:** Not started
-- **Description:** Extends [T008]. The first-lace celebration currently appears only on the wrap-up screen. Show it in the active sesh at the moment it happens, reading "You just landed {trick} for the first time!", and keep it on the wrap-up screen with past-tense copy: "You landed {trick} for the first time".
-- **Exit criteria:** Test confirms the in-sesh celebration renders on the landing that takes a trick from zero prior laces to one and not on subsequent landings in the same sesh; verified in-browser across both the in-sesh and wrap-up appearances.
-- **Notes:** `isFirstLaceForTrick` is currently evaluated once at sesh completion, against history as it stood before recording. In-sesh it has to be evaluated at the landing instead — capture "did this trick have prior laces when the sesh started" once at sesh start and combine it with `landings.length === 1`, rather than re-querying history mid-sesh. Reuse `FirstLaceBanner` from `sesh.tsx` with parameterised copy; don't build a second banner component.
-
 ### [T021] Personal-best celebration
 
 - **Area:** Sesh
