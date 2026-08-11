@@ -129,15 +129,6 @@ The first pass used **locked/unlocked** for "the user can land this trick." User
 - **Exit criteria:** Test confirms the celebration fires on the landing that exceeds an existing personal best, and does not fire when no prior comparable attempt exists or when the count merely ties the best; verified in-browser.
 - **Notes:** The data is already there — `getPersonalBest` returns `undefined` when there's no comparable prior attempt, which is exactly the "don't celebrate" signal, and `ActiveSesh` already computes `hasBeatenBest` for the live-challenge readout. The work is turning that from a passive status line into a celebration moment, and making it fire regardless of whether the user opted into live challenge display. Note `getPersonalBest` is scoped to timed seshes at a matching planned duration, so open-ended seshes have no personal best by construction — that's existing, deliberate behavior (see `isEligibleTimedAttempt`), not a gap to close here.
 
-### [T023] Show a trick's existing notes during the sesh
-
-- **Area:** Sesh / Notes
-- **Priority:** Medium
-- **Status:** Not started
-- **Description:** When practicing a trick the user has already written notes for, render those notes in the sesh flow so they can be read at a glance. Static text only — not editable, not tappable. The point is to surface the reminders that were written to make the next sesh go better.
-- **Exit criteria:** Test confirms a trick with existing notes renders them in the active sesh and a trick with none renders no notes section; verified in-browser.
-- **Notes:** `selectNotesForTrick` already exists in the Notes domain. Read via `useNotes()` in the Sesh component and pass down — don't have `ActiveSesh` reach into a provider itself, since it's also driven by `MultiTrickSesh` and the assessment run and should stay a presentational component. Worth deciding during implementation whether long note lists need truncation; a scrolling wall of text mid-sesh defeats "at a glance."
-
 ### [T024] Show note count on the trick row's Notes action
 
 - **Area:** Tricks / Notes

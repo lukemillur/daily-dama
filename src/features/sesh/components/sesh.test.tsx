@@ -4,6 +4,7 @@ import { Text } from 'react-native';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 
 import { NoteProvider, useNotes } from '@/features/notes/state/note-provider';
+import type { Note } from '@/features/notes/model/note';
 import { ActiveSesh, CompletedSesh } from '@/features/sesh/components/sesh';
 import { createTimedSeshPlan, type Landing, type SeshSummary } from '@/features/sesh/model/sesh';
 import { createPracticeSessionRecordId } from '@/features/stats/model/practice-history';
@@ -33,6 +34,18 @@ function landing(elapsedMs: number): Landing {
 }
 
 function noop() {}
+
+function buildNote(overrides: Partial<Note> = {}): Note {
+  return {
+    id: 'note-1',
+    trickId: TRICK.id,
+    trickName: TRICK.name,
+    body: 'Keep the elbow tucked in on the release.',
+    createdAt: 1000,
+    updatedAt: 1000,
+    ...overrides,
+  };
+}
 
 function pressByAccessibilityLabel(root: ReactTestRenderer, label: string) {
   const [match] = root.root.findAll(
@@ -270,5 +283,75 @@ describe('CompletedSesh note prompt', () => {
     expect(
       findByAccessibilityLabel(root, `latest-note-practice-session-id:${expectedId}`).length,
     ).toBeGreaterThan(0);
+  });
+});
+
+describe('ActiveSesh trick notes', () => {
+  beforeEach(() => {
+    jest.useFakeTimers();
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  it('renders the notes panel with existing note text for a trick that has notes', () => {
+    const note = buildNote({ body: 'Keep the elbow tucked in on the release.' });
+    let root!: ReactTestRenderer;
+    act(() => {
+      root = create(
+        <ActiveSesh
+          trick={TRICK}
+          plan={PLAN}
+          startedAt={Date.now()}
+          landings={[]}
+          pausedDurationMs={0}
+          liveChallengeEnabled={false}
+          hadPriorLaceAtSeshStart={false}
+          trickNotes={[note]}
+          onLaced={noop}
+          onPause={noop}
+          onResume={noop}
+          onEnd={noop}
+          onTimerElapsed={noop}
+        />,
+      );
+    });
+
+    expect(findByAccessibilityLabel(root, 'Notes from previous sessions').length).toBeGreaterThan(0);
+    expect(JSON.stringify(root.toJSON())).toContain('Keep the elbow tucked in on the release.');
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  it('renders no notes section for a trick with no existing notes', () => {
+    let root!: ReactTestRenderer;
+    act(() => {
+      root = create(
+        <ActiveSesh
+          trick={TRICK}
+          plan={PLAN}
+          startedAt={Date.now()}
+          landings={[]}
+          pausedDurationMs={0}
+          liveChallengeEnabled={false}
+          hadPriorLaceAtSeshStart={false}
+          trickNotes={[]}
+          onLaced={noop}
+          onPause={noop}
+          onResume={noop}
+          onEnd={noop}
+          onTimerElapsed={noop}
+        />,
+      );
+    });
+
+    expect(findByAccessibilityLabel(root, 'Notes from previous sessions')).toHaveLength(0);
+
+    act(() => {
+      root.unmount();
+    });
   });
 });
