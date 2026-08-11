@@ -93,7 +93,7 @@ export function formatGoalProgress(progress: GoalProgress) {
     : `${formatDuration(progress.current)} / ${formatDuration(progress.target)}`;
 }
 
-function GoalRow({
+export function GoalRow({
   progress,
   onDelete,
 }: {

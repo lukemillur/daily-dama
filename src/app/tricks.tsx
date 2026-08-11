@@ -17,6 +17,7 @@ import {
   useCustomTrickActions,
   useCustomTricks,
 } from '@/features/custom-tricks/state/custom-trick-provider';
+import { AllTrickGoalsScreen } from '@/features/goals/components/all-trick-goals-screen';
 import { TrickGoalsScreen } from '@/features/goals/components/trick-goals-screen';
 import { TrickNotesScreen } from '@/features/notes/components/trick-notes-screen';
 import { useNotes } from '@/features/notes/state/note-provider';
@@ -52,6 +53,7 @@ export default function TricksScreen() {
   const [notesTrick, setNotesTrick] = useState<DirectoryTrick | undefined>(undefined);
   const [goalsTrick, setGoalsTrick] = useState<DirectoryTrick | undefined>(undefined);
   const [showLacedTricks, setShowLacedTricks] = useState(false);
+  const [showAllGoals, setShowAllGoals] = useState(false);
   const directoryTricks = useMemo(
     () => createProfileDirectoryTricks(KENDAMA_KENTEI_TRICKS, tricks),
     [tricks],
@@ -128,6 +130,14 @@ export default function TricksScreen() {
     );
   }
 
+  if (showAllGoals) {
+    return (
+      <Screen edges={['top', 'left', 'right']}>
+        <AllTrickGoalsScreen onClose={() => setShowAllGoals(false)} />
+      </Screen>
+    );
+  }
+
   if (creationStep === 'choose') {
     return (
       <Screen edges={['top', 'left', 'right']}>
@@ -183,6 +193,9 @@ export default function TricksScreen() {
               <LacedTricksButton variant="secondary" onPress={() => setShowLacedTricks(true)}>
                 Laced tricks
               </LacedTricksButton>
+              <TrickGoalsButton variant="secondary" onPress={() => setShowAllGoals(true)}>
+                Trick goals
+              </TrickGoalsButton>
             </HeaderActions>
           }
         />
@@ -587,6 +600,7 @@ const Introduction = styled(BodyText)`max-width: 580px; margin-top: 16px;`;
 const HeaderActions = styled.View`flex-direction: row; flex-wrap: wrap; gap: 10px; margin-top: 26px;`;
 const DefineButton = styled(Button).attrs({ size: 'medium' })`align-self: flex-start;`;
 const LacedTricksButton = styled(Button).attrs({ size: 'medium' })`align-self: flex-start;`;
+const TrickGoalsButton = styled(Button).attrs({ size: 'medium' })`align-self: flex-start;`;
 const CenteredContent = styled.View`flex: 1; width: 100%; max-width: 760px; align-self: center; align-items: center; justify-content: center; padding: 40px 22px 120px;`;
 const CenteredTitle = styled(DisplayTitle)`margin-top: 12px; text-align: center;`;
 const CenteredCopy = styled(BodyText)`max-width: 500px; margin-top: 16px; text-align: center;`;

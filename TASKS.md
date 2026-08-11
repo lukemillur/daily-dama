@@ -129,15 +129,6 @@ The first pass used **locked/unlocked** for "the user can land this trick." User
 - **Exit criteria:** Test confirms the celebration fires on the landing that exceeds an existing personal best, and does not fire when no prior comparable attempt exists or when the count merely ties the best; verified in-browser.
 - **Notes:** The data is already there — `getPersonalBest` returns `undefined` when there's no comparable prior attempt, which is exactly the "don't celebrate" signal, and `ActiveSesh` already computes `hasBeatenBest` for the live-challenge readout. The work is turning that from a passive status line into a celebration moment, and making it fire regardless of whether the user opted into live challenge display. Note `getPersonalBest` is scoped to timed seshes at a matching planned duration, so open-ended seshes have no personal best by construction — that's existing, deliberate behavior (see `isEligibleTimedAttempt`), not a gap to close here.
 
-### [T027] Standalone trick-goals screen
-
-- **Area:** Tricks / Goals
-- **Priority:** Medium
-- **Status:** Not started
-- **Description:** Goals are currently reachable only per-trick from a row action, which gives no view of what the user is actually working toward. Add a "Trick goals" screen from the Tricks route listing all goals across all tricks, rendering achieved goals visually distinct from outstanding ones.
-- **Exit criteria:** Test confirms the screen lists goals from multiple tricks with per-goal derived progress, and that achieved and unachieved goals render distinguishably; verified in-browser.
-- **Notes:** Sits alongside the "Laced tricks" entry point from [T016.1] — worth landing them with consistent placement and styling. The existing `TrickGoalsScreen` is scoped to one trick ID; this is a sibling all-tricks view, not a change to that component. `selectGoalProgress` needs no changes.
-
 ### [T028] Multi-trick run controls
 
 - **Area:** Sesh

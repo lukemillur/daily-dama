@@ -13,6 +13,7 @@ import {
   INITIAL_GOALS,
   isGoalNewlyAchieved,
   selectGoalProgress,
+  selectGoalProgressByTrick,
   selectGoalsForTrick,
   validateGoalCreation,
 } from '@/features/goals/model/goal';
@@ -205,6 +206,64 @@ describe('goals', () => {
     expect(goalState.goals).toEqual([goal]);
     expect(goalState.goals[0]).toBe(goal);
     expect(goalState.goals[0]?.trickName).toBe('Stilt flip');
+  });
+});
+
+describe('selectGoalProgressByTrick', () => {
+  it('returns [] for no goals', () => {
+    expect(selectGoalProgressByTrick([], [])).toEqual([]);
+  });
+
+  it('groups goals across two tricks into two groups sorted by trick name', () => {
+    const zebraValidation = validateGoalCreation({
+      kind: 'count',
+      trickId: 'zebra-trick',
+      trickName: 'Zebra trick',
+      targetCount: 5,
+    });
+    const appleValidation = validateGoalCreation({
+      kind: 'count',
+      trickId: 'apple-trick',
+      trickName: 'Apple trick',
+      targetCount: 10,
+    });
+    if (zebraValidation.status !== 'valid' || appleValidation.status !== 'valid') {
+      throw new Error('Expected valid drafts.');
+    }
+    const zebraGoal = createGoal('goal-zebra', zebraValidation.value, 1);
+    const appleGoal = createGoal('goal-apple', appleValidation.value, 2);
+
+    const groups = selectGoalProgressByTrick([zebraGoal, appleGoal], []);
+
+    expect(groups.map((group) => group.trickName)).toEqual(['Apple trick', 'Zebra trick']);
+    expect(groups[0]?.progress.map((progress) => progress.goal.id)).toEqual(['goal-apple']);
+    expect(groups[1]?.progress.map((progress) => progress.goal.id)).toEqual(['goal-zebra']);
+  });
+
+  it('sorts multiple goals for the same trick newest-first within one group', () => {
+    const olderValidation = validateGoalCreation({
+      kind: 'count',
+      trickId: 'big-cup',
+      trickName: 'Big cup',
+      targetCount: 10,
+    });
+    const newerValidation = validateGoalCreation({
+      kind: 'count',
+      trickId: 'big-cup',
+      trickName: 'Big cup',
+      targetCount: 20,
+    });
+    if (olderValidation.status !== 'valid' || newerValidation.status !== 'valid') {
+      throw new Error('Expected valid drafts.');
+    }
+    const older = createGoal('goal-1', olderValidation.value, 1);
+    const newer = createGoal('goal-2', newerValidation.value, 2);
+
+    const groups = selectGoalProgressByTrick([older, newer], []);
+
+    expect(groups).toHaveLength(1);
+    expect(groups[0]?.trickId).toBe('big-cup');
+    expect(groups[0]?.progress.map((progress) => progress.goal.id)).toEqual(['goal-2', 'goal-1']);
   });
 });
 

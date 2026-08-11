@@ -156,6 +156,36 @@ export function selectGoalProgress(
   return { goal, current, target, achieved: current >= target };
 }
 
+export interface TrickGoalGroup {
+  readonly trickId: string;
+  readonly trickName: string;
+  readonly progress: readonly GoalProgress[];
+}
+
+export function selectGoalProgressByTrick(
+  goals: readonly Goal[],
+  sessions: readonly PracticeSessionRecord[],
+): readonly TrickGoalGroup[] {
+  const groupsByTrickId = new Map<string, { trickName: string; goals: Goal[] }>();
+
+  for (const goal of goals) {
+    const group = groupsByTrickId.get(goal.trickId);
+    if (group) group.goals.push(goal);
+    else groupsByTrickId.set(goal.trickId, { trickName: goal.trickName, goals: [goal] });
+  }
+
+  return Array.from(groupsByTrickId.entries())
+    .map(([trickId, group]) => ({
+      trickId,
+      trickName: group.trickName,
+      progress: group.goals
+        .slice()
+        .sort((a, b) => b.createdAt - a.createdAt)
+        .map((goal) => selectGoalProgress(goal, sessions)),
+    }))
+    .sort((a, b) => a.trickName.localeCompare(b.trickName));
+}
+
 export function getGoalContribution(goal: Goal, landingCount: number, durationMs: number): number {
   return goal.kind === 'count' ? landingCount : durationMs;
 }
