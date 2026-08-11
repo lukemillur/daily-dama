@@ -120,15 +120,6 @@ The first pass used **locked/unlocked** for "the user can land this trick." User
   - Toggling stays a plain set union with lace-derived status (`selectEffectiveUnlockedTrickIds`), unchanged from [T006]. A trick with real sesh history reads laced regardless of the manual flag; that's existing behavior and is correct.
   - Trick rows show nothing at all for an unlaced trick — no badge, no "0 laces". There's no reason to tell someone they haven't done something yet.
 
-### [T016.1] Laced-tricks grid screen
-
-- **Area:** Tricks
-- **Priority:** High (inherited from parent T016)
-- **Status:** In progress
-- **Description:** A new screen reachable from the Tricks route via a "Laced tricks" action, rendering tricks as compact cards flowing left-to-right (wrapping rows, not one-per-line), each showing only its name and a laced/unlaced state. Tapping a card toggles it.
-- **Exit criteria:** Test confirms tapping an unlaced card dispatches the manual-unlock toggle for that trick ID and the card re-renders laced, and that a trick with lace history renders laced without any manual flag; verified in-browser that the toggle survives a page reload.
-- **Notes:** This is a new presentation, not a new prop on `TrickDirectory` — that component is a vertical `SectionList` row layout and bending it into a wrapping grid would make it worse for both callers. New component under `src/features/tricks/components/`, reusing `createProfileDirectoryTricks` + `selectEffectiveUnlockedTrickIds` for data. Wire it as a screen-swap in `src/app/tricks.tsx` alongside the existing `notesTrick`/`goalsTrick` pattern.
-
 ### [T016.2] Passive laced treatment on trick rows
 
 - **Area:** Tricks

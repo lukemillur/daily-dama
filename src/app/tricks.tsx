@@ -25,6 +25,7 @@ import {
   useUserProfileActions,
 } from '@/features/profile/state/user-profile-provider';
 import { usePracticeHistory } from '@/features/stats/state/practice-history-provider';
+import { LacedTricksScreen } from '@/features/tricks/components/laced-tricks-screen';
 import { TrickDirectory } from '@/features/tricks/components/trick-directory';
 import { KENDAMA_KENTEI_TRICKS } from '@/features/tricks/data/kendama-kentei-tricks';
 import {
@@ -47,6 +48,7 @@ export default function TricksScreen() {
   const [deletingTrick, setDeletingTrick] = useState<CustomTrick | undefined>(undefined);
   const [notesTrick, setNotesTrick] = useState<DirectoryTrick | undefined>(undefined);
   const [goalsTrick, setGoalsTrick] = useState<DirectoryTrick | undefined>(undefined);
+  const [showLacedTricks, setShowLacedTricks] = useState(false);
   const directoryTricks = useMemo(
     () => createProfileDirectoryTricks(KENDAMA_KENTEI_TRICKS, tricks),
     [tricks],
@@ -109,6 +111,19 @@ export default function TricksScreen() {
     );
   }
 
+  if (showLacedTricks) {
+    return (
+      <Screen edges={['top', 'left', 'right']}>
+        <LacedTricksScreen
+          tricks={directoryTricks}
+          unlockedTrickIds={unlockedTrickIds}
+          onToggleTrick={toggleManualUnlock}
+          onClose={() => setShowLacedTricks(false)}
+        />
+      </Screen>
+    );
+  }
+
   if (creationStep === 'choose') {
     return (
       <Screen edges={['top', 'left', 'right']}>
@@ -159,7 +174,12 @@ export default function TricksScreen() {
                 : `${selectedTrickIds.length} ${selectedTrickIds.length === 1 ? 'trick' : 'tricks'} ready for focused practice.`,
           }}
           headerAction={
-            <DefineButton onPress={() => setCreationStep('choose')}>Define new trick</DefineButton>
+            <HeaderActions>
+              <DefineButton onPress={() => setCreationStep('choose')}>Define new trick</DefineButton>
+              <LacedTricksButton variant="secondary" onPress={() => setShowLacedTricks(true)}>
+                Laced tricks
+              </LacedTricksButton>
+            </HeaderActions>
           }
         />
       </DirectoryContent>
@@ -560,7 +580,9 @@ function DeleteConfirmation({
 const DirectoryContent = styled.View`width: 100%; max-width: 760px; flex: 1; overflow: hidden; background-color: ${AppColors.paper};`;
 const PageTitle = styled(DisplayTitle)`margin-top: 12px;`;
 const Introduction = styled(BodyText)`max-width: 580px; margin-top: 16px;`;
-const DefineButton = styled(Button).attrs({ size: 'medium' })`align-self: flex-start; margin-top: 26px;`;
+const HeaderActions = styled.View`flex-direction: row; flex-wrap: wrap; gap: 10px; margin-top: 26px;`;
+const DefineButton = styled(Button).attrs({ size: 'medium' })`align-self: flex-start;`;
+const LacedTricksButton = styled(Button).attrs({ size: 'medium' })`align-self: flex-start;`;
 const CenteredContent = styled.View`flex: 1; width: 100%; max-width: 760px; align-self: center; align-items: center; justify-content: center; padding: 40px 22px 120px;`;
 const CenteredTitle = styled(DisplayTitle)`margin-top: 12px; text-align: center;`;
 const CenteredCopy = styled(BodyText)`max-width: 500px; margin-top: 16px; text-align: center;`;
