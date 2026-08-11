@@ -149,6 +149,7 @@ export default function TricksScreen() {
           }}
           notesAction={{ onOpen: setNotesTrick }}
           goalsAction={{ onOpen: setGoalsTrick }}
+          practiceAction
           header={{
             eyebrow: 'Your trick lab',
             title: 'Choose the next\nmove.',

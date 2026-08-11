@@ -109,15 +109,6 @@ _This round came out of a review pass over the first batch of completed work (T0
 
 The first pass used **locked/unlocked** for "the user can land this trick." User-facing copy in this round switches to **laced/unlaced**, which is what the domain actually calls it. The persisted profile field is still named `manuallyUnlockedTrickIds` and stays that way — renaming a persisted key means either a migration or throwing away real user data, and neither is worth it for a vocabulary change. Rename the copy, not the storage contract.
 
-### [T015] Hide the Practice row action outside the Tricks route
-
-- **Area:** Tricks
-- **Priority:** High
-- **Status:** Not started
-- **Description:** Corrects [T003]. `TrickDirectory` renders the "Practice" link for every row unconditionally (`src/features/tricks/components/trick-directory.tsx`), so it also appears in the onboarding selection step and the multi-trick lineup picker, where deep-linking into a single-trick Sesh mid-flow makes no sense. Gate it behind an opt-in prop the way `notesAction`/`goalsAction` already are.
-- **Exit criteria:** Test confirms `TrickDirectory` renders no Practice action when the new prop is absent and one per row when it's supplied; verified in-browser that `/tricks` still shows Practice while the onboarding selection step and `/sesh/multi-trick` show none.
-- **Notes:** Follow the existing optional-action prop convention rather than adding a boolean `hidePractice` — the three other row actions (`customActions`, `notesAction`, `goalsAction`) are all absent-by-default, and Practice being the one opt-out is exactly what caused this. Only `src/app/tricks.tsx` should pass it.
-
 ### [T016] Laced-tricks surface
 
 - **Area:** Tricks
