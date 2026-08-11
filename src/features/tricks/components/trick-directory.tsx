@@ -40,10 +40,6 @@ export interface TrickDirectoryProps {
   readonly showFocusedSection?: boolean;
   readonly lacedCountByTrickId?: ReadonlyMap<string, number>;
   readonly unlockedTrickIds?: ReadonlySet<string>;
-  readonly manualUnlock?: {
-    readonly manuallyUnlockedTrickIds: readonly string[];
-    readonly onToggle: (trickId: string) => void;
-  };
 }
 
 const DEFAULT_HEADER = {
@@ -71,7 +67,6 @@ export function TrickDirectory({
   showFocusedSection = false,
   lacedCountByTrickId,
   unlockedTrickIds,
-  manualUnlock,
 }: TrickDirectoryProps) {
   const selectedTrickIds = selection?.selectedTrickIds ?? NO_SELECTED_TRICKS;
   const sections = useMemo(
@@ -95,7 +90,6 @@ export function TrickDirectory({
         selectedTrickIds,
         lacedCountByTrickId,
         unlockedTrickIds,
-        manualUnlock,
         notesAction,
         goalsAction,
         practiceAction,
@@ -121,12 +115,8 @@ export function TrickDirectory({
           onOpenNotes={notesAction ? () => notesAction.onOpen(item) : undefined}
           onOpenGoals={goalsAction ? () => goalsAction.onOpen(item) : undefined}
           showPracticeAction={Boolean(practiceAction)}
-          showLacedCount={lacedCountByTrickId !== undefined}
           lacedCount={lacedCountByTrickId?.get(item.id) ?? 0}
-          showUnlockedStatus={unlockedTrickIds !== undefined}
-          isUnlocked={unlockedTrickIds?.has(item.id) ?? false}
-          manuallyUnlocked={manualUnlock?.manuallyUnlockedTrickIds.includes(item.id) ?? false}
-          onToggleManualUnlock={manualUnlock ? () => manualUnlock.onToggle(item.id) : undefined}
+          isLaced={unlockedTrickIds?.has(item.id) ?? false}
         />
       )}
       ItemSeparatorComponent={ItemSeparator}
@@ -183,12 +173,8 @@ interface TrickRowProps {
   readonly onOpenNotes?: () => void;
   readonly onOpenGoals?: () => void;
   readonly showPracticeAction?: boolean;
-  readonly showLacedCount?: boolean;
   readonly lacedCount?: number;
-  readonly showUnlockedStatus?: boolean;
-  readonly isUnlocked?: boolean;
-  readonly manuallyUnlocked?: boolean;
-  readonly onToggleManualUnlock?: () => void;
+  readonly isLaced?: boolean;
 }
 
 function TrickRow({
@@ -201,12 +187,8 @@ function TrickRow({
   onOpenNotes,
   onOpenGoals,
   showPracticeAction = false,
-  showLacedCount = false,
   lacedCount = 0,
-  showUnlockedStatus = false,
-  isUnlocked = false,
-  manuallyUnlocked = false,
-  onToggleManualUnlock,
+  isLaced = false,
 }: TrickRowProps) {
   const customDescription = isCustomDirectoryTrick(trick)
     ? trick.customKind === 'sequence'
@@ -215,39 +197,18 @@ function TrickRow({
     : undefined;
   const identity = (
     <>
-      <Position>{String(position).padStart(2, '0')}</Position>
+      <Position $laced={isLaced}>{isLaced ? '✓' : String(position).padStart(2, '0')}</Position>
       <TrickIdentity>
         <TrickNameRow>
           <TrickName>{trick.name}</TrickName>
-          {showUnlockedStatus ? (
-            <UnlockBadge
-              $unlocked={isUnlocked}
-              accessibilityLabel={isUnlocked ? 'Unlocked' : 'Locked'}>
-              {isUnlocked ? 'Unlocked' : 'Locked'}
-            </UnlockBadge>
-          ) : null}
-          {onToggleManualUnlock ? (
-            <ManualUnlockToggle
-              $active={manuallyUnlocked}
-              accessibilityLabel={
-                manuallyUnlocked ? `Remove manual unlock for ${trick.name}` : `Manually unlock ${trick.name}`
-              }
-              accessibilityRole="switch"
-              accessibilityState={{ checked: manuallyUnlocked }}
-              onPress={onToggleManualUnlock}>
-              <ManualUnlockToggleText $active={manuallyUnlocked}>
-                {manuallyUnlocked ? 'Manual ✓' : 'Manual'}
-              </ManualUnlockToggleText>
-            </ManualUnlockToggle>
-          ) : null}
         </TrickNameRow>
-        {isCustomDirectoryTrick(trick) || showLacedCount ? (
+        {isCustomDirectoryTrick(trick) || lacedCount > 0 ? (
           <TrickMetaRow>
             {isCustomDirectoryTrick(trick) ? (
               <CustomLabel>{trick.customKind === 'sequence' ? 'Custom sequence' : 'Custom trick'}</CustomLabel>
             ) : null}
-            {isCustomDirectoryTrick(trick) && showLacedCount ? <MetaDivider>·</MetaDivider> : null}
-            {showLacedCount ? (
+            {isCustomDirectoryTrick(trick) && lacedCount > 0 ? <MetaDivider>·</MetaDivider> : null}
+            {lacedCount > 0 ? (
               <LacedCountLabel>
                 {lacedCount} {lacedCount === 1 ? 'lace' : 'laces'}
               </LacedCountLabel>
@@ -259,7 +220,7 @@ function TrickRow({
   );
 
   return (
-    <TrickRowContainer $selected={isSelected}>
+    <TrickRowContainer $selected={isSelected} $laced={isLaced}>
       {onToggle ? (
         <SelectableIdentity
           accessibilityLabel={[trick.name, customDescription, isSelected ? 'selected' : 'not selected']
@@ -390,11 +351,13 @@ const FocusedEmptyText = styled.Text`
   line-height: 20px;
 `;
 
-const TrickRowContainer = styled.View<{ readonly $selected: boolean }>`
+const TrickRowContainer = styled.View<{ readonly $selected: boolean; readonly $laced: boolean }>`
   min-height: 66px;
   flex-direction: row;
   align-items: center;
-  background-color: ${({ $selected }) => ($selected ? '#e5edcf' : '#f8f1dd')};
+  background-color: ${({ $selected, $laced }) => ($selected || $laced ? '#e5edcf' : '#f8f1dd')};
+  border-left-width: ${({ $laced }) => ($laced ? '4px' : '0px')};
+  border-left-color: ${({ $laced }) => ($laced ? '#274137' : 'transparent')};
 `;
 
 const SelectableIdentity = styled(Pressable)`
@@ -406,9 +369,9 @@ const SelectableIdentity = styled(Pressable)`
   padding: 15px 22px;
 `;
 
-const Position = styled.Text`
+const Position = styled.Text<{ readonly $laced: boolean }>`
   width: 26px;
-  color: #d84929;
+  color: ${({ $laced }) => ($laced ? '#274137' : '#d84929')};
   font-size: 13px;
   font-weight: 900;
   letter-spacing: 1px;
@@ -430,34 +393,6 @@ const TrickName = styled.Text`
   font-size: 18px;
   font-weight: 750;
   line-height: 24px;
-`;
-
-const UnlockBadge = styled.Text<{ readonly $unlocked: boolean }>`
-  overflow: hidden;
-  padding: 2px 7px;
-  color: ${({ $unlocked }) => ($unlocked ? '#274137' : '#8a7a52')};
-  background-color: ${({ $unlocked }) => ($unlocked ? '#d5e2b8' : '#efe2b8')};
-  border-radius: 3px;
-  font-size: 9px;
-  font-weight: 900;
-  letter-spacing: 0.6px;
-  text-transform: uppercase;
-`;
-
-const ManualUnlockToggle = styled(Pressable)<{ readonly $active: boolean }>`
-  overflow: hidden;
-  padding: 2px 7px;
-  background-color: ${({ $active }) => ($active ? '#d5e2b8' : 'transparent')};
-  border: 1px solid ${({ $active }) => ($active ? '#274137' : '#8a9088')};
-  border-radius: 3px;
-`;
-
-const ManualUnlockToggleText = styled.Text<{ readonly $active: boolean }>`
-  color: ${({ $active }) => ($active ? '#274137' : '#53635d')};
-  font-size: 9px;
-  font-weight: 900;
-  letter-spacing: 0.6px;
-  text-transform: uppercase;
 `;
 
 const TrickMetaRow = styled.View`
