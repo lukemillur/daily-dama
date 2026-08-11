@@ -1,13 +1,23 @@
 import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
 import type { ReactElement } from 'react';
-import { Text } from 'react-native';
+import { Pressable, Text } from 'react-native';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 
+import type { Goal } from '@/features/goals/model/goal';
+import { useGoalActions, useGoals, GoalProvider } from '@/features/goals/state/goal-provider';
 import { NoteProvider, useNotes } from '@/features/notes/state/note-provider';
 import type { Note } from '@/features/notes/model/note';
 import { ActiveSesh, CompletedSesh } from '@/features/sesh/components/sesh';
 import { createTimedSeshPlan, type Landing, type SeshSummary } from '@/features/sesh/model/sesh';
-import { createPracticeSessionRecordId } from '@/features/stats/model/practice-history';
+import {
+  createPracticeSessionRecordId,
+  type PracticeSessionRecord,
+} from '@/features/stats/model/practice-history';
+import {
+  PracticeHistoryProvider,
+  usePracticeHistory,
+  usePracticeHistoryActions,
+} from '@/features/stats/state/practice-history-provider';
 import type { PracticeTrick } from '@/features/tricks/model/trick';
 
 // ActiveSesh/CompletedSesh are re-exported from a module that also (transitively) imports
@@ -283,6 +293,160 @@ describe('CompletedSesh note prompt', () => {
     expect(
       findByAccessibilityLabel(root, `latest-note-practice-session-id:${expectedId}`).length,
     ).toBeGreaterThan(0);
+  });
+});
+
+function buildCountGoal(overrides: Partial<Goal> = {}): Goal {
+  return {
+    id: 'goal-1',
+    trickId: TRICK.id,
+    trickName: TRICK.name,
+    createdAt: 1000,
+    kind: 'count',
+    targetCount: 3,
+    ...overrides,
+  } as Goal;
+}
+
+function buildSessionRecord(overrides: Partial<PracticeSessionRecord> = {}): PracticeSessionRecord {
+  return {
+    id: 'session-1',
+    trickId: TRICK.id,
+    trickName: TRICK.name,
+    startedAt: 0,
+    completedAt: 5000,
+    durationMs: 5000,
+    laceCount: 1,
+    ...overrides,
+  };
+}
+
+describe('CompletedSesh goals panel', () => {
+  const summary: SeshSummary = {
+    trick: TRICK,
+    plan: PLAN,
+    startedAt: 0,
+    endedAt: 5000,
+    durationMs: 5000,
+    landings: [landing(1000)],
+  };
+
+  it('renders the goal and its progress for the practiced trick', async () => {
+    const goals = [buildCountGoal({ targetCount: 3 })];
+    const sessions = [buildSessionRecord({ laceCount: 2 })];
+
+    const root = await mountWithNoteProvider(
+      <CompletedSesh
+        summary={summary}
+        isFirstLace={false}
+        onReset={noop}
+        onRepeat={noop}
+        goals={goals}
+        sessions={sessions}
+      />,
+    );
+
+    const text = JSON.stringify(root.toJSON());
+    expect(text).toContain('2 / 3 laces');
+  });
+
+  it('renders no goals section when the trick has no goals', async () => {
+    const root = await mountWithNoteProvider(
+      <CompletedSesh
+        summary={summary}
+        isFirstLace={false}
+        onReset={noop}
+        onRepeat={noop}
+        goals={[]}
+        sessions={[]}
+      />,
+    );
+
+    const text = JSON.stringify(root.toJSON());
+    expect(text).not.toContain('Lace count goal');
+    expect(text).not.toContain('Practice time goal');
+  });
+});
+
+describe('CompletedSesh goals panel ordering (regression)', () => {
+  // Regression coverage for the off-by-one-sesh trap: Sesh.tsx must read goals/sessions live
+  // from the providers at render, not from a snapshot captured before recordCompletedSesh runs.
+  // A props-only test can't catch a mistake at that wiring level, so this harness mounts the
+  // real providers and drives both actions directly, mirroring the Harness pattern in
+  // kentei-rank-auto-promotion.test.tsx.
+
+  const summary: SeshSummary = {
+    trick: TRICK,
+    plan: PLAN,
+    startedAt: 0,
+    endedAt: 5000,
+    durationMs: 5000,
+    landings: [landing(1000), landing(2000)],
+  };
+
+  function Harness() {
+    const { goals } = useGoals();
+    const { addGoal } = useGoalActions();
+    const { sessions } = usePracticeHistory();
+    const { recordCompletedSesh } = usePracticeHistoryActions();
+
+    return (
+      <>
+        <Pressable
+          accessibilityLabel="add-count-goal"
+          onPress={() =>
+            addGoal({ kind: 'count', trickId: TRICK.id, trickName: TRICK.name, targetCount: 3 })
+          }
+        />
+        <Pressable
+          accessibilityLabel="record-sesh"
+          onPress={() => recordCompletedSesh(summary)}
+        />
+        <CompletedSesh
+          summary={summary}
+          isFirstLace={false}
+          onReset={noop}
+          onRepeat={noop}
+          goals={goals}
+          sessions={sessions}
+        />
+      </>
+    );
+  }
+
+  async function mountHarness() {
+    let root!: ReactTestRenderer;
+    await act(async () => {
+      root = create(
+        <NoteProvider>
+          <GoalProvider>
+            <PracticeHistoryProvider>
+              <Harness />
+            </PracticeHistoryProvider>
+          </GoalProvider>
+        </NoteProvider>,
+      );
+    });
+    return root;
+  }
+
+  it('reflects the just-completed sesh in goal progress, not the sesh before it', async () => {
+    const root = await mountHarness();
+
+    act(() => {
+      pressByAccessibilityLabel(root, 'add-count-goal');
+    });
+
+    // Before the sesh is recorded, progress should show zero landings toward the goal.
+    expect(JSON.stringify(root.toJSON())).toContain('0 / 3 laces');
+
+    act(() => {
+      pressByAccessibilityLabel(root, 'record-sesh');
+    });
+
+    // After recordCompletedSesh runs, progress must include this sesh's 2 landings — not be
+    // stale by one sesh.
+    expect(JSON.stringify(root.toJSON())).toContain('2 / 3 laces');
   });
 });
 

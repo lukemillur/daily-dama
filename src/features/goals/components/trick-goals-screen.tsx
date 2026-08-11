@@ -81,13 +81,13 @@ export function TrickGoalsScreen({ trickId, trickName, onClose }: TrickGoalsScre
   );
 }
 
-function formatGoalTarget(goal: Goal) {
+export function formatGoalTarget(goal: Goal) {
   return goal.kind === 'count'
     ? `${goal.targetCount} ${goal.targetCount === 1 ? 'lace' : 'laces'}`
     : formatDuration(goal.targetMs);
 }
 
-function formatGoalProgress(progress: GoalProgress) {
+export function formatGoalProgress(progress: GoalProgress) {
   return progress.goal.kind === 'count'
     ? `${progress.current} / ${progress.target} ${progress.target === 1 ? 'lace' : 'laces'}`
     : `${formatDuration(progress.current)} / ${formatDuration(progress.target)}`;
