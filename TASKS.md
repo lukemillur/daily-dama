@@ -133,7 +133,7 @@ The first pass used **locked/unlocked** for "the user can land this trick." User
 
 - **Area:** Sesh / Notes
 - **Priority:** Medium
-- **Status:** Not started
+- **Status:** In progress
 - **Description:** Extends [T010.2]. Today a note can only be added from the wrap-up screen of a timed sesh that landed nothing, which means the user has no way to capture a thought after a sesh that went well. Prompt on every completed timed sesh, with copy that differs depending on whether the trick was laced.
 - **Exit criteria:** Test confirms the prompt appears for a timed sesh with landings and for one without, with different copy for each, and that the note created carries the correct practice-session reference in both cases; verified in-browser.
 - **Notes:** `shouldPromptSeshNote` currently returns true only for `timed` + zero landings; widen it to all timed seshes and let `SeshNotePrompt` pick copy from the landing count. Open-ended seshes deliberately stay unprompted — that was the explicit answer during scoping, not an oversight.
