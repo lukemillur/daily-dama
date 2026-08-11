@@ -129,15 +129,6 @@ The first pass used **locked/unlocked** for "the user can land this trick." User
 - **Exit criteria:** Test confirms the celebration fires on the landing that exceeds an existing personal best, and does not fire when no prior comparable attempt exists or when the count merely ties the best; verified in-browser.
 - **Notes:** The data is already there — `getPersonalBest` returns `undefined` when there's no comparable prior attempt, which is exactly the "don't celebrate" signal, and `ActiveSesh` already computes `hasBeatenBest` for the live-challenge readout. The work is turning that from a passive status line into a celebration moment, and making it fire regardless of whether the user opted into live challenge display. Note `getPersonalBest` is scoped to timed seshes at a matching planned duration, so open-ended seshes have no personal best by construction — that's existing, deliberate behavior (see `isEligibleTimedAttempt`), not a gap to close here.
 
-### [T024] Show note count on the trick row's Notes action
-
-- **Area:** Tricks / Notes
-- **Priority:** Low
-- **Status:** Not started
-- **Description:** The Notes row action on a trick reads "NOTES — 2" when that trick has notes, and plain "NOTES" when it has none.
-- **Exit criteria:** Test confirms the label includes the count for a trick with ≥1 note and omits the separator and number entirely for a trick with none; verified in-browser.
-- **Notes:** Pass a count map into `TrickDirectory` following the `lacedCountByTrickId` precedent rather than having the row query the Notes provider — `TrickDirectory` currently reads no providers and shouldn't start.
-
 ### [T025] Show a trick's goals on the sesh wrap-up screen
 
 - **Area:** Sesh / Goals

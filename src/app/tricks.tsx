@@ -19,6 +19,7 @@ import {
 } from '@/features/custom-tricks/state/custom-trick-provider';
 import { TrickGoalsScreen } from '@/features/goals/components/trick-goals-screen';
 import { TrickNotesScreen } from '@/features/notes/components/trick-notes-screen';
+import { useNotes } from '@/features/notes/state/note-provider';
 import { useRequireOnboarding } from '@/features/onboarding/state/require-onboarding';
 import {
   useUserProfile,
@@ -33,6 +34,7 @@ import {
   type DirectoryTrick,
   selectEffectiveUnlockedTrickIds,
   selectLacedCountByTrickId,
+  selectNoteCountByTrickId,
   selectUnlockedTrickIds,
 } from '@/features/tricks/model/trick-directory';
 import type { PracticeTrick } from '@/features/tricks/model/trick';
@@ -43,6 +45,7 @@ export default function TricksScreen() {
   const { selectedTrickIds, manuallyUnlockedTrickIds = [] } = useUserProfile();
   const { toggleSelectedTrick, toggleManualUnlock } = useUserProfileActions();
   const { sessions } = usePracticeHistory();
+  const { notes } = useNotes();
   const [creationStep, setCreationStep] = useState<'list' | 'choose' | CustomTrick['kind']>('list');
   const [editingTrick, setEditingTrick] = useState<CustomTrick | undefined>(undefined);
   const [deletingTrick, setDeletingTrick] = useState<CustomTrick | undefined>(undefined);
@@ -54,6 +57,7 @@ export default function TricksScreen() {
     [tricks],
   );
   const lacedCountByTrickId = useMemo(() => selectLacedCountByTrickId(sessions), [sessions]);
+  const noteCountByTrickId = useMemo(() => selectNoteCountByTrickId(notes), [notes]);
   const lacedUnlockedTrickIds = useMemo(() => selectUnlockedTrickIds(sessions), [sessions]);
   const unlockedTrickIds = useMemo(
     () => selectEffectiveUnlockedTrickIds(lacedUnlockedTrickIds, manuallyUnlockedTrickIds),
@@ -155,6 +159,7 @@ export default function TricksScreen() {
           hideScrollIndicator
           showFocusedSection
           lacedCountByTrickId={lacedCountByTrickId}
+          noteCountByTrickId={noteCountByTrickId}
           unlockedTrickIds={unlockedTrickIds}
           selection={{ selectedTrickIds, onToggleTrick: toggleSelectedTrick }}
           customActions={{

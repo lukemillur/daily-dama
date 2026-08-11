@@ -100,4 +100,39 @@ describe('TrickDirectory', () => {
     expect(flatTexts).not.toContain('✓');
     expect(root.root.findAll((node) => node.props.accessibilityRole === 'switch')).toHaveLength(0);
   });
+
+  it('includes the note count in the Notes action label for a trick with notes', () => {
+    let root!: import('react-test-renderer').ReactTestRenderer;
+    act(() => {
+      root = create(
+        <TrickDirectory
+          tricks={FIXTURE_TRICKS}
+          notesAction={{ onOpen: () => {} }}
+          noteCountByTrickId={new Map([['trick-1', 2]])}
+        />,
+      );
+    });
+
+    const flatTexts = allText(root);
+
+    expect(flatTexts).toContain('Notes — 2');
+  });
+
+  it('omits the separator and count from the Notes action label for a trick with no notes', () => {
+    let root!: import('react-test-renderer').ReactTestRenderer;
+    act(() => {
+      root = create(
+        <TrickDirectory
+          tricks={FIXTURE_TRICKS}
+          notesAction={{ onOpen: () => {} }}
+          noteCountByTrickId={new Map([['trick-1', 0]])}
+        />,
+      );
+    });
+
+    const flatTexts = allText(root);
+
+    expect(flatTexts.some((text) => text.includes('—'))).toBe(false);
+    expect(flatTexts).toContain('Notes');
+  });
 });
