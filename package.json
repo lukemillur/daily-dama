@@ -56,6 +56,7 @@
   },
   "jest": {
     "preset": "jest-expo",
+    "resolver": "react-native-worklets/jest/resolver",
     "moduleNameMapper": {
       "^@/(.*)$": "<rootDir>/src/$1"
     }
