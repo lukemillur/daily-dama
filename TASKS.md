@@ -120,15 +120,6 @@ The first pass used **locked/unlocked** for "the user can land this trick." User
   - Toggling stays a plain set union with lace-derived status (`selectEffectiveUnlockedTrickIds`), unchanged from [T006]. A trick with real sesh history reads laced regardless of the manual flag; that's existing behavior and is correct.
   - Trick rows show nothing at all for an unlaced trick — no badge, no "0 laces". There's no reason to tell someone they haven't done something yet.
 
-### [T018] Count manually-laced tricks toward Kentei rank promotion
-
-- **Area:** Profile / Tricks
-- **Priority:** High
-- **Status:** Not started
-- **Description:** Corrects [T007], which does not work as intended. `KenteiRankAutoPromotion` derives rank completion purely from practice-history lace counts (`selectLacedCountByTrickId`), so tricks the user marked laced by hand never contribute and the rank never advances. Promotion should consider a trick complete if it's laced by either source.
-- **Exit criteria:** Test confirms that marking the last unlaced trick in the current rank as manually laced — with no practice history for it — advances `profile.kenteiRank` to the next rank; verified in-browser.
-- **Notes:** `selectEffectiveUnlockedTrickIds` already computes the union; the gap is that `isKenteiRankComplete`/`selectPromotedKenteiRank` take a lace-count map instead of a set of "can land it" trick IDs. Changing those two selectors to take the effective set is the smaller, more honest fix than teaching the component to merge two shapes. `KenteiRankAutoPromotion` already reads both providers, so no new cross-domain wiring is needed. Was out of scope for T007's original ticket; it's in scope now.
-
 ### [T019] Rank-up celebration
 
 - **Area:** Profile
