@@ -129,15 +129,6 @@ The first pass used **locked/unlocked** for "the user can land this trick." User
 - **Exit criteria:** Test confirms the celebration fires on the landing that exceeds an existing personal best, and does not fire when no prior comparable attempt exists or when the count merely ties the best; verified in-browser.
 - **Notes:** The data is already there — `getPersonalBest` returns `undefined` when there's no comparable prior attempt, which is exactly the "don't celebrate" signal, and `ActiveSesh` already computes `hasBeatenBest` for the live-challenge readout. The work is turning that from a passive status line into a celebration moment, and making it fire regardless of whether the user opted into live challenge display. Note `getPersonalBest` is scoped to timed seshes at a matching planned duration, so open-ended seshes have no personal best by construction — that's existing, deliberate behavior (see `isEligibleTimedAttempt`), not a gap to close here.
 
-### [T026] Celebrate goal achievement in the sesh and on the wrap-up
-
-- **Area:** Sesh / Goals
-- **Priority:** Medium
-- **Status:** In progress
-- **Description:** When a landing takes a goal from unmet to met, celebrate it during the sesh, and show it again on the wrap-up screen. Depends on [T025].
-- **Exit criteria:** Test confirms the celebration fires on the landing that crosses a count-based goal's target and not on later landings in the same sesh, and that a goal already achieved before the sesh started never fires; verified in-browser.
-- **Notes:** Count-based goals cross on a landing; time-based goals cross on elapsed time and can therefore fire with no user action at all. Handle both, but the failure mode to watch is a time goal crossing repeatedly on every timer tick — latch it once per sesh. Reuse whatever banner component [T020] settles on rather than adding a third celebration style.
-
 ### [T027] Standalone trick-goals screen
 
 - **Area:** Tricks / Goals
