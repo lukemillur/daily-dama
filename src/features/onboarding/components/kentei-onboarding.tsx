@@ -1,7 +1,11 @@
 import { useRouter } from 'expo-router';
 import { useReducer } from 'react';
 
-import { INITIAL_KENTEI_ASSESSMENT, kenteiAssessmentReducer } from '@/features/onboarding/model/kentei-assessment';
+import {
+  getSeedLacedTrickIds,
+  INITIAL_KENTEI_ASSESSMENT,
+  kenteiAssessmentReducer,
+} from '@/features/onboarding/model/kentei-assessment';
 import { useUserProfileActions } from '@/features/profile/state/user-profile-provider';
 import { OnboardingAssessmentStep } from '@/features/onboarding/components/onboarding-assessment-step';
 import { OnboardingIntroStep } from '@/features/onboarding/components/onboarding-intro-step';
@@ -45,7 +49,8 @@ export function KenteiOnboarding() {
           onToggleTrick={(trickId) => dispatch({ type: 'practiceTrickToggled', trickId })}
           onFinish={() => {
             if (state.selectedTrickIds.length === 0) return;
-            completeOnboarding(state.rank, state.selectedTrickIds);
+            const lacedTrickIds = getSeedLacedTrickIds(state.startingRank, state.landedTrickIds);
+            completeOnboarding(state.rank, state.selectedTrickIds, lacedTrickIds);
             router.replace('/sesh');
           }}
         />

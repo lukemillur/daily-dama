@@ -34,7 +34,11 @@ interface UserProfileActions {
   readonly removeManualUnlock: (trickId: string) => void;
   readonly setLastSesh: (trickId: string, plan: SeshPlan) => void;
   readonly setStreakThresholdMs: (thresholdMs: number) => void;
-  readonly completeOnboarding: (kenteiRank: number, selectedTrickIds: readonly string[]) => void;
+  readonly completeOnboarding: (
+    kenteiRank: number,
+    selectedTrickIds: readonly string[],
+    lacedTrickIds: readonly string[],
+  ) => void;
   readonly restartOnboarding: () => void;
   readonly advanceKenteiRank: (rank: number) => void;
 }
@@ -114,8 +118,8 @@ export function UserProfileProvider({ children }: PropsWithChildren) {
   }, []);
 
   const completeOnboarding = useCallback(
-    (kenteiRank: number, selectedTrickIds: readonly string[]) => {
-      dispatch({ type: 'onboardingCompleted', kenteiRank, selectedTrickIds });
+    (kenteiRank: number, selectedTrickIds: readonly string[], lacedTrickIds: readonly string[]) => {
+      dispatch({ type: 'onboardingCompleted', kenteiRank, selectedTrickIds, lacedTrickIds });
     },
     [],
   );
