@@ -311,11 +311,11 @@ describe('shouldPromptSeshNote', () => {
     expect(shouldPromptSeshNote(makeSeshSummary({ landings: [] }))).toBe(true);
   });
 
-  it('does not trigger for a timed sesh that landed the trick at least once', () => {
-    expect(shouldPromptSeshNote(makeSeshSummary({ landings: [landing(1_000)] }))).toBe(false);
+  it('triggers for a timed sesh that landed the trick at least once', () => {
+    expect(shouldPromptSeshNote(makeSeshSummary({ landings: [landing(1_000)] }))).toBe(true);
     expect(
       shouldPromptSeshNote(makeSeshSummary({ landings: [landing(1_000), landing(2_000)] })),
-    ).toBe(false);
+    ).toBe(true);
   });
 
   it('never triggers for an open-ended sesh, regardless of target or landings', () => {
