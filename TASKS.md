@@ -133,7 +133,7 @@ The first pass used **locked/unlocked** for "the user can land this trick." User
 
 - **Area:** Sesh / Goals
 - **Priority:** Medium
-- **Status:** Not started
+- **Status:** In progress
 - **Description:** When a landing takes a goal from unmet to met, celebrate it during the sesh, and show it again on the wrap-up screen. Depends on [T025].
 - **Exit criteria:** Test confirms the celebration fires on the landing that crosses a count-based goal's target and not on later landings in the same sesh, and that a goal already achieved before the sesh started never fires; verified in-browser.
 - **Notes:** Count-based goals cross on a landing; time-based goals cross on elapsed time and can therefore fire with no user action at all. Handle both, but the failure mode to watch is a time goal crossing repeatedly on every timer tick — latch it once per sesh. Reuse whatever banner component [T020] settles on rather than adding a third celebration style.
