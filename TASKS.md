@@ -133,7 +133,7 @@ The first pass used **locked/unlocked** for "the user can land this trick." User
 
 - **Area:** Sesh / Goals
 - **Priority:** Medium
-- **Status:** Not started
+- **Status:** In progress
 - **Description:** Goals set for a trick currently exist in isolation from the practice they describe. Render the practiced trick's goals, with their derived progress, on the sesh wrap-up screen.
 - **Exit criteria:** Test confirms the wrap-up renders each goal for the practiced trick with progress reflecting history including the just-completed sesh, and renders no goals section for a trick with none; verified in-browser.
 - **Notes:** `selectGoalProgress(goal, sessions)` already derives everything needed. The ordering trap: the wrap-up must read history *after* the completed sesh is recorded, or progress will be stale by exactly one sesh — `recordCompletedSesh` runs in an effect on entering `completed`, so re-read `sessions` from the provider at render rather than reusing anything captured at the transition.
