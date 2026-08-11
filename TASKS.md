@@ -124,7 +124,7 @@ The first pass used **locked/unlocked** for "the user can land this trick." User
 
 - **Area:** Profile
 - **Priority:** Medium
-- **Status:** Not started
+- **Status:** In progress
 - **Description:** When the user's Kentei rank increases, show a celebration reusing the onboarding rank-reveal animation with copy rewritten for a promotion rather than a first-time reveal. It renders as an app-level modal so it can fire from anywhere a promotion can happen — finishing a sesh, marking tricks laced in the grid, completing an assessment.
 - **Exit criteria:** Test confirms the celebration renders when the assessed rank advances and does not render on app hydration of an already-advanced profile; verified in-browser that marking the last trick of the current rank as laced in the laced grid triggers it.
 - **Notes:** Depends on [T018] to be triggerable from the laced grid at all. Promotion is already funnelled through one place (`advanceKenteiRank`, dispatched only by `KenteiRankAutoPromotion`), so that component is the natural trigger point — it renders as a sibling of `AppTabs` inside all the providers, which is exactly the scope a global modal needs. The hydration case is the trap: a restored profile whose rank is already high must not fire the celebration, so key off the transition, not the value. Reuse `OnboardingRankRevealStep`'s animation, don't fork it — extract the shared piece if the copy can't be parameterised cleanly.
