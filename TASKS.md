@@ -103,15 +103,6 @@ _Raw ideas land here — a name and a one-line description, nothing more. Discus
 
 ## Backlog
 
-### [T014] Multi-trick sesh variant
-
-- **Area:** Sesh
-- **Priority:** High
-- **Status:** Not started. Depends on T012.
-- **Description:** A casual practice mode built on T012's shared sequencing core, where the user selects an arbitrary set of tricks (not rank-based) to step through in one run.
-- **Exit criteria:** Test confirms selecting N arbitrary tricks and running them through the sequencing core produces N practice-history records, one per trick attempted — verified in-browser.
-- **Notes:** Trick-selection UI is left as an implementation-time detail — likely reuses the existing trick-selection UI already used for focused tricks.
-
 ## Done
 
 Completed entries live in [TASKS_DONE.md](TASKS_DONE.md) — not part of the top-to-bottom read above; see step 5 under *Completing a task*.
