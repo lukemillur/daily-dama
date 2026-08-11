@@ -144,7 +144,7 @@ The first pass used **locked/unlocked** for "the user can land this trick." User
 
 - **Area:** Sesh
 - **Priority:** High (inherited from parent T028)
-- **Status:** Not started
+- **Status:** In progress
 - **Description:** A checkbox in multi-trick setup that, when enabled, advances the run to the next trick as soon as the current trick is laced once.
 - **Exit criteria:** Test confirms that with the option enabled a single landing records the trick and advances to the next one, and that with it disabled the run behaves exactly as it does today; verified in-browser across a 3-trick run.
 - **Notes:** `MultiTrickSesh` already advances off the `completed` state, so the mechanism is dispatching `seshEnded` on the first landing rather than adding a second advance path. Keep the option a prop on `MultiTrickSesh` — `MultiTrickSeshEntry` owns the checkbox UI and local setup state.
