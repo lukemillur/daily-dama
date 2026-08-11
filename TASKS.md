@@ -133,7 +133,7 @@ The first pass used **locked/unlocked** for "the user can land this trick." User
 
 - **Area:** Tricks / Goals
 - **Priority:** Medium
-- **Status:** Not started
+- **Status:** In progress
 - **Description:** Goals are currently reachable only per-trick from a row action, which gives no view of what the user is actually working toward. Add a "Trick goals" screen from the Tricks route listing all goals across all tricks, rendering achieved goals visually distinct from outstanding ones.
 - **Exit criteria:** Test confirms the screen lists goals from multiple tricks with per-goal derived progress, and that achieved and unachieved goals render distinguishably; verified in-browser.
 - **Notes:** Sits alongside the "Laced tricks" entry point from [T016.1] — worth landing them with consistent placement and styling. The existing `TrickGoalsScreen` is scoped to one trick ID; this is a sibling all-tricks view, not a change to that component. `selectGoalProgress` needs no changes.
