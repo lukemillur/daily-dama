@@ -119,7 +119,7 @@ The first pass used **locked/unlocked** for "the user can land this trick." User
 
 - **Area:** Onboarding / Profile
 - **Priority:** High
-- **Status:** Not started
+- **Status:** In progress
 - **Description:** Correct onboarding completion seeding so that tricks at the user's final assessed rank are not marked complete. The current seed boundary can immediately satisfy promotion requirements and advance the user one rank beyond the assessment result.
 - **Exit criteria:** An integrated regression test starts assessment at Rank 4, resolves the result as Rank 3, and confirms the persisted profile remains Rank 3, Rank 3 tricks are not seeded as completed, lower prerequisite ranks remain seeded as intended, and no immediate unearned rank-up is produced.
 - **Notes:** Test the provider/reducer boundary used by onboarding, not only the seed helper in isolation.
