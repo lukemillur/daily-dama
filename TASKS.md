@@ -115,23 +115,6 @@ _This round came out of a review pass over the first batch of completed work (T0
 
 The first pass used **locked/unlocked** for "the user can land this trick." User-facing copy in this round switches to **laced/unlaced**, which is what the domain actually calls it. The persisted profile field is still named `manuallyUnlockedTrickIds` and stays that way — renaming a persisted key means either a migration or throwing away real user data, and neither is worth it for a vocabulary change. Rename the copy, not the storage contract.
 
-### [T029] Kentei assessment run refinements
-
-- **Area:** Sesh / Profile
-- **Priority:** High
-- **Status:** Not started
-- **Description:** Umbrella for corrections to [T013]'s assessment run. The run currently inherits practice-sesh chrome that misrepresents what an assessment is: a countdown between every trick, a running timer implying time pressure, and an "End sesh" label for what ends an assessment.
-- **Notes:** Umbrella only, no exit criteria of its own. [T029.3] depends on [T028.3] ("Next trick" in the shared core) and [T029.4] depends on [T028.1] (advance-on-lace in the shared core) — this entry deliberately doesn't reimplement either. Decision resolved during scoping: hiding the timer is a display change only; assessment records still capture real `durationMs`, since Stats derivation and the time-logged windows shouldn't develop a blind spot for assessment practice.
-
-### [T029.5] Assessment wrap-up screen
-
-- **Area:** Sesh / Profile
-- **Priority:** High (inherited from parent T029)
-- **Status:** In progress
-- **Description:** Show a wrap-up when an assessment run completes, instead of replacing the route to `/profile` with no summary. Covers which tricks were attempted and laced, which ranks were skipped, and the resulting assessed rank.
-- **Exit criteria:** Test confirms a completed assessment renders per-trick outcomes and the resulting rank, and that a skipped rank is reported as skipped rather than failed; verified in-browser.
-- **Notes:** Builds on [T028.4]'s accumulated summaries; the assessment-specific additions are rank framing and skip reporting. A skipped rank is explicitly _unassessed_, not failed — that's a decision already recorded in [T013] and the copy here must not contradict it. If [T019] has landed, a promotion during the run should surface through that modal rather than being re-rendered inline here.
-
 ### [T030] Make the Profile screen scrollable on mobile
 
 - **Area:** Profile / navigation
