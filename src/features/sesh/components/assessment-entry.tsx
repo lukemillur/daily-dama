@@ -52,10 +52,25 @@ export function AssessmentEntry() {
         onFinished={() => router.replace('/profile')}
         showAttemptsReminder
         skipTarget={isMultiRankFlow ? (index) => selectNextRankStartIndex(tricks, index) : undefined}
+        describeSkippedRange={
+          isMultiRankFlow
+            ? (start, end) => {
+                const count = end - start;
+                return `Rank ${tricks[start].kenteiRank} — ${count} trick${count === 1 ? '' : 's'} skipped`;
+              }
+            : undefined
+        }
         endActionLabel="End assessment"
         skipCountdownBetweenTricks
         hideTimer
         advanceOnFirstLace
+        wrapUpFooter={
+          <ResultCopy accessibilityLabel="Assessment result">
+            {kenteiRank !== undefined
+              ? `You're assessed at Rank ${kenteiRank}.`
+              : 'Keep practicing — you have not earned a rank yet.'}
+          </ResultCopy>
+        }
       />
     );
   }
@@ -171,4 +186,9 @@ const RankNumber = styled.Text`
 const BackButton = styled(Button)`
   align-self: flex-start;
   margin-top: 30px;
+`;
+const ResultCopy = styled(BodyText)`
+  margin-top: 28px;
+  text-align: center;
+  font-weight: 800;
 `;

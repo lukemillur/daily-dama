@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
+import type { ReactNode } from 'react';
 import { Text } from 'react-native';
 import type { ReactTestRenderer } from 'react-test-renderer';
 import { act, create } from 'react-test-renderer';
@@ -99,6 +100,8 @@ async function mountMultiTrickSesh(props: {
   readonly endActionLabel?: string;
   readonly skipCountdownBetweenTricks?: boolean;
   readonly hideTimer?: boolean;
+  readonly describeSkippedRange?: (startIndex: number, endIndex: number) => string;
+  readonly wrapUpFooter?: ReactNode;
 }) {
   let root!: ReactTestRenderer;
   await act(async () => {
@@ -114,6 +117,8 @@ async function mountMultiTrickSesh(props: {
             endActionLabel={props.endActionLabel}
             skipCountdownBetweenTricks={props.skipCountdownBetweenTricks}
             hideTimer={props.hideTimer}
+            describeSkippedRange={props.describeSkippedRange}
+            wrapUpFooter={props.wrapUpFooter}
           />
           <SessionSummary />
         </PracticeHistoryProvider>
@@ -576,6 +581,90 @@ describe('MultiTrickSesh wrap-up', () => {
     }
 
     expect(onFinished).not.toHaveBeenCalled();
+
+    act(() => {
+      pressByAccessibilityLabel(root, 'Finish sesh');
+    });
+
+    expect(onFinished).toHaveBeenCalledTimes(1);
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  it('renders the wrap-up footer only once the wrap-up is showing, not before', async () => {
+    const onFinished = jest.fn();
+    const root = await mountMultiTrickSesh({
+      onFinished,
+      wrapUpFooter: <Text accessibilityLabel="resulting-rank">Rank 5</Text>,
+    });
+
+    expect(findByAccessibilityLabel(root, 'resulting-rank')).toHaveLength(0);
+
+    for (const trick of TRICKS) {
+      advanceThroughCountdown();
+      expect(findByText(root, trick.name).length).toBeGreaterThan(0);
+
+      act(() => {
+        pressByAccessibilityLabel(root, 'Laced');
+      });
+      act(() => {
+        pressByVisibleText(root, 'Next trick');
+      });
+    }
+
+    expect(findByAccessibilityLabel(root, 'resulting-rank').length).toBeGreaterThan(0);
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  it('reports a skipped rank as skipped, not failed, and keeps it out of the attempted rows', async () => {
+    const onFinished = jest.fn();
+    const root = await mountMultiTrickSesh({
+      onFinished,
+      skipTarget: () => TRICKS.length,
+      describeSkippedRange: (start, end) => `Skipped ${end - start} tricks`,
+    });
+
+    advanceThroughCountdown();
+    expect(findByText(root, TRICKS[0].name).length).toBeGreaterThan(0);
+
+    act(() => {
+      pressByAccessibilityLabel(root, 'Laced');
+    });
+    act(() => {
+      pressByVisibleText(root, 'Next trick');
+    });
+
+    advanceThroughCountdown();
+    expect(findByText(root, TRICKS[1].name).length).toBeGreaterThan(0);
+
+    act(() => {
+      pressByVisibleText(root, 'Skip this rank');
+    });
+
+    const skippedMatches = root.root.findAll(
+      (node) =>
+        typeof node.props.accessibilityLabel === 'string' &&
+        node.props.accessibilityLabel.startsWith('Wrap-up skipped:'),
+    );
+    expect(skippedMatches.length).toBeGreaterThan(0);
+    for (const match of skippedMatches) {
+      expect(match.props.accessibilityLabel).not.toContain('laces');
+      expect(match.props.accessibilityLabel).not.toContain('0 laces');
+    }
+
+    for (let index = 1; index < TRICKS.length; index += 1) {
+      const attemptedMatches = root.root.findAll(
+        (node) =>
+          typeof node.props.accessibilityLabel === 'string' &&
+          node.props.accessibilityLabel.startsWith(`Wrap-up entry: ${TRICKS[index].name},`),
+      );
+      expect(attemptedMatches.length).toBe(0);
+    }
 
     act(() => {
       pressByAccessibilityLabel(root, 'Finish sesh');

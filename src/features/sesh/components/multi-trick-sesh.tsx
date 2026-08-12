@@ -1,5 +1,5 @@
 import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
-import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useReducer, useRef, useState, type ReactNode } from 'react';
 import { ScrollView } from 'react-native';
 import { styled } from 'styled-components/native';
 
@@ -78,6 +78,21 @@ interface MultiTrickSeshProps {
    * unaffected so recorded durations stay accurate.
    */
   readonly hideTimer?: boolean;
+  /**
+   * When provided, called every time `handleSkipRank` fires, with the
+   * pre-jump index and the computed target index; its return value is
+   * accumulated and rendered as a distinct "skipped" section in the
+   * wrap-up. Mirrors `skipTarget`'s index-based shape — opaque to this
+   * component, which knows nothing about ranks. Omit to preserve today's
+   * behavior exactly (skipped tricks stay silently absent from the
+   * wrap-up).
+   */
+  readonly describeSkippedRange?: (startIndex: number, endIndex: number) => string;
+  /**
+   * Rendered near the bottom of the wrap-up, above the "Finish sesh"
+   * button. `undefined` renders nothing.
+   */
+  readonly wrapUpFooter?: ReactNode;
 }
 
 /**
@@ -103,6 +118,8 @@ export function MultiTrickSesh({
   endActionLabel,
   skipCountdownBetweenTricks,
   hideTimer,
+  describeSkippedRange,
+  wrapUpFooter,
 }: MultiTrickSeshProps) {
   const [sequence, setSequence] = useState(() => createTrickSequence(tricks));
   const [state, dispatch] = useReducer(
@@ -117,6 +134,7 @@ export function MultiTrickSesh({
   const { notes } = useNotes();
   const recordedSummaryId = useRef<string | undefined>(undefined);
   const [summaries, setSummaries] = useState<SeshSummary[]>([]);
+  const [skippedEntries, setSkippedEntries] = useState<string[]>([]);
 
   // The run is over once the sequence has no trick left to run, whether that
   // happened because every trick completed normally (leaves `state` at
@@ -187,7 +205,12 @@ export function MultiTrickSesh({
   const handleSkipRank = () => {
     if (!skipTarget) return;
 
-    const nextSequence = advanceTrickSequenceToIndex(sequence, skipTarget(sequence.currentIndex));
+    const targetIndex = skipTarget(sequence.currentIndex);
+    if (describeSkippedRange) {
+      setSkippedEntries((prev) => [...prev, describeSkippedRange(sequence.currentIndex, targetIndex)]);
+    }
+
+    const nextSequence = advanceTrickSequenceToIndex(sequence, targetIndex);
     setSequence(nextSequence);
 
     const nextTrick = getCurrentSequenceTrick(nextSequence);
@@ -252,7 +275,14 @@ export function MultiTrickSesh({
   // the last trick, or handleSkipRank skipped past it. Renders the full
   // run's wrap-up and is the only place onFinished gets called now.
   if (isRunFinished) {
-    return <MultiTrickWrapUp summaries={summaries} onContinue={() => onFinished?.()} />;
+    return (
+      <MultiTrickWrapUp
+        summaries={summaries}
+        skippedEntries={skippedEntries}
+        footer={wrapUpFooter}
+        onContinue={() => onFinished?.()}
+      />
+    );
   }
 
   // Reached for the one tick between a trick's sesh completing and the
@@ -275,9 +305,13 @@ export function MultiTrickSesh({
  */
 function MultiTrickWrapUp({
   summaries,
+  skippedEntries,
+  footer,
   onContinue,
 }: {
   readonly summaries: readonly SeshSummary[];
+  readonly skippedEntries: readonly string[];
+  readonly footer?: ReactNode;
   readonly onContinue: () => void;
 }) {
   return (
@@ -300,6 +334,20 @@ function MultiTrickWrapUp({
             );
           })}
         </WrapUpList>
+        {skippedEntries.length > 0 && (
+          <WrapUpList>
+            {skippedEntries.map((entry, index) => (
+              <WrapUpSkippedRow
+                key={`${entry}-${index}`}
+                accessibilityLabel={`Wrap-up skipped: ${entry}`}>
+                <WrapUpSkippedText>
+                  {entry} — Skipped
+                </WrapUpSkippedText>
+              </WrapUpSkippedRow>
+            ))}
+          </WrapUpList>
+        )}
+        {footer}
         <FinishButton accessibilityLabel="Finish sesh" onPress={onContinue}>
           Finish sesh
         </FinishButton>
@@ -319,6 +367,8 @@ const WrapUpRow = styled.View`min-height: 50px; flex-direction: row; align-items
 const WrapUpTrickName = styled.Text`flex: 1; color: #18382e; font-size: 17px; font-weight: 800;`;
 const WrapUpLaceCount = styled.Text`color: ${AppColors.textMuted}; font-size: 14px; font-weight: 700; margin-right: 14px;`;
 const WrapUpTime = styled.Text`color: #18382e; font-size: 15px; font-variant: tabular-nums; font-weight: 800;`;
+const WrapUpSkippedRow = styled.View`min-height: 50px; flex-direction: row; align-items: center; border-bottom-width: 1px; border-bottom-color: ${AppColors.borderMuted};`;
+const WrapUpSkippedText = styled.Text`flex: 1; color: ${AppColors.textMuted}; font-size: 15px; font-weight: 700; font-style: italic;`;
 const FinishButton = styled(Button).attrs({ size: 'medium' })`
   margin-top: 28px;
   border-radius: 5px;
