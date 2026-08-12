@@ -152,7 +152,7 @@ The first pass used **locked/unlocked** for "the user can land this trick." User
 
 - **Area:** Sesh
 - **Priority:** High (inherited from parent T029)
-- **Status:** Not started
+- **Status:** In progress
 - **Description:** During an assessment run the end action reads "End assessment" rather than "End Sesh".
 - **Exit criteria:** Test confirms the end action renders "End assessment" when the assessment flow drives the run and "End Sesh" otherwise; verified in-browser.
 - **Notes:** An optional label prop on `ActiveSesh` defaulting to today's copy, set only by `AssessmentEntry`. Don't branch on a boolean `isAssessment` inside `ActiveSesh` — the component has no business knowing what an assessment is.
