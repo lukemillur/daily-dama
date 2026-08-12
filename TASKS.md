@@ -140,15 +140,6 @@ The first pass used **locked/unlocked** for "the user can land this trick." User
   - When both auto-advance-on-lace and a per-trick duration are configured, whichever condition is met first advances the run.
   - These controls belong to the shared `MultiTrickSesh` core so the assessment flow ([T029]) inherits them rather than reimplementing them.
 
-### [T028.1] Advance to the next trick after a single lace
-
-- **Area:** Sesh
-- **Priority:** High (inherited from parent T028)
-- **Status:** Not started
-- **Description:** A checkbox in multi-trick setup that, when enabled, advances the run to the next trick as soon as the current trick is laced once.
-- **Exit criteria:** Test confirms that with the option enabled a single landing records the trick and advances to the next one, and that with it disabled the run behaves exactly as it does today; verified in-browser across a 3-trick run.
-- **Notes:** `MultiTrickSesh` already advances off the `completed` state, so the mechanism is dispatching `seshEnded` on the first landing rather than adding a second advance path. Keep the option a prop on `MultiTrickSesh` — `MultiTrickSeshEntry` owns the checkbox UI and local setup state.
-
 ### [T028.2] Per-trick duration for a multi-trick run
 
 - **Area:** Sesh
