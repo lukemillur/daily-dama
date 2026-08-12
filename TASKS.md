@@ -127,7 +127,7 @@ The first pass used **locked/unlocked** for "the user can land this trick." User
 
 - **Area:** Sesh
 - **Priority:** High (inherited from parent T029)
-- **Status:** Not started
+- **Status:** In progress
 - **Description:** Expose [T028.1]'s advance-on-first-lace behavior in the assessment flow, so pressing Laced moves straight to the next trick. Depends on [T028.1].
 - **Exit criteria:** Test confirms an assessment run with the option active records the trick and advances on the first landing; verified in-browser.
 - **Notes:** Should be wiring only if [T028.1] put the behavior in `MultiTrickSesh` as intended. Whether it's always on for assessments or user-selectable at the entry screen is the one open call — resolve it while implementing and record the choice here; either way it's the same prop.
