@@ -482,6 +482,7 @@ export function ActiveSesh({
   attemptsReminder,
   onSkipRank,
   onNextTrick,
+  endActionLabel = 'End Sesh',
 }: {
   readonly trick: PracticeTrick;
   readonly plan: SeshPlan;
@@ -502,6 +503,7 @@ export function ActiveSesh({
   readonly attemptsReminder?: boolean;
   readonly onSkipRank?: () => void;
   readonly onNextTrick?: () => void;
+  readonly endActionLabel?: string;
 }) {
   const notesToShow = trickNotes ?? [];
   const showChallenge = liveChallengeEnabled && personalBest !== undefined;
@@ -628,7 +630,7 @@ export function ActiveSesh({
             disabled={!targetMet}
             $disabled={!targetMet}
             onPress={onEnd}>
-            <EndButtonText>End Sesh</EndButtonText>
+            <EndButtonText>{endActionLabel}</EndButtonText>
           </EndButton>
         </SecondaryActions>
         {targetLandingCount !== undefined && !targetMet ? (

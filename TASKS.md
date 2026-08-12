@@ -19,7 +19,7 @@ Working backlog for Daily Dama **core-functionality** work. This file is the che
 2. Run the task's own exit criteria yourself — don't mark it done on assumption.
 3. Run the project's standard verification sequence (`yarn test --runInBand`, `yarn lint`, `yarn tsc --noEmit` — see [AGENTS.md](AGENTS.md)). A task isn't done if it breaks the baseline, even when its own criteria pass.
 4. Commit the change on its own, referencing the task ID in the message. Focused commits, never pushed automatically (see AGENTS.md § Git state expectations).
-5. In that same commit, move the entry from `Backlog` in this file to [TASKS_DONE.md](TASKS_DONE.md), flipping its status to `Done`.
+5. In that same commit, move the entry from `Backlog` in this file to [TASKS_DONE.md](TASKS_DONE.md), flipping its status to `Done`. If this task was the last remaining child of a parent umbrella entry (every sibling child is now `Done`), move the parent entry to `TASKS_DONE.md` as well, in the same commit, flipping its status to `Done` too — an umbrella with no exit criteria of its own is done exactly when its children are.
 6. Open a PR into `development` and squash-merge it immediately — no review gate, this is pre-authorized (see [AGENTS.md](AGENTS.md) § Git state expectations). `development`, not `main`, is where task branches land; promoting `development` into `main` is a separate, manual step outside this protocol.
 
 **Getting stuck:**
@@ -122,15 +122,6 @@ The first pass used **locked/unlocked** for "the user can land this trick." User
 - **Status:** Not started
 - **Description:** Umbrella for corrections to [T013]'s assessment run. The run currently inherits practice-sesh chrome that misrepresents what an assessment is: a countdown between every trick, a running timer implying time pressure, and an "End sesh" label for what ends an assessment.
 - **Notes:** Umbrella only, no exit criteria of its own. [T029.3] depends on [T028.3] ("Next trick" in the shared core) and [T029.4] depends on [T028.1] (advance-on-lace in the shared core) — this entry deliberately doesn't reimplement either. Decision resolved during scoping: hiding the timer is a display change only; assessment records still capture real `durationMs`, since Stats derivation and the time-logged windows shouldn't develop a blind spot for assessment practice.
-
-### [T029.1] Assessment-specific end-action copy
-
-- **Area:** Sesh
-- **Priority:** High (inherited from parent T029)
-- **Status:** Not started
-- **Description:** During an assessment run the end action reads "End assessment" rather than "End Sesh".
-- **Exit criteria:** Test confirms the end action renders "End assessment" when the assessment flow drives the run and "End Sesh" otherwise; verified in-browser.
-- **Notes:** An optional label prop on `ActiveSesh` defaulting to today's copy, set only by `AssessmentEntry`. Don't branch on a boolean `isAssessment` inside `ActiveSesh` — the component has no business knowing what an assessment is.
 
 ### [T029.2] Skip the countdown between assessment tricks
 

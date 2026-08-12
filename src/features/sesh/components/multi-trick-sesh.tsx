@@ -54,6 +54,13 @@ interface MultiTrickSeshProps {
    * ever advances off the `completed` state.
    */
   readonly advanceOnFirstLace?: boolean;
+  /**
+   * Opaque to this component, forwarded to `ActiveSesh` as-is — replaces
+   * the default "End Sesh" copy on the primary end action. Used by callers
+   * (e.g. the assessment flow) that need different framing without this
+   * component or `ActiveSesh` knowing what an assessment is.
+   */
+  readonly endActionLabel?: string;
 }
 
 /**
@@ -76,6 +83,7 @@ export function MultiTrickSesh({
   skipTarget,
   showAttemptsReminder,
   advanceOnFirstLace,
+  endActionLabel,
 }: MultiTrickSeshProps) {
   const [sequence, setSequence] = useState(() => createTrickSequence(tricks));
   const [state, dispatch] = useReducer(
@@ -200,6 +208,7 @@ export function MultiTrickSesh({
         // second advance mechanism. Unlike `handleSkipRank`, this always
         // records the current trick's landings before moving on.
         onNextTrick={() => dispatch({ type: 'seshEnded', now: Date.now() })}
+        endActionLabel={endActionLabel}
       />
     );
   }
