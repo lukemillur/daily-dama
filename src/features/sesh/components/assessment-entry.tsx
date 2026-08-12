@@ -54,6 +54,7 @@ export function AssessmentEntry() {
         skipTarget={isMultiRankFlow ? (index) => selectNextRankStartIndex(tricks, index) : undefined}
         endActionLabel="End assessment"
         skipCountdownBetweenTricks
+        hideTimer
       />
     );
   }

@@ -70,6 +70,14 @@ interface MultiTrickSeshProps {
    * always shows its countdown regardless of this flag.
    */
   readonly skipCountdownBetweenTricks?: boolean;
+  /**
+   * Opaque to this component, forwarded to `ActiveSesh` as-is — hides the
+   * elapsed-time readout and its label. Used by the assessment flow, since a
+   * visible countdown implies time pressure that doesn't apply to an
+   * assessment; `useNow` and the underlying elapsed-time math keep running
+   * unaffected so recorded durations stay accurate.
+   */
+  readonly hideTimer?: boolean;
 }
 
 /**
@@ -94,6 +102,7 @@ export function MultiTrickSesh({
   advanceOnFirstLace,
   endActionLabel,
   skipCountdownBetweenTricks,
+  hideTimer,
 }: MultiTrickSeshProps) {
   const [sequence, setSequence] = useState(() => createTrickSequence(tricks));
   const [state, dispatch] = useReducer(
@@ -234,6 +243,7 @@ export function MultiTrickSesh({
         // records the current trick's landings before moving on.
         onNextTrick={() => dispatch({ type: 'seshEnded', now: Date.now() })}
         endActionLabel={endActionLabel}
+        hideTimer={hideTimer}
       />
     );
   }

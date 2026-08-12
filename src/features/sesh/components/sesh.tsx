@@ -483,6 +483,7 @@ export function ActiveSesh({
   onSkipRank,
   onNextTrick,
   endActionLabel = 'End Sesh',
+  hideTimer,
 }: {
   readonly trick: PracticeTrick;
   readonly plan: SeshPlan;
@@ -504,6 +505,7 @@ export function ActiveSesh({
   readonly onSkipRank?: () => void;
   readonly onNextTrick?: () => void;
   readonly endActionLabel?: string;
+  readonly hideTimer?: boolean;
 }) {
   const notesToShow = trickNotes ?? [];
   const showChallenge = liveChallengeEnabled && personalBest !== undefined;
@@ -585,11 +587,15 @@ export function ActiveSesh({
         <SequenceSteps trick={trick} prominent />
         {attemptsReminder ? <AttemptsReminder>You have 5 attempts.</AttemptsReminder> : null}
         <TrickNotesPanel trickNotes={notesToShow} />
-        <TimerLabel>{plan.kind === 'timed' ? 'Time remaining' : 'Elapsed time'}</TimerLabel>
-        <Timer
-          accessibilityLabel={`${plan.kind === 'timed' ? 'Time remaining' : 'Elapsed time'} ${formattedTime}`}>
-          {formattedTime}
-        </Timer>
+        {!hideTimer ? (
+          <>
+            <TimerLabel>{plan.kind === 'timed' ? 'Time remaining' : 'Elapsed time'}</TimerLabel>
+            <Timer
+              accessibilityLabel={`${plan.kind === 'timed' ? 'Time remaining' : 'Elapsed time'} ${formattedTime}`}>
+              {formattedTime}
+            </Timer>
+          </>
+        ) : null}
         <LacedButton
           accessibilityRole="button"
           accessibilityState={{ disabled: isPaused }}

@@ -361,6 +361,71 @@ describe('ActiveSesh end action label', () => {
   });
 });
 
+describe('ActiveSesh timer visibility', () => {
+  beforeEach(() => {
+    jest.useFakeTimers();
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  it('renders the timer and its label when hideTimer is omitted', () => {
+    let root!: ReactTestRenderer;
+    act(() => {
+      root = create(
+        <ActiveSesh
+          trick={TRICK}
+          plan={PLAN}
+          startedAt={Date.now()}
+          landings={[]}
+          pausedDurationMs={0}
+          liveChallengeEnabled={false}
+          onLaced={noop}
+          onPause={noop}
+          onResume={noop}
+          onEnd={noop}
+          onTimerElapsed={noop}
+        />,
+      );
+    });
+
+    expect(JSON.stringify(root.toJSON())).toContain('Time remaining');
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  it('hides the timer and its label when hideTimer is set', () => {
+    let root!: ReactTestRenderer;
+    act(() => {
+      root = create(
+        <ActiveSesh
+          trick={TRICK}
+          plan={PLAN}
+          startedAt={Date.now()}
+          landings={[]}
+          pausedDurationMs={0}
+          liveChallengeEnabled={false}
+          onLaced={noop}
+          onPause={noop}
+          onResume={noop}
+          onEnd={noop}
+          onTimerElapsed={noop}
+          hideTimer
+        />,
+      );
+    });
+
+    expect(JSON.stringify(root.toJSON())).not.toContain('Time remaining');
+
+    act(() => {
+      root.unmount();
+    });
+  });
+});
+
 describe('CompletedSesh first-lace celebration', () => {
   const summary: SeshSummary = {
     trick: TRICK,

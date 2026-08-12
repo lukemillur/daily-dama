@@ -123,15 +123,6 @@ The first pass used **locked/unlocked** for "the user can land this trick." User
 - **Description:** Umbrella for corrections to [T013]'s assessment run. The run currently inherits practice-sesh chrome that misrepresents what an assessment is: a countdown between every trick, a running timer implying time pressure, and an "End sesh" label for what ends an assessment.
 - **Notes:** Umbrella only, no exit criteria of its own. [T029.3] depends on [T028.3] ("Next trick" in the shared core) and [T029.4] depends on [T028.1] (advance-on-lace in the shared core) — this entry deliberately doesn't reimplement either. Decision resolved during scoping: hiding the timer is a display change only; assessment records still capture real `durationMs`, since Stats derivation and the time-logged windows shouldn't develop a blind spot for assessment practice.
 
-### [T029.3] Hide the timer during an assessment
-
-- **Area:** Sesh
-- **Priority:** High (inherited from parent T029)
-- **Status:** In progress
-- **Description:** The elapsed-time readout isn't rendered during an assessment run — there's nothing to race, and showing a clock makes the user feel rushed.
-- **Exit criteria:** Test confirms the timer and its label are absent in an assessment run and present in a regular sesh, while the recorded practice-history record still carries a real non-zero `durationMs`; verified in-browser.
-- **Notes:** Display-only. `useNow` should keep running — `ActiveSesh` derives elapsed time from it for the record, and stopping the interval would zero out assessment durations in Stats.
-
 ### [T029.4] Auto-advance on lace during an assessment
 
 - **Area:** Sesh
