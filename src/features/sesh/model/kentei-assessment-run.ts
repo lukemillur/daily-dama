@@ -67,3 +67,24 @@ export function selectNextRankStartIndex(
   const nextIndex = tricks.findIndex((trick, index) => index > fromIndex && trick.kenteiRank > currentRank);
   return nextIndex === -1 ? tricks.length : nextIndex;
 }
+
+/**
+ * Copy for the assessment wrap-up screen, given the rank the profile had
+ * when the run started and the rank it has now (after any auto-promotion
+ * from practice recorded during the run). Because the underlying rank model
+ * is promotion-only (see selectPromotedKenteiRank in trick-directory.ts),
+ * `resultRank` can never be lower than `startingRank` — this only has to
+ * distinguish "advanced" from "held," never handle a regression case.
+ */
+export function selectAssessmentResultCopy(
+  startingRank: number | undefined,
+  resultRank: number | undefined,
+): string {
+  if (resultRank === undefined) {
+    return 'Keep practicing — you have not earned a rank yet.';
+  }
+  if (startingRank === undefined || resultRank > startingRank) {
+    return `Rank up! You're now Rank ${resultRank}.`;
+  }
+  return `You held Rank ${resultRank}. Land every trick in a rank to advance.`;
+}
