@@ -217,6 +217,78 @@ describe('ActiveSesh first-lace celebration', () => {
   });
 });
 
+describe('ActiveSesh "Next trick" action', () => {
+  beforeEach(() => {
+    jest.useFakeTimers();
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  it('does not render "Next trick" when onNextTrick is omitted', () => {
+    let root!: ReactTestRenderer;
+    act(() => {
+      root = create(
+        <ActiveSesh
+          trick={TRICK}
+          plan={PLAN}
+          startedAt={Date.now()}
+          landings={[]}
+          pausedDurationMs={0}
+          liveChallengeEnabled={false}
+          onLaced={noop}
+          onPause={noop}
+          onResume={noop}
+          onEnd={noop}
+          onTimerElapsed={noop}
+        />,
+      );
+    });
+
+    expect(root.root.findAll((node) => node.props.children === 'Next trick')).toHaveLength(0);
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  it('renders "Next trick" and invokes the handler when supplied', () => {
+    const onNextTrick = jest.fn();
+    let root!: ReactTestRenderer;
+    act(() => {
+      root = create(
+        <ActiveSesh
+          trick={TRICK}
+          plan={PLAN}
+          startedAt={Date.now()}
+          landings={[]}
+          pausedDurationMs={0}
+          liveChallengeEnabled={false}
+          onLaced={noop}
+          onPause={noop}
+          onResume={noop}
+          onEnd={noop}
+          onTimerElapsed={noop}
+          onNextTrick={onNextTrick}
+        />,
+      );
+    });
+
+    expect(root.root.findAll((node) => node.props.children === 'Next trick').length).toBeGreaterThan(0);
+
+    act(() => {
+      pressByVisibleText(root, 'Next trick');
+    });
+
+    expect(onNextTrick).toHaveBeenCalledTimes(1);
+
+    act(() => {
+      root.unmount();
+    });
+  });
+});
+
 describe('CompletedSesh first-lace celebration', () => {
   const summary: SeshSummary = {
     trick: TRICK,
@@ -858,6 +930,59 @@ describe('Sesh wiring - goal celebration ordering (regression)', () => {
 
       const text = JSON.stringify(root.toJSON());
       expect(text).toContain('You reached your goal');
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+});
+
+describe('Sesh single-trick entry point - "Next trick" absence', () => {
+  // Sesh's call to ActiveSesh never supplies onNextTrick, so the control must never appear
+  // during a real single-trick sesh, not just when testing ActiveSesh in isolation.
+
+  async function mountSesh() {
+    let root!: ReactTestRenderer;
+    await act(async () => {
+      root = create(
+        <NoteProvider>
+          <GoalProvider>
+            <PracticeHistoryProvider>
+              <UserProfileProvider>
+                <Sesh availableTricks={[TRICK]} selectedTrickIds={[TRICK.id]} />
+              </UserProfileProvider>
+            </PracticeHistoryProvider>
+          </GoalProvider>
+        </NoteProvider>,
+      );
+    });
+    return root;
+  }
+
+  it('never renders "Next trick" during an active single-trick sesh', async () => {
+    jest.useFakeTimers();
+    try {
+      const root = await mountSesh();
+
+      act(() => {
+        pressByAccessibilityLabel(root, `Start a sesh with ${TRICK.name}`);
+      });
+
+      // Countdown ticks down from 3, one setTimeout(1000ms) step at a time.
+      act(() => {
+        jest.advanceTimersByTime(1000);
+      });
+      act(() => {
+        jest.advanceTimersByTime(1000);
+      });
+      act(() => {
+        jest.advanceTimersByTime(1000);
+      });
+
+      expect(root.root.findAll((node) => node.props.children === 'Next trick')).toHaveLength(0);
+
+      act(() => {
+        root.unmount();
+      });
     } finally {
       jest.useRealTimers();
     }
