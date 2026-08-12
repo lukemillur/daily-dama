@@ -1,0 +1,89 @@
+# newTicket workflow tooling
+
+Deterministic scripts behind [`.claude/skills/newTicket/SKILL.md`](../skills/newTicket/SKILL.md). Node built-ins only — no install step, no dependencies. Run `yarn test:workflow` (or `node --test '.claude/scripts/test/*.test.mjs'`) after changing anything here.
+
+## Why these exist
+
+Every stage the workflow can perform mechanically is performed mechanically. A model context is only spent where judgement is actually required — planning a non-trivial change, and writing the code.
+
+| Script | Replaces |
+| :-- | :-- |
+| `ticket-claim.mjs` | the former `ticket-claim` subagent (a fresh Sonnet context per cycle for a fixed sequence of git commands) |
+| `verify.mjs` | four separate `Bash` round trips per implementation |
+| `worktree-cleanup.mjs` | agents attempting to remove worktrees they cannot remove |
+| `validate-agent-config.mjs` | discovering a broken agent definition at run time |
+
+## `ticket-claim.mjs`
+
+```sh
+node .claude/scripts/ticket-claim.mjs                 # next actionable task
+node .claude/scripts/ticket-claim.mjs T035            # named task (or --task T035)
+node .claude/scripts/ticket-claim.mjs resume T034     # resume an existing claim (or T034 --resume)
+node .claude/scripts/ticket-claim.mjs --dry-run       # decide without changing anything
+```
+
+Prints one JSON object on stdout and a one-line summary on stderr; exits 1 when blocked, 0 otherwise.
+
+```jsonc
+{
+  "status": "claimed",          // claimed | resumed | blocked | backlog-exhausted
+  "taskId": "T035",
+  "title": "…",
+  "branch": "task/T035-add-a-global-notes-archive",
+  "entry": "### [T035] …",      // verbatim, so no stage needs to re-read TASKS.md
+  "planFile": ".claude/plans/T035.md",
+  "planExists": false,
+  "planning": { "policy": "required", "source": "default", "reason": "…" },
+  "resolvedFromParent": false,  // true when a named umbrella resolved to a child
+  "skipped": [ { "id": "T039", "reason": "dependency", "detail": "…" } ]
+}
+```
+
+Selection, in order: umbrella parents are passed over (their children are separate entries); non-`Not started` entries are skipped; an entry whose stated `Depends on T0NN` isn't archived in `TASKS_DONE.md` is skipped; and the first candidate that already has a remote `task/<ID>-*` branch **stops the run** with `blocked` + a `resumeCommand`, rather than being skipped.
+
+What it will not do: switch branches or write files in the checkout it's invoked from; force-push; delete a branch it doesn't own; adopt an existing claim branch outside explicit resume mode; or treat branch age as evidence a claim is stale. The claim commit and push happen inside a temporary worktree under `.claude/worktrees/newticket-claim-*` that the script removes on success and on failure.
+
+`--resume` is read-only against the branch. It refuses when zero or more than one branch matches the ID, and when the branch's own `TASKS.md` doesn't contain the task.
+
+## `verify.mjs`
+
+```sh
+node .claude/scripts/verify.mjs                 # test, lint, typecheck, web export
+node .claude/scripts/verify.mjs --skip-export   # docs/test-only changes
+node .claude/scripts/verify.mjs --only lint     # one step, repeatable
+node .claude/scripts/verify.mjs --keep-going    # don't stop at the first failure
+```
+
+One line per step on success; on failure, the failing command's output tail plus a non-zero exit. The complete log of every step is always written to a temp file whose path is printed. Give it a 600000 ms tool timeout.
+
+## `worktree-cleanup.mjs`
+
+```sh
+node .claude/scripts/worktree-cleanup.mjs --path <dir> [--path <dir> …]
+node .claude/scripts/worktree-cleanup.mjs --prefix newticket-claim-
+node .claude/scripts/worktree-cleanup.mjs --list
+# add --dry-run to any of the above
+```
+
+Claude Code holds a `git worktree lock` on an agent's worktree for the agent's lifetime, so an agent cannot remove its own — cleanup belongs to the orchestrating session, after the call returns.
+
+Removal requires **every** check to pass; anything else is refused and reported, never forced:
+
+| Refusal | Meaning |
+| :-- | :-- |
+| `main-checkout` | it's the repository itself |
+| `outside-container` | not under `.claude/worktrees/` — user-owned |
+| `locked` | an agent still holds it; retry at the next checkpoint |
+| `branch-checked-out` | a branch is still checked out there |
+| `dirty` | uncommitted or untracked files |
+| `unpushed-commits` | commits that exist on no remote |
+| `active-process` | a live process has its cwd inside |
+| `unverifiable` | git couldn't answer; assume unsafe |
+
+`--prefix` only matches direct children of `.claude/worktrees/`. Never point it at `agent-` — those are not necessarily this run's.
+
+## `validate-agent-config.mjs`
+
+Static check of `.claude/agents/*.md` and `.claude/skills/*/SKILL.md` frontmatter against Claude Code 2.1.x: known fields only, valid `model`/`effort`/`isolation`, tool names that actually resolve, and no `Agent` on a subagent. Exits non-zero on any error.
+
+Note the asymmetry it encodes: on a **subagent**, `tools:` is a real allowlist. On a **skill**, `allowed-tools` only pre-approves — `disallowed-tools` is what removes tools from the pool.

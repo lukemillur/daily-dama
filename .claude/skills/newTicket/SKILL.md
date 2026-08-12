@@ -1,60 +1,130 @@
 ---
 name: newTicket
-description: Claims a Daily Dama backlog task — a specific one if named, otherwise the next available one — and drives it end-to-end against `development` via the ticket-claim, ticket-planner, and ticket-implementer agents (claim, plan, implement, merge). No plan-approval gate. When no task is named, keeps going: drives one task after another, each in fresh subagents so context never accumulates, until the backlog is exhausted, a blocker is hit, or the session's usage limit is reached.
-allowed-tools: Read, Agent
+description: Claims a Daily Dama backlog task — a specific one if named, otherwise the next available one — and drives it end-to-end against `development`: deterministic claim script, then the ticket-planner and ticket-implementer agents (plan, implement, merge). No plan-approval gate. When no task is named, keeps going: one task after another, each in fresh subagents so context never accumulates, until the backlog is exhausted, a blocker is hit, or the session's usage limit is reached. Also resumes an interrupted task with `/newTicket resume T0NN`.
+allowed-tools: Agent, Read, Bash(node .claude/scripts/ticket-claim.mjs:*), Bash(node .claude/scripts/worktree-cleanup.mjs:*), Bash(git worktree list:*)
+disallowed-tools: Edit, Write, NotebookEdit, WebFetch, WebSearch
 ---
 
-Drive task(s) from `TASKS.md` to merged PRs against `development`. All the actual work — selecting, claiming, planning, implementing, merging — happens inside three subagents (`.claude/agents/ticket-claim.md`, `ticket-planner.md`, `ticket-implementer.md`), each invoked fresh for every task. This skill itself is the orchestrator: it never touches git or `TASKS.md` directly, and it never does planning or implementation work itself.
+Drive task(s) from `TASKS.md` to merged PRs against `development`.
 
-**Call all three subagents directly from this top-level session, in sequence, for each task.** Do not route the calls through an intermediate subagent that itself tries to call `Agent` — nested subagent-to-subagent delegation has failed in practice (the inner agent reported it couldn't reach the `Agent` tool and fell back to doing the work inline, which broke the fresh-context guarantee and let one call silently process multiple tasks). This top-level session is the only place `Agent` gets called.
+You are the orchestrator. You never edit files, never plan, never implement, and never run git yourself. Everything happens in exactly two places:
 
-**Always pass `isolation: "worktree"` on all three `Agent` calls** (`ticket-claim`, `ticket-planner`, `ticket-implementer`). This session's own working directory is a real checkout that may hold work of its own (uncommitted edits, a different branch checked out) — without worktree isolation, a subagent's `git checkout` of a task branch operates on that same shared directory and can silently sweep up or clash with whatever's sitting there. Each subagent already does its own branch fetch/checkout/push (see their individual instructions), so an isolated worktree is a drop-in — nothing about the claim/plan/implement logic changes, it just runs somewhere that can't collide with this session or with other cycles. **This requires the orchestrating session's own working directory to already be this repo's root** — worktree isolation resolves the repo from cwd, not from any path passed in, so running this skill from elsewhere silently breaks every subagent's fetch/checkout and relative-path reads.
+- **`node .claude/scripts/ticket-claim.mjs`** — selection, dependency checks, collision detection, branching, the status flip, the claim commit and push. Deterministic; no model context. Prints one JSON object.
+- **`ticket-planner` / `ticket-implementer` subagents** — invoked fresh for every task, always with `isolation: "worktree"` and `run_in_background: false`.
 
-Because each stage runs in its own separate worktree, a task's branch would otherwise stay locked to whichever worktree last checked it out — git refuses to check out a branch that's already checked out elsewhere. `ticket-claim` and `ticket-planner` both detach HEAD (`git checkout --detach`) right before finishing, once their own commits are pushed, so the branch name is free for the next stage's plain `git fetch && git checkout`. Their worktree directories themselves aren't cleaned up synchronously (a harness-level lock on an agent's own worktree only releases at that agent's session end) — expect `.claude/worktrees/` to accumulate over a long continuous run; it's gitignored and harmless beyond disk use, and this top-level session can clean up stragglers with a plain `git worktree remove <path> --force` between cycles if it becomes a problem.
+**Call the subagents directly from this top-level session.** Never route them through an intermediate subagent that itself calls `Agent` — nested delegation has failed in practice (the inner agent couldn't reach `Agent`, did the work inline, and one call silently processed several tasks). This session is the only place `Agent` gets called.
+
+**This session's working directory must already be the repo root** — worktree isolation resolves the repo from cwd, so running this skill from elsewhere breaks every subagent's fetch/checkout and the scripts' relative paths.
+
+## Invocation
+
+Read what the user actually said; there's no argument syntax to parse.
+
+| They said | You run |
+| :-- | :-- |
+| `/newTicket` (nothing named) | continuous mode: cycles back to back |
+| `/newTicket T035`, "work on the laced count task" | one cycle for that task |
+| `/newTicket resume T034`, `/newTicket T034 --resume` | one cycle resuming that task's existing claim branch |
 
 ## One cycle
 
-A "cycle" is exactly one task, taken through claim → plan → implement, via three separate `Agent` calls you make yourself.
+Exactly one task, claim → plan (maybe) → implement → cleanup. Post a short plain one-line status (no headers, no emoji) as its own message at each checkpoint — you're the only visible progress while a cycle runs.
 
-**Progress updates:** since these calls are foreground and sequential, you're the only place a status is visible while a cycle is running — the subagents' internal work isn't shown to the user. Post a short, plain one-line status message (no headers, no emoji) as its own message at each checkpoint below, so the user can see progress at a glance without reading full reports. Keep each line to the task ID and what just happened, e.g. `T003: claimed (branch task/T003-...)`.
+### 1. Claim
 
-1. **Claim.** Post `T00x: claiming next task…` (or `T00x: claiming…` if a specific ID was given). Invoke `ticket-claim` (`Agent` tool, `subagent_type: "ticket-claim"`, foreground, `isolation: "worktree"`), passing a task ID if one was named, otherwise nothing.
-   - `STATUS: blocked` or `STATUS: backlog-exhausted` — post `T00x: blocked — <reason>` or `no actionable tasks left in backlog`, and the cycle ends here; nothing to plan or implement. Carry the status forward to the cycle's outcome.
-   - `STATUS: claimed` — post `T00x: claimed (branch <branch-name>) — <one-line task description>`, where the description is a concise paraphrase (not a verbatim dump) of the task's title/description from the entry `ticket-claim` returned, enough for the user to know what the task is at a glance. Take the task entry, branch name, and plan-file status from its report, and continue to step 2.
-2. **Plan.** If `ticket-claim`'s report says `.claude/plans/<ID>.md` already exists on the branch (a resumed task whose planning already completed in an earlier, interrupted run), skip this step entirely: post `T00x: plan already exists (resuming) — skipping planning`, and go straight to step 3 with that file's path. Otherwise:
+```sh
+node .claude/scripts/ticket-claim.mjs                 # continuous: next actionable task
+node .claude/scripts/ticket-claim.mjs T035            # named
+node .claude/scripts/ticket-claim.mjs resume T034     # resume
+```
 
-   Post `T00x: planning…`. Invoke `ticket-planner` (`Agent` tool, `subagent_type: "ticket-planner"`, foreground, `isolation: "worktree"`), giving it the full task entry and branch name from step 1.
-   - If it reports a blocker instead of a plan, post `T00x: blocked at planning — <reason>`. The cycle ends with `STATUS: blocked` — the branch stays claimed for a future session. Do not proceed to implementation on a plan that doesn't exist.
-   - If this `Agent` call itself fails, errors out, or its result indicates the session hit its usage/rate limit (phrasing like "usage limit", "rate limit", "quota exceeded", "5-hour limit", or the call being rejected for capacity reasons — not a normal tool error) — do not retry and do not do the planning yourself inline. Post `T00x: usage limit hit during planning`. The cycle ends with `STATUS: usage-limit`, noting planning is where it hit. The branch stays claimed and pushed, and if `ticket-planner` got far enough to commit `.claude/plans/<ID>.md` before the limit hit, that's preserved too — recoverable state per `TASKS.md` § *Working across multiple agents* → *Stale claims*.
-   - Otherwise post `T00x: plan ready`.
-3. **Implement.** Post `T00x: implementing…`. Invoke `ticket-implementer` (`Agent` tool, `subagent_type: "ticket-implementer"`, foreground, `isolation: "worktree"`), passing the task entry and the plan **file path** (`.claude/plans/<ID>.md`) — whether that path came from `ticket-claim`'s report (resumed case) or `ticket-planner`'s report (freshly planned this cycle), it's always a path, never the plan text itself; `ticket-implementer` reads the file directly. Only fall back to relaying full plan text if `ticket-planner` explicitly reported the commit/push failed and no file exists remotely. It handles the rest of `TASKS.md`'s *Completing a task* steps itself, including opening the PR into `development` and attempting the squash-merge.
-   - Same usage-limit check as step 2, applied to this call: if it fails or indicates the limit was hit, don't do the implementation yourself inline. Post `T00x: usage limit hit during implementation`. The cycle ends with `STATUS: usage-limit`, noting implementation is where it hit. The plan is already durable in `.claude/plans/<ID>.md` on the branch, so nothing further needs preserving in your reply.
-   - If it reports a scoping/blocker problem instead of a finished PR, post `T00x: blocked during implementation — <reason>`. The cycle ends with `STATUS: blocked`.
-   - If it reports the code is done, the PR is open, but the merge itself was rejected (a failing check, missing review, branch protection, merge conflict — anything `gh pr merge` refused) — this is a distinct case from a scoping blocker: the implementation is finished, only the merge needs a human or a follow-up investigation. Post `T00x: blocked at merge (PR <URL>) — <the rejection reason ticket-implementer reported>`. The cycle ends with `STATUS: blocked`. Do not attempt the merge yourself, with any flags, to unblock this — `ticket-implementer` is required to have already stopped rather than force it (see its own instructions), and this session inherits that same boundary. Diagnosing or fixing the underlying blocker (e.g. broken CI config) is a separate, explicit task for you or the human to pick up outside this cycle, not something to fold into finishing the cycle.
-   - Otherwise, its report will confirm the PR was opened and merged — this only becomes known once the whole call returns, so post both as two short lines back to back: `T00x: PR opened (<PR URL>)` then `T00x: merged into development`. The cycle ends with `STATUS: success`.
+Parse the JSON. Its `status` is one of:
 
-A cycle's outcome is always exactly one of `success | blocked | usage-limit | backlog-exhausted`, and covers exactly one task. Never let a single cycle span more than one task, and never substitute your own inline work for a subagent call that failed or was unreachable — that defeats the fresh-context design and the usage-limit guard.
+- **`claimed`** — post `T0NN: claimed (branch <branch>) — <one-line paraphrase of the task>`. Carry `entry`, `branch`, `planFile`, `planExists`, `planning` into step 2.
+- **`resumed`** — post `T0NN: resuming <branch> (plan <exists|missing>)`. Same fields; the script did not modify the branch.
+- **`blocked`** — post `T0NN: blocked — <blocker.detail>`. Cycle ends. If `blocker.resumeCommand` is present, include it verbatim so the user can pick the task back up.
+- **`backlog-exhausted`** — post `no actionable tasks left in backlog`. Cycle ends; not an error.
+
+The script never steals or rewrites an existing claim branch. A task that already has a remote `task/<ID>-*` branch is reported `blocked` with reason `claimed`, in named *and* continuous mode — continuous mode stops there rather than skipping ahead, because skipping is how claimed work gets forgotten.
+
+### 2. Plan — only when required
+
+Decide from the claim JSON:
+
+| Condition | Do |
+| :-- | :-- |
+| `planExists: true` | Skip planning. Post `T0NN: plan already exists (resuming)`. Go to step 3 with `planFile`. |
+| `planning.policy == "implementer"` | Skip planning. Post `T0NN: planning inline (<planning.reason>)`. Go to step 3 and pass `PLANNING: implementer` instead of a plan path. |
+| `planning.policy == "required"` | Run `ticket-planner`. |
+
+Never invent a third route, and never skip a `required` planner to save time — the policy already accounts for cost. `planning.source` tells you why: `field` (the task declared it), `default` (no `**Planning:**` field — safe default is the separate planner), `escalated` (the task said `Implementer` but touches persistence, schema, state machines, concurrency, architecture boundaries or native APIs), `existing-plan`.
+
+Post `T0NN: planning…`, then invoke `ticket-planner` (`subagent_type: "ticket-planner"`, `isolation: "worktree"`, `run_in_background: false`) with the full task entry and branch name.
+
+- `STATUS: blocked` → post `T0NN: blocked at planning — <reason>`; cycle ends `blocked`. The branch stays claimed for a future session. Do not implement against a plan that doesn't exist.
+- Usage limit (see below) → cycle ends `usage-limit`.
+- Otherwise post `T0NN: plan ready` and take `planFile` and `WORKTREE` from its report.
+
+Run cleanup on the planner's `WORKTREE` path (step 4) before moving on.
+
+### 3. Implement
+
+Post `T0NN: implementing…`, then invoke `ticket-implementer` (`subagent_type: "ticket-implementer"`, `isolation: "worktree"`, `run_in_background: false`) with the task entry, the branch, and either the plan **file path** (never the plan text — it reads the file itself) or `PLANNING: implementer`.
+
+- `STATUS: blocked` → post `T0NN: blocked during implementation — <reason>`; cycle ends `blocked`.
+- `STATUS: blocked-at-merge` → the code is done and the PR is open; only the merge was refused. Post `T0NN: blocked at merge (PR <URL>) — <the exact rejection>`; cycle ends `blocked`. **Do not attempt the merge yourself, with any flags.** The implementer is required to stop rather than force it, and you inherit that boundary. Diagnosing the underlying cause is a separate task, not part of finishing this cycle.
+- Usage limit → cycle ends `usage-limit`.
+- `STATUS: merged` → post `T0NN: PR opened (<URL>)` then `T0NN: merged into development`; cycle ends `success`.
+
+### 4. Clean up the stage worktree
+
+Claude Code holds a `git worktree lock` on an agent's worktree while it runs, so an agent cannot remove its own — that's why they used to accumulate. Removal is yours, after the call returns:
+
+```sh
+node .claude/scripts/worktree-cleanup.mjs --path <WORKTREE from the agent's report>
+```
+
+Run it after the planner returns, and after a `merged` implementer. Also run it after a `blocked` or `usage-limit` stage — it removes nothing that could lose work: it refuses any worktree that is the main checkout, locked, on a branch, dirty, holding commits that exist nowhere else, has a live process inside it, or sits outside `.claude/worktrees/`. A rejected-merge worktree stays put by design.
+
+If a path comes back `refused` with reason `locked`, the harness lock hasn't released yet — don't force it. Retry the same `--path` at the next checkpoint (start of the next cycle, or end of the run) and report anything still remaining.
+
+Keep a list, in your reply text, of every worktree path that survived cleanup. At the end of the run:
+
+```sh
+node .claude/scripts/worktree-cleanup.mjs --path <each deferred path>
+node .claude/scripts/worktree-cleanup.mjs --prefix newticket-claim-
+```
+
+The second sweeps temporary claim worktrees left behind by an interrupted claim. Never pass `--prefix agent-` or clean up worktrees this run didn't create — pre-existing ones are user-owned.
+
+## Cycle outcomes
+
+A cycle covers exactly one task and ends in exactly one state. Never let a cycle span two tasks, and never substitute your own inline work for a subagent call that failed — that defeats the fresh-context design and the usage-limit guard.
+
+| Outcome | Meaning | Continuous mode |
+| :-- | :-- | :-- |
+| `success` | merged into `development` | start the next cycle immediately, no confirmation |
+| `blocked` | claim, plan, implementation or merge stopped on a specific reason | stop the loop; report the reason |
+| `usage-limit` | an `Agent` call failed for capacity reasons | stop the loop; the task stays claimed and resumable |
+| `backlog-exhausted` | no actionable task remains | stop the loop; not an error |
+
+`claimed` and `resumed` are claim-step statuses, not cycle outcomes — a cycle that claims successfully continues to plan/implement and ends in one of the four above.
 
 ## Usage-limit handling
 
-There's no way to proactively check remaining usage before starting a cycle — this session has no tool that exposes the 5-hour window's remaining capacity. The guard is reactive instead: watch your own calls to `ticket-planner` and `ticket-implementer` (see steps 2–3 above) and treat `usage-limit` as a stop signal, not a blocker — the task stays claimed for a future session to resume, nothing is wrong with the task itself.
+Nothing exposes remaining capacity ahead of time, so the guard is reactive: if an `Agent` call fails, errors out, or its result mentions a usage/rate/quota/5-hour limit or a capacity rejection (not a normal tool error), do **not** retry and do **not** do the work yourself. Post `T0NN: usage limit hit during <planning|implementation>` and end the cycle with `usage-limit`.
 
-## Named task vs. continuous mode
+Nothing is wrong with the task: the branch stays claimed and pushed, and a committed `.claude/plans/<ID>.md` survives. Recover with `/newTicket resume T0NN`, which detects the durable plan and skips straight to implementation.
 
-Check whether a specific task was named when this skill was invoked — e.g. `/newTicket T003`, `/newTicket T005.2`, or plain language like "work on the laced count task." There's no special argument syntax to parse for this; just read what the user actually said.
+## Continuous mode
 
-**If a specific task was named:** run one cycle with that task ID. Report its outcome and stop — regardless of status.
+1. Run a cycle with no task ID.
+2. Append its outcome (task ID, PR URL, or blocker/limit detail) to a running tally in your reply text — not in any file.
+3. `success` → next cycle immediately (pre-authorized, matching the protocol's no-review-gate design).
+4. `blocked`, `usage-limit` or `backlog-exhausted` → stop. Never skip a blocked task to reach the next one.
 
-**If no task was named (continuous mode):** run cycles back to back:
-
-1. Run one cycle with no task ID (`ticket-claim` selects the next actionable task itself).
-2. Append the cycle's outcome (task ID, PR URL if merged, or blocker/limit detail) to a running tally you keep in your own reply text — not in any file.
-3. If the cycle's outcome was `success` — start the next cycle immediately, with no pause for confirmation (this is pre-authorized, matching the rest of the protocol's no-review-gate design).
-4. If `backlog-exhausted` — stop the loop. This isn't an error; report the full tally of everything completed this run.
-5. If `blocked` or `usage-limit` — stop the loop immediately. Never skip a blocked task and move to the next one. Report the full tally plus the blocker/limit detail from the cycle that stopped it.
-
-Each cycle's three subagent calls are fresh, with no memory of prior cycles, by design — this keeps context from accumulating across a long continuous run.
+Each cycle's subagents are fresh, with no memory of prior cycles, by design.
 
 ## Report
 
-Summarize plainly. Single-task mode: which task, the branch name, the PR URL — or the blocker/usage-limit detail if it didn't finish. Continuous mode: the full tally of every task's outcome this run, and why the loop stopped.
+Single-task mode: which task, the branch, the PR URL — or the blocker/usage-limit detail. Resume mode: also say whether a durable plan was reused. Continuous mode: the full tally of every task's outcome and why the loop stopped. Always: any worktrees left behind and why.

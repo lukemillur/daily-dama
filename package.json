@@ -52,14 +52,22 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "lint": "expo lint",
-    "test": "jest --runInBand"
+    "test": "jest --runInBand",
+    "test:workflow": "node --test '.claude/scripts/test/*.test.mjs'"
   },
   "jest": {
     "preset": "jest-expo",
     "resolver": "react-native-worklets/jest/resolver",
     "moduleNameMapper": {
       "^@/(.*)$": "<rootDir>/src/$1"
-    }
+    },
+    "testPathIgnorePatterns": [
+      "/node_modules/",
+      "<rootDir>/.claude/worktrees/"
+    ],
+    "modulePathIgnorePatterns": [
+      "<rootDir>/.claude/worktrees/"
+    ]
   },
   "private": true
 }
