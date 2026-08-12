@@ -120,15 +120,6 @@ The first pass used **locked/unlocked** for "the user can land this trick." User
   - Toggling stays a plain set union with lace-derived status (`selectEffectiveUnlockedTrickIds`), unchanged from [T006]. A trick with real sesh history reads laced regardless of the manual flag; that's existing behavior and is correct.
   - Trick rows show nothing at all for an unlaced trick — no badge, no "0 laces". There's no reason to tell someone they haven't done something yet.
 
-### [T021] Personal-best celebration
-
-- **Area:** Sesh
-- **Priority:** Medium
-- **Status:** Not started
-- **Description:** When a user beats their previous best for a trick at a given duration, celebrate it in the sesh the same way a first lace is celebrated. This must only fire when there's a genuine previous best to beat — a first-ever sesh on a trick is not a personal best.
-- **Exit criteria:** Test confirms the celebration fires on the landing that exceeds an existing personal best, and does not fire when no prior comparable attempt exists or when the count merely ties the best; verified in-browser.
-- **Notes:** The data is already there — `getPersonalBest` returns `undefined` when there's no comparable prior attempt, which is exactly the "don't celebrate" signal, and `ActiveSesh` already computes `hasBeatenBest` for the live-challenge readout. The work is turning that from a passive status line into a celebration moment, and making it fire regardless of whether the user opted into live challenge display. Note `getPersonalBest` is scoped to timed seshes at a matching planned duration, so open-ended seshes have no personal best by construction — that's existing, deliberate behavior (see `isEligibleTimedAttempt`), not a gap to close here.
-
 ### [T028] Multi-trick run controls
 
 - **Area:** Sesh
