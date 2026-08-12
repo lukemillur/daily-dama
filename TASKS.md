@@ -140,15 +140,6 @@ The first pass used **locked/unlocked** for "the user can land this trick." User
   - When both auto-advance-on-lace and a per-trick duration are configured, whichever condition is met first advances the run.
   - These controls belong to the shared `MultiTrickSesh` core so the assessment flow ([T029]) inherits them rather than reimplementing them.
 
-### [T028.4] Multi-trick sesh wrap-up screen
-
-- **Area:** Sesh
-- **Priority:** High (inherited from parent T028)
-- **Status:** Not started
-- **Description:** A run through several tricks currently ends by dumping the user back at the trick picker with no summary. Show a wrap-up covering the whole run: each trick attempted, its laces, and its time.
-- **Exit criteria:** Test confirms a completed 3-trick run renders one summary entry per attempted trick in run order with correct per-trick lace counts, and that a skipped trick is absent; verified in-browser.
-- **Notes:** `MultiTrickSesh` currently discards each `SeshSummary` after recording it and calls `onFinished` immediately. It'll need to accumulate summaries across the run and render the wrap-up itself before calling `onFinished` — the placeholder "Sequence complete" panel at the bottom of that file is where this goes. The per-trick celebrations from [T020]/[T021]/[T026] fire per trick during the run; deciding whether they're also replayed here is deferred, not assumed.
-
 ### [T029] Kentei assessment run refinements
 
 - **Area:** Sesh / Profile
