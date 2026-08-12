@@ -9,11 +9,11 @@ import {
   createTrickSections,
   isKenteiRankComplete,
   selectAvailablePracticeTricks,
-  selectEffectiveUnlockedTrickIds,
+  selectEffectiveLacedTrickIds,
   selectLacedCountByTrickId,
+  selectLacedTrickIds,
   selectNoteCountByTrickId,
   selectPromotedKenteiRank,
-  selectUnlockedTrickIds,
 } from '@/features/tricks/model/trick-directory';
 
 const CUSTOM_TRICKS: readonly CustomTrick[] = [
@@ -178,29 +178,38 @@ describe('selectNoteCountByTrickId', () => {
   });
 });
 
-describe('selectUnlockedTrickIds', () => {
-  it('marks a trick with at least one practice-history record as unlocked', () => {
-    const unlocked = selectUnlockedTrickIds([
+describe('selectLacedTrickIds', () => {
+  it('marks a trick laced once one of its sessions lands a real lace', () => {
+    const laced = selectLacedTrickIds([
       session({ id: 'big-cup-1', trickId: 'big-cup', laceCount: 4 }),
     ]);
 
-    expect(unlocked.has('big-cup')).toBe(true);
+    expect(laced.has('big-cup')).toBe(true);
   });
 
-  it('unlocks a trick even when its only record has zero laces', () => {
-    const unlocked = selectUnlockedTrickIds([
+  it('leaves a trick unlaced when its only record has zero laces', () => {
+    const laced = selectLacedTrickIds([
       session({ id: 'airplane-1', trickId: 'airplane', laceCount: 0 }),
     ]);
 
-    expect(unlocked.has('airplane')).toBe(true);
+    expect(laced.has('airplane')).toBe(false);
   });
 
-  it('leaves a trick with no practice-history records locked', () => {
-    const unlocked = selectUnlockedTrickIds([
+  it('leaves a trick with no practice-history records unlaced', () => {
+    const laced = selectLacedTrickIds([
       session({ id: 'big-cup-1', trickId: 'big-cup', laceCount: 5 }),
     ]);
 
-    expect(unlocked.has('never-practiced')).toBe(false);
+    expect(laced.has('never-practiced')).toBe(false);
+  });
+
+  it('counts a trick as laced when any of its sessions lands a lace, not just the first', () => {
+    const laced = selectLacedTrickIds([
+      session({ id: 'airplane-1', trickId: 'airplane', laceCount: 0 }),
+      session({ id: 'airplane-2', trickId: 'airplane', laceCount: 2 }),
+    ]);
+
+    expect(laced.has('airplane')).toBe(true);
   });
 });
 
@@ -267,28 +276,28 @@ describe('selectPromotedKenteiRank', () => {
     )!.id;
     const practiceLaced = lacedTrickIdsForRankOne(lastRankOneId);
     const manuallyUnlockedTrickIds = [lastRankOneId];
-    const effective = selectEffectiveUnlockedTrickIds(practiceLaced, manuallyUnlockedTrickIds);
+    const effective = selectEffectiveLacedTrickIds(practiceLaced, manuallyUnlockedTrickIds);
 
     expect(selectPromotedKenteiRank(1, KENDAMA_KENTEI_TRICKS, effective)).toBe(2);
   });
 });
 
-describe('selectEffectiveUnlockedTrickIds', () => {
-  it('shows a trick as unlocked when the manual flag is set despite no lace history', () => {
-    const effective = selectEffectiveUnlockedTrickIds(new Set(), ['never-practiced']);
+describe('selectEffectiveLacedTrickIds', () => {
+  it('shows a trick as laced when the manual flag is set despite no lace history', () => {
+    const effective = selectEffectiveLacedTrickIds(new Set(), ['never-practiced']);
 
     expect(effective.has('never-practiced')).toBe(true);
   });
 
   it('returns a trick to lace-derived status once the manual flag is cleared', () => {
-    const effective = selectEffectiveUnlockedTrickIds(new Set(), []);
+    const effective = selectEffectiveLacedTrickIds(new Set(), []);
 
     expect(effective.has('never-practiced')).toBe(false);
   });
 
-  it('keeps a trick with real lace history unlocked regardless of the manual flag', () => {
-    const withManualFlagCleared = selectEffectiveUnlockedTrickIds(new Set(['big-cup']), []);
-    const withManualFlagSet = selectEffectiveUnlockedTrickIds(new Set(['big-cup']), ['big-cup']);
+  it('keeps a trick with real lace history laced regardless of the manual flag', () => {
+    const withManualFlagCleared = selectEffectiveLacedTrickIds(new Set(['big-cup']), []);
+    const withManualFlagSet = selectEffectiveLacedTrickIds(new Set(['big-cup']), ['big-cup']);
 
     expect(withManualFlagCleared.has('big-cup')).toBe(true);
     expect(withManualFlagSet.has('big-cup')).toBe(true);

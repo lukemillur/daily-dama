@@ -33,10 +33,10 @@ import { KENDAMA_KENTEI_TRICKS } from '@/features/tricks/data/kendama-kentei-tri
 import {
   createProfileDirectoryTricks,
   type DirectoryTrick,
-  selectEffectiveUnlockedTrickIds,
+  selectEffectiveLacedTrickIds,
   selectLacedCountByTrickId,
+  selectLacedTrickIds,
   selectNoteCountByTrickId,
-  selectUnlockedTrickIds,
 } from '@/features/tricks/model/trick-directory';
 import type { PracticeTrick } from '@/features/tricks/model/trick';
 
@@ -60,10 +60,10 @@ export default function TricksScreen() {
   );
   const lacedCountByTrickId = useMemo(() => selectLacedCountByTrickId(sessions), [sessions]);
   const noteCountByTrickId = useMemo(() => selectNoteCountByTrickId(notes), [notes]);
-  const lacedUnlockedTrickIds = useMemo(() => selectUnlockedTrickIds(sessions), [sessions]);
+  const lacedTrickIds = useMemo(() => selectLacedTrickIds(sessions), [sessions]);
   const unlockedTrickIds = useMemo(
-    () => selectEffectiveUnlockedTrickIds(lacedUnlockedTrickIds, manuallyUnlockedTrickIds),
-    [lacedUnlockedTrickIds, manuallyUnlockedTrickIds],
+    () => selectEffectiveLacedTrickIds(lacedTrickIds, manuallyUnlockedTrickIds),
+    [lacedTrickIds, manuallyUnlockedTrickIds],
   );
 
   if (!isOnboardingComplete) return null;
