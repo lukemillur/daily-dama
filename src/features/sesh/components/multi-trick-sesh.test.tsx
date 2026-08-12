@@ -6,7 +6,7 @@ import { act, create } from 'react-test-renderer';
 
 import { NoteProvider } from '@/features/notes/state/note-provider';
 import { MultiTrickSesh } from '@/features/sesh/components/multi-trick-sesh';
-import { OPEN_ENDED_SESH_PLAN } from '@/features/sesh/model/sesh';
+import { createTimedSeshPlan, OPEN_ENDED_SESH_PLAN, type SeshPlan } from '@/features/sesh/model/sesh';
 import {
   PracticeHistoryProvider,
   usePracticeHistory,
@@ -80,6 +80,7 @@ function SessionSummary() {
 
 async function mountMultiTrickSesh(props: {
   readonly advanceOnFirstLace?: boolean;
+  readonly plan?: SeshPlan;
   readonly onFinished: () => void;
 }) {
   let root!: ReactTestRenderer;
@@ -89,7 +90,7 @@ async function mountMultiTrickSesh(props: {
         <PracticeHistoryProvider>
           <MultiTrickSesh
             tricks={TRICKS}
-            plan={OPEN_ENDED_SESH_PLAN}
+            plan={props.plan ?? OPEN_ENDED_SESH_PLAN}
             advanceOnFirstLace={props.advanceOnFirstLace}
             onFinished={props.onFinished}
           />
@@ -157,6 +158,41 @@ describe('MultiTrickSesh advanceOnFirstLace', () => {
     advanceThroughCountdown();
     expect(findByText(root, TRICKS[1].name).length).toBeGreaterThan(0);
     expect(findByAccessibilityLabel(root, 'session-count:1').length).toBeGreaterThan(0);
+
+    act(() => {
+      root.unmount();
+    });
+  });
+});
+
+describe('MultiTrickSesh per-trick duration', () => {
+  beforeEach(async () => {
+    await AsyncStorage.clear();
+    jest.useFakeTimers();
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  it('advances to the next trick once the per-trick duration elapses, with no manual action', async () => {
+    const onFinished = jest.fn();
+    const root = await mountMultiTrickSesh({ plan: createTimedSeshPlan(1), onFinished });
+
+    for (const trick of TRICKS) {
+      advanceThroughCountdown();
+      expect(findByText(root, trick.name).length).toBeGreaterThan(0);
+
+      act(() => {
+        jest.advanceTimersByTime(60_000);
+      });
+    }
+
+    expect(onFinished).toHaveBeenCalledTimes(1);
+    expect(findByAccessibilityLabel(root, 'session-count:3').length).toBeGreaterThan(0);
+    for (let index = 0; index < TRICKS.length; index += 1) {
+      expect(findByAccessibilityLabel(root, `session-${index}-lace-count:0`).length).toBeGreaterThan(0);
+    }
 
     act(() => {
       root.unmount();
