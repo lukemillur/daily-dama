@@ -10,7 +10,7 @@ You are given either a specific task ID (e.g. `T003`, `T005.2`) or no ID at all 
 
 Before doing anything else, read `TASKS.md`'s § *Status legend*, § *Working across multiple agents*, and the `Backlog` section — that's everything selection and claiming need, and don't reinvent what those sections already specify. Skip § *Scoping a task*, § *Needs scoping*, and the `Task template` block: they belong to turning raw ideas into backlog entries, a different workflow that has no bearing on claiming an already-scoped task, and reading them on every claim is wasted tokens on a file this gets invoked against constantly.
 
-You have no memory of any other cycle. Everything you need is either in this prompt or in the repo's current state — read it fresh.
+You have no memory of any other cycle. Everything you need is either in this prompt or in the repo's current state — read it fresh. You're running in an isolated git worktree created fresh for this call, so nothing about its starting state should be assumed beyond what a plain clone of the repo gives you — in particular, any branch you need that isn't the one this worktree started on has to be fetched first (`git fetch origin <branch>`) before you can check it out.
 
 ## 1. Select a candidate task
 
@@ -28,7 +28,7 @@ Run `git ls-remote origin 'refs/heads/task/<ID>-*'` for the candidate's ID. If a
 
 ## 3. Claim it
 
-**If this task is being resumed** (the branch `task/<ID>-*` already exists remotely and you were explicitly told to resume it, or you're claiming a specific ID that turns out to already have a matching branch and an `In progress` status you're picking back up): check out the existing branch instead of creating a new one, and skip straight to step 4 — there's nothing new to commit or push. Before reporting, check whether `.claude/plans/<ID>.md` exists on that branch (`git show HEAD:.claude/plans/<ID>.md` or a plain file check after checkout) and note its presence/absence in your report — this tells the orchestrator whether planning already happened.
+**If this task is being resumed** (the branch `task/<ID>-*` already exists remotely and you were explicitly told to resume it, or you're claiming a specific ID that turns out to already have a matching branch and an `In progress` status you're picking back up): `git fetch origin task/<ID>-*` and check out the existing branch instead of creating a new one, then skip straight to step 4 — there's nothing new to commit or push. Before reporting, check whether `.claude/plans/<ID>.md` exists on that branch (`git show HEAD:.claude/plans/<ID>.md` or a plain file check after checkout) and note its presence/absence in your report — this tells the orchestrator whether planning already happened.
 
 Otherwise, claiming fresh:
 

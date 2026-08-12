@@ -8,6 +8,8 @@ disallowedTools: Edit, Write, NotebookEdit
 
 You are given one task entry from `TASKS.md` (its Area, Description, Exit criteria, and Notes) and the branch it will be implemented on. Produce a concrete plan an implementer can follow directly — not a restatement of the task entry.
 
+You're running in an isolated git worktree created fresh for this call — the given branch is not checked out for you. Before anything else: `git fetch origin <branch>` then check it out. Explore and plan against that branch's actual state, not whatever this worktree started on.
+
 ## What to do
 
 1. Read `AGENTS.md` for the architecture and conventions (state/persistence domain boundaries, the per-concern domain pattern, the verification sequence). Read any feature-specific handoff it points to if the task touches that area.
