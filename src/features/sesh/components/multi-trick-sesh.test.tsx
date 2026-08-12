@@ -74,8 +74,21 @@ function SessionSummary() {
       {sessions.map((session, index) => (
         <Text key={session.id} accessibilityLabel={`session-${index}-lace-count:${session.laceCount}`} />
       ))}
+      {sessions.map((session, index) => (
+        <Text key={session.id} accessibilityLabel={`session-${index}-duration:${session.durationMs}`} />
+      ))}
     </>
   );
+}
+
+function findSessionDurationMs(root: ReactTestRenderer, index: number): number {
+  const [match] = root.root.findAll(
+    (node) =>
+      typeof node.props.accessibilityLabel === 'string' &&
+      node.props.accessibilityLabel.startsWith(`session-${index}-duration:`),
+  );
+  if (!match) throw new Error(`No duration label found for session ${index}`);
+  return Number(match.props.accessibilityLabel.split(':')[1]);
 }
 
 async function mountMultiTrickSesh(props: {
@@ -85,6 +98,7 @@ async function mountMultiTrickSesh(props: {
   readonly skipTarget?: (currentIndex: number) => number;
   readonly endActionLabel?: string;
   readonly skipCountdownBetweenTricks?: boolean;
+  readonly hideTimer?: boolean;
 }) {
   let root!: ReactTestRenderer;
   await act(async () => {
@@ -99,6 +113,7 @@ async function mountMultiTrickSesh(props: {
             skipTarget={props.skipTarget}
             endActionLabel={props.endActionLabel}
             skipCountdownBetweenTricks={props.skipCountdownBetweenTricks}
+            hideTimer={props.hideTimer}
           />
           <SessionSummary />
         </PracticeHistoryProvider>
@@ -195,6 +210,68 @@ describe('MultiTrickSesh endActionLabel', () => {
     expect(findByText(root, TRICKS[0].name).length).toBeGreaterThan(0);
     expect(findByText(root, 'End assessment').length).toBeGreaterThan(0);
     expect(findByText(root, 'End Sesh')).toHaveLength(0);
+
+    act(() => {
+      root.unmount();
+    });
+  });
+});
+
+describe('MultiTrickSesh hideTimer', () => {
+  beforeEach(async () => {
+    await AsyncStorage.clear();
+    jest.useFakeTimers();
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  it('hides the timer during an assessment-style run', async () => {
+    const onFinished = jest.fn();
+    const root = await mountMultiTrickSesh({ onFinished, hideTimer: true });
+
+    advanceThroughCountdown();
+    expect(findByText(root, TRICKS[0].name).length).toBeGreaterThan(0);
+    expect(findByText(root, 'Elapsed time')).toHaveLength(0);
+    expect(findByText(root, 'Time remaining')).toHaveLength(0);
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  it('shows the timer during a regular run', async () => {
+    const onFinished = jest.fn();
+    const root = await mountMultiTrickSesh({ onFinished });
+
+    advanceThroughCountdown();
+    expect(findByText(root, 'Elapsed time').length).toBeGreaterThan(0);
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  it('still records a real, non-zero durationMs while the timer is hidden', async () => {
+    const onFinished = jest.fn();
+    const root = await mountMultiTrickSesh({ onFinished, hideTimer: true });
+
+    advanceThroughCountdown();
+
+    act(() => {
+      jest.advanceTimersByTime(2000);
+    });
+
+    act(() => {
+      pressByVisibleText(root, 'Laced.');
+    });
+
+    act(() => {
+      pressByVisibleText(root, 'End Sesh');
+    });
+
+    expect(findSessionDurationMs(root, 0)).toBeGreaterThan(0);
 
     act(() => {
       root.unmount();
