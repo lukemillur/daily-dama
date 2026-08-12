@@ -147,7 +147,7 @@ The first pass used **locked/unlocked** for "the user can land this trick." User
 
 - **Area:** Home
 - **Priority:** Medium
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Implementer
 - **Description:** Correct the labels on Home practice summaries so they describe the rolling-window calculations currently implemented.
 - **Exit criteria:** Tests assert unambiguous labels equivalent to "Last 24 hours," "Last 7 days," "Last 30 days," and "Last 365 days" while representative boundary calculations remain unchanged; the summary is verified in-browser at 320 px.
