@@ -119,7 +119,7 @@ The first pass used **locked/unlocked** for "the user can land this trick." User
 
 - **Area:** Tricks
 - **Priority:** High
-- **Status:** Not started
+- **Status:** In progress
 - **Description:** Separate "practiced" from "laced." A trick should become automatically laced only when practice history contains at least one successful lace; merely including a trick in a zero-lace Sesh must not mark it laced.
 - **Exit criteria:** Selector and integration tests confirm that a zero-lace completed Sesh leaves its tricks unlaced, a positive-lace completed Sesh marks its tricks laced, the manual override still marks a trick laced, the Tricks directory and Laced screen use the same derivation, and rank promotion follows the corrected definition.
 - **Notes:** Rename misleading local selectors where useful, but retain the persisted `manuallyUnlockedTrickIds` field until a deliberate document-schema change is warranted.
