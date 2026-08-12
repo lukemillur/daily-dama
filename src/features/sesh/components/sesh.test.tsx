@@ -46,6 +46,11 @@ function findGoalBanner(root: ReactTestRenderer, goal: Goal) {
   return root.root.findAll((node) => node.props.accessibilityLabel === label);
 }
 
+function findPersonalBestBanner(root: ReactTestRenderer, trickName: string) {
+  const label = `New personal best on ${trickName}`;
+  return root.root.findAll((node) => node.props.accessibilityLabel === label);
+}
+
 function landing(elapsedMs: number): Landing {
   return { landedAt: elapsedMs, elapsedMs, intervalMs: elapsedMs };
 }
@@ -803,6 +808,163 @@ describe('ActiveSesh goal celebration - count-based goals', () => {
     });
 
     expect(findGoalBanner(root, goal)).toHaveLength(0);
+
+    act(() => {
+      root.unmount();
+    });
+  });
+});
+
+describe('ActiveSesh personal-best celebration', () => {
+  beforeEach(() => {
+    jest.useFakeTimers();
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  it('shows the banner on the landing that beats the best, not on the tie, and not on the next landing', () => {
+    let root!: ReactTestRenderer;
+    act(() => {
+      root = create(
+        <ActiveSesh
+          trick={TRICK}
+          plan={PLAN}
+          startedAt={Date.now()}
+          landings={[landing(1000)]}
+          pausedDurationMs={0}
+          personalBest={2}
+          liveChallengeEnabled={false}
+          hadPriorLaceAtSeshStart={true}
+          onLaced={noop}
+          onPause={noop}
+          onResume={noop}
+          onEnd={noop}
+          onTimerElapsed={noop}
+        />,
+      );
+    });
+
+    expect(findPersonalBestBanner(root, TRICK.name)).toHaveLength(0);
+
+    act(() => {
+      root.update(
+        <ActiveSesh
+          trick={TRICK}
+          plan={PLAN}
+          startedAt={Date.now()}
+          landings={[landing(1000), landing(2000)]}
+          pausedDurationMs={0}
+          personalBest={2}
+          liveChallengeEnabled={false}
+          hadPriorLaceAtSeshStart={true}
+          onLaced={noop}
+          onPause={noop}
+          onResume={noop}
+          onEnd={noop}
+          onTimerElapsed={noop}
+        />,
+      );
+    });
+
+    expect(findPersonalBestBanner(root, TRICK.name)).toHaveLength(0);
+
+    act(() => {
+      root.update(
+        <ActiveSesh
+          trick={TRICK}
+          plan={PLAN}
+          startedAt={Date.now()}
+          landings={[landing(1000), landing(2000), landing(3000)]}
+          pausedDurationMs={0}
+          personalBest={2}
+          liveChallengeEnabled={false}
+          hadPriorLaceAtSeshStart={true}
+          onLaced={noop}
+          onPause={noop}
+          onResume={noop}
+          onEnd={noop}
+          onTimerElapsed={noop}
+        />,
+      );
+    });
+
+    expect(findPersonalBestBanner(root, TRICK.name).length).toBeGreaterThan(0);
+    expect(JSON.stringify(root.toJSON())).toContain('New personal best');
+
+    act(() => {
+      root.update(
+        <ActiveSesh
+          trick={TRICK}
+          plan={PLAN}
+          startedAt={Date.now()}
+          landings={[landing(1000), landing(2000), landing(3000), landing(4000)]}
+          pausedDurationMs={0}
+          personalBest={2}
+          liveChallengeEnabled={false}
+          hadPriorLaceAtSeshStart={true}
+          onLaced={noop}
+          onPause={noop}
+          onResume={noop}
+          onEnd={noop}
+          onTimerElapsed={noop}
+        />,
+      );
+    });
+
+    expect(findPersonalBestBanner(root, TRICK.name)).toHaveLength(0);
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  it('never celebrates when there is no comparable prior attempt (personalBest is undefined)', () => {
+    let root!: ReactTestRenderer;
+    act(() => {
+      root = create(
+        <ActiveSesh
+          trick={TRICK}
+          plan={PLAN}
+          startedAt={Date.now()}
+          landings={[]}
+          pausedDurationMs={0}
+          personalBest={undefined}
+          liveChallengeEnabled={false}
+          hadPriorLaceAtSeshStart={false}
+          onLaced={noop}
+          onPause={noop}
+          onResume={noop}
+          onEnd={noop}
+          onTimerElapsed={noop}
+        />,
+      );
+    });
+
+    for (const count of [1, 2, 3, 4]) {
+      act(() => {
+        root.update(
+          <ActiveSesh
+            trick={TRICK}
+            plan={PLAN}
+            startedAt={Date.now()}
+            landings={Array.from({ length: count }, (_, i) => landing((i + 1) * 1000))}
+            pausedDurationMs={0}
+            personalBest={undefined}
+            liveChallengeEnabled={false}
+            hadPriorLaceAtSeshStart={false}
+            onLaced={noop}
+            onPause={noop}
+            onResume={noop}
+            onEnd={noop}
+            onTimerElapsed={noop}
+          />,
+        );
+      });
+
+      expect(findPersonalBestBanner(root, TRICK.name)).toHaveLength(0);
+    }
 
     act(() => {
       root.unmount();

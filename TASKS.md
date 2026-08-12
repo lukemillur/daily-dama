@@ -7,12 +7,14 @@ Working backlog for Daily Dama **core-functionality** work. This file is the che
 ## How to use this file
 
 **Picking up work:**
+
 1. Read this file top to bottom before touching code.
-2. Take the first `Backlog` entry with status `Not started` or `In progress`. Before claiming it, follow the branch-check protocol in *Working across multiple agents* below — this file's status field is a human-readable picture, not the authoritative claim signal.
+2. Take the first `Backlog` entry with status `Not started` or `In progress`. Before claiming it, follow the branch-check protocol in _Working across multiple agents_ below — this file's status field is a human-readable picture, not the authoritative claim signal.
 3. Read its exit criteria before writing anything — that's the definition of done, not a vibe check.
 4. If the exit criteria depend on something no longer true (file moved, API changed, decision superseded), stop and flag it rather than guessing.
 
 **Completing a task:**
+
 1. Do the work.
 2. Run the task's own exit criteria yourself — don't mark it done on assumption.
 3. Run the project's standard verification sequence (`yarn test --runInBand`, `yarn lint`, `yarn tsc --noEmit` — see [AGENTS.md](AGENTS.md)). A task isn't done if it breaks the baseline, even when its own criteria pass.
@@ -21,8 +23,9 @@ Working backlog for Daily Dama **core-functionality** work. This file is the che
 6. Open a PR into `development` and squash-merge it immediately — no review gate, this is pre-authorized (see [AGENTS.md](AGENTS.md) § Git state expectations). `development`, not `main`, is where task branches land; promoting `development` into `main` is a separate, manual step outside this protocol.
 
 **Getting stuck:**
+
 - If a task turns out bigger than scoped, don't silently expand it. Split it into new entries and mark the original `Blocked` with a one-line reason.
-- If a task depends on a product decision, mark it `Blocked` with the specific open question, not a guess — but this should be rare in practice. See *Scoping a task* below: most decisions should already have been surfaced and resolved before an entry ever reached `Backlog`.
+- If a task depends on a product decision, mark it `Blocked` with the specific open question, not a guess — but this should be rare in practice. See _Scoping a task_ below: most decisions should already have been surfaced and resolved before an entry ever reached `Backlog`.
 
 ## Status legend
 
@@ -53,10 +56,11 @@ Rough ideas do not go straight into `Backlog`. They land in `Needs scoping` firs
 **Promotion checklist — an idea may move to `Backlog` only if all four are true:**
 
 1. **Single area.** It stays inside one feature area or persistence domain (see AGENTS.md's three domains — profile, custom tricks, practice history — and the Sesh/Stats/Tricks/navigation split). If it spans two, split it into one entry per area.
-2. **One exit criterion.** The definition of done is a single coherent verification of *one* behavior or change — it can involve running a whole suite or several related checks together, as long as they're all confirming the same thing. What doesn't fit: bolting on verification of a second, unrelated behavior ("and also verify X") — that's a second task wearing one entry's clothes.
+2. **One exit criterion.** The definition of done is a single coherent verification of _one_ behavior or change — it can involve running a whole suite or several related checks together, as long as they're all confirming the same thing. What doesn't fit: bolting on verification of a second, unrelated behavior ("and also verify X") — that's a second task wearing one entry's clothes.
 3. **No embedded decision.** If answering it requires a product or technical call only you can make, it is not ready — it goes to `Blocked` with the specific open question, not into `Not started` with an assumption baked in.
 
-   Push on this *during scoping itself*, not after. While an idea sits in `Needs scoping`, actively hunt for any product or technical question it raises and get it answered in that conversation. The goal is for `Blocked` to be rare and reserved for questions that only became visible during implementation — not a routine landing spot for decisions that could've been asked about in five seconds while scoping.
+   Push on this _during scoping itself_, not after. While an idea sits in `Needs scoping`, actively hunt for any product or technical question it raises and get it answered in that conversation. The goal is for `Blocked` to be rare and reserved for questions that only became visible during implementation — not a routine landing spot for decisions that could've been asked about in five seconds while scoping.
+
 4. **One commit.** The whole thing lands in a single focused commit. If it can't, it isn't one task — see sizing below.
 
 If an idea fails any check, either split it into entries that each pass all four, or resolve the open question first. Don't force a fit.
@@ -73,14 +77,16 @@ Nothing else is a valid size. An idea that doesn't reduce to S or a numbered M-c
 Tasks here may be picked up by more than one agent at a time — possibly different harnesses, possibly different machines. Real-time coordination happens through git, not through this file: a pushed branch is the authoritative claim, and this file's `Status` field is the human-readable picture that catches up whenever that branch eventually merges. Don't trust `Status` alone to mean a task is actually free.
 
 **Before claiming a task:**
+
 1. Pull latest `development`.
 2. Check whether a branch already exists for it: `git ls-remote origin 'refs/heads/task/T0NN-*'` (substitute the real ID, e.g. `T003` or a child like `T005.1`). If one exists, it's already claimed — pick a different task.
 3. If the task notes a dependency (e.g. T013 depends on T012), confirm that dependency is actually in [TASKS_DONE.md](TASKS_DONE.md), not just referenced as resolved in a conversation. From another agent's perspective, only a merged, archived task is really done.
 
 **Claiming and working:**
+
 1. Create a branch named `task/T0NN-short-slug`, using the task's own ID, branched from `development`.
-2. Push the branch immediately, *before* starting the actual work — this push is the claim (see the narrow exception to "never push automatically" in AGENTS.md § Git state expectations). If the push is rejected because the branch name already exists, someone beat you to it — stop and pick another task. Never `--force` here; a rejected push is the collision detector working as intended, not an obstacle to push through.
-3. Do the work on that branch. Everything under *Completing a task* above still applies — including that moving the entry to `TASKS_DONE.md` happens in a commit on this branch, not a direct edit on `development`.
+2. Push the branch immediately, _before_ starting the actual work — this push is the claim (see the narrow exception to "never push automatically" in AGENTS.md § Git state expectations). If the push is rejected because the branch name already exists, someone beat you to it — stop and pick another task. Never `--force` here; a rejected push is the collision detector working as intended, not an obstacle to push through.
+3. Do the work on that branch. Everything under _Completing a task_ above still applies — including that moving the entry to `TASKS_DONE.md` happens in a commit on this branch, not a direct edit on `development`.
 4. Open a PR into `development` when ready and squash-merge it immediately — this is pre-authorized, no review gate (see AGENTS.md § Git state expectations). CI runs the standard verification sequence on the PR, but the merge itself does not wait on it.
 5. Pushing further commits to your own branch, opening the PR, and squash-merging it into `development` are all covered by working normally on a task. Promoting `development` into `main` is a separate, manual step and still needs the usual confirmation.
 
@@ -108,37 +114,6 @@ _This round came out of a review pass over the first batch of completed work (T0
 ### Terminology note
 
 The first pass used **locked/unlocked** for "the user can land this trick." User-facing copy in this round switches to **laced/unlaced**, which is what the domain actually calls it. The persisted profile field is still named `manuallyUnlockedTrickIds` and stays that way — renaming a persisted key means either a migration or throwing away real user data, and neither is worth it for a vocabulary change. Rename the copy, not the storage contract.
-
-### [T016] Laced-tricks surface
-
-- **Area:** Tricks
-- **Priority:** High
-- **Status:** Not started
-- **Description:** Umbrella for reworking how "I can land this trick" is both set and displayed. Corrects [T004] and [T006]: the badge-plus-toggle pair jammed into the trick name row wrecked the row layout, and "manual unlock" was implemented as a literal Manual button rather than as an ordinary way to say "I've laced this." Marking moves to a dedicated compact screen; the trick list keeps only a passive signal.
-- **Notes:** Umbrella only, no exit criteria of its own. [T016.1] must land before [T016.2] — the marking UI has to exist somewhere before the toggle is removed from the row. Decisions resolved during scoping:
-  - The laced grid covers the same trick set as the directory (standard Kentei tricks plus custom tricks), grouped by rank, from `createProfileDirectoryTricks` — not a rank-limited subset.
-  - Toggling stays a plain set union with lace-derived status (`selectEffectiveUnlockedTrickIds`), unchanged from [T006]. A trick with real sesh history reads laced regardless of the manual flag; that's existing behavior and is correct.
-  - Trick rows show nothing at all for an unlaced trick — no badge, no "0 laces". There's no reason to tell someone they haven't done something yet.
-
-### [T021] Personal-best celebration
-
-- **Area:** Sesh
-- **Priority:** Medium
-- **Status:** Not started
-- **Description:** When a user beats their previous best for a trick at a given duration, celebrate it in the sesh the same way a first lace is celebrated. This must only fire when there's a genuine previous best to beat — a first-ever sesh on a trick is not a personal best.
-- **Exit criteria:** Test confirms the celebration fires on the landing that exceeds an existing personal best, and does not fire when no prior comparable attempt exists or when the count merely ties the best; verified in-browser.
-- **Notes:** The data is already there — `getPersonalBest` returns `undefined` when there's no comparable prior attempt, which is exactly the "don't celebrate" signal, and `ActiveSesh` already computes `hasBeatenBest` for the live-challenge readout. The work is turning that from a passive status line into a celebration moment, and making it fire regardless of whether the user opted into live challenge display. Note `getPersonalBest` is scoped to timed seshes at a matching planned duration, so open-ended seshes have no personal best by construction — that's existing, deliberate behavior (see `isEligibleTimedAttempt`), not a gap to close here.
-
-### [T028] Multi-trick run controls
-
-- **Area:** Sesh
-- **Priority:** High
-- **Status:** Not started
-- **Description:** Umbrella for the controls a multi-trick run is missing. Extends [T012]/[T014]: a run currently steps to the next trick only when the user manually ends each one, offers no way to advance mid-trick, and drops the user back at the picker with no summary of what they just did.
-- **Notes:** Umbrella only, no exit criteria of its own. Children are ordered but largely independent; [T028.4] should land last since it reports on everything the others change. Decisions resolved during scoping:
-  - "Next trick" **records** the trick being left, with whatever laces occurred — same practice-history write `End Sesh` performs. It means "I'm done with this one", not "discard this." Consequently it feeds Stats, goals, and rank promotion normally. This deliberately differs from assessment's existing "Skip this rank", which records nothing.
-  - When both auto-advance-on-lace and a per-trick duration are configured, whichever condition is met first advances the run.
-  - These controls belong to the shared `MultiTrickSesh` core so the assessment flow ([T029]) inherits them rather than reimplementing them.
 
 ### [T029] Kentei assessment run refinements
 
@@ -182,7 +157,7 @@ The first pass used **locked/unlocked** for "the user can land this trick." User
 - **Status:** Not started
 - **Description:** Show a wrap-up when an assessment run completes, instead of replacing the route to `/profile` with no summary. Covers which tricks were attempted and laced, which ranks were skipped, and the resulting assessed rank.
 - **Exit criteria:** Test confirms a completed assessment renders per-trick outcomes and the resulting rank, and that a skipped rank is reported as skipped rather than failed; verified in-browser.
-- **Notes:** Builds on [T028.4]'s accumulated summaries; the assessment-specific additions are rank framing and skip reporting. A skipped rank is explicitly *unassessed*, not failed — that's a decision already recorded in [T013] and the copy here must not contradict it. If [T019] has landed, a promotion during the run should surface through that modal rather than being re-rendered inline here.
+- **Notes:** Builds on [T028.4]'s accumulated summaries; the assessment-specific additions are rank framing and skip reporting. A skipped rank is explicitly _unassessed_, not failed — that's a decision already recorded in [T013] and the copy here must not contradict it. If [T019] has landed, a promotion during the run should surface through that modal rather than being re-rendered inline here.
 
 ### [T030] Make the Profile screen scrollable on mobile
 
@@ -195,4 +170,4 @@ The first pass used **locked/unlocked** for "the user can land this trick." User
 
 ## Done
 
-Completed entries live in [TASKS_DONE.md](TASKS_DONE.md) — not part of the top-to-bottom read above; see step 5 under *Completing a task*.
+Completed entries live in [TASKS_DONE.md](TASKS_DONE.md) — not part of the top-to-bottom read above; see step 5 under _Completing a task_.
