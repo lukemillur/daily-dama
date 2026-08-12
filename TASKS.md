@@ -124,6 +124,183 @@ The first pass used **locked/unlocked** for "the user can land this trick." User
 - **Exit criteria:** Verified in-browser at 375 px that the assessed-rank tile is visible, unobscured by the navigation, and that every section down to the streak-threshold save action is reachable by scrolling.
 - **Notes:** `ProfileScreen` renders its content directly inside `Screen` with `flex: 1; justify-content: center` and no `ScrollView`, so overflow is clipped at both ends rather than scrolling — which is exactly why the top tile disappears. Other screens (`sesh`, `tricks`) already use scroll containers; follow their pattern including the `paddingBottom` allowance for the floating tab bar, and check `Screen`'s web header inset isn't being double-counted. This is a verified-in-browser exit criterion by nature; a unit test asserting a `ScrollView` exists would prove nothing about the actual defect.
 
+### [T031] Accept paused Sesh records when restoring practice history
+
+- **Area:** Practice history / persistence
+- **Priority:** High
+- **Status:** Not started
+- **Description:** Fix the runtime-validation mismatch that rejects valid completed Sesh records containing paused time. The Sesh records active practice duration, while the current history validator assumes duration must exactly equal the wall-clock interval between start and completion.
+- **Exit criteria:** A test creates a Sesh that is started, paused, resumed, and completed, converts it into a history record, serializes it, and restores it successfully; the same test boundary confirms non-paused records still restore and records whose active duration exceeds their total wall-clock span are rejected.
+- **Notes:** Preserve the real `completedAt` timestamp and active-practice `durationMs`. For the current document version, enforce `durationMs <= completedAt - startedAt` rather than exact equality.
+
+### [T032] Prevent onboarding seed data from immediately promoting the assessed rank
+
+- **Area:** Onboarding / Profile
+- **Priority:** High
+- **Status:** Not started
+- **Description:** Correct onboarding completion seeding so that tricks at the user's final assessed rank are not marked complete. The current seed boundary can immediately satisfy promotion requirements and advance the user one rank beyond the assessment result.
+- **Exit criteria:** An integrated regression test starts assessment at Rank 4, resolves the result as Rank 3, and confirms the persisted profile remains Rank 3, Rank 3 tricks are not seeded as completed, lower prerequisite ranks remain seeded as intended, and no immediate unearned rank-up is produced.
+- **Notes:** Test the provider/reducer boundary used by onboarding, not only the seed helper in isolation.
+
+### [T033] Require a real lace for automatic laced status
+
+- **Area:** Tricks
+- **Priority:** High
+- **Status:** Not started
+- **Description:** Separate "practiced" from "laced." A trick should become automatically laced only when practice history contains at least one successful lace; merely including a trick in a zero-lace Sesh must not mark it laced.
+- **Exit criteria:** Selector and integration tests confirm that a zero-lace completed Sesh leaves its tricks unlaced, a positive-lace completed Sesh marks its tricks laced, the manual override still marks a trick laced, the Tricks directory and Laced screen use the same derivation, and rank promotion follows the corrected definition.
+- **Notes:** Rename misleading local selectors where useful, but retain the persisted `manuallyUnlockedTrickIds` field until a deliberate document-schema change is warranted.
+
+### [T034] Align Kentei assessment language with promotion-only behavior
+
+- **Area:** Sesh / Profile
+- **Priority:** High
+- **Status:** Not started
+- **Description:** Present the existing Kentei flow as a rank challenge rather than an authoritative reassessment. The current state model prevents rank regression, while some assessment language implies the result can replace the user's current rank.
+- **Exit criteria:** Entry, in-session, result, and Profile copy consistently describe a challenge or promotion opportunity; tests and a browser walkthrough confirm the UI never claims a lower result will lower or replace the current rank and clearly distinguishes retaining the current rank from advancing.
+- **Notes:** Preserve the monotonic-rank model for this iteration. If authoritative reassessment or demotion is desired instead, stop and rescope this as a larger profile/domain-model change.
+
+### [T035] Add a global notes archive
+
+- **Area:** Tricks / Notes
+- **Priority:** Medium
+- **Status:** Not started
+- **Description:** Add an all-notes screen reachable from Tricks so users can review, edit, and delete notes without opening tricks one at a time.
+- **Exit criteria:** Tests and browser checks at desktop and 320 px confirm that Tricks links to an All Notes screen, notes are listed with their stored trick-name snapshots and useful date context, notes can be edited and deleted there, orphaned notes remain visible and manageable after a custom trick is deleted, and the empty state is coherent.
+- **Notes:** Follow the existing All Trick Goals screen's routing and presentation conventions where appropriate. Historical snapshots remain authoritative; do not resolve names from the current trick directory.
+
+### [T036] Label rolling Home totals as rolling windows
+
+- **Area:** Home
+- **Priority:** Medium
+- **Status:** Not started
+- **Description:** Correct the labels on Home practice summaries so they describe the rolling-window calculations currently implemented.
+- **Exit criteria:** Tests assert unambiguous labels equivalent to "Last 24 hours," "Last 7 days," "Last 30 days," and "Last 365 days" while representative boundary calculations remain unchanged; the summary is verified in-browser at 320 px.
+- **Notes:** Do not silently convert the calculations to calendar-day/week/month/year semantics in this task.
+
+### [T037] Refresh Home time-based summaries while the app remains open
+
+- **Area:** Home
+- **Priority:** Medium
+- **Status:** Not started
+- **Description:** Ensure rolling totals and streak information update when time boundaries pass without a new practice-history write.
+- **Exit criteria:** Fake-time tests confirm a record naturally ages out of the 24-hour summary while Home remains mounted, streak presentation updates across a local-day boundary, and returning the app to the foreground refreshes both immediately without storing timers, native handles, or current-time values in reducers or persisted state.
+- **Notes:** Use a small presentation-level clock/refresh signal and app-foreground handling. Keep `Date.now()` outside pure summary functions by passing an explicit reference time.
+
+### [T038] Add a neglected-tricks practice queue to Stats
+
+- **Area:** Stats
+- **Priority:** Medium
+- **Status:** Not started
+- **Description:** Add a compact "Needs attention" section that turns practice history into an actionable next-session queue. Limit the first iteration to currently focused tricks, at most three suggestions, with never-practiced tricks first and previously practiced tricks ordered by oldest recent practice.
+- **Notes:** Umbrella only — complete T038.1 and T038.2. Do not add recommendation scores, spaced-repetition configuration, or new persistence in this iteration.
+
+### [T038.1] Derive neglected focused tricks from practice history
+
+- **Area:** Stats
+- **Priority:** Medium (inherited from parent T038)
+- **Status:** Not started
+- **Description:** Implement a pure selector that ranks focused tricks by practice neglect, using focused-list order as deterministic tie-breaking and limiting its result to three.
+- **Exit criteria:** Unit tests confirm empty input, never-practiced tricks before practiced tricks, practiced tricks ordered by oldest recent practice, deterministic ties, unrelated practice records having no effect, and the three-item limit.
+- **Notes:** Derive the result from focused tricks and completed practice history; do not consult UI state or persist recommendation state.
+
+### [T038.2] Render neglected-trick suggestions with Practice actions
+
+- **Area:** Stats / Sesh routing
+- **Priority:** Medium (inherited from parent T038)
+- **Status:** Not started
+- **Description:** Render T038.1's results in a visually subordinate "Needs attention" section on Stats and provide direct Practice actions for each suggested trick. Depends on T038.1.
+- **Exit criteria:** Component tests confirm the first three selector results render in order, each action links to `/sesh?trickId=...` with the correct trick, and empty output adds no unnecessary visual weight; the section is verified in-browser at desktop and 320 px without changing the existing By Trick statistics.
+- **Notes:** Keep this section subordinate to the core Stats summary rather than turning Stats into a recommendation dashboard.
+
+### [T039] Replace the starter README and document local setup
+
+- **Area:** Repository documentation
+- **Priority:** Medium
+- **Status:** Not started
+- **Description:** Replace the Expo starter README with project-specific documentation that lets a new collaborator understand and run Daily Dama safely.
+- **Exit criteria:** A clean-install walkthrough confirms the README accurately explains the product, supported platforms, Yarn-based setup, source layout, local-first persistence domains, access-gate configuration, standard verification commands, and relevant handoff documents; a secret-free `.env.example` documents supported environment variables, with no npm-only or obsolete reset-project guidance remaining.
+- **Notes:** Keep the architecture explanation concise and defer detailed invariants to `AGENTS.md`, `TRICK_VIZ_HANDOFF.md`, and `DEPLOYMENT_HANDOFF.md`.
+
+### [T040] Remove the destructive starter reset command
+
+- **Area:** Repository maintenance
+- **Priority:** Medium
+- **Status:** Not started
+- **Description:** Remove the Expo starter reset script, which can replace application source and is no longer appropriate in an established repository.
+- **Exit criteria:** `package.json` no longer exposes the reset script, `scripts/reset-project.js` is removed, repository search finds no remaining references, the package manifest remains valid, and the standard verification sequence passes.
+- **Notes:** Keep this narrowly focused on the destructive command; broader starter-scaffold cleanup belongs to T041.
+
+### [T041] Remove verified unused starter scaffold and dependencies
+
+- **Area:** Repository maintenance
+- **Priority:** Low
+- **Status:** Not started
+- **Description:** Audit and remove unused Expo starter components, assets, and direct dependencies after proving they are not part of the current application or configuration.
+- **Exit criteria:** Repository search and dependency inspection account for every candidate before removal; a frozen Yarn install followed by tests, lint, TypeScript, and web export passes with the verified-unused scaffold, assets, and direct dependencies removed and the lockfile updated.
+- **Notes:** Likely candidates include ExternalLink, WebBadge, HintRow, Collapsible, TrickCarousel, and associated assets/packages, but each must be verified with source/config searches and `yarn why`. Preserve components used by web navigation and packages required transitively or by configuration. Do not combine this with feature-level refactors.
+
+### [T042] Complete native tab iconography
+
+- **Area:** Navigation
+- **Priority:** Medium
+- **Status:** Not started
+- **Description:** Give Sesh, Tricks, Stats, and Profile distinct, subject-appropriate native tab icons rather than relying on incomplete or repeated icon treatment.
+- **Exit criteria:** Deliberate iOS and Android checks confirm all five native tabs have distinct, route-appropriate icons that remain legible and unclipped in selected and unselected states, while the existing web navigation and its verified 320 px fit remain unchanged.
+- **Notes:** This is native navigation polish, not a web-navigation redesign. Update navigation tests or snapshots where they provide useful regression protection.
+
+### [T043] Harden active Sesh behavior across app backgrounding
+
+- **Area:** Sesh
+- **Priority:** High
+- **Status:** Not started
+- **Description:** Make timed, open-ended, paused, and multi-trick Sesh behavior reliable when the app moves between foreground and background.
+- **Notes:** Umbrella only — complete T043.1 and T043.2. Route-navigation and process-death recovery are intentionally excluded because they belong to the separately rejected task 6.
+
+### [T043.1] Reconcile active Sesh state after foregrounding
+
+- **Area:** Sesh
+- **Priority:** High (inherited from parent T043)
+- **Status:** Not started
+- **Description:** Add explicit app-lifecycle coordination that reconciles timed, open-ended, paused, and multi-trick Sesh state against timestamps when the app returns to the foreground.
+- **Exit criteria:** Automated state-transition tests confirm an overdue timed Sesh completes at its logical deadline, an open-ended Sesh reports correct elapsed active time, a paused Sesh remains paused without accruing active duration, and a multi-trick run retains coherent current-trick state after a background/foreground cycle.
+- **Notes:** Keep timestamp acquisition and app-state effects outside the reducer, passing explicit timestamps through actions. Do not add persisted in-progress Sesh state.
+
+### [T043.2] Verify backgrounded Sesh behavior on iOS and Android
+
+- **Area:** Sesh
+- **Priority:** High (inherited from parent T043)
+- **Status:** Not started
+- **Description:** Exercise T043.1's lifecycle behavior on both native platforms and fix any platform-specific integration defects without changing the Sesh domain model. Depends on T043.1.
+- **Exit criteria:** Deliberate iOS and Android checks cover timed, open-ended, paused, and multi-trick Sesh background/foreground cycles, confirm any overdue timer resolves at its logical deadline, and confirm the wake lock releases after completion or cancellation; any platform-specific regressions found are covered by an automated test where practical.
+- **Notes:** This is native hardening of the lifecycle model established in T043.1, not process-death recovery or route-leave protection.
+
+### [T044] Prevent mobile keyboards from obscuring form actions
+
+- **Area:** Forms / mobile layout
+- **Priority:** Medium
+- **Status:** Not started
+- **Description:** Establish a reusable keyboard-aware form layout and apply it to custom-trick editing, notes, goals, Profile streak editing, and the access gate.
+- **Notes:** Umbrella only — complete T044.1 and T044.2. Use safe-area and keyboard behavior rather than fixed device-specific offsets; preserve existing web layouts.
+
+### [T044.1] Establish a shared keyboard-aware form layout
+
+- **Area:** Forms / mobile layout
+- **Priority:** Medium (inherited from parent T044)
+- **Status:** Not started
+- **Description:** Create the smallest reusable layout primitive or convention needed to keep long mobile forms scrollable and their primary actions reachable while the keyboard is open, proving it through the custom-trick form.
+- **Exit criteria:** On representative small iOS and Android viewports, the custom-trick form's final input and primary action remain reachable with the keyboard open, scrolling and keyboard dismissal behave predictably, safe-area and tab-bar insets do not overlap content, and the web layout remains unchanged.
+- **Notes:** Avoid fixed device-specific offsets. Keep the abstraction narrow enough to accommodate screen-specific headers and action layouts rather than forcing every form into an identical visual shell.
+
+### [T044.2] Apply the keyboard-aware layout to remaining forms
+
+- **Area:** Forms / mobile layout
+- **Priority:** Medium (inherited from parent T044)
+- **Status:** Not started
+- **Description:** Apply T044.1's proven layout pattern to notes, goals, Profile streak editing, and the access gate. Depends on T044.1.
+- **Exit criteria:** Focused checks on representative small iOS and Android viewports confirm the final input and primary action remain reachable with the keyboard open on every notes, goals, Profile streak, and access-gate form; scrolling, dismissal, safe-area, and tab-bar behavior are consistent and web rendering is unchanged.
+- **Notes:** Adapt the shared convention where a screen's structure requires it; do not introduce fixed offsets or unrelated form redesigns.
+
 ## Done
 
 Completed entries live in [TASKS_DONE.md](TASKS_DONE.md) — not part of the top-to-bottom read above; see step 5 under _Completing a task_.
