@@ -1,12 +1,12 @@
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import { TextInput } from "react-native";
+import { ScrollView, TextInput } from "react-native";
 import { styled } from "styled-components/native";
 
 import { Button } from "@/components/ui/button";
 import { Screen } from "@/components/ui/screen";
 import { BodyText, DisplayTitle, Eyebrow } from "@/components/ui/typography";
-import { AppColors } from "@/constants/theme";
+import { AppColors, BottomTabInset } from "@/constants/theme";
 import { useRequireOnboarding } from "@/features/onboarding/state/require-onboarding";
 import {
   createStreakThresholdMs,
@@ -27,46 +27,53 @@ export default function ProfileScreen() {
   if (!isOnboardingComplete || !kenteiRank) return null;
 
   return (
-    <Screen align="center" edges={["top", "left", "right"]}>
-      <Content>
-        <Eyebrow>Your profile</Eyebrow>
-        <RankLine>
-          <RankNumber>{String(kenteiRank).padStart(2, "0")}</RankNumber>
-          <RankIdentity>
-            <RankLabel>Assessed Kentei rank</RankLabel>
-            <RankContext>
-              Your current frontier, with {selectedTrickIds.length}{" "}
-              {selectedTrickIds.length === 1 ? "trick" : "tricks"} in rotation.
-            </RankContext>
-          </RankIdentity>
-        </RankLine>
-        <Divider />
-        <SectionLabel>Assessment</SectionLabel>
-        <Title>Ready to check{`\n`}your level again?</Title>
-        <Copy>
-          Retaking the assessment updates your rank and recommended starting
-          point. Your custom tricks and practice history stay exactly where they
-          are.
-        </Copy>
-        <RetakeButton onPress={restartOnboarding}>
-          Retake assessment
-        </RetakeButton>
-        <SectionLabel>Kentei assessment</SectionLabel>
-        <Title>Put it to{`\n`}the test.</Title>
-        <Copy>
-          Run a real, timed assessment through your tricks. Every landing counts
-          as practice history, so a full pass through a rank promotes you
-          automatically.
-        </Copy>
-        <RetakeButton onPress={() => router.push("/profile/kentei-assessment")}>
-          Start Kentei assessment
-        </RetakeButton>
-        <Divider />
-        <StreakSettings
-          streakThresholdMs={streakThresholdMs}
-          onSave={setStreakThresholdMs}
-        />
-      </Content>
+    <Screen edges={["top", "left", "right"]}>
+      <ProfileScroll
+        contentContainerStyle={{ paddingBottom: 120 + BottomTabInset }}
+      >
+        <Content>
+          <Eyebrow>Your profile</Eyebrow>
+          <RankLine>
+            <RankNumber>{String(kenteiRank).padStart(2, "0")}</RankNumber>
+            <RankIdentity>
+              <RankLabel>Assessed Kentei rank</RankLabel>
+              <RankContext>
+                Your current frontier, with {selectedTrickIds.length}{" "}
+                {selectedTrickIds.length === 1 ? "trick" : "tricks"} in
+                rotation.
+              </RankContext>
+            </RankIdentity>
+          </RankLine>
+          <Divider />
+          <SectionLabel>Assessment</SectionLabel>
+          <Title>Ready to check{`\n`}your level again?</Title>
+          <Copy>
+            Retaking the assessment updates your rank and recommended
+            starting point. Your custom tricks and practice history stay
+            exactly where they are.
+          </Copy>
+          <RetakeButton onPress={restartOnboarding}>
+            Retake assessment
+          </RetakeButton>
+          <SectionLabel>Kentei assessment</SectionLabel>
+          <Title>Put it to{`\n`}the test.</Title>
+          <Copy>
+            Run a real, timed assessment through your tricks. Every landing
+            counts as practice history, so a full pass through a rank
+            promotes you automatically.
+          </Copy>
+          <RetakeButton
+            onPress={() => router.push("/profile/kentei-assessment")}
+          >
+            Start Kentei assessment
+          </RetakeButton>
+          <Divider />
+          <StreakSettings
+            streakThresholdMs={streakThresholdMs}
+            onSave={setStreakThresholdMs}
+          />
+        </Content>
+      </ProfileScroll>
     </Screen>
   );
 }
@@ -121,12 +128,15 @@ function StreakSettings({
   );
 }
 
+const ProfileScroll = styled(ScrollView)`
+  flex: 1;
+  width: 100%;
+`;
 const Content = styled.View`
   width: 100%;
   max-width: 760px;
-  flex: 1;
-  justify-content: center;
-  padding: 40px 22px 130px;
+  align-self: center;
+  padding: 40px 22px 0;
 `;
 const RankLine = styled.View`
   flex-direction: row;
