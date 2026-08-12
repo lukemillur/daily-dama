@@ -137,7 +137,7 @@ The first pass used **locked/unlocked** for "the user can land this trick." User
 
 - **Area:** Tricks / Notes
 - **Priority:** Medium
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Implementer
 - **Description:** Add an all-notes screen reachable from Tricks so users can review, edit, and delete notes without opening tricks one at a time.
 - **Exit criteria:** Tests and browser checks at desktop and 320 px confirm that Tricks links to an All Notes screen, notes are listed with their stored trick-name snapshots and useful date context, notes can be edited and deleted there, orphaned notes remain visible and manageable after a custom trick is deleted, and the empty state is coherent.
