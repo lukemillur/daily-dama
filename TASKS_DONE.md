@@ -6,6 +6,15 @@ Entries keep their content as it was at completion. Don't retroactively edit a d
 
 ---
 
+### [T036] Label rolling Home totals as rolling windows
+
+- **Area:** Home
+- **Priority:** Medium
+- **Status:** Done
+- **Description:** Correct the labels on Home practice summaries so they describe the rolling-window calculations currently implemented.
+- **Exit criteria:** Tests assert unambiguous labels equivalent to "Last 24 hours," "Last 7 days," "Last 30 days," and "Last 365 days" while representative boundary calculations remain unchanged; the summary is verified in-browser at 320 px.
+- **Notes:** Renamed the four `TIME_LOGGED_LABELS` entries in `src/features/home/components/daily-home.tsx` from calendar-ish copy ("Today"/"This week"/"This month"/"This year") to explicit rolling-window copy ("Last 24 hours"/"Last 7 days"/"Last 30 days"/"Last 365 days"), and exported the map so `src/features/home/components/daily-home.test.tsx` (new file) can assert on it directly without needing a router-aware full render (`DailyHome` renders `expo-router`'s `Link`, which `react-test-renderer`'s `create()` can't mount standalone). Did not touch the Momentum section's existing "Last seven days" eyebrow — already unambiguous — or `calculateTimeLogged`'s rolling-window math in `src/features/stats/model/time-logged.ts`, per the task's explicit non-goal; its existing boundary tests in `time-logged.test.ts` pass unchanged. Verified in-browser at a 320px viewport using a throwaway Playwright script (`npm install --no-save playwright`, reverted `yarn.lock` after) against an independent `yarn expo start --web --port 8093` server in this worktree, seeding `localStorage` with an onboarded profile and two practice-history records (one recent, one over a year old) to unlock all four gated windows simultaneously: confirmed all four labels ("Last 24 hours", "Last 7 days", "Last 30 days", "Last 365 days") render without text overflow or wrapping and the page has no horizontal overflow at that width. Full verification via `node .claude/scripts/verify.mjs` (test/lint/tsc/web-export) passed.
+
 ### [T001] Add laced count to trick list
 
 - **Area:** Tricks

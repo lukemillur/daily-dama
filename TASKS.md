@@ -143,16 +143,6 @@ The first pass used **locked/unlocked** for "the user can land this trick." User
 - **Exit criteria:** Tests and browser checks at desktop and 320 px confirm that Tricks links to an All Notes screen, notes are listed with their stored trick-name snapshots and useful date context, notes can be edited and deleted there, orphaned notes remain visible and manageable after a custom trick is deleted, and the empty state is coherent.
 - **Notes:** Follow the existing All Trick Goals screen's routing and presentation conventions where appropriate. Historical snapshots remain authoritative; do not resolve names from the current trick directory.
 
-### [T036] Label rolling Home totals as rolling windows
-
-- **Area:** Home
-- **Priority:** Medium
-- **Status:** In progress
-- **Planning:** Implementer
-- **Description:** Correct the labels on Home practice summaries so they describe the rolling-window calculations currently implemented.
-- **Exit criteria:** Tests assert unambiguous labels equivalent to "Last 24 hours," "Last 7 days," "Last 30 days," and "Last 365 days" while representative boundary calculations remain unchanged; the summary is verified in-browser at 320 px.
-- **Notes:** Do not silently convert the calculations to calendar-day/week/month/year semantics in this task.
-
 ### [T037] Refresh Home time-based summaries while the app remains open
 
 - **Area:** Home
