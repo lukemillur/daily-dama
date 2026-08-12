@@ -119,7 +119,7 @@ The first pass used **locked/unlocked** for "the user can land this trick." User
 
 - **Area:** Practice history / persistence
 - **Priority:** High
-- **Status:** Not started
+- **Status:** In progress
 - **Description:** Fix the runtime-validation mismatch that rejects valid completed Sesh records containing paused time. The Sesh records active practice duration, while the current history validator assumes duration must exactly equal the wall-clock interval between start and completion.
 - **Exit criteria:** A test creates a Sesh that is started, paused, resumed, and completed, converts it into a history record, serializes it, and restores it successfully; the same test boundary confirms non-paused records still restore and records whose active duration exceeds their total wall-clock span are rejected.
 - **Notes:** Preserve the real `completedAt` timestamp and active-practice `durationMs`. For the current document version, enforce `durationMs <= completedAt - startedAt` rather than exact equality.
