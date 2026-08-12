@@ -115,15 +115,6 @@ _This round came out of a review pass over the first batch of completed work (T0
 
 The first pass used **locked/unlocked** for "the user can land this trick." User-facing copy in this round switches to **laced/unlaced**, which is what the domain actually calls it. The persisted profile field is still named `manuallyUnlockedTrickIds` and stays that way — renaming a persisted key means either a migration or throwing away real user data, and neither is worth it for a vocabulary change. Rename the copy, not the storage contract.
 
-### [T033] Require a real lace for automatic laced status
-
-- **Area:** Tricks
-- **Priority:** High
-- **Status:** Not started
-- **Description:** Separate "practiced" from "laced." A trick should become automatically laced only when practice history contains at least one successful lace; merely including a trick in a zero-lace Sesh must not mark it laced.
-- **Exit criteria:** Selector and integration tests confirm that a zero-lace completed Sesh leaves its tricks unlaced, a positive-lace completed Sesh marks its tricks laced, the manual override still marks a trick laced, the Tricks directory and Laced screen use the same derivation, and rank promotion follows the corrected definition.
-- **Notes:** Rename misleading local selectors where useful, but retain the persisted `manuallyUnlockedTrickIds` field until a deliberate document-schema change is warranted.
-
 ### [T034] Align Kentei assessment language with promotion-only behavior
 
 - **Area:** Sesh / Profile

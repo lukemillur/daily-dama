@@ -5,7 +5,7 @@ import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 import { LacedTricksScreen } from '@/features/tricks/components/laced-tricks-screen';
 import {
   type DirectoryTrick,
-  selectEffectiveUnlockedTrickIds,
+  selectEffectiveLacedTrickIds,
 } from '@/features/tricks/model/trick-directory';
 
 const FIXTURE_TRICKS: readonly DirectoryTrick[] = [
@@ -22,7 +22,7 @@ function findCard(root: ReactTestRenderer, label: string) {
 
 function Harness({ onToggleTrickId }: { readonly onToggleTrickId: (trickId: string) => void }) {
   const [manuallyUnlockedTrickIds, setManuallyUnlockedTrickIds] = useState<readonly string[]>([]);
-  const unlockedTrickIds = selectEffectiveUnlockedTrickIds(new Set(), manuallyUnlockedTrickIds);
+  const unlockedTrickIds = selectEffectiveLacedTrickIds(new Set(), manuallyUnlockedTrickIds);
 
   return (
     <LacedTricksScreen

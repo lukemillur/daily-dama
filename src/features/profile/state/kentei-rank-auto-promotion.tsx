@@ -5,8 +5,8 @@ import { useUserProfile, useUserProfileActions } from '@/features/profile/state/
 import { usePracticeHistory } from '@/features/stats/state/practice-history-provider';
 import { KENDAMA_KENTEI_TRICKS } from '@/features/tricks/data/kendama-kentei-tricks';
 import {
-  selectEffectiveUnlockedTrickIds,
-  selectLacedCountByTrickId,
+  selectEffectiveLacedTrickIds,
+  selectLacedTrickIds,
   selectPromotedKenteiRank,
 } from '@/features/tricks/model/trick-directory';
 
@@ -20,13 +20,9 @@ export function KenteiRankAutoPromotion() {
   const { advanceKenteiRank } = useUserProfileActions();
   const { sessions } = usePracticeHistory();
 
-  const lacedCountByTrickId = useMemo(() => selectLacedCountByTrickId(sessions), [sessions]);
-  const lacedTrickIds = useMemo(
-    () => new Set([...lacedCountByTrickId.entries()].filter(([, count]) => count > 0).map(([trickId]) => trickId)),
-    [lacedCountByTrickId],
-  );
+  const lacedTrickIds = useMemo(() => selectLacedTrickIds(sessions), [sessions]);
   const effectiveLacedTrickIds = useMemo(
-    () => selectEffectiveUnlockedTrickIds(lacedTrickIds, manuallyUnlockedTrickIds),
+    () => selectEffectiveLacedTrickIds(lacedTrickIds, manuallyUnlockedTrickIds),
     [lacedTrickIds, manuallyUnlockedTrickIds],
   );
 

@@ -14,7 +14,12 @@ import {
   useUserProfileActions,
   UserProfileProvider,
 } from '@/features/profile/state/user-profile-provider';
-import { PracticeHistoryProvider } from '@/features/stats/state/practice-history-provider';
+import { type Landing, OPEN_ENDED_SESH_PLAN, type SeshSummary } from '@/features/sesh/model/sesh';
+import { PRACTICE_HISTORY_STORAGE_KEY } from '@/features/stats/persistence/practice-history-persistence';
+import {
+  PracticeHistoryProvider,
+  usePracticeHistoryActions,
+} from '@/features/stats/state/practice-history-provider';
 import { KENDAMA_KENTEI_TRICKS } from '@/features/tricks/data/kendama-kentei-tricks';
 
 // Both mocks are hoisted above these imports by babel-jest, so the requires below run before
@@ -37,6 +42,21 @@ const RANK_1_TRICK_IDS = KENDAMA_KENTEI_TRICKS.filter((trick) => trick.kenteiRan
   (trick) => trick.id,
 );
 
+function landing(elapsedMs: number): Landing {
+  return { landedAt: elapsedMs, elapsedMs, intervalMs: elapsedMs };
+}
+
+function summaryFor(trickId: string, trickName: string, landingCount: number): SeshSummary {
+  return {
+    trick: { id: trickId, name: trickName },
+    plan: OPEN_ENDED_SESH_PLAN,
+    startedAt: 0,
+    endedAt: 5000,
+    durationMs: 5000,
+    landings: Array.from({ length: landingCount }, (_, index) => landing((index + 1) * 1000)),
+  };
+}
+
 function hasAccessibilityLabel(root: ReactTestRenderer, label: string) {
   return root.root.findAll((node) => node.props.accessibilityLabel === label).length > 0;
 }
@@ -52,12 +72,15 @@ function Harness({
   rank = 1,
   selectedTrickIds = [],
   lacedTrickIds = [],
+  recordLandingCount,
 }: {
   readonly rank?: number;
   readonly selectedTrickIds?: readonly string[];
   readonly lacedTrickIds?: readonly string[];
+  readonly recordLandingCount?: number;
 }) {
   const { completeOnboarding, toggleManualUnlock } = useUserProfileActions();
+  const { recordCompletedSesh } = usePracticeHistoryActions();
 
   return (
     <>
@@ -65,6 +88,17 @@ function Harness({
       {RANK_1_TRICK_IDS.map((trickId) => (
         <ToggleTrick key={trickId} trickId={trickId} onPress={() => toggleManualUnlock(trickId)} />
       ))}
+      {recordLandingCount === undefined
+        ? null
+        : RANK_1_TRICK_IDS.map((trickId) => (
+            <RecordSesh
+              key={trickId}
+              trickId={trickId}
+              onPress={() =>
+                recordCompletedSesh(summaryFor(trickId, trickId, recordLandingCount))
+              }
+            />
+          ))}
     </>
   );
 }
@@ -79,10 +113,15 @@ function ToggleTrick({ trickId, onPress }: { readonly trickId: string; readonly 
   return <Pressable accessibilityLabel={`toggle-${trickId}`} onPress={onPress} />;
 }
 
+function RecordSesh({ trickId, onPress }: { readonly trickId: string; readonly onPress: () => void }) {
+  return <Pressable accessibilityLabel={`record-${trickId}`} onPress={onPress} />;
+}
+
 async function mountAndHydrate(harnessProps: {
   readonly rank?: number;
   readonly selectedTrickIds?: readonly string[];
   readonly lacedTrickIds?: readonly string[];
+  readonly recordLandingCount?: number;
 } = {}) {
   let root!: ReactTestRenderer;
   await act(async () => {
@@ -188,5 +227,57 @@ describe('KenteiRankAutoPromotion celebration', () => {
     for (const id of rank3Ids) {
       expect(profile?.manuallyUnlockedTrickIds).not.toContain(id);
     }
+  });
+
+  it('does not promote the rank when a completed Sesh records zero laces for every trick in the rank', async () => {
+    await AsyncStorage.removeItem(USER_PROFILE_STORAGE_KEY);
+    await AsyncStorage.removeItem(PRACTICE_HISTORY_STORAGE_KEY);
+
+    const root = await mountAndHydrate({ recordLandingCount: 0 });
+
+    act(() => {
+      pressByAccessibilityLabel(root, 'start-onboarding');
+    });
+
+    for (const trickId of RANK_1_TRICK_IDS) {
+      act(() => {
+        pressByAccessibilityLabel(root, `record-${trickId}`);
+      });
+    }
+
+    await act(async () => {});
+
+    expect(hasAccessibilityLabel(root, 'Rank up celebration')).toBe(false);
+
+    const persisted = await AsyncStorage.getItem(USER_PROFILE_STORAGE_KEY);
+    expect(persisted).not.toBeNull();
+    const profile = deserializeUserProfile(persisted!);
+    expect(profile?.kenteiRank).toBe(1);
+  });
+
+  it('promotes the rank when a completed Sesh lands a real lace for every trick in the rank', async () => {
+    await AsyncStorage.removeItem(USER_PROFILE_STORAGE_KEY);
+    await AsyncStorage.removeItem(PRACTICE_HISTORY_STORAGE_KEY);
+
+    const root = await mountAndHydrate({ recordLandingCount: 1 });
+
+    act(() => {
+      pressByAccessibilityLabel(root, 'start-onboarding');
+    });
+
+    for (const trickId of RANK_1_TRICK_IDS) {
+      act(() => {
+        pressByAccessibilityLabel(root, `record-${trickId}`);
+      });
+    }
+
+    await act(async () => {});
+
+    expect(hasAccessibilityLabel(root, 'Rank up celebration')).toBe(true);
+
+    const persisted = await AsyncStorage.getItem(USER_PROFILE_STORAGE_KEY);
+    expect(persisted).not.toBeNull();
+    const profile = deserializeUserProfile(persisted!);
+    expect(profile?.kenteiRank).toBe(2);
   });
 });
