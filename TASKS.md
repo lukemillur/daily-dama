@@ -115,17 +115,6 @@ _This round came out of a review pass over the first batch of completed work (T0
 
 The first pass used **locked/unlocked** for "the user can land this trick." User-facing copy in this round switches to **laced/unlaced**, which is what the domain actually calls it. The persisted profile field is still named `manuallyUnlockedTrickIds` and stays that way — renaming a persisted key means either a migration or throwing away real user data, and neither is worth it for a vocabulary change. Rename the copy, not the storage contract.
 
-### [T028] Multi-trick run controls
-
-- **Area:** Sesh
-- **Priority:** High
-- **Status:** Not started
-- **Description:** Umbrella for the controls a multi-trick run is missing. Extends [T012]/[T014]: a run currently steps to the next trick only when the user manually ends each one, offers no way to advance mid-trick, and drops the user back at the picker with no summary of what they just did.
-- **Notes:** Umbrella only, no exit criteria of its own. Children are ordered but largely independent; [T028.4] should land last since it reports on everything the others change. Decisions resolved during scoping:
-  - "Next trick" **records** the trick being left, with whatever laces occurred — same practice-history write `End Sesh` performs. It means "I'm done with this one", not "discard this." Consequently it feeds Stats, goals, and rank promotion normally. This deliberately differs from assessment's existing "Skip this rank", which records nothing.
-  - When both auto-advance-on-lace and a per-trick duration are configured, whichever condition is met first advances the run.
-  - These controls belong to the shared `MultiTrickSesh` core so the assessment flow ([T029]) inherits them rather than reimplementing them.
-
 ### [T029] Kentei assessment run refinements
 
 - **Area:** Sesh / Profile
