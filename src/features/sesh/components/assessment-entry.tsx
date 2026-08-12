@@ -55,6 +55,7 @@ export function AssessmentEntry() {
         endActionLabel="End assessment"
         skipCountdownBetweenTricks
         hideTimer
+        advanceOnFirstLace
       />
     );
   }

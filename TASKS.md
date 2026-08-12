@@ -123,15 +123,6 @@ The first pass used **locked/unlocked** for "the user can land this trick." User
 - **Description:** Umbrella for corrections to [T013]'s assessment run. The run currently inherits practice-sesh chrome that misrepresents what an assessment is: a countdown between every trick, a running timer implying time pressure, and an "End sesh" label for what ends an assessment.
 - **Notes:** Umbrella only, no exit criteria of its own. [T029.3] depends on [T028.3] ("Next trick" in the shared core) and [T029.4] depends on [T028.1] (advance-on-lace in the shared core) — this entry deliberately doesn't reimplement either. Decision resolved during scoping: hiding the timer is a display change only; assessment records still capture real `durationMs`, since Stats derivation and the time-logged windows shouldn't develop a blind spot for assessment practice.
 
-### [T029.4] Auto-advance on lace during an assessment
-
-- **Area:** Sesh
-- **Priority:** High (inherited from parent T029)
-- **Status:** Not started
-- **Description:** Expose [T028.1]'s advance-on-first-lace behavior in the assessment flow, so pressing Laced moves straight to the next trick. Depends on [T028.1].
-- **Exit criteria:** Test confirms an assessment run with the option active records the trick and advances on the first landing; verified in-browser.
-- **Notes:** Should be wiring only if [T028.1] put the behavior in `MultiTrickSesh` as intended. Whether it's always on for assessments or user-selectable at the entry screen is the one open call — resolve it while implementing and record the choice here; either way it's the same prop.
-
 ### [T029.5] Assessment wrap-up screen
 
 - **Area:** Sesh / Profile
