@@ -274,12 +274,12 @@ describe('getCurrentAssessmentTrick', () => {
 });
 
 describe('getSeedLacedTrickIds', () => {
-  it('unions tricks below the starting rank with explicitly landed tricks', () => {
-    const startingRank = 4;
+  it('unions tricks below the resolved rank with explicitly landed tricks', () => {
+    const rank = 4;
     const landedTrickIds = ['trick-x', 'trick-y'];
-    const result = getSeedLacedTrickIds(startingRank, landedTrickIds);
+    const result = getSeedLacedTrickIds(rank, landedTrickIds);
 
-    const belowRankIds = KENDAMA_KENTEI_TRICKS.filter((trick) => trick.kenteiRank < startingRank).map(
+    const belowRankIds = KENDAMA_KENTEI_TRICKS.filter((trick) => trick.kenteiRank < rank).map(
       (trick) => trick.id,
     );
 
@@ -287,17 +287,58 @@ describe('getSeedLacedTrickIds', () => {
     expect(result.length).toBe(new Set(result).size);
   });
 
-  it('de-duplicates when a landed trick id is also below the starting rank', () => {
-    const startingRank = 4;
+  it('de-duplicates when a landed trick id is also below the resolved rank', () => {
+    const rank = 4;
     const belowRankTrick = getTricksForRank(1)[0];
-    const result = getSeedLacedTrickIds(startingRank, [belowRankTrick.id]);
+    const result = getSeedLacedTrickIds(rank, [belowRankTrick.id]);
 
     expect(result.filter((id) => id === belowRankTrick.id)).toHaveLength(1);
   });
 
-  it('returns just the landed tricks when starting at rank 1 (Basic level)', () => {
+  it('returns just the landed tricks when resolved at rank 1 (Basic level)', () => {
     const landedTrickIds = ['trick-a', 'trick-b'];
     const result = getSeedLacedTrickIds(1, landedTrickIds);
     expect(result).toEqual(landedTrickIds);
+  });
+
+  it('does not seed the resolved rank itself when it was never verified (T032 regression)', () => {
+    // Entrance rank 4, immediate first-trick failure -> resolved rank 3, nothing landed.
+    const result = getSeedLacedTrickIds(3, []);
+
+    const rank1Ids = getTricksForRank(1).map((trick) => trick.id);
+    const rank2Ids = getTricksForRank(2).map((trick) => trick.id);
+    const rank3Ids = getTricksForRank(3).map((trick) => trick.id);
+
+    for (const id of [...rank1Ids, ...rank2Ids]) {
+      expect(result).toContain(id);
+    }
+    for (const id of rank3Ids) {
+      expect(result).not.toContain(id);
+    }
+  });
+});
+
+describe('getSeedLacedTrickIds via the reducer (T032 regression)', () => {
+  it('does not seed the resolved rank when the entrance rank is failed immediately', () => {
+    let state = kenteiAssessmentReducer(INITIAL_KENTEI_ASSESSMENT, { type: 'introContinued' });
+    state = kenteiAssessmentReducer(state, { type: 'levelSelected', level: 'Advanced' });
+    state = kenteiAssessmentReducer(state, { type: 'trickNotLanded' });
+
+    if (state.status !== 'rankReveal') throw new Error('Expected rankReveal status');
+    expect(state.rank).toBe(3);
+    expect(state.landedTrickIds).toEqual([]);
+
+    const result = getSeedLacedTrickIds(state.rank, state.landedTrickIds);
+
+    const rank1Ids = getTricksForRank(1).map((trick) => trick.id);
+    const rank2Ids = getTricksForRank(2).map((trick) => trick.id);
+    const rank3Ids = getTricksForRank(3).map((trick) => trick.id);
+
+    for (const id of [...rank1Ids, ...rank2Ids]) {
+      expect(result).toContain(id);
+    }
+    for (const id of rank3Ids) {
+      expect(result).not.toContain(id);
+    }
   });
 });

@@ -118,12 +118,17 @@ export function getTricksForRank(rank: number) {
   return KENDAMA_KENTEI_TRICKS.filter((trick) => trick.kenteiRank === rank);
 }
 
+// The "assume everything below is already known" boundary must be the assessment's *resolved*
+// rank, not its entrance rank. If the very first trick at the entrance rank is failed, the
+// resolved rank drops one below the entrance rank (see `trickNotLanded` above) — using the
+// entrance rank here would then seed the entire resolved rank as already-laced, even though it
+// was never verified, and immediately trigger an unearned rank-up on first load (T032).
 export function getSeedLacedTrickIds(
-  startingRank: number,
+  rank: number,
   landedTrickIds: readonly string[],
 ): readonly string[] {
-  const belowStartingRank = KENDAMA_KENTEI_TRICKS.filter(
-    (trick) => trick.kenteiRank < startingRank,
-  ).map((trick) => trick.id);
-  return Array.from(new Set([...belowStartingRank, ...landedTrickIds]));
+  const belowRank = KENDAMA_KENTEI_TRICKS.filter((trick) => trick.kenteiRank < rank).map(
+    (trick) => trick.id,
+  );
+  return Array.from(new Set([...belowRank, ...landedTrickIds]));
 }
