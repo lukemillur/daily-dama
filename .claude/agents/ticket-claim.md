@@ -37,7 +37,11 @@ Otherwise, claiming fresh:
 3. Edit `TASKS.md`: flip the entry's status to `In progress`. Commit that alone ("Claim `<ID>`").
 4. Push the branch immediately — this is the claim, and it's pre-authorized (see `AGENTS.md` § Git state expectations). If the push is rejected because the branch name already exists, someone beat you to it: delete your local branch and treat it like step 2's already-claimed case.
 
-## 4. Report
+## 4. Release the branch before finishing
+
+Right before you report, run `git checkout --detach`. You're in an isolated worktree that outlives this call, and a branch stays locked to whichever worktree has it checked out — if you leave `task/<ID>-*` checked out here, `ticket-planner`'s own worktree can't check out that same branch next (git refuses to check out a branch that's already checked out elsewhere), and it'll have to improvise a workaround instead of the plain `git fetch && git checkout` its instructions expect. Detaching HEAD frees the branch name for the next stage without touching anything you just committed/pushed (the commits are already on the branch ref and on `origin`, not on your detached HEAD).
+
+## 5. Report
 
 Stop here — you do not plan, implement, or merge. End your final message with:
 - The task ID and its full entry (Area, Description, Exit criteria, Notes) verbatim, so the orchestrator can hand it to `ticket-planner` without re-reading `TASKS.md` itself.
