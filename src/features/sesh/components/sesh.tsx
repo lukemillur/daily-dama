@@ -507,6 +507,7 @@ export function ActiveSesh({
   const showChallenge = liveChallengeEnabled && personalBest !== undefined;
   const hasBeatenBest = showChallenge && landings.length > personalBest;
   const showFirstLaceCelebration = hadPriorLaceAtSeshStart === false && landings.length === 1;
+  const showPersonalBestCelebration = personalBest !== undefined && landings.length === personalBest + 1;
   const isPaused = pausedAt !== undefined;
   const targetLandingCount = getSeshTargetLandingCount(plan);
   const targetMet = isSeshTargetMet(plan, landings.length);
@@ -574,6 +575,9 @@ export function ActiveSesh({
           <GoalCelebrationBanner key={baseline.goal.id} goal={baseline.goal} tense="inSesh" />
         ))}
         {showFirstLaceCelebration ? <FirstLaceBanner trickName={trick.name} tense="inSesh" /> : null}
+        {showPersonalBestCelebration ? (
+          <PersonalBestBanner trickName={trick.name} personalBest={personalBest} />
+        ) : null}
         <Eyebrow>{isPaused ? 'Sesh paused' : 'Sesh in progress'}</Eyebrow>
         <ActiveTrick>{trick.name}</ActiveTrick>
         <SequenceSteps trick={trick} prominent />
@@ -725,6 +729,28 @@ function CelebrationBanner({
         <CelebrationBannerTitle>{title}</CelebrationBannerTitle>
       </CelebrationBannerCard>
     </Animated.View>
+  );
+}
+
+function PersonalBestBanner({
+  trickName,
+  personalBest,
+}: {
+  readonly trickName: string;
+  readonly personalBest: number;
+}) {
+  return (
+    <CelebrationBanner
+      accessibilityLabel={`New personal best on ${trickName}`}
+      eyebrow="New personal best"
+      title={
+        <>
+          You just beat your best of {personalBest}
+          {`\n`}
+          on {trickName}!
+        </>
+      }
+    />
   );
 }
 
