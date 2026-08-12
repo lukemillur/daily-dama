@@ -82,6 +82,7 @@ async function mountMultiTrickSesh(props: {
   readonly advanceOnFirstLace?: boolean;
   readonly plan?: SeshPlan;
   readonly onFinished: () => void;
+  readonly skipTarget?: (currentIndex: number) => number;
 }) {
   let root!: ReactTestRenderer;
   await act(async () => {
@@ -93,6 +94,7 @@ async function mountMultiTrickSesh(props: {
             plan={props.plan ?? OPEN_ENDED_SESH_PLAN}
             advanceOnFirstLace={props.advanceOnFirstLace}
             onFinished={props.onFinished}
+            skipTarget={props.skipTarget}
           />
           <SessionSummary />
         </PracticeHistoryProvider>
@@ -124,6 +126,12 @@ describe('MultiTrickSesh advanceOnFirstLace', () => {
         pressByAccessibilityLabel(root, 'Laced');
       });
     }
+
+    expect(onFinished).not.toHaveBeenCalled();
+
+    act(() => {
+      pressByAccessibilityLabel(root, 'Finish sesh');
+    });
 
     expect(onFinished).toHaveBeenCalledTimes(1);
     expect(findByAccessibilityLabel(root, 'session-count:3').length).toBeGreaterThan(0);
@@ -225,6 +233,12 @@ describe('MultiTrickSesh "Next trick" action', () => {
       });
     }
 
+    expect(onFinished).not.toHaveBeenCalled();
+
+    act(() => {
+      pressByAccessibilityLabel(root, 'Finish sesh');
+    });
+
     expect(onFinished).toHaveBeenCalledTimes(1);
     expect(findByAccessibilityLabel(root, 'session-count:3').length).toBeGreaterThan(0);
     for (let index = 0; index < TRICKS.length; index += 1) {
@@ -260,11 +274,146 @@ describe('MultiTrickSesh per-trick duration', () => {
       });
     }
 
+    expect(onFinished).not.toHaveBeenCalled();
+
+    act(() => {
+      pressByAccessibilityLabel(root, 'Finish sesh');
+    });
+
     expect(onFinished).toHaveBeenCalledTimes(1);
     expect(findByAccessibilityLabel(root, 'session-count:3').length).toBeGreaterThan(0);
     for (let index = 0; index < TRICKS.length; index += 1) {
       expect(findByAccessibilityLabel(root, `session-${index}-lace-count:0`).length).toBeGreaterThan(0);
     }
+
+    act(() => {
+      root.unmount();
+    });
+  });
+});
+
+describe('MultiTrickSesh wrap-up', () => {
+  beforeEach(async () => {
+    await AsyncStorage.clear();
+    jest.useFakeTimers();
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  it('renders one wrap-up entry per attempted trick, in run order, with correct lace counts, and calls onFinished only after "Finish sesh" is pressed', async () => {
+    const onFinished = jest.fn();
+    const root = await mountMultiTrickSesh({ onFinished });
+
+    const laceCounts = [1, 2, 0];
+
+    for (let index = 0; index < TRICKS.length; index += 1) {
+      const trick = TRICKS[index];
+      advanceThroughCountdown();
+      expect(findByText(root, trick.name).length).toBeGreaterThan(0);
+
+      for (let lace = 0; lace < laceCounts[index]; lace += 1) {
+        act(() => {
+          pressByAccessibilityLabel(root, 'Laced');
+        });
+      }
+
+      act(() => {
+        pressByVisibleText(root, index === TRICKS.length - 1 ? 'End Sesh' : 'Next trick');
+      });
+    }
+
+    // Assert each trick's wrap-up entry exists with the correct lace count
+    // (time formatting is covered by formatDuration elsewhere, so match on
+    // trick name + lace count only).
+    for (let index = 0; index < TRICKS.length; index += 1) {
+      const trick = TRICKS[index];
+      const laceCount = laceCounts[index];
+      const matches = root.root.findAll(
+        (node) =>
+          typeof node.props.accessibilityLabel === 'string' &&
+          node.props.accessibilityLabel.startsWith(`Wrap-up entry: ${trick.name}, ${laceCount} laces,`),
+      );
+      expect(matches.length).toBeGreaterThan(0);
+    }
+
+    // And in run order — the wrap-up entries appear in the same order as
+    // TRICKS, not just each individually present. findAll matches both the
+    // composite styled-component and its underlying host node for each row,
+    // so dedupe consecutive duplicates before comparing.
+    const rawWrapUpEntryLabels = root.root
+      .findAll(
+        (node) =>
+          typeof node.props.accessibilityLabel === 'string' &&
+          node.props.accessibilityLabel.startsWith('Wrap-up entry:'),
+      )
+      .map((node) => node.props.accessibilityLabel as string);
+    const wrapUpEntryLabels = [...new Set(rawWrapUpEntryLabels)];
+    expect(wrapUpEntryLabels).toEqual(
+      TRICKS.map((trick, index) => expect.stringContaining(`Wrap-up entry: ${trick.name}, ${laceCounts[index]} laces,`)),
+    );
+
+    expect(onFinished).not.toHaveBeenCalled();
+
+    act(() => {
+      pressByAccessibilityLabel(root, 'Finish sesh');
+    });
+
+    expect(onFinished).toHaveBeenCalledTimes(1);
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  it('excludes skipped tricks from the wrap-up, showing only the attempted trick', async () => {
+    const onFinished = jest.fn();
+    const root = await mountMultiTrickSesh({
+      onFinished,
+      skipTarget: () => TRICKS.length,
+    });
+
+    advanceThroughCountdown();
+    expect(findByText(root, TRICKS[0].name).length).toBeGreaterThan(0);
+
+    act(() => {
+      pressByAccessibilityLabel(root, 'Laced');
+    });
+    act(() => {
+      pressByVisibleText(root, 'Next trick');
+    });
+
+    advanceThroughCountdown();
+    expect(findByText(root, TRICKS[1].name).length).toBeGreaterThan(0);
+
+    act(() => {
+      pressByVisibleText(root, 'Skip this rank');
+    });
+
+    const attemptedMatches = root.root.findAll(
+      (node) =>
+        typeof node.props.accessibilityLabel === 'string' &&
+        node.props.accessibilityLabel.startsWith(`Wrap-up entry: ${TRICKS[0].name},`),
+    );
+    expect(attemptedMatches.length).toBeGreaterThan(0);
+
+    for (let index = 1; index < TRICKS.length; index += 1) {
+      const skippedMatches = root.root.findAll(
+        (node) =>
+          typeof node.props.accessibilityLabel === 'string' &&
+          node.props.accessibilityLabel.startsWith(`Wrap-up entry: ${TRICKS[index].name},`),
+      );
+      expect(skippedMatches.length).toBe(0);
+    }
+
+    expect(onFinished).not.toHaveBeenCalled();
+
+    act(() => {
+      pressByAccessibilityLabel(root, 'Finish sesh');
+    });
+
+    expect(onFinished).toHaveBeenCalledTimes(1);
 
     act(() => {
       root.unmount();

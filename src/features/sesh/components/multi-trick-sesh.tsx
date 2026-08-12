@@ -1,14 +1,19 @@
 import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
 import { useEffect, useMemo, useReducer, useRef, useState } from 'react';
+import { ScrollView } from 'react-native';
 import { styled } from 'styled-components/native';
 
+import { Button } from '@/components/ui/button';
 import { BodyText, DisplayTitle as BaseDisplayTitle, Eyebrow as BaseEyebrow } from '@/components/ui/typography';
+import { AppColors } from '@/constants/theme';
 import { ActiveSesh, Countdown } from '@/features/sesh/components/sesh';
 import {
+  formatDuration,
   INITIAL_SESH_STATE,
   type SeshPlan,
   seshReducer,
   type SeshState,
+  type SeshSummary,
   shouldKeepScreenAwake,
 } from '@/features/sesh/model/sesh';
 import {
@@ -84,25 +89,23 @@ export function MultiTrickSesh({
   const { recordCompletedSesh } = usePracticeHistoryActions();
   const { notes } = useNotes();
   const recordedSummaryId = useRef<string | undefined>(undefined);
+  const [summaries, setSummaries] = useState<SeshSummary[]>([]);
 
-  const hasReportedEmptySequence = useRef(false);
+  // The run is over once the sequence has no trick left to run, whether that
+  // happened because every trick completed normally (leaves `state` at
+  // 'completed', with nothing left to dispatch to) or because
+  // `handleSkipRank` skipped past the last one (dispatches `seshReset`,
+  // leaving `state` at 'choosing'). Derived directly from render-time state
+  // rather than tracked separately, so there's no setState-in-effect to
+  // sequence correctly across both paths.
+  const isRunFinished =
+    isTrickSequenceFinished(sequence) && (state.status === 'choosing' || state.status === 'completed');
 
   const activeTrickId = state.status === 'active' ? state.trick.id : undefined;
   const trickNotes = useMemo(
     () => (activeTrickId ? selectNotesForTrick(notes, activeTrickId) : []),
     [notes, activeTrickId],
   );
-
-  useEffect(() => {
-    // An empty trick list starts already finished (state stays 'choosing',
-    // since there's no trick to seed the reducer with) — finish immediately
-    // rather than rendering the countdown/active states forever.
-    if (state.status !== 'choosing' || !isTrickSequenceFinished(sequence)) return;
-    if (hasReportedEmptySequence.current) return;
-
-    hasReportedEmptySequence.current = true;
-    onFinished?.();
-  }, [onFinished, sequence, state.status]);
 
   useEffect(() => {
     if (state.status !== 'completed') return;
@@ -112,6 +115,7 @@ export function MultiTrickSesh({
 
     recordedSummaryId.current = summaryId;
     recordCompletedSesh(state.summary);
+    setSummaries((prev) => [...prev, state.summary]);
 
     const nextSequence = advanceTrickSequence(sequence);
     setSequence(nextSequence);
@@ -119,10 +123,8 @@ export function MultiTrickSesh({
     const nextTrick = getCurrentSequenceTrick(nextSequence);
     if (nextTrick) {
       dispatch({ type: 'trickSelected', trick: nextTrick, plan });
-    } else {
-      onFinished?.();
     }
-  }, [onFinished, plan, recordCompletedSesh, sequence, state]);
+  }, [plan, recordCompletedSesh, sequence, state]);
 
   useEffect(() => {
     if (!shouldKeepScreenAwake(state.status)) return;
@@ -202,10 +204,16 @@ export function MultiTrickSesh({
     );
   }
 
-  // Reached once the effect above has advanced past the last trick and
-  // called onFinished. T013/T014 own what the user actually sees after a
-  // multi-trick run; this is just a safe fallback render for the instant
-  // in between.
+  // Reached once the run is over — either the effect above advanced past
+  // the last trick, or handleSkipRank skipped past it. Renders the full
+  // run's wrap-up and is the only place onFinished gets called now.
+  if (isRunFinished) {
+    return <MultiTrickWrapUp summaries={summaries} onContinue={() => onFinished?.()} />;
+  }
+
+  // Reached for the one tick between a trick's sesh completing and the
+  // effect above reacting to it. Not terminal — never the resting state a
+  // user actually sees.
   return (
     <CenteredPanel>
       <Eyebrow>Sequence complete</Eyebrow>
@@ -215,7 +223,59 @@ export function MultiTrickSesh({
   );
 }
 
+/**
+ * Wrap-up shown once a multi-trick run is over, whether every trick ran to
+ * completion or the tail end was skipped. Lists only the tricks actually
+ * attempted (`summaries`), in the order they were completed — skipped
+ * tricks never produce a summary, so they're simply absent here.
+ */
+function MultiTrickWrapUp({
+  summaries,
+  onContinue,
+}: {
+  readonly summaries: readonly SeshSummary[];
+  readonly onContinue: () => void;
+}) {
+  return (
+    <ScrollArea contentContainerStyle={{ padding: 24, paddingBottom: 140 }}>
+      <ActiveContent>
+        <Eyebrow>Sesh complete</Eyebrow>
+        <DisplayTitle>Nice work.</DisplayTitle>
+        <WrapUpList>
+          {summaries.map((summary) => {
+            const laceCount = summary.landings.length;
+            const time = formatDuration(summary.durationMs);
+            return (
+              <WrapUpRow
+                key={createPracticeSessionRecordId(summary)}
+                accessibilityLabel={`Wrap-up entry: ${summary.trick.name}, ${summary.landings.length} laces, ${time}`}>
+                <WrapUpTrickName>{summary.trick.name}</WrapUpTrickName>
+                <WrapUpLaceCount>{laceCount} {laceCount === 1 ? 'lace' : 'laces'}</WrapUpLaceCount>
+                <WrapUpTime>{time}</WrapUpTime>
+              </WrapUpRow>
+            );
+          })}
+        </WrapUpList>
+        <FinishButton accessibilityLabel="Finish sesh" onPress={onContinue}>
+          Finish sesh
+        </FinishButton>
+      </ActiveContent>
+    </ScrollArea>
+  );
+}
+
+const ScrollArea = styled(ScrollView)`flex: 1; width: 100%;`;
+const ActiveContent = styled.View`width: 100%; max-width: 680px; align-self: center; align-items: center;`;
 const CenteredPanel = styled.View`flex: 1; width: 100%; max-width: 680px; align-self: center; align-items: center; justify-content: center; padding: 40px 24px 140px;`;
 const Eyebrow = styled(BaseEyebrow)`margin-bottom: 14px;`;
 const DisplayTitle = styled(BaseDisplayTitle)`text-align: center;`;
 const BodyCopy = styled(BodyText)`max-width: 470px; text-align: center; margin-top: 18px;`;
+const WrapUpList = styled.View`width: 100%; margin-top: 28px;`;
+const WrapUpRow = styled.View`min-height: 50px; flex-direction: row; align-items: center; border-bottom-width: 1px; border-bottom-color: #c7ceb7;`;
+const WrapUpTrickName = styled.Text`flex: 1; color: #18382e; font-size: 17px; font-weight: 800;`;
+const WrapUpLaceCount = styled.Text`color: ${AppColors.textMuted}; font-size: 14px; font-weight: 700; margin-right: 14px;`;
+const WrapUpTime = styled.Text`color: #18382e; font-size: 15px; font-variant: tabular-nums; font-weight: 800;`;
+const FinishButton = styled(Button).attrs({ size: 'medium' })`
+  margin-top: 28px;
+  border-radius: 5px;
+`;
