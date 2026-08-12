@@ -144,7 +144,7 @@ The first pass used **locked/unlocked** for "the user can land this trick." User
 
 - **Area:** Sesh
 - **Priority:** High (inherited from parent T028)
-- **Status:** Not started
+- **Status:** In progress
 - **Description:** Let the user set a duration applied to each trick in the run — three tricks at one minute each means the run moves on after a minute on each trick.
 - **Exit criteria:** Test confirms that a run configured with a per-trick duration passes a timed plan for each trick and advances when that duration elapses, and that leaving it unset preserves today's open-ended behavior; verified in-browser.
 - **Notes:** `MultiTrickSesh` already takes a `plan` and hands it to every trick; the run currently hardcodes `OPEN_ENDED_SESH_PLAN` at both call sites. A timed plan should flow through the existing `timerElapsed` → `completed` → advance path with no new advance logic. Reuse `createTimedSeshPlan`'s existing 1–60 minute validation rather than inventing separate bounds.
