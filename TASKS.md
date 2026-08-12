@@ -127,7 +127,7 @@ The first pass used **locked/unlocked** for "the user can land this trick." User
 
 - **Area:** Sesh
 - **Priority:** High (inherited from parent T029)
-- **Status:** Not started
+- **Status:** In progress
 - **Description:** The elapsed-time readout isn't rendered during an assessment run — there's nothing to race, and showing a clock makes the user feel rushed.
 - **Exit criteria:** Test confirms the timer and its label are absent in an assessment run and present in a regular sesh, while the recorded practice-history record still carries a real non-zero `durationMs`; verified in-browser.
 - **Notes:** Display-only. `useNow` should keep running — `ActiveSesh` derives elapsed time from it for the record, and stopping the interval would zero out assessment durations in Stats.
