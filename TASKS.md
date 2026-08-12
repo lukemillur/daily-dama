@@ -148,15 +148,6 @@ The first pass used **locked/unlocked** for "the user can land this trick." User
 - **Description:** Umbrella for corrections to [T013]'s assessment run. The run currently inherits practice-sesh chrome that misrepresents what an assessment is: a countdown between every trick, a running timer implying time pressure, and an "End sesh" label for what ends an assessment.
 - **Notes:** Umbrella only, no exit criteria of its own. [T029.3] depends on [T028.3] ("Next trick" in the shared core) and [T029.4] depends on [T028.1] (advance-on-lace in the shared core) — this entry deliberately doesn't reimplement either. Decision resolved during scoping: hiding the timer is a display change only; assessment records still capture real `durationMs`, since Stats derivation and the time-logged windows shouldn't develop a blind spot for assessment practice.
 
-### [T029.1] Assessment-specific end-action copy
-
-- **Area:** Sesh
-- **Priority:** High (inherited from parent T029)
-- **Status:** In progress
-- **Description:** During an assessment run the end action reads "End assessment" rather than "End Sesh".
-- **Exit criteria:** Test confirms the end action renders "End assessment" when the assessment flow drives the run and "End Sesh" otherwise; verified in-browser.
-- **Notes:** An optional label prop on `ActiveSesh` defaulting to today's copy, set only by `AssessmentEntry`. Don't branch on a boolean `isAssessment` inside `ActiveSesh` — the component has no business knowing what an assessment is.
-
 ### [T029.2] Skip the countdown between assessment tricks
 
 - **Area:** Sesh
