@@ -115,15 +115,6 @@ _This round came out of a review pass over the first batch of completed work (T0
 
 The first pass used **locked/unlocked** for "the user can land this trick." User-facing copy in this round switches to **laced/unlaced**, which is what the domain actually calls it. The persisted profile field is still named `manuallyUnlockedTrickIds` and stays that way — renaming a persisted key means either a migration or throwing away real user data, and neither is worth it for a vocabulary change. Rename the copy, not the storage contract.
 
-### [T031] Accept paused Sesh records when restoring practice history
-
-- **Area:** Practice history / persistence
-- **Priority:** High
-- **Status:** In progress
-- **Description:** Fix the runtime-validation mismatch that rejects valid completed Sesh records containing paused time. The Sesh records active practice duration, while the current history validator assumes duration must exactly equal the wall-clock interval between start and completion.
-- **Exit criteria:** A test creates a Sesh that is started, paused, resumed, and completed, converts it into a history record, serializes it, and restores it successfully; the same test boundary confirms non-paused records still restore and records whose active duration exceeds their total wall-clock span are rejected.
-- **Notes:** Preserve the real `completedAt` timestamp and active-practice `durationMs`. For the current document version, enforce `durationMs <= completedAt - startedAt` rather than exact equality.
-
 ### [T032] Prevent onboarding seed data from immediately promoting the assessed rank
 
 - **Area:** Onboarding / Profile

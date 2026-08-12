@@ -40,7 +40,9 @@ function isSessionRecord(value: unknown): value is PracticeSessionRecord {
     isFiniteNonNegativeNumber(completedAt) &&
     completedAt >= startedAt &&
     isFiniteNonNegativeNumber(durationMs) &&
-    durationMs === completedAt - startedAt &&
+    // durationMs is active practice time, which can be less than wall-clock
+    // elapsed time when a session was paused; it can never exceed it.
+    durationMs <= completedAt - startedAt &&
     Number.isInteger(laceCount) &&
     Number(laceCount) >= 0 &&
     (plannedDurationMs === undefined ||
