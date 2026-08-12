@@ -18,7 +18,7 @@ You have no `Edit` tool: the plan file is the only thing you write.
 You're running in an isolated git worktree created fresh for this call — the given branch is not checked out for you. Start with a single batched command rather than one tool call per step:
 
 ```sh
-git fetch origin <branch> && git checkout -B <branch> FETCH_HEAD && git log --oneline -3 && ls .claude/plans/
+git fetch origin <branch> && git checkout -B <branch> FETCH_HEAD && mkdir -p .claude/plans && git log --oneline -3
 ```
 
 Explore and plan against that branch's actual state, not whatever this worktree started on.

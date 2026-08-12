@@ -103,10 +103,25 @@ test('refuses a worktree holding commits that exist nowhere else', () => {
 });
 
 test('refuses a worktree with a live process inside it', () => {
-  const run = createFakeRunner([...cleanResponses, [/^lsof/, { code: 0, stdout: 'COMMAND PID\nnode 4242\n' }]]);
+  const run = createFakeRunner([
+    ...cleanResponses,
+    [/^lsof/, { code: 0, stdout: `p4242\nfcwd\nn${WT}/src/features\n` }],
+  ]);
   const assessment = assessWorktree({ run, repoRoot: REPO, worktree: find('agent-abc123') });
   assert.equal(assessment.safe, false);
   assert.equal(assessment.reason, 'active-process');
+  assert.match(assessment.detail, /src\/features/);
+});
+
+test('refuses when lsof is unavailable or fails unexpectedly', () => {
+  const run = createFakeRunner([
+    ...cleanResponses,
+    [/^lsof/, { code: 1, stdout: '', stderr: 'spawn lsof ENOENT' }],
+  ]);
+  const assessment = assessWorktree({ run, repoRoot: REPO, worktree: find('agent-abc123') });
+  assert.equal(assessment.safe, false);
+  assert.equal(assessment.reason, 'unverifiable');
+  assert.match(assessment.detail, /lsof failed/);
 });
 
 test('refuses when git itself cannot answer', () => {

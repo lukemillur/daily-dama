@@ -32,6 +32,7 @@ function baseResponses({ branches = [], tasks = TASKS, done = DONE } = {}) {
     [`git -C ${REPO} show origin/development:TASKS.md`, { stdout: tasks }],
     [`git -C ${REPO} show origin/development:TASKS_DONE.md`, { stdout: done }],
     [/ls-remote/, { stdout: lsRemote(branches) }],
+    [/show-ref --verify --quiet/, { code: 1 }],
     [/worktree add|switch|add TASKS.md|commit|worktree remove|branch -D|push/, { stdout: '' }],
   ];
 }
@@ -94,7 +95,13 @@ test('dry run reports the decision and touches nothing', () => {
 test('a fresh claim branches, flips the status, commits and pushes — then cleans up after itself', () => {
   const fileSystem = fakeFileSystem();
   const run = createFakeRunner(baseResponses());
-  const result = claim({ run, repoRoot: REPO, options: options(), fileSystem });
+  const result = claim({
+    run,
+    repoRoot: REPO,
+    options: options(),
+    fileSystem,
+    createClaimNonce: () => 'nonce-one',
+  });
 
   assert.equal(result.status, 'claimed');
   assert.equal(result.branch, 'task/T100-rename-a-label-on-the-summary-card');
@@ -108,6 +115,7 @@ test('a fresh claim branches, flips the status, commits and pushes — then clea
     cursor = index;
   }
   assert.ok(joined.some((call) => call.includes('worktree remove --force')), 'removes its own temporary worktree');
+  assert.ok(joined.some((call) => call.includes('Claim-Nonce: nonce-one')), 'claim commit carries a unique nonce');
 
   // Exactly one status line changes, and the orchestrating checkout is never touched.
   assert.equal(fileSystem.written.length, 1);
@@ -116,6 +124,51 @@ test('a fresh claim branches, flips the status, commits and pushes — then clea
   for (const call of joined) {
     assert.equal(/^git -C \/repo (checkout|switch|reset|restore|merge)\b/.test(call), false, `mutating call: ${call}`);
   }
+});
+
+test('a pre-existing local branch blocks before a worktree is created and is never deleted', () => {
+  const run = createFakeRunner([
+    ...baseResponses(),
+    [/show-ref --verify --quiet/, { code: 0 }],
+  ]);
+  const result = claim({ run, repoRoot: REPO, options: options(), fileSystem: fakeFileSystem() });
+  assert.equal(result.status, 'blocked');
+  assert.equal(result.blocker.reason, 'local-branch-exists');
+  const joined = run.calls.map((argv) => argv.join(' '));
+  assert.equal(joined.some((call) => call.includes('worktree add')), false);
+  assert.equal(joined.some((call) => call.includes('branch -D')), false);
+});
+
+test('a local branch created after preflight is not deleted when switch -c loses the race', () => {
+  const run = createFakeRunner([
+    ...baseResponses(),
+    [/switch -c task\/T100/, { code: 128, stderr: 'fatal: a branch named task/T100 already exists' }],
+  ]);
+  assert.throws(
+    () => claim({ run, repoRoot: REPO, options: options(), fileSystem: fakeFileSystem() }),
+    /branch named task\/T100 already exists/,
+  );
+  const joined = run.calls.map((argv) => argv.join(' '));
+  assert.ok(joined.some((call) => call.includes('worktree remove --force')), 'temporary worktree is still removed');
+  assert.equal(joined.some((call) => call.includes('branch -D')), false, 'branch created by someone else is preserved');
+});
+
+test('claim nonces make otherwise identical concurrent claim commits diverge', () => {
+  const commitCalls = [];
+  for (const nonce of ['worker-a', 'worker-b']) {
+    const run = createFakeRunner(baseResponses());
+    claim({
+      run,
+      repoRoot: REPO,
+      options: options(),
+      fileSystem: fakeFileSystem(),
+      createClaimNonce: () => nonce,
+    });
+    commitCalls.push(run.calls.find((argv) => argv.includes('commit')).join(' '));
+  }
+  assert.notEqual(commitCalls[0], commitCalls[1]);
+  assert.match(commitCalls[0], /Claim-Nonce: worker-a/);
+  assert.match(commitCalls[1], /Claim-Nonce: worker-b/);
 });
 
 test('a claim never force-pushes and never deletes a remote branch', () => {

@@ -73,6 +73,8 @@ test('a real claim pushes the branch and leaves the orchestrating checkout untou
   const pushed = git(repo.local, 'show', `origin/${result.json.branch}:TASKS.md`);
   assert.match(pushed, /### \[T100\][\s\S]*?- \*\*Status:\*\* In progress/);
   assert.match(pushed, /### \[T101\][\s\S]*?- \*\*Status:\*\* Not started/);
+  const claimMessage = git(repo.local, 'show', '-s', '--format=%B', `origin/${result.json.branch}`);
+  assert.match(claimMessage, /^Claim `T100`\n\nClaim-Nonce: [0-9a-f-]{36}$/);
 
   // The orchestrating checkout never moved and stayed clean.
   assert.equal(git(repo.local, 'rev-parse', 'HEAD'), headBefore);
@@ -83,6 +85,23 @@ test('a real claim pushes the branch and leaves the orchestrating checkout untou
   // The temporary claim worktree removed itself.
   assert.equal(git(repo.local, 'worktree', 'list').split('\n').length, 1);
   assert.equal(fs.readdirSync(path.join(repo.local, '.claude/worktrees')).length, 0);
+});
+
+test('a pre-existing local task branch is preserved and blocks a claim', (t) => {
+  const repo = makeRepo();
+  t.after(() => cleanupRepo(repo));
+
+  const branch = 'task/T100-rename-a-label-on-the-summary-card';
+  git(repo.local, 'branch', branch);
+  const branchBefore = git(repo.local, 'rev-parse', branch);
+
+  const result = node(CLAIM, ['--repo', repo.local, 'T100'], repo.local);
+
+  assert.equal(result.code, 1);
+  assert.equal(result.json.status, 'blocked');
+  assert.equal(result.json.blocker.reason, 'local-branch-exists');
+  assert.equal(git(repo.local, 'rev-parse', branch), branchBefore, 'local branch untouched');
+  assert.equal(git(repo.local, 'worktree', 'list').split('\n').length, 1);
 });
 
 test('a second claim of the same task is refused without touching the existing branch', (t) => {

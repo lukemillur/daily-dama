@@ -43,6 +43,12 @@ Selection, in order: umbrella parents are passed over (their children are separa
 
 What it will not do: switch branches or write files in the checkout it's invoked from; force-push; delete a branch it doesn't own; adopt an existing claim branch outside explicit resume mode; or treat branch age as evidence a claim is stale. The claim commit and push happen inside a temporary worktree under `.claude/worktrees/newticket-claim-*` that the script removes on success and on failure.
 
+Before creating that worktree it refuses a colliding local task branch. Every
+claim commit also carries a random nonce: concurrent workers therefore create
+different commit IDs, so an ordinary non-force push accepts exactly one and
+rejects the other as non-fast-forward rather than treating identical commits
+as the same successful claim.
+
 `--resume` is read-only against the branch. It refuses when zero or more than one branch matches the ID, and when the branch's own `TASKS.md` doesn't contain the task.
 
 ## `verify.mjs`
@@ -79,6 +85,9 @@ Removal requires **every** check to pass; anything else is refused and reported,
 | `unpushed-commits` | commits that exist on no remote |
 | `active-process` | a live process has its cwd inside |
 | `unverifiable` | git couldn't answer; assume unsafe |
+
+Process detection includes descendant directories inside the worktree and
+fails closed when `lsof` is unavailable or returns an unexpected error.
 
 `--prefix` only matches direct children of `.claude/worktrees/`. Never point it at `agent-` — those are not necessarily this run's.
 

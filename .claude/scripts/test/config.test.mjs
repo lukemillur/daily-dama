@@ -80,10 +80,16 @@ test('the newTicket skill restricts as well as pre-approves', () => {
   const skill = fs.readFileSync(path.join(repoRoot, '.claude/skills/newTicket/SKILL.md'), 'utf8');
   const fields = parseFrontmatter(skill);
   const disallowed = toolList(fields['disallowed-tools']);
-  for (const tool of ['Edit', 'Write', 'NotebookEdit']) {
+  for (const tool of ['Edit', 'Write', 'NotebookEdit', 'Read', 'Grep', 'Glob', 'WebFetch', 'WebSearch']) {
     assert.ok(disallowed.includes(tool), `${tool} must be removed from the orchestrator's pool`);
   }
-  assert.ok(toolList(fields['allowed-tools']).includes('Agent'), 'the orchestrator must be able to spawn subagents');
+  const allowed = toolList(fields['allowed-tools']);
+  assert.deepEqual(
+    allowed.filter((tool) => tool.startsWith('Agent')),
+    ['Agent(ticket-planner)', 'Agent(ticket-implementer)'],
+    'the orchestrator may spawn only the two ticket agents',
+  );
+  assert.equal(allowed.some((tool) => tool === 'Bash' || tool === 'Bash(*)'), false, 'generic Bash is not pre-approved');
 });
 
 test('no subagent can spawn subagents', () => {

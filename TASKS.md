@@ -138,6 +138,7 @@ The first pass used **locked/unlocked** for "the user can land this trick." User
 - **Area:** Tricks / Notes
 - **Priority:** Medium
 - **Status:** Not started
+- **Planning:** Implementer
 - **Description:** Add an all-notes screen reachable from Tricks so users can review, edit, and delete notes without opening tricks one at a time.
 - **Exit criteria:** Tests and browser checks at desktop and 320 px confirm that Tricks links to an All Notes screen, notes are listed with their stored trick-name snapshots and useful date context, notes can be edited and deleted there, orphaned notes remain visible and manageable after a custom trick is deleted, and the empty state is coherent.
 - **Notes:** Follow the existing All Trick Goals screen's routing and presentation conventions where appropriate. Historical snapshots remain authoritative; do not resolve names from the current trick directory.
@@ -147,6 +148,7 @@ The first pass used **locked/unlocked** for "the user can land this trick." User
 - **Area:** Home
 - **Priority:** Medium
 - **Status:** Not started
+- **Planning:** Implementer
 - **Description:** Correct the labels on Home practice summaries so they describe the rolling-window calculations currently implemented.
 - **Exit criteria:** Tests assert unambiguous labels equivalent to "Last 24 hours," "Last 7 days," "Last 30 days," and "Last 365 days" while representative boundary calculations remain unchanged; the summary is verified in-browser at 320 px.
 - **Notes:** Do not silently convert the calculations to calendar-day/week/month/year semantics in this task.
@@ -156,6 +158,7 @@ The first pass used **locked/unlocked** for "the user can land this trick." User
 - **Area:** Home
 - **Priority:** Medium
 - **Status:** Not started
+- **Planning:** Required
 - **Description:** Ensure rolling totals and streak information update when time boundaries pass without a new practice-history write.
 - **Exit criteria:** Fake-time tests confirm a record naturally ages out of the 24-hour summary while Home remains mounted, streak presentation updates across a local-day boundary, and returning the app to the foreground refreshes both immediately without storing timers, native handles, or current-time values in reducers or persisted state.
 - **Notes:** Use a small presentation-level clock/refresh signal and app-foreground handling. Keep `Date.now()` outside pure summary functions by passing an explicit reference time.
@@ -173,6 +176,7 @@ The first pass used **locked/unlocked** for "the user can land this trick." User
 - **Area:** Stats
 - **Priority:** Medium (inherited from parent T038)
 - **Status:** Not started
+- **Planning:** Implementer
 - **Description:** Implement a pure selector that ranks focused tricks by practice neglect, using focused-list order as deterministic tie-breaking and limiting its result to three.
 - **Exit criteria:** Unit tests confirm empty input, never-practiced tricks before practiced tricks, practiced tricks ordered by oldest recent practice, deterministic ties, unrelated practice records having no effect, and the three-item limit.
 - **Notes:** Derive the result from focused tricks and completed practice history; do not consult UI state or persist recommendation state.
@@ -182,6 +186,7 @@ The first pass used **locked/unlocked** for "the user can land this trick." User
 - **Area:** Stats / Sesh routing
 - **Priority:** Medium (inherited from parent T038)
 - **Status:** Not started
+- **Planning:** Implementer
 - **Description:** Render T038.1's results in a visually subordinate "Needs attention" section on Stats and provide direct Practice actions for each suggested trick. Depends on T038.1.
 - **Exit criteria:** Component tests confirm the first three selector results render in order, each action links to `/sesh?trickId=...` with the correct trick, and empty output adds no unnecessary visual weight; the section is verified in-browser at desktop and 320 px without changing the existing By Trick statistics.
 - **Notes:** Keep this section subordinate to the core Stats summary rather than turning Stats into a recommendation dashboard.
@@ -191,6 +196,7 @@ The first pass used **locked/unlocked** for "the user can land this trick." User
 - **Area:** Repository documentation
 - **Priority:** Medium
 - **Status:** Not started
+- **Planning:** Implementer
 - **Description:** Replace the Expo starter README with project-specific documentation that lets a new collaborator understand and run Daily Dama safely.
 - **Exit criteria:** A clean-install walkthrough confirms the README accurately explains the product, supported platforms, Yarn-based setup, source layout, local-first persistence domains, access-gate configuration, standard verification commands, and relevant handoff documents; a secret-free `.env.example` documents supported environment variables, with no npm-only or obsolete reset-project guidance remaining.
 - **Notes:** Keep the architecture explanation concise and defer detailed invariants to `AGENTS.md`, `TRICK_VIZ_HANDOFF.md`, and `DEPLOYMENT_HANDOFF.md`. Depends on T040: confirm T040 is in `TASKS_DONE.md` before writing setup docs, so this doesn't describe or re-add `npm run reset-project` guidance that T040 is removing in parallel.
@@ -200,6 +206,7 @@ The first pass used **locked/unlocked** for "the user can land this trick." User
 - **Area:** Repository maintenance
 - **Priority:** Medium
 - **Status:** Not started
+- **Planning:** Implementer
 - **Description:** Remove the Expo starter reset script, which can replace application source and is no longer appropriate in an established repository.
 - **Exit criteria:** `package.json` no longer exposes the reset script, `scripts/reset-project.js` is removed, repository search finds no remaining references, the package manifest remains valid, and the standard verification sequence passes.
 - **Notes:** Keep this narrowly focused on the destructive command; broader starter-scaffold cleanup belongs to T041. Do this before T039: `README.md` currently documents `npm run reset-project`, so this task's "no remaining references" criterion touches the same file T039 rewrites. Claim and merge this one first to avoid a conflicting parallel edit.
@@ -209,6 +216,7 @@ The first pass used **locked/unlocked** for "the user can land this trick." User
 - **Area:** Repository maintenance
 - **Priority:** Low
 - **Status:** Not started
+- **Planning:** Implementer
 - **Description:** Audit and remove unused Expo starter components, assets, and direct dependencies after proving they are not part of the current application or configuration.
 - **Exit criteria:** Repository search and dependency inspection account for every candidate before removal; a frozen Yarn install followed by tests, lint, TypeScript, and web export passes with the verified-unused scaffold, assets, and direct dependencies removed and the lockfile updated.
 - **Notes:** Likely candidates include ExternalLink, WebBadge, HintRow, Collapsible, TrickCarousel, and associated assets/packages, but each must be verified with source/config searches and `yarn why`. Preserve components used by web navigation and packages required transitively or by configuration. Do not combine this with feature-level refactors.
@@ -218,6 +226,7 @@ The first pass used **locked/unlocked** for "the user can land this trick." User
 - **Area:** Navigation
 - **Priority:** Medium
 - **Status:** Not started
+- **Planning:** Required
 - **Description:** Give Sesh, Tricks, Stats, and Profile distinct, subject-appropriate native tab icons rather than relying on incomplete or repeated icon treatment.
 - **Exit criteria:** Deliberate iOS and Android checks confirm all five native tabs have distinct, route-appropriate icons that remain legible and unclipped in selected and unselected states, while the existing web navigation and its verified 320 px fit remain unchanged.
 - **Notes:** This is native navigation polish, not a web-navigation redesign. Update navigation tests or snapshots where they provide useful regression protection.
@@ -235,6 +244,7 @@ The first pass used **locked/unlocked** for "the user can land this trick." User
 - **Area:** Sesh
 - **Priority:** High (inherited from parent T043)
 - **Status:** Not started
+- **Planning:** Required
 - **Description:** Add explicit app-lifecycle coordination that reconciles timed, open-ended, paused, and multi-trick Sesh state against timestamps when the app returns to the foreground.
 - **Exit criteria:** Automated state-transition tests confirm an overdue timed Sesh completes at its logical deadline, an open-ended Sesh reports correct elapsed active time, a paused Sesh remains paused without accruing active duration, and a multi-trick run retains coherent current-trick state after a background/foreground cycle.
 - **Notes:** Keep timestamp acquisition and app-state effects outside the reducer, passing explicit timestamps through actions. Do not add persisted in-progress Sesh state.
@@ -244,6 +254,7 @@ The first pass used **locked/unlocked** for "the user can land this trick." User
 - **Area:** Sesh
 - **Priority:** High (inherited from parent T043)
 - **Status:** Not started
+- **Planning:** Required
 - **Description:** Exercise T043.1's lifecycle behavior on both native platforms and fix any platform-specific integration defects without changing the Sesh domain model. Depends on T043.1.
 - **Exit criteria:** Deliberate iOS and Android checks cover timed, open-ended, paused, and multi-trick Sesh background/foreground cycles, confirm any overdue timer resolves at its logical deadline, and confirm the wake lock releases after completion or cancellation; any platform-specific regressions found are covered by an automated test where practical.
 - **Notes:** This is native hardening of the lifecycle model established in T043.1, not process-death recovery or route-leave protection.
@@ -261,6 +272,7 @@ The first pass used **locked/unlocked** for "the user can land this trick." User
 - **Area:** Forms / mobile layout
 - **Priority:** Medium (inherited from parent T044)
 - **Status:** Not started
+- **Planning:** Required
 - **Description:** Create the smallest reusable layout primitive or convention needed to keep long mobile forms scrollable and their primary actions reachable while the keyboard is open, proving it through the custom-trick form.
 - **Exit criteria:** On representative small iOS and Android viewports, the custom-trick form's final input and primary action remain reachable with the keyboard open, scrolling and keyboard dismissal behave predictably, safe-area and tab-bar insets do not overlap content, and the web layout remains unchanged.
 - **Notes:** Avoid fixed device-specific offsets. Keep the abstraction narrow enough to accommodate screen-specific headers and action layouts rather than forcing every form into an identical visual shell.
@@ -270,6 +282,7 @@ The first pass used **locked/unlocked** for "the user can land this trick." User
 - **Area:** Forms / mobile layout
 - **Priority:** Medium (inherited from parent T044)
 - **Status:** Not started
+- **Planning:** Required
 - **Description:** Apply T044.1's proven layout pattern to notes, goals, Profile streak editing, and the access gate. Depends on T044.1.
 - **Exit criteria:** Focused checks on representative small iOS and Android viewports confirm the final input and primary action remain reachable with the keyboard open on every notes, goals, Profile streak, and access-gate form; scrolling, dismissal, safe-area, and tab-bar behavior are consistent and web rendering is unchanged.
 - **Notes:** Adapt the shared convention where a screen's structure requires it; do not introduce fixed offsets or unrelated form redesigns.

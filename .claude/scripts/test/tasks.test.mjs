@@ -69,6 +69,17 @@ test('parses done IDs and respects a non-Done archived status', () => {
   assert.equal(doneIds.has('T104.1'), false);
 });
 
+test('an archived entry without an explicit Done status does not satisfy dependencies', () => {
+  const malformed = [
+    '# Tasks — Done Archive',
+    '',
+    '### [T777] Missing status',
+    '',
+    '- **Description:** This entry is malformed.',
+  ].join('\n');
+  assert.equal(parseDoneIds(malformed).has('T777'), false);
+});
+
 test('planning policy: explicit Implementer skips the separate planner', () => {
   const policy = resolvePlanningPolicy(byId('T100'));
   assert.equal(policy.policy, 'implementer');
@@ -100,6 +111,36 @@ test('planning policy: persistence work marked Implementer is escalated', () => 
   assert.match(policy.reason, /persistence/);
 });
 
+test('planning policy: documenting persistence and explicitly avoiding new persistence do not escalate', () => {
+  const documentation = {
+    ...byId('T100'),
+    title: 'Document local setup',
+    fields: {
+      ...byId('T100').fields,
+      Area: 'Repository documentation',
+      Description: 'Explain the existing local-first persistence domains.',
+      Notes: 'Do not add new persistence in this task.',
+    },
+  };
+  const policy = resolvePlanningPolicy(documentation);
+  assert.equal(policy.policy, 'implementer');
+  assert.equal(policy.source, 'field');
+});
+
+test('planning policy: an actual persisted-shape change still escalates outside a persistence area', () => {
+  const change = {
+    ...byId('T100'),
+    fields: {
+      ...byId('T100').fields,
+      Area: 'Profile',
+      Description: 'Change the persisted profile shape to add a new field.',
+    },
+  };
+  const policy = resolvePlanningPolicy(change);
+  assert.equal(policy.policy, 'required');
+  assert.equal(policy.source, 'escalated');
+});
+
 test('planning policy: an unrecognized value falls back to the separate planner', () => {
   const task = { ...byId('T100'), fields: { ...byId('T100').fields, Planning: 'maybe' } };
   const policy = resolvePlanningPolicy(task);
@@ -114,8 +155,15 @@ test('every entry in the real TASKS.md backlog resolves to a policy', () => {
     const policy = resolvePlanningPolicy(task);
     assert.ok(['required', 'implementer'].includes(policy.policy), `${task.id} resolved to ${policy.policy}`);
   }
+  const actionable = real.filter((task) => task.fields['Exit criteria']);
+  assert.deepEqual(
+    actionable.filter((task) => !task.fields.Planning).map((task) => task.id),
+    [],
+    'every actionable backlog entry must make its planning cost explicit',
+  );
+
   const unannotated = real.filter((task) => !task.fields.Planning);
-  assert.ok(unannotated.length > 0, 'existing entries carry no Planning field');
+  assert.ok(unannotated.length > 0, 'umbrella entries may omit the Planning field');
   for (const task of unannotated) {
     assert.equal(resolvePlanningPolicy(task).policy, 'required', `${task.id} must stay on the separate planner`);
   }

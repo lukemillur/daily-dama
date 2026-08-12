@@ -32,7 +32,7 @@ const EFFORTS = new Set(['low', 'medium', 'high', 'xhigh', 'max']);
 // Built-in tools a subagent can be granted. Names outside this set are only
 // valid as MCP patterns (`mcp__server` / `mcp__server__tool`).
 const BUILTIN_TOOLS = new Set([
-  'Agent', 'Artifact', 'Bash', 'BashOutput', 'Edit', 'EnterWorktree', 'ExitWorktree', 'Glob', 'Grep',
+  'Agent', 'Artifact', 'AskUserQuestion', 'Bash', 'BashOutput', 'Edit', 'EnterWorktree', 'ExitWorktree', 'Glob', 'Grep',
   'KillShell', 'Monitor', 'NotebookEdit', 'Read', 'SendMessage', 'Skill', 'SlashCommand', 'TaskCreate',
   'TaskGet', 'TaskList', 'TaskStop', 'TaskUpdate', 'TodoWrite', 'ToolSearch', 'WebFetch', 'WebSearch', 'Write',
 ]);

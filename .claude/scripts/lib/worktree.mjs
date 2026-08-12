@@ -109,11 +109,27 @@ export function assessWorktree({ run, repoRoot, worktree, containerDir }) {
     return refuse('unpushed-commits', `${unreachable.stdout.trim()} commit(s) exist only here`);
   }
 
-  const processes = run(['lsof', '-a', '-d', 'cwd', '--', worktree.path], { allowFailure: true });
-  // lsof exits 1 with no output when nothing matches; only a non-empty listing
-  // is evidence of a live process.
-  if (processes.stdout.trim() !== '') {
-    return refuse('active-process', 'a process is running with its cwd inside this worktree');
+  // Ask lsof for every process cwd, then compare paths ourselves. Querying the
+  // worktree path as an exact lsof name misses processes running in descendants
+  // such as `src/` or `node_modules/`.
+  const processes = run(['lsof', '-d', 'cwd', '-Fn'], { allowFailure: true });
+  if (processes.code !== 0 && !(processes.code === 1 && processes.stdout.trim() === '' && processes.stderr.trim() === '')) {
+    return refuse(
+      'unverifiable',
+      `lsof failed while checking active processes: ${processes.stderr.trim() || `exit ${processes.code}`}`,
+    );
+  }
+  const worktreePath = realPath(worktree.path);
+  const activeCwd = processes.stdout
+    .split('\n')
+    .filter((line) => line.startsWith('n'))
+    .map((line) => line.slice(1))
+    .find((cwd) => {
+      const resolved = realPath(cwd);
+      return resolved === worktreePath || isInside(resolved, worktreePath);
+    });
+  if (activeCwd) {
+    return refuse('active-process', `a process is running with cwd ${activeCwd} inside this worktree`);
   }
 
   return { safe: true, reason: 'clean', detail: 'detached, clean, fully pushed, unlocked' };

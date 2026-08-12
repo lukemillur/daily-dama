@@ -1,8 +1,8 @@
 ---
 name: newTicket
 description: Claims a Daily Dama backlog task — a specific one if named, otherwise the next available one — and drives it end-to-end against `development`: deterministic claim script, then the ticket-planner and ticket-implementer agents (plan, implement, merge). No plan-approval gate. When no task is named, keeps going: one task after another, each in fresh subagents so context never accumulates, until the backlog is exhausted, a blocker is hit, or the session's usage limit is reached. Also resumes an interrupted task with `/newTicket resume T0NN`.
-allowed-tools: Agent, Read, Bash(node .claude/scripts/ticket-claim.mjs:*), Bash(node .claude/scripts/worktree-cleanup.mjs:*), Bash(git worktree list:*)
-disallowed-tools: Edit, Write, NotebookEdit, WebFetch, WebSearch
+allowed-tools: Agent(ticket-planner), Agent(ticket-implementer), Bash(node .claude/scripts/ticket-claim.mjs:*), Bash(node .claude/scripts/worktree-cleanup.mjs:*)
+disallowed-tools: Artifact, AskUserQuestion, BashOutput, Edit, EnterWorktree, ExitWorktree, Glob, Grep, KillShell, Monitor, NotebookEdit, Read, SendMessage, Skill, SlashCommand, TaskCreate, TaskGet, TaskList, TaskStop, TaskUpdate, TodoWrite, ToolSearch, WebFetch, WebSearch, Write, mcp__Claude_Browser__*
 ---
 
 Drive task(s) from `TASKS.md` to merged PRs against `development`.
@@ -13,6 +13,12 @@ You are the orchestrator. You never edit files, never plan, never implement, and
 - **`ticket-planner` / `ticket-implementer` subagents** — invoked fresh for every task, always with `isolation: "worktree"` and `run_in_background: false`.
 
 **Call the subagents directly from this top-level session.** Never route them through an intermediate subagent that itself calls `Agent` — nested delegation has failed in practice (the inner agent couldn't reach `Agent`, did the work inline, and one call silently processed several tasks). This session is the only place `Agent` gets called.
+
+Claude Code skills do not support a true positive tool allowlist: `allowed-tools`
+pre-approves calls but does not hide every unlisted tool. This skill therefore
+scopes `Agent` to the two ticket agents, pre-approves only the deterministic
+claim/cleanup scripts, and removes unrelated built-in tools with
+`disallowed-tools`. Do not use any other Bash command from this orchestrator.
 
 **This session's working directory must already be the repo root** — worktree isolation resolves the repo from cwd, so running this skill from elsewhere breaks every subagent's fetch/checkout and the scripts' relative paths.
 

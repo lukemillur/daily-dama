@@ -23,6 +23,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { randomUUID } from 'node:crypto';
 import { pathToFileURL } from 'node:url';
 import { createRunner } from './lib/exec.mjs';
 import {
@@ -152,25 +153,40 @@ function resumeTask({ run, repoRoot, options }) {
 }
 
 /** Create the claim branch, flip the status, commit, push. */
-function pushClaim({ run, repoRoot, base, task, branch, fileSystem }) {
+function pushClaim({ run, repoRoot, base, task, branch, fileSystem, claimNonce }) {
   const worktreePath = path.join(
     repoRoot,
     '.claude',
     'worktrees',
     `newticket-claim-${task.id}-${process.pid}-${Date.now().toString(36)}`,
   );
-  let created = false;
+  let worktreeCreated = false;
+  let branchCreated = false;
   try {
     run(['git', '-C', repoRoot, 'worktree', 'add', '--detach', worktreePath, base]);
-    created = true;
+    worktreeCreated = true;
     run(['git', '-C', worktreePath, 'switch', '-c', branch]);
+    branchCreated = true;
 
     const tasksPath = path.join(worktreePath, 'TASKS.md');
     const updated = setTaskStatus(fileSystem.readFileSync(tasksPath, 'utf8'), task.id, 'In progress');
     fileSystem.writeFileSync(tasksPath, updated);
 
     run(['git', '-C', worktreePath, 'add', 'TASKS.md']);
-    run(['git', '-C', worktreePath, 'commit', '-m', `Claim \`${task.id}\``]);
+    // The nonce makes independently-created claim commits necessarily diverge,
+    // even when both workers share the same parent, tree, author and timestamp.
+    // A concurrent second push therefore receives a non-fast-forward rejection
+    // instead of succeeding as an identical "everything up to date" commit.
+    run([
+      'git',
+      '-C',
+      worktreePath,
+      'commit',
+      '-m',
+      `Claim \`${task.id}\``,
+      '-m',
+      `Claim-Nonce: ${claimNonce}`,
+    ]);
 
     // No --force, ever. A rejected push means another worker got there first.
     const push = run(['git', '-C', worktreePath, 'push', 'origin', `${branch}:${branch}`], { allowFailure: true });
@@ -179,19 +195,24 @@ function pushClaim({ run, repoRoot, base, task, branch, fileSystem }) {
     }
     return { ok: true };
   } finally {
-    if (created) {
+    if (worktreeCreated) {
       // The only thing this worktree can contain is the status edit made above,
       // so forcing its removal cannot lose anyone else's work. This --force is
       // scoped to a directory this process created seconds ago; it is not a
       // git history operation.
       run(['git', '-C', worktreePath, 'switch', '--detach'], { allowFailure: true });
       run(['git', '-C', repoRoot, 'worktree', 'remove', '--force', worktreePath], { allowFailure: true });
+    }
+    if (branchCreated) {
+      // Delete only a branch this invocation successfully created. In
+      // particular, a failed `switch -c` must never delete a pre-existing
+      // local task branch with the same deterministic name.
       run(['git', '-C', repoRoot, 'branch', '-D', branch], { allowFailure: true });
     }
   }
 }
 
-export function claim({ run, repoRoot, options, fileSystem = fs }) {
+export function claim({ run, repoRoot, options, fileSystem = fs, createClaimNonce = randomUUID }) {
   if (options.fetch) run(['git', '-C', repoRoot, 'fetch', 'origin', 'development']);
   if (options.resume) return resumeTask({ run, repoRoot, options });
 
@@ -215,6 +236,24 @@ export function claim({ run, repoRoot, options, fileSystem = fs }) {
 
   const task = selection.task;
   const branch = branchNameFor(task);
+  const localBranch = run(
+    ['git', '-C', repoRoot, 'show-ref', '--verify', '--quiet', `refs/heads/${branch}`],
+    { allowFailure: true },
+  );
+  if (localBranch.code === 0) {
+    return blocked(
+      'local-branch-exists',
+      `local branch ${branch} already exists; refusing to overwrite or delete it. Inspect it and either resume its remote claim or resolve it manually.`,
+      { taskId: task.id, branch },
+    );
+  }
+  if (localBranch.code !== 1) {
+    return blocked(
+      'local-branch-check-failed',
+      `could not determine whether local branch ${branch} exists: ${localBranch.stderr.trim() || `git exited ${localBranch.code}`}`,
+      { taskId: task.id, branch },
+    );
+  }
   const planning = resolvePlanningPolicy(task);
   const base = {
     taskId: task.id,
@@ -230,7 +269,15 @@ export function claim({ run, repoRoot, options, fileSystem = fs }) {
 
   if (options.dryRun) return { status: 'claimed', dryRun: true, ...base };
 
-  const push = pushClaim({ run, repoRoot, base: options.base, task, branch, fileSystem });
+  const push = pushClaim({
+    run,
+    repoRoot,
+    base: options.base,
+    task,
+    branch,
+    fileSystem,
+    claimNonce: createClaimNonce(),
+  });
   if (!push.ok) {
     const recheck = remoteClaims(run, repoRoot).get(task.id) ?? [];
     if (recheck.length > 0) {

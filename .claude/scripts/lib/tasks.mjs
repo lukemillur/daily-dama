@@ -20,10 +20,21 @@ export const PLANNING_IMPLEMENTER = 'implementer';
  *
  * Escalation is one-directional: it can only add rigor, never remove it.
  */
-const ESCALATION_SIGNALS = [
+const AREA_ESCALATION_SIGNALS = [
   { pattern: /\bpersist(ence|ed|ing)?\b|\basync ?storage\b|\bstorage contract\b/i, reason: 'persistence' },
-  { pattern: /\bschema\b|\bmigration\b|\bpersisted (key|shape|field)\b/i, reason: 'schema' },
-  { pattern: /\breducer\b|\bstate machine\b|\bconcurren(t|cy)\b|\brace condition\b/i, reason: 'state-machine/concurrency' },
+  { pattern: /\bschema\b|\bmigration\b/i, reason: 'schema' },
+  { pattern: /\breducer\b|\bstate machine\b|\bconcurren(t|cy)\b/i, reason: 'state-machine/concurrency' },
+  { pattern: /\barchitectur(e|al)\b|\bdomain boundar(y|ies)\b/i, reason: 'architecture boundary' },
+  { pattern: /\bnative\b|\bios\b|\bandroid\b|\bplatform api\b/i, reason: 'native/platform API' },
+];
+
+const SUMMARY_ESCALATION_SIGNALS = [
+  {
+    pattern:
+      /\b(?:add|change|modify|update|introduce|migrate|restore|hydrate|validate|write|store|persist)\w*\b.{0,60}\b(?:persistence|async ?storage|storage contract|persisted(?:\s+[\w-]+){0,2}\s+(?:key|shape|field))\b|\b(?:persistence|async ?storage|storage contract|persisted(?:\s+[\w-]+){0,2}\s+(?:key|shape|field))\b.{0,60}\b(?:add|change|modify|update|introduce|migrate|restore|hydrate|validate|write|store|persist)\w*\b/i,
+    reason: 'persistence/schema',
+  },
+  { pattern: /\bschema\b|\bmigration\b|\breducer\b|\bstate machine\b|\bconcurren(t|cy)\b|\brace condition\b/i, reason: 'state-machine/concurrency' },
   { pattern: /\bdomain boundar(y|ies)\b|\barchitectur(e|al)\b|\bprovider setup\b/i, reason: 'architecture boundary' },
   { pattern: /\bnative\b|\bios\b|\bandroid\b|\bplatform api\b/i, reason: 'native/platform API' },
 ];
@@ -156,7 +167,7 @@ export function parseDoneIds(markdown) {
     if (!heading) return;
     const window = lines.slice(index + 1, index + 12).join('\n');
     const status = /^- \*\*Status:\*\*\s*(.*)$/m.exec(window);
-    if (!status || /done/i.test(status[1])) done.add(heading[1]);
+    if (status && /^done(?:\s|$)/i.test(status[1].trim())) done.add(heading[1]);
   });
   return done;
 }
@@ -194,10 +205,18 @@ export function resolvePlanningPolicy(task) {
       reason: `unrecognized Planning value ${JSON.stringify(task.fields.Planning)}; defaulting to the separate planner`,
     };
   }
-  const haystack = [task.title, task.fields.Area, task.fields.Description, task.fields.Notes]
-    .filter(Boolean)
-    .join('\n');
-  const signal = ESCALATION_SIGNALS.find(({ pattern }) => pattern.test(haystack));
+  // Area labels are categorical, so a risk term there is authoritative. In
+  // prose, persistence requires an action as well as a noun: documentation can
+  // legitimately describe "persistence domains", and Notes commonly say "do
+  // not add persistence". Neither means the task changes a storage boundary.
+  // Notes are intentionally excluded from automatic escalation; their product
+  // constraints should be reflected by an explicit `Planning: Required` when
+  // they make implementation risky.
+  const area = task.fields.Area ?? '';
+  const summary = [task.title, task.fields.Description].filter(Boolean).join('\n');
+  const signal =
+    AREA_ESCALATION_SIGNALS.find(({ pattern }) => pattern.test(area)) ??
+    SUMMARY_ESCALATION_SIGNALS.find(({ pattern }) => pattern.test(summary));
   if (signal) {
     return {
       policy: PLANNING_REQUIRED,

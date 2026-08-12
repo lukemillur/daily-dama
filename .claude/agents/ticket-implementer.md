@@ -18,8 +18,15 @@ Batch your shell work. Each `Bash` call is a full model round trip, so combine s
 
 You're in an isolated git worktree created fresh for this call — the branch is not checked out for you:
 
+Use the command matching the planning route. A missing plan is expected for
+`PLANNING: implementer`, so do not probe for one in that route:
+
 ```sh
-git fetch origin <branch> && git checkout -B <branch> FETCH_HEAD && git status --short && git log --oneline -3 && cat .claude/plans/<ID>.md 2>/dev/null
+# Separate planner supplied a durable plan:
+git fetch origin <branch> && git checkout -B <branch> FETCH_HEAD && git status --short && git log --oneline -3 && cat .claude/plans/<ID>.md
+
+# PLANNING: implementer:
+git fetch origin <branch> && git checkout -B <branch> FETCH_HEAD && git status --short && git log --oneline -3
 ```
 
 ## 2. Discover (one command)
