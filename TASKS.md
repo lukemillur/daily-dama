@@ -140,15 +140,6 @@ The first pass used **locked/unlocked** for "the user can land this trick." User
   - When both auto-advance-on-lace and a per-trick duration are configured, whichever condition is met first advances the run.
   - These controls belong to the shared `MultiTrickSesh` core so the assessment flow ([T029]) inherits them rather than reimplementing them.
 
-### [T028.2] Per-trick duration for a multi-trick run
-
-- **Area:** Sesh
-- **Priority:** High (inherited from parent T028)
-- **Status:** In progress
-- **Description:** Let the user set a duration applied to each trick in the run — three tricks at one minute each means the run moves on after a minute on each trick.
-- **Exit criteria:** Test confirms that a run configured with a per-trick duration passes a timed plan for each trick and advances when that duration elapses, and that leaving it unset preserves today's open-ended behavior; verified in-browser.
-- **Notes:** `MultiTrickSesh` already takes a `plan` and hands it to every trick; the run currently hardcodes `OPEN_ENDED_SESH_PLAN` at both call sites. A timed plan should flow through the existing `timerElapsed` → `completed` → advance path with no new advance logic. Reuse `createTimedSeshPlan`'s existing 1–60 minute validation rather than inventing separate bounds.
-
 ### [T028.3] "Next trick" action during a run
 
 - **Area:** Sesh
