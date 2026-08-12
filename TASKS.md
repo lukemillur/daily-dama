@@ -115,15 +115,6 @@ _This round came out of a review pass over the first batch of completed work (T0
 
 The first pass used **locked/unlocked** for "the user can land this trick." User-facing copy in this round switches to **laced/unlaced**, which is what the domain actually calls it. The persisted profile field is still named `manuallyUnlockedTrickIds` and stays that way — renaming a persisted key means either a migration or throwing away real user data, and neither is worth it for a vocabulary change. Rename the copy, not the storage contract.
 
-### [T032] Prevent onboarding seed data from immediately promoting the assessed rank
-
-- **Area:** Onboarding / Profile
-- **Priority:** High
-- **Status:** In progress
-- **Description:** Correct onboarding completion seeding so that tricks at the user's final assessed rank are not marked complete. The current seed boundary can immediately satisfy promotion requirements and advance the user one rank beyond the assessment result.
-- **Exit criteria:** An integrated regression test starts assessment at Rank 4, resolves the result as Rank 3, and confirms the persisted profile remains Rank 3, Rank 3 tricks are not seeded as completed, lower prerequisite ranks remain seeded as intended, and no immediate unearned rank-up is produced.
-- **Notes:** Test the provider/reducer boundary used by onboarding, not only the seed helper in isolation.
-
 ### [T033] Require a real lace for automatic laced status
 
 - **Area:** Tricks

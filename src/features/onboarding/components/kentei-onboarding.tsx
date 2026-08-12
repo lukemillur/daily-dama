@@ -49,7 +49,7 @@ export function KenteiOnboarding() {
           onToggleTrick={(trickId) => dispatch({ type: 'practiceTrickToggled', trickId })}
           onFinish={() => {
             if (state.selectedTrickIds.length === 0) return;
-            const lacedTrickIds = getSeedLacedTrickIds(state.startingRank, state.landedTrickIds);
+            const lacedTrickIds = getSeedLacedTrickIds(state.rank, state.landedTrickIds);
             completeOnboarding(state.rank, state.selectedTrickIds, lacedTrickIds);
             router.replace('/sesh');
           }}

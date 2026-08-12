@@ -3,8 +3,10 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Pressable } from 'react-native';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 
+import { getSeedLacedTrickIds, kenteiAssessmentReducer } from '@/features/onboarding/model/kentei-assessment';
 import { KenteiRankAutoPromotion } from '@/features/profile/state/kentei-rank-auto-promotion';
 import {
+  deserializeUserProfile,
   serializeUserProfile,
   USER_PROFILE_STORAGE_KEY,
 } from '@/features/profile/persistence/user-profile-persistence';
@@ -46,12 +48,20 @@ function pressByAccessibilityLabel(root: ReactTestRenderer, label: string) {
   match.props.onPress();
 }
 
-function Harness() {
+function Harness({
+  rank = 1,
+  selectedTrickIds = [],
+  lacedTrickIds = [],
+}: {
+  readonly rank?: number;
+  readonly selectedTrickIds?: readonly string[];
+  readonly lacedTrickIds?: readonly string[];
+}) {
   const { completeOnboarding, toggleManualUnlock } = useUserProfileActions();
 
   return (
     <>
-      <StartOnboarding onPress={() => completeOnboarding(1, [], [])} />
+      <StartOnboarding onPress={() => completeOnboarding(rank, selectedTrickIds, lacedTrickIds)} />
       {RANK_1_TRICK_IDS.map((trickId) => (
         <ToggleTrick key={trickId} trickId={trickId} onPress={() => toggleManualUnlock(trickId)} />
       ))}
@@ -69,14 +79,18 @@ function ToggleTrick({ trickId, onPress }: { readonly trickId: string; readonly 
   return <Pressable accessibilityLabel={`toggle-${trickId}`} onPress={onPress} />;
 }
 
-async function mountAndHydrate() {
+async function mountAndHydrate(harnessProps: {
+  readonly rank?: number;
+  readonly selectedTrickIds?: readonly string[];
+  readonly lacedTrickIds?: readonly string[];
+} = {}) {
   let root!: ReactTestRenderer;
   await act(async () => {
     root = create(
       <UserProfileProvider>
         <PracticeHistoryProvider>
           <KenteiRankAutoPromotion />
-          <Harness />
+          <Harness {...harnessProps} />
         </PracticeHistoryProvider>
       </UserProfileProvider>,
     );
@@ -127,5 +141,52 @@ describe('KenteiRankAutoPromotion celebration', () => {
     await act(async () => {});
 
     expect(hasAccessibilityLabel(root, 'Rank up celebration')).toBe(false);
+  });
+
+  it('does not promote the rank when onboarding seeds only prerequisite ranks (T032 regression)', async () => {
+    // Start from a clean slate rather than whatever a prior test in this file left in
+    // AsyncStorage (the mock persists across tests within a file, and other tests here
+    // intentionally advance/seed a profile).
+    await AsyncStorage.removeItem(USER_PROFILE_STORAGE_KEY);
+
+    // Enter assessment at Rank 4 (Advanced), fail the very first trick shown -> resolved Rank 3
+    // with nothing landed. This is the exact scenario that used to seed all of Rank 3 as
+    // already-laced and immediately trigger an unearned promotion to Rank 4.
+    let assessmentState = kenteiAssessmentReducer(
+      { status: 'levelSelect' },
+      { type: 'levelSelected', level: 'Advanced' },
+    );
+    assessmentState = kenteiAssessmentReducer(assessmentState, { type: 'trickNotLanded' });
+    if (assessmentState.status !== 'rankReveal') throw new Error('Expected rankReveal status');
+    expect(assessmentState.rank).toBe(3);
+
+    const lacedTrickIds = getSeedLacedTrickIds(assessmentState.rank, assessmentState.landedTrickIds);
+
+    const root = await mountAndHydrate({ rank: 3, selectedTrickIds: [], lacedTrickIds });
+
+    act(() => {
+      pressByAccessibilityLabel(root, 'start-onboarding');
+    });
+
+    // Let any promotion effect flush before asserting nothing fired.
+    await act(async () => {});
+
+    expect(hasAccessibilityLabel(root, 'Rank up celebration')).toBe(false);
+
+    const persisted = await AsyncStorage.getItem(USER_PROFILE_STORAGE_KEY);
+    expect(persisted).not.toBeNull();
+    const profile = deserializeUserProfile(persisted!);
+    expect(profile?.kenteiRank).toBe(3);
+
+    const rank1Ids = KENDAMA_KENTEI_TRICKS.filter((trick) => trick.kenteiRank === 1).map((trick) => trick.id);
+    const rank2Ids = KENDAMA_KENTEI_TRICKS.filter((trick) => trick.kenteiRank === 2).map((trick) => trick.id);
+    const rank3Ids = KENDAMA_KENTEI_TRICKS.filter((trick) => trick.kenteiRank === 3).map((trick) => trick.id);
+
+    for (const id of [...rank1Ids, ...rank2Ids]) {
+      expect(profile?.manuallyUnlockedTrickIds).toContain(id);
+    }
+    for (const id of rank3Ids) {
+      expect(profile?.manuallyUnlockedTrickIds).not.toContain(id);
+    }
   });
 });
