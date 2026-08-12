@@ -1,6 +1,7 @@
 import { describe, expect, it, jest } from '@jest/globals';
 
-import type { PracticeHistory } from '@/features/stats/model/practice-history';
+import { INITIAL_SESH_STATE, OPEN_ENDED_SESH_PLAN, seshReducer } from '@/features/sesh/model/sesh';
+import { createPracticeSessionRecord, type PracticeHistory } from '@/features/stats/model/practice-history';
 import {
   deserializePracticeHistory,
   loadPracticeHistory,
@@ -9,6 +10,7 @@ import {
   savePracticeHistory,
   serializePracticeHistory,
 } from '@/features/stats/persistence/practice-history-persistence';
+import type { PracticeTrick } from '@/features/tricks/model/trick';
 import type { KeyValueStorage } from '@/shared/persistence/storage';
 
 const HISTORY: PracticeHistory = {
@@ -50,6 +52,39 @@ describe('practice history persistence', () => {
     });
   });
 
+  it('restores a completed sesh record that includes paused time', () => {
+    const AIRPLANE: PracticeTrick = { id: 'airplane', name: 'Airplane' };
+    const t0 = 1_000;
+
+    let state = seshReducer(INITIAL_SESH_STATE, {
+      type: 'trickSelected',
+      trick: AIRPLANE,
+      plan: OPEN_ENDED_SESH_PLAN,
+    });
+    state = seshReducer(state, { type: 'countdownCompleted', now: t0 });
+    state = seshReducer(state, { type: 'seshPaused', now: t0 + 10_000 });
+    state = seshReducer(state, { type: 'seshResumed', now: t0 + 40_000 });
+    state = seshReducer(state, { type: 'seshEnded', now: t0 + 70_000 });
+
+    if (state.status !== 'completed') throw new Error('expected sesh to complete');
+    const summary = state.summary;
+
+    // Active practice time (40s) is strictly less than wall-clock elapsed time (70s) because
+    // of the 30s pause — this is the paused-record case the validator must accept.
+    expect(summary.durationMs).toBe(40_000);
+    expect(summary.endedAt - summary.startedAt).toBe(70_000);
+
+    const record = createPracticeSessionRecord(summary, undefined);
+    const history: PracticeHistory = { sessions: [record] };
+    const serialized = serializePracticeHistory(history);
+
+    expect(deserializePracticeHistory(serialized)).toEqual(history);
+  });
+
+  // The existing "loads valid completed sessions" test above already covers the non-paused
+  // boundary: HISTORY's session has durationMs === completedAt - startedAt exactly, and it
+  // must keep restoring successfully under the new `<=` check.
+
   it('accepts pre-existing records that predate plannedDurationMs (backward compatibility)', () => {
     const serialized = JSON.stringify({
       version: PRACTICE_HISTORY_SCHEMA_VERSION,
@@ -89,6 +124,11 @@ describe('practice history persistence', () => {
     JSON.stringify({
       version: PRACTICE_HISTORY_SCHEMA_VERSION,
       sessions: [{ ...HISTORY.sessions[0], durationMs: -1 }],
+    }),
+    // Active duration exceeding the total wall-clock span is never valid, paused or not.
+    JSON.stringify({
+      version: PRACTICE_HISTORY_SCHEMA_VERSION,
+      sessions: [{ ...HISTORY.sessions[0], durationMs: HISTORY.sessions[0].durationMs + 1 }],
     }),
   ])('recovers to empty history from malformed records', async (serialized) => {
     const result = await loadPracticeHistory(createStorage(serialized));
