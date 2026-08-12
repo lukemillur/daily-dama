@@ -481,6 +481,7 @@ export function ActiveSesh({
   onTimerElapsed,
   attemptsReminder,
   onSkipRank,
+  onNextTrick,
 }: {
   readonly trick: PracticeTrick;
   readonly plan: SeshPlan;
@@ -500,6 +501,7 @@ export function ActiveSesh({
   readonly onTimerElapsed: () => void;
   readonly attemptsReminder?: boolean;
   readonly onSkipRank?: () => void;
+  readonly onNextTrick?: () => void;
 }) {
   const notesToShow = trickNotes ?? [];
   const showChallenge = liveChallengeEnabled && personalBest !== undefined;
@@ -605,6 +607,11 @@ export function ActiveSesh({
           </TargetStatus>
         ) : null}
         <LandingHistory landings={landings} />
+        {onNextTrick ? (
+          <NextTrickButton accessibilityRole="button" onPress={onNextTrick}>
+            <NextTrickButtonText>Next trick</NextTrickButtonText>
+          </NextTrickButton>
+        ) : null}
         <SecondaryActions>
           <PauseButton
             accessibilityRole="button"
@@ -1046,6 +1053,8 @@ const EndAnywayButtonText = styled.Text`color: ${AppColors.textMuted}; font-size
 const AttemptsReminder = styled.Text`width: 100%; text-align: center; color: ${AppColors.textMuted}; font-size: 12px; font-weight: 800; letter-spacing: 0.4px; margin-top: 10px; text-transform: uppercase;`;
 const SkipRankButton = styled(Pressable)`min-height: 40px; align-items: center; justify-content: center; margin-top: 14px; padding: 8px 24px;`;
 const SkipRankButtonText = styled.Text`color: ${AppColors.textMuted}; font-size: 13px; font-weight: 800; text-decoration-line: underline;`;
+const NextTrickButton = styled(Pressable)`width: 100%; min-height: 52px; align-items: center; justify-content: center; margin-top: 20px; padding: 12px 24px; background-color: ${AppColors.yellow}; border: 2px solid ${AppColors.ink}; border-radius: 5px;`;
+const NextTrickButtonText = styled.Text`color: ${AppColors.ink}; font-size: 16px; font-weight: 900;`;
 const MultiTrickLink = styled.Text`margin-top: 14px; color: ${AppColors.textMuted}; font-size: 13px; font-weight: 800; text-decoration-line: underline;`;
 const TargetStatus = styled.Text<{ $met: boolean }>`width: 100%; text-align: center; margin-top: 12px; color: ${({ $met }) => ($met ? AppColors.red : AppColors.ink)}; font-size: 15px; font-weight: 900;`;
 const ResultBanner = styled.Text<{ $beaten: boolean }>`width: 100%; text-align: center; margin-top: 18px; padding: 12px 16px; background-color: ${({ $beaten }) => ($beaten ? '#e5edcf' : '#f8f1dd')}; border-left-width: 5px; border-left-color: ${({ $beaten }) => ($beaten ? AppColors.red : AppColors.ink)}; color: ${AppColors.ink}; font-size: 15px; font-weight: 900;`;

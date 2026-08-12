@@ -193,6 +193,11 @@ export function MultiTrickSesh({
         onTimerElapsed={() => dispatch({ type: 'timerElapsed', now: Date.now() })}
         attemptsReminder={showAttemptsReminder}
         onSkipRank={skipTarget ? handleSkipRank : undefined}
+        // "Next trick" reuses the same completed-effect advance path as
+        // "End Sesh" above — it's the identical `seshEnded` dispatch, not a
+        // second advance mechanism. Unlike `handleSkipRank`, this always
+        // records the current trick's landings before moving on.
+        onNextTrick={() => dispatch({ type: 'seshEnded', now: Date.now() })}
       />
     );
   }

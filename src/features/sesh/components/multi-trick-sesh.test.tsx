@@ -165,6 +165,78 @@ describe('MultiTrickSesh advanceOnFirstLace', () => {
   });
 });
 
+describe('MultiTrickSesh "Next trick" action', () => {
+  beforeEach(async () => {
+    await AsyncStorage.clear();
+    jest.useFakeTimers();
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  it('records the accumulated laces for the current trick and advances the run', async () => {
+    const onFinished = jest.fn();
+    const root = await mountMultiTrickSesh({ onFinished });
+
+    advanceThroughCountdown();
+    expect(findByText(root, TRICKS[0].name).length).toBeGreaterThan(0);
+
+    act(() => {
+      pressByAccessibilityLabel(root, 'Laced');
+    });
+    act(() => {
+      pressByAccessibilityLabel(root, 'Laced');
+    });
+
+    // Still on the first trick until "Next trick" is pressed.
+    expect(findByText(root, TRICKS[0].name).length).toBeGreaterThan(0);
+    expect(findByAccessibilityLabel(root, 'session-count:0').length).toBeGreaterThan(0);
+
+    act(() => {
+      pressByVisibleText(root, 'Next trick');
+    });
+
+    // The first trick's landings were recorded before advancing.
+    expect(findByAccessibilityLabel(root, 'session-count:1').length).toBeGreaterThan(0);
+    expect(findByAccessibilityLabel(root, 'session-0-lace-count:2').length).toBeGreaterThan(0);
+
+    advanceThroughCountdown();
+    expect(findByText(root, TRICKS[1].name).length).toBeGreaterThan(0);
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  it('coexists with "End Sesh": pressing "Next trick" through the whole run finishes once', async () => {
+    const onFinished = jest.fn();
+    const root = await mountMultiTrickSesh({ onFinished });
+
+    for (const trick of TRICKS) {
+      advanceThroughCountdown();
+      expect(findByText(root, trick.name).length).toBeGreaterThan(0);
+
+      act(() => {
+        pressByAccessibilityLabel(root, 'Laced');
+      });
+      act(() => {
+        pressByVisibleText(root, 'Next trick');
+      });
+    }
+
+    expect(onFinished).toHaveBeenCalledTimes(1);
+    expect(findByAccessibilityLabel(root, 'session-count:3').length).toBeGreaterThan(0);
+    for (let index = 0; index < TRICKS.length; index += 1) {
+      expect(findByAccessibilityLabel(root, `session-${index}-lace-count:1`).length).toBeGreaterThan(0);
+    }
+
+    act(() => {
+      root.unmount();
+    });
+  });
+});
+
 describe('MultiTrickSesh per-trick duration', () => {
   beforeEach(async () => {
     await AsyncStorage.clear();

@@ -140,15 +140,6 @@ The first pass used **locked/unlocked** for "the user can land this trick." User
   - When both auto-advance-on-lace and a per-trick duration are configured, whichever condition is met first advances the run.
   - These controls belong to the shared `MultiTrickSesh` core so the assessment flow ([T029]) inherits them rather than reimplementing them.
 
-### [T028.3] "Next trick" action during a run
-
-- **Area:** Sesh
-- **Priority:** High (inherited from parent T028)
-- **Status:** Not started
-- **Description:** Add a "Next trick" button to the sesh screen during a multi-trick run that records the current trick and moves to the next one.
-- **Exit criteria:** Test confirms pressing it writes a practice-history record for the current trick with the laces accumulated so far and advances the run, and that it's absent from a single-trick sesh; verified in-browser.
-- **Notes:** Because it records, this is `seshEnded` plus the existing advance effect — not a new code path, and explicitly *not* the `advanceTrickSequenceToIndex` path used by "Skip this rank", which bypasses recording on purpose. Add as an optional prop on `ActiveSesh` alongside `onSkipRank`, absent by default so single-trick `Sesh` is untouched.
-
 ### [T028.4] Multi-trick sesh wrap-up screen
 
 - **Area:** Sesh
