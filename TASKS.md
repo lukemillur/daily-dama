@@ -119,7 +119,7 @@ The first pass used **locked/unlocked** for "the user can land this trick." User
 
 - **Area:** Sesh / Profile
 - **Priority:** High
-- **Status:** Not started
+- **Status:** In progress
 - **Description:** Present the existing Kentei flow as a rank challenge rather than an authoritative reassessment. The current state model prevents rank regression, while some assessment language implies the result can replace the user's current rank.
 - **Exit criteria:** Entry, in-session, result, and Profile copy consistently describe a challenge or promotion opportunity; tests and a browser walkthrough confirm the UI never claims a lower result will lower or replace the current rank and clearly distinguishes retaining the current rank from advancing.
 - **Notes:** Preserve the monotonic-rank model for this iteration. If authoritative reassessment or demotion is desired instead, stop and rescope this as a larger profile/domain-model change.
