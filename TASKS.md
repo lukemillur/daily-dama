@@ -115,15 +115,6 @@ _This round came out of a review pass over the first batch of completed work (T0
 
 The first pass used **locked/unlocked** for "the user can land this trick." User-facing copy in this round switches to **laced/unlaced**, which is what the domain actually calls it. The persisted profile field is still named `manuallyUnlockedTrickIds` and stays that way — renaming a persisted key means either a migration or throwing away real user data, and neither is worth it for a vocabulary change. Rename the copy, not the storage contract.
 
-### [T030] Make the Profile screen scrollable on mobile
-
-- **Area:** Profile / navigation
-- **Priority:** High
-- **Status:** Not started
-- **Description:** On mobile the Profile screen doesn't scroll, the navigation menu paints over the first section, and the assessed-rank tile isn't visible at all. Its content is taller than the viewport with nowhere to go.
-- **Exit criteria:** Verified in-browser at 375 px that the assessed-rank tile is visible, unobscured by the navigation, and that every section down to the streak-threshold save action is reachable by scrolling.
-- **Notes:** `ProfileScreen` renders its content directly inside `Screen` with `flex: 1; justify-content: center` and no `ScrollView`, so overflow is clipped at both ends rather than scrolling — which is exactly why the top tile disappears. Other screens (`sesh`, `tricks`) already use scroll containers; follow their pattern including the `paddingBottom` allowance for the floating tab bar, and check `Screen`'s web header inset isn't being double-counted. This is a verified-in-browser exit criterion by nature; a unit test asserting a `ScrollView` exists would prove nothing about the actual defect.
-
 ### [T031] Accept paused Sesh records when restoring practice history
 
 - **Area:** Practice history / persistence
