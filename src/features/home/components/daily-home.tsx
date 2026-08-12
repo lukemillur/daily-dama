@@ -140,11 +140,15 @@ function PracticeQueue({ tricks }: { readonly tricks: readonly HomePracticeTrick
   );
 }
 
-const TIME_LOGGED_LABELS: Record<TimeLoggedWindowKey, string> = {
-  day: 'Today',
-  week: 'This week',
-  month: 'This month',
-  year: 'This year',
+// Labels name the rolling windows calculateTimeLogged actually computes (last 24h/7d/30d/365d
+// from `now`), not calendar day/week/month/year — do not swap these for calendar-aligned copy
+// without also changing the underlying calculation. Exported so tests can assert on the copy
+// directly without needing a full router-aware render.
+export const TIME_LOGGED_LABELS: Record<TimeLoggedWindowKey, string> = {
+  day: 'Last 24 hours',
+  week: 'Last 7 days',
+  month: 'Last 30 days',
+  year: 'Last 365 days',
 };
 
 function TimeLogged({ summary }: { readonly summary: HomeSummary }) {
