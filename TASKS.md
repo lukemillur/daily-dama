@@ -127,7 +127,7 @@ The first pass used **locked/unlocked** for "the user can land this trick." User
 
 - **Area:** Sesh / Profile
 - **Priority:** High (inherited from parent T029)
-- **Status:** Not started
+- **Status:** In progress
 - **Description:** Show a wrap-up when an assessment run completes, instead of replacing the route to `/profile` with no summary. Covers which tricks were attempted and laced, which ranks were skipped, and the resulting assessed rank.
 - **Exit criteria:** Test confirms a completed assessment renders per-trick outcomes and the resulting rank, and that a skipped rank is reported as skipped rather than failed; verified in-browser.
 - **Notes:** Builds on [T028.4]'s accumulated summaries; the assessment-specific additions are rank framing and skip reporting. A skipped rank is explicitly _unassessed_, not failed — that's a decision already recorded in [T013] and the copy here must not contradict it. If [T019] has landed, a promotion during the run should surface through that modal rather than being re-rendered inline here.
