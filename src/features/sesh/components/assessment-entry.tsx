@@ -53,6 +53,7 @@ export function AssessmentEntry() {
         showAttemptsReminder
         skipTarget={isMultiRankFlow ? (index) => selectNextRankStartIndex(tricks, index) : undefined}
         endActionLabel="End assessment"
+        skipCountdownBetweenTricks
       />
     );
   }

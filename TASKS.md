@@ -123,15 +123,6 @@ The first pass used **locked/unlocked** for "the user can land this trick." User
 - **Description:** Umbrella for corrections to [T013]'s assessment run. The run currently inherits practice-sesh chrome that misrepresents what an assessment is: a countdown between every trick, a running timer implying time pressure, and an "End sesh" label for what ends an assessment.
 - **Notes:** Umbrella only, no exit criteria of its own. [T029.3] depends on [T028.3] ("Next trick" in the shared core) and [T029.4] depends on [T028.1] (advance-on-lace in the shared core) — this entry deliberately doesn't reimplement either. Decision resolved during scoping: hiding the timer is a display change only; assessment records still capture real `durationMs`, since Stats derivation and the time-logged windows shouldn't develop a blind spot for assessment practice.
 
-### [T029.2] Skip the countdown between assessment tricks
-
-- **Area:** Sesh
-- **Priority:** High (inherited from parent T029)
-- **Status:** In progress
-- **Description:** Moving to the next trick during an assessment goes straight to the active state, without the 3-second countdown.
-- **Exit criteria:** Test confirms that in an assessment run advancing to the next trick transitions directly to `active`, while a regular multi-trick run still passes through `countdown`; verified in-browser across a multi-rank assessment.
-- **Notes:** `MultiTrickSesh` seeds each trick by dispatching `trickSelected`, which lands in `countdown`. Adding an option to dispatch `countdownCompleted` immediately after is smaller than teaching the reducer a second entry path — keep the reducer's state graph unchanged.
-
 ### [T029.3] Hide the timer during an assessment
 
 - **Area:** Sesh
