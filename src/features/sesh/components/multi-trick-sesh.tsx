@@ -40,6 +40,15 @@ interface MultiTrickSeshProps {
   readonly skipTarget?: (currentIndex: number) => number;
   /** Shows the static "You have 5 attempts." reminder on every trick. */
   readonly showAttemptsReminder?: boolean;
+  /**
+   * When true, forces a `seshEnded` dispatch immediately after the trick's
+   * first landing, so the run advances to the next trick after a single
+   * lace instead of waiting for the trick's normal completion condition
+   * (timer elapsed / manual "End Sesh"). This is a second dispatch from the
+   * same handler, not a second advance path — `MultiTrickSesh` still only
+   * ever advances off the `completed` state.
+   */
+  readonly advanceOnFirstLace?: boolean;
 }
 
 /**
@@ -55,7 +64,14 @@ interface MultiTrickSeshProps {
  * initializers below) — this component drives one run through a fixed
  * list, not a list that can change mid-run.
  */
-export function MultiTrickSesh({ tricks, plan, onFinished, skipTarget, showAttemptsReminder }: MultiTrickSeshProps) {
+export function MultiTrickSesh({
+  tricks,
+  plan,
+  onFinished,
+  skipTarget,
+  showAttemptsReminder,
+  advanceOnFirstLace,
+}: MultiTrickSeshProps) {
   const [sequence, setSequence] = useState(() => createTrickSequence(tricks));
   const [state, dispatch] = useReducer(
     seshReducer,
@@ -151,6 +167,14 @@ export function MultiTrickSesh({ tricks, plan, onFinished, skipTarget, showAttem
   }
 
   if (state.status === 'active') {
+    const handleLaced = () => {
+      const now = Date.now();
+      dispatch({ type: 'trickLaced', now });
+      if (advanceOnFirstLace && state.status === 'active' && state.landings.length === 0) {
+        dispatch({ type: 'seshEnded', now });
+      }
+    };
+
     return (
       <ActiveSesh
         trick={state.trick}
@@ -162,7 +186,7 @@ export function MultiTrickSesh({ tricks, plan, onFinished, skipTarget, showAttem
         personalBest={undefined}
         liveChallengeEnabled={false}
         trickNotes={trickNotes}
-        onLaced={() => dispatch({ type: 'trickLaced', now: Date.now() })}
+        onLaced={handleLaced}
         onPause={() => dispatch({ type: 'seshPaused', now: Date.now() })}
         onResume={() => dispatch({ type: 'seshResumed', now: Date.now() })}
         onEnd={() => dispatch({ type: 'seshEnded', now: Date.now() })}

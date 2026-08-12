@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Platform, useWindowDimensions } from 'react-native';
+import { Platform, Pressable, useWindowDimensions } from 'react-native';
 import { styled } from 'styled-components/native';
 
 import { Button } from '@/components/ui/button';
@@ -36,6 +36,7 @@ export function MultiTrickSeshEntry() {
   const { tricks: customTricks } = useCustomTricks();
   const [step, setStep] = useState<MultiTrickSeshEntryStep>({ kind: 'choosingTricks' });
   const [selectedTrickIds, setSelectedTrickIds] = useState<string[]>([]);
+  const [advanceOnFirstLace, setAdvanceOnFirstLace] = useState(false);
 
   const handleToggleTrick = (trickId: string) => {
     setSelectedTrickIds((current) =>
@@ -54,10 +55,18 @@ export function MultiTrickSeshEntry() {
   const handleFinished = () => {
     setStep({ kind: 'choosingTricks' });
     setSelectedTrickIds([]);
+    setAdvanceOnFirstLace(false);
   };
 
   if (step.kind === 'running') {
-    return <MultiTrickSesh tricks={step.tricks} plan={OPEN_ENDED_SESH_PLAN} onFinished={handleFinished} />;
+    return (
+      <MultiTrickSesh
+        tricks={step.tricks}
+        plan={OPEN_ENDED_SESH_PLAN}
+        advanceOnFirstLace={advanceOnFirstLace}
+        onFinished={handleFinished}
+      />
+    );
   }
 
   const selectedCount = selectedTrickIds.length;
@@ -83,6 +92,16 @@ export function MultiTrickSeshEntry() {
                   ? 'Select at least one trick to continue.'
                   : `${selectedCount} ${selectedCount === 1 ? 'trick' : 'tricks'} selected.`}
               </SelectionCount>
+              <AdvanceOnFirstLaceRow
+                accessibilityLabel={`Advance after one lace, ${advanceOnFirstLace ? 'checked' : 'unchecked'}`}
+                accessibilityRole="checkbox"
+                accessibilityState={{ checked: advanceOnFirstLace }}
+                onPress={() => setAdvanceOnFirstLace((current) => !current)}>
+                <AdvanceOnFirstLaceIndicator $checked={advanceOnFirstLace}>
+                  <AdvanceOnFirstLaceMark>{advanceOnFirstLace ? '✓' : ''}</AdvanceOnFirstLaceMark>
+                </AdvanceOnFirstLaceIndicator>
+                <AdvanceOnFirstLaceLabel>Advance after one lace</AdvanceOnFirstLaceLabel>
+              </AdvanceOnFirstLaceRow>
               <FinishButton disabled={selectedCount === 0} onPress={handleStart}>
                 Start sesh
               </FinishButton>
@@ -98,4 +117,16 @@ const SelectionContent = styled.View`width: 100%; max-width: 760px; max-height: 
 const FinishBackdrop = styled.View<{ readonly $pinned: boolean }>`background-color: ${({ $pinned }) => $pinned ? AppColors.yellow : AppColors.paper};`;
 const FinishArea = styled.View<{ readonly $pinned: boolean }>`align-items: center; margin-top: ${({ $pinned }) => $pinned ? 54 : 0}px; padding: 20px 22px 22px; background-color: ${AppColors.paper}; border-top-width: 1px; border-top-color: ${AppColors.borderMuted};`;
 const SelectionCount = styled.Text`color: ${AppColors.textMuted}; font-size: 14px; font-weight: 700; margin-bottom: 12px;`;
+const AdvanceOnFirstLaceRow = styled(Pressable)`flex-direction: row; align-items: center; gap: 12px; align-self: stretch; padding: 10px 2px; margin-bottom: 12px;`;
+const AdvanceOnFirstLaceIndicator = styled.View<{ readonly $checked: boolean }>`
+  width: 22px;
+  height: 22px;
+  align-items: center;
+  justify-content: center;
+  background-color: ${({ $checked }) => ($checked ? AppColors.ink : 'transparent')};
+  border: 2px solid ${AppColors.ink};
+  border-radius: ${Radii.control}px;
+`;
+const AdvanceOnFirstLaceMark = styled.Text`color: ${AppColors.yellow}; font-size: 14px; font-weight: 900;`;
+const AdvanceOnFirstLaceLabel = styled.Text`color: ${AppColors.textMuted}; font-size: 14px; font-weight: 700;`;
 const FinishButton = styled(Button).attrs({ fill: true })`min-height: 54px;`;
