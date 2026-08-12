@@ -84,6 +84,7 @@ async function mountMultiTrickSesh(props: {
   readonly onFinished: () => void;
   readonly skipTarget?: (currentIndex: number) => number;
   readonly endActionLabel?: string;
+  readonly skipCountdownBetweenTricks?: boolean;
 }) {
   let root!: ReactTestRenderer;
   await act(async () => {
@@ -97,6 +98,7 @@ async function mountMultiTrickSesh(props: {
             onFinished={props.onFinished}
             skipTarget={props.skipTarget}
             endActionLabel={props.endActionLabel}
+            skipCountdownBetweenTricks={props.skipCountdownBetweenTricks}
           />
           <SessionSummary />
         </PracticeHistoryProvider>
@@ -193,6 +195,68 @@ describe('MultiTrickSesh endActionLabel', () => {
     expect(findByText(root, TRICKS[0].name).length).toBeGreaterThan(0);
     expect(findByText(root, 'End assessment').length).toBeGreaterThan(0);
     expect(findByText(root, 'End Sesh')).toHaveLength(0);
+
+    act(() => {
+      root.unmount();
+    });
+  });
+});
+
+describe('MultiTrickSesh skipCountdownBetweenTricks', () => {
+  beforeEach(async () => {
+    await AsyncStorage.clear();
+    jest.useFakeTimers();
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  it('still shows the first trick\'s countdown, then skips the countdown for every later trick', async () => {
+    const onFinished = jest.fn();
+    const root = await mountMultiTrickSesh({ onFinished, skipCountdownBetweenTricks: true });
+
+    // First trick: countdown still shown, has to be advanced through before
+    // the active screen (and "Laced") appears.
+    advanceThroughCountdown();
+    expect(findByText(root, TRICKS[0].name).length).toBeGreaterThan(0);
+    expect(findByAccessibilityLabel(root, 'Laced').length).toBeGreaterThan(0);
+
+    act(() => {
+      pressByAccessibilityLabel(root, 'Laced');
+    });
+    act(() => {
+      pressByVisibleText(root, 'Next trick');
+    });
+
+    // Second trick: no advanceThroughCountdown() here — the next trick
+    // should already be in 'active' with "Laced" available.
+    expect(findByText(root, TRICKS[1].name).length).toBeGreaterThan(0);
+    expect(findByAccessibilityLabel(root, 'Laced').length).toBeGreaterThan(0);
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  it('lands directly in active on the next rank after "Skip this rank"', async () => {
+    const onFinished = jest.fn();
+    const root = await mountMultiTrickSesh({
+      onFinished,
+      skipCountdownBetweenTricks: true,
+      skipTarget: () => 2,
+    });
+
+    advanceThroughCountdown();
+    expect(findByText(root, TRICKS[0].name).length).toBeGreaterThan(0);
+
+    act(() => {
+      pressByVisibleText(root, 'Skip this rank');
+    });
+
+    // No advanceThroughCountdown() — TRICKS[2] should already be active.
+    expect(findByText(root, TRICKS[2].name).length).toBeGreaterThan(0);
+    expect(findByAccessibilityLabel(root, 'Laced').length).toBeGreaterThan(0);
 
     act(() => {
       root.unmount();

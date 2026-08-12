@@ -1,5 +1,5 @@
 import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
-import { useEffect, useMemo, useReducer, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import { ScrollView } from 'react-native';
 import { styled } from 'styled-components/native';
 
@@ -61,6 +61,15 @@ interface MultiTrickSeshProps {
    * component or `ActiveSesh` knowing what an assessment is.
    */
   readonly endActionLabel?: string;
+  /**
+   * When true, pairs every post-mount `trickSelected` dispatch (advancing
+   * to the next trick after a completion, or via "Skip this rank") with an
+   * immediate `countdownCompleted` dispatch, so the next trick lands
+   * straight in `'active'` instead of `'countdown'`. Only affects
+   * transitions *between* tricks — the very first trick, seeded at mount,
+   * always shows its countdown regardless of this flag.
+   */
+  readonly skipCountdownBetweenTricks?: boolean;
 }
 
 /**
@@ -84,6 +93,7 @@ export function MultiTrickSesh({
   showAttemptsReminder,
   advanceOnFirstLace,
   endActionLabel,
+  skipCountdownBetweenTricks,
 }: MultiTrickSeshProps) {
   const [sequence, setSequence] = useState(() => createTrickSequence(tricks));
   const [state, dispatch] = useReducer(
@@ -109,6 +119,21 @@ export function MultiTrickSesh({
   const isRunFinished =
     isTrickSequenceFinished(sequence) && (state.status === 'choosing' || state.status === 'completed');
 
+  // Seeds the next trick and, when `skipCountdownBetweenTricks` is set,
+  // immediately fast-forwards past its countdown. Two synchronous
+  // dispatches to the same reducer fold in order against the queued
+  // state, not the stale render closure — the same pattern already used
+  // by `handleLaced`'s paired `trickLaced`/`seshEnded` dispatches below.
+  const seedNextTrick = useCallback(
+    (trick: PracticeTrick) => {
+      dispatch({ type: 'trickSelected', trick, plan });
+      if (skipCountdownBetweenTricks) {
+        dispatch({ type: 'countdownCompleted', now: Date.now() });
+      }
+    },
+    [plan, skipCountdownBetweenTricks],
+  );
+
   const activeTrickId = state.status === 'active' ? state.trick.id : undefined;
   const trickNotes = useMemo(
     () => (activeTrickId ? selectNotesForTrick(notes, activeTrickId) : []),
@@ -130,9 +155,9 @@ export function MultiTrickSesh({
 
     const nextTrick = getCurrentSequenceTrick(nextSequence);
     if (nextTrick) {
-      dispatch({ type: 'trickSelected', trick: nextTrick, plan });
+      seedNextTrick(nextTrick);
     }
-  }, [plan, recordCompletedSesh, sequence, state]);
+  }, [recordCompletedSesh, sequence, state, seedNextTrick]);
 
   useEffect(() => {
     if (!shouldKeepScreenAwake(state.status)) return;
@@ -158,7 +183,7 @@ export function MultiTrickSesh({
 
     const nextTrick = getCurrentSequenceTrick(nextSequence);
     if (nextTrick) {
-      dispatch({ type: 'trickSelected', trick: nextTrick, plan });
+      seedNextTrick(nextTrick);
     } else {
       dispatch({ type: 'seshReset' });
     }
