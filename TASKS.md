@@ -136,7 +136,7 @@ The first pass used **locked/unlocked** for "the user can land this trick." User
 
 - **Area:** Sesh
 - **Priority:** High (inherited from parent T029)
-- **Status:** Not started
+- **Status:** In progress
 - **Description:** Moving to the next trick during an assessment goes straight to the active state, without the 3-second countdown.
 - **Exit criteria:** Test confirms that in an assessment run advancing to the next trick transitions directly to `active`, while a regular multi-trick run still passes through `countdown`; verified in-browser across a multi-rank assessment.
 - **Notes:** `MultiTrickSesh` seeds each trick by dispatching `trickSelected`, which lands in `countdown`. Adding an option to dispatch `countdownCompleted` immediately after is smaller than teaching the reducer a second entry path — keep the reducer's state graph unchanged.
