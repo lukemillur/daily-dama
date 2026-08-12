@@ -144,7 +144,7 @@ The first pass used **locked/unlocked** for "the user can land this trick." User
 
 - **Area:** Sesh
 - **Priority:** High (inherited from parent T028)
-- **Status:** Not started
+- **Status:** In progress
 - **Description:** Add a "Next trick" button to the sesh screen during a multi-trick run that records the current trick and moves to the next one.
 - **Exit criteria:** Test confirms pressing it writes a practice-history record for the current trick with the laces accumulated so far and advances the run, and that it's absent from a single-trick sesh; verified in-browser.
 - **Notes:** Because it records, this is `seshEnded` plus the existing advance effect — not a new code path, and explicitly *not* the `advanceTrickSequenceToIndex` path used by "Skip this rank", which bypasses recording on purpose. Add as an optional prop on `ActiveSesh` alongside `onSkipRank`, absent by default so single-trick `Sesh` is untouched.
