@@ -9,6 +9,7 @@ import { MultiTrickSesh } from '@/features/sesh/components/multi-trick-sesh';
 import {
   type AssessmentFlow,
   selectAssessmentRankBounds,
+  selectAssessmentResultCopy,
   selectAssessmentTricks,
   selectNextRankStartIndex,
 } from '@/features/sesh/model/kentei-assessment-run';
@@ -19,7 +20,11 @@ import { useUserProfile } from '@/features/profile/state/user-profile-provider';
 type AssessmentEntryStep =
   | { readonly kind: 'choosingFlow' }
   | { readonly kind: 'choosingRank' }
-  | { readonly kind: 'running'; readonly flow: AssessmentFlow };
+  | {
+      readonly kind: 'running';
+      readonly flow: AssessmentFlow;
+      readonly startingKenteiRank: number | undefined;
+    };
 
 /**
  * Entry point for a real, timed Kentei assessment run: lets the user pick
@@ -66,9 +71,7 @@ export function AssessmentEntry() {
         advanceOnFirstLace
         wrapUpFooter={
           <ResultCopy accessibilityLabel="Assessment result">
-            {kenteiRank !== undefined
-              ? `You're assessed at Rank ${kenteiRank}.`
-              : 'Keep practicing — you have not earned a rank yet.'}
+            {selectAssessmentResultCopy(step.startingKenteiRank, kenteiRank)}
           </ResultCopy>
         }
       />
@@ -90,7 +93,11 @@ export function AssessmentEntry() {
                 accessibilityRole="radio"
                 accessibilityState={{ checked: false }}
                 onPress={() =>
-                  setStep({ kind: 'running', flow: { kind: 'fromRank', startingRank: rank } })
+                  setStep({
+                    kind: 'running',
+                    flow: { kind: 'fromRank', startingRank: rank },
+                    startingKenteiRank: kenteiRank,
+                  })
                 }
               >
                 <RankNumber>{rank}</RankNumber>
@@ -114,7 +121,13 @@ export function AssessmentEntry() {
         a rank promotes you automatically.
       </Copy>
       <FlowButton
-        onPress={() => setStep({ kind: 'running', flow: { kind: 'fullBottomToTop' } })}
+        onPress={() =>
+          setStep({
+            kind: 'running',
+            flow: { kind: 'fullBottomToTop' },
+            startingKenteiRank: kenteiRank,
+          })
+        }
       >
         Full assessment
       </FlowButton>
@@ -129,7 +142,11 @@ export function AssessmentEntry() {
         <>
           <FlowButton
             onPress={() =>
-              setStep({ kind: 'running', flow: { kind: 'currentRankOnly', rank: kenteiRank } })
+              setStep({
+                kind: 'running',
+                flow: { kind: 'currentRankOnly', rank: kenteiRank },
+                startingKenteiRank: kenteiRank,
+              })
             }
           >
             Current rank only

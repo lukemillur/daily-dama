@@ -3,6 +3,7 @@ import { describe, expect, it } from '@jest/globals';
 import { KENDAMA_KENTEI_TRICKS } from '@/features/tricks/data/kendama-kentei-tricks';
 import {
   selectAssessmentRankBounds,
+  selectAssessmentResultCopy,
   selectAssessmentTricks,
   selectNextRankStartIndex,
 } from '@/features/sesh/model/kentei-assessment-run';
@@ -94,5 +95,34 @@ describe('selectNextRankStartIndex', () => {
     const result = selectNextRankStartIndex(KENDAMA_KENTEI_TRICKS, KENDAMA_KENTEI_TRICKS.length + 5);
 
     expect(result).toBe(KENDAMA_KENTEI_TRICKS.length);
+  });
+});
+
+describe('selectAssessmentResultCopy', () => {
+  it('shows "not yet earned" copy when no rank has been earned, regardless of starting rank', () => {
+    expect(selectAssessmentResultCopy(undefined, undefined)).toMatch(/not earned/i);
+    expect(selectAssessmentResultCopy(3, undefined)).toMatch(/not earned/i);
+  });
+
+  it('treats the first rank ever earned as an advance, not a hold', () => {
+    const result = selectAssessmentResultCopy(undefined, 1);
+
+    expect(result).toMatch(/rank up/i);
+    expect(result).toContain('1');
+  });
+
+  it('shows "advanced" copy with the new rank when resultRank is higher than startingRank', () => {
+    const result = selectAssessmentResultCopy(3, 4);
+
+    expect(result).toMatch(/rank up/i);
+    expect(result).toContain('4');
+    expect(result).not.toContain('3');
+  });
+
+  it('shows "held" copy, with no assessed/replaced language, when resultRank equals startingRank', () => {
+    const result = selectAssessmentResultCopy(5, 5);
+
+    expect(result).toMatch(/held/i);
+    expect(result).not.toMatch(/assess/i);
   });
 });

@@ -115,15 +115,6 @@ _This round came out of a review pass over the first batch of completed work (T0
 
 The first pass used **locked/unlocked** for "the user can land this trick." User-facing copy in this round switches to **laced/unlaced**, which is what the domain actually calls it. The persisted profile field is still named `manuallyUnlockedTrickIds` and stays that way — renaming a persisted key means either a migration or throwing away real user data, and neither is worth it for a vocabulary change. Rename the copy, not the storage contract.
 
-### [T034] Align Kentei assessment language with promotion-only behavior
-
-- **Area:** Sesh / Profile
-- **Priority:** High
-- **Status:** Not started
-- **Description:** Present the existing Kentei flow as a rank challenge rather than an authoritative reassessment. The current state model prevents rank regression, while some assessment language implies the result can replace the user's current rank.
-- **Exit criteria:** Entry, in-session, result, and Profile copy consistently describe a challenge or promotion opportunity; tests and a browser walkthrough confirm the UI never claims a lower result will lower or replace the current rank and clearly distinguishes retaining the current rank from advancing.
-- **Notes:** Preserve the monotonic-rank model for this iteration. If authoritative reassessment or demotion is desired instead, stop and rescope this as a larger profile/domain-model change.
-
 ### [T035] Add a global notes archive
 
 - **Area:** Tricks / Notes
