@@ -257,7 +257,7 @@ Entries keep their content as it was at completion. Don't retroactively edit a d
 
 - **Area:** Tricks
 - **Priority:** High
-- **Status:** Not started
+- **Status:** Done — umbrella entry; both children (T016.1, T016.2) complete.
 - **Description:** Umbrella for reworking how "I can land this trick" is both set and displayed. Corrects [T004] and [T006]: the badge-plus-toggle pair jammed into the trick name row wrecked the row layout, and "manual unlock" was implemented as a literal Manual button rather than as an ordinary way to say "I've laced this." Marking moves to a dedicated compact screen; the trick list keeps only a passive signal.
 - **Notes:** Umbrella only, no exit criteria of its own. [T016.1] must land before [T016.2] — the marking UI has to exist somewhere before the toggle is removed from the row. Decisions resolved during scoping:
   - The laced grid covers the same trick set as the directory (standard Kentei tricks plus custom tricks), grouped by rank, from `createProfileDirectoryTricks` — not a rank-limited subset.
@@ -394,7 +394,7 @@ Entries keep their content as it was at completion. Don't retroactively edit a d
 
 - **Area:** Sesh
 - **Priority:** High
-- **Status:** Not started
+- **Status:** Done — umbrella entry; all four children (T028.1–T028.4) complete.
 - **Description:** Umbrella for the controls a multi-trick run is missing. Extends [T012]/[T014]: a run currently steps to the next trick only when the user manually ends each one, offers no way to advance mid-trick, and drops the user back at the picker with no summary of what they just did.
 - **Notes:** Umbrella only, no exit criteria of its own. Children are ordered but largely independent; [T028.4] should land last since it reports on everything the others change. Decisions resolved during scoping:
   - "Next trick" **records** the trick being left, with whatever laces occurred — same practice-history write `End Sesh` performs. It means "I'm done with this one", not "discard this." Consequently it feeds Stats, goals, and rank promotion normally. This deliberately differs from assessment's existing "Skip this rank", which records nothing.
