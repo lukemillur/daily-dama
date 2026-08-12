@@ -83,6 +83,7 @@ async function mountMultiTrickSesh(props: {
   readonly plan?: SeshPlan;
   readonly onFinished: () => void;
   readonly skipTarget?: (currentIndex: number) => number;
+  readonly endActionLabel?: string;
 }) {
   let root!: ReactTestRenderer;
   await act(async () => {
@@ -95,6 +96,7 @@ async function mountMultiTrickSesh(props: {
             advanceOnFirstLace={props.advanceOnFirstLace}
             onFinished={props.onFinished}
             skipTarget={props.skipTarget}
+            endActionLabel={props.endActionLabel}
           />
           <SessionSummary />
         </PracticeHistoryProvider>
@@ -166,6 +168,31 @@ describe('MultiTrickSesh advanceOnFirstLace', () => {
     advanceThroughCountdown();
     expect(findByText(root, TRICKS[1].name).length).toBeGreaterThan(0);
     expect(findByAccessibilityLabel(root, 'session-count:1').length).toBeGreaterThan(0);
+
+    act(() => {
+      root.unmount();
+    });
+  });
+});
+
+describe('MultiTrickSesh endActionLabel', () => {
+  beforeEach(async () => {
+    await AsyncStorage.clear();
+    jest.useFakeTimers();
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  it('forwards endActionLabel to ActiveSesh, replacing "End Sesh"', async () => {
+    const onFinished = jest.fn();
+    const root = await mountMultiTrickSesh({ onFinished, endActionLabel: 'End assessment' });
+
+    advanceThroughCountdown();
+    expect(findByText(root, TRICKS[0].name).length).toBeGreaterThan(0);
+    expect(findByText(root, 'End assessment').length).toBeGreaterThan(0);
+    expect(findByText(root, 'End Sesh')).toHaveLength(0);
 
     act(() => {
       root.unmount();

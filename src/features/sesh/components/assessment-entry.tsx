@@ -52,6 +52,7 @@ export function AssessmentEntry() {
         onFinished={() => router.replace('/profile')}
         showAttemptsReminder
         skipTarget={isMultiRankFlow ? (index) => selectNextRankStartIndex(tricks, index) : undefined}
+        endActionLabel="End assessment"
       />
     );
   }

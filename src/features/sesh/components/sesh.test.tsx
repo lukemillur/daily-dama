@@ -294,6 +294,73 @@ describe('ActiveSesh "Next trick" action', () => {
   });
 });
 
+describe('ActiveSesh end action label', () => {
+  beforeEach(() => {
+    jest.useFakeTimers();
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  it('renders "End Sesh" when endActionLabel is omitted', () => {
+    let root!: ReactTestRenderer;
+    act(() => {
+      root = create(
+        <ActiveSesh
+          trick={TRICK}
+          plan={PLAN}
+          startedAt={Date.now()}
+          landings={[]}
+          pausedDurationMs={0}
+          liveChallengeEnabled={false}
+          onLaced={noop}
+          onPause={noop}
+          onResume={noop}
+          onEnd={noop}
+          onTimerElapsed={noop}
+        />,
+      );
+    });
+
+    expect(JSON.stringify(root.toJSON())).toContain('End Sesh');
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  it('renders the supplied endActionLabel instead of "End Sesh"', () => {
+    let root!: ReactTestRenderer;
+    act(() => {
+      root = create(
+        <ActiveSesh
+          trick={TRICK}
+          plan={PLAN}
+          startedAt={Date.now()}
+          landings={[]}
+          pausedDurationMs={0}
+          liveChallengeEnabled={false}
+          onLaced={noop}
+          onPause={noop}
+          onResume={noop}
+          onEnd={noop}
+          onTimerElapsed={noop}
+          endActionLabel="End assessment"
+        />,
+      );
+    });
+
+    const json = JSON.stringify(root.toJSON());
+    expect(json).toContain('End assessment');
+    expect(json).not.toContain('End Sesh');
+
+    act(() => {
+      root.unmount();
+    });
+  });
+});
+
 describe('CompletedSesh first-lace celebration', () => {
   const summary: SeshSummary = {
     trick: TRICK,
