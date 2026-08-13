@@ -141,16 +141,6 @@ The first pass used **locked/unlocked** for "the user can land this trick." User
 - **Description:** Add a compact "Needs attention" section that turns practice history into an actionable next-session queue. Limit the first iteration to currently focused tricks, at most three suggestions, with never-practiced tricks first and previously practiced tricks ordered by oldest recent practice.
 - **Notes:** Umbrella only — complete T038.1 and T038.2. Do not add recommendation scores, spaced-repetition configuration, or new persistence in this iteration.
 
-### [T038.1] Derive neglected focused tricks from practice history
-
-- **Area:** Stats
-- **Priority:** Medium (inherited from parent T038)
-- **Status:** In progress
-- **Planning:** Implementer
-- **Description:** Implement a pure selector that ranks focused tricks by practice neglect, using focused-list order as deterministic tie-breaking and limiting its result to three.
-- **Exit criteria:** Unit tests confirm empty input, never-practiced tricks before practiced tricks, practiced tricks ordered by oldest recent practice, deterministic ties, unrelated practice records having no effect, and the three-item limit.
-- **Notes:** Derive the result from focused tricks and completed practice history; do not consult UI state or persist recommendation state.
-
 ### [T038.2] Render neglected-trick suggestions with Practice actions
 
 - **Area:** Stats / Sesh routing
