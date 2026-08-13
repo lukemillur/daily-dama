@@ -6,6 +6,16 @@ Entries keep their content as it was at completion. Don't retroactively edit a d
 
 ---
 
+### [T050] Sort focused tricks to the top of the multi-trick picker
+
+- **Area:** Sesh
+- **Priority:** Low
+- **Status:** Done
+- **Planning:** Implementer
+- **Description:** The multi-trick setup screen's trick list has no focused-trick treatment — it's plain rank order, unlike the main Tricks screen which sections the user's focused tricks first via `TrickDirectory`'s existing `showFocusedSection` prop. Give the multi-trick picker the same treatment.
+- **Exit criteria:** Test: a user with N focused tricks (profile `selectedTrickIds`) opens multi-trick setup — those N tricks render in a "Focused" section at the top regardless of rank, matching `src/app/tricks.tsx`'s existing behavior; toggling a trick's in-progress selection for this run does not change section placement.
+- **Notes:** Implemented per the task's own notes. `TrickDirectory` (`src/features/tricks/components/trick-directory.tsx`) gained a new optional `focusedTrickIds?: readonly string[]` prop, used for `showFocusedSection` sectioning in place of `selection.selectedTrickIds` when supplied (falls back to `selection.selectedTrickIds` so `src/app/tricks.tsx`, where the two lists genuinely are the same, needed no change). `MultiTrickSeshEntry` now reads `useUserProfile().selectedTrickIds` (read-only — the run's own toggle/selection state and its `useUserProfile` actions stay entirely separate, per the file's existing doc comment on why this component never calls persisted-profile mutators) and passes `showFocusedSection` + `focusedTrickIds={focusedTrickIds}` to its `TrickDirectory`, while `selection.selectedTrickIds` continues to drive only checkbox state for this run. Read post-T049's actual wizard-step shape of `multi-trick-sesh-entry.tsx` before touching it, per the task's note. Added a `TrickDirectory`-level unit test (new case in `trick-directory.test.tsx`) confirming `focusedTrickIds` drives sectioning independent of a separate `selection` prop, and a new integration test file `multi-trick-sesh-entry.test.tsx` seeding a hydrated profile (via `AsyncStorage`-persisted `serializeUserProfile`) with two focused tricks from non-rank-1 ranks, confirming they render under "Focused tricks" ahead of "Rank 1" and stay there after toggling one trick's in-progress selection. Worked around a `VirtualizedList`-vs-`act()` warning in the new integration test by flushing its pending cell-range `setTimeout` inside `act()` after mount and after the toggle, and unmounting inside `act()` at test end. Full verification (`node .claude/scripts/verify.mjs`) passes; ran `yarn install` first, whose `node_modules` was missing on entry to this worktree.
+
 ### [T049] Split multi-trick sesh setup into a two-step wizard
 
 - **Area:** Sesh
