@@ -140,7 +140,7 @@ _This next batch (T045–T069) comes from a QA pass over PR 55's suggested check
 
 - **Area:** Sesh
 - **Priority:** Low
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Implementer
 - **Description:** `AttemptsReminder` ("You have 5 attempts.") has only a 10px top margin and no bottom margin, and `LacedButton` has no top margin, so when the timer is hidden (as in a Kentei assessment) and there are no trick notes to show, the reminder text and the Laced button sit cramped together with nothing but that 10px between them.
 - **Exit criteria:** Visual check confirms clear spacing between "You have 5 attempts." and the Laced button in the cramped case (`hideTimer` true, no trick notes); layouts where the timer is visible are unaffected.
