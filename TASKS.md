@@ -137,7 +137,7 @@ The first pass used **locked/unlocked** for "the user can land this trick." User
 
 - **Area:** Repository maintenance
 - **Priority:** Low
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Implementer
 - **Description:** Audit and remove unused Expo starter components, assets, and direct dependencies after proving they are not part of the current application or configuration.
 - **Exit criteria:** Repository search and dependency inspection account for every candidate before removal; a frozen Yarn install followed by tests, lint, TypeScript, and web export passes with the verified-unused scaffold, assets, and direct dependencies removed and the lockfile updated.
