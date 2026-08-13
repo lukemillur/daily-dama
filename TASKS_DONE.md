@@ -6,6 +6,16 @@ Entries keep their content as it was at completion. Don't retroactively edit a d
 
 ---
 
+### [T039] Replace the starter README and document local setup
+
+- **Area:** Repository documentation
+- **Priority:** Medium
+- **Status:** Done
+- **Planning:** Implementer
+- **Description:** Replace the Expo starter README with project-specific documentation that lets a new collaborator understand and run Daily Dama safely.
+- **Exit criteria:** A clean-install walkthrough confirms the README accurately explains the product, supported platforms, Yarn-based setup, source layout, local-first persistence domains, access-gate configuration, standard verification commands, and relevant handoff documents; a secret-free `.env.example` documents supported environment variables, with no npm-only or obsolete reset-project guidance remaining.
+- **Notes:** Confirmed T040 was already merged into `development` before writing setup docs, so no reset-project guidance was re-added. Rewrote `README.md` with product summary, supported platforms, Yarn-based setup (`yarn install`/`yarn web`/`yarn ios`/`yarn android`), source layout, the three persistence domains (profile, custom tricks, practice history), access-gate configuration via `EXPO_PUBLIC_ACCESS_PASSWORD`, the standard verification commands, and links to `AGENTS.md`, `TASKS.md`, `.claude/scripts/README.md`, `TRICK_VIZ_HANDOFF.md`, and `DEPLOYMENT_HANDOFF.md`. Added a secret-free `.env.example` documenting `EXPO_PUBLIC_ACCESS_PASSWORD`. Verified via `node .claude/scripts/verify.mjs --skip-export` (docs-only change; test, lint, tsc all pass).
+
 ### [T040] Remove the destructive starter reset command
 
 - **Area:** Repository maintenance
