@@ -35,20 +35,23 @@ jest.mock('@react-native-async-storage/async-storage', () =>
 const TRICK: PracticeTrick = { id: 'big-cup', name: 'Big Cup' };
 const PLAN = createTimedSeshPlan(5);
 
+// Match only the rendered host View, not the CelebrationBanner/wrapper component instances
+// (which still carry a matching `accessibilityLabel` prop even after auto-dismiss makes them
+// render null, since that prop is passed down rather than consumed and dropped).
 function findBanner(root: ReactTestRenderer) {
   return root.root.findAll(
-    (node) => node.props.accessibilityLabel === 'First lace ever on Big Cup',
+    (node) => node.type === 'View' && node.props.accessibilityLabel === 'First lace ever on Big Cup',
   );
 }
 
 function findGoalBanner(root: ReactTestRenderer, goal: Goal) {
   const label = `Goal achieved for ${goal.trickName}: ${formatGoalTarget(goal)}`;
-  return root.root.findAll((node) => node.props.accessibilityLabel === label);
+  return root.root.findAll((node) => node.type === 'View' && node.props.accessibilityLabel === label);
 }
 
 function findPersonalBestBanner(root: ReactTestRenderer, trickName: string) {
   const label = `New personal best on ${trickName}`;
-  return root.root.findAll((node) => node.props.accessibilityLabel === label);
+  return root.root.findAll((node) => node.type === 'View' && node.props.accessibilityLabel === label);
 }
 
 function landing(elapsedMs: number): Landing {
@@ -1275,14 +1278,21 @@ describe('ActiveSesh goal celebration - time-based goals', () => {
 
     // Once the auto-dismiss window elapses, the banner goes away on its own — and stays gone on
     // subsequent ticks even though elapsed time (and crossedTimeGoalIds) is still past the goal.
-    act(() => {
-      jest.advanceTimersByTime(2_000);
-    });
+    // Advance in small steps (matching useNow's 250ms polling interval): a single large jump
+    // here can, under jest's fake timers, fail to flush a setTimeout that a component schedules
+    // from an effect triggered mid-advance by that same polling interval.
+    for (let i = 0; i < 16; i += 1) {
+      act(() => {
+        jest.advanceTimersByTime(250);
+      });
+    }
     expect(findGoalBanner(root, goal)).toHaveLength(0);
 
-    act(() => {
-      jest.advanceTimersByTime(2_000);
-    });
+    for (let i = 0; i < 8; i += 1) {
+      act(() => {
+        jest.advanceTimersByTime(250);
+      });
+    }
     expect(findGoalBanner(root, goal)).toHaveLength(0);
 
     act(() => {
