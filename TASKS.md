@@ -136,16 +136,6 @@ The first pass used **locked/unlocked** for "the user can land this trick." User
 _This next batch (T045–T069) comes from a QA pass over PR 55's suggested checklist (the `development` → `main` release covering T002–T041), worked top to bottom. Where an entry names the task that shipped the behavior it's correcting, the archived entry in [TASKS_DONE.md](TASKS_DONE.md) stays as-written — history isn't rewritten, same as above._
 
 
-### [T053] Add breathing room before auto-advancing on a lace
-
-- **Area:** Sesh
-- **Priority:** Medium
-- **Status:** In progress
-- **Planning:** Required
-- **Description:** In ad hoc multi-trick practice (`MultiTrickSeshEntry`/`MultiTrickSesh`) with "advance after one lace" enabled, landing a trick and moving to the next happens in one synchronous beat (`trickLaced` then `seshEnded` dispatched back-to-back in `handleLaced`, `src/features/sesh/components/multi-trick-sesh.tsx`) — the user never sees an acknowledgment of the landing before the next trick's countdown appears. Insert a brief (roughly 1-3 second) "Trick landed"-style acknowledgment before advancing.
-- **Exit criteria:** Test: with advance-on-lace enabled in ad hoc multi-trick practice, landing a trick shows acknowledgment copy for the configured window before the next trick's countdown begins.
-- **Notes:** Scoped to the ad hoc multi-trick flow (`MultiTrickSeshEntry`) only, not the Kentei assessment flow, which shares the same `MultiTrickSesh`/`handleLaced` mechanism but deliberately opted into zero friction here via `skipCountdownBetweenTricks` + `advanceOnFirstLace` (T029.2/T029.4) — adding a mandatory pause there would silently undo that prior, deliberate work. Implement as an opt-in prop on `MultiTrickSesh` (default off) so `AssessmentEntry` is unaffected unless explicitly turned on later. This is an assumption, not confirmed with the user — flag if assessment should get this too. There is no existing `SeshState` status for "just landed, pausing" (`sesh.ts`'s `SeshState` union is only `choosing | countdown | active | completed`); implement as a component-local transient render state in `MultiTrickSesh` that delays the existing `seedNextTrick` call, not as a new reducer status — keeps timer effects out of the reducer, consistent with the project's stated convention. The existing one-tick "Sequence complete" fallback panel in `multi-trick-sesh.tsx` is explicitly documented as imperceptible/not a resting state and isn't a usable hook for this — it's end-of-run copy, not per-trick.
-
 ### [T054] Add spacing above the Laced button
 
 - **Area:** Sesh

@@ -30,6 +30,7 @@ import { selectNotesForTrick } from '@/features/notes/model/note';
 import { useNotes } from '@/features/notes/state/note-provider';
 
 const MULTI_TRICK_SESH_KEEP_AWAKE_TAG = 'multi-trick-sesh-active';
+const LACE_ACKNOWLEDGMENT_DURATION_MS = 1500;
 
 interface MultiTrickSeshProps {
   readonly tricks: readonly PracticeTrick[];
@@ -54,6 +55,15 @@ interface MultiTrickSeshProps {
    * ever advances off the `completed` state.
    */
   readonly advanceOnFirstLace?: boolean;
+  /**
+   * When true (and only meaningful alongside `advanceOnFirstLace` — a pause
+   * before an advance that isn't happening has nothing to delay), shows a
+   * brief "Trick landed" acknowledgment panel for
+   * `LACE_ACKNOWLEDGMENT_DURATION_MS` before the `seshEnded` dispatch that
+   * `advanceOnFirstLace` would otherwise fire immediately. Purely a delay on
+   * *when* that dispatch happens, not a new advance path.
+   */
+  readonly pauseAfterLace?: boolean;
   /**
    * Opaque to this component, forwarded to `ActiveSesh` as-is — replaces
    * the default "End Sesh" copy on the primary end action. Used by callers
@@ -126,6 +136,7 @@ export function MultiTrickSesh({
   skipTarget,
   showAttemptsReminder,
   advanceOnFirstLace,
+  pauseAfterLace,
   endActionLabel,
   skipCountdownBetweenTricks,
   hideTimer,
@@ -153,6 +164,13 @@ export function MultiTrickSesh({
   // progresses past that first countdown by any path (normal completion or
   // skip); nothing resets it back to true afterward.
   const [isFirstCountdown, setIsFirstCountdown] = useState(true);
+  // Set for the brief window between a `pauseAfterLace` landing and the
+  // deferred `seshEnded` dispatch that actually advances the run. Renders
+  // an acknowledgment panel in place of `ActiveSesh` while set; the effect
+  // below is the only thing that clears it.
+  const [laceAcknowledgment, setLaceAcknowledgment] = useState<{ readonly trickName: string } | undefined>(
+    undefined,
+  );
 
   // The run is over once the sequence has no trick left to run, whether that
   // happened because every trick completed normally (leaves `state` at
@@ -220,6 +238,17 @@ export function MultiTrickSesh({
     };
   }, [state.status]);
 
+  useEffect(() => {
+    if (!laceAcknowledgment) return;
+
+    const timeoutId = setTimeout(() => {
+      setLaceAcknowledgment(undefined);
+      dispatch({ type: 'seshEnded', now: Date.now() });
+    }, LACE_ACKNOWLEDGMENT_DURATION_MS);
+
+    return () => clearTimeout(timeoutId);
+  }, [laceAcknowledgment]);
+
   const handleSkipRank = () => {
     if (!skipTarget) return;
 
@@ -262,9 +291,23 @@ export function MultiTrickSesh({
       const now = Date.now();
       dispatch({ type: 'trickLaced', now });
       if (advanceOnFirstLace && state.status === 'active' && state.landings.length === 0) {
-        dispatch({ type: 'seshEnded', now });
+        if (pauseAfterLace) {
+          setLaceAcknowledgment({ trickName: state.trick.name });
+        } else {
+          dispatch({ type: 'seshEnded', now });
+        }
       }
     };
+
+    if (laceAcknowledgment) {
+      return (
+        <CenteredPanel accessibilityLabel="Trick landed">
+          <Eyebrow>Trick landed</Eyebrow>
+          <DisplayTitle>{laceAcknowledgment.trickName}</DisplayTitle>
+          <BodyCopy>Nice! Next trick coming up.</BodyCopy>
+        </CenteredPanel>
+      );
+    }
 
     return (
       <ActiveSesh

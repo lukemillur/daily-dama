@@ -6,6 +6,17 @@ Entries keep their content as it was at completion. Don't retroactively edit a d
 
 ---
 
+### [T053] Add breathing room before auto-advancing on a lace
+
+- **Area:** Sesh
+- **Priority:** Medium
+- **Status:** Done
+- **Planning:** Required
+- **Description:** In ad hoc multi-trick practice (`MultiTrickSeshEntry`/`MultiTrickSesh`) with "advance after one lace" enabled, landing a trick and moving to the next happens in one synchronous beat (`trickLaced` then `seshEnded` dispatched back-to-back in `handleLaced`, `src/features/sesh/components/multi-trick-sesh.tsx`) — the user never sees an acknowledgment of the landing before the next trick's countdown appears. Insert a brief (roughly 1-3 second) "Trick landed"-style acknowledgment before advancing.
+- **Exit criteria:** Test: with advance-on-lace enabled in ad hoc multi-trick practice, landing a trick shows acknowledgment copy for the configured window before the next trick's countdown begins.
+- **Notes:** Implemented per the committed plan. Added `pauseAfterLace?: boolean` (default off) to `MultiTrickSesh` and a new component-local transient state, `laceAcknowledgment`, set from `handleLaced` instead of dispatching `seshEnded` immediately when both `advanceOnFirstLace` and `pauseAfterLace` are set. A `useEffect` keyed on `laceAcknowledgment` starts a single `setTimeout` (`LACE_ACKNOWLEDGMENT_DURATION_MS = 1500`, mirroring `Countdown`'s single-timeout-with-cleanup pattern) that clears the acknowledgment and dispatches the deferred `seshEnded`; the effect's cleanup clears the timeout on unmount/re-trigger. The `'active'` render branch shows a new panel (reusing the existing `CenteredPanel`/`Eyebrow`/`DisplayTitle`/`BodyCopy` primitives, `accessibilityLabel="Trick landed"`) in place of `ActiveSesh` while `laceAcknowledgment` is set. `MultiTrickSeshEntry` passes `pauseAfterLace={advanceOnFirstLace}`, tying the pause to the same checkbox rather than adding separate configuration. `AssessmentEntry` is untouched — it never passes `pauseAfterLace`, so the Kentei assessment flow keeps its deliberate zero-friction advance from T029.2/T029.4. No `SeshState` reducer changes; the delay is entirely local render state upstream of the existing `'completed'` effect. Added a new `describe('MultiTrickSesh pauseAfterLace', ...)` test block in `multi-trick-sesh.test.tsx` and forwarded the new prop through `mountMultiTrickSesh`; the existing `advanceOnFirstLace` tests (no `pauseAfterLace`) pass unmodified. Full verification (`node .claude/scripts/verify.mjs`) passes.
+  Open question flagged, not resolved here: should the Kentei assessment flow eventually get a shorter/optional version of this acknowledgment, or is instant advance intentionally permanent there? This task makes no change to `AssessmentEntry`.
+
 ### [T052] Hide "Next trick" on the final trick of a multi-trick run
 
 - **Area:** Sesh

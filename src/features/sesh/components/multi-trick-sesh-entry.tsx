@@ -91,6 +91,7 @@ export function MultiTrickSeshEntry() {
         tricks={step.tricks}
         plan={step.plan}
         advanceOnFirstLace={advanceOnFirstLace}
+        pauseAfterLace={advanceOnFirstLace}
         onFinished={handleFinished}
         onCancelRun={handleFinished}
       />
