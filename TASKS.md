@@ -135,16 +135,6 @@ The first pass used **locked/unlocked** for "the user can land this trick." User
 
 _This next batch (T045–T069) comes from a QA pass over PR 55's suggested checklist (the `development` → `main` release covering T002–T041), worked top to bottom. Where an entry names the task that shipped the behavior it's correcting, the archived entry in [TASKS_DONE.md](TASKS_DONE.md) stays as-written — history isn't rewritten, same as above._
 
-### [T046] Fix transient timer glitch on Sesh pause/resume
-
-- **Area:** Sesh
-- **Priority:** High
-- **Status:** Not started
-- **Planning:** Required
-- **Description:** Resuming a paused sesh briefly renders a displayed time equal to the pause duration before flipping to the correct value, for both timed (counts down) and open-ended (counts up) plans. Root cause: `useNow` (`src/features/sesh/components/sesh.tsx`) freezes `now` entirely while paused and only refreshes it via a 250ms `setInterval` that doesn't (re)start until after the resume render commits, so for one or more renders a freshly up-to-date `pausedDurationMs` (already includes the full pause) combines with a stale `now` (unchanged since before/at the pause), under-counting elapsed time by exactly the pause duration.
-- **Exit criteria:** Test simulates pause at time T, waits several seconds while paused, then resumes — asserts the *first* rendered displayed time after resume is already correct (no transient wrong frame), for both a timed and an open-ended plan. `sesh.test.tsx` currently uses `jest.useFakeTimers()` but has no test that advances fake time across an actual pause→resume transition; this is new coverage, not a regression fix to an existing test.
-- **Notes:** Fix belongs in `useNow`/`ActiveSesh` (component-level timer effect), not the reducer — `seshPaused`/`seshResumed` (`src/features/sesh/model/sesh.ts`) are already correct and covered by existing reducer tests (`sesh.test.ts`); this is purely about `now` not being refreshed synchronously enough on resume. Likely fix shape: force an immediate `setNow(Date.now())` when `isPaused` flips from true to false, rather than waiting for the next interval tick.
-
 ### [T047] Allow backing out of the pre-sesh countdown
 
 - **Area:** Sesh

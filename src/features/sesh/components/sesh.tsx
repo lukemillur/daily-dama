@@ -1,6 +1,6 @@
 import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
 import { Link } from 'expo-router';
-import { useEffect, useMemo, useReducer, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useReducer, useRef, useState, type ReactNode } from 'react';
 import { Animated, Pressable, ScrollView, TextInput } from 'react-native';
 import { styled } from 'styled-components/native';
 
@@ -665,6 +665,20 @@ function TrickNotesPanel({ trickNotes }: { readonly trickNotes: readonly Note[] 
 
 function useNow(initialTime: number, isPaused: boolean) {
   const [now, setNow] = useState(initialTime);
+  const wasPausedRef = useRef(isPaused);
+
+  // Resuming: force an immediate, synchronous refresh (before paint) so the
+  // very next commit already reflects the correct elapsed time, rather than
+  // waiting for the next 250ms interval tick. useLayoutEffect (not a render-time
+  // setState) keeps Date.now() out of the render body per the react-hooks
+  // purity rule.
+  useLayoutEffect(() => {
+    if (wasPausedRef.current && !isPaused) {
+      setNow(Date.now());
+    }
+    wasPausedRef.current = isPaused;
+  }, [isPaused]);
+
   useEffect(() => {
     if (isPaused) return;
     const interval = setInterval(() => setNow(Date.now()), 250);
