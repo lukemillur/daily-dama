@@ -137,7 +137,7 @@ The first pass used **locked/unlocked** for "the user can land this trick." User
 
 - **Area:** Home
 - **Priority:** Medium
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** Ensure rolling totals and streak information update when time boundaries pass without a new practice-history write.
 - **Exit criteria:** Fake-time tests confirm a record naturally ages out of the 24-hour summary while Home remains mounted, streak presentation updates across a local-day boundary, and returning the app to the foreground refreshes both immediately without storing timers, native handles, or current-time values in reducers or persisted state.
