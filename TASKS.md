@@ -136,16 +136,6 @@ The first pass used **locked/unlocked** for "the user can land this trick." User
 _This next batch (T045–T069) comes from a QA pass over PR 55's suggested checklist (the `development` → `main` release covering T002–T041), worked top to bottom. Where an entry names the task that shipped the behavior it's correcting, the archived entry in [TASKS_DONE.md](TASKS_DONE.md) stays as-written — history isn't rewritten, same as above._
 
 
-### [T052] Hide "Next trick" on the final trick of a multi-trick run
-
-- **Area:** Sesh
-- **Priority:** Low
-- **Status:** In progress
-- **Planning:** Implementer
-- **Description:** `NextTrickButton` (`src/features/sesh/components/sesh.tsx`) renders whenever `onNextTrick` is supplied, with no awareness of position in the sequence — `multi-trick-sesh.tsx` passes it unconditionally for any active trick, including the last one, where it's functionally identical to "End Sesh" (both dispatch the same `seshEnded` action) but mislabeled.
-- **Exit criteria:** Test: on the final trick of a multi-trick run, "Next trick" is not rendered; "End Sesh" and the Laced flow continue to work as today; on any non-final trick, "Next trick" still renders as today.
-- **Notes:** Both `sequence.currentIndex` and `sequence.tricks.length` are already in scope where `onNextTrick` is wired (`multi-trick-sesh.tsx`) — the fix is a single added condition, not new state. Independent of [T057] (which removes "Next trick" from the Kentei assessment flow entirely, regardless of position) — the two fixes gate on different conditions and don't conflict, but touch the same prop wiring, so implement with awareness of whichever lands first.
-
 ### [T053] Add breathing room before auto-advancing on a lace
 
 - **Area:** Sesh

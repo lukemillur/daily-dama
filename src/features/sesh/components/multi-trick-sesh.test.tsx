@@ -396,7 +396,8 @@ describe('MultiTrickSesh "Next trick" action', () => {
     const onFinished = jest.fn();
     const root = await mountMultiTrickSesh({ onFinished });
 
-    for (const trick of TRICKS) {
+    for (let index = 0; index < TRICKS.length; index += 1) {
+      const trick = TRICKS[index];
       advanceThroughCountdown();
       expect(findByText(root, trick.name).length).toBeGreaterThan(0);
 
@@ -404,7 +405,7 @@ describe('MultiTrickSesh "Next trick" action', () => {
         pressByAccessibilityLabel(root, 'Laced');
       });
       act(() => {
-        pressByVisibleText(root, 'Next trick');
+        pressByVisibleText(root, index === TRICKS.length - 1 ? 'End Sesh' : 'Next trick');
       });
     }
 
@@ -418,6 +419,37 @@ describe('MultiTrickSesh "Next trick" action', () => {
     expect(findByAccessibilityLabel(root, 'session-count:3').length).toBeGreaterThan(0);
     for (let index = 0; index < TRICKS.length; index += 1) {
       expect(findByAccessibilityLabel(root, `session-${index}-lace-count:1`).length).toBeGreaterThan(0);
+    }
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  it('hides "Next trick" on the final trick of the run but shows it on every earlier trick', async () => {
+    const onFinished = jest.fn();
+    const root = await mountMultiTrickSesh({ onFinished });
+
+    for (let index = 0; index < TRICKS.length; index += 1) {
+      const trick = TRICKS[index];
+      advanceThroughCountdown();
+      expect(findByText(root, trick.name).length).toBeGreaterThan(0);
+
+      act(() => {
+        pressByAccessibilityLabel(root, 'Laced');
+      });
+
+      const isFinalTrick = index === TRICKS.length - 1;
+      if (isFinalTrick) {
+        expect(findByText(root, 'Next trick')).toHaveLength(0);
+      } else {
+        expect(findByText(root, 'Next trick').length).toBeGreaterThan(0);
+      }
+      expect(findByText(root, 'End Sesh').length).toBeGreaterThan(0);
+
+      act(() => {
+        pressByVisibleText(root, isFinalTrick ? 'End Sesh' : 'Next trick');
+      });
     }
 
     act(() => {
@@ -604,7 +636,8 @@ describe('MultiTrickSesh wrap-up', () => {
 
     expect(findByAccessibilityLabel(root, 'resulting-rank')).toHaveLength(0);
 
-    for (const trick of TRICKS) {
+    for (let index = 0; index < TRICKS.length; index += 1) {
+      const trick = TRICKS[index];
       advanceThroughCountdown();
       expect(findByText(root, trick.name).length).toBeGreaterThan(0);
 
@@ -612,7 +645,7 @@ describe('MultiTrickSesh wrap-up', () => {
         pressByAccessibilityLabel(root, 'Laced');
       });
       act(() => {
-        pressByVisibleText(root, 'Next trick');
+        pressByVisibleText(root, index === TRICKS.length - 1 ? 'End Sesh' : 'Next trick');
       });
     }
 

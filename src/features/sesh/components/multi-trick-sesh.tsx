@@ -287,8 +287,14 @@ export function MultiTrickSesh({
         // "Next trick" reuses the same completed-effect advance path as
         // "End Sesh" above — it's the identical `seshEnded` dispatch, not a
         // second advance mechanism. Unlike `handleSkipRank`, this always
-        // records the current trick's landings before moving on.
-        onNextTrick={() => dispatch({ type: 'seshEnded', now: Date.now() })}
+        // records the current trick's landings before moving on. Omitted
+        // on the final trick of the run, where it would be functionally
+        // identical to "End Sesh" but mislabeled.
+        onNextTrick={
+          sequence.currentIndex < sequence.tricks.length - 1
+            ? () => dispatch({ type: 'seshEnded', now: Date.now() })
+            : undefined
+        }
         endActionLabel={endActionLabel}
         hideTimer={hideTimer}
       />
