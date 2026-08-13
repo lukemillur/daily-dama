@@ -133,16 +133,6 @@ _This round came out of a review pass over the first batch of completed work (T0
 
 The first pass used **locked/unlocked** for "the user can land this trick." User-facing copy in this round switches to **laced/unlaced**, which is what the domain actually calls it. The persisted profile field is still named `manuallyUnlockedTrickIds` and stays that way — renaming a persisted key means either a migration or throwing away real user data, and neither is worth it for a vocabulary change. Rename the copy, not the storage contract.
 
-### [T037] Refresh Home time-based summaries while the app remains open
-
-- **Area:** Home
-- **Priority:** Medium
-- **Status:** In progress
-- **Planning:** Required
-- **Description:** Ensure rolling totals and streak information update when time boundaries pass without a new practice-history write.
-- **Exit criteria:** Fake-time tests confirm a record naturally ages out of the 24-hour summary while Home remains mounted, streak presentation updates across a local-day boundary, and returning the app to the foreground refreshes both immediately without storing timers, native handles, or current-time values in reducers or persisted state.
-- **Notes:** Use a small presentation-level clock/refresh signal and app-foreground handling. Keep `Date.now()` outside pure summary functions by passing an explicit reference time.
-
 ### [T038] Add a neglected-tricks practice queue to Stats
 
 - **Area:** Stats
