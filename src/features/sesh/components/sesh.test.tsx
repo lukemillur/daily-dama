@@ -40,18 +40,18 @@ const PLAN = createTimedSeshPlan(5);
 // render null, since that prop is passed down rather than consumed and dropped).
 function findBanner(root: ReactTestRenderer) {
   return root.root.findAll(
-    (node) => node.type === 'View' && node.props.accessibilityLabel === 'First lace ever on Big Cup',
+    (node) => (node.type as unknown) === 'View' && node.props.accessibilityLabel === 'First lace ever on Big Cup',
   );
 }
 
 function findGoalBanner(root: ReactTestRenderer, goal: Goal) {
   const label = `Goal achieved for ${goal.trickName}: ${formatGoalTarget(goal)}`;
-  return root.root.findAll((node) => node.type === 'View' && node.props.accessibilityLabel === label);
+  return root.root.findAll((node) => (node.type as unknown) === 'View' && node.props.accessibilityLabel === label);
 }
 
 function findPersonalBestBanner(root: ReactTestRenderer, trickName: string) {
   const label = `New personal best on ${trickName}`;
-  return root.root.findAll((node) => node.type === 'View' && node.props.accessibilityLabel === label);
+  return root.root.findAll((node) => (node.type as unknown) === 'View' && node.props.accessibilityLabel === label);
 }
 
 function landing(elapsedMs: number): Landing {
