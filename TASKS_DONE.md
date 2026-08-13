@@ -6,6 +6,16 @@ Entries keep their content as it was at completion. Don't retroactively edit a d
 
 ---
 
+### [T052] Hide "Next trick" on the final trick of a multi-trick run
+
+- **Area:** Sesh
+- **Priority:** Low
+- **Status:** Done
+- **Planning:** Implementer
+- **Description:** `NextTrickButton` (`src/features/sesh/components/sesh.tsx`) renders whenever `onNextTrick` is supplied, with no awareness of position in the sequence — `multi-trick-sesh.tsx` passes it unconditionally for any active trick, including the last one, where it's functionally identical to "End Sesh" (both dispatch the same `seshEnded` action) but mislabeled.
+- **Exit criteria:** Test: on the final trick of a multi-trick run, "Next trick" is not rendered; "End Sesh" and the Laced flow continue to work as today; on any non-final trick, "Next trick" still renders as today.
+- **Notes:** Implemented exactly as scoped in the task's own notes — a single added condition, no new state. In `src/features/sesh/components/multi-trick-sesh.tsx`, `onNextTrick` is now `sequence.currentIndex < sequence.tricks.length - 1 ? () => dispatch({ type: 'seshEnded', now: Date.now() }) : undefined`, using state already in scope at that call site. Updated two existing tests in `multi-trick-sesh.test.tsx` that previously pressed "Next trick" unconditionally through every trick including the last (`'coexists with "End Sesh"'` and `'renders the wrap-up footer only once the wrap-up is showing'`) to press "End Sesh" on the final trick instead, matching the existing pattern already used by the wrap-up-entries test. Added a new test, `'hides "Next trick" on the final trick of the run but shows it on every earlier trick'`, asserting the button's presence/absence at every trick position in a three-trick run while confirming "End Sesh" and the Laced flow keep working throughout. `node_modules` was missing in this worktree; ran `yarn install` before testing. Verified by `node .claude/scripts/verify.mjs` (test, lint, typecheck, web export all clean).
+
 ### [T051] Add a back button to the multi-trick sesh setup screen
 
 - **Area:** Sesh / Navigation
