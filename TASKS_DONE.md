@@ -6,6 +6,16 @@ Entries keep their content as it was at completion. Don't retroactively edit a d
 
 ---
 
+### [T048] Persist open-ended sesh target laces across sessions
+
+- **Area:** Sesh / persistence (profile domain)
+- **Priority:** Medium
+- **Status:** Done
+- **Planning:** Required
+- **Description:** A target lace count defined for an open-ended sesh (T005.1/T005.2) only lives for the run it was set on — every fresh visit to Sesh setup resets the target field to blank, even though `lastSesh` (`src/features/profile/model/user-profile.ts`) already persists the last-used trick and plan across visits. Persist the target too, carrying it forward until the user changes it.
+- **Exit criteria:** Test: set a target, complete (or end) an open-ended sesh, revisit Sesh setup fresh (not via "Repeat sesh") — the previously-set target pre-fills; changing it and starting again persists the new value on the next fresh visit; a profile with no persisted target (including all existing pre-fix profiles) behaves exactly as today, no migration needed.
+- **Notes:** Implemented per the committed plan. `LastSeshPlan`'s `openEnded` variant gained an optional `targetLandingCount?: number`; `createLastSesh` now carries `plan.target.landingCount` through when present and otherwise still emits the bare `{ kind: 'openEnded' }` (no explicit `undefined` key) to keep serialized output for untargeted seshes unchanged. `isLastSesh` in `user-profile-persistence.ts` now accepts either the old 1-key `openEnded` shape or a 2-key shape validated with the existing `isValidSeshTargetLandingCount`, rejecting anything else. `src/app/sesh/index.tsx`'s `initialPlan` derivation now calls `createOpenEndedSeshPlan(lastSesh.plan.targetLandingCount)` instead of unconditionally falling back to the bare `OPEN_ENDED_SESH_PLAN` constant. No changes needed in `sesh.tsx` (already pre-fills from `initialPlan.target.landingCount`) or the profile provider. Added round-trip/malformed-value test coverage in `user-profile-persistence.test.ts` and new `createLastSesh` unit tests in `user-profile.test.ts`. Manually verified in-browser: seeding a profile with `targetLandingCount: 7` pre-fills the Sesh setup field; seeding one without it reproduces today's blank field. Full verification (`node .claude/scripts/verify.mjs`) passes. `node_modules` was missing on entry to this worktree; ran `yarn install` before testing.
+
 ### [T047] Allow backing out of the pre-sesh countdown
 
 - **Area:** Sesh

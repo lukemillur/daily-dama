@@ -135,15 +135,6 @@ The first pass used **locked/unlocked** for "the user can land this trick." User
 
 _This next batch (T045–T069) comes from a QA pass over PR 55's suggested checklist (the `development` → `main` release covering T002–T041), worked top to bottom. Where an entry names the task that shipped the behavior it's correcting, the archived entry in [TASKS_DONE.md](TASKS_DONE.md) stays as-written — history isn't rewritten, same as above._
 
-### [T048] Persist open-ended sesh target laces across sessions
-
-- **Area:** Sesh / persistence (profile domain)
-- **Priority:** Medium
-- **Status:** In progress
-- **Planning:** Required
-- **Description:** A target lace count defined for an open-ended sesh (T005.1/T005.2) only lives for the run it was set on — every fresh visit to Sesh setup resets the target field to blank, even though `lastSesh` (`src/features/profile/model/user-profile.ts`) already persists the last-used trick and plan across visits. Persist the target too, carrying it forward until the user changes it.
-- **Exit criteria:** Test: set a target, complete (or end) an open-ended sesh, revisit Sesh setup fresh (not via "Repeat sesh") — the previously-set target pre-fills; changing it and starting again persists the new value on the next fresh visit; a profile with no persisted target (including all existing pre-fix profiles) behaves exactly as today, no migration needed.
-- **Notes:** Two independent gaps to close, both in `src/features/profile/model/user-profile.ts` / `src/app/sesh/index.tsx`: (1) `LastSeshPlan`'s `openEnded` variant carries no target field, and `createLastSesh` discards `plan.target` unconditionally when writing it; (2) even if carried, `sesh/index.tsx`'s `initialPlan` derivation unconditionally falls back to the bare `OPEN_ENDED_SESH_PLAN` constant (no target) for any non-timed `lastSesh` — both need fixing together. Add the new field as optional so it's backward-compatible with already-persisted profiles (no migration infrastructure needed, consistent with how `lastSesh` itself is already handled as optional). This is a profile-domain persistence change per AGENTS.md — plan the exact field shape and validator update before implementing.
 
 ### [T049] Split multi-trick sesh setup into a two-step wizard
 
