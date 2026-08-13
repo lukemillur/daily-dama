@@ -140,7 +140,7 @@ _This next batch (T045–T069) comes from a QA pass over PR 55's suggested check
 
 - **Area:** Sesh
 - **Priority:** Medium
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** `MultiTrickSeshEntry` (`src/features/sesh/components/multi-trick-sesh-entry.tsx`) currently renders trick selection and all run configuration (time per trick, advance-after-one-lace, Start sesh) in a single step/screen — the trick list and the timing/start controls are visible together, which reads as cluttered. Split it into two steps: pick tricks, then configure timing and start.
 - **Exit criteria:** Verified in-browser: step 1 shows only the trick-selection list plus a way to proceed (disabled/unavailable with zero tricks selected); step 2 shows only the timing/advance-on-lace/Start-sesh controls plus a Back control that returns to step 1 with the prior selection preserved; starting a run behaves exactly as today.
