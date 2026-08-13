@@ -139,7 +139,7 @@ _This next batch (T045–T069) comes from a QA pass over PR 55's suggested check
 
 - **Area:** Sesh / persistence (profile domain)
 - **Priority:** Medium
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** A target lace count defined for an open-ended sesh (T005.1/T005.2) only lives for the run it was set on — every fresh visit to Sesh setup resets the target field to blank, even though `lastSesh` (`src/features/profile/model/user-profile.ts`) already persists the last-used trick and plan across visits. Persist the target too, carrying it forward until the user changes it.
 - **Exit criteria:** Test: set a target, complete (or end) an open-ended sesh, revisit Sesh setup fresh (not via "Repeat sesh") — the previously-set target pre-fills; changing it and starting again persists the new value on the next fresh visit; a profile with no persisted target (including all existing pre-fix profiles) behaves exactly as today, no migration needed.
