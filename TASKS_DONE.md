@@ -6,6 +6,16 @@ Entries keep their content as it was at completion. Don't retroactively edit a d
 
 ---
 
+### [T040] Remove the destructive starter reset command
+
+- **Area:** Repository maintenance
+- **Priority:** Medium
+- **Status:** Done
+- **Planning:** Implementer
+- **Description:** Remove the Expo starter reset script, which can replace application source and is no longer appropriate in an established repository.
+- **Exit criteria:** `package.json` no longer exposes the reset script, `scripts/reset-project.js` is removed, repository search finds no remaining references, the package manifest remains valid, and the standard verification sequence passes.
+- **Notes:** Removed the `reset-project` script entry from `package.json`, deleted `scripts/reset-project.js`, and removed the "Get a fresh project" section from `README.md` (the only remaining reference to `npm run reset-project`/`app-example`). Repository search confirms no other references remain outside this task's own archived description. Verified via `node .claude/scripts/verify.mjs` (test, lint, tsc, web export all pass).
+
 ### [T038] Add a neglected-tricks practice queue to Stats
 
 - **Area:** Stats

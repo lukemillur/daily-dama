@@ -143,16 +143,6 @@ The first pass used **locked/unlocked** for "the user can land this trick." User
 - **Exit criteria:** A clean-install walkthrough confirms the README accurately explains the product, supported platforms, Yarn-based setup, source layout, local-first persistence domains, access-gate configuration, standard verification commands, and relevant handoff documents; a secret-free `.env.example` documents supported environment variables, with no npm-only or obsolete reset-project guidance remaining.
 - **Notes:** Keep the architecture explanation concise and defer detailed invariants to `AGENTS.md`, `TRICK_VIZ_HANDOFF.md`, and `DEPLOYMENT_HANDOFF.md`. Depends on T040: confirm T040 is in `TASKS_DONE.md` before writing setup docs, so this doesn't describe or re-add `npm run reset-project` guidance that T040 is removing in parallel.
 
-### [T040] Remove the destructive starter reset command
-
-- **Area:** Repository maintenance
-- **Priority:** Medium
-- **Status:** Not started
-- **Planning:** Implementer
-- **Description:** Remove the Expo starter reset script, which can replace application source and is no longer appropriate in an established repository.
-- **Exit criteria:** `package.json` no longer exposes the reset script, `scripts/reset-project.js` is removed, repository search finds no remaining references, the package manifest remains valid, and the standard verification sequence passes.
-- **Notes:** Keep this narrowly focused on the destructive command; broader starter-scaffold cleanup belongs to T041. Do this before T039: `README.md` currently documents `npm run reset-project`, so this task's "no remaining references" criterion touches the same file T039 rewrites. Claim and merge this one first to avoid a conflicting parallel edit.
-
 ### [T041] Remove verified unused starter scaffold and dependencies
 
 - **Area:** Repository maintenance
