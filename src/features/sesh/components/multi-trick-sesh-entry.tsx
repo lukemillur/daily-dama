@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { BodyText, DisplayTitle, Eyebrow } from '@/components/ui/typography';
 import { AppColors, Radii } from '@/constants/theme';
 import { useCustomTricks } from '@/features/custom-tricks/state/custom-trick-provider';
+import { useUserProfile } from '@/features/profile/state/user-profile-provider';
 import { MultiTrickSesh } from '@/features/sesh/components/multi-trick-sesh';
 import {
   createTimedSeshPlan,
@@ -37,11 +38,16 @@ type MultiTrickSeshEntryStep =
  * `toggleSelectedTrick`) — that list drives the single-trick Sesh picker
  * elsewhere in the app, and reusing its actions here would silently mutate
  * the user's persistent practice list every time they build a one-off run.
+ * The profile's focus list is still read (read-only) to section the picker,
+ * matching the Tricks screen's "Focused" section — but it stays a distinct
+ * input from this run's own in-progress selection, which is what drives the
+ * checkbox state.
  */
 export function MultiTrickSeshEntry() {
   const { width } = useWindowDimensions();
   const shouldPinSelectionChrome = Platform.OS === 'web' && width >= 768;
   const { tricks: customTricks } = useCustomTricks();
+  const { selectedTrickIds: focusedTrickIds } = useUserProfile();
   const [step, setStep] = useState<MultiTrickSeshEntryStep>({ kind: 'choosingTricks' });
   const [selectedTrickIds, setSelectedTrickIds] = useState<string[]>([]);
   const [advanceOnFirstLace, setAdvanceOnFirstLace] = useState(false);
@@ -150,6 +156,8 @@ export function MultiTrickSeshEntry() {
         fixedHeader={shouldPinSelectionChrome}
         fixedFooter={shouldPinSelectionChrome}
         hideScrollIndicator
+        showFocusedSection
+        focusedTrickIds={focusedTrickIds}
         selection={{ selectedTrickIds, onToggleTrick: handleToggleTrick }}
         header={{
           eyebrow: 'Multi-trick sesh',

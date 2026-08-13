@@ -136,16 +136,6 @@ The first pass used **locked/unlocked** for "the user can land this trick." User
 _This next batch (T045–T069) comes from a QA pass over PR 55's suggested checklist (the `development` → `main` release covering T002–T041), worked top to bottom. Where an entry names the task that shipped the behavior it's correcting, the archived entry in [TASKS_DONE.md](TASKS_DONE.md) stays as-written — history isn't rewritten, same as above._
 
 
-### [T050] Sort focused tricks to the top of the multi-trick picker
-
-- **Area:** Sesh
-- **Priority:** Low
-- **Status:** In progress
-- **Planning:** Implementer
-- **Description:** The multi-trick setup screen's trick list has no focused-trick treatment — it's plain rank order, unlike the main Tricks screen which sections the user's focused tricks first via `TrickDirectory`'s existing `showFocusedSection` prop. Give the multi-trick picker the same treatment.
-- **Exit criteria:** Test: a user with N focused tricks (profile `selectedTrickIds`) opens multi-trick setup — those N tricks render in a "Focused" section at the top regardless of rank, matching `src/app/tricks.tsx`'s existing behavior; toggling a trick's in-progress selection for this run does not change section placement.
-- **Notes:** Not a regression — T014's notes in `TASKS_DONE.md` explicitly recorded `showFocusedSection` as omitted for simplicity at the time. The fix is not just flipping the flag: `TrickDirectory`'s `showFocusedSection` currently sections by whatever list is passed as `selection.selectedTrickIds`, and in `MultiTrickSeshEntry` that list is the run's own in-progress ad hoc picks (local `useState`), not the persisted profile focus list — reusing it directly would section tricks by "checked so far," which is circular. `MultiTrickSeshEntry` needs to read the real `useUserProfile().selectedTrickIds` and pass it as a distinct focused-list input, separate from the run's own selection state (mirroring how `src/app/tricks.tsx` is able to reuse the same list for both purposes only because, there, they genuinely are the same list).
-
 ### [T051] Add a back button to the multi-trick sesh setup screen
 
 - **Area:** Sesh / Navigation

@@ -40,6 +40,49 @@ function allText(root: import('react-test-renderer').ReactTestRenderer): string[
 }
 
 describe('TrickDirectory', () => {
+  it('sections by focusedTrickIds, independent of an in-progress selection prop, when showFocusedSection is set', () => {
+    let root!: import('react-test-renderer').ReactTestRenderer;
+    let toggled: string[] = [];
+    act(() => {
+      root = create(
+        <TrickDirectory
+          tricks={FIXTURE_TRICKS}
+          showFocusedSection
+          focusedTrickIds={['trick-3']}
+          selection={{
+            selectedTrickIds: [],
+            onToggleTrick: (id) => {
+              toggled = [...toggled, id];
+            },
+          }}
+        />,
+      );
+    });
+
+    const text = allText(root);
+    const focusedHeaderIndex = text.indexOf('Focused tricks');
+    const spikeIndex = text.indexOf('Spike');
+    const rank1HeaderIndex = text.indexOf('Rank 1');
+    expect(focusedHeaderIndex).toBeGreaterThanOrEqual(0);
+    expect(spikeIndex).toBeGreaterThan(focusedHeaderIndex);
+    expect(spikeIndex).toBeLessThan(rank1HeaderIndex);
+
+    // Toggling in-progress selection (e.g. checking a different trick for this run) must not
+    // move sections — focusedTrickIds stays the sole sectioning input.
+    const [toggleAction] = root.root.findAll(
+      (node) => node.props.accessibilityRole === 'checkbox' && typeof node.props.onPress === 'function',
+    );
+    act(() => {
+      toggleAction.props.onPress();
+    });
+    expect(toggled.length).toBeGreaterThan(0);
+
+    const textAfterToggle = allText(root);
+    expect(textAfterToggle.indexOf('Focused tricks')).toBeGreaterThanOrEqual(0);
+    expect(textAfterToggle.indexOf('Spike')).toBeGreaterThan(textAfterToggle.indexOf('Focused tricks'));
+    expect(textAfterToggle.indexOf('Spike')).toBeLessThan(textAfterToggle.indexOf('Rank 1'));
+  });
+
   it('renders no Practice action when practiceAction is absent', () => {
     let root!: import('react-test-renderer').ReactTestRenderer;
     act(() => {
