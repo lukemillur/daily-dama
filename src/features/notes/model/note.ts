@@ -119,3 +119,7 @@ export function selectNotesForTrick(notes: readonly Note[], trickId: string): re
     .slice()
     .sort((a, b) => b.createdAt - a.createdAt);
 }
+
+export function selectAllNotesSorted(notes: readonly Note[]): readonly Note[] {
+  return notes.slice().sort((a, b) => b.createdAt - a.createdAt);
+}
