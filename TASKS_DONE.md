@@ -6,6 +6,16 @@ Entries keep their content as it was at completion. Don't retroactively edit a d
 
 ---
 
+### [T038.1] Derive neglected focused tricks from practice history
+
+- **Area:** Stats
+- **Priority:** Medium (inherited from parent T038)
+- **Status:** Done
+- **Planning:** Implementer
+- **Description:** Implement a pure selector that ranks focused tricks by practice neglect, using focused-list order as deterministic tie-breaking and limiting its result to three.
+- **Exit criteria:** Unit tests confirm empty input, never-practiced tricks before practiced tricks, practiced tricks ordered by oldest recent practice, deterministic ties, unrelated practice records having no effect, and the three-item limit.
+- **Notes:** Added `src/features/stats/model/neglected-tricks.ts` exporting `selectNeglectedFocusedTricks<T extends { id: string }>(focusedTricks, sessions)` and `MAX_NEGLECTED_TRICKS = 3`. Kept the input generic over any `{ id: string }`-shaped trick (rather than importing a specific home/tricks trick type into `stats`) so T038.2 can pass whatever trick shape it resolves focused tricks into and get the same object back in each result's `trick` field, alongside an optional `mostRecentPracticeAt` derived from `PracticeSessionRecord.completedAt`. Ranking: builds a `Map<trickId, mostRecentCompletedAt>` from sessions, pairs each focused trick with its recency and original index, sorts never-practiced before practiced, then by ascending `mostRecentPracticeAt`, with explicit index-based tie-breaking (not just relying on stable sort) so ties are deterministic by focused-list order for both never-practiced and equal-recency groups, then slices to `MAX_NEGLECTED_TRICKS`. No UI state consulted, nothing persisted — pure function over its two inputs. Added `src/features/stats/model/neglected-tricks.test.ts` covering all six exit-criteria cases (empty input, never-practiced-before-practiced, oldest-recent-practice-first ordering using multiple sessions per trick, deterministic ties across both never-practiced and equal-recency groups, unrelated trick IDs in history having no effect, and the three-item cap with five focused tricks). Verified by `yarn test --runInBand`, `yarn lint`, `yarn tsc --noEmit`, and `yarn expo export --platform web` (all clean via `node .claude/scripts/verify.mjs`). T038 stays open in `TASKS.md`/`Backlog` — T038.2 (rendering) is still Not started and the umbrella isn't done until both children are.
+
 ### [T036] Label rolling Home totals as rolling windows
 
 - **Area:** Home
