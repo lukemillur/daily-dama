@@ -140,7 +140,7 @@ _This next batch (T045–T069) comes from a QA pass over PR 55's suggested check
 
 - **Area:** Sesh
 - **Priority:** Low
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Implementer
 - **Description:** The multi-trick setup screen's trick list has no focused-trick treatment — it's plain rank order, unlike the main Tricks screen which sections the user's focused tricks first via `TrickDirectory`'s existing `showFocusedSection` prop. Give the multi-trick picker the same treatment.
 - **Exit criteria:** Test: a user with N focused tricks (profile `selectedTrickIds`) opens multi-trick setup — those N tricks render in a "Focused" section at the top regardless of rank, matching `src/app/tricks.tsx`'s existing behavior; toggling a trick's in-progress selection for this run does not change section placement.
