@@ -140,7 +140,7 @@ _This next batch (T045–T069) comes from a QA pass over PR 55's suggested check
 
 - **Area:** Sesh
 - **Priority:** Medium
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** In ad hoc multi-trick practice (`MultiTrickSeshEntry`/`MultiTrickSesh`) with "advance after one lace" enabled, landing a trick and moving to the next happens in one synchronous beat (`trickLaced` then `seshEnded` dispatched back-to-back in `handleLaced`, `src/features/sesh/components/multi-trick-sesh.tsx`) — the user never sees an acknowledgment of the landing before the next trick's countdown appears. Insert a brief (roughly 1-3 second) "Trick landed"-style acknowledgment before advancing.
 - **Exit criteria:** Test: with advance-on-lace enabled in ad hoc multi-trick practice, landing a trick shows acknowledgment copy for the configured window before the next trick's countdown begins.
