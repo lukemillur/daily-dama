@@ -6,6 +6,16 @@ Entries keep their content as it was at completion. Don't retroactively edit a d
 
 ---
 
+### [T051] Add a back button to the multi-trick sesh setup screen
+
+- **Area:** Sesh / Navigation
+- **Priority:** Medium
+- **Status:** Done
+- **Planning:** Implementer
+- **Description:** There is no way to navigate from `/sesh/multi-trick` back to `/sesh` before starting a run — no header (the route's `_layout.tsx` sets `headerShown: false`, app-wide convention) and no in-content control either. Add one.
+- **Exit criteria:** From the multi-trick setup screen (before a run starts), a visible Back control returns to the Sesh screen — verified in-browser.
+- **Notes:** No back-button precedent exists anywhere in this app's routing (`headerShown: false` everywhere, no icon library/assets in the project, no `BackHandler`/hardware-back handling). The closest in-repo precedent for "exit a sub-flow" is `assessment-entry.tsx`'s literal text "Back" button (local step state, not router-level) or the various Tricks nested screens' "Close" buttons (see [T068]/[T069] for that broader pattern). A plain text button dispatching `router.back()` (or `router.replace('/sesh')`) matches this app's existing visual language better than a header back-arrow, which nothing else in the app uses. Implemented as a secondary-variant `Button` labeled "Back" wired to `router.replace('/sesh')` (deterministic regardless of nav history, matching the pattern used by `assessment-entry.tsx`/`kentei-onboarding.tsx` elsewhere in the app), passed via `TrickDirectory`'s existing `headerAction` prop on the `choosingTricks` step only (the first step of T049's wizard) — distinct from that step's separate internal step-to-step Back button in `configuringRun`. Verified in-browser: navigating directly to `/sesh/multi-trick`, the Back control is visible and clicking it lands on `/sesh`. Full verification (`node .claude/scripts/verify.mjs`) passes; ran `yarn install` first, whose `node_modules` was missing on entry to this worktree.
+
 ### [T050] Sort focused tricks to the top of the multi-trick picker
 
 - **Area:** Sesh
