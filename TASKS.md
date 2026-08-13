@@ -145,7 +145,7 @@ The first pass used **locked/unlocked** for "the user can land this trick." User
 
 - **Area:** Stats
 - **Priority:** Medium (inherited from parent T038)
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Implementer
 - **Description:** Implement a pure selector that ranks focused tricks by practice neglect, using focused-list order as deterministic tie-breaking and limiting its result to three.
 - **Exit criteria:** Unit tests confirm empty input, never-practiced tricks before practiced tricks, practiced tricks ordered by oldest recent practice, deterministic ties, unrelated practice records having no effect, and the three-item limit.
