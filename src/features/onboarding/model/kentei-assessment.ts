@@ -7,9 +7,26 @@ const LAST_KENTEI_RANK = 12;
 export type KenteiAssessmentState =
   | { readonly status: 'intro' }
   | { readonly status: 'levelSelect' }
-  | { readonly status: 'assessing'; readonly rank: number; readonly trickIndex: number }
-  | { readonly status: 'rankReveal'; readonly rank: number }
-  | { readonly status: 'selecting'; readonly rank: number; readonly selectedTrickIds: readonly string[] };
+  | {
+      readonly status: 'assessing';
+      readonly rank: number;
+      readonly trickIndex: number;
+      readonly startingRank: number;
+      readonly landedTrickIds: readonly string[];
+    }
+  | {
+      readonly status: 'rankReveal';
+      readonly rank: number;
+      readonly startingRank: number;
+      readonly landedTrickIds: readonly string[];
+    }
+  | {
+      readonly status: 'selecting';
+      readonly rank: number;
+      readonly selectedTrickIds: readonly string[];
+      readonly startingRank: number;
+      readonly landedTrickIds: readonly string[];
+    };
 
 export type KenteiAssessmentAction =
   | { readonly type: 'introContinued' }
@@ -31,26 +48,54 @@ export function kenteiAssessmentReducer(
     case 'levelSelected': {
       if (state.status !== 'levelSelect') return state;
       const { first } = getKenteiRankRangeForLevel(action.level);
-      return { status: 'assessing', rank: first, trickIndex: 0 };
+      return { status: 'assessing', rank: first, trickIndex: 0, startingRank: first, landedTrickIds: [] };
     }
     case 'trickLanded': {
       if (state.status !== 'assessing') return state;
       const tricksInRank = getTricksForRank(state.rank);
       const isLastTrickInRank = state.trickIndex === tricksInRank.length - 1;
-      if (!isLastTrickInRank) return { ...state, trickIndex: state.trickIndex + 1 };
-      if (state.rank === LAST_KENTEI_RANK) return { status: 'rankReveal', rank: LAST_KENTEI_RANK };
-      return { status: 'assessing', rank: state.rank + 1, trickIndex: 0 };
+      const landedTrick = getCurrentAssessmentTrick(state.rank, state.trickIndex);
+      const landedTrickIds = [...state.landedTrickIds, landedTrick.id];
+      if (!isLastTrickInRank) {
+        return { ...state, trickIndex: state.trickIndex + 1, landedTrickIds };
+      }
+      if (state.rank === LAST_KENTEI_RANK) {
+        return {
+          status: 'rankReveal',
+          rank: LAST_KENTEI_RANK,
+          startingRank: state.startingRank,
+          landedTrickIds,
+        };
+      }
+      return {
+        status: 'assessing',
+        rank: state.rank + 1,
+        trickIndex: 0,
+        startingRank: state.startingRank,
+        landedTrickIds,
+      };
     }
     case 'trickNotLanded': {
       if (state.status !== 'assessing') return state;
       const isFirstTrickInRank = state.trickIndex === 0;
       const finalRank =
         isFirstTrickInRank && state.rank > FIRST_KENTEI_RANK ? state.rank - 1 : state.rank;
-      return { status: 'rankReveal', rank: finalRank };
+      return {
+        status: 'rankReveal',
+        rank: finalRank,
+        startingRank: state.startingRank,
+        landedTrickIds: state.landedTrickIds,
+      };
     }
     case 'rankRevealContinued':
       return state.status === 'rankReveal'
-        ? { status: 'selecting', rank: state.rank, selectedTrickIds: [] }
+        ? {
+            status: 'selecting',
+            rank: state.rank,
+            selectedTrickIds: [],
+            startingRank: state.startingRank,
+            landedTrickIds: state.landedTrickIds,
+          }
         : state;
     case 'practiceTrickToggled':
       if (state.status !== 'selecting') return state;
@@ -71,4 +116,19 @@ export function getCurrentAssessmentTrick(rank: number, trickIndex: number) {
 
 export function getTricksForRank(rank: number) {
   return KENDAMA_KENTEI_TRICKS.filter((trick) => trick.kenteiRank === rank);
+}
+
+// The "assume everything below is already known" boundary must be the assessment's *resolved*
+// rank, not its entrance rank. If the very first trick at the entrance rank is failed, the
+// resolved rank drops one below the entrance rank (see `trickNotLanded` above) — using the
+// entrance rank here would then seed the entire resolved rank as already-laced, even though it
+// was never verified, and immediately trigger an unearned rank-up on first load (T032).
+export function getSeedLacedTrickIds(
+  rank: number,
+  landedTrickIds: readonly string[],
+): readonly string[] {
+  const belowRank = KENDAMA_KENTEI_TRICKS.filter((trick) => trick.kenteiRank < rank).map(
+    (trick) => trick.id,
+  );
+  return Array.from(new Set([...belowRank, ...landedTrickIds]));
 }

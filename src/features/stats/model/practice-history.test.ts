@@ -3,8 +3,11 @@ import { describe, expect, it } from '@jest/globals';
 import {
   aggregatePracticeStats,
   createPracticeSessionRecord,
+  createPracticeSessionRecordId,
   getPersonalBest,
   isEligibleTimedAttempt,
+  hasPriorLaceForTrick,
+  isFirstLaceForTrick,
   practiceHistoryReducer,
   type PracticeSessionRecord,
 } from '@/features/stats/model/practice-history';
@@ -149,6 +152,15 @@ describe('practice history', () => {
   });
 });
 
+describe('createPracticeSessionRecordId', () => {
+  it('matches the id createPracticeSessionRecord assigns for the same summary', () => {
+    const summary = makeSummary();
+    expect(createPracticeSessionRecordId(summary)).toBe(
+      createPracticeSessionRecord(summary, undefined).id,
+    );
+  });
+});
+
 describe('isEligibleTimedAttempt', () => {
   it('is never eligible for an open-ended sesh', () => {
     const summary = makeSummary({ plan: OPEN_ENDED_SESH_PLAN });
@@ -249,6 +261,46 @@ describe('sessionRecorded reducer (plannedDurationMs eligibility)', () => {
 
     expect(result.sessions[1]?.plannedDurationMs).toBe(300_000);
     expect(getPersonalBest(result.sessions, 'whirlwind', 300_000)).toBe(9);
+  });
+});
+
+describe('isFirstLaceForTrick', () => {
+  it('is true when there is no prior session for the trick', () => {
+    const summary = makeSummary({ trick: { id: 'big-cup', name: 'Big cup' } });
+    expect(isFirstLaceForTrick([], summary)).toBe(true);
+  });
+
+  it('is true when the only prior session for the trick had zero laces', () => {
+    const summary = makeSummary({ trick: { id: 'airplane', name: 'Airplane' } });
+    expect(isFirstLaceForTrick([AIRPLANE_ZERO_LACES], summary)).toBe(true);
+  });
+
+  it('is false when a prior session for the trick already has laces', () => {
+    const summary = makeSummary({ trick: { id: 'big-cup', name: 'Big cup' } });
+    expect(isFirstLaceForTrick([BIG_CUP_FIRST], summary)).toBe(false);
+  });
+
+  it('is false when this sesh itself landed zero laces', () => {
+    const summary = makeSummary({ trick: { id: 'whirlwind', name: 'Whirlwind' }, landings: [] });
+    expect(isFirstLaceForTrick([], summary)).toBe(false);
+  });
+});
+
+describe('hasPriorLaceForTrick', () => {
+  it('is false for an empty history', () => {
+    expect(hasPriorLaceForTrick([], 'big-cup')).toBe(false);
+  });
+
+  it('is false when the only record for the trick has zero laces', () => {
+    expect(hasPriorLaceForTrick([AIRPLANE_ZERO_LACES], 'airplane')).toBe(false);
+  });
+
+  it('is true when a record for the trick has laces', () => {
+    expect(hasPriorLaceForTrick([BIG_CUP_FIRST], 'big-cup')).toBe(true);
+  });
+
+  it('is false when only a different trick has laces', () => {
+    expect(hasPriorLaceForTrick([BIG_CUP_FIRST], 'airplane')).toBe(false);
   });
 });
 

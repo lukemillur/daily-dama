@@ -77,6 +77,7 @@ describe('daily home summary', () => {
       momentum: { sessionCount: 0, totalPracticeMs: 0, totalLaces: 0 },
     });
     expect(result.recentSession).toBeUndefined();
+    expect(result.timeLoggedWindows).toEqual([{ key: 'day', totalMs: 0 }]);
   });
 
   it('returns selected available tricks in profile order with useful context', () => {
@@ -179,6 +180,23 @@ describe('daily home summary', () => {
     const yesterday = session('yesterday', 'big-cup', 'Big cup', NOW - DAY, 300_000, 5);
 
     expect(summary({ sessions: [today, yesterday] }).currentStreak).toBe(2);
+  });
+
+  it('gates time-logged windows on elapsed time since the first-ever practice record', () => {
+    const justUnderWeek = session('just-under-week', 'big-cup', 'Big cup', NOW - 7 * DAY + 1);
+
+    expect(summary({ sessions: [justUnderWeek] }).timeLoggedWindows.map((w) => w.key)).toEqual([
+      'day',
+    ]);
+  });
+
+  it('reveals the week window with the correct total once seven days have elapsed since first use', () => {
+    const first = session('first', 'big-cup', 'Big cup', NOW - 7 * DAY, 30_000, 3);
+
+    const windows = summary({ sessions: [first] }).timeLoggedWindows;
+
+    expect(windows.map((w) => w.key)).toEqual(['day', 'week']);
+    expect(windows.find((w) => w.key === 'week')).toEqual({ key: 'week', totalMs: 30_000 });
   });
 
   it('respects a custom streak threshold from the profile', () => {

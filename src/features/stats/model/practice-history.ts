@@ -54,12 +54,36 @@ export function isEligibleTimedAttempt(summary: SeshSummary, previousBest: numbe
   return reachedFullDuration || exceededPreviousBest;
 }
 
+// True when at least one recorded session for the trick has a laceCount above zero — i.e. the
+// trick has been laced at least once in the given history.
+export function hasPriorLaceForTrick(
+  sessions: readonly PracticeSessionRecord[],
+  trickId: string,
+): boolean {
+  return sessions.some((session) => session.trickId === trickId && session.laceCount > 0);
+}
+
+// True when this sesh landed the trick for the first time ever — i.e. no prior recorded session
+// for the same trick has a laceCount above zero. `priorSessions` must be the history as it stood
+// BEFORE this summary was recorded (a zero-lace record for the trick doesn't disqualify it).
+export function isFirstLaceForTrick(
+  priorSessions: readonly PracticeSessionRecord[],
+  summary: SeshSummary,
+): boolean {
+  if (summary.landings.length === 0) return false;
+  return !hasPriorLaceForTrick(priorSessions, summary.trick.id);
+}
+
+export function createPracticeSessionRecordId(summary: SeshSummary): string {
+  return `${summary.startedAt}:${summary.endedAt}:${summary.trick.id}`;
+}
+
 export function createPracticeSessionRecord(
   summary: SeshSummary,
   previousBest: number | undefined,
 ): PracticeSessionRecord {
   return {
-    id: `${summary.startedAt}:${summary.endedAt}:${summary.trick.id}`,
+    id: createPracticeSessionRecordId(summary),
     trickId: summary.trick.id,
     trickName: summary.trick.name,
     startedAt: summary.startedAt,

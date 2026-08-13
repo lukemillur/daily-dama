@@ -1,56 +1,86 @@
-# Welcome to your Expo app 👋
+# Daily Dama
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Daily Dama is a local-first Expo app for choosing Kendama tricks, running open-ended or timed practice sessions ("Seshes"), and reviewing accumulated practice Stats. There is no backend — all state lives on-device (AsyncStorage, backed by `localStorage` on web).
 
-## Get started
+Built with Expo, Expo Router, and TypeScript.
 
-1. Install dependencies
+## Supported platforms
 
-   ```bash
-   npm install
-   ```
+Web is the primary, actively verified platform. iOS and Android are required eventual targets via Expo, but have not yet received deliberate device hardening — treat them as functional but less polished.
 
-2. Start the app
+## Setup
 
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
+This project uses **Yarn**, not npm.
 
 ```bash
-npm run reset-project
+yarn install
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+Copy `.env.example` to `.env` and fill in any values you need (see [Environment variables](#environment-variables) below):
 
-### Other setup steps
+```bash
+cp .env.example .env
+```
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+Start the dev server:
 
-## Learn more
+```bash
+yarn web    # web (primary verification surface)
+yarn ios    # iOS simulator
+yarn android # Android emulator
+```
 
-To learn more about developing your project with Expo, look at the following resources:
+You can also run `yarn start` and choose a target from the Expo CLI output (development build, simulator/emulator, or Expo Go).
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+## Environment variables
 
-## Join the community
+See `.env.example` for the full list. Currently:
 
-Join our community of developers creating universal apps.
+- `EXPO_PUBLIC_ACCESS_PASSWORD` — optional. If set, gates the whole app behind a simple password screen (`src/features/access-gate/`). If unset, the gate is skipped entirely and the app is open. This is a soft "keep casual visitors out" measure, not real security — `EXPO_PUBLIC_*` variables are inlined into the JS bundle at build time and are readable by anyone who opens dev tools. See `DEPLOYMENT_HANDOFF.md` for how this is configured for the production deploy.
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+## Source layout
+
+```
+src/
+  app/                  Expo Router routes (file-based routing)
+  features/             One directory per product area (home, sesh, tricks,
+                         stats, profile, onboarding, custom-tricks, goals,
+                         notes, access-gate, trick-viz), each typically split
+                         into components/model/persistence/state
+  components/           Shared UI components
+  shared/persistence/    Shared AsyncStorage write-queue and helpers
+  constants, hooks, types  Cross-cutting utilities and shared types
+```
+
+Tricks is the authoritative route for browsing, selecting, creating, editing, and deleting tricks. Profile is intentionally a placeholder for now.
+
+## Local-first persistence
+
+App state is split into three independent persistent domains, each backed by AsyncStorage and its own provider in `src/app/_layout.tsx`:
+
+- **User profile** — onboarding status, assessed Kentei rank, selected trick IDs.
+- **Custom tricks** — standalone custom tricks and custom sequences.
+- **Practice history** — immutable completed-Sesh records used to derive Stats.
+
+Each domain owns its own reducer, runtime validation, persistence adapter, and hydration fallback, and writes go through a shared write-queue to preserve ordering. Stats are always derived from practice history rather than stored as mutable totals, so they can't drift from session history. See `AGENTS.md` for the full set of invariants (custom-trick schema, sequence rules, Sesh reducer behavior, etc.) before making changes in these areas.
+
+## Verification
+
+```bash
+yarn test --runInBand
+yarn lint
+yarn tsc --noEmit
+yarn expo export --platform web --output-dir /tmp/daily-dama-web-export
+```
+
+`node .claude/scripts/verify.mjs` runs all four in sequence, prints one line per step, and on failure shows the failing command's output. Pass `--skip-export` for docs- or test-only changes.
+
+The workflow tooling under `.claude/scripts/` has its own separate, dependency-free test suite: `yarn test:workflow`.
+
+## Further reading
+
+- [`AGENTS.md`](AGENTS.md) — full working agreement, product shape, and state/persistence invariants. Read this before working in the state, custom-trick, Tricks, or Sesh areas.
+- [`TASKS.md`](TASKS.md) — active backlog and the checkpoint mechanism across sessions/agents.
+- [`.claude/scripts/README.md`](.claude/scripts/README.md) — the `newTicket` workflow tooling (claim/resume, verification wrapper, worktree cleanup).
+- [`TRICK_VIZ_HANDOFF.md`](TRICK_VIZ_HANDOFF.md) — procedural 3D trick visualization.
+- [`DEPLOYMENT_HANDOFF.md`](DEPLOYMENT_HANDOFF.md) — web deploy to dailydama.com, including access-gate configuration for production.

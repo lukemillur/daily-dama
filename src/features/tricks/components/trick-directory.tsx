@@ -1,3 +1,4 @@
+import { Link } from 'expo-router';
 import { type ReactElement, useMemo } from 'react';
 import { Pressable, SectionList, type SectionListData } from 'react-native';
 import { styled } from 'styled-components/native';
@@ -25,12 +26,21 @@ export interface TrickDirectoryProps {
     readonly onEdit: (trickId: string) => void;
     readonly onDelete: (trickId: string) => void;
   };
+  readonly notesAction?: {
+    readonly onOpen: (trick: DirectoryTrick) => void;
+  };
+  readonly goalsAction?: {
+    readonly onOpen: (trick: DirectoryTrick) => void;
+  };
+  readonly practiceAction?: true;
   readonly footer?: ReactElement;
   readonly fixedHeader?: boolean;
   readonly fixedFooter?: boolean;
   readonly hideScrollIndicator?: boolean;
   readonly showFocusedSection?: boolean;
   readonly lacedCountByTrickId?: ReadonlyMap<string, number>;
+  readonly noteCountByTrickId?: ReadonlyMap<string, number>;
+  readonly unlockedTrickIds?: ReadonlySet<string>;
 }
 
 const DEFAULT_HEADER = {
@@ -48,12 +58,17 @@ export function TrickDirectory({
   header,
   headerAction,
   customActions,
+  notesAction,
+  goalsAction,
+  practiceAction,
   footer,
   fixedHeader = false,
   fixedFooter = false,
   hideScrollIndicator = false,
   showFocusedSection = false,
   lacedCountByTrickId,
+  noteCountByTrickId,
+  unlockedTrickIds,
 }: TrickDirectoryProps) {
   const selectedTrickIds = selection?.selectedTrickIds ?? NO_SELECTED_TRICKS;
   const sections = useMemo(
@@ -73,7 +88,15 @@ export function TrickDirectory({
   const directoryList = (
     <SectionList
       sections={sections}
-      extraData={{ selectedTrickIds, lacedCountByTrickId }}
+      extraData={{
+        selectedTrickIds,
+        lacedCountByTrickId,
+        noteCountByTrickId,
+        unlockedTrickIds,
+        notesAction,
+        goalsAction,
+        practiceAction,
+      }}
       keyExtractor={(trick) => trick.id}
       stickySectionHeadersEnabled
       showsVerticalScrollIndicator={!hideScrollIndicator}
@@ -92,8 +115,12 @@ export function TrickDirectory({
           onToggle={selection ? () => selection.onToggleTrick(item.id) : undefined}
           onEdit={isCustomDirectoryTrick(item) && customActions ? () => customActions.onEdit(item.id) : undefined}
           onDelete={isCustomDirectoryTrick(item) && customActions ? () => customActions.onDelete(item.id) : undefined}
-          showLacedCount={lacedCountByTrickId !== undefined}
+          onOpenNotes={notesAction ? () => notesAction.onOpen(item) : undefined}
+          onOpenGoals={goalsAction ? () => goalsAction.onOpen(item) : undefined}
+          showPracticeAction={Boolean(practiceAction)}
           lacedCount={lacedCountByTrickId?.get(item.id) ?? 0}
+          noteCount={noteCountByTrickId?.get(item.id) ?? 0}
+          isLaced={unlockedTrickIds?.has(item.id) ?? false}
         />
       )}
       ItemSeparatorComponent={ItemSeparator}
@@ -147,8 +174,12 @@ interface TrickRowProps {
   readonly onToggle?: () => void;
   readonly onEdit?: () => void;
   readonly onDelete?: () => void;
-  readonly showLacedCount?: boolean;
+  readonly onOpenNotes?: () => void;
+  readonly onOpenGoals?: () => void;
+  readonly showPracticeAction?: boolean;
   readonly lacedCount?: number;
+  readonly noteCount?: number;
+  readonly isLaced?: boolean;
 }
 
 function TrickRow({
@@ -158,8 +189,12 @@ function TrickRow({
   onToggle,
   onEdit,
   onDelete,
-  showLacedCount = false,
+  onOpenNotes,
+  onOpenGoals,
+  showPracticeAction = false,
   lacedCount = 0,
+  noteCount = 0,
+  isLaced = false,
 }: TrickRowProps) {
   const customDescription = isCustomDirectoryTrick(trick)
     ? trick.customKind === 'sequence'
@@ -168,16 +203,18 @@ function TrickRow({
     : undefined;
   const identity = (
     <>
-      <Position>{String(position).padStart(2, '0')}</Position>
+      <Position $laced={isLaced}>{isLaced ? '✓' : String(position).padStart(2, '0')}</Position>
       <TrickIdentity>
-        <TrickName>{trick.name}</TrickName>
-        {isCustomDirectoryTrick(trick) || showLacedCount ? (
+        <TrickNameRow>
+          <TrickName>{trick.name}</TrickName>
+        </TrickNameRow>
+        {isCustomDirectoryTrick(trick) || lacedCount > 0 ? (
           <TrickMetaRow>
             {isCustomDirectoryTrick(trick) ? (
               <CustomLabel>{trick.customKind === 'sequence' ? 'Custom sequence' : 'Custom trick'}</CustomLabel>
             ) : null}
-            {isCustomDirectoryTrick(trick) && showLacedCount ? <MetaDivider>·</MetaDivider> : null}
-            {showLacedCount ? (
+            {isCustomDirectoryTrick(trick) && lacedCount > 0 ? <MetaDivider>·</MetaDivider> : null}
+            {lacedCount > 0 ? (
               <LacedCountLabel>
                 {lacedCount} {lacedCount === 1 ? 'lace' : 'laces'}
               </LacedCountLabel>
@@ -189,7 +226,7 @@ function TrickRow({
   );
 
   return (
-    <TrickRowContainer $selected={isSelected}>
+    <TrickRowContainer $selected={isSelected} $laced={isLaced}>
       {onToggle ? (
         <SelectableIdentity
           accessibilityLabel={[trick.name, customDescription, isSelected ? 'selected' : 'not selected']
@@ -204,16 +241,35 @@ function TrickRow({
           </SelectionIndicator>
         </SelectableIdentity>
       ) : identity}
-      {onEdit && onDelete ? (
-        <RowActions>
-          <RowAction accessibilityLabel={`Edit ${trick.name}`} accessibilityRole="button" onPress={onEdit}>
-            <RowActionText>Edit</RowActionText>
+      <RowActions>
+        {onEdit && onDelete ? (
+          <>
+            <RowAction accessibilityLabel={`Edit ${trick.name}`} accessibilityRole="button" onPress={onEdit}>
+              <RowActionText>Edit</RowActionText>
+            </RowAction>
+            <RowAction accessibilityLabel={`Delete ${trick.name}`} accessibilityRole="button" onPress={onDelete}>
+              <DeleteActionText>Delete</DeleteActionText>
+            </RowAction>
+          </>
+        ) : null}
+        {onOpenNotes ? (
+          <RowAction accessibilityLabel={`Notes for ${trick.name}`} accessibilityRole="button" onPress={onOpenNotes}>
+            <RowActionText>{noteCount > 0 ? `Notes — ${noteCount}` : 'Notes'}</RowActionText>
           </RowAction>
-          <RowAction accessibilityLabel={`Delete ${trick.name}`} accessibilityRole="button" onPress={onDelete}>
-            <DeleteActionText>Delete</DeleteActionText>
+        ) : null}
+        {onOpenGoals ? (
+          <RowAction accessibilityLabel={`Goals for ${trick.name}`} accessibilityRole="button" onPress={onOpenGoals}>
+            <RowActionText>Goals</RowActionText>
           </RowAction>
-        </RowActions>
-      ) : null}
+        ) : null}
+        {showPracticeAction ? (
+          <Link asChild href={{ pathname: '/sesh', params: { trickId: trick.id } }}>
+            <RowAction accessibilityLabel={`Practice ${trick.name}`} accessibilityRole="button">
+              <PracticeActionText>Practice</PracticeActionText>
+            </RowAction>
+          </Link>
+        ) : null}
+      </RowActions>
     </TrickRowContainer>
   );
 }
@@ -301,11 +357,13 @@ const FocusedEmptyText = styled.Text`
   line-height: 20px;
 `;
 
-const TrickRowContainer = styled.View<{ readonly $selected: boolean }>`
+const TrickRowContainer = styled.View<{ readonly $selected: boolean; readonly $laced: boolean }>`
   min-height: 66px;
   flex-direction: row;
   align-items: center;
-  background-color: ${({ $selected }) => ($selected ? '#e5edcf' : '#f8f1dd')};
+  background-color: ${({ $selected, $laced }) => ($selected || $laced ? '#e5edcf' : '#f8f1dd')};
+  border-left-width: ${({ $laced }) => ($laced ? '4px' : '0px')};
+  border-left-color: ${({ $laced }) => ($laced ? '#274137' : 'transparent')};
 `;
 
 const SelectableIdentity = styled(Pressable)`
@@ -317,9 +375,9 @@ const SelectableIdentity = styled(Pressable)`
   padding: 15px 22px;
 `;
 
-const Position = styled.Text`
+const Position = styled.Text<{ readonly $laced: boolean }>`
   width: 26px;
-  color: #d84929;
+  color: ${({ $laced }) => ($laced ? '#274137' : '#d84929')};
   font-size: 13px;
   font-weight: 900;
   letter-spacing: 1px;
@@ -328,6 +386,12 @@ const Position = styled.Text`
 const TrickIdentity = styled.View`
   flex: 1;
   gap: 3px;
+`;
+
+const TrickNameRow = styled.View`
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
 `;
 
 const TrickName = styled.Text`
@@ -383,6 +447,7 @@ const RowActions = styled.View`flex-direction: row; align-self: stretch; align-i
 const RowAction = styled(Pressable)`min-width: 48px; min-height: 44px; align-items: center; justify-content: center; padding: 6px;`;
 const RowActionText = styled.Text`color: #18382e; font-size: 10px; font-weight: 900; text-transform: uppercase;`;
 const DeleteActionText = styled(RowActionText)`color: #d84929;`;
+const PracticeActionText = styled(RowActionText)`color: #274137;`;
 
 const ItemSeparator = styled.View`
   height: 1px;

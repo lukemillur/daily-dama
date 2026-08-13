@@ -86,6 +86,10 @@ yarn tsc --noEmit
 yarn expo export --platform web --output-dir /tmp/daily-dama-web-export
 ```
 
+`node .claude/scripts/verify.mjs` runs all four in order as one command, prints one line per step, and on failure prints the failing command's output and exits non-zero (`--skip-export` omits the export for docs- or test-only changes). Use it when you'd otherwise spend four separate tool calls; run the individual commands when you're iterating on one of them.
+
+The workflow tooling under `.claude/scripts/` has its own dependency-free test suite, separate from the app's jest suite: `yarn test:workflow`.
+
 For browser verification, run the Expo development server rather than serving the static export with a generic file server. Expo Router's extensionless routes such as `/tricks` need appropriate fallback/routing behavior. If the usual port is occupied, select another explicit port instead of assuming the page at that port belongs to this repository.
 
 The five-link web navigation has been measured to fit a 320 px viewport. Recheck that width whenever labels, gaps, or padding change. Two known-benign warnings exist (`useNativeDriver` fallback, styled-components/native media-query) — don't assume a *new* warning or runtime error is one of these without checking.
@@ -100,9 +104,10 @@ Core-functionality work in progress is tracked in [TASKS.md](TASKS.md) — check
 
 Some areas have their own root-level handoff document. Read the relevant one before working in that area rather than re-deriving it:
 
+- [.claude/scripts/README.md](.claude/scripts/README.md) — the `newTicket` workflow's deterministic tooling (claim/resume, verification wrapper, worktree cleanup, config validation) and the agent/skill boundaries around it.
 - [TRICK_VIZ_HANDOFF.md](TRICK_VIZ_HANDOFF.md) — procedural 3D trick visualization (`src/features/trick-viz/`). Verified kendama geometry, the ken-pose abstraction, keyframe/easing pitfalls, the verlet string, and environment traps (React Compiler, stale console buffers, sandbox access gating).
 - [DEPLOYMENT_HANDOFF.md](DEPLOYMENT_HANDOFF.md) — web deploy to dailydama.com.
 
 # Git state expectations
 
-Focused local commits are welcome and make agent work easier to audit. Never push automatically, **except** within the multi-agent protocol in [TASKS.md](TASKS.md) § Working across multiple agents, and scoped strictly to an agent's own `task/T0NN-*` branch: pushing a brand-new branch to stake a claim, pushing further work commits to that same branch, and opening — never merging — a PR from it into `main` are all allowed without asking. A rejected claim push is the protocol's own collision detector, and none of this ever touches `main` directly. Merging into `main`, pushing to `main` directly, any `--force`, and anything outside an agent's own claimed branch still require the usual confirmation. Preserve unrelated work and inspect `git status` before editing. Recent persistence, custom-trick, Tricks-route, and Sesh work is intentionally split into focused commits, so consult `git log` when the reasoning behind a boundary is unclear.
+Focused local commits are welcome and make agent work easier to audit. Never push automatically, **except** within the multi-agent protocol in [TASKS.md](TASKS.md) § Working across multiple agents, and scoped strictly to an agent's own `task/T0NN-*` branch: pushing a brand-new branch to stake a claim, pushing further work commits to that same branch, opening a PR from it into `development`, and squash-merging that PR into `development` are all allowed without asking — this is the one exception to "never merge automatically." A rejected claim push is the protocol's own collision detector, and none of this ever touches `main` or `production` directly. Promoting `development` into `main`, pushing to `main`/`production` directly, any `--force`, and anything outside an agent's own claimed branch still require the usual confirmation. Preserve unrelated work and inspect `git status` before editing. Recent persistence, custom-trick, Tricks-route, and Sesh work is intentionally split into focused commits, so consult `git log` when the reasoning behind a boundary is unclear.

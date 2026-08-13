@@ -17,34 +17,56 @@ import {
   useCustomTrickActions,
   useCustomTricks,
 } from '@/features/custom-tricks/state/custom-trick-provider';
+import { AllTrickGoalsScreen } from '@/features/goals/components/all-trick-goals-screen';
+import { TrickGoalsScreen } from '@/features/goals/components/trick-goals-screen';
+import { AllNotesScreen } from '@/features/notes/components/all-notes-screen';
+import { TrickNotesScreen } from '@/features/notes/components/trick-notes-screen';
+import { useNotes } from '@/features/notes/state/note-provider';
 import { useRequireOnboarding } from '@/features/onboarding/state/require-onboarding';
 import {
   useUserProfile,
   useUserProfileActions,
 } from '@/features/profile/state/user-profile-provider';
 import { usePracticeHistory } from '@/features/stats/state/practice-history-provider';
+import { LacedTricksScreen } from '@/features/tricks/components/laced-tricks-screen';
 import { TrickDirectory } from '@/features/tricks/components/trick-directory';
 import { KENDAMA_KENTEI_TRICKS } from '@/features/tricks/data/kendama-kentei-tricks';
 import {
   createProfileDirectoryTricks,
+  type DirectoryTrick,
+  selectEffectiveLacedTrickIds,
   selectLacedCountByTrickId,
+  selectLacedTrickIds,
+  selectNoteCountByTrickId,
 } from '@/features/tricks/model/trick-directory';
 import type { PracticeTrick } from '@/features/tricks/model/trick';
 
 export default function TricksScreen() {
   const isOnboardingComplete = useRequireOnboarding();
   const { tricks } = useCustomTricks();
-  const { selectedTrickIds } = useUserProfile();
-  const { toggleSelectedTrick } = useUserProfileActions();
+  const { selectedTrickIds, manuallyUnlockedTrickIds = [] } = useUserProfile();
+  const { toggleSelectedTrick, toggleManualUnlock } = useUserProfileActions();
   const { sessions } = usePracticeHistory();
+  const { notes } = useNotes();
   const [creationStep, setCreationStep] = useState<'list' | 'choose' | CustomTrick['kind']>('list');
   const [editingTrick, setEditingTrick] = useState<CustomTrick | undefined>(undefined);
   const [deletingTrick, setDeletingTrick] = useState<CustomTrick | undefined>(undefined);
+  const [notesTrick, setNotesTrick] = useState<DirectoryTrick | undefined>(undefined);
+  const [goalsTrick, setGoalsTrick] = useState<DirectoryTrick | undefined>(undefined);
+  const [showLacedTricks, setShowLacedTricks] = useState(false);
+  const [showAllGoals, setShowAllGoals] = useState(false);
+  const [showAllNotes, setShowAllNotes] = useState(false);
   const directoryTricks = useMemo(
     () => createProfileDirectoryTricks(KENDAMA_KENTEI_TRICKS, tricks),
     [tricks],
   );
   const lacedCountByTrickId = useMemo(() => selectLacedCountByTrickId(sessions), [sessions]);
+  const noteCountByTrickId = useMemo(() => selectNoteCountByTrickId(notes), [notes]);
+  const lacedTrickIds = useMemo(() => selectLacedTrickIds(sessions), [sessions]);
+  const unlockedTrickIds = useMemo(
+    () => selectEffectiveLacedTrickIds(lacedTrickIds, manuallyUnlockedTrickIds),
+    [lacedTrickIds, manuallyUnlockedTrickIds],
+  );
 
   if (!isOnboardingComplete) return null;
 
@@ -69,6 +91,59 @@ export default function TricksScreen() {
           onCancel={() => setDeletingTrick(undefined)}
           onDeleted={() => setDeletingTrick(undefined)}
         />
+      </Screen>
+    );
+  }
+
+  if (notesTrick) {
+    return (
+      <Screen edges={['top', 'left', 'right']}>
+        <TrickNotesScreen
+          trickId={notesTrick.id}
+          trickName={notesTrick.name}
+          onClose={() => setNotesTrick(undefined)}
+        />
+      </Screen>
+    );
+  }
+
+  if (goalsTrick) {
+    return (
+      <Screen edges={['top', 'left', 'right']}>
+        <TrickGoalsScreen
+          trickId={goalsTrick.id}
+          trickName={goalsTrick.name}
+          onClose={() => setGoalsTrick(undefined)}
+        />
+      </Screen>
+    );
+  }
+
+  if (showLacedTricks) {
+    return (
+      <Screen edges={['top', 'left', 'right']}>
+        <LacedTricksScreen
+          tricks={directoryTricks}
+          unlockedTrickIds={unlockedTrickIds}
+          onToggleTrick={toggleManualUnlock}
+          onClose={() => setShowLacedTricks(false)}
+        />
+      </Screen>
+    );
+  }
+
+  if (showAllGoals) {
+    return (
+      <Screen edges={['top', 'left', 'right']}>
+        <AllTrickGoalsScreen onClose={() => setShowAllGoals(false)} />
+      </Screen>
+    );
+  }
+
+  if (showAllNotes) {
+    return (
+      <Screen edges={['top', 'left', 'right']}>
+        <AllNotesScreen onClose={() => setShowAllNotes(false)} />
       </Screen>
     );
   }
@@ -104,11 +179,16 @@ export default function TricksScreen() {
           hideScrollIndicator
           showFocusedSection
           lacedCountByTrickId={lacedCountByTrickId}
+          noteCountByTrickId={noteCountByTrickId}
+          unlockedTrickIds={unlockedTrickIds}
           selection={{ selectedTrickIds, onToggleTrick: toggleSelectedTrick }}
           customActions={{
             onEdit: (trickId) => setEditingTrick(tricks.find((trick) => trick.id === trickId)),
             onDelete: (trickId) => setDeletingTrick(tricks.find((trick) => trick.id === trickId)),
           }}
+          notesAction={{ onOpen: setNotesTrick }}
+          goalsAction={{ onOpen: setGoalsTrick }}
+          practiceAction
           header={{
             eyebrow: 'Your trick lab',
             title: 'Choose the next\nmove.',
@@ -118,7 +198,18 @@ export default function TricksScreen() {
                 : `${selectedTrickIds.length} ${selectedTrickIds.length === 1 ? 'trick' : 'tricks'} ready for focused practice.`,
           }}
           headerAction={
-            <DefineButton onPress={() => setCreationStep('choose')}>Define new trick</DefineButton>
+            <HeaderActions>
+              <DefineButton onPress={() => setCreationStep('choose')}>Define new trick</DefineButton>
+              <LacedTricksButton variant="secondary" onPress={() => setShowLacedTricks(true)}>
+                Laced tricks
+              </LacedTricksButton>
+              <TrickGoalsButton variant="secondary" onPress={() => setShowAllGoals(true)}>
+                Trick goals
+              </TrickGoalsButton>
+              <AllNotesButton variant="secondary" onPress={() => setShowAllNotes(true)}>
+                All notes
+              </AllNotesButton>
+            </HeaderActions>
           }
         />
       </DirectoryContent>
@@ -492,11 +583,12 @@ function DeleteConfirmation({
   readonly onDeleted: () => void;
 }) {
   const { deleteCustomTrick } = useCustomTrickActions();
-  const { removeSelectedTrick } = useUserProfileActions();
+  const { removeSelectedTrick, removeManualUnlock } = useUserProfileActions();
 
   const confirmDelete = () => {
     deleteCustomTrick(trick.id);
     removeSelectedTrick(trick.id);
+    removeManualUnlock(trick.id);
     onDeleted();
   };
 
@@ -518,7 +610,11 @@ function DeleteConfirmation({
 const DirectoryContent = styled.View`width: 100%; max-width: 760px; flex: 1; overflow: hidden; background-color: ${AppColors.paper};`;
 const PageTitle = styled(DisplayTitle)`margin-top: 12px;`;
 const Introduction = styled(BodyText)`max-width: 580px; margin-top: 16px;`;
-const DefineButton = styled(Button).attrs({ size: 'medium' })`align-self: flex-start; margin-top: 26px;`;
+const HeaderActions = styled.View`flex-direction: row; flex-wrap: wrap; gap: 10px; margin-top: 26px;`;
+const DefineButton = styled(Button).attrs({ size: 'medium' })`align-self: flex-start;`;
+const LacedTricksButton = styled(Button).attrs({ size: 'medium' })`align-self: flex-start;`;
+const TrickGoalsButton = styled(Button).attrs({ size: 'medium' })`align-self: flex-start;`;
+const AllNotesButton = styled(Button).attrs({ size: 'medium' })`align-self: flex-start;`;
 const CenteredContent = styled.View`flex: 1; width: 100%; max-width: 760px; align-self: center; align-items: center; justify-content: center; padding: 40px 22px 120px;`;
 const CenteredTitle = styled(DisplayTitle)`margin-top: 12px; text-align: center;`;
 const CenteredCopy = styled(BodyText)`max-width: 500px; margin-top: 16px; text-align: center;`;

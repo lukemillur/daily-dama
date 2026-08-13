@@ -62,6 +62,71 @@ describe('user profile trick selection', () => {
     expect(overwritten.streakThresholdMs).toBe(60_000);
   });
 
+  it('toggles a manual unlock flag on and off', () => {
+    const set = userProfileReducer(INITIAL_USER_PROFILE, {
+      type: 'manualUnlockToggled',
+      trickId: 'big-cup',
+    });
+    expect(set.manuallyUnlockedTrickIds).toEqual(['big-cup']);
+
+    const cleared = userProfileReducer(set, {
+      type: 'manualUnlockToggled',
+      trickId: 'big-cup',
+    });
+    expect(cleared.manuallyUnlockedTrickIds).toEqual([]);
+  });
+
+  it('removes a manual unlock flag without affecting other flagged tricks', () => {
+    const state = {
+      ...INITIAL_USER_PROFILE,
+      manuallyUnlockedTrickIds: ['big-cup', 'custom-delete', 'airplane'],
+    };
+
+    expect(
+      userProfileReducer(state, {
+        type: 'manualUnlockRemoved',
+        trickId: 'custom-delete',
+      }).manuallyUnlockedTrickIds,
+    ).toEqual(['big-cup', 'airplane']);
+  });
+
+  it('seeds manuallyUnlockedTrickIds from lacedTrickIds when none existed before', () => {
+    const result = userProfileReducer(INITIAL_USER_PROFILE, {
+      type: 'onboardingCompleted',
+      kenteiRank: 4,
+      selectedTrickIds: ['big-cup'],
+      lacedTrickIds: ['trick-a', 'trick-b'],
+    });
+
+    expect(result.manuallyUnlockedTrickIds).toEqual(['trick-a', 'trick-b']);
+  });
+
+  it('unions lacedTrickIds with a pre-existing manuallyUnlockedTrickIds instead of clobbering it', () => {
+    const state = { ...INITIAL_USER_PROFILE, manuallyUnlockedTrickIds: ['existing-trick'] };
+
+    const result = userProfileReducer(state, {
+      type: 'onboardingCompleted',
+      kenteiRank: 4,
+      selectedTrickIds: ['big-cup'],
+      lacedTrickIds: ['trick-a'],
+    });
+
+    expect(result.manuallyUnlockedTrickIds).toEqual(['existing-trick', 'trick-a']);
+  });
+
+  it('de-duplicates when lacedTrickIds overlaps existing manuallyUnlockedTrickIds', () => {
+    const state = { ...INITIAL_USER_PROFILE, manuallyUnlockedTrickIds: ['trick-a', 'existing-trick'] };
+
+    const result = userProfileReducer(state, {
+      type: 'onboardingCompleted',
+      kenteiRank: 4,
+      selectedTrickIds: ['big-cup'],
+      lacedTrickIds: ['trick-a', 'trick-b'],
+    });
+
+    expect(result.manuallyUnlockedTrickIds).toEqual(['trick-a', 'existing-trick', 'trick-b']);
+  });
+
   it('preserves the current practice list while an assessment is being retaken', () => {
     const completedProfile = {
       hasCompletedOnboarding: true,
@@ -76,5 +141,20 @@ describe('user profile trick selection', () => {
       kenteiRank: undefined,
       selectedTrickIds: ['big-cup', 'custom-morning-line'],
     });
+  });
+
+  it('advances the assessed Kentei rank', () => {
+    const state = { ...INITIAL_USER_PROFILE, kenteiRank: 1 };
+
+    expect(
+      userProfileReducer(state, { type: 'kenteiRankAdvanced', rank: 2 }).kenteiRank,
+    ).toBe(2);
+  });
+
+  it('is a no-op when advancing to the already-current rank', () => {
+    const state = { ...INITIAL_USER_PROFILE, kenteiRank: 3 };
+    const result = userProfileReducer(state, { type: 'kenteiRankAdvanced', rank: 3 });
+
+    expect(result).toBe(state);
   });
 });

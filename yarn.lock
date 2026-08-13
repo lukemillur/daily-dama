@@ -1154,7 +1154,7 @@
   resolved "https://registry.yarnpkg.com/@expo/sudo-prompt/-/sudo-prompt-9.3.2.tgz#0fd2813402a42988e49145cab220e25bea74b308"
   integrity sha512-HHQigo3rQWKMDzYDLkubN5WQOYXJJE2eNqIQC2axC2iO3mHdwnIR7FgZVvHWtBwAdzBgAP0ECp8KqS8TiMKvgw==
 
-"@expo/ui@^57.0.9", "@expo/ui@~57.0.9":
+"@expo/ui@^57.0.9":
   version "57.0.9"
   resolved "https://registry.yarnpkg.com/@expo/ui/-/ui-57.0.9.tgz#346694eaad2aec6286cf508921f02e3c6e34501c"
   integrity sha512-VIxvk5ncgylBj2vrIP1iLaMc3XmYucKbf0hIcg3qx9l2anB9JzaYnH7cvVgNU3RfwV8R9m/tA7lX9BP7D8uMQw==
@@ -3911,13 +3911,6 @@ expo-constants@~57.0.8, expo-constants@~57.0.9:
   dependencies:
     "@expo/env" "~2.4.2"
 
-expo-device@~57.0.1:
-  version "57.0.1"
-  resolved "https://registry.yarnpkg.com/expo-device/-/expo-device-57.0.1.tgz#1ca758ea538010b8edb0965dec0a18964f6dbad1"
-  integrity sha512-jyEMDUticH+dhcL3GHa2aiifOvGXJsmb3oVT2R2q4i8bN7Bddy61+NkpMmuS2VAZrvoLQwf0TJJ/1vi1ukvutA==
-  dependencies:
-    ua-parser-js "^0.7.33"
-
 expo-file-system@~57.0.1:
   version "57.0.1"
   resolved "https://registry.yarnpkg.com/expo-file-system/-/expo-file-system-57.0.1.tgz#920792f0e5e1c1a98da80d511dc5c131ab302651"
@@ -3937,7 +3930,7 @@ expo-gl@~57.0.2:
   dependencies:
     invariant "^2.2.4"
 
-expo-glass-effect@^57.0.1, expo-glass-effect@~57.0.1:
+expo-glass-effect@^57.0.1:
   version "57.0.1"
   resolved "https://registry.yarnpkg.com/expo-glass-effect/-/expo-glass-effect-57.0.1.tgz#8829b8f3f801589266bd1c75fdfed4a6d73cf9d8"
   integrity sha512-m/n8maxqNcHk6ZDhuqXBfD5Kt1Iz3M8xykVgdB0iSCIXvF70IqWXmQhX8Psswhrp8eZ+3r0mAD0Jh/2gFA3QaA==
@@ -4040,7 +4033,7 @@ expo-status-bar@~57.0.1:
   resolved "https://registry.yarnpkg.com/expo-status-bar/-/expo-status-bar-57.0.1.tgz#0a8ec1657fcd0987f9612ca411a0c3d002f0eaf0"
   integrity sha512-Xwaq1gAoVRWx5dPG5VhT5RSbnI9OilhZnO5qoPBnUaBAa5VzRzfdS8q0/bsPt0jR2DKLtGuP0bQ6efMJ4RIMDg==
 
-expo-symbols@^57.0.1, expo-symbols@~57.0.1:
+expo-symbols@^57.0.1:
   version "57.0.1"
   resolved "https://registry.yarnpkg.com/expo-symbols/-/expo-symbols-57.0.1.tgz#3f420b1f1749da4df1deebb7bdbfc82131a262a2"
   integrity sha512-8Zf+a83OywV0vf1NUtSKpNqKcULmO0GTI+zfFnGYl7SLDH9FjL5RcEZoy6CHvCgq2KDrQF21pl3r7Tb4ItPscw==
@@ -4055,11 +4048,6 @@ expo-system-ui@~57.0.2:
   dependencies:
     "@react-native/normalize-colors" "0.86.2"
     debug "^4.3.2"
-
-expo-web-browser@~57.0.2:
-  version "57.0.2"
-  resolved "https://registry.yarnpkg.com/expo-web-browser/-/expo-web-browser-57.0.2.tgz#37a9386069bbf0a35709b3f0b394f195dc1cd43a"
-  integrity sha512-3vl5kvd7PB48ub6PpNIJUuPxO8xVa6D8RnIgNba6SXRwqFprOfeEZgwTgtm41kz0AAtvMOztUVNEUkwrHKjqMQ==
 
 expo@~57.0.10:
   version "57.0.10"
@@ -7787,11 +7775,6 @@ typescript@~6.0.3:
   version "6.0.3"
   resolved "https://registry.yarnpkg.com/typescript/-/typescript-6.0.3.tgz#90251dc007916e972786cb94d74d15b185577d21"
   integrity sha512-y2TvuxSZPDyQakkFRPZHKFm+KKVqIisdg9/CZwm9ftvKXLP8NRWj38/ODjNbr43SsoXqNuAisEf1GdCxqWcdBw==
-
-ua-parser-js@^0.7.33:
-  version "0.7.41"
-  resolved "https://registry.yarnpkg.com/ua-parser-js/-/ua-parser-js-0.7.41.tgz#9f6dee58c389e8afababa62a4a2dc22edb69a452"
-  integrity sha512-O3oYyCMPYgNNHuO7Jjk3uacJWZF8loBgwrfd/5LE/HyZ3lUIOdniQ7DNXJcIgZbwioZxk0fLfI4EVnetdiX5jg==
 
 ua-parser-js@^1.0.35:
   version "1.0.41"

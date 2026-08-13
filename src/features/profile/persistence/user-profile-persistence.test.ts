@@ -64,6 +64,29 @@ describe('user profile persistence', () => {
     expect(deserializeUserProfile(serialized)).toEqual(profileWithThreshold);
   });
 
+  it('round-trips a profile with manually unlocked tricks', () => {
+    const profileWithManualUnlocks = {
+      ...COMPLETE_PROFILE,
+      manuallyUnlockedTrickIds: ['big-cup', 'custom-trick'],
+    } as const;
+
+    const serialized = serializeUserProfile(profileWithManualUnlocks);
+
+    expect(deserializeUserProfile(serialized)).toEqual(profileWithManualUnlocks);
+  });
+
+  it.each([0, 'not-an-array', ['big-cup', 'big-cup'], ['big-cup', ''], [1, 2]])(
+    'rejects a malformed manuallyUnlockedTrickIds: %p',
+    (manuallyUnlockedTrickIds) => {
+      const serialized = JSON.stringify({
+        version: USER_PROFILE_SCHEMA_VERSION,
+        profile: { ...COMPLETE_PROFILE, manuallyUnlockedTrickIds },
+      });
+
+      expect(deserializeUserProfile(serialized)).toBeUndefined();
+    },
+  );
+
   it.each([0, -60_000, 61 * 60_000, 90_000, 1.5 * 60_000, '60000'])(
     'rejects a malformed streak threshold: %p',
     (streakThresholdMs) => {

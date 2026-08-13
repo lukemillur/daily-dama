@@ -1,4 +1,5 @@
 import { Link, useRouter } from 'expo-router';
+import { useMemo } from 'react';
 import { Pressable, ScrollView } from 'react-native';
 import { styled } from 'styled-components/native';
 
@@ -6,23 +7,53 @@ import { Button } from '@/components/ui/button';
 import { Screen } from '@/components/ui/screen';
 import { BodyText, DisplayTitle, Eyebrow } from '@/components/ui/typography';
 import { AppColors, BottomTabInset } from '@/constants/theme';
+import { useCustomTricks } from '@/features/custom-tricks/state/custom-trick-provider';
 import { useRequireOnboarding } from '@/features/onboarding/state/require-onboarding';
+import { useUserProfile } from '@/features/profile/state/user-profile-provider';
 import { formatDuration } from '@/features/sesh/model/sesh';
-import { aggregatePracticeStats } from '@/features/stats/model/practice-history';
+import { NeglectedTricksSection } from '@/features/stats/components/neglected-tricks-section';
+import { formatPracticeDate } from '@/features/stats/model/format-practice-date';
+import { selectNeglectedFocusedTricks, type NeglectedTrick } from '@/features/stats/model/neglected-tricks';
+import { aggregatePracticeStats, type PracticeSessionRecord } from '@/features/stats/model/practice-history';
 import { usePracticeHistory } from '@/features/stats/state/practice-history-provider';
+import { KENDAMA_KENTEI_TRICKS } from '@/features/tricks/data/kendama-kentei-tricks';
+import { selectAvailablePracticeTricks } from '@/features/tricks/model/trick-directory';
 
 export default function StatsScreen() {
   const isOnboardingComplete = useRequireOnboarding();
   const { sessions } = usePracticeHistory();
+  const { selectedTrickIds } = useUserProfile();
+  const { tricks: customTricks } = useCustomTricks();
   const stats = aggregatePracticeStats(sessions);
+  const neglectedTricks = useSelectNeglectedTricks(selectedTrickIds, customTricks, sessions);
 
   if (!isOnboardingComplete) return null;
 
   return (
     <Screen edges={['top', 'left', 'right']}>
-      {stats.sessionCount === 0 ? <EmptyStats /> : <PopulatedStats stats={stats} />}
+      {stats.sessionCount === 0 ? (
+        <EmptyStats />
+      ) : (
+        <PopulatedStats neglectedTricks={neglectedTricks} stats={stats} />
+      )}
     </Screen>
   );
+}
+
+function useSelectNeglectedTricks(
+  selectedTrickIds: readonly string[],
+  customTricks: Parameters<typeof selectAvailablePracticeTricks>[1],
+  sessions: readonly PracticeSessionRecord[],
+): readonly NeglectedTrick<{ readonly id: string; readonly name: string }>[] {
+  return useMemo(() => {
+    const availableTricks = selectAvailablePracticeTricks(KENDAMA_KENTEI_TRICKS, customTricks);
+    const availableTrickById = new Map(availableTricks.map((trick) => [trick.id, trick]));
+    const focusedTricks = selectedTrickIds.flatMap((trickId) => {
+      const trick = availableTrickById.get(trickId);
+      return trick ? [{ id: trick.id, name: trick.name }] : [];
+    });
+    return selectNeglectedFocusedTricks(focusedTricks, sessions);
+  }, [customTricks, selectedTrickIds, sessions]);
 }
 
 function EmptyStats() {
@@ -42,7 +73,13 @@ function EmptyStats() {
 
 type Stats = ReturnType<typeof aggregatePracticeStats>;
 
-function PopulatedStats({ stats }: { readonly stats: Stats }) {
+function PopulatedStats({
+  neglectedTricks,
+  stats,
+}: {
+  readonly neglectedTricks: readonly NeglectedTrick<{ readonly id: string; readonly name: string }>[];
+  readonly stats: Stats;
+}) {
   const router = useRouter();
 
   return (
@@ -65,6 +102,8 @@ function PopulatedStats({ stats }: { readonly stats: Stats }) {
             <OverviewLabel>{stats.sessionCount === 1 ? 'Sesh' : 'Seshes'}</OverviewLabel>
           </OverviewMetric>
         </Overview>
+
+        <NeglectedTricksSection neglectedTricks={neglectedTricks} />
 
         <SectionLabel>By trick</SectionLabel>
         <TrickList>
@@ -98,14 +137,6 @@ function PopulatedStats({ stats }: { readonly stats: Stats }) {
       </StatsContent>
     </StatsScroll>
   );
-}
-
-export function formatPracticeDate(timestamp: number) {
-  return new Intl.DateTimeFormat(undefined, {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  }).format(timestamp);
 }
 
 const StatsScroll = styled(ScrollView)`flex: 1; width: 100%;`;

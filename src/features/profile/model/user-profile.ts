@@ -15,6 +15,7 @@ export interface UserProfile {
   readonly hasCompletedOnboarding: boolean;
   readonly lastSesh?: LastSesh;
   readonly streakThresholdMs?: number;
+  readonly manuallyUnlockedTrickIds?: readonly string[];
 }
 
 export const MIN_STREAK_THRESHOLD_MINUTES = 1;
@@ -53,14 +54,18 @@ export type UserProfileAction =
   | { readonly type: 'selectedTrickToggled'; readonly trickId: string }
   | { readonly type: 'selectedTrickRemoved'; readonly trickId: string }
   | { readonly type: 'selectedTricksCleared' }
+  | { readonly type: 'manualUnlockToggled'; readonly trickId: string }
+  | { readonly type: 'manualUnlockRemoved'; readonly trickId: string }
   | { readonly type: 'lastSeshUpdated'; readonly lastSesh: LastSesh }
   | { readonly type: 'streakThresholdUpdated'; readonly thresholdMs: number }
   | {
       readonly type: 'onboardingCompleted';
       readonly kenteiRank: number;
       readonly selectedTrickIds: readonly string[];
+      readonly lacedTrickIds: readonly string[];
     }
-  | { readonly type: 'onboardingRestarted' };
+  | { readonly type: 'onboardingRestarted' }
+  | { readonly type: 'kenteiRankAdvanced'; readonly rank: number };
 
 export function userProfileReducer(
   state: UserProfile,
@@ -90,6 +95,28 @@ export function userProfileReducer(
         : state;
     case 'selectedTricksCleared':
       return state.selectedTrickIds.length === 0 ? state : { ...state, selectedTrickIds: [] };
+    case 'manualUnlockToggled': {
+      const manuallyUnlockedTrickIds = state.manuallyUnlockedTrickIds ?? [];
+      const isManuallyUnlocked = manuallyUnlockedTrickIds.includes(action.trickId);
+
+      return {
+        ...state,
+        manuallyUnlockedTrickIds: isManuallyUnlocked
+          ? manuallyUnlockedTrickIds.filter((trickId) => trickId !== action.trickId)
+          : [...manuallyUnlockedTrickIds, action.trickId],
+      };
+    }
+    case 'manualUnlockRemoved': {
+      const manuallyUnlockedTrickIds = state.manuallyUnlockedTrickIds ?? [];
+      return manuallyUnlockedTrickIds.includes(action.trickId)
+        ? {
+            ...state,
+            manuallyUnlockedTrickIds: manuallyUnlockedTrickIds.filter(
+              (trickId) => trickId !== action.trickId,
+            ),
+          }
+        : state;
+    }
     case 'lastSeshUpdated':
       return { ...state, lastSesh: action.lastSesh };
     case 'streakThresholdUpdated':
@@ -100,6 +127,9 @@ export function userProfileReducer(
         kenteiRank: action.kenteiRank,
         hasCompletedOnboarding: true,
         selectedTrickIds: [...action.selectedTrickIds],
+        manuallyUnlockedTrickIds: Array.from(
+          new Set([...(state.manuallyUnlockedTrickIds ?? []), ...action.lacedTrickIds]),
+        ),
       };
     case 'onboardingRestarted':
       return {
@@ -107,5 +137,7 @@ export function userProfileReducer(
         kenteiRank: undefined,
         hasCompletedOnboarding: false,
       };
+    case 'kenteiRankAdvanced':
+      return state.kenteiRank === action.rank ? state : { ...state, kenteiRank: action.rank };
   }
 }

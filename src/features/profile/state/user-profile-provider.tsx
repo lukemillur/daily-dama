@@ -30,10 +30,17 @@ interface UserProfileActions {
   readonly toggleSelectedTrick: (trickId: string) => void;
   readonly removeSelectedTrick: (trickId: string) => void;
   readonly clearSelectedTricks: () => void;
+  readonly toggleManualUnlock: (trickId: string) => void;
+  readonly removeManualUnlock: (trickId: string) => void;
   readonly setLastSesh: (trickId: string, plan: SeshPlan) => void;
   readonly setStreakThresholdMs: (thresholdMs: number) => void;
-  readonly completeOnboarding: (kenteiRank: number, selectedTrickIds: readonly string[]) => void;
+  readonly completeOnboarding: (
+    kenteiRank: number,
+    selectedTrickIds: readonly string[],
+    lacedTrickIds: readonly string[],
+  ) => void;
   readonly restartOnboarding: () => void;
+  readonly advanceKenteiRank: (rank: number) => void;
 }
 
 const UserProfileStateContext = createContext<UserProfile | undefined>(undefined);
@@ -94,6 +101,14 @@ export function UserProfileProvider({ children }: PropsWithChildren) {
     dispatch({ type: 'selectedTrickRemoved', trickId });
   }, []);
 
+  const toggleManualUnlock = useCallback((trickId: string) => {
+    dispatch({ type: 'manualUnlockToggled', trickId });
+  }, []);
+
+  const removeManualUnlock = useCallback((trickId: string) => {
+    dispatch({ type: 'manualUnlockRemoved', trickId });
+  }, []);
+
   const setLastSesh = useCallback((trickId: string, plan: SeshPlan) => {
     dispatch({ type: 'lastSeshUpdated', lastSesh: createLastSesh(trickId, plan) });
   }, []);
@@ -103,8 +118,8 @@ export function UserProfileProvider({ children }: PropsWithChildren) {
   }, []);
 
   const completeOnboarding = useCallback(
-    (kenteiRank: number, selectedTrickIds: readonly string[]) => {
-      dispatch({ type: 'onboardingCompleted', kenteiRank, selectedTrickIds });
+    (kenteiRank: number, selectedTrickIds: readonly string[], lacedTrickIds: readonly string[]) => {
+      dispatch({ type: 'onboardingCompleted', kenteiRank, selectedTrickIds, lacedTrickIds });
     },
     [],
   );
@@ -113,23 +128,33 @@ export function UserProfileProvider({ children }: PropsWithChildren) {
     dispatch({ type: 'onboardingRestarted' });
   }, []);
 
+  const advanceKenteiRank = useCallback((rank: number) => {
+    dispatch({ type: 'kenteiRankAdvanced', rank });
+  }, []);
+
   const actions = useMemo(
     () => ({
       toggleSelectedTrick,
       removeSelectedTrick,
       clearSelectedTricks,
+      toggleManualUnlock,
+      removeManualUnlock,
       setLastSesh,
       setStreakThresholdMs,
       completeOnboarding,
       restartOnboarding,
+      advanceKenteiRank,
     }),
     [
+      advanceKenteiRank,
       clearSelectedTricks,
       completeOnboarding,
+      removeManualUnlock,
       removeSelectedTrick,
       restartOnboarding,
       setLastSesh,
       setStreakThresholdMs,
+      toggleManualUnlock,
       toggleSelectedTrick,
     ],
   );
