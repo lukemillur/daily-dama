@@ -147,7 +147,7 @@ The first pass used **locked/unlocked** for "the user can land this trick." User
 
 - **Area:** Repository maintenance
 - **Priority:** Medium
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Implementer
 - **Description:** Remove the Expo starter reset script, which can replace application source and is no longer appropriate in an established repository.
 - **Exit criteria:** `package.json` no longer exposes the reset script, `scripts/reset-project.js` is removed, repository search finds no remaining references, the package manifest remains valid, and the standard verification sequence passes.
