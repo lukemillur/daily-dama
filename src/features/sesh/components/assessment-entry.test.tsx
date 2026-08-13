@@ -181,3 +181,47 @@ describe('AssessmentEntry result copy', () => {
     });
   });
 });
+
+describe('AssessmentEntry countdown cancel (T047)', () => {
+  beforeEach(async () => {
+    await AsyncStorage.clear();
+    jest.useFakeTimers();
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  it('returns to the flow picker when Cancel is pressed during the first trick countdown', async () => {
+    await AsyncStorage.setItem(
+      USER_PROFILE_STORAGE_KEY,
+      serializeUserProfile({
+        hasCompletedOnboarding: true,
+        kenteiRank: 1,
+        selectedTrickIds: [],
+      }),
+    );
+
+    const root = await mountAssessmentEntry();
+
+    act(() => {
+      pressByVisibleText(root, 'Current rank only');
+    });
+
+    // Advance partway through the first trick's countdown, not to completion.
+    act(() => {
+      jest.advanceTimersByTime(1000);
+    });
+
+    act(() => {
+      pressByVisibleText(root, 'Cancel');
+    });
+
+    expect(findByAccessibilityLabel(root, 'Assessment result')).toHaveLength(0);
+    expect(root.root.findAll((node) => node.props.children === 'Current rank only').length).toBeGreaterThan(0);
+
+    act(() => {
+      root.unmount();
+    });
+  });
+});

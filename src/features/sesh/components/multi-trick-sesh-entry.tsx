@@ -82,6 +82,7 @@ export function MultiTrickSeshEntry() {
         plan={step.plan}
         advanceOnFirstLace={advanceOnFirstLace}
         onFinished={handleFinished}
+        onCancelRun={handleFinished}
       />
     );
   }

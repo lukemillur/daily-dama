@@ -55,6 +55,7 @@ export function AssessmentEntry() {
         tricks={tricks}
         plan={OPEN_ENDED_SESH_PLAN}
         onFinished={() => router.replace('/profile')}
+        onCancelRun={() => setStep({ kind: 'choosingFlow' })}
         showAttemptsReminder
         skipTarget={isMultiRankFlow ? (index) => selectNextRankStartIndex(tricks, index) : undefined}
         describeSkippedRange={

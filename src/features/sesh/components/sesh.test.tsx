@@ -1,3 +1,4 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
 import type { ReactElement } from 'react';
 import { Pressable, Text } from 'react-native';
@@ -1649,6 +1650,69 @@ describe('Sesh single-trick entry point - "Next trick" absence', () => {
       act(() => {
         root.unmount();
       });
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+});
+
+describe('Sesh wiring - countdown cancel (T047)', () => {
+  // A user who starts a sesh by accident must be able to back out during the countdown, before
+  // any practice history is recorded, and land back on the trick picker.
+
+  function Harness() {
+    const { sessions } = usePracticeHistory();
+    return (
+      <>
+        <Text accessibilityLabel={`session-count:${sessions.length}`} />
+        <Sesh availableTricks={[TRICK]} selectedTrickIds={[TRICK.id]} />
+      </>
+    );
+  }
+
+  async function mountHarness() {
+    let root!: ReactTestRenderer;
+    await act(async () => {
+      root = create(
+        <NoteProvider>
+          <GoalProvider>
+            <PracticeHistoryProvider>
+              <UserProfileProvider>
+                <Harness />
+              </UserProfileProvider>
+            </PracticeHistoryProvider>
+          </GoalProvider>
+        </NoteProvider>,
+      );
+    });
+    return root;
+  }
+
+  it('returns to the trick picker without recording a session when Cancel is pressed mid-countdown', async () => {
+    await AsyncStorage.clear();
+    jest.useFakeTimers();
+    try {
+      const root = await mountHarness();
+
+      act(() => {
+        pressByAccessibilityLabel(root, `Start a sesh with ${TRICK.name}`);
+      });
+
+      // Advance partway through the countdown, but not to completion — proving cancellation
+      // during the countdown, not after it would have naturally completed.
+      act(() => {
+        jest.advanceTimersByTime(1000);
+      });
+
+      expect(root.root.findAll((node) => node.props.children === 'Get ready').length).toBeGreaterThan(0);
+
+      act(() => {
+        pressByVisibleText(root, 'Cancel');
+      });
+
+      expect(findByAccessibilityLabel(root, `Start a sesh with ${TRICK.name}`).length).toBeGreaterThan(0);
+      expect(root.root.findAll((node) => node.props.children === 'Get ready')).toHaveLength(0);
+      expect(findByAccessibilityLabel(root, 'session-count:0').length).toBeGreaterThan(0);
     } finally {
       jest.useRealTimers();
     }

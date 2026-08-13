@@ -102,6 +102,7 @@ async function mountMultiTrickSesh(props: {
   readonly hideTimer?: boolean;
   readonly describeSkippedRange?: (startIndex: number, endIndex: number) => string;
   readonly wrapUpFooter?: ReactNode;
+  readonly onCancelRun?: () => void;
 }) {
   let root!: ReactTestRenderer;
   await act(async () => {
@@ -119,6 +120,7 @@ async function mountMultiTrickSesh(props: {
             hideTimer={props.hideTimer}
             describeSkippedRange={props.describeSkippedRange}
             wrapUpFooter={props.wrapUpFooter}
+            onCancelRun={props.onCancelRun}
           />
           <SessionSummary />
         </PracticeHistoryProvider>
@@ -671,6 +673,120 @@ describe('MultiTrickSesh wrap-up', () => {
     });
 
     expect(onFinished).toHaveBeenCalledTimes(1);
+
+    act(() => {
+      root.unmount();
+    });
+  });
+});
+
+describe('MultiTrickSesh onCancelRun (T047)', () => {
+  beforeEach(async () => {
+    await AsyncStorage.clear();
+    jest.useFakeTimers();
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  it('calls onCancelRun when Cancel is pressed during the very first trick countdown', async () => {
+    const onFinished = jest.fn();
+    const onCancelRun = jest.fn();
+    const root = await mountMultiTrickSesh({ onFinished, onCancelRun });
+
+    // Advance partway through the countdown, not to completion.
+    act(() => {
+      jest.advanceTimersByTime(1000);
+    });
+
+    expect(findByText(root, TRICKS[0].name).length).toBeGreaterThan(0);
+
+    act(() => {
+      pressByVisibleText(root, 'Cancel');
+    });
+
+    expect(onCancelRun).toHaveBeenCalledTimes(1);
+    expect(onFinished).not.toHaveBeenCalled();
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  it('does not render Cancel on the second trick countdown, even after the first completes normally', async () => {
+    const onFinished = jest.fn();
+    const onCancelRun = jest.fn();
+    const root = await mountMultiTrickSesh({ onFinished, onCancelRun });
+
+    act(() => {
+      jest.advanceTimersByTime(1000);
+    });
+    expect(findByText(root, TRICKS[0].name).length).toBeGreaterThan(0);
+    expect(findByText(root, 'Cancel').length).toBeGreaterThan(0);
+
+    // Finish advancing through the first trick's countdown so it lands in 'active'.
+    act(() => {
+      jest.advanceTimersByTime(1000);
+    });
+    act(() => {
+      jest.advanceTimersByTime(1000);
+    });
+
+    act(() => {
+      pressByAccessibilityLabel(root, 'Laced');
+    });
+    act(() => {
+      pressByVisibleText(root, 'End Sesh');
+    });
+
+    // Second trick: still shows its own countdown (skipCountdownBetweenTricks is not set), but
+    // must not offer Cancel — the scope boundary from the task Notes.
+    expect(findByText(root, TRICKS[1].name).length).toBeGreaterThan(0);
+    expect(findByText(root, 'Cancel')).toHaveLength(0);
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  it('does not render Cancel on the second trick countdown after skipping past the first', async () => {
+    const onFinished = jest.fn();
+    const onCancelRun = jest.fn();
+    const root = await mountMultiTrickSesh({
+      onFinished,
+      onCancelRun,
+      skipTarget: () => 1,
+    });
+
+    act(() => {
+      jest.advanceTimersByTime(1000);
+    });
+    expect(findByText(root, TRICKS[0].name).length).toBeGreaterThan(0);
+    expect(findByText(root, 'Cancel').length).toBeGreaterThan(0);
+
+    act(() => {
+      pressByVisibleText(root, 'Skip this rank');
+    });
+
+    expect(findByText(root, TRICKS[1].name).length).toBeGreaterThan(0);
+    expect(findByText(root, 'Cancel')).toHaveLength(0);
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  it('does not render Cancel on any countdown when onCancelRun is not supplied', async () => {
+    const onFinished = jest.fn();
+    const root = await mountMultiTrickSesh({ onFinished });
+
+    act(() => {
+      jest.advanceTimersByTime(1000);
+    });
+
+    expect(findByText(root, TRICKS[0].name).length).toBeGreaterThan(0);
+    expect(findByText(root, 'Cancel')).toHaveLength(0);
 
     act(() => {
       root.unmount();
