@@ -133,16 +133,6 @@ _This round came out of a review pass over the first batch of completed work (T0
 
 The first pass used **locked/unlocked** for "the user can land this trick." User-facing copy in this round switches to **laced/unlaced**, which is what the domain actually calls it. The persisted profile field is still named `manuallyUnlockedTrickIds` and stays that way — renaming a persisted key means either a migration or throwing away real user data, and neither is worth it for a vocabulary change. Rename the copy, not the storage contract.
 
-### [T035] Add a global notes archive
-
-- **Area:** Tricks / Notes
-- **Priority:** Medium
-- **Status:** Not started
-- **Planning:** Implementer
-- **Description:** Add an all-notes screen reachable from Tricks so users can review, edit, and delete notes without opening tricks one at a time.
-- **Exit criteria:** Tests and browser checks at desktop and 320 px confirm that Tricks links to an All Notes screen, notes are listed with their stored trick-name snapshots and useful date context, notes can be edited and deleted there, orphaned notes remain visible and manageable after a custom trick is deleted, and the empty state is coherent.
-- **Notes:** Follow the existing All Trick Goals screen's routing and presentation conventions where appropriate. Historical snapshots remain authoritative; do not resolve names from the current trick directory.
-
 ### [T037] Refresh Home time-based summaries while the app remains open
 
 - **Area:** Home
