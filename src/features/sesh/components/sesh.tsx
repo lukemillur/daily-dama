@@ -593,6 +593,7 @@ export function ActiveSesh({
           accessibilityState={{ disabled: isPaused }}
           disabled={isPaused}
           $disabled={isPaused}
+          $extraTopSpacing={hideTimer}
           onPress={onLaced}
           accessibilityLabel="Laced">
           <LacedButtonText>Laced.</LacedButtonText>
@@ -1093,7 +1094,7 @@ const SequenceNumber = styled.Text`width: 22px; color: ${AppColors.red}; font-si
 const SequenceName = styled.Text`flex: 1; color: ${AppColors.ink}; font-size: 14px; font-weight: 800; line-height: 20px;`;
 const TimerLabel = styled.Text`color: ${AppColors.red}; font-size: 12px; font-weight: 900; letter-spacing: 1.4px; margin-top: 22px; text-transform: uppercase;`;
 const Timer = styled.Text`color: #18382e; font-size: 78px; font-variant: tabular-nums; font-weight: 900; letter-spacing: -4px; margin: 4px 0 22px;`;
-const LacedButton = styled(Pressable)<{ $disabled: boolean }>`width: 100%; min-height: 108px; flex-direction: row; align-items: center; justify-content: space-between; background-color: #d84929; opacity: ${({ $disabled }) => ($disabled ? 0.45 : 1)}; padding: 22px 26px; border-radius: 6px;`;
+const LacedButton = styled(Pressable)<{ $disabled: boolean; $extraTopSpacing?: boolean }>`width: 100%; min-height: 108px; flex-direction: row; align-items: center; justify-content: space-between; background-color: #d84929; opacity: ${({ $disabled }) => ($disabled ? 0.45 : 1)}; padding: 22px 26px; border-radius: 6px; margin-top: ${({ $extraTopSpacing }) => ($extraTopSpacing ? '24px' : '0')};`;
 const LacedButtonText = styled.Text`color: #fff8e5; font-size: 34px; font-weight: 900;`;
 const LacedCount = styled.Text`color: #f4c94d; font-size: 40px; font-weight: 900;`;
 const ChallengeStatus = styled.Text<{ $beaten: boolean }>`width: 100%; text-align: center; margin-top: 12px; color: ${({ $beaten }) => ($beaten ? AppColors.red : AppColors.ink)}; font-size: 15px; font-weight: 900;`;
