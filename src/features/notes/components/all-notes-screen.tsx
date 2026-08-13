@@ -7,7 +7,7 @@ import { BodyText, DisplayTitle, Eyebrow } from '@/components/ui/typography';
 import { AppColors, BottomTabInset } from '@/constants/theme';
 import { selectAllNotesSorted, type Note } from '@/features/notes/model/note';
 import { useNoteActions, useNotes } from '@/features/notes/state/note-provider';
-import { formatPracticeDate } from '@/app/stats/index';
+import { formatPracticeDate } from '@/features/stats/model/format-practice-date';
 
 interface AllNotesScreenProps {
   readonly onClose: () => void;
