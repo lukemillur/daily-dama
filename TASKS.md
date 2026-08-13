@@ -135,16 +135,6 @@ The first pass used **locked/unlocked** for "the user can land this trick." User
 
 _This next batch (T045–T069) comes from a QA pass over PR 55's suggested checklist (the `development` → `main` release covering T002–T041), worked top to bottom. Where an entry names the task that shipped the behavior it's correcting, the archived entry in [TASKS_DONE.md](TASKS_DONE.md) stays as-written — history isn't rewritten, same as above._
 
-### [T045] Auto-dismiss in-sesh celebration banners
-
-- **Area:** Sesh
-- **Priority:** Medium
-- **Status:** Not started
-- **Planning:** Required
-- **Description:** During an active sesh, `CelebrationBanner`-based banners (`FirstLaceBanner`, `PersonalBestBanner`, and `GoalCelebrationBanner` for both count- and time-based goals, all in `src/features/sesh/components/sesh.tsx`) have an entrance animation but no exit animation or timer — each stays visible until the next "Laced" press flips its underlying `landings.length`-derived condition false. Make them auto-fade after a few seconds instead.
-- **Exit criteria:** Test confirms each of the four banner types dismisses on its own a few seconds after appearing (fake timers), without requiring another Laced press; the time-based goal celebration in particular no longer latches for the rest of the sesh once shown (today `celebratingTimeGoalIds` in `sesh.tsx` is append-only and nothing ever clears it — worse than the other three, which at least clear on the next lace). `CompletedSesh`'s wrap-up rendering of `FirstLaceBanner`/`GoalCelebrationBanner` is a static summary screen with no Laced button to race against and is unaffected by this change; `RankUpCelebrationModal` (`src/features/profile/components/rank-up-celebration-modal.tsx`) is a separate, deliberately tap-to-dismiss mechanism, also unaffected.
-- **Notes:** `CelebrationBanner` (`sesh.tsx`) uses the plain `Animated` API (not Reanimated) with `Animated.parallel([Animated.spring(scale, ...), Animated.timing(opacity, ...)])` on mount only — the fade-out needs a symmetric timing call back toward 0, gated by a timer independent of `landings.length`. None of these three banners render during a Kentei assessment or ad hoc multi-trick run today — `MultiTrickSesh` passes `personalBest={undefined}`, `liveChallengeEnabled={false}`, and omits `hadPriorLaceAtSeshStart`/`goalBaselines` (a deliberate T028.4 scope decision) — so this fix is scoped to the single-trick `Sesh` path only; no duplicate work needed elsewhere. Existing tests in `sesh.test.tsx` (`findBanner`/`findGoalBanner`/`findPersonalBestBanner` helpers) assert today's landing-count-driven visibility and will need updating.
-
 ### [T046] Fix transient timer glitch on Sesh pause/resume
 
 - **Area:** Sesh
