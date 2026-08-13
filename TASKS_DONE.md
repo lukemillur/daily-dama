@@ -6,6 +6,24 @@ Entries keep their content as it was at completion. Don't retroactively edit a d
 
 ---
 
+### [T038] Add a neglected-tricks practice queue to Stats
+
+- **Area:** Stats
+- **Priority:** Medium
+- **Status:** Done
+- **Description:** Add a compact "Needs attention" section that turns practice history into an actionable next-session queue. Limit the first iteration to currently focused tricks, at most three suggestions, with never-practiced tricks first and previously practiced tricks ordered by oldest recent practice.
+- **Notes:** Umbrella only — complete T038.1 and T038.2. Do not add recommendation scores, spaced-repetition configuration, or new persistence in this iteration. Both children are Done; see their entries for implementation detail.
+
+### [T038.2] Render neglected-trick suggestions with Practice actions
+
+- **Area:** Stats / Sesh routing
+- **Priority:** Medium (inherited from parent T038)
+- **Status:** Done
+- **Planning:** Implementer
+- **Description:** Render T038.1's results in a visually subordinate "Needs attention" section on Stats and provide direct Practice actions for each suggested trick. Depends on T038.1.
+- **Exit criteria:** Component tests confirm the first three selector results render in order, each action links to `/sesh?trickId=...` with the correct trick, and empty output adds no unnecessary visual weight; the section is verified in-browser at desktop and 320 px without changing the existing By Trick statistics.
+- **Notes:** Added `src/features/stats/components/neglected-tricks-section.tsx`, a presentational component (mirrors the `DailyHome`/`PracticeQueue` pattern) that renders nothing when `neglectedTricks` is empty, otherwise a muted "Needs attention" label plus one row per trick with a `Link` styled as text (`Practice →`) to `/sesh?trickId=<id>`. Wired into `src/app/stats/index.tsx`: resolves `useUserProfile().selectedTrickIds` against `selectAvailablePracticeTricks(KENDAMA_KENTEI_TRICKS, customTricks)` to get focused `{id, name}` candidates in profile-selection order, then calls `selectNeglectedFocusedTricks` (T038.1) and passes the result straight through — no new persistence. Section sits between the Overview metrics and the existing "By trick" list; "By trick" itself is untouched. Extracted `formatPracticeDate` out of `src/app/stats/index.tsx` into `src/features/stats/model/format-practice-date.ts` and repointed its three existing importers (`src/app/stats/[trickId].tsx`, `src/features/notes/components/trick-notes-screen.tsx`, `src/features/notes/components/all-notes-screen.tsx`) at the new module — the new component needed the formatter too, and importing from the `app/stats/index` screen module pulled in AsyncStorage-backed providers transitively, breaking a plain component-test render; this also removed a previously-necessary `AsyncStorage` jest-mock justification that had drifted (the mock is still needed, just for `NoteProvider`'s own persistence, not this transitive import — updated the stale comment in `all-notes-screen.test.tsx` accordingly). Added `src/features/stats/components/neglected-tricks-section.test.tsx` covering: empty-input renders `null`, three results render in order with one `Practice <name>`-labelled action each, the link's resolved `href` is exactly `/sesh?trickId=<id>`, and never-practiced vs. previously-practiced copy ("Never practiced" vs. "Last practiced ..."). Verified in-browser at desktop and 320px width against a real dev server (selected a focused trick, confirmed the section appears above "By trick," confirmed the Practice action's `href` navigates to `/sesh` pre-selecting that trick, confirmed the five-link nav still fits 320px). `node .claude/scripts/verify.mjs` (test/lint/tsc/web-export) all clean. This was the last open child of T038; moved the T038 umbrella to Done in this same commit.
+
 ### [T038.1] Derive neglected focused tricks from practice history
 
 - **Area:** Stats

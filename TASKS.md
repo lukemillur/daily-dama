@@ -133,24 +133,6 @@ _This round came out of a review pass over the first batch of completed work (T0
 
 The first pass used **locked/unlocked** for "the user can land this trick." User-facing copy in this round switches to **laced/unlaced**, which is what the domain actually calls it. The persisted profile field is still named `manuallyUnlockedTrickIds` and stays that way — renaming a persisted key means either a migration or throwing away real user data, and neither is worth it for a vocabulary change. Rename the copy, not the storage contract.
 
-### [T038] Add a neglected-tricks practice queue to Stats
-
-- **Area:** Stats
-- **Priority:** Medium
-- **Status:** Not started
-- **Description:** Add a compact "Needs attention" section that turns practice history into an actionable next-session queue. Limit the first iteration to currently focused tricks, at most three suggestions, with never-practiced tricks first and previously practiced tricks ordered by oldest recent practice.
-- **Notes:** Umbrella only — complete T038.1 and T038.2. Do not add recommendation scores, spaced-repetition configuration, or new persistence in this iteration.
-
-### [T038.2] Render neglected-trick suggestions with Practice actions
-
-- **Area:** Stats / Sesh routing
-- **Priority:** Medium (inherited from parent T038)
-- **Status:** In progress
-- **Planning:** Implementer
-- **Description:** Render T038.1's results in a visually subordinate "Needs attention" section on Stats and provide direct Practice actions for each suggested trick. Depends on T038.1.
-- **Exit criteria:** Component tests confirm the first three selector results render in order, each action links to `/sesh?trickId=...` with the correct trick, and empty output adds no unnecessary visual weight; the section is verified in-browser at desktop and 320 px without changing the existing By Trick statistics.
-- **Notes:** Keep this section subordinate to the core Stats summary rather than turning Stats into a recommendation dashboard.
-
 ### [T039] Replace the starter README and document local setup
 
 - **Area:** Repository documentation

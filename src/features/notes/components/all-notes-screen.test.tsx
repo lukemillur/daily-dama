@@ -6,8 +6,7 @@ import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 import { AllNotesScreen } from '@/features/notes/components/all-notes-screen';
 import { NoteProvider, useNoteActions } from '@/features/notes/state/note-provider';
 
-// AllNotesScreen imports formatPracticeDate from the stats screen module, which transitively
-// pulls in AsyncStorage-backed providers. Mock the same way sibling screen tests do.
+// NoteProvider persists through AsyncStorage. Mock the same way sibling screen tests do.
 jest.mock('@react-native-async-storage/async-storage', () =>
   // eslint-disable-next-line @typescript-eslint/no-require-imports -- required by jest hoisting
   require('@react-native-async-storage/async-storage/jest/async-storage-mock'),
