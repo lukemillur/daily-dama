@@ -94,6 +94,7 @@ function findSessionDurationMs(root: ReactTestRenderer, index: number): number {
 
 async function mountMultiTrickSesh(props: {
   readonly advanceOnFirstLace?: boolean;
+  readonly pauseAfterLace?: boolean;
   readonly plan?: SeshPlan;
   readonly onFinished: () => void;
   readonly skipTarget?: (currentIndex: number) => number;
@@ -113,6 +114,7 @@ async function mountMultiTrickSesh(props: {
             tricks={TRICKS}
             plan={props.plan ?? OPEN_ENDED_SESH_PLAN}
             advanceOnFirstLace={props.advanceOnFirstLace}
+            pauseAfterLace={props.pauseAfterLace}
             onFinished={props.onFinished}
             skipTarget={props.skipTarget}
             endActionLabel={props.endActionLabel}
@@ -192,6 +194,51 @@ describe('MultiTrickSesh advanceOnFirstLace', () => {
     advanceThroughCountdown();
     expect(findByText(root, TRICKS[1].name).length).toBeGreaterThan(0);
     expect(findByAccessibilityLabel(root, 'session-count:1').length).toBeGreaterThan(0);
+
+    act(() => {
+      root.unmount();
+    });
+  });
+});
+
+describe('MultiTrickSesh pauseAfterLace', () => {
+  beforeEach(async () => {
+    await AsyncStorage.clear();
+    jest.useFakeTimers();
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  it('shows an acknowledgment panel before advancing, then advances after the delay', async () => {
+    const onFinished = jest.fn();
+    const root = await mountMultiTrickSesh({ advanceOnFirstLace: true, pauseAfterLace: true, onFinished });
+
+    advanceThroughCountdown();
+    expect(findByText(root, TRICKS[0].name).length).toBeGreaterThan(0);
+
+    act(() => {
+      pressByAccessibilityLabel(root, 'Laced');
+    });
+
+    // Acknowledgment panel shown; next trick's "Laced" button isn't reachable yet.
+    expect(findByAccessibilityLabel(root, 'Trick landed').length).toBeGreaterThan(0);
+    expect(findByAccessibilityLabel(root, 'Laced').length).toBe(0);
+
+    act(() => {
+      jest.advanceTimersByTime(1499);
+    });
+    expect(findByAccessibilityLabel(root, 'Trick landed').length).toBeGreaterThan(0);
+
+    act(() => {
+      jest.advanceTimersByTime(1);
+    });
+
+    // Acknowledgment gone; next trick's countdown appears.
+    expect(findByAccessibilityLabel(root, 'Trick landed').length).toBe(0);
+    advanceThroughCountdown();
+    expect(findByText(root, TRICKS[1].name).length).toBeGreaterThan(0);
 
     act(() => {
       root.unmount();
