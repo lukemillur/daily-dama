@@ -139,7 +139,7 @@ _This next batch (T045–T069) comes from a QA pass over PR 55's suggested check
 
 - **Area:** Sesh
 - **Priority:** Medium
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** The 3-2-1 `Countdown` screen (`src/features/sesh/components/sesh.tsx`) that runs before a sesh goes active has no cancel control today — a user who starts a sesh by accident is stuck watching it complete. Add a way to back out during the countdown.
 - **Exit criteria:** From the countdown screen, a visible Back/cancel control returns to trick/setup selection without recording a session — verified for single-trick Sesh (`src/app/sesh/index.tsx`) at minimum, dispatching the existing `seshReset` action (already unconditional in the reducer — `sesh.ts`'s `seshReset` case matches from any status, so this is UI-only wiring, not a reducer change).
