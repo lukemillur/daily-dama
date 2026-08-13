@@ -545,24 +545,8 @@ export function ActiveSesh({
       ),
     [goalBaselines, elapsedMs],
   );
-  const celebratedTimeGoalIdsRef = useRef<Set<string>>(new Set());
-  const [celebratingTimeGoalIds, setCelebratingTimeGoalIds] = useState<readonly string[]>([]);
-
-  useEffect(() => {
-    const newlyCrossed: string[] = [];
-    crossedTimeGoalIds.forEach((goalId) => {
-      if (!celebratedTimeGoalIdsRef.current.has(goalId)) {
-        celebratedTimeGoalIdsRef.current.add(goalId);
-        newlyCrossed.push(goalId);
-      }
-    });
-    if (newlyCrossed.length > 0) {
-      setCelebratingTimeGoalIds((current) => [...current, ...newlyCrossed]);
-    }
-  }, [crossedTimeGoalIds]);
-
   const timeGoalCelebrations = goalBaselines.filter(
-    (baseline) => baseline.goal.kind === 'time' && celebratingTimeGoalIds.includes(baseline.goal.id),
+    (baseline) => baseline.goal.kind === 'time' && crossedTimeGoalIds.has(baseline.goal.id),
   );
 
   useEffect(() => {
@@ -711,17 +695,23 @@ function LandingHistory({ landings }: { readonly landings: readonly Landing[] })
   );
 }
 
+const CELEBRATION_VISIBLE_MS = 4000;
+const CELEBRATION_FADE_MS = 250;
+
 function CelebrationBanner({
   accessibilityLabel,
   eyebrow,
   title,
+  autoDismiss = false,
 }: {
   readonly accessibilityLabel: string;
   readonly eyebrow: string;
   readonly title: ReactNode;
+  readonly autoDismiss?: boolean;
 }) {
   const [scale] = useState(() => new Animated.Value(0.55));
   const [opacity] = useState(() => new Animated.Value(0));
+  const [dismissed, setDismissed] = useState(false);
 
   useEffect(() => {
     Animated.parallel([
@@ -729,6 +719,26 @@ function CelebrationBanner({
       Animated.timing(opacity, { toValue: 1, duration: 180, useNativeDriver: true }),
     ]).start();
   }, [opacity, scale]);
+
+  useEffect(() => {
+    if (!autoDismiss) return undefined;
+    const fadeTimer = setTimeout(() => {
+      Animated.timing(opacity, {
+        toValue: 0,
+        duration: CELEBRATION_FADE_MS,
+        useNativeDriver: true,
+      }).start();
+    }, CELEBRATION_VISIBLE_MS);
+    const removeTimer = setTimeout(() => {
+      setDismissed(true);
+    }, CELEBRATION_VISIBLE_MS + CELEBRATION_FADE_MS);
+    return () => {
+      clearTimeout(fadeTimer);
+      clearTimeout(removeTimer);
+    };
+  }, [autoDismiss, opacity]);
+
+  if (dismissed) return null;
 
   return (
     <Animated.View style={{ opacity, transform: [{ scale }] }}>
@@ -758,6 +768,7 @@ function PersonalBestBanner({
           on {trickName}!
         </>
       }
+      autoDismiss
     />
   );
 }
@@ -780,6 +791,7 @@ function FirstLaceBanner({
           {trickName} for the first time{tense === 'inSesh' ? '!' : ''}
         </>
       }
+      autoDismiss={tense === 'inSesh'}
     />
   );
 }
@@ -802,6 +814,7 @@ function GoalCelebrationBanner({
           {formatGoalTarget(goal)}
         </>
       }
+      autoDismiss={tense === 'inSesh'}
     />
   );
 }

@@ -194,6 +194,63 @@ describe('ActiveSesh first-lace celebration', () => {
     });
   });
 
+  it('auto-dismisses the in-sesh banner a few seconds after it appears, with no further Laced press', () => {
+    let root!: ReactTestRenderer;
+    act(() => {
+      root = create(
+        <ActiveSesh
+          trick={TRICK}
+          plan={PLAN}
+          startedAt={Date.now()}
+          landings={[]}
+          pausedDurationMs={0}
+          liveChallengeEnabled={false}
+          hadPriorLaceAtSeshStart={false}
+          onLaced={noop}
+          onPause={noop}
+          onResume={noop}
+          onEnd={noop}
+          onTimerElapsed={noop}
+        />,
+      );
+    });
+
+    act(() => {
+      root.update(
+        <ActiveSesh
+          trick={TRICK}
+          plan={PLAN}
+          startedAt={Date.now()}
+          landings={[landing(1000)]}
+          pausedDurationMs={0}
+          liveChallengeEnabled={false}
+          hadPriorLaceAtSeshStart={false}
+          onLaced={noop}
+          onPause={noop}
+          onResume={noop}
+          onEnd={noop}
+          onTimerElapsed={noop}
+        />,
+      );
+    });
+
+    expect(findBanner(root).length).toBeGreaterThan(0);
+
+    act(() => {
+      jest.advanceTimersByTime(2000);
+    });
+    expect(findBanner(root).length).toBeGreaterThan(0);
+
+    act(() => {
+      jest.advanceTimersByTime(3000);
+    });
+    expect(findBanner(root)).toHaveLength(0);
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
   it('never shows the in-sesh banner when the trick already had a prior lace', () => {
     let root!: ReactTestRenderer;
     act(() => {
@@ -847,6 +904,68 @@ describe('ActiveSesh goal celebration - count-based goals', () => {
     });
   });
 
+  it('auto-dismisses a count-goal banner a few seconds after it appears, with no further Laced press', () => {
+    const goal = buildCountGoal({ targetCount: 3 });
+    const baseline: GoalProgress = { goal, current: 2, target: 3, achieved: false };
+
+    let root!: ReactTestRenderer;
+    act(() => {
+      root = create(
+        <ActiveSesh
+          trick={TRICK}
+          plan={PLAN}
+          startedAt={Date.now()}
+          landings={[]}
+          pausedDurationMs={0}
+          liveChallengeEnabled={false}
+          hadPriorLaceAtSeshStart={true}
+          goalBaselines={[baseline]}
+          onLaced={noop}
+          onPause={noop}
+          onResume={noop}
+          onEnd={noop}
+          onTimerElapsed={noop}
+        />,
+      );
+    });
+
+    act(() => {
+      root.update(
+        <ActiveSesh
+          trick={TRICK}
+          plan={PLAN}
+          startedAt={Date.now()}
+          landings={[landing(1000)]}
+          pausedDurationMs={0}
+          liveChallengeEnabled={false}
+          hadPriorLaceAtSeshStart={true}
+          goalBaselines={[baseline]}
+          onLaced={noop}
+          onPause={noop}
+          onResume={noop}
+          onEnd={noop}
+          onTimerElapsed={noop}
+        />,
+      );
+    });
+
+    expect(findGoalBanner(root, goal).length).toBeGreaterThan(0);
+
+    act(() => {
+      jest.advanceTimersByTime(2000);
+    });
+    expect(findGoalBanner(root, goal).length).toBeGreaterThan(0);
+
+    act(() => {
+      jest.advanceTimersByTime(3000);
+    });
+    expect(findGoalBanner(root, goal)).toHaveLength(0);
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
   it('never celebrates a goal that was already achieved before the sesh started', () => {
     const goal = buildCountGoal({ targetCount: 3 });
     const baseline: GoalProgress = { goal, current: 3, target: 3, achieved: true };
@@ -985,6 +1104,65 @@ describe('ActiveSesh personal-best celebration', () => {
     });
   });
 
+  it('auto-dismisses the personal-best banner a few seconds after it appears, with no further Laced press', () => {
+    let root!: ReactTestRenderer;
+    act(() => {
+      root = create(
+        <ActiveSesh
+          trick={TRICK}
+          plan={PLAN}
+          startedAt={Date.now()}
+          landings={[landing(1000), landing(2000)]}
+          pausedDurationMs={0}
+          personalBest={2}
+          liveChallengeEnabled={false}
+          hadPriorLaceAtSeshStart={true}
+          onLaced={noop}
+          onPause={noop}
+          onResume={noop}
+          onEnd={noop}
+          onTimerElapsed={noop}
+        />,
+      );
+    });
+
+    act(() => {
+      root.update(
+        <ActiveSesh
+          trick={TRICK}
+          plan={PLAN}
+          startedAt={Date.now()}
+          landings={[landing(1000), landing(2000), landing(3000)]}
+          pausedDurationMs={0}
+          personalBest={2}
+          liveChallengeEnabled={false}
+          hadPriorLaceAtSeshStart={true}
+          onLaced={noop}
+          onPause={noop}
+          onResume={noop}
+          onEnd={noop}
+          onTimerElapsed={noop}
+        />,
+      );
+    });
+
+    expect(findPersonalBestBanner(root, TRICK.name).length).toBeGreaterThan(0);
+
+    act(() => {
+      jest.advanceTimersByTime(2000);
+    });
+    expect(findPersonalBestBanner(root, TRICK.name).length).toBeGreaterThan(0);
+
+    act(() => {
+      jest.advanceTimersByTime(3000);
+    });
+    expect(findPersonalBestBanner(root, TRICK.name)).toHaveLength(0);
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
   it('never celebrates when there is no comparable prior attempt (personalBest is undefined)', () => {
     let root!: ReactTestRenderer;
     act(() => {
@@ -1046,7 +1224,7 @@ describe('ActiveSesh goal celebration - time-based goals', () => {
     jest.useRealTimers();
   });
 
-  it('shows the banner exactly once when elapsed time crosses the target, with no re-flicker on later ticks', () => {
+  it('shows the banner exactly once when elapsed time crosses the target, then auto-dismisses and does not reappear', () => {
     const goal = buildTimeGoal({ targetMs: 10_000 });
     const baseline: GoalProgress = { goal, current: 9_000, target: 10_000, achieved: false };
     const startedAt = Date.now();
@@ -1094,6 +1272,18 @@ describe('ActiveSesh goal celebration - time-based goals', () => {
       jest.advanceTimersByTime(2_000);
     });
     expect(findGoalBanner(root, goal)).toHaveLength(bannerCountAfterCrossing);
+
+    // Once the auto-dismiss window elapses, the banner goes away on its own — and stays gone on
+    // subsequent ticks even though elapsed time (and crossedTimeGoalIds) is still past the goal.
+    act(() => {
+      jest.advanceTimersByTime(2_000);
+    });
+    expect(findGoalBanner(root, goal)).toHaveLength(0);
+
+    act(() => {
+      jest.advanceTimersByTime(2_000);
+    });
+    expect(findGoalBanner(root, goal)).toHaveLength(0);
 
     act(() => {
       root.unmount();
