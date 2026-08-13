@@ -145,7 +145,7 @@ The first pass used **locked/unlocked** for "the user can land this trick." User
 
 - **Area:** Stats / Sesh routing
 - **Priority:** Medium (inherited from parent T038)
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Implementer
 - **Description:** Render T038.1's results in a visually subordinate "Needs attention" section on Stats and provide direct Practice actions for each suggested trick. Depends on T038.1.
 - **Exit criteria:** Component tests confirm the first three selector results render in order, each action links to `/sesh?trickId=...` with the correct trick, and empty output adds no unnecessary visual weight; the section is verified in-browser at desktop and 320 px without changing the existing By Trick statistics.
