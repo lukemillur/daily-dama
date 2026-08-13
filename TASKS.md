@@ -137,7 +137,7 @@ The first pass used **locked/unlocked** for "the user can land this trick." User
 
 - **Area:** Repository documentation
 - **Priority:** Medium
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Implementer
 - **Description:** Replace the Expo starter README with project-specific documentation that lets a new collaborator understand and run Daily Dama safely.
 - **Exit criteria:** A clean-install walkthrough confirms the README accurately explains the product, supported platforms, Yarn-based setup, source layout, local-first persistence domains, access-gate configuration, standard verification commands, and relevant handoff documents; a secret-free `.env.example` documents supported environment variables, with no npm-only or obsolete reset-project guidance remaining.
