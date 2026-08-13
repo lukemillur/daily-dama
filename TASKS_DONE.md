@@ -6,6 +6,16 @@ Entries keep their content as it was at completion. Don't retroactively edit a d
 
 ---
 
+### [T054] Add spacing above the Laced button
+
+- **Area:** Sesh
+- **Priority:** Low
+- **Status:** Done
+- **Planning:** Implementer
+- **Description:** `AttemptsReminder` ("You have 5 attempts.") has only a 10px top margin and no bottom margin, and `LacedButton` has no top margin, so when the timer is hidden (as in a Kentei assessment) and there are no trick notes to show, the reminder text and the Laced button sit cramped together with nothing but that 10px between them.
+- **Exit criteria:** Visual check confirms clear spacing between "You have 5 attempts." and the Laced button in the cramped case (`hideTimer` true, no trick notes); layouts where the timer is visible are unaffected.
+- **Notes:** `LacedButton` (`src/features/sesh/components/sesh.tsx`) now accepts an `$extraTopSpacing` prop, wired to `hideTimer` at its single call site, adding `margin-top: 24px` only when the timer is hidden; when the timer is visible the margin stays `0`, unchanged from before, since `Timer`'s own `margin-bottom: 22px` already separates it from the button. Verified in-browser: a Kentei assessment run (`hideTimer` true, no trick notes) now shows clear spacing between "You have 5 attempts." and the Laced button; a regular timed Sesh (timer visible) renders identically to before; `Countdown`'s `AttemptsReminder` placement (a separate render path, unaffected by this change) still looks correct above the countdown number. Full verification (`node .claude/scripts/verify.mjs`) passes.
+
 ### [T053] Add breathing room before auto-advancing on a lace
 
 - **Area:** Sesh

@@ -136,16 +136,6 @@ The first pass used **locked/unlocked** for "the user can land this trick." User
 _This next batch (T045–T069) comes from a QA pass over PR 55's suggested checklist (the `development` → `main` release covering T002–T041), worked top to bottom. Where an entry names the task that shipped the behavior it's correcting, the archived entry in [TASKS_DONE.md](TASKS_DONE.md) stays as-written — history isn't rewritten, same as above._
 
 
-### [T054] Add spacing above the Laced button
-
-- **Area:** Sesh
-- **Priority:** Low
-- **Status:** Not started
-- **Planning:** Implementer
-- **Description:** `AttemptsReminder` ("You have 5 attempts.") has only a 10px top margin and no bottom margin, and `LacedButton` has no top margin, so when the timer is hidden (as in a Kentei assessment) and there are no trick notes to show, the reminder text and the Laced button sit cramped together with nothing but that 10px between them.
-- **Exit criteria:** Visual check confirms clear spacing between "You have 5 attempts." and the Laced button in the cramped case (`hideTimer` true, no trick notes); layouts where the timer is visible are unaffected.
-- **Notes:** Both components are in `src/features/sesh/components/sesh.tsx`'s styled-components (`ActiveContent` has no `gap`, so spacing is entirely per-child margins today). Same `AttemptsReminder` also renders in `Countdown` above the countdown number — confirm that placement still looks correct after the change, though it wasn't the reported complaint.
-
 ### [T055] Show current rank/class standing during a Kentei assessment run
 
 - **Area:** Sesh (Kentei assessment)
