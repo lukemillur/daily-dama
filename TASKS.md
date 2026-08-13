@@ -140,7 +140,7 @@ _This next batch (T045–T069) comes from a QA pass over PR 55's suggested check
 
 - **Area:** Sesh
 - **Priority:** Low
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Implementer
 - **Description:** `NextTrickButton` (`src/features/sesh/components/sesh.tsx`) renders whenever `onNextTrick` is supplied, with no awareness of position in the sequence — `multi-trick-sesh.tsx` passes it unconditionally for any active trick, including the last one, where it's functionally identical to "End Sesh" (both dispatch the same `seshEnded` action) but mislabeled.
 - **Exit criteria:** Test: on the final trick of a multi-trick run, "Next trick" is not rendered; "End Sesh" and the Laced flow continue to work as today; on any non-final trick, "Next trick" still renders as today.
