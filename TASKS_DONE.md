@@ -6,6 +6,16 @@ Entries keep their content as it was at completion. Don't retroactively edit a d
 
 ---
 
+### [T049] Split multi-trick sesh setup into a two-step wizard
+
+- **Area:** Sesh
+- **Priority:** Medium
+- **Status:** Done
+- **Planning:** Required
+- **Description:** `MultiTrickSeshEntry` (`src/features/sesh/components/multi-trick-sesh-entry.tsx`) currently renders trick selection and all run configuration (time per trick, advance-after-one-lace, Start sesh) in a single step/screen — the trick list and the timing/start controls are visible together, which reads as cluttered. Split it into two steps: pick tricks, then configure timing and start.
+- **Exit criteria:** Verified in-browser: step 1 shows only the trick-selection list plus a way to proceed (disabled/unavailable with zero tricks selected); step 2 shows only the timing/advance-on-lace/Start-sesh controls plus a Back control that returns to step 1 with the prior selection preserved; starting a run behaves exactly as today.
+- **Notes:** Implemented per the committed plan. `MultiTrickSeshEntryStep` gained a `configuringRun` state between `choosingTricks` and `running`; `selectedTrickIds`/`advanceOnFirstLace`/`perTrickDurationMinutes` stayed as independent top-level `useState`, outside the step union, so Back preserves prior selection and timing values for free. Step 1's `TrickDirectory` footer now shows only the selection count and a `Continue` button (disabled at zero selected). Step 2 is a new, non-`TrickDirectory` render branch styled after `assessment-entry.tsx`'s `Content`/`Eyebrow`/`DisplayTitle`/`BodyText` pattern, carrying over the duration field and advance-on-lace row verbatim, plus `Start sesh` (same `handleStart`/disabled condition as before) and a `Back` button (`setStep({ kind: 'choosingTricks' })`, styled like `assessment-entry.tsx`'s `BackButton`). `handleFinished` still resets to `choosingTricks` and clears all three pieces of local state. Verified in-browser at `/sesh/multi-trick`: step 1 shows only the trick list/selection count/Continue; step 2 shows only timing/advance/Start/Back; Back preserves both the trick selection and the timing values entered; starting a timed run from step 2 launched the countdown with the entered duration. Also checked layout at a 320px viewport (nav and step-1 trick list render without clipping). Full verification (`node .claude/scripts/verify.mjs`) passes after running `yarn install` in this worktree, whose `node_modules` was missing on entry.
+
 ### [T048] Persist open-ended sesh target laces across sessions
 
 - **Area:** Sesh / persistence (profile domain)

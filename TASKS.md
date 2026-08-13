@@ -136,16 +136,6 @@ The first pass used **locked/unlocked** for "the user can land this trick." User
 _This next batch (T045–T069) comes from a QA pass over PR 55's suggested checklist (the `development` → `main` release covering T002–T041), worked top to bottom. Where an entry names the task that shipped the behavior it's correcting, the archived entry in [TASKS_DONE.md](TASKS_DONE.md) stays as-written — history isn't rewritten, same as above._
 
 
-### [T049] Split multi-trick sesh setup into a two-step wizard
-
-- **Area:** Sesh
-- **Priority:** Medium
-- **Status:** In progress
-- **Planning:** Required
-- **Description:** `MultiTrickSeshEntry` (`src/features/sesh/components/multi-trick-sesh-entry.tsx`) currently renders trick selection and all run configuration (time per trick, advance-after-one-lace, Start sesh) in a single step/screen — the trick list and the timing/start controls are visible together, which reads as cluttered. Split it into two steps: pick tricks, then configure timing and start.
-- **Exit criteria:** Verified in-browser: step 1 shows only the trick-selection list plus a way to proceed (disabled/unavailable with zero tricks selected); step 2 shows only the timing/advance-on-lace/Start-sesh controls plus a Back control that returns to step 1 with the prior selection preserved; starting a run behaves exactly as today.
-- **Notes:** `src/features/sesh/components/assessment-entry.tsx` already implements a real 3-step local state machine (`choosingFlow → choosingRank → running`) with an explicit "Back" button (`setStep({ kind: 'choosingFlow' })`) — use that as the in-repo precedent for shape/style rather than inventing a new pattern. This is local component state only, no reducer/router involvement, consistent with how `assessment-entry.tsx` does it. Overlaps textually with [T050] (both touch `MultiTrickSeshEntry`'s picker step) and [T051] (both touch its entry/first step) — independently shippable, no hard ordering dependency, but expect minor rebase friction if worked concurrently.
-
 ### [T050] Sort focused tricks to the top of the multi-trick picker
 
 - **Area:** Sesh
