@@ -140,7 +140,7 @@ _This next batch (T045–T069) comes from a QA pass over PR 55's suggested check
 
 - **Area:** Sesh / Navigation
 - **Priority:** Medium
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Implementer
 - **Description:** There is no way to navigate from `/sesh/multi-trick` back to `/sesh` before starting a run — no header (the route's `_layout.tsx` sets `headerShown: false`, app-wide convention) and no in-content control either. Add one.
 - **Exit criteria:** From the multi-trick setup screen (before a run starts), a visible Back control returns to the Sesh screen — verified in-browser.
