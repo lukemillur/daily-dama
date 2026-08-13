@@ -139,7 +139,7 @@ _This next batch (T045–T069) comes from a QA pass over PR 55's suggested check
 
 - **Area:** Sesh
 - **Priority:** Medium
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** During an active sesh, `CelebrationBanner`-based banners (`FirstLaceBanner`, `PersonalBestBanner`, and `GoalCelebrationBanner` for both count- and time-based goals, all in `src/features/sesh/components/sesh.tsx`) have an entrance animation but no exit animation or timer — each stays visible until the next "Laced" press flips its underlying `landings.length`-derived condition false. Make them auto-fade after a few seconds instead.
 - **Exit criteria:** Test confirms each of the four banner types dismisses on its own a few seconds after appearing (fake timers), without requiring another Laced press; the time-based goal celebration in particular no longer latches for the rest of the sesh once shown (today `celebratingTimeGoalIds` in `sesh.tsx` is append-only and nothing ever clears it — worse than the other three, which at least clear on the next lace). `CompletedSesh`'s wrap-up rendering of `FirstLaceBanner`/`GoalCelebrationBanner` is a static summary screen with no Laced button to race against and is unaffected by this change; `RankUpCelebrationModal` (`src/features/profile/components/rank-up-celebration-modal.tsx`) is a separate, deliberately tap-to-dismiss mechanism, also unaffected.
