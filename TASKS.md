@@ -140,7 +140,7 @@ _This next batch (T045–T069) comes from a QA pass over PR 55's suggested check
 
 - **Area:** Sesh (Kentei assessment)
 - **Priority:** Medium
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** While working through an assessment, nothing on screen shows which rank/class the user is currently on — `Countdown`/`ActiveSesh` (`src/features/sesh/components/sesh.tsx`) render a generic "Sesh in progress" eyebrow regardless of context, even though the trick objects flowing through already carry `kenteiRank`/`kenteiLevel`/`kenteiClass` (`TrickSummary`, via `selectAssessmentTricks`).
 - **Exit criteria:** During an active/countdown trick within a Kentei assessment, the current rank/class is visibly rendered; regular single-trick Sesh and ad hoc multi-trick screens (where custom tricks may have no Kentei metadata at all) are unchanged.
