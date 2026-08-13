@@ -1,11 +1,12 @@
 import { Link } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { StyleSheet } from 'react-native';
 
 import { Screen } from '@/components/ui/screen';
 import { AppColors } from '@/constants/theme';
 import { useCustomTricks } from '@/features/custom-tricks/state/custom-trick-provider';
 import { DailyHome } from '@/features/home/components/daily-home';
+import { HOME_CLOCK_INTERVAL_MS, useLiveClock } from '@/features/home/hooks/use-live-clock';
 import { createHomeSummary } from '@/features/home/model/home-summary';
 import { KenteiOnboarding } from '@/features/onboarding/components/kentei-onboarding';
 import { useUserProfile } from '@/features/profile/state/user-profile-provider';
@@ -16,10 +17,10 @@ export default function HomeScreen() {
   const profile = useUserProfile();
   const { tricks: customTricks } = useCustomTricks();
   const { sessions } = usePracticeHistory();
-  const [mountedAt] = useState(Date.now);
+  const liveNow = useLiveClock(HOME_CLOCK_INTERVAL_MS);
   const summaryNow = sessions.reduce(
     (latest, session) => Math.max(latest, session.completedAt),
-    mountedAt,
+    liveNow,
   );
   const summary = useMemo(
     () =>
