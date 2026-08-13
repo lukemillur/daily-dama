@@ -133,16 +133,6 @@ _This round came out of a review pass over the first batch of completed work (T0
 
 The first pass used **locked/unlocked** for "the user can land this trick." User-facing copy in this round switches to **laced/unlaced**, which is what the domain actually calls it. The persisted profile field is still named `manuallyUnlockedTrickIds` and stays that way — renaming a persisted key means either a migration or throwing away real user data, and neither is worth it for a vocabulary change. Rename the copy, not the storage contract.
 
-### [T041] Remove verified unused starter scaffold and dependencies
-
-- **Area:** Repository maintenance
-- **Priority:** Low
-- **Status:** Not started
-- **Planning:** Implementer
-- **Description:** Audit and remove unused Expo starter components, assets, and direct dependencies after proving they are not part of the current application or configuration.
-- **Exit criteria:** Repository search and dependency inspection account for every candidate before removal; a frozen Yarn install followed by tests, lint, TypeScript, and web export passes with the verified-unused scaffold, assets, and direct dependencies removed and the lockfile updated.
-- **Notes:** Likely candidates include ExternalLink, WebBadge, HintRow, Collapsible, TrickCarousel, and associated assets/packages, but each must be verified with source/config searches and `yarn why`. Preserve components used by web navigation and packages required transitively or by configuration. Do not combine this with feature-level refactors.
-
 ### [T042] Complete native tab iconography
 
 - **Area:** Navigation

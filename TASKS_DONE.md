@@ -6,6 +6,16 @@ Entries keep their content as it was at completion. Don't retroactively edit a d
 
 ---
 
+### [T041] Remove verified unused starter scaffold and dependencies
+
+- **Area:** Repository maintenance
+- **Priority:** Low
+- **Status:** Done
+- **Planning:** Implementer
+- **Description:** Audit and remove unused Expo starter components, assets, and direct dependencies after proving they are not part of the current application or configuration.
+- **Exit criteria:** Repository search and dependency inspection account for every candidate before removal; a frozen Yarn install followed by tests, lint, TypeScript, and web export passes with the verified-unused scaffold, assets, and direct dependencies removed and the lockfile updated.
+- **Notes:** Verified via source/config search that `ExternalLink`, `WebBadge`, `HintRow`, `Collapsible`, and `TrickCarousel` had no importers anywhere in `src`, then removed all five along with the assets only they referenced (`expo-badge.png`, `expo-badge-white.png`, `react-logo*.png`, `tutorial-web.png`); `app-tabs`, `animated-icon`, `themed-text`, and `themed-view` remain in use by web navigation and were preserved. Removed `expo-web-browser` and `expo-device` from `package.json` (zero usage anywhere, not required by any other dependency per `yarn why`). Also removed `expo-symbols`, `@expo/ui`, and `expo-glass-effect` as *direct* dependencies since nothing in `src` imports them directly and `yarn why` confirms they're already required transitively by `expo-router`, so they remain installed for it. Regenerated `yarn.lock` with `yarn install`, then re-verified with `yarn install --frozen-lockfile` before running `node .claude/scripts/verify.mjs` (test, lint, tsc, web export all pass).
+
 ### [T039] Replace the starter README and document local setup
 
 - **Area:** Repository documentation
