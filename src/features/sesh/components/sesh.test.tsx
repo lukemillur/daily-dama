@@ -10,7 +10,14 @@ import { NoteProvider, useNotes } from '@/features/notes/state/note-provider';
 import type { Note } from '@/features/notes/model/note';
 import { UserProfileProvider } from '@/features/profile/state/user-profile-provider';
 import { Sesh, ActiveSesh, CompletedSesh } from '@/features/sesh/components/sesh';
-import { createTimedSeshPlan, type Landing, type SeshSummary } from '@/features/sesh/model/sesh';
+import {
+  createOpenEndedSeshPlan,
+  createTimedSeshPlan,
+  formatDuration,
+  formatRemainingDuration,
+  type Landing,
+  type SeshSummary,
+} from '@/features/sesh/model/sesh';
 import {
   createPracticeSessionRecordId,
   type PracticeSessionRecord,
@@ -479,6 +486,171 @@ describe('ActiveSesh timer visibility', () => {
     });
 
     expect(JSON.stringify(root.toJSON())).not.toContain('Time remaining');
+
+    act(() => {
+      root.unmount();
+    });
+  });
+});
+
+describe('ActiveSesh pause/resume timer accuracy (regression)', () => {
+  beforeEach(() => {
+    jest.useFakeTimers();
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  it('shows the correct elapsed time immediately on resume for a timed plan', () => {
+    let root!: ReactTestRenderer;
+    const startedAt = Date.now();
+
+    act(() => {
+      root = create(
+        <ActiveSesh
+          trick={TRICK}
+          plan={PLAN}
+          startedAt={startedAt}
+          landings={[]}
+          pausedDurationMs={0}
+          liveChallengeEnabled={false}
+          onLaced={noop}
+          onPause={noop}
+          onResume={noop}
+          onEnd={noop}
+          onTimerElapsed={noop}
+        />,
+      );
+    });
+
+    act(() => {
+      jest.advanceTimersByTime(10_000);
+    });
+
+    const pausedAt = Date.now();
+    act(() => {
+      root.update(
+        <ActiveSesh
+          trick={TRICK}
+          plan={PLAN}
+          startedAt={startedAt}
+          pausedAt={pausedAt}
+          landings={[]}
+          pausedDurationMs={0}
+          liveChallengeEnabled={false}
+          onLaced={noop}
+          onPause={noop}
+          onResume={noop}
+          onEnd={noop}
+          onTimerElapsed={noop}
+        />,
+      );
+    });
+
+    act(() => {
+      jest.advanceTimersByTime(5_000);
+    });
+
+    act(() => {
+      root.update(
+        <ActiveSesh
+          trick={TRICK}
+          plan={PLAN}
+          startedAt={startedAt}
+          landings={[]}
+          pausedDurationMs={5_000}
+          liveChallengeEnabled={false}
+          onLaced={noop}
+          onPause={noop}
+          onResume={noop}
+          onEnd={noop}
+          onTimerElapsed={noop}
+        />,
+      );
+    });
+
+    const json = JSON.stringify(root.toJSON());
+    expect(json).toContain(formatRemainingDuration(290_000));
+    expect(json).not.toContain(formatRemainingDuration(295_000));
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  it('shows the correct elapsed time immediately on resume for an open-ended plan', () => {
+    let root!: ReactTestRenderer;
+    const startedAt = Date.now();
+    const openEndedPlan = createOpenEndedSeshPlan();
+
+    act(() => {
+      root = create(
+        <ActiveSesh
+          trick={TRICK}
+          plan={openEndedPlan}
+          startedAt={startedAt}
+          landings={[]}
+          pausedDurationMs={0}
+          liveChallengeEnabled={false}
+          onLaced={noop}
+          onPause={noop}
+          onResume={noop}
+          onEnd={noop}
+          onTimerElapsed={noop}
+        />,
+      );
+    });
+
+    act(() => {
+      jest.advanceTimersByTime(10_000);
+    });
+
+    const pausedAt = Date.now();
+    act(() => {
+      root.update(
+        <ActiveSesh
+          trick={TRICK}
+          plan={openEndedPlan}
+          startedAt={startedAt}
+          pausedAt={pausedAt}
+          landings={[]}
+          pausedDurationMs={0}
+          liveChallengeEnabled={false}
+          onLaced={noop}
+          onPause={noop}
+          onResume={noop}
+          onEnd={noop}
+          onTimerElapsed={noop}
+        />,
+      );
+    });
+
+    act(() => {
+      jest.advanceTimersByTime(5_000);
+    });
+
+    act(() => {
+      root.update(
+        <ActiveSesh
+          trick={TRICK}
+          plan={openEndedPlan}
+          startedAt={startedAt}
+          landings={[]}
+          pausedDurationMs={5_000}
+          liveChallengeEnabled={false}
+          onLaced={noop}
+          onPause={noop}
+          onResume={noop}
+          onEnd={noop}
+          onTimerElapsed={noop}
+        />,
+      );
+    });
+
+    const json = JSON.stringify(root.toJSON());
+    expect(json).toContain(formatDuration(10_000));
+    expect(json).not.toContain(formatDuration(5_000));
 
     act(() => {
       root.unmount();
