@@ -6,7 +6,7 @@ import { useCustomTricks } from '@/features/custom-tricks/state/custom-trick-pro
 import { useRequireOnboarding } from '@/features/onboarding/state/require-onboarding';
 import { Sesh } from '@/features/sesh/components/sesh';
 import { useUserProfile } from '@/features/profile/state/user-profile-provider';
-import { createTimedSeshPlan, OPEN_ENDED_SESH_PLAN, type SeshPlan } from '@/features/sesh/model/sesh';
+import { createOpenEndedSeshPlan, createTimedSeshPlan, type SeshPlan } from '@/features/sesh/model/sesh';
 import { KENDAMA_KENTEI_TRICKS } from '@/features/tricks/data/kendama-kentei-tricks';
 import { selectAvailablePracticeTricks } from '@/features/tricks/model/trick-directory';
 
@@ -31,7 +31,7 @@ export default function SeshScreen() {
     : lastSesh
       ? lastSesh.plan.kind === 'timed'
         ? createTimedSeshPlan(lastSesh.plan.durationMinutes)
-        : OPEN_ENDED_SESH_PLAN
+        : createOpenEndedSeshPlan(lastSesh.plan.targetLandingCount)
       : undefined;
 
   if (!isOnboardingComplete) return null;

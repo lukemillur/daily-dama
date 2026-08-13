@@ -56,6 +56,17 @@ describe('user profile persistence', () => {
     expect(deserializeUserProfile(serialized)).toEqual(profileWithLastSesh);
   });
 
+  it('round-trips an open-ended cached last sesh with a target', () => {
+    const profileWithLastSesh = {
+      ...COMPLETE_PROFILE,
+      lastSesh: { trickId: 'airplane', plan: { kind: 'openEnded', targetLandingCount: 10 } },
+    } as const;
+
+    const serialized = serializeUserProfile(profileWithLastSesh);
+
+    expect(deserializeUserProfile(serialized)).toEqual(profileWithLastSesh);
+  });
+
   it('round-trips a profile with a custom streak threshold', () => {
     const profileWithThreshold = { ...COMPLETE_PROFILE, streakThresholdMs: 300_000 } as const;
 
@@ -110,6 +121,9 @@ describe('user profile persistence', () => {
     { trickId: 'big-cup', plan: { kind: 'timed', durationMinutes: 61 } },
     { trickId: 'big-cup', plan: { kind: 'unknown' } },
     { trickId: '', plan: { kind: 'openEnded' } },
+    { trickId: 'big-cup', plan: { kind: 'openEnded', targetLandingCount: 0 } },
+    { trickId: 'big-cup', plan: { kind: 'openEnded', targetLandingCount: 1000 } },
+    { trickId: 'big-cup', plan: { kind: 'openEnded', targetLandingCount: 5, extra: true } },
   ])('rejects a malformed cached last sesh', (lastSesh) => {
     const serialized = JSON.stringify({
       version: USER_PROFILE_SCHEMA_VERSION,

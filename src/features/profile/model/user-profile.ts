@@ -1,7 +1,7 @@
 import type { SeshPlan } from '@/features/sesh/model/sesh';
 
 export type LastSeshPlan =
-  | { readonly kind: 'openEnded' }
+  | { readonly kind: 'openEnded'; readonly targetLandingCount?: number }
   | { readonly kind: 'timed'; readonly durationMinutes: number };
 
 export interface LastSesh {
@@ -40,7 +40,12 @@ export function createStreakThresholdMs(minutes: number): number {
 export function createLastSesh(trickId: string, plan: SeshPlan): LastSesh {
   return {
     trickId,
-    plan: plan.kind === 'timed' ? { kind: 'timed', durationMinutes: plan.durationMs / 60_000 } : { kind: 'openEnded' },
+    plan:
+      plan.kind === 'timed'
+        ? { kind: 'timed', durationMinutes: plan.durationMs / 60_000 }
+        : plan.target
+          ? { kind: 'openEnded', targetLandingCount: plan.target.landingCount }
+          : { kind: 'openEnded' },
   };
 }
 
