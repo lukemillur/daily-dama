@@ -93,6 +93,17 @@ interface MultiTrickSeshProps {
    * button. `undefined` renders nothing.
    */
   readonly wrapUpFooter?: ReactNode;
+  /**
+   * When provided, renders a "Cancel" control alongside the very first
+   * trick countdown of the run only — mirrors `skipCountdownBetweenTricks`'s
+   * "only affects transitions between tricks, not the first trick" framing,
+   * inverted: this affects only the first trick, never any transition
+   * between tricks later in the run. Called instead of any reducer
+   * dispatch; the caller decides what "back out of the run" means (e.g.
+   * returning to a setup/flow-picker step). Omit to disable cancelling
+   * entirely.
+   */
+  readonly onCancelRun?: () => void;
 }
 
 /**
@@ -120,6 +131,7 @@ export function MultiTrickSesh({
   hideTimer,
   describeSkippedRange,
   wrapUpFooter,
+  onCancelRun,
 }: MultiTrickSeshProps) {
   const [sequence, setSequence] = useState(() => createTrickSequence(tricks));
   const [state, dispatch] = useReducer(
@@ -135,6 +147,12 @@ export function MultiTrickSesh({
   const recordedSummaryId = useRef<string | undefined>(undefined);
   const [summaries, setSummaries] = useState<SeshSummary[]>([]);
   const [skippedEntries, setSkippedEntries] = useState<string[]>([]);
+  // Tracks whether the run is still on its very first trick's countdown, so
+  // the Cancel control (wired via `onCancelRun`) only ever renders there —
+  // never on a later trick's countdown. Flipped to false the moment the run
+  // progresses past that first countdown by any path (normal completion or
+  // skip); nothing resets it back to true afterward.
+  const [isFirstCountdown, setIsFirstCountdown] = useState(true);
 
   // The run is over once the sequence has no trick left to run, whether that
   // happened because every trick completed normally (leaves `state` at
@@ -205,6 +223,8 @@ export function MultiTrickSesh({
   const handleSkipRank = () => {
     if (!skipTarget) return;
 
+    setIsFirstCountdown(false);
+
     const targetIndex = skipTarget(sequence.currentIndex);
     if (describeSkippedRange) {
       setSkippedEntries((prev) => [...prev, describeSkippedRange(sequence.currentIndex, targetIndex)]);
@@ -226,9 +246,13 @@ export function MultiTrickSesh({
       <Countdown
         trick={state.trick}
         plan={state.plan}
-        onComplete={() => dispatch({ type: 'countdownCompleted', now: Date.now() })}
+        onComplete={() => {
+          setIsFirstCountdown(false);
+          dispatch({ type: 'countdownCompleted', now: Date.now() });
+        }}
         attemptsReminder={showAttemptsReminder}
         onSkipRank={skipTarget ? handleSkipRank : undefined}
+        onCancel={isFirstCountdown ? onCancelRun : undefined}
       />
     );
   }

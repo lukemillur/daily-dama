@@ -135,16 +135,6 @@ The first pass used **locked/unlocked** for "the user can land this trick." User
 
 _This next batch (T045–T069) comes from a QA pass over PR 55's suggested checklist (the `development` → `main` release covering T002–T041), worked top to bottom. Where an entry names the task that shipped the behavior it's correcting, the archived entry in [TASKS_DONE.md](TASKS_DONE.md) stays as-written — history isn't rewritten, same as above._
 
-### [T047] Allow backing out of the pre-sesh countdown
-
-- **Area:** Sesh
-- **Priority:** Medium
-- **Status:** Not started
-- **Planning:** Required
-- **Description:** The 3-2-1 `Countdown` screen (`src/features/sesh/components/sesh.tsx`) that runs before a sesh goes active has no cancel control today — a user who starts a sesh by accident is stuck watching it complete. Add a way to back out during the countdown.
-- **Exit criteria:** From the countdown screen, a visible Back/cancel control returns to trick/setup selection without recording a session — verified for single-trick Sesh (`src/app/sesh/index.tsx`) at minimum, dispatching the existing `seshReset` action (already unconditional in the reducer — `sesh.ts`'s `seshReset` case matches from any status, so this is UI-only wiring, not a reducer change).
-- **Notes:** Scope decision: wire this only at the *first* countdown of a run (single-trick Sesh's `choosing → countdown` transition, and — if picked up together — the first trick's countdown in ad hoc multi-trick/assessment entry, returning to that flow's setup/flow-picker step). Do not wire it between tricks mid-run in a multi-trick sequence; the reported complaint is specifically about accidentally starting a sesh, not about backing out mid-sequence, and later countdowns are a different UX moment not asked for here. This is distinct from the existing "Skip this rank" control (`SkipRankButton`, only present in multi-rank assessment/skip-enabled flows) — skip moves forward past a rank, it isn't a cancel. Distinct also from [T051] (multi-trick setup screen back button), which is about leaving the setup screen *before* countdown even starts.
-
 ### [T048] Persist open-ended sesh target laces across sessions
 
 - **Area:** Sesh / persistence (profile domain)

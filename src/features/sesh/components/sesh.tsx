@@ -158,6 +158,7 @@ export function Sesh({ availableTricks, initialPlan, preferredTrickId, selectedT
         trick={state.trick}
         plan={state.plan}
         onComplete={() => dispatch({ type: 'countdownCompleted', now: Date.now() })}
+        onCancel={() => dispatch({ type: 'seshReset' })}
       />
     );
   }
@@ -412,12 +413,14 @@ export function Countdown({
   onComplete,
   attemptsReminder,
   onSkipRank,
+  onCancel,
 }: {
   readonly trick: PracticeTrick;
   readonly plan: SeshPlan;
   readonly onComplete: () => void;
   readonly attemptsReminder?: boolean;
   readonly onSkipRank?: () => void;
+  readonly onCancel?: () => void;
 }) {
   const [count, setCount] = useState(3);
   const [scale] = useState(() => new Animated.Value(0.55));
@@ -453,6 +456,11 @@ export function Countdown({
           ? `${formatDuration(plan.durationMs)} begins after the countdown.`
           : 'The clock starts after the countdown.'}
       </BodyCopy>
+      {onCancel ? (
+        <CancelButton variant="secondary" size="medium" onPress={onCancel}>
+          Cancel
+        </CancelButton>
+      ) : null}
       {onSkipRank ? (
         <SkipRankButton accessibilityRole="button" onPress={onSkipRank}>
           <SkipRankButtonText>Skip this rank</SkipRankButtonText>
@@ -1113,6 +1121,7 @@ const EndAnywayButton = styled(Pressable)`min-height: 40px; align-items: center;
 const EndAnywayButtonText = styled.Text`color: ${AppColors.textMuted}; font-size: 13px; font-weight: 800; text-decoration-line: underline;`;
 const AttemptsReminder = styled.Text`width: 100%; text-align: center; color: ${AppColors.textMuted}; font-size: 12px; font-weight: 800; letter-spacing: 0.4px; margin-top: 10px; text-transform: uppercase;`;
 const SkipRankButton = styled(Pressable)`min-height: 40px; align-items: center; justify-content: center; margin-top: 14px; padding: 8px 24px;`;
+const CancelButton = styled(Button)`margin-top: 14px;`;
 const SkipRankButtonText = styled.Text`color: ${AppColors.textMuted}; font-size: 13px; font-weight: 800; text-decoration-line: underline;`;
 const NextTrickButton = styled(Pressable)`width: 100%; min-height: 52px; align-items: center; justify-content: center; margin-top: 20px; padding: 12px 24px; background-color: ${AppColors.yellow}; border: 2px solid ${AppColors.ink}; border-radius: 5px;`;
 const NextTrickButtonText = styled.Text`color: ${AppColors.ink}; font-size: 16px; font-weight: 900;`;

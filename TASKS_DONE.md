@@ -6,6 +6,16 @@ Entries keep their content as it was at completion. Don't retroactively edit a d
 
 ---
 
+### [T047] Allow backing out of the pre-sesh countdown
+
+- **Area:** Sesh
+- **Priority:** Medium
+- **Status:** Done
+- **Planning:** Required
+- **Description:** The 3-2-1 `Countdown` screen (`src/features/sesh/components/sesh.tsx`) that runs before a sesh goes active has no cancel control today — a user who starts a sesh by accident is stuck watching it complete. Add a way to back out during the countdown.
+- **Exit criteria:** From the countdown screen, a visible Back/cancel control returns to trick/setup selection without recording a session — verified for single-trick Sesh (`src/app/sesh/index.tsx`) at minimum, dispatching the existing `seshReset` action (already unconditional in the reducer — `sesh.ts`'s `seshReset` case matches from any status, so this is UI-only wiring, not a reducer change).
+- **Notes:** Implemented per the committed plan. `Countdown` (`src/features/sesh/components/sesh.tsx`) gained an optional `onCancel?: () => void` prop, rendering a bordered `CancelButton` (reusing `Button`'s secondary variant) above the existing lower-emphasis "Skip this rank" link. Single-trick `Sesh` wires `onCancel={() => dispatch({ type: 'seshReset' })}` on its countdown-status render. Per the Notes' explicit "if picked up together" allowance, also wired the first-trick-only cancel into `MultiTrickSesh` (new `onCancelRun?: () => void` prop, gated by an `isFirstCountdown` piece of local state that flips to `false` on any post-first-countdown advance — normal completion or "Skip this rank" — so Cancel never reappears on later tricks), and its two callers: `multi-trick-sesh-entry.tsx` (`onCancelRun={handleFinished}`, reusing the existing reset-to-picker handler since no session was recorded yet) and `assessment-entry.tsx` (`onCancelRun={() => setStep({ kind: 'choosingFlow' })}`). No reducer changes — `seshReset` was already unconditional. Added regression coverage: `sesh.test.tsx` (cancel mid-countdown returns to the trick picker with zero recorded sessions — required an `AsyncStorage.clear()` in that test's `beforeEach` after discovering cross-test practice-history leakage in the full suite run, not needed in earlier tests in the file), `multi-trick-sesh.test.tsx` (Cancel fires `onCancelRun` on the first trick countdown; does not render on the second trick's countdown after either normal completion or "Skip this rank"; does not render at all when `onCancelRun` is omitted), and `assessment-entry.test.tsx` (Cancel during the first trick's countdown returns to the flow picker). Manually verified in-browser per AGENTS.md: started a single-trick timed sesh, cancelled mid-countdown, confirmed Stats showed no phantom practice-history entry. `node_modules` was missing on entry to this worktree; ran `yarn install` before testing. Full verification (`node .claude/scripts/verify.mjs`) passes.
+
 ### [T041] Remove verified unused starter scaffold and dependencies
 
 - **Area:** Repository maintenance
