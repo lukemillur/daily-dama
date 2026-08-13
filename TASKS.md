@@ -133,16 +133,6 @@ _This round came out of a review pass over the first batch of completed work (T0
 
 The first pass used **locked/unlocked** for "the user can land this trick." User-facing copy in this round switches to **laced/unlaced**, which is what the domain actually calls it. The persisted profile field is still named `manuallyUnlockedTrickIds` and stays that way — renaming a persisted key means either a migration or throwing away real user data, and neither is worth it for a vocabulary change. Rename the copy, not the storage contract.
 
-### [T039] Replace the starter README and document local setup
-
-- **Area:** Repository documentation
-- **Priority:** Medium
-- **Status:** In progress
-- **Planning:** Implementer
-- **Description:** Replace the Expo starter README with project-specific documentation that lets a new collaborator understand and run Daily Dama safely.
-- **Exit criteria:** A clean-install walkthrough confirms the README accurately explains the product, supported platforms, Yarn-based setup, source layout, local-first persistence domains, access-gate configuration, standard verification commands, and relevant handoff documents; a secret-free `.env.example` documents supported environment variables, with no npm-only or obsolete reset-project guidance remaining.
-- **Notes:** Keep the architecture explanation concise and defer detailed invariants to `AGENTS.md`, `TRICK_VIZ_HANDOFF.md`, and `DEPLOYMENT_HANDOFF.md`. Depends on T040: confirm T040 is in `TASKS_DONE.md` before writing setup docs, so this doesn't describe or re-add `npm run reset-project` guidance that T040 is removing in parallel.
-
 ### [T041] Remove verified unused starter scaffold and dependencies
 
 - **Area:** Repository maintenance
