@@ -136,16 +136,6 @@ The first pass used **locked/unlocked** for "the user can land this trick." User
 _This next batch (T045–T069) comes from a QA pass over PR 55's suggested checklist (the `development` → `main` release covering T002–T041), worked top to bottom. Where an entry names the task that shipped the behavior it's correcting, the archived entry in [TASKS_DONE.md](TASKS_DONE.md) stays as-written — history isn't rewritten, same as above._
 
 
-### [T051] Add a back button to the multi-trick sesh setup screen
-
-- **Area:** Sesh / Navigation
-- **Priority:** Medium
-- **Status:** In progress
-- **Planning:** Implementer
-- **Description:** There is no way to navigate from `/sesh/multi-trick` back to `/sesh` before starting a run — no header (the route's `_layout.tsx` sets `headerShown: false`, app-wide convention) and no in-content control either. Add one.
-- **Exit criteria:** From the multi-trick setup screen (before a run starts), a visible Back control returns to the Sesh screen — verified in-browser.
-- **Notes:** No back-button precedent exists anywhere in this app's routing (`headerShown: false` everywhere, no icon library/assets in the project, no `BackHandler`/hardware-back handling). The closest in-repo precedent for "exit a sub-flow" is `assessment-entry.tsx`'s literal text "Back" button (local step state, not router-level) or the various Tricks nested screens' "Close" buttons (see [T068]/[T069] for that broader pattern). A plain text button dispatching `router.back()` (or `router.replace('/sesh')`) matches this app's existing visual language better than a header back-arrow, which nothing else in the app uses.
-
 ### [T052] Hide "Next trick" on the final trick of a multi-trick run
 
 - **Area:** Sesh

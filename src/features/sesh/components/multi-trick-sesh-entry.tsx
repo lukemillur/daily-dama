@@ -1,3 +1,4 @@
+import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Platform, Pressable, TextInput, useWindowDimensions } from 'react-native';
 import { styled } from 'styled-components/native';
@@ -44,6 +45,7 @@ type MultiTrickSeshEntryStep =
  * checkbox state.
  */
 export function MultiTrickSeshEntry() {
+  const router = useRouter();
   const { width } = useWindowDimensions();
   const shouldPinSelectionChrome = Platform.OS === 'web' && width >= 768;
   const { tricks: customTricks } = useCustomTricks();
@@ -164,6 +166,14 @@ export function MultiTrickSeshEntry() {
           title: 'Pick your\nlineup.',
           introduction: 'Select any tricks you want to work through, one after another, in one sesh.',
         }}
+        headerAction={
+          <ExitBackButton
+            accessibilityLabel="Back to Sesh"
+            variant="secondary"
+            onPress={() => router.replace('/sesh')}>
+            Back
+          </ExitBackButton>
+        }
         footer={
           <FinishBackdrop $pinned={shouldPinSelectionChrome}>
             <FinishArea $pinned={shouldPinSelectionChrome}>
@@ -227,4 +237,8 @@ const Copy = styled(BodyText)`
 const BackButton = styled(Button)`
   align-self: flex-start;
   margin-top: 30px;
+`;
+const ExitBackButton = styled(Button)`
+  align-self: flex-start;
+  margin-top: 16px;
 `;
