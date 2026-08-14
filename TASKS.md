@@ -150,7 +150,7 @@ _The following batch (T070–T079) comes from the QA checklist completed against
 
 - **Area:** Sesh / practice entry points
 - **Priority:** High (inherited from parent T077)
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** When a Sesh launched with a direct practice entry point completes, make “Start another sesh” leave the quick-start route/state and return to the normal Sesh home picker instead of returning to “Ready when you are” for the same trick.
 - **Exit criteria:** An integration test starts Sesh from a neglected-trick/practice link, completes the run, presses “Start another sesh,” and verifies the Sesh home picker is rendered; pressing the Sesh tab afterward also reaches the same home picker without a route lock.
