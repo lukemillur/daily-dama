@@ -100,21 +100,30 @@ describe('AllTrickGoalsScreen', () => {
   });
 
   it('lists goals from multiple tricks with per-goal progress, achieved and unachieved rendered distinguishably', async () => {
-    const root = await mountHarness();
+    // Goals are created against a real Date.now() timestamp, but summaryFor() uses a fixed,
+    // unrealistic endedAt (5000) as the recorded session's completedAt. Pin Date.now() so the
+    // goals' createdAt precedes that fixed completedAt, matching production where both
+    // timestamps come from the same real clock.
+    const dateNowSpy = jest.spyOn(Date, 'now').mockReturnValue(0);
+    try {
+      const root = await mountHarness();
 
-    press(root, 'add-goal-a');
-    press(root, 'add-goal-b');
-    press(root, 'record-sesh-a');
+      press(root, 'add-goal-a');
+      press(root, 'add-goal-b');
+      press(root, 'record-sesh-a');
 
-    expect(findText(root, 'Big Cup')).toHaveLength(1);
-    expect(findText(root, 'Stall')).toHaveLength(1);
-    expect(findText(root, '3 / 3 laces')).toHaveLength(1);
-    expect(findText(root, '0 / 5 laces')).toHaveLength(1);
+      expect(findText(root, 'Big Cup')).toHaveLength(1);
+      expect(findText(root, 'Stall')).toHaveLength(1);
+      expect(findText(root, '3 / 3 laces')).toHaveLength(1);
+      expect(findText(root, '0 / 5 laces')).toHaveLength(1);
 
-    // Achieved and unachieved goals must render distinguishably: exactly one "Achieved" badge,
-    // and it must belong to trick A's card (the only goal that reached its target).
-    const achievedBadges = findText(root, 'Achieved');
-    expect(achievedBadges).toHaveLength(1);
+      // Achieved and unachieved goals must render distinguishably: exactly one "Achieved" badge,
+      // and it must belong to trick A's card (the only goal that reached its target).
+      const achievedBadges = findText(root, 'Achieved');
+      expect(achievedBadges).toHaveLength(1);
+    } finally {
+      dateNowSpy.mockRestore();
+    }
   });
 
   it('shows the empty state when there are no goals', async () => {
