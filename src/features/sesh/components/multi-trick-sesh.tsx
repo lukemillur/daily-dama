@@ -114,6 +114,12 @@ interface MultiTrickSeshProps {
    * entirely.
    */
   readonly onCancelRun?: () => void;
+  /**
+   * Forwarded to `Countdown`/`ActiveSesh` as-is — renders the current
+   * trick's Kentei rank/class when its metadata is present. Used by the
+   * assessment flow.
+   */
+  readonly showRankStanding?: boolean;
 }
 
 /**
@@ -143,6 +149,7 @@ export function MultiTrickSesh({
   describeSkippedRange,
   wrapUpFooter,
   onCancelRun,
+  showRankStanding,
 }: MultiTrickSeshProps) {
   const [sequence, setSequence] = useState(() => createTrickSequence(tricks));
   const [state, dispatch] = useReducer(
@@ -282,6 +289,7 @@ export function MultiTrickSesh({
         attemptsReminder={showAttemptsReminder}
         onSkipRank={skipTarget ? handleSkipRank : undefined}
         onCancel={isFirstCountdown ? onCancelRun : undefined}
+        showRankStanding={showRankStanding}
       />
     );
   }
@@ -340,6 +348,7 @@ export function MultiTrickSesh({
         }
         endActionLabel={endActionLabel}
         hideTimer={hideTimer}
+        showRankStanding={showRankStanding}
       />
     );
   }

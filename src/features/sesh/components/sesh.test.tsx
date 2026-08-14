@@ -10,7 +10,7 @@ import { useGoalActions, useGoals, GoalProvider } from '@/features/goals/state/g
 import { NoteProvider, useNotes } from '@/features/notes/state/note-provider';
 import type { Note } from '@/features/notes/model/note';
 import { UserProfileProvider } from '@/features/profile/state/user-profile-provider';
-import { Sesh, ActiveSesh, CompletedSesh } from '@/features/sesh/components/sesh';
+import { Sesh, ActiveSesh, CompletedSesh, Countdown } from '@/features/sesh/components/sesh';
 import {
   createOpenEndedSeshPlan,
   createTimedSeshPlan,
@@ -28,7 +28,7 @@ import {
   usePracticeHistory,
   usePracticeHistoryActions,
 } from '@/features/stats/state/practice-history-provider';
-import type { PracticeTrick } from '@/features/tricks/model/trick';
+import type { PracticeTrick, TrickSummary } from '@/features/tricks/model/trick';
 
 // ActiveSesh/CompletedSesh are re-exported from a module that also (transitively) imports
 // practice-history-provider, which pulls in AsyncStorage. Mock it the same way
@@ -41,6 +41,13 @@ jest.mock('@react-native-async-storage/async-storage', () =>
 );
 
 const TRICK: PracticeTrick = { id: 'big-cup', name: 'Big Cup' };
+const TRICK_WITH_KENTEI: TrickSummary = {
+  id: 'lighthouse',
+  name: 'Lighthouse',
+  kenteiRank: 5,
+  kenteiClass: '3rd Class',
+  kenteiLevel: 'Basic',
+};
 const PLAN = createTimedSeshPlan(5);
 
 // Match only the rendered host View, not the CelebrationBanner/wrapper component instances
@@ -1716,5 +1723,141 @@ describe('Sesh wiring - countdown cancel (T047)', () => {
     } finally {
       jest.useRealTimers();
     }
+  });
+});
+
+describe('Countdown rank standing', () => {
+  beforeEach(() => {
+    jest.useFakeTimers();
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  it('renders the rank/class label when showRankStanding is true and the trick carries Kentei metadata', () => {
+    let root!: ReactTestRenderer;
+    act(() => {
+      root = create(
+        <Countdown trick={TRICK_WITH_KENTEI} plan={PLAN} onComplete={noop} showRankStanding />,
+      );
+    });
+
+    expect(JSON.stringify(root.toJSON())).toContain('Rank 5 · 3rd Class · Basic');
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  it('renders nothing when showRankStanding is omitted', () => {
+    let root!: ReactTestRenderer;
+    act(() => {
+      root = create(<Countdown trick={TRICK_WITH_KENTEI} plan={PLAN} onComplete={noop} />);
+    });
+
+    expect(JSON.stringify(root.toJSON())).not.toContain('Rank 5');
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  it('renders nothing when showRankStanding is true but the trick lacks Kentei metadata', () => {
+    let root!: ReactTestRenderer;
+    act(() => {
+      root = create(<Countdown trick={TRICK} plan={PLAN} onComplete={noop} showRankStanding />);
+    });
+
+    expect(JSON.stringify(root.toJSON())).not.toContain('Rank');
+
+    act(() => {
+      root.unmount();
+    });
+  });
+});
+
+describe('ActiveSesh rank standing', () => {
+  it('renders the rank/class label when showRankStanding is true and the trick carries Kentei metadata', () => {
+    let root!: ReactTestRenderer;
+    act(() => {
+      root = create(
+        <ActiveSesh
+          trick={TRICK_WITH_KENTEI}
+          plan={PLAN}
+          startedAt={Date.now()}
+          landings={[]}
+          pausedDurationMs={0}
+          liveChallengeEnabled={false}
+          onLaced={noop}
+          onPause={noop}
+          onResume={noop}
+          onEnd={noop}
+          onTimerElapsed={noop}
+          showRankStanding
+        />,
+      );
+    });
+
+    expect(JSON.stringify(root.toJSON())).toContain('Rank 5 · 3rd Class · Basic');
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  it('renders nothing when showRankStanding is omitted', () => {
+    let root!: ReactTestRenderer;
+    act(() => {
+      root = create(
+        <ActiveSesh
+          trick={TRICK_WITH_KENTEI}
+          plan={PLAN}
+          startedAt={Date.now()}
+          landings={[]}
+          pausedDurationMs={0}
+          liveChallengeEnabled={false}
+          onLaced={noop}
+          onPause={noop}
+          onResume={noop}
+          onEnd={noop}
+          onTimerElapsed={noop}
+        />,
+      );
+    });
+
+    expect(JSON.stringify(root.toJSON())).not.toContain('Rank 5');
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  it('renders nothing when showRankStanding is true but the trick lacks Kentei metadata', () => {
+    let root!: ReactTestRenderer;
+    act(() => {
+      root = create(
+        <ActiveSesh
+          trick={TRICK}
+          plan={PLAN}
+          startedAt={Date.now()}
+          landings={[]}
+          pausedDurationMs={0}
+          liveChallengeEnabled={false}
+          onLaced={noop}
+          onPause={noop}
+          onResume={noop}
+          onEnd={noop}
+          onTimerElapsed={noop}
+          showRankStanding
+        />,
+      );
+    });
+
+    expect(JSON.stringify(root.toJSON())).not.toContain('Rank');
+
+    act(() => {
+      root.unmount();
+    });
   });
 });

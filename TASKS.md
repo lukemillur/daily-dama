@@ -136,16 +136,6 @@ The first pass used **locked/unlocked** for "the user can land this trick." User
 _This next batch (T045–T069) comes from a QA pass over PR 55's suggested checklist (the `development` → `main` release covering T002–T041), worked top to bottom. Where an entry names the task that shipped the behavior it's correcting, the archived entry in [TASKS_DONE.md](TASKS_DONE.md) stays as-written — history isn't rewritten, same as above._
 
 
-### [T055] Show current rank/class standing during a Kentei assessment run
-
-- **Area:** Sesh (Kentei assessment)
-- **Priority:** Medium
-- **Status:** Not started
-- **Planning:** Required
-- **Description:** While working through an assessment, nothing on screen shows which rank/class the user is currently on — `Countdown`/`ActiveSesh` (`src/features/sesh/components/sesh.tsx`) render a generic "Sesh in progress" eyebrow regardless of context, even though the trick objects flowing through already carry `kenteiRank`/`kenteiLevel`/`kenteiClass` (`TrickSummary`, via `selectAssessmentTricks`).
-- **Exit criteria:** During an active/countdown trick within a Kentei assessment, the current rank/class is visibly rendered; regular single-trick Sesh and ad hoc multi-trick screens (where custom tricks may have no Kentei metadata at all) are unchanged.
-- **Notes:** Gate this to assessment context specifically (e.g. a prop threaded from `AssessmentEntry`) rather than rendering unconditionally in the shared `Countdown`/`ActiveSesh` components, since regular Sesh and ad hoc multi-trick tricks may lack `kenteiRank`/`kenteiLevel`/`kenteiClass` entirely. Independent of [T056] (skip-rank trick preview) — related by theme (both are "surface rank context during assessment") but touch different UI moments and are separately shippable.
-
 ### [T056] Show the rank's trick list before skipping it in a Kentei assessment
 
 - **Area:** Sesh (Kentei assessment)

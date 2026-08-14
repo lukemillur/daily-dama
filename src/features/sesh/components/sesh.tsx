@@ -40,7 +40,7 @@ import {
   shouldPromptSeshNote,
   type SeshSummary,
 } from '@/features/sesh/model/sesh';
-import type { PracticeTrick } from '@/features/tricks/model/trick';
+import { formatKenteiStanding, isTrickSummary, type PracticeTrick } from '@/features/tricks/model/trick';
 import {
   createPracticeSessionRecordId,
   getPersonalBest,
@@ -414,6 +414,7 @@ export function Countdown({
   attemptsReminder,
   onSkipRank,
   onCancel,
+  showRankStanding,
 }: {
   readonly trick: PracticeTrick;
   readonly plan: SeshPlan;
@@ -421,7 +422,9 @@ export function Countdown({
   readonly attemptsReminder?: boolean;
   readonly onSkipRank?: () => void;
   readonly onCancel?: () => void;
+  readonly showRankStanding?: boolean;
 }) {
+  const rankStanding = showRankStanding && isTrickSummary(trick) ? formatKenteiStanding(trick) : undefined;
   const [count, setCount] = useState(3);
   const [scale] = useState(() => new Animated.Value(0.55));
   const [opacity] = useState(() => new Animated.Value(0));
@@ -445,6 +448,7 @@ export function Countdown({
   return (
     <CenteredPanel>
       <Eyebrow>Get ready</Eyebrow>
+      {rankStanding ? <RankStandingLabel>{rankStanding}</RankStandingLabel> : null}
       <CountdownTrick>{trick.name}</CountdownTrick>
       <SequenceSteps trick={trick} />
       {attemptsReminder ? <AttemptsReminder>You have 5 attempts.</AttemptsReminder> : null}
@@ -492,6 +496,7 @@ export function ActiveSesh({
   onNextTrick,
   endActionLabel = 'End Sesh',
   hideTimer,
+  showRankStanding,
 }: {
   readonly trick: PracticeTrick;
   readonly plan: SeshPlan;
@@ -514,7 +519,9 @@ export function ActiveSesh({
   readonly onNextTrick?: () => void;
   readonly endActionLabel?: string;
   readonly hideTimer?: boolean;
+  readonly showRankStanding?: boolean;
 }) {
+  const rankStanding = showRankStanding && isTrickSummary(trick) ? formatKenteiStanding(trick) : undefined;
   const notesToShow = trickNotes ?? [];
   const showChallenge = liveChallengeEnabled && personalBest !== undefined;
   const hasBeatenBest = showChallenge && landings.length > personalBest;
@@ -575,6 +582,7 @@ export function ActiveSesh({
           <PersonalBestBanner trickName={trick.name} personalBest={personalBest} />
         ) : null}
         <Eyebrow>{isPaused ? 'Sesh paused' : 'Sesh in progress'}</Eyebrow>
+        {rankStanding ? <RankStandingLabel>{rankStanding}</RankStandingLabel> : null}
         <ActiveTrick>{trick.name}</ActiveTrick>
         <SequenceSteps trick={trick} prominent />
         {attemptsReminder ? <AttemptsReminder>You have 5 attempts.</AttemptsReminder> : null}
@@ -1121,6 +1129,8 @@ const EndButtonText = styled.Text`color: #18382e; font-size: 15px; font-weight: 
 const EndAnywayButton = styled(Pressable)`min-height: 40px; align-items: center; justify-content: center; margin-top: 10px; padding: 8px 24px;`;
 const EndAnywayButtonText = styled.Text`color: ${AppColors.textMuted}; font-size: 13px; font-weight: 800; text-decoration-line: underline;`;
 const AttemptsReminder = styled.Text`width: 100%; text-align: center; color: ${AppColors.textMuted}; font-size: 12px; font-weight: 800; letter-spacing: 0.4px; margin-top: 10px; text-transform: uppercase;`;
+
+const RankStandingLabel = styled.Text`width: 100%; text-align: center; color: ${AppColors.textMuted}; font-size: 12px; font-weight: 800; letter-spacing: 0.4px; margin-bottom: 10px; text-transform: uppercase;`;
 const SkipRankButton = styled(Pressable)`min-height: 40px; align-items: center; justify-content: center; margin-top: 14px; padding: 8px 24px;`;
 const CancelButton = styled(Button)`margin-top: 14px;`;
 const SkipRankButtonText = styled.Text`color: ${AppColors.textMuted}; font-size: 13px; font-weight: 800; text-decoration-line: underline;`;

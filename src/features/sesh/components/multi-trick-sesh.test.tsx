@@ -12,7 +12,7 @@ import {
   PracticeHistoryProvider,
   usePracticeHistory,
 } from '@/features/stats/state/practice-history-provider';
-import type { PracticeTrick } from '@/features/tricks/model/trick';
+import type { PracticeTrick, TrickSummary } from '@/features/tricks/model/trick';
 
 // MultiTrickSesh (transitively, via practice-history-provider) pulls in AsyncStorage. Mock it the
 // same way sesh.test.tsx does — these tests never touch storage directly.
@@ -25,6 +25,11 @@ const TRICKS: readonly PracticeTrick[] = [
   { id: 'big-cup', name: 'Big Cup' },
   { id: 'lighthouse', name: 'Lighthouse' },
   { id: 'airplane', name: 'Airplane' },
+];
+
+const TRICKS_WITH_KENTEI: readonly TrickSummary[] = [
+  { id: 'big-cup', name: 'Big Cup', kenteiRank: 5, kenteiClass: '3rd Class', kenteiLevel: 'Basic' },
+  { id: 'lighthouse', name: 'Lighthouse', kenteiRank: 5, kenteiClass: '3rd Class', kenteiLevel: 'Basic' },
 ];
 
 function pressByAccessibilityLabel(root: ReactTestRenderer, label: string) {
@@ -104,6 +109,8 @@ async function mountMultiTrickSesh(props: {
   readonly describeSkippedRange?: (startIndex: number, endIndex: number) => string;
   readonly wrapUpFooter?: ReactNode;
   readonly onCancelRun?: () => void;
+  readonly tricks?: readonly PracticeTrick[];
+  readonly showRankStanding?: boolean;
 }) {
   let root!: ReactTestRenderer;
   await act(async () => {
@@ -111,7 +118,7 @@ async function mountMultiTrickSesh(props: {
       <NoteProvider>
         <PracticeHistoryProvider>
           <MultiTrickSesh
-            tricks={TRICKS}
+            tricks={props.tricks ?? TRICKS}
             plan={props.plan ?? OPEN_ENDED_SESH_PLAN}
             advanceOnFirstLace={props.advanceOnFirstLace}
             pauseAfterLace={props.pauseAfterLace}
@@ -123,6 +130,7 @@ async function mountMultiTrickSesh(props: {
             describeSkippedRange={props.describeSkippedRange}
             wrapUpFooter={props.wrapUpFooter}
             onCancelRun={props.onCancelRun}
+            showRankStanding={props.showRankStanding}
           />
           <SessionSummary />
         </PracticeHistoryProvider>
@@ -867,6 +875,47 @@ describe('MultiTrickSesh onCancelRun (T047)', () => {
 
     expect(findByText(root, TRICKS[0].name).length).toBeGreaterThan(0);
     expect(findByText(root, 'Cancel')).toHaveLength(0);
+
+    act(() => {
+      root.unmount();
+    });
+  });
+});
+
+describe('MultiTrickSesh showRankStanding', () => {
+  beforeEach(async () => {
+    await AsyncStorage.clear();
+    jest.useFakeTimers();
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  it('renders the rank/class label during both countdown and active phases when set', async () => {
+    const onFinished = jest.fn();
+    const root = await mountMultiTrickSesh({
+      onFinished,
+      tricks: TRICKS_WITH_KENTEI,
+      showRankStanding: true,
+    });
+
+    expect(JSON.stringify(root.toJSON())).toContain('Rank 5 · 3rd Class · Basic');
+
+    advanceThroughCountdown();
+
+    expect(JSON.stringify(root.toJSON())).toContain('Rank 5 · 3rd Class · Basic');
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  it('does not render the label when showRankStanding is not passed', async () => {
+    const onFinished = jest.fn();
+    const root = await mountMultiTrickSesh({ onFinished, tricks: TRICKS_WITH_KENTEI });
+
+    expect(JSON.stringify(root.toJSON())).not.toContain('Rank 5');
 
     act(() => {
       root.unmount();
