@@ -243,6 +243,24 @@ test('cleanup refuses a worktree holding commits that exist nowhere else', (t) =
   assert.ok(fs.existsSync(stage));
 });
 
+test('a clean Codex stage is safely released before a resumed task creates another one', (t) => {
+  const repo = makeRepo();
+  t.after(() => cleanupRepo(repo));
+
+  const claimed = node(CLAIM, ['--repo', repo.local, 'T100'], repo.local);
+  const stage = path.join(repo.local, '.claude/worktrees/codex-ticket-t100-implementer-abc');
+  git(repo.local, 'worktree', 'add', '--detach', stage, `origin/${claimed.json.branch}`);
+  git(stage, 'checkout', '-B', claimed.json.branch, `origin/${claimed.json.branch}`);
+
+  const result = node(
+    CLEANUP,
+    ['--repo', repo.local, '--release-codex-stage', '--task', 'T100', '--branch', claimed.json.branch],
+    repo.local,
+  );
+  assert.deepEqual(result.json.removed.map((target) => path.basename(target)), ['codex-ticket-t100-implementer-abc']);
+  assert.equal(fs.existsSync(stage), false);
+});
+
 test('cleanup never removes the main checkout, even when asked directly', (t) => {
   const repo = makeRepo();
   t.after(() => cleanupRepo(repo));

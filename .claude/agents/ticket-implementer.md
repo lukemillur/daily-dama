@@ -47,6 +47,12 @@ Run the task's own targeted tests as you go (`yarn test --runInBand <path-patter
 
 Verify the task's own exit criteria yourself — don't mark it done on assumption.
 
+Before archiving or opening a PR, turn each stated criterion into a short
+evidence record: `passed`, `not-run`, or `blocked`, plus the command or manual
+check that supports it. A web export proves that the bundle builds; it does not
+by itself prove a required browser interaction. If any required criterion is
+`not-run` or `blocked`, stop before the commit and report `RESULT.status: blocked`.
+
 If that needs the browser preview: **do not use `preview_start` with a named config from `.claude/launch.json`** — those configs have no `cwd` of their own, so the tool reuses (or starts) a server rooted in the main repo checkout, not your isolated worktree, and you'd silently verify pre-edit code. Start your own dev server in this worktree instead (`yarn expo start --web --port <port>`, backgrounded) on a port other than 8081/8091 — check it's actually free first rather than assuming, since a prior cycle's server may still be up. Then `preview_start` with `{url: "http://localhost:<port>"}`. Stop that server once you're done verifying so it doesn't linger past this call.
 
 ## 5. Run the full verification sequence (one command)
@@ -83,7 +89,20 @@ The PR body includes the task ID, the task's **Description** field verbatim from
 
 Then attempt **exactly one** plain squash-merge: `gh pr merge --squash --delete-branch`. No review gate, no waiting on CI — that much is pre-authorized for your own claimed branch per `AGENTS.md` § Git state expectations, same as the push.
 
-If it's rejected for any reason — a failing required check, missing review, branch protection, a merge conflict, anything `gh pr merge` refuses — **stop. Do not retry with different flags, and never reach for `--admin`, `--force`, or any other bypass of branch protection.** The pre-authorization covers an ordinary squash-merge on your own branch; it does not extend to overriding whatever check is stopping it. Do not diagnose or fix the underlying cause either (broken CI config, a flaky test, an unrelated dependency issue) — that belongs to a human or the orchestrating session. Leave the PR open, leave this worktree exactly as it is (a human may need it to investigate — the orchestrator's cleanup refuses to touch a worktree with a branch still checked out), and go straight to reporting.
+Always reconcile the remote PR state after that one command, including when it
+returns non-zero:
+
+```sh
+merge_output="$(gh pr merge --squash --delete-branch 2>&1)"; merge_exit=$?
+node .claude/scripts/pr-merge-status.mjs --pr "$pr_url"
+```
+
+The status script is read-only. If it reports `status: "merged"`, treat the
+task as merged even when `merge_exit` is non-zero: do not retry the merge, fetch
+`development`, detach as in step 8, and report the command output as a
+post-merge local failure. If it reports `not-merged` or `unavailable`, stop.
+Do not retry with different flags or reach for `--admin`, `--force`, or another
+bypass. Preserve the exact merge output for the final result.
 
 ## 8. Release the worktree (one command, only after a successful merge)
 
@@ -93,14 +112,17 @@ git fetch origin development && git checkout --detach origin/development && git 
 
 Do **not** try to remove your own worktree — Claude Code holds a `git worktree lock` on it for as long as you're running, so the removal fails. The orchestrator removes it after this call returns. Detaching onto `origin/development` is what makes that removal safe: it leaves the worktree clean, off any branch, and holding no commits that exist nowhere else.
 
-## 9. Report (short)
+## 9. Report (structured and short)
 
-- Task ID and PR URL.
-- Either "merged" or the exact rejection message `gh pr merge` gave, verbatim.
-- At most 1-2 lines on anything you deviated from in the plan.
-- `WORKTREE: <absolute path from git rev-parse --show-toplevel>`
-- `STATUS: merged` | `STATUS: blocked-at-merge` | `STATUS: blocked`
+Emit one `RESULT:` line containing JSON with:
 
-Nothing else. Don't restate implementation detail, verification output, or the reasoning behind decisions — that record already lives durably in the `TASKS_DONE.md` commit (per its Notes field), and the orchestrator only extracts the PR URL, status and worktree path from this report. A long report here is pure overhead.
+- `taskId`, `status` (`merged`, `blocked-at-merge`, or `blocked`), `prUrl`, and `worktree`.
+- `merge`: the read-only reconciliation result, the merge command exit code, and its exact output.
+- `exitCriteria`: every task criterion with its `passed` / `not-run` / `blocked` status and concise evidence.
+- `deviation` only when the implementation materially departed from the plan.
 
-If, once you're in the code, the task turns out bigger than scoped or depends on an undecided product call, stop — don't push a half-finished branch past that point. Follow `TASKS.md`'s own guidance: split it into new entries, or mark it `Blocked` with the specific open question, and report `STATUS: blocked` rather than guessing.
+For a confirmed remote merge, set `status` to `merged` even if the merge command
+returned non-zero. Keep the report to that one result line; the commit and PR
+remain the durable implementation record.
+
+If, once you're in the code, the task turns out bigger than scoped or depends on an undecided product call, stop — don't push a half-finished branch past that point. Follow `TASKS.md`'s own guidance: split it into new entries, or mark it `Blocked` with the specific open question, and report `RESULT.status: blocked` rather than guessing.

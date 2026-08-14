@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import { createFakeRunner } from '../lib/exec.mjs';
-import { assessWorktree, parseWorktreeList, removeWorktree } from '../lib/worktree.mjs';
+import { assessWorktree, parseWorktreeList, releaseAttachedWorktree, removeWorktree } from '../lib/worktree.mjs';
 import { cleanup, parseArgs } from '../worktree-cleanup.mjs';
 
 const REPO = '/repo';
@@ -79,6 +79,31 @@ test('refuses a worktree that still has a branch checked out', () => {
   const assessment = assessWorktree({ run, repoRoot: REPO, worktree: find('agent-onbranch') });
   assert.equal(assessment.safe, false);
   assert.equal(assessment.reason, 'branch-checked-out');
+});
+
+test('releases only a clean, pushed Codex stage on its exact task branch', () => {
+  const stage = find('agent-onbranch');
+  const run = createFakeRunner([
+    ...cleanResponses,
+    [/checkout --detach HEAD/, { stdout: '' }],
+    [/worktree list --porcelain/, { stdout: PORCELAIN.replace('branch refs/heads/task/T100-something', 'detached') }],
+  ]);
+  const result = releaseAttachedWorktree({ run, repoRoot: REPO, worktree: stage, branch: 'task/T100-something' });
+  assert.equal(result.action, 'removed');
+  assert.ok(run.calls.some((argv) => argv.join(' ') === `git -C ${stage.path} checkout --detach HEAD`));
+});
+
+test('refuses to release a stage when a different branch is attached', () => {
+  const run = createFakeRunner(cleanResponses);
+  const result = releaseAttachedWorktree({
+    run,
+    repoRoot: REPO,
+    worktree: find('agent-onbranch'),
+    branch: 'task/T100-other',
+  });
+  assert.equal(result.action, 'refused');
+  assert.equal(result.reason, 'unexpected-branch');
+  assert.equal(run.calls.some((argv) => argv.includes('checkout')), false);
 });
 
 test('refuses a worktree outside .claude/worktrees as user-owned', () => {
@@ -159,6 +184,10 @@ test('CLI argument parsing', () => {
   assert.deepEqual(parsed.prefixes, ['newticket-claim-']);
   assert.equal(parsed.dryRun, true);
   assert.equal(parseArgs(['--list']).list, true);
+  const release = parseArgs(['--release-codex-stage', '--task', 'T100.1', '--branch', 'task/T100.1-safe-release']);
+  assert.equal(release.releaseCodexStage, true);
+  assert.equal(release.task, 'T100.1');
+  assert.throws(() => parseArgs(['--release-codex-stage', '--task', 'T100']), /requires a valid/);
   assert.throws(() => parseArgs([]), /nothing to do/);
 });
 
@@ -204,6 +233,30 @@ test('cleanup by prefix only matches this workflow’s own worktrees', () => {
   const run = createFakeRunner([...cleanResponses, [/worktree list --porcelain/, { stdout: porcelain }]]);
   const result = cleanup({ run, repoRoot: REPO, options: parseArgs(['--prefix', 'newticket-claim-']) });
   assert.deepEqual(result.removed, ['/repo/.claude/worktrees/newticket-claim-T100-1-abc']);
+});
+
+test('release-codex-stage ignores non-Codex worktrees and removes only the matching task stage', () => {
+  const codex = '/repo/.claude/worktrees/codex-ticket-t100-implementer-abc';
+  const porcelain = [
+    PORCELAIN,
+    `worktree ${codex}`,
+    'HEAD 7777777777777777777777777777777777777777',
+    'branch refs/heads/task/T100-something',
+    '',
+  ].join('\n');
+  const detached = porcelain.replaceAll('branch refs/heads/task/T100-something', 'detached');
+  const run = createFakeRunner([
+    ...cleanResponses,
+    [/worktree list --porcelain/, () => ({ stdout: run.calls.filter((argv) => argv.includes('worktree') && argv.includes('list')).length > 1 ? detached : porcelain })],
+    [/checkout --detach HEAD/, { stdout: '' }],
+  ]);
+  const result = cleanup({
+    run,
+    repoRoot: REPO,
+    options: parseArgs(['--release-codex-stage', '--task', 'T100', '--branch', 'task/T100-something']),
+  });
+  assert.deepEqual(result.removed, [codex]);
+  assert.equal(run.calls.some((argv) => argv.join(' ').includes('agent-onbranch checkout --detach')), false);
 });
 
 test('list mode inspects without removing anything', () => {

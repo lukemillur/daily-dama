@@ -77,9 +77,11 @@ function isInside(child, parent) {
  * @param {string} input.repoRoot
  * @param {ReturnType<typeof parseWorktreeList>[number]} input.worktree
  * @param {string} [input.containerDir] directory workflow worktrees must live under
+ * @param {boolean} [input.allowAttachedBranch] allow a verified task branch to be detached for cleanup
+ * @param {string} [input.expectedBranch] task branch required when allowAttachedBranch is true
  * @returns {{safe: boolean, reason: string, detail: string}}
  */
-export function assessWorktree({ run, repoRoot, worktree, containerDir }) {
+export function assessWorktree({ run, repoRoot, worktree, containerDir, allowAttachedBranch = false, expectedBranch }) {
   const container = containerDir ?? path.join(repoRoot, '.claude', 'worktrees');
   const refuse = (reason, detail) => ({ safe: false, reason, detail });
 
@@ -93,8 +95,14 @@ export function assessWorktree({ run, repoRoot, worktree, containerDir }) {
   if (worktree.locked) {
     return refuse('locked', `worktree is locked${worktree.lockReason ? `: ${worktree.lockReason}` : ''}`);
   }
-  if (!worktree.detached && worktree.branch) {
+  if (!worktree.detached && worktree.branch && !allowAttachedBranch) {
     return refuse('branch-checked-out', `${worktree.branch} is still checked out here`);
+  }
+  if (allowAttachedBranch) {
+    const expectedRef = expectedBranch ? `refs/heads/${expectedBranch}` : null;
+    if (!expectedRef || worktree.branch !== expectedRef) {
+      return refuse('unexpected-branch', `expected ${expectedRef ?? 'an explicit task branch'}, found ${worktree.branch ?? 'a detached HEAD'}`);
+    }
   }
 
   const status = run(['git', '-C', worktree.path, 'status', '--porcelain'], { allowFailure: true });
@@ -161,6 +169,49 @@ export function removeWorktree({ run, repoRoot, worktree, dryRun = false, contai
     return { path: worktree.path, action: 'failed', reason: 'remove-failed', detail: removal.stderr.trim() };
   }
   return { path: worktree.path, action: 'removed', reason: assessment.reason, detail: assessment.detail };
+}
+
+/**
+ * Safely release a Codex-owned staging worktree that an interrupted run left
+ * attached to its task branch. This is intentionally narrower than normal
+ * cleanup: it only accepts the exact task branch after all ordinary safety
+ * checks (clean, pushed, unlocked, no active process) pass.
+ *
+ * @param {object} input
+ * @param {import('./exec.mjs').Runner} input.run
+ * @param {string} input.repoRoot
+ * @param {ReturnType<typeof parseWorktreeList>[number]} input.worktree
+ * @param {string} input.branch
+ * @param {boolean} [input.dryRun]
+ * @param {string} [input.containerDir]
+ * @returns {{path: string, action: 'removed'|'would-remove'|'refused'|'failed', reason: string, detail: string}}
+ */
+export function releaseAttachedWorktree({ run, repoRoot, worktree, branch, dryRun = false, containerDir }) {
+  const assessment = assessWorktree({
+    run,
+    repoRoot,
+    worktree,
+    containerDir,
+    allowAttachedBranch: true,
+    expectedBranch: branch,
+  });
+  if (!assessment.safe) {
+    return { path: worktree.path, action: 'refused', reason: assessment.reason, detail: assessment.detail };
+  }
+  if (dryRun) {
+    return { path: worktree.path, action: 'would-remove', reason: 'released-stage', detail: 'would detach the clean pushed task branch, then remove it' };
+  }
+
+  const detach = run(['git', '-C', worktree.path, 'checkout', '--detach', 'HEAD'], { allowFailure: true });
+  if (detach.code !== 0) {
+    return { path: worktree.path, action: 'failed', reason: 'detach-failed', detail: detach.stderr.trim() };
+  }
+
+  const refreshed = listWorktrees({ run, repoRoot }).find((candidate) => realPath(candidate.path) === realPath(worktree.path));
+  if (!refreshed) {
+    return { path: worktree.path, action: 'failed', reason: 'unverifiable', detail: 'worktree disappeared after detaching' };
+  }
+  return removeWorktree({ run, repoRoot, worktree: refreshed, dryRun, containerDir });
 }
 
 /** List worktrees known to the repository. */
