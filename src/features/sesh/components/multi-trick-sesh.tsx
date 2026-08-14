@@ -24,12 +24,16 @@ import {
   isTrickSequenceFinished,
 } from '@/features/sesh/model/trick-sequence';
 import type { PracticeTrick } from '@/features/tricks/model/trick';
-import { createPracticeSessionRecordId } from '@/features/stats/model/practice-history';
+import {
+  createPracticeSessionRecordId,
+  type PracticeSessionOrigin,
+} from '@/features/stats/model/practice-history';
 import { usePracticeHistoryActions } from '@/features/stats/state/practice-history-provider';
 import { selectNotesForTrick } from '@/features/notes/model/note';
 import { useNotes } from '@/features/notes/state/note-provider';
 
 const MULTI_TRICK_SESH_KEEP_AWAKE_TAG = 'multi-trick-sesh-active';
+const LACE_ACKNOWLEDGMENT_DURATION_MS = 1500;
 
 interface MultiTrickSeshProps {
   readonly tricks: readonly PracticeTrick[];
@@ -55,10 +59,22 @@ interface MultiTrickSeshProps {
    */
   readonly advanceOnFirstLace?: boolean;
   /**
+   * When true (and only meaningful alongside `advanceOnFirstLace` — a pause
+   * before an advance that isn't happening has nothing to delay), shows a
+   * brief "Trick landed" acknowledgment panel for
+   * `LACE_ACKNOWLEDGMENT_DURATION_MS` before the `seshEnded` dispatch that
+   * `advanceOnFirstLace` would otherwise fire immediately. Purely a delay on
+   * *when* that dispatch happens, not a new advance path.
+   */
+  readonly pauseAfterLace?: boolean;
+  /**
    * Opaque to this component, forwarded to `ActiveSesh` as-is — replaces
-   * the default "End Sesh" copy on the primary end action. Used by callers
-   * (e.g. the assessment flow) that need different framing without this
-   * component or `ActiveSesh` knowing what an assessment is.
+   * the default "End Sesh" copy on the primary end action. This action ends
+   * the *whole run* (see `handleEndRun`), not just the current trick — the
+   * current trick's landings-so-far are still recorded, but no further
+   * tricks in the sequence are run or recorded. Used by callers (e.g. the
+   * assessment flow) that need different framing without this component or
+   * `ActiveSesh` knowing what an assessment is.
    */
   readonly endActionLabel?: string;
   /**
@@ -93,6 +109,37 @@ interface MultiTrickSeshProps {
    * button. `undefined` renders nothing.
    */
   readonly wrapUpFooter?: ReactNode;
+  /**
+   * When provided, renders a "Cancel" control alongside the very first
+   * trick countdown of the run only — mirrors `skipCountdownBetweenTricks`'s
+   * "only affects transitions between tricks, not the first trick" framing,
+   * inverted: this affects only the first trick, never any transition
+   * between tricks later in the run. Called instead of any reducer
+   * dispatch; the caller decides what "back out of the run" means (e.g.
+   * returning to a setup/flow-picker step). Omit to disable cancelling
+   * entirely.
+   */
+  readonly onCancelRun?: () => void;
+  /**
+   * Forwarded to `Countdown`/`ActiveSesh` as-is — renders the current
+   * trick's Kentei rank/class when its metadata is present. Used by the
+   * assessment flow.
+   */
+  readonly showRankStanding?: boolean;
+  /**
+   * Label for the wrap-up's final button, which also always fires
+   * `onFinished`. Defaults to "Finish sesh" — the ad hoc multi-trick flow's
+   * wrap-up just resets local run state, so that generic copy still fits.
+   * The Kentei assessment flow overrides it to describe navigating Home.
+   */
+  readonly finishButtonLabel?: string;
+  /**
+   * Opaque pass-through recorded on every trick's practice-history record
+   * for this run, forwarded as-is to `recordCompletedSesh`. Omit for
+   * regular ad hoc multi-trick practice; the Kentei assessment flow passes
+   * `'assessment'`.
+   */
+  readonly origin?: PracticeSessionOrigin;
 }
 
 /**
@@ -115,11 +162,16 @@ export function MultiTrickSesh({
   skipTarget,
   showAttemptsReminder,
   advanceOnFirstLace,
+  pauseAfterLace,
   endActionLabel,
   skipCountdownBetweenTricks,
   hideTimer,
   describeSkippedRange,
   wrapUpFooter,
+  onCancelRun,
+  showRankStanding,
+  finishButtonLabel,
+  origin,
 }: MultiTrickSeshProps) {
   const [sequence, setSequence] = useState(() => createTrickSequence(tricks));
   const [state, dispatch] = useReducer(
@@ -133,8 +185,30 @@ export function MultiTrickSesh({
   const { recordCompletedSesh } = usePracticeHistoryActions();
   const { notes } = useNotes();
   const recordedSummaryId = useRef<string | undefined>(undefined);
+  const endRunRequestedRef = useRef(false);
   const [summaries, setSummaries] = useState<SeshSummary[]>([]);
   const [skippedEntries, setSkippedEntries] = useState<string[]>([]);
+  // Set between a "Skip this rank" tap and the user confirming or
+  // canceling that skip. Holds the range a confirmed skip would commit,
+  // computed once at request time so the preview and the eventual commit
+  // can never disagree. Nothing observable (`sequence`, `state`,
+  // `isFirstCountdown`) changes while this is set — canceling just clears it.
+  const [pendingSkip, setPendingSkip] = useState<
+    { readonly fromIndex: number; readonly targetIndex: number } | undefined
+  >(undefined);
+  // Tracks whether the run is still on its very first trick's countdown, so
+  // the Cancel control (wired via `onCancelRun`) only ever renders there —
+  // never on a later trick's countdown. Flipped to false the moment the run
+  // progresses past that first countdown by any path (normal completion or
+  // skip); nothing resets it back to true afterward.
+  const [isFirstCountdown, setIsFirstCountdown] = useState(true);
+  // Set for the brief window between a `pauseAfterLace` landing and the
+  // deferred `seshEnded` dispatch that actually advances the run. Renders
+  // an acknowledgment panel in place of `ActiveSesh` while set; the effect
+  // below is the only thing that clears it.
+  const [laceAcknowledgment, setLaceAcknowledgment] = useState<{ readonly trickName: string } | undefined>(
+    undefined,
+  );
 
   // The run is over once the sequence has no trick left to run, whether that
   // happened because every trick completed normally (leaves `state` at
@@ -174,8 +248,16 @@ export function MultiTrickSesh({
     if (recordedSummaryId.current === summaryId) return;
 
     recordedSummaryId.current = summaryId;
-    recordCompletedSesh(state.summary);
+    recordCompletedSesh(state.summary, origin);
     setSummaries((prev) => [...prev, state.summary]);
+
+    if (endRunRequestedRef.current) {
+      endRunRequestedRef.current = false;
+      setIsFirstCountdown(false);
+      setSequence((prev) => advanceTrickSequenceToIndex(prev, prev.tricks.length));
+      dispatch({ type: 'seshReset' });
+      return;
+    }
 
     const nextSequence = advanceTrickSequence(sequence);
     setSequence(nextSequence);
@@ -184,7 +266,7 @@ export function MultiTrickSesh({
     if (nextTrick) {
       seedNextTrick(nextTrick);
     }
-  }, [recordCompletedSesh, sequence, state, seedNextTrick]);
+  }, [origin, recordCompletedSesh, sequence, state, seedNextTrick]);
 
   useEffect(() => {
     if (!shouldKeepScreenAwake(state.status)) return;
@@ -202,12 +284,37 @@ export function MultiTrickSesh({
     };
   }, [state.status]);
 
-  const handleSkipRank = () => {
+  useEffect(() => {
+    if (!laceAcknowledgment) return;
+
+    const timeoutId = setTimeout(() => {
+      setLaceAcknowledgment(undefined);
+      dispatch({ type: 'seshEnded', now: Date.now() });
+    }, LACE_ACKNOWLEDGMENT_DURATION_MS);
+
+    return () => clearTimeout(timeoutId);
+  }, [laceAcknowledgment]);
+
+  const handleSkipRankRequest = () => {
     if (!skipTarget) return;
 
     const targetIndex = skipTarget(sequence.currentIndex);
+    setPendingSkip({ fromIndex: sequence.currentIndex, targetIndex });
+  };
+
+  const handleCancelSkip = () => {
+    setPendingSkip(undefined);
+  };
+
+  const handleConfirmSkip = () => {
+    if (!pendingSkip) return;
+
+    const { fromIndex, targetIndex } = pendingSkip;
+
+    setIsFirstCountdown(false);
+
     if (describeSkippedRange) {
-      setSkippedEntries((prev) => [...prev, describeSkippedRange(sequence.currentIndex, targetIndex)]);
+      setSkippedEntries((prev) => [...prev, describeSkippedRange(fromIndex, targetIndex)]);
     }
 
     const nextSequence = advanceTrickSequenceToIndex(sequence, targetIndex);
@@ -219,16 +326,35 @@ export function MultiTrickSesh({
     } else {
       dispatch({ type: 'seshReset' });
     }
+
+    setPendingSkip(undefined);
   };
+
+  if (pendingSkip) {
+    const skippedTricks = sequence.tricks.slice(pendingSkip.fromIndex, pendingSkip.targetIndex);
+    return (
+      <SkipRankConfirmation
+        tricks={skippedTricks}
+        description={describeSkippedRange?.(pendingSkip.fromIndex, pendingSkip.targetIndex)}
+        onCancel={handleCancelSkip}
+        onConfirm={handleConfirmSkip}
+      />
+    );
+  }
 
   if (state.status === 'countdown') {
     return (
       <Countdown
         trick={state.trick}
         plan={state.plan}
-        onComplete={() => dispatch({ type: 'countdownCompleted', now: Date.now() })}
+        onComplete={() => {
+          setIsFirstCountdown(false);
+          dispatch({ type: 'countdownCompleted', now: Date.now() });
+        }}
         attemptsReminder={showAttemptsReminder}
-        onSkipRank={skipTarget ? handleSkipRank : undefined}
+        onSkipRank={skipTarget ? handleSkipRankRequest : undefined}
+        onCancel={isFirstCountdown ? onCancelRun : undefined}
+        showRankStanding={showRankStanding}
       />
     );
   }
@@ -238,9 +364,35 @@ export function MultiTrickSesh({
       const now = Date.now();
       dispatch({ type: 'trickLaced', now });
       if (advanceOnFirstLace && state.status === 'active' && state.landings.length === 0) {
-        dispatch({ type: 'seshEnded', now });
+        if (pauseAfterLace) {
+          setLaceAcknowledgment({ trickName: state.trick.name });
+        } else {
+          dispatch({ type: 'seshEnded', now });
+        }
       }
     };
+
+    // Ends the *whole run*, not just the current trick: the current
+    // trick's landings-so-far are still recorded (same as today's
+    // per-trick completion), but the `completed` effect above reads this
+    // ref and jumps the sequence straight to its end instead of advancing
+    // to the next trick — see `endRunRequestedRef`. Backs both the
+    // primary "End Sesh"/"End assessment" button and the "End anyway"
+    // confirmation in `ActiveSesh`, since both call this same `onEnd` prop.
+    const handleEndRun = () => {
+      endRunRequestedRef.current = true;
+      dispatch({ type: 'seshEnded', now: Date.now() });
+    };
+
+    if (laceAcknowledgment) {
+      return (
+        <CenteredPanel accessibilityLabel="Trick landed">
+          <Eyebrow>Trick landed</Eyebrow>
+          <DisplayTitle>{laceAcknowledgment.trickName}</DisplayTitle>
+          <BodyCopy>Nice! Next trick coming up.</BodyCopy>
+        </CenteredPanel>
+      );
+    }
 
     return (
       <ActiveSesh
@@ -256,17 +408,29 @@ export function MultiTrickSesh({
         onLaced={handleLaced}
         onPause={() => dispatch({ type: 'seshPaused', now: Date.now() })}
         onResume={() => dispatch({ type: 'seshResumed', now: Date.now() })}
-        onEnd={() => dispatch({ type: 'seshEnded', now: Date.now() })}
+        onEnd={handleEndRun}
         onTimerElapsed={() => dispatch({ type: 'timerElapsed', now: Date.now() })}
         attemptsReminder={showAttemptsReminder}
-        onSkipRank={skipTarget ? handleSkipRank : undefined}
-        // "Next trick" reuses the same completed-effect advance path as
-        // "End Sesh" above — it's the identical `seshEnded` dispatch, not a
-        // second advance mechanism. Unlike `handleSkipRank`, this always
-        // records the current trick's landings before moving on.
-        onNextTrick={() => dispatch({ type: 'seshEnded', now: Date.now() })}
+        onSkipRank={skipTarget ? handleSkipRankRequest : undefined}
+        // "Next trick" is a distinct action from "End Sesh"/handleEndRun
+        // above: both dispatch `seshEnded` and reuse the same
+        // completed-effect advance path, but "Next trick" never sets
+        // `endRunRequestedRef`, so it always advances one trick and keeps
+        // the run going — unlike `handleSkipRank`, it always records the
+        // current trick's landings before moving on. Omitted on the final
+        // trick of the run, where it would be functionally identical to
+        // "End Sesh" but mislabeled, and omitted entirely when
+        // `advanceOnFirstLace` is set: there, "Laced" on an untouched trick
+        // already dispatches this same `seshEnded` action, so "Next trick"
+        // would be pure redundant chrome.
+        onNextTrick={
+          !advanceOnFirstLace && sequence.currentIndex < sequence.tricks.length - 1
+            ? () => dispatch({ type: 'seshEnded', now: Date.now() })
+            : undefined
+        }
         endActionLabel={endActionLabel}
         hideTimer={hideTimer}
+        showRankStanding={showRankStanding}
       />
     );
   }
@@ -281,6 +445,7 @@ export function MultiTrickSesh({
         skippedEntries={skippedEntries}
         footer={wrapUpFooter}
         onContinue={() => onFinished?.()}
+        finishButtonLabel={finishButtonLabel}
       />
     );
   }
@@ -298,6 +463,58 @@ export function MultiTrickSesh({
 }
 
 /**
+ * Confirmation panel shown after a "Skip this rank" tap, before the skip is
+ * committed. Full-screen replace, same pattern as `laceAcknowledgment`
+ * above -- reads only local state and dispatches nothing, so canceling
+ * returns exactly to whatever countdown/active render was already correct.
+ */
+function SkipRankConfirmation({
+  tricks,
+  description,
+  onCancel,
+  onConfirm,
+}: {
+  readonly tricks: readonly PracticeTrick[];
+  readonly description?: string;
+  readonly onCancel: () => void;
+  readonly onConfirm: () => void;
+}) {
+  const heading =
+    description ?? `${tricks.length} trick${tricks.length === 1 ? '' : 's'} in this rank`;
+
+  return (
+    <ScrollArea contentContainerStyle={{ padding: 24, paddingBottom: 140 }}>
+      <ActiveContent accessibilityLabel="Skip rank confirmation">
+        <Eyebrow>Skip this rank?</Eyebrow>
+        <DisplayTitle>{heading}</DisplayTitle>
+        <BodyCopy>
+          These tricks won&apos;t be recorded -- you can revisit this rank later.
+        </BodyCopy>
+        <WrapUpList>
+          {tricks.map((trick) => (
+            <WrapUpRow key={trick.id} accessibilityLabel={`Skip preview: ${trick.name}`}>
+              <WrapUpTrickName>{trick.name}</WrapUpTrickName>
+            </WrapUpRow>
+          ))}
+        </WrapUpList>
+        <SkipConfirmationActions>
+          <SkipConfirmationButton
+            accessibilityLabel="Cancel skip rank"
+            variant="secondary"
+            onPress={onCancel}>
+            Cancel
+          </SkipConfirmationButton>
+          <SkipConfirmationButton accessibilityLabel="Confirm skip rank" onPress={onConfirm}>
+            Skip rank
+          </SkipConfirmationButton>
+        </SkipConfirmationActions>
+      </ActiveContent>
+    </ScrollArea>
+  );
+}
+
+
+/**
  * Wrap-up shown once a multi-trick run is over, whether every trick ran to
  * completion or the tail end was skipped. Lists only the tricks actually
  * attempted (`summaries`), in the order they were completed — skipped
@@ -308,11 +525,13 @@ function MultiTrickWrapUp({
   skippedEntries,
   footer,
   onContinue,
+  finishButtonLabel = 'Finish sesh',
 }: {
   readonly summaries: readonly SeshSummary[];
   readonly skippedEntries: readonly string[];
   readonly footer?: ReactNode;
   readonly onContinue: () => void;
+  readonly finishButtonLabel?: string;
 }) {
   return (
     <ScrollArea contentContainerStyle={{ padding: 24, paddingBottom: 140 }}>
@@ -348,8 +567,8 @@ function MultiTrickWrapUp({
           </WrapUpList>
         )}
         {footer}
-        <FinishButton accessibilityLabel="Finish sesh" onPress={onContinue}>
-          Finish sesh
+        <FinishButton accessibilityLabel={finishButtonLabel} onPress={onContinue}>
+          {finishButtonLabel}
         </FinishButton>
       </ActiveContent>
     </ScrollArea>
@@ -373,3 +592,14 @@ const FinishButton = styled(Button).attrs({ size: 'medium' })`
   margin-top: 28px;
   border-radius: 5px;
 `;
+const SkipConfirmationActions = styled.View`
+  width: 100%;
+  flex-direction: row;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 28px;
+`;
+const SkipConfirmationButton = styled(Button).attrs({ size: 'medium' })`
+  border-radius: 5px;
+`;
+

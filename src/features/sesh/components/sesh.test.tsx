@@ -1,5 +1,6 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
-import type { ReactElement } from 'react';
+import type { ComponentProps, ReactElement } from 'react';
 import { Pressable, Text } from 'react-native';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 
@@ -9,8 +10,15 @@ import { useGoalActions, useGoals, GoalProvider } from '@/features/goals/state/g
 import { NoteProvider, useNotes } from '@/features/notes/state/note-provider';
 import type { Note } from '@/features/notes/model/note';
 import { UserProfileProvider } from '@/features/profile/state/user-profile-provider';
-import { Sesh, ActiveSesh, CompletedSesh } from '@/features/sesh/components/sesh';
-import { createTimedSeshPlan, type Landing, type SeshSummary } from '@/features/sesh/model/sesh';
+import { Sesh, ActiveSesh, CompletedSesh, Countdown } from '@/features/sesh/components/sesh';
+import {
+  createOpenEndedSeshPlan,
+  createTimedSeshPlan,
+  formatDuration,
+  formatRemainingDuration,
+  type Landing,
+  type SeshSummary,
+} from '@/features/sesh/model/sesh';
 import {
   createPracticeSessionRecordId,
   type PracticeSessionRecord,
@@ -20,7 +28,7 @@ import {
   usePracticeHistory,
   usePracticeHistoryActions,
 } from '@/features/stats/state/practice-history-provider';
-import type { PracticeTrick } from '@/features/tricks/model/trick';
+import type { PracticeTrick, TrickSummary } from '@/features/tricks/model/trick';
 
 // ActiveSesh/CompletedSesh are re-exported from a module that also (transitively) imports
 // practice-history-provider, which pulls in AsyncStorage. Mock it the same way
@@ -33,22 +41,32 @@ jest.mock('@react-native-async-storage/async-storage', () =>
 );
 
 const TRICK: PracticeTrick = { id: 'big-cup', name: 'Big Cup' };
+const TRICK_WITH_KENTEI: TrickSummary = {
+  id: 'lighthouse',
+  name: 'Lighthouse',
+  kenteiRank: 5,
+  kenteiClass: '3rd Class',
+  kenteiLevel: 'Basic',
+};
 const PLAN = createTimedSeshPlan(5);
 
+// Match only the rendered host View, not the CelebrationBanner/wrapper component instances
+// (which still carry a matching `accessibilityLabel` prop even after auto-dismiss makes them
+// render null, since that prop is passed down rather than consumed and dropped).
 function findBanner(root: ReactTestRenderer) {
   return root.root.findAll(
-    (node) => node.props.accessibilityLabel === 'First lace ever on Big Cup',
+    (node) => (node.type as unknown) === 'View' && node.props.accessibilityLabel === 'First lace ever on Big Cup',
   );
 }
 
 function findGoalBanner(root: ReactTestRenderer, goal: Goal) {
   const label = `Goal achieved for ${goal.trickName}: ${formatGoalTarget(goal)}`;
-  return root.root.findAll((node) => node.props.accessibilityLabel === label);
+  return root.root.findAll((node) => (node.type as unknown) === 'View' && node.props.accessibilityLabel === label);
 }
 
 function findPersonalBestBanner(root: ReactTestRenderer, trickName: string) {
   const label = `New personal best on ${trickName}`;
-  return root.root.findAll((node) => node.props.accessibilityLabel === label);
+  return root.root.findAll((node) => (node.type as unknown) === 'View' && node.props.accessibilityLabel === label);
 }
 
 function landing(elapsedMs: number): Landing {
@@ -189,6 +207,63 @@ describe('ActiveSesh first-lace celebration', () => {
     });
 
     expect(findBanner(root)).toHaveLength(0);
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  it('auto-dismisses the in-sesh banner a few seconds after it appears, with no further Laced press', () => {
+    let root!: ReactTestRenderer;
+    act(() => {
+      root = create(
+        <ActiveSesh
+          trick={TRICK}
+          plan={PLAN}
+          startedAt={Date.now()}
+          landings={[]}
+          pausedDurationMs={0}
+          liveChallengeEnabled={false}
+          hadPriorLaceAtSeshStart={false}
+          onLaced={noop}
+          onPause={noop}
+          onResume={noop}
+          onEnd={noop}
+          onTimerElapsed={noop}
+        />,
+      );
+    });
+
+    act(() => {
+      root.update(
+        <ActiveSesh
+          trick={TRICK}
+          plan={PLAN}
+          startedAt={Date.now()}
+          landings={[landing(1000)]}
+          pausedDurationMs={0}
+          liveChallengeEnabled={false}
+          hadPriorLaceAtSeshStart={false}
+          onLaced={noop}
+          onPause={noop}
+          onResume={noop}
+          onEnd={noop}
+          onTimerElapsed={noop}
+        />,
+      );
+    });
+
+    expect(findBanner(root).length).toBeGreaterThan(0);
+
+    act(() => {
+      jest.advanceTimersByTime(2000);
+    });
+    expect(findBanner(root).length).toBeGreaterThan(0);
+
+    act(() => {
+      jest.advanceTimersByTime(3000);
+    });
+    expect(findBanner(root)).toHaveLength(0);
+
     act(() => {
       root.unmount();
     });
@@ -419,6 +494,171 @@ describe('ActiveSesh timer visibility', () => {
     });
 
     expect(JSON.stringify(root.toJSON())).not.toContain('Time remaining');
+
+    act(() => {
+      root.unmount();
+    });
+  });
+});
+
+describe('ActiveSesh pause/resume timer accuracy (regression)', () => {
+  beforeEach(() => {
+    jest.useFakeTimers();
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  it('shows the correct elapsed time immediately on resume for a timed plan', () => {
+    let root!: ReactTestRenderer;
+    const startedAt = Date.now();
+
+    act(() => {
+      root = create(
+        <ActiveSesh
+          trick={TRICK}
+          plan={PLAN}
+          startedAt={startedAt}
+          landings={[]}
+          pausedDurationMs={0}
+          liveChallengeEnabled={false}
+          onLaced={noop}
+          onPause={noop}
+          onResume={noop}
+          onEnd={noop}
+          onTimerElapsed={noop}
+        />,
+      );
+    });
+
+    act(() => {
+      jest.advanceTimersByTime(10_000);
+    });
+
+    const pausedAt = Date.now();
+    act(() => {
+      root.update(
+        <ActiveSesh
+          trick={TRICK}
+          plan={PLAN}
+          startedAt={startedAt}
+          pausedAt={pausedAt}
+          landings={[]}
+          pausedDurationMs={0}
+          liveChallengeEnabled={false}
+          onLaced={noop}
+          onPause={noop}
+          onResume={noop}
+          onEnd={noop}
+          onTimerElapsed={noop}
+        />,
+      );
+    });
+
+    act(() => {
+      jest.advanceTimersByTime(5_000);
+    });
+
+    act(() => {
+      root.update(
+        <ActiveSesh
+          trick={TRICK}
+          plan={PLAN}
+          startedAt={startedAt}
+          landings={[]}
+          pausedDurationMs={5_000}
+          liveChallengeEnabled={false}
+          onLaced={noop}
+          onPause={noop}
+          onResume={noop}
+          onEnd={noop}
+          onTimerElapsed={noop}
+        />,
+      );
+    });
+
+    const json = JSON.stringify(root.toJSON());
+    expect(json).toContain(formatRemainingDuration(290_000));
+    expect(json).not.toContain(formatRemainingDuration(295_000));
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  it('shows the correct elapsed time immediately on resume for an open-ended plan', () => {
+    let root!: ReactTestRenderer;
+    const startedAt = Date.now();
+    const openEndedPlan = createOpenEndedSeshPlan();
+
+    act(() => {
+      root = create(
+        <ActiveSesh
+          trick={TRICK}
+          plan={openEndedPlan}
+          startedAt={startedAt}
+          landings={[]}
+          pausedDurationMs={0}
+          liveChallengeEnabled={false}
+          onLaced={noop}
+          onPause={noop}
+          onResume={noop}
+          onEnd={noop}
+          onTimerElapsed={noop}
+        />,
+      );
+    });
+
+    act(() => {
+      jest.advanceTimersByTime(10_000);
+    });
+
+    const pausedAt = Date.now();
+    act(() => {
+      root.update(
+        <ActiveSesh
+          trick={TRICK}
+          plan={openEndedPlan}
+          startedAt={startedAt}
+          pausedAt={pausedAt}
+          landings={[]}
+          pausedDurationMs={0}
+          liveChallengeEnabled={false}
+          onLaced={noop}
+          onPause={noop}
+          onResume={noop}
+          onEnd={noop}
+          onTimerElapsed={noop}
+        />,
+      );
+    });
+
+    act(() => {
+      jest.advanceTimersByTime(5_000);
+    });
+
+    act(() => {
+      root.update(
+        <ActiveSesh
+          trick={TRICK}
+          plan={openEndedPlan}
+          startedAt={startedAt}
+          landings={[]}
+          pausedDurationMs={5_000}
+          liveChallengeEnabled={false}
+          onLaced={noop}
+          onPause={noop}
+          onResume={noop}
+          onEnd={noop}
+          onTimerElapsed={noop}
+        />,
+      );
+    });
+
+    const json = JSON.stringify(root.toJSON());
+    expect(json).toContain(formatDuration(10_000));
+    expect(json).not.toContain(formatDuration(5_000));
 
     act(() => {
       root.unmount();
@@ -672,22 +912,31 @@ describe('CompletedSesh goals panel ordering (regression)', () => {
   }
 
   it('reflects the just-completed sesh in goal progress, not the sesh before it', async () => {
-    const root = await mountHarness();
+    // The goal is created against a real Date.now() timestamp, but this fixture's sesh
+    // uses a fixed, unrealistic `summary.endedAt` (5000) as its completed-session timestamp.
+    // Pin Date.now() so the goal's createdAt precedes that fixed completedAt, matching
+    // production where both timestamps come from the same real clock.
+    const dateNowSpy = jest.spyOn(Date, 'now').mockReturnValue(0);
+    try {
+      const root = await mountHarness();
 
-    act(() => {
-      pressByAccessibilityLabel(root, 'add-count-goal');
-    });
+      act(() => {
+        pressByAccessibilityLabel(root, 'add-count-goal');
+      });
 
-    // Before the sesh is recorded, progress should show zero landings toward the goal.
-    expect(JSON.stringify(root.toJSON())).toContain('0 / 3 laces');
+      // Before the sesh is recorded, progress should show zero landings toward the goal.
+      expect(JSON.stringify(root.toJSON())).toContain('0 / 3 laces');
 
-    act(() => {
-      pressByAccessibilityLabel(root, 'record-sesh');
-    });
+      act(() => {
+        pressByAccessibilityLabel(root, 'record-sesh');
+      });
 
-    // After recordCompletedSesh runs, progress must include this sesh's 2 landings — not be
-    // stale by one sesh.
-    expect(JSON.stringify(root.toJSON())).toContain('2 / 3 laces');
+      // After recordCompletedSesh runs, progress must include this sesh's 2 landings — not be
+      // stale by one sesh.
+      expect(JSON.stringify(root.toJSON())).toContain('2 / 3 laces');
+    } finally {
+      dateNowSpy.mockRestore();
+    }
   });
 });
 
@@ -847,6 +1096,68 @@ describe('ActiveSesh goal celebration - count-based goals', () => {
     });
   });
 
+  it('auto-dismisses a count-goal banner a few seconds after it appears, with no further Laced press', () => {
+    const goal = buildCountGoal({ targetCount: 3 });
+    const baseline: GoalProgress = { goal, current: 2, target: 3, achieved: false };
+
+    let root!: ReactTestRenderer;
+    act(() => {
+      root = create(
+        <ActiveSesh
+          trick={TRICK}
+          plan={PLAN}
+          startedAt={Date.now()}
+          landings={[]}
+          pausedDurationMs={0}
+          liveChallengeEnabled={false}
+          hadPriorLaceAtSeshStart={true}
+          goalBaselines={[baseline]}
+          onLaced={noop}
+          onPause={noop}
+          onResume={noop}
+          onEnd={noop}
+          onTimerElapsed={noop}
+        />,
+      );
+    });
+
+    act(() => {
+      root.update(
+        <ActiveSesh
+          trick={TRICK}
+          plan={PLAN}
+          startedAt={Date.now()}
+          landings={[landing(1000)]}
+          pausedDurationMs={0}
+          liveChallengeEnabled={false}
+          hadPriorLaceAtSeshStart={true}
+          goalBaselines={[baseline]}
+          onLaced={noop}
+          onPause={noop}
+          onResume={noop}
+          onEnd={noop}
+          onTimerElapsed={noop}
+        />,
+      );
+    });
+
+    expect(findGoalBanner(root, goal).length).toBeGreaterThan(0);
+
+    act(() => {
+      jest.advanceTimersByTime(2000);
+    });
+    expect(findGoalBanner(root, goal).length).toBeGreaterThan(0);
+
+    act(() => {
+      jest.advanceTimersByTime(3000);
+    });
+    expect(findGoalBanner(root, goal)).toHaveLength(0);
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
   it('never celebrates a goal that was already achieved before the sesh started', () => {
     const goal = buildCountGoal({ targetCount: 3 });
     const baseline: GoalProgress = { goal, current: 3, target: 3, achieved: true };
@@ -985,6 +1296,65 @@ describe('ActiveSesh personal-best celebration', () => {
     });
   });
 
+  it('auto-dismisses the personal-best banner a few seconds after it appears, with no further Laced press', () => {
+    let root!: ReactTestRenderer;
+    act(() => {
+      root = create(
+        <ActiveSesh
+          trick={TRICK}
+          plan={PLAN}
+          startedAt={Date.now()}
+          landings={[landing(1000), landing(2000)]}
+          pausedDurationMs={0}
+          personalBest={2}
+          liveChallengeEnabled={false}
+          hadPriorLaceAtSeshStart={true}
+          onLaced={noop}
+          onPause={noop}
+          onResume={noop}
+          onEnd={noop}
+          onTimerElapsed={noop}
+        />,
+      );
+    });
+
+    act(() => {
+      root.update(
+        <ActiveSesh
+          trick={TRICK}
+          plan={PLAN}
+          startedAt={Date.now()}
+          landings={[landing(1000), landing(2000), landing(3000)]}
+          pausedDurationMs={0}
+          personalBest={2}
+          liveChallengeEnabled={false}
+          hadPriorLaceAtSeshStart={true}
+          onLaced={noop}
+          onPause={noop}
+          onResume={noop}
+          onEnd={noop}
+          onTimerElapsed={noop}
+        />,
+      );
+    });
+
+    expect(findPersonalBestBanner(root, TRICK.name).length).toBeGreaterThan(0);
+
+    act(() => {
+      jest.advanceTimersByTime(2000);
+    });
+    expect(findPersonalBestBanner(root, TRICK.name).length).toBeGreaterThan(0);
+
+    act(() => {
+      jest.advanceTimersByTime(3000);
+    });
+    expect(findPersonalBestBanner(root, TRICK.name)).toHaveLength(0);
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
   it('never celebrates when there is no comparable prior attempt (personalBest is undefined)', () => {
     let root!: ReactTestRenderer;
     act(() => {
@@ -1046,7 +1416,7 @@ describe('ActiveSesh goal celebration - time-based goals', () => {
     jest.useRealTimers();
   });
 
-  it('shows the banner exactly once when elapsed time crosses the target, with no re-flicker on later ticks', () => {
+  it('shows the banner exactly once when elapsed time crosses the target, then auto-dismisses and does not reappear', () => {
     const goal = buildTimeGoal({ targetMs: 10_000 });
     const baseline: GoalProgress = { goal, current: 9_000, target: 10_000, achieved: false };
     const startedAt = Date.now();
@@ -1094,6 +1464,25 @@ describe('ActiveSesh goal celebration - time-based goals', () => {
       jest.advanceTimersByTime(2_000);
     });
     expect(findGoalBanner(root, goal)).toHaveLength(bannerCountAfterCrossing);
+
+    // Once the auto-dismiss window elapses, the banner goes away on its own — and stays gone on
+    // subsequent ticks even though elapsed time (and crossedTimeGoalIds) is still past the goal.
+    // Advance in small steps (matching useNow's 250ms polling interval): a single large jump
+    // here can, under jest's fake timers, fail to flush a setTimeout that a component schedules
+    // from an effect triggered mid-advance by that same polling interval.
+    for (let i = 0; i < 16; i += 1) {
+      act(() => {
+        jest.advanceTimersByTime(250);
+      });
+    }
+    expect(findGoalBanner(root, goal)).toHaveLength(0);
+
+    for (let i = 0; i < 8; i += 1) {
+      act(() => {
+        jest.advanceTimersByTime(250);
+      });
+    }
+    expect(findGoalBanner(root, goal)).toHaveLength(0);
 
     act(() => {
       root.unmount();
@@ -1280,5 +1669,374 @@ describe('Sesh single-trick entry point - "Next trick" absence', () => {
     } finally {
       jest.useRealTimers();
     }
+  });
+});
+
+describe('Sesh regular practice origin (T062.1)', () => {
+  // Regular single-trick Sesh never passes an origin prop, so a completed run's practice-history
+  // record must carry no origin — distinguishing it from the Kentei assessment flow's tagged
+  // records at read time.
+
+  function Harness() {
+    const { sessions } = usePracticeHistory();
+    return (
+      <>
+        {sessions.map((session, index) => (
+          <Text
+            key={session.id}
+            accessibilityLabel={`session-${index}-origin:${session.origin ?? 'none'}`}
+          />
+        ))}
+        <Sesh availableTricks={[TRICK]} selectedTrickIds={[TRICK.id]} />
+      </>
+    );
+  }
+
+  async function mountHarness() {
+    let root!: ReactTestRenderer;
+    await act(async () => {
+      root = create(
+        <NoteProvider>
+          <GoalProvider>
+            <PracticeHistoryProvider>
+              <UserProfileProvider>
+                <Harness />
+              </UserProfileProvider>
+            </PracticeHistoryProvider>
+          </GoalProvider>
+        </NoteProvider>,
+      );
+    });
+    return root;
+  }
+
+  it('records a completed sesh with no origin', async () => {
+    await AsyncStorage.clear();
+    jest.useFakeTimers();
+    try {
+      const root = await mountHarness();
+
+      act(() => {
+        pressByAccessibilityLabel(root, `Start a sesh with ${TRICK.name}`);
+      });
+
+      act(() => {
+        jest.advanceTimersByTime(1000);
+      });
+      act(() => {
+        jest.advanceTimersByTime(1000);
+      });
+      act(() => {
+        jest.advanceTimersByTime(1000);
+      });
+
+      act(() => {
+        pressByAccessibilityLabel(root, 'Laced');
+      });
+
+      act(() => {
+        pressByVisibleText(root, 'End Sesh');
+      });
+
+      expect(findByAccessibilityLabel(root, 'session-0-origin:none').length).toBeGreaterThan(0);
+
+      act(() => {
+        root.unmount();
+      });
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+});
+
+describe('Sesh wiring - countdown cancel (T047)', () => {
+  // A user who starts a sesh by accident must be able to back out during the countdown, before
+  // any practice history is recorded, and land back on the trick picker.
+
+  function Harness() {
+    const { sessions } = usePracticeHistory();
+    return (
+      <>
+        <Text accessibilityLabel={`session-count:${sessions.length}`} />
+        <Sesh availableTricks={[TRICK]} selectedTrickIds={[TRICK.id]} />
+      </>
+    );
+  }
+
+  async function mountHarness() {
+    let root!: ReactTestRenderer;
+    await act(async () => {
+      root = create(
+        <NoteProvider>
+          <GoalProvider>
+            <PracticeHistoryProvider>
+              <UserProfileProvider>
+                <Harness />
+              </UserProfileProvider>
+            </PracticeHistoryProvider>
+          </GoalProvider>
+        </NoteProvider>,
+      );
+    });
+    return root;
+  }
+
+  it('returns to the trick picker without recording a session when Cancel is pressed mid-countdown', async () => {
+    await AsyncStorage.clear();
+    jest.useFakeTimers();
+    try {
+      const root = await mountHarness();
+
+      act(() => {
+        pressByAccessibilityLabel(root, `Start a sesh with ${TRICK.name}`);
+      });
+
+      // Advance partway through the countdown, but not to completion — proving cancellation
+      // during the countdown, not after it would have naturally completed.
+      act(() => {
+        jest.advanceTimersByTime(1000);
+      });
+
+      expect(root.root.findAll((node) => node.props.children === 'Get ready').length).toBeGreaterThan(0);
+
+      act(() => {
+        pressByVisibleText(root, 'Cancel');
+      });
+
+      expect(findByAccessibilityLabel(root, `Start a sesh with ${TRICK.name}`).length).toBeGreaterThan(0);
+      expect(root.root.findAll((node) => node.props.children === 'Get ready')).toHaveLength(0);
+      expect(findByAccessibilityLabel(root, 'session-count:0').length).toBeGreaterThan(0);
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+});
+
+describe('Countdown rank standing', () => {
+  beforeEach(() => {
+    jest.useFakeTimers();
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  it('renders the rank/class label when showRankStanding is true and the trick carries Kentei metadata', () => {
+    let root!: ReactTestRenderer;
+    act(() => {
+      root = create(
+        <Countdown trick={TRICK_WITH_KENTEI} plan={PLAN} onComplete={noop} showRankStanding />,
+      );
+    });
+
+    expect(JSON.stringify(root.toJSON())).toContain('Rank 5 · 3rd Class · Basic');
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  it('renders nothing when showRankStanding is omitted', () => {
+    let root!: ReactTestRenderer;
+    act(() => {
+      root = create(<Countdown trick={TRICK_WITH_KENTEI} plan={PLAN} onComplete={noop} />);
+    });
+
+    expect(JSON.stringify(root.toJSON())).not.toContain('Rank 5');
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  it('renders nothing when showRankStanding is true but the trick lacks Kentei metadata', () => {
+    let root!: ReactTestRenderer;
+    act(() => {
+      root = create(<Countdown trick={TRICK} plan={PLAN} onComplete={noop} showRankStanding />);
+    });
+
+    expect(JSON.stringify(root.toJSON())).not.toContain('Rank');
+
+    act(() => {
+      root.unmount();
+    });
+  });
+});
+
+describe('ActiveSesh rank standing', () => {
+  it('renders the rank/class label when showRankStanding is true and the trick carries Kentei metadata', () => {
+    let root!: ReactTestRenderer;
+    act(() => {
+      root = create(
+        <ActiveSesh
+          trick={TRICK_WITH_KENTEI}
+          plan={PLAN}
+          startedAt={Date.now()}
+          landings={[]}
+          pausedDurationMs={0}
+          liveChallengeEnabled={false}
+          onLaced={noop}
+          onPause={noop}
+          onResume={noop}
+          onEnd={noop}
+          onTimerElapsed={noop}
+          showRankStanding
+        />,
+      );
+    });
+
+    expect(JSON.stringify(root.toJSON())).toContain('Rank 5 · 3rd Class · Basic');
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  it('renders nothing when showRankStanding is omitted', () => {
+    let root!: ReactTestRenderer;
+    act(() => {
+      root = create(
+        <ActiveSesh
+          trick={TRICK_WITH_KENTEI}
+          plan={PLAN}
+          startedAt={Date.now()}
+          landings={[]}
+          pausedDurationMs={0}
+          liveChallengeEnabled={false}
+          onLaced={noop}
+          onPause={noop}
+          onResume={noop}
+          onEnd={noop}
+          onTimerElapsed={noop}
+        />,
+      );
+    });
+
+    expect(JSON.stringify(root.toJSON())).not.toContain('Rank 5');
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  it('renders nothing when showRankStanding is true but the trick lacks Kentei metadata', () => {
+    let root!: ReactTestRenderer;
+    act(() => {
+      root = create(
+        <ActiveSesh
+          trick={TRICK}
+          plan={PLAN}
+          startedAt={Date.now()}
+          landings={[]}
+          pausedDurationMs={0}
+          liveChallengeEnabled={false}
+          onLaced={noop}
+          onPause={noop}
+          onResume={noop}
+          onEnd={noop}
+          onTimerElapsed={noop}
+          showRankStanding
+        />,
+      );
+    });
+
+    expect(JSON.stringify(root.toJSON())).not.toContain('Rank');
+
+    act(() => {
+      root.unmount();
+    });
+  });
+});
+
+
+describe('Sesh quick-start variant (T063)', () => {
+  // quickStart is the signal a practice entry point (Tricks-row Practice, Stats "Needs
+  // attention" Practice, Home "Practice again"/"In rotation", Stats trick-detail Challenge)
+  // sends alongside trickId -- it must render only the preselected trick and a Start-sesh
+  // action, never the full format/duration/trick-list picker.
+
+  const OTHER_TRICK: PracticeTrick = { id: 'lighthouse-flip', name: 'Lighthouse Flip' };
+
+  async function mountSesh(props: Partial<ComponentProps<typeof Sesh>> = {}) {
+    let root!: ReactTestRenderer;
+    await act(async () => {
+      root = create(
+        <NoteProvider>
+          <GoalProvider>
+            <PracticeHistoryProvider>
+              <UserProfileProvider>
+                <Sesh
+                  availableTricks={[TRICK, OTHER_TRICK]}
+                  selectedTrickIds={[TRICK.id, OTHER_TRICK.id]}
+                  {...props}
+                />
+              </UserProfileProvider>
+            </PracticeHistoryProvider>
+          </GoalProvider>
+        </NoteProvider>,
+      );
+    });
+    return root;
+  }
+
+  it('renders only the preselected trick and a Start-sesh action, no format/duration/trick-list UI', async () => {
+    const root = await mountSesh({ quickStart: true, preferredTrickId: TRICK.id });
+
+    const text = JSON.stringify(root.toJSON());
+    expect(text).toContain(TRICK.name);
+    expect(text).not.toContain(OTHER_TRICK.name);
+    expect(text).not.toContain('Timed');
+    expect(text).not.toContain('Open-ended');
+    expect(text).not.toContain('Practice format');
+    expect(findByAccessibilityLabel(root, `Start a sesh with ${TRICK.name}`).length).toBeGreaterThan(0);
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  it("pressing Start sesh begins that trick's countdown", async () => {
+    jest.useFakeTimers();
+    try {
+      const root = await mountSesh({ quickStart: true, preferredTrickId: TRICK.id });
+
+      act(() => {
+        pressByAccessibilityLabel(root, `Start a sesh with ${TRICK.name}`);
+      });
+
+      expect(JSON.stringify(root.toJSON())).toContain('Get ready');
+
+      act(() => {
+        root.unmount();
+      });
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it('falls back to the full picker when the preselected trick is not practiceable', async () => {
+    const root = await mountSesh({ quickStart: true, preferredTrickId: 'not-a-real-trick' });
+
+    const text = JSON.stringify(root.toJSON());
+    expect(text).toContain('Practice format');
+    expect(text).toContain(TRICK.name);
+    expect(text).toContain(OTHER_TRICK.name);
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  it('still renders the full picker with "Up next" when quickStart is not set (plain visit, incl. lastSesh)', async () => {
+    const root = await mountSesh({ preferredTrickId: TRICK.id });
+
+    const text = JSON.stringify(root.toJSON());
+    expect(text).toContain('Practice format');
+    expect(text).toContain('Up next');
+    expect(text).toContain(OTHER_TRICK.name);
+
+    act(() => {
+      root.unmount();
+    });
   });
 });

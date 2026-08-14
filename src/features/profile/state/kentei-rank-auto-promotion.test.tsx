@@ -15,6 +15,7 @@ import {
   UserProfileProvider,
 } from '@/features/profile/state/user-profile-provider';
 import { type Landing, OPEN_ENDED_SESH_PLAN, type SeshSummary } from '@/features/sesh/model/sesh';
+import type { PracticeSessionOrigin } from '@/features/stats/model/practice-history';
 import { PRACTICE_HISTORY_STORAGE_KEY } from '@/features/stats/persistence/practice-history-persistence';
 import {
   PracticeHistoryProvider,
@@ -73,11 +74,13 @@ function Harness({
   selectedTrickIds = [],
   lacedTrickIds = [],
   recordLandingCount,
+  origin,
 }: {
   readonly rank?: number;
   readonly selectedTrickIds?: readonly string[];
   readonly lacedTrickIds?: readonly string[];
   readonly recordLandingCount?: number;
+  readonly origin?: PracticeSessionOrigin;
 }) {
   const { completeOnboarding, toggleManualUnlock } = useUserProfileActions();
   const { recordCompletedSesh } = usePracticeHistoryActions();
@@ -95,7 +98,7 @@ function Harness({
               key={trickId}
               trickId={trickId}
               onPress={() =>
-                recordCompletedSesh(summaryFor(trickId, trickId, recordLandingCount))
+                recordCompletedSesh(summaryFor(trickId, trickId, recordLandingCount), origin)
               }
             />
           ))}
@@ -122,6 +125,7 @@ async function mountAndHydrate(harnessProps: {
   readonly selectedTrickIds?: readonly string[];
   readonly lacedTrickIds?: readonly string[];
   readonly recordLandingCount?: number;
+  readonly origin?: PracticeSessionOrigin;
 } = {}) {
   let root!: ReactTestRenderer;
   await act(async () => {
@@ -253,6 +257,35 @@ describe('KenteiRankAutoPromotion celebration', () => {
     expect(persisted).not.toBeNull();
     const profile = deserializeUserProfile(persisted!);
     expect(profile?.kenteiRank).toBe(1);
+  });
+
+  it('promotes the rank when a completed Sesh lands a real lace via an assessment-origin session (T062.2 regression)', async () => {
+    // Stats/Home now filter out `origin: 'assessment'` sessions (see selectRegularSessions), but
+    // KenteiRankAutoPromotion deliberately reads unfiltered history and must keep seeing
+    // assessment-sourced landings so auto-promotion still fires off Kentei-assessment lacing.
+    await AsyncStorage.removeItem(USER_PROFILE_STORAGE_KEY);
+    await AsyncStorage.removeItem(PRACTICE_HISTORY_STORAGE_KEY);
+
+    const root = await mountAndHydrate({ recordLandingCount: 1, origin: 'assessment' });
+
+    act(() => {
+      pressByAccessibilityLabel(root, 'start-onboarding');
+    });
+
+    for (const trickId of RANK_1_TRICK_IDS) {
+      act(() => {
+        pressByAccessibilityLabel(root, `record-${trickId}`);
+      });
+    }
+
+    await act(async () => {});
+
+    expect(hasAccessibilityLabel(root, 'Rank up celebration')).toBe(true);
+
+    const persisted = await AsyncStorage.getItem(USER_PROFILE_STORAGE_KEY);
+    expect(persisted).not.toBeNull();
+    const profile = deserializeUserProfile(persisted!);
+    expect(profile?.kenteiRank).toBe(2);
   });
 
   it('promotes the rank when a completed Sesh lands a real lace for every trick in the rank', async () => {

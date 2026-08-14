@@ -17,6 +17,7 @@ import type { SeshSummary } from '@/features/sesh/model/sesh';
 import {
   INITIAL_PRACTICE_HISTORY,
   type PracticeHistory,
+  type PracticeSessionOrigin,
   practiceHistoryReducer,
 } from '@/features/stats/model/practice-history';
 import {
@@ -26,7 +27,7 @@ import {
 import { createWriteQueue } from '@/shared/persistence/storage';
 
 interface PracticeHistoryActions {
-  readonly recordCompletedSesh: (summary: SeshSummary) => void;
+  readonly recordCompletedSesh: (summary: SeshSummary, origin?: PracticeSessionOrigin) => void;
 }
 
 const PracticeHistoryStateContext = createContext<PracticeHistory | undefined>(undefined);
@@ -74,8 +75,8 @@ export function PracticeHistoryProvider({ children }: PropsWithChildren) {
     void enqueueWrite(history);
   }, [enqueueWrite, hasHydrated, history]);
 
-  const recordCompletedSesh = useCallback((summary: SeshSummary) => {
-    dispatch({ type: 'sessionRecorded', summary });
+  const recordCompletedSesh = useCallback((summary: SeshSummary, origin?: PracticeSessionOrigin) => {
+    dispatch({ type: 'sessionRecorded', summary, origin });
   }, []);
 
   const actions = useMemo(() => ({ recordCompletedSesh }), [recordCompletedSesh]);

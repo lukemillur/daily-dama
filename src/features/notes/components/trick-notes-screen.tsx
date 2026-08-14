@@ -12,12 +12,12 @@ import { formatPracticeDate } from '@/features/stats/model/format-practice-date'
 interface TrickNotesScreenProps {
   readonly trickId: string;
   readonly trickName: string;
-  readonly onClose: () => void;
+  readonly onBack: () => void;
 }
 
 type ScreenStep = { readonly kind: 'list' } | { readonly kind: 'add' } | { readonly kind: 'edit'; readonly note: Note };
 
-export function TrickNotesScreen({ trickId, trickName, onClose }: TrickNotesScreenProps) {
+export function TrickNotesScreen({ trickId, trickName, onBack }: TrickNotesScreenProps) {
   const { notes } = useNotes();
   const { addNote } = useNoteActions();
   const [step, setStep] = useState<ScreenStep>({ kind: 'list' });
@@ -41,8 +41,8 @@ export function TrickNotesScreen({ trickId, trickName, onClose }: TrickNotesScre
       <NoteForm
         initialBody={step.note.body}
         note={step.note}
-        onCancel={() => setStep({ kind: 'list' })}
-        onClose={() => setStep({ kind: 'list' })}
+        onCancel={onBack}
+        onSaved={() => setStep({ kind: 'list' })}
         title="Edit note"
       />
     );
@@ -70,8 +70,8 @@ export function TrickNotesScreen({ trickId, trickName, onClose }: TrickNotesScre
         </NoteList>
 
         <FormActions>
-          <Button fill variant="secondary" onPress={onClose}>
-            Close
+          <Button accessibilityLabel="Back to Tricks" fill variant="secondary" onPress={onBack}>
+            Back to Tricks
           </Button>
         </FormActions>
       </Content>
@@ -131,14 +131,14 @@ function NoteForm({
   initialBody = '',
   note,
   onCancel,
-  onClose,
+  onSaved,
   onSave,
   title,
 }: {
   readonly initialBody?: string;
   readonly note?: Note;
   readonly onCancel: () => void;
-  readonly onClose?: () => void;
+  readonly onSaved?: () => void;
   readonly onSave?: (body: string) => void;
   readonly title: string;
 }) {
@@ -149,7 +149,7 @@ function NoteForm({
   const save = () => {
     if (note) {
       const result = updateNote(note.id, { body });
-      if (result.status === 'saved') onClose?.();
+      if (result.status === 'saved') onSaved?.();
       return;
     }
     onSave?.(body);

@@ -9,6 +9,7 @@ import {
   hasPriorLaceForTrick,
   isFirstLaceForTrick,
   practiceHistoryReducer,
+  selectRegularSessions,
   type PracticeSessionRecord,
 } from '@/features/stats/model/practice-history';
 import { OPEN_ENDED_SESH_PLAN, type Landing, type SeshSummary } from '@/features/sesh/model/sesh';
@@ -286,6 +287,25 @@ describe('isFirstLaceForTrick', () => {
   });
 });
 
+describe('selectRegularSessions', () => {
+  it('keeps a session with no origin', () => {
+    expect(selectRegularSessions([BIG_CUP_FIRST])).toEqual([BIG_CUP_FIRST]);
+  });
+
+  it('drops a session with origin "assessment"', () => {
+    const assessmentSession: PracticeSessionRecord = { ...BIG_CUP_FIRST, origin: 'assessment' };
+    expect(selectRegularSessions([assessmentSession])).toEqual([]);
+  });
+
+  it('preserves order of kept sessions in a mixed array', () => {
+    const assessmentSession: PracticeSessionRecord = { ...BIG_CUP_SECOND, origin: 'assessment' };
+    expect(selectRegularSessions([BIG_CUP_FIRST, assessmentSession, AIRPLANE_ZERO_LACES])).toEqual([
+      BIG_CUP_FIRST,
+      AIRPLANE_ZERO_LACES,
+    ]);
+  });
+});
+
 describe('hasPriorLaceForTrick', () => {
   it('is false for an empty history', () => {
     expect(hasPriorLaceForTrick([], 'big-cup')).toBe(false);
@@ -327,5 +347,37 @@ describe('getPersonalBest', () => {
   it('returns undefined when there is no match', () => {
     expect(getPersonalBest(sessions, 'big-cup', 120_000)).toBeUndefined();
     expect(getPersonalBest(sessions, 'unknown-trick', 300_000)).toBeUndefined();
+  });
+});
+
+
+describe('createPracticeSessionRecord origin', () => {
+  it('carries an assessment origin when passed', () => {
+    const summary = makeSummary();
+    const record = createPracticeSessionRecord(summary, undefined, 'assessment');
+    expect(record.origin).toBe('assessment');
+  });
+
+  it('leaves origin undefined when not passed', () => {
+    const summary = makeSummary();
+    const record = createPracticeSessionRecord(summary, undefined);
+    expect(record.origin).toBeUndefined();
+  });
+});
+
+describe('sessionRecorded reducer origin', () => {
+  it('carries an assessment origin through to the recorded session', () => {
+    const summary = makeSummary();
+    const result = practiceHistoryReducer(
+      { sessions: [] },
+      { type: 'sessionRecorded', summary, origin: 'assessment' },
+    );
+    expect(result.sessions[0]?.origin).toBe('assessment');
+  });
+
+  it('leaves origin absent when the action carries none', () => {
+    const summary = makeSummary();
+    const result = practiceHistoryReducer({ sessions: [] }, { type: 'sessionRecorded', summary });
+    expect(result.sessions[0]?.origin).toBeUndefined();
   });
 });

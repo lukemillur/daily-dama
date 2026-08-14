@@ -22,7 +22,7 @@ export default function ProfileScreen() {
   const isOnboardingComplete = useRequireOnboarding();
   const router = useRouter();
   const { kenteiRank, selectedTrickIds, streakThresholdMs } = useUserProfile();
-  const { restartOnboarding, setStreakThresholdMs } = useUserProfileActions();
+  const { setStreakThresholdMs } = useUserProfileActions();
 
   if (!isOnboardingComplete || !kenteiRank) return null;
 
@@ -45,16 +45,6 @@ export default function ProfileScreen() {
             </RankIdentity>
           </RankLine>
           <Divider />
-          <SectionLabel>Assessment</SectionLabel>
-          <Title>Ready to check{`\n`}your level again?</Title>
-          <Copy>
-            Retaking the assessment updates your rank and recommended
-            starting point. Your custom tricks and practice history stay
-            exactly where they are.
-          </Copy>
-          <RetakeButton onPress={restartOnboarding}>
-            Retake assessment
-          </RetakeButton>
           <SectionLabel>Kentei assessment</SectionLabel>
           <Title>Put it to{`\n`}the test.</Title>
           <Copy>

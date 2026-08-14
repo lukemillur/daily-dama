@@ -14,16 +14,17 @@
 // Usage:
 //   node .claude/scripts/worktree-cleanup.mjs --path <dir> [--path <dir> …]
 //   node .claude/scripts/worktree-cleanup.mjs --prefix newticket-claim-
+//   node .claude/scripts/worktree-cleanup.mjs --release-codex-stage --task T035 --branch task/T035-short-slug
 //   node .claude/scripts/worktree-cleanup.mjs --list
 //   …add --dry-run to report decisions without removing anything.
 
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { createRunner } from './lib/exec.mjs';
-import { assessWorktree, listWorktrees, realPath, removeWorktree } from './lib/worktree.mjs';
+import { assessWorktree, listWorktrees, realPath, releaseAttachedWorktree, removeWorktree } from './lib/worktree.mjs';
 
 export function parseArgs(argv) {
-  const options = { paths: [], prefixes: [], dryRun: false, list: false, repoRoot: null, json: false };
+  const options = { paths: [], prefixes: [], dryRun: false, list: false, repoRoot: null, json: false, releaseCodexStage: false, task: null, branch: null };
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index];
     if (arg === '--path') options.paths.push(argv[++index]);
@@ -32,9 +33,15 @@ export function parseArgs(argv) {
     else if (arg === '--list') options.list = true;
     else if (arg === '--json') options.json = true;
     else if (arg === '--repo') options.repoRoot = argv[++index];
+    else if (arg === '--release-codex-stage') options.releaseCodexStage = true;
+    else if (arg === '--task') options.task = argv[++index];
+    else if (arg === '--branch') options.branch = argv[++index];
     else throw new Error(`unrecognized argument: ${arg}`);
   }
-  if (!options.list && options.paths.length === 0 && options.prefixes.length === 0) {
+  if (options.releaseCodexStage && (!/^T\d+(?:\.\d+)?$/.test(options.task ?? '') || !/^task\/T\d+(?:\.\d+)?-[a-z0-9-]+$/.test(options.branch ?? ''))) {
+    throw new Error('--release-codex-stage requires a valid --task and --branch');
+  }
+  if (!options.list && options.paths.length === 0 && options.prefixes.length === 0 && !options.releaseCodexStage) {
     throw new Error('nothing to do: pass --path, --prefix, or --list');
   }
   return options;
@@ -64,6 +71,21 @@ export function cleanup({ run, repoRoot, options }) {
 
   const targets = [];
   const results = [];
+  if (options.releaseCodexStage) {
+    const stagePrefix = `codex-ticket-${options.task.toLowerCase().replace('.', '-')}-`;
+    for (const worktree of worktrees) {
+      if (worktree.main) continue;
+      if (path.dirname(realPath(worktree.path)) !== container) continue;
+      if (!path.basename(worktree.path).startsWith(stagePrefix)) continue;
+      if (worktree.detached) {
+        results.push(removeWorktree({ run, repoRoot, worktree, dryRun: options.dryRun }));
+      } else {
+        results.push(
+          releaseAttachedWorktree({ run, repoRoot, worktree, branch: options.branch, dryRun: options.dryRun }),
+        );
+      }
+    }
+  }
   for (const requested of options.paths) {
     const worktree = byPath.get(realPath(requested));
     if (!worktree) {

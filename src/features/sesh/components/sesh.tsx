@@ -1,6 +1,6 @@
 import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
 import { Link } from 'expo-router';
-import { useEffect, useMemo, useReducer, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useReducer, useRef, useState, type ReactNode } from 'react';
 import { Animated, Pressable, ScrollView, TextInput } from 'react-native';
 import { styled } from 'styled-components/native';
 
@@ -40,12 +40,13 @@ import {
   shouldPromptSeshNote,
   type SeshSummary,
 } from '@/features/sesh/model/sesh';
-import type { PracticeTrick } from '@/features/tricks/model/trick';
+import { formatKenteiStanding, isTrickSummary, type PracticeTrick } from '@/features/tricks/model/trick';
 import {
   createPracticeSessionRecordId,
   getPersonalBest,
   hasPriorLaceForTrick,
   isFirstLaceForTrick,
+  type PracticeSessionOrigin,
   type PracticeSessionRecord,
 } from '@/features/stats/model/practice-history';
 import { usePracticeHistory, usePracticeHistoryActions } from '@/features/stats/state/practice-history-provider';
@@ -60,9 +61,29 @@ interface SeshProps {
   readonly availableTricks: readonly PracticeTrick[];
   readonly preferredTrickId?: string;
   readonly initialPlan?: SeshPlan;
+  /**
+   * True only when the caller explicitly navigated in via a practice entry
+   * point (deep link with `mode=practice`), never on a plain Sesh-tab visit
+   * — see `isQuickStart` below for the full gate.
+   */
+  readonly quickStart?: boolean;
+  /**
+   * Opaque pass-through recorded on the practice-history record for this
+   * sesh, forwarded as-is to `recordCompletedSesh`. No current caller sets
+   * this — `Sesh` only has one call site, always regular practice — but it
+   * mirrors `MultiTrickSeshProps.origin` for structural consistency.
+   */
+  readonly origin?: PracticeSessionOrigin;
 }
 
-export function Sesh({ availableTricks, initialPlan, preferredTrickId, selectedTrickIds }: SeshProps) {
+export function Sesh({
+  availableTricks,
+  initialPlan,
+  preferredTrickId,
+  quickStart,
+  selectedTrickIds,
+  origin,
+}: SeshProps) {
   const [state, dispatch] = useReducer(seshReducer, INITIAL_SESH_STATE);
   const { sessions } = usePracticeHistory();
   const { goals } = useGoals();
@@ -85,6 +106,7 @@ export function Sesh({ availableTricks, initialPlan, preferredTrickId, selectedT
   )
     ? preferredTrickId
     : undefined;
+  const isQuickStart = Boolean(quickStart) && validatedPreferredTrickId !== undefined;
   const activeTrickId = state.status === 'active' ? state.trick.id : undefined;
   const trickNotes = useMemo(
     () => (activeTrickId ? selectNotesForTrick(notes, activeTrickId) : []),
@@ -110,8 +132,8 @@ export function Sesh({ availableTricks, initialPlan, preferredTrickId, selectedT
         return isGoalNewlyAchieved(goal, baseline.current, contribution);
       }),
     );
-    recordCompletedSesh(state.summary);
-  }, [goals, recordCompletedSesh, sessions, state]);
+    recordCompletedSesh(state.summary, origin);
+  }, [goals, origin, recordCompletedSesh, sessions, state]);
 
   useEffect(() => {
     if (!shouldKeepScreenAwake(state.status)) return;
@@ -129,25 +151,42 @@ export function Sesh({ availableTricks, initialPlan, preferredTrickId, selectedT
     };
   }, [state.status]);
 
+  const handleTrickSelected = (
+    trick: PracticeTrick,
+    plan: SeshPlan,
+    best: number | undefined,
+    liveChallenge: boolean,
+  ) => {
+    setPersonalBest(best);
+    setLiveChallengeEnabled(liveChallenge);
+    setHadPriorLaceAtSeshStart(hasPriorLaceForTrick(sessions, trick.id));
+    setGoalBaselines(
+      selectGoalsForTrick(goals, trick.id).map((goal) => selectGoalProgress(goal, sessions)),
+    );
+    dispatch({ type: 'trickSelected', trick, plan });
+    setLastSesh(trick.id, plan);
+  };
+
   if (state.status === 'choosing') {
-    return practiceTricks.length === 0 ? (
-      <EmptyState />
-    ) : (
+    if (practiceTricks.length === 0) return <EmptyState />;
+    if (isQuickStart) {
+      const trick = practiceTricks.find((candidate) => candidate.id === validatedPreferredTrickId)!;
+      return (
+        <QuickStart
+          trick={trick}
+          initialPlan={initialPlan}
+          sessions={sessions}
+          onStart={handleTrickSelected}
+        />
+      );
+    }
+    return (
       <TrickPicker
         initialPlan={initialPlan}
         preferredTrickId={validatedPreferredTrickId}
         tricks={practiceTricks}
         sessions={sessions}
-        onSelect={(trick, plan, best, liveChallenge) => {
-          setPersonalBest(best);
-          setLiveChallengeEnabled(liveChallenge);
-          setHadPriorLaceAtSeshStart(hasPriorLaceForTrick(sessions, trick.id));
-          setGoalBaselines(
-            selectGoalsForTrick(goals, trick.id).map((goal) => selectGoalProgress(goal, sessions)),
-          );
-          dispatch({ type: 'trickSelected', trick, plan });
-          setLastSesh(trick.id, plan);
-        }}
+        onSelect={handleTrickSelected}
       />
     );
   }
@@ -158,6 +197,7 @@ export function Sesh({ availableTricks, initialPlan, preferredTrickId, selectedT
         trick={state.trick}
         plan={state.plan}
         onComplete={() => dispatch({ type: 'countdownCompleted', now: Date.now() })}
+        onCancel={() => dispatch({ type: 'seshReset' })}
       />
     );
   }
@@ -232,6 +272,46 @@ function EmptyState() {
           Choose tricks
         </PrimaryButton>
       </Link>
+    </CenteredPanel>
+  );
+}
+
+function QuickStart({
+  trick,
+  initialPlan,
+  sessions,
+  onStart,
+}: {
+  readonly trick: PracticeTrick;
+  readonly initialPlan?: SeshPlan;
+  readonly sessions: readonly PracticeSessionRecord[];
+  readonly onStart: (
+    trick: PracticeTrick,
+    plan: SeshPlan,
+    personalBest: number | undefined,
+    liveChallengeEnabled: boolean,
+  ) => void;
+}) {
+  const plan = initialPlan ?? createTimedSeshPlan(5);
+  const personalBest =
+    plan.kind === 'timed' ? getPersonalBest(sessions, trick.id, plan.durationMs) : undefined;
+
+  return (
+    <CenteredPanel>
+      <Eyebrow>Ready when you are</Eyebrow>
+      <DisplayTitle>{trick.name}</DisplayTitle>
+      {trick.descriptor ? <BodyCopy>{trick.descriptor}</BodyCopy> : null}
+      <SequenceSteps trick={trick} />
+      {plan.kind === 'timed' && personalBest !== undefined ? (
+        <ChoiceBest>
+          Best at {formatDuration(plan.durationMs)} — {personalBest} {personalBest === 1 ? 'lace' : 'laces'}
+        </ChoiceBest>
+      ) : null}
+      <PrimaryButton
+        accessibilityLabel={`Start a sesh with ${trick.name}`}
+        onPress={() => onStart(trick, plan, personalBest, false)}>
+        Start sesh
+      </PrimaryButton>
     </CenteredPanel>
   );
 }
@@ -412,13 +492,18 @@ export function Countdown({
   onComplete,
   attemptsReminder,
   onSkipRank,
+  onCancel,
+  showRankStanding,
 }: {
   readonly trick: PracticeTrick;
   readonly plan: SeshPlan;
   readonly onComplete: () => void;
   readonly attemptsReminder?: boolean;
   readonly onSkipRank?: () => void;
+  readonly onCancel?: () => void;
+  readonly showRankStanding?: boolean;
 }) {
+  const rankStanding = showRankStanding && isTrickSummary(trick) ? formatKenteiStanding(trick) : undefined;
   const [count, setCount] = useState(3);
   const [scale] = useState(() => new Animated.Value(0.55));
   const [opacity] = useState(() => new Animated.Value(0));
@@ -442,6 +527,7 @@ export function Countdown({
   return (
     <CenteredPanel>
       <Eyebrow>Get ready</Eyebrow>
+      {rankStanding ? <RankStandingLabel>{rankStanding}</RankStandingLabel> : null}
       <CountdownTrick>{trick.name}</CountdownTrick>
       <SequenceSteps trick={trick} />
       {attemptsReminder ? <AttemptsReminder>You have 5 attempts.</AttemptsReminder> : null}
@@ -453,6 +539,11 @@ export function Countdown({
           ? `${formatDuration(plan.durationMs)} begins after the countdown.`
           : 'The clock starts after the countdown.'}
       </BodyCopy>
+      {onCancel ? (
+        <CancelButton variant="secondary" size="medium" onPress={onCancel}>
+          Cancel
+        </CancelButton>
+      ) : null}
       {onSkipRank ? (
         <SkipRankButton accessibilityRole="button" onPress={onSkipRank}>
           <SkipRankButtonText>Skip this rank</SkipRankButtonText>
@@ -484,6 +575,7 @@ export function ActiveSesh({
   onNextTrick,
   endActionLabel = 'End Sesh',
   hideTimer,
+  showRankStanding,
 }: {
   readonly trick: PracticeTrick;
   readonly plan: SeshPlan;
@@ -506,7 +598,9 @@ export function ActiveSesh({
   readonly onNextTrick?: () => void;
   readonly endActionLabel?: string;
   readonly hideTimer?: boolean;
+  readonly showRankStanding?: boolean;
 }) {
+  const rankStanding = showRankStanding && isTrickSummary(trick) ? formatKenteiStanding(trick) : undefined;
   const notesToShow = trickNotes ?? [];
   const showChallenge = liveChallengeEnabled && personalBest !== undefined;
   const hasBeatenBest = showChallenge && landings.length > personalBest;
@@ -545,24 +639,8 @@ export function ActiveSesh({
       ),
     [goalBaselines, elapsedMs],
   );
-  const celebratedTimeGoalIdsRef = useRef<Set<string>>(new Set());
-  const [celebratingTimeGoalIds, setCelebratingTimeGoalIds] = useState<readonly string[]>([]);
-
-  useEffect(() => {
-    const newlyCrossed: string[] = [];
-    crossedTimeGoalIds.forEach((goalId) => {
-      if (!celebratedTimeGoalIdsRef.current.has(goalId)) {
-        celebratedTimeGoalIdsRef.current.add(goalId);
-        newlyCrossed.push(goalId);
-      }
-    });
-    if (newlyCrossed.length > 0) {
-      setCelebratingTimeGoalIds((current) => [...current, ...newlyCrossed]);
-    }
-  }, [crossedTimeGoalIds]);
-
   const timeGoalCelebrations = goalBaselines.filter(
-    (baseline) => baseline.goal.kind === 'time' && celebratingTimeGoalIds.includes(baseline.goal.id),
+    (baseline) => baseline.goal.kind === 'time' && crossedTimeGoalIds.has(baseline.goal.id),
   );
 
   useEffect(() => {
@@ -583,6 +661,7 @@ export function ActiveSesh({
           <PersonalBestBanner trickName={trick.name} personalBest={personalBest} />
         ) : null}
         <Eyebrow>{isPaused ? 'Sesh paused' : 'Sesh in progress'}</Eyebrow>
+        {rankStanding ? <RankStandingLabel>{rankStanding}</RankStandingLabel> : null}
         <ActiveTrick>{trick.name}</ActiveTrick>
         <SequenceSteps trick={trick} prominent />
         {attemptsReminder ? <AttemptsReminder>You have 5 attempts.</AttemptsReminder> : null}
@@ -601,6 +680,7 @@ export function ActiveSesh({
           accessibilityState={{ disabled: isPaused }}
           disabled={isPaused}
           $disabled={isPaused}
+          $extraTopSpacing={hideTimer}
           onPress={onLaced}
           accessibilityLabel="Laced">
           <LacedButtonText>Laced.</LacedButtonText>
@@ -681,6 +761,20 @@ function TrickNotesPanel({ trickNotes }: { readonly trickNotes: readonly Note[] 
 
 function useNow(initialTime: number, isPaused: boolean) {
   const [now, setNow] = useState(initialTime);
+  const wasPausedRef = useRef(isPaused);
+
+  // Resuming: force an immediate, synchronous refresh (before paint) so the
+  // very next commit already reflects the correct elapsed time, rather than
+  // waiting for the next 250ms interval tick. useLayoutEffect (not a render-time
+  // setState) keeps Date.now() out of the render body per the react-hooks
+  // purity rule.
+  useLayoutEffect(() => {
+    if (wasPausedRef.current && !isPaused) {
+      setNow(Date.now());
+    }
+    wasPausedRef.current = isPaused;
+  }, [isPaused]);
+
   useEffect(() => {
     if (isPaused) return;
     const interval = setInterval(() => setNow(Date.now()), 250);
@@ -711,17 +805,23 @@ function LandingHistory({ landings }: { readonly landings: readonly Landing[] })
   );
 }
 
+const CELEBRATION_VISIBLE_MS = 4000;
+const CELEBRATION_FADE_MS = 250;
+
 function CelebrationBanner({
   accessibilityLabel,
   eyebrow,
   title,
+  autoDismiss = false,
 }: {
   readonly accessibilityLabel: string;
   readonly eyebrow: string;
   readonly title: ReactNode;
+  readonly autoDismiss?: boolean;
 }) {
   const [scale] = useState(() => new Animated.Value(0.55));
   const [opacity] = useState(() => new Animated.Value(0));
+  const [dismissed, setDismissed] = useState(false);
 
   useEffect(() => {
     Animated.parallel([
@@ -729,6 +829,26 @@ function CelebrationBanner({
       Animated.timing(opacity, { toValue: 1, duration: 180, useNativeDriver: true }),
     ]).start();
   }, [opacity, scale]);
+
+  useEffect(() => {
+    if (!autoDismiss) return undefined;
+    const fadeTimer = setTimeout(() => {
+      Animated.timing(opacity, {
+        toValue: 0,
+        duration: CELEBRATION_FADE_MS,
+        useNativeDriver: true,
+      }).start();
+    }, CELEBRATION_VISIBLE_MS);
+    const removeTimer = setTimeout(() => {
+      setDismissed(true);
+    }, CELEBRATION_VISIBLE_MS + CELEBRATION_FADE_MS);
+    return () => {
+      clearTimeout(fadeTimer);
+      clearTimeout(removeTimer);
+    };
+  }, [autoDismiss, opacity]);
+
+  if (dismissed) return null;
 
   return (
     <Animated.View style={{ opacity, transform: [{ scale }] }}>
@@ -758,6 +878,7 @@ function PersonalBestBanner({
           on {trickName}!
         </>
       }
+      autoDismiss
     />
   );
 }
@@ -780,6 +901,7 @@ function FirstLaceBanner({
           {trickName} for the first time{tense === 'inSesh' ? '!' : ''}
         </>
       }
+      autoDismiss={tense === 'inSesh'}
     />
   );
 }
@@ -802,6 +924,7 @@ function GoalCelebrationBanner({
           {formatGoalTarget(goal)}
         </>
       }
+      autoDismiss={tense === 'inSesh'}
     />
   );
 }
@@ -1058,7 +1181,7 @@ const SequenceNumber = styled.Text`width: 22px; color: ${AppColors.red}; font-si
 const SequenceName = styled.Text`flex: 1; color: ${AppColors.ink}; font-size: 14px; font-weight: 800; line-height: 20px;`;
 const TimerLabel = styled.Text`color: ${AppColors.red}; font-size: 12px; font-weight: 900; letter-spacing: 1.4px; margin-top: 22px; text-transform: uppercase;`;
 const Timer = styled.Text`color: #18382e; font-size: 78px; font-variant: tabular-nums; font-weight: 900; letter-spacing: -4px; margin: 4px 0 22px;`;
-const LacedButton = styled(Pressable)<{ $disabled: boolean }>`width: 100%; min-height: 108px; flex-direction: row; align-items: center; justify-content: space-between; background-color: #d84929; opacity: ${({ $disabled }) => ($disabled ? 0.45 : 1)}; padding: 22px 26px; border-radius: 6px;`;
+const LacedButton = styled(Pressable)<{ $disabled: boolean; $extraTopSpacing?: boolean }>`width: 100%; min-height: 108px; flex-direction: row; align-items: center; justify-content: space-between; background-color: #d84929; opacity: ${({ $disabled }) => ($disabled ? 0.45 : 1)}; padding: 22px 26px; border-radius: 6px; margin-top: ${({ $extraTopSpacing }) => ($extraTopSpacing ? '24px' : '0')};`;
 const LacedButtonText = styled.Text`color: #fff8e5; font-size: 34px; font-weight: 900;`;
 const LacedCount = styled.Text`color: #f4c94d; font-size: 40px; font-weight: 900;`;
 const ChallengeStatus = styled.Text<{ $beaten: boolean }>`width: 100%; text-align: center; margin-top: 12px; color: ${({ $beaten }) => ($beaten ? AppColors.red : AppColors.ink)}; font-size: 15px; font-weight: 900;`;
@@ -1085,7 +1208,10 @@ const EndButtonText = styled.Text`color: #18382e; font-size: 15px; font-weight: 
 const EndAnywayButton = styled(Pressable)`min-height: 40px; align-items: center; justify-content: center; margin-top: 10px; padding: 8px 24px;`;
 const EndAnywayButtonText = styled.Text`color: ${AppColors.textMuted}; font-size: 13px; font-weight: 800; text-decoration-line: underline;`;
 const AttemptsReminder = styled.Text`width: 100%; text-align: center; color: ${AppColors.textMuted}; font-size: 12px; font-weight: 800; letter-spacing: 0.4px; margin-top: 10px; text-transform: uppercase;`;
+
+const RankStandingLabel = styled.Text`width: 100%; text-align: center; color: ${AppColors.textMuted}; font-size: 12px; font-weight: 800; letter-spacing: 0.4px; margin-bottom: 10px; text-transform: uppercase;`;
 const SkipRankButton = styled(Pressable)`min-height: 40px; align-items: center; justify-content: center; margin-top: 14px; padding: 8px 24px;`;
+const CancelButton = styled(Button)`margin-top: 14px;`;
 const SkipRankButtonText = styled.Text`color: ${AppColors.textMuted}; font-size: 13px; font-weight: 800; text-decoration-line: underline;`;
 const NextTrickButton = styled(Pressable)`width: 100%; min-height: 52px; align-items: center; justify-content: center; margin-top: 20px; padding: 12px 24px; background-color: ${AppColors.yellow}; border: 2px solid ${AppColors.ink}; border-radius: 5px;`;
 const NextTrickButtonText = styled.Text`color: ${AppColors.ink}; font-size: 16px; font-weight: 900;`;

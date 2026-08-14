@@ -1,4 +1,5 @@
 import type { CustomTrick } from '@/features/custom-tricks/model/custom-trick';
+import type { Goal } from '@/features/goals/model/goal';
 import type { Note } from '@/features/notes/model/note';
 import type { PracticeSessionRecord } from '@/features/stats/model/practice-history';
 import type {
@@ -173,6 +174,14 @@ export function selectNoteCountByTrickId(notes: readonly Note[]): ReadonlyMap<st
   const counts = new Map<string, number>();
   for (const note of notes) {
     counts.set(note.trickId, (counts.get(note.trickId) ?? 0) + 1);
+  }
+  return counts;
+}
+
+export function selectGoalCountByTrickId(goals: readonly Goal[]): ReadonlyMap<string, number> {
+  const counts = new Map<string, number>();
+  for (const goal of goals) {
+    counts.set(goal.trickId, (counts.get(goal.trickId) ?? 0) + 1);
   }
   return counts;
 }

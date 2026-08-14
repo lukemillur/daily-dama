@@ -11,6 +11,7 @@ Every stage the workflow can perform mechanically is performed mechanically. A m
 | `ticket-claim.mjs` | the former `ticket-claim` subagent (a fresh Sonnet context per cycle for a fixed sequence of git commands) |
 | `verify.mjs` | four separate `Bash` round trips per implementation |
 | `worktree-cleanup.mjs` | agents attempting to remove worktrees they cannot remove |
+| `pr-merge-status.mjs` | mistaking a post-merge local `gh` failure for a rejected remote merge |
 | `validate-agent-config.mjs` | discovering a broken agent definition at run time |
 
 ## `ticket-claim.mjs`
@@ -68,6 +69,7 @@ One line per step on success; on failure, the failing command's output tail plus
 node .claude/scripts/worktree-cleanup.mjs --path <dir> [--path <dir> …]
 node .claude/scripts/worktree-cleanup.mjs --prefix newticket-claim-
 node .claude/scripts/worktree-cleanup.mjs --list
+node .claude/scripts/worktree-cleanup.mjs --release-codex-stage --task T035 --branch task/T035-short-slug
 # add --dry-run to any of the above
 ```
 
@@ -90,6 +92,23 @@ Process detection includes descendant directories inside the worktree and
 fails closed when `lsof` is unavailable or returns an unexpected error.
 
 `--prefix` only matches direct children of `.claude/worktrees/`. Never point it at `agent-` — those are not necessarily this run's.
+
+`--release-codex-stage` is intentionally narrow: it considers only a
+`codex-ticket-<task>-*` stage for the named task, requires its exact task branch,
+and then applies the normal clean/pushed/unlocked/no-process checks before
+detaching and removing it. It exists solely to make a Codex resume safe; it is
+not a general cleanup sweep.
+
+## `pr-merge-status.mjs`
+
+```sh
+node .claude/scripts/pr-merge-status.mjs --pr <number-or-url>
+```
+
+Read GitHub's canonical PR state after exactly one merge attempt. A confirmed
+`merged` result wins over a non-zero `gh pr merge` exit, which can occur during
+local branch cleanup after GitHub has already completed the merge. The script is
+read-only and never retries or changes merge settings.
 
 ## `validate-agent-config.mjs`
 

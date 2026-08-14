@@ -8,10 +8,12 @@ import { AppColors } from '@/constants/theme';
 import { MultiTrickSesh } from '@/features/sesh/components/multi-trick-sesh';
 import {
   type AssessmentFlow,
+  selectAssessmentGapNotice,
   selectAssessmentRankBounds,
   selectAssessmentResultCopy,
   selectAssessmentTricks,
   selectNextRankStartIndex,
+  selectStartedAboveStoredRank,
 } from '@/features/sesh/model/kentei-assessment-run';
 import { OPEN_ENDED_SESH_PLAN } from '@/features/sesh/model/sesh';
 import { KENDAMA_KENTEI_TRICKS } from '@/features/tricks/data/kendama-kentei-tricks';
@@ -24,6 +26,7 @@ type AssessmentEntryStep =
       readonly kind: 'running';
       readonly flow: AssessmentFlow;
       readonly startingKenteiRank: number | undefined;
+      readonly startedAboveStoredRank: boolean;
     };
 
 /**
@@ -43,6 +46,7 @@ export function AssessmentEntry() {
   const { kenteiRank } = useUserProfile();
   const { minRank, maxRank } = selectAssessmentRankBounds(KENDAMA_KENTEI_TRICKS);
   const [step, setStep] = useState<AssessmentEntryStep>({ kind: 'choosingFlow' });
+  const [skippedDuringRun, setSkippedDuringRun] = useState(false);
 
   if (step.kind === 'running') {
     const tricks = selectAssessmentTricks(step.flow, KENDAMA_KENTEI_TRICKS);
@@ -50,16 +54,28 @@ export function AssessmentEntry() {
     // jump to — `currentRankOnly` covers a single rank, so "skip this rank"
     // would just mean abandoning the run, a different, unrequested action.
     const isMultiRankFlow = step.flow.kind !== 'currentRankOnly';
+    const wasOutOfOrder = step.startedAboveStoredRank || skippedDuringRun;
+    const gapNotice = selectAssessmentGapNotice(step.startingKenteiRank, kenteiRank, wasOutOfOrder);
     return (
       <MultiTrickSesh
         tricks={tricks}
         plan={OPEN_ENDED_SESH_PLAN}
-        onFinished={() => router.replace('/profile')}
+        origin="assessment"
+        onFinished={() => router.replace('/')}
+        finishButtonLabel="Go to Home"
+        onCancelRun={() => setStep({ kind: 'choosingFlow' })}
         showAttemptsReminder
         skipTarget={isMultiRankFlow ? (index) => selectNextRankStartIndex(tricks, index) : undefined}
         describeSkippedRange={
           isMultiRankFlow
             ? (start, end) => {
+                // Called during MultiTrickSesh render, to preview the skip confirmation
+                // description, as well as from its confirm handler. Deferring the state
+                // update via a resolved-Promise microtask (queueMicrotask itself is faked
+                // by jest fake timers in this suite and never flushes) avoids a synchronous
+                // setState-during-a-different-components-render warning while still
+                // landing before the run reaches its wrap-up screen.
+                Promise.resolve().then(() => setSkippedDuringRun(true));
                 const count = end - start;
                 return `Rank ${tricks[start].kenteiRank} — ${count} trick${count === 1 ? '' : 's'} skipped`;
               }
@@ -69,10 +85,16 @@ export function AssessmentEntry() {
         skipCountdownBetweenTricks
         hideTimer
         advanceOnFirstLace
+        showRankStanding
         wrapUpFooter={
+          <>
           <ResultCopy accessibilityLabel="Assessment result">
             {selectAssessmentResultCopy(step.startingKenteiRank, kenteiRank)}
           </ResultCopy>
+          {gapNotice ? (
+            <GapNotice accessibilityLabel="Assessment gap notice">{gapNotice}</GapNotice>
+          ) : null}
+          </>
         }
       />
     );
@@ -92,19 +114,31 @@ export function AssessmentEntry() {
                 accessibilityLabel={`Start from rank ${rank}`}
                 accessibilityRole="radio"
                 accessibilityState={{ checked: false }}
-                onPress={() =>
-                  setStep({
-                    kind: 'running',
-                    flow: { kind: 'fromRank', startingRank: rank },
-                    startingKenteiRank: kenteiRank,
-                  })
-                }
+                onPress={() => {
+                    setSkippedDuringRun(false);
+                    setStep({
+                      kind: 'running',
+                      flow: { kind: 'fromRank', startingRank: rank },
+                      startingKenteiRank: kenteiRank,
+                      startedAboveStoredRank: selectStartedAboveStoredRank(
+                        { kind: 'fromRank', startingRank: rank },
+                        kenteiRank,
+                        minRank,
+                      ),
+                    });
+                  }}
               >
                 <RankNumber>{rank}</RankNumber>
               </RankChoice>
             ),
           )}
         </RankGrid>
+        {kenteiRank !== undefined ? (
+          <GapHint>
+            Ranks above {kenteiRank} won&rsquo;t count toward promotion until Rank {kenteiRank} and
+            everything below it are cleared.
+          </GapHint>
+        ) : null}
         <BackButton variant="secondary" onPress={() => setStep({ kind: 'choosingFlow' })}>
           Back
         </BackButton>
@@ -121,13 +155,15 @@ export function AssessmentEntry() {
         a rank promotes you automatically.
       </Copy>
       <FlowButton
-        onPress={() =>
+        onPress={() => {
+          setSkippedDuringRun(false);
           setStep({
             kind: 'running',
             flow: { kind: 'fullBottomToTop' },
             startingKenteiRank: kenteiRank,
-          })
-        }
+            startedAboveStoredRank: false,
+          });
+        }}
       >
         Full assessment
       </FlowButton>
@@ -141,13 +177,15 @@ export function AssessmentEntry() {
       {kenteiRank ? (
         <>
           <FlowButton
-            onPress={() =>
+            onPress={() => {
+              setSkippedDuringRun(false);
               setStep({
                 kind: 'running',
                 flow: { kind: 'currentRankOnly', rank: kenteiRank },
                 startingKenteiRank: kenteiRank,
-              })
-            }
+                startedAboveStoredRank: false,
+              });
+            }}
           >
             Current rank only
           </FlowButton>
@@ -208,4 +246,16 @@ const ResultCopy = styled(BodyText)`
   margin-top: 28px;
   text-align: center;
   font-weight: 800;
+`;
+const GapNotice = styled(BodyText)`
+  margin-top: 12px;
+  text-align: center;
+  font-size: 13px;
+  color: ${AppColors.textMuted};
+`;
+const GapHint = styled(BodyText)`
+  margin-top: 18px;
+  font-size: 13px;
+  max-width: 500px;
+  color: ${AppColors.textMuted};
 `;

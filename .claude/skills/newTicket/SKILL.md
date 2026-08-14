@@ -77,10 +77,18 @@ Run cleanup on the planner's `WORKTREE` path (step 4) before moving on.
 
 Post `T0NN: implementing…`, then invoke `ticket-implementer` (`subagent_type: "ticket-implementer"`, `isolation: "worktree"`, `run_in_background: false`) with the task entry, the branch, and either the plan **file path** (never the plan text — it reads the file itself) or `PLANNING: implementer`.
 
-- `STATUS: blocked` → post `T0NN: blocked during implementation — <reason>`; cycle ends `blocked`.
-- `STATUS: blocked-at-merge` → the code is done and the PR is open; only the merge was refused. Post `T0NN: blocked at merge (PR <URL>) — <the exact rejection>`; cycle ends `blocked`. **Do not attempt the merge yourself, with any flags.** The implementer is required to stop rather than force it, and you inherit that boundary. Diagnosing the underlying cause is a separate task, not part of finishing this cycle.
+- `RESULT.status: blocked` → post `T0NN: blocked during implementation — <reason>`; cycle ends `blocked`.
+- `RESULT.status: blocked-at-merge` → the code is done and the PR is open; only the merge was refused. Post `T0NN: blocked at merge (PR <URL>) — <the exact rejection>`; cycle ends `blocked`. **Do not attempt the merge yourself, with any flags.** The implementer is required to stop rather than force it, and you inherit that boundary. Diagnosing the underlying cause is a separate task, not part of finishing this cycle.
 - Usage limit → cycle ends `usage-limit`.
-- `STATUS: merged` → post `T0NN: PR opened (<URL>)` then `T0NN: merged into development`; cycle ends `success`.
+- `RESULT.status: merged` → post `T0NN: PR opened (<URL>)` then `T0NN: merged into development`; cycle ends `success`.
+
+The implementer reports a single `RESULT:` JSON line. Use its read-only
+`merge.status` as the source of truth: `merged` means success even if the merge
+command itself returned non-zero. A `not-merged` or `unavailable` reconciliation
+is the only route to `blocked-at-merge`. Do not make another merge attempt.
+Before accepting `success`, confirm every `exitCriteria` record is `passed`;
+otherwise report the evidence gap as `blocked` rather than claiming full
+verification.
 
 ### 4. Clean up the stage worktree
 
@@ -94,14 +102,13 @@ Run it after the planner returns, and after a `merged` implementer. Also run it 
 
 If a path comes back `refused` with reason `locked`, the harness lock hasn't released yet — don't force it. Retry the same `--path` at the next checkpoint (start of the next cycle, or end of the run) and report anything still remaining.
 
-Keep a list, in your reply text, of every worktree path that survived cleanup. At the end of the run:
+Keep a list, in your reply text, of every worktree path that survived cleanup. At the end of the run, retry only paths created by this cycle:
 
 ```sh
 node .claude/scripts/worktree-cleanup.mjs --path <each deferred path>
-node .claude/scripts/worktree-cleanup.mjs --prefix newticket-claim-
 ```
 
-The second sweeps temporary claim worktrees left behind by an interrupted claim. Never pass `--prefix agent-` or clean up worktrees this run didn't create — pre-existing ones are user-owned.
+Never use a broad prefix sweep or clean up worktrees this run did not create — pre-existing worktrees are user-owned. A Codex-specific resume stage is released only by its explicit task-and-branch safety check, not by this Claude workflow.
 
 ## Cycle outcomes
 

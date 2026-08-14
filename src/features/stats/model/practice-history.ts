@@ -1,5 +1,7 @@
 import type { SeshSummary } from '@/features/sesh/model/sesh';
 
+export type PracticeSessionOrigin = 'assessment';
+
 export interface PracticeSessionRecord {
   readonly id: string;
   readonly trickId: string;
@@ -11,6 +13,9 @@ export interface PracticeSessionRecord {
   // Set only when this session is a comparable timed attempt (see isEligibleTimedAttempt);
   // absent for open-ended seshes and for timed seshes that don't qualify.
   readonly plannedDurationMs?: number;
+  // Set only when this session was recorded via the Kentei assessment flow;
+  // absent for regular single-trick Sesh and ad hoc multi-trick practice.
+  readonly origin?: PracticeSessionOrigin;
 }
 
 export interface PracticeHistory {
@@ -21,7 +26,11 @@ export const INITIAL_PRACTICE_HISTORY: PracticeHistory = { sessions: [] };
 
 export type PracticeHistoryAction =
   | { readonly type: 'historyRestored'; readonly history: PracticeHistory }
-  | { readonly type: 'sessionRecorded'; readonly summary: SeshSummary };
+  | {
+      readonly type: 'sessionRecorded';
+      readonly summary: SeshSummary;
+      readonly origin?: PracticeSessionOrigin;
+    };
 
 export function practiceHistoryReducer(
   state: PracticeHistory,
@@ -35,7 +44,7 @@ export function practiceHistoryReducer(
         action.summary.plan.kind === 'timed'
           ? getPersonalBest(state.sessions, action.summary.trick.id, action.summary.plan.durationMs)
           : undefined;
-      const session = createPracticeSessionRecord(action.summary, previousBest);
+      const session = createPracticeSessionRecord(action.summary, previousBest, action.origin);
       return state.sessions.some((existing) => existing.id === session.id)
         ? state
         : { sessions: [...state.sessions, session] };
@@ -74,6 +83,14 @@ export function isFirstLaceForTrick(
   return !hasPriorLaceForTrick(priorSessions, summary.trick.id);
 }
 
+// Excludes Kentei-assessment-sourced sessions from Stats/Home reads. `KenteiRankAutoPromotion`
+// deliberately reads unfiltered history and must not call this.
+export function selectRegularSessions(
+  sessions: readonly PracticeSessionRecord[],
+): readonly PracticeSessionRecord[] {
+  return sessions.filter((session) => session.origin === undefined);
+}
+
 export function createPracticeSessionRecordId(summary: SeshSummary): string {
   return `${summary.startedAt}:${summary.endedAt}:${summary.trick.id}`;
 }
@@ -81,6 +98,7 @@ export function createPracticeSessionRecordId(summary: SeshSummary): string {
 export function createPracticeSessionRecord(
   summary: SeshSummary,
   previousBest: number | undefined,
+  origin?: PracticeSessionOrigin,
 ): PracticeSessionRecord {
   return {
     id: createPracticeSessionRecordId(summary),
@@ -94,6 +112,7 @@ export function createPracticeSessionRecord(
       summary.plan.kind === 'timed' && isEligibleTimedAttempt(summary, previousBest)
         ? summary.plan.durationMs
         : undefined,
+    origin,
   };
 }
 

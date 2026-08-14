@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
+import { Text } from 'react-native';
 
 import { AssessmentEntry } from '@/features/sesh/components/assessment-entry';
 import { NoteProvider } from '@/features/notes/state/note-provider';
@@ -10,7 +11,10 @@ import {
   USER_PROFILE_STORAGE_KEY,
 } from '@/features/profile/persistence/user-profile-persistence';
 import { UserProfileProvider } from '@/features/profile/state/user-profile-provider';
-import { PracticeHistoryProvider } from '@/features/stats/state/practice-history-provider';
+import {
+  PracticeHistoryProvider,
+  usePracticeHistory,
+} from '@/features/stats/state/practice-history-provider';
 import { PRACTICE_HISTORY_STORAGE_KEY } from '@/features/stats/persistence/practice-history-persistence';
 import { KENDAMA_KENTEI_TRICKS } from '@/features/tricks/data/kendama-kentei-tricks';
 
@@ -63,6 +67,22 @@ function assessmentResultText(root: ReactTestRenderer): string {
   return String(match.props.children);
 }
 
+// Renders each recorded session's origin behind an accessibility label so tests can assert on
+// practice-history writes, mirroring the SessionSummary pattern in multi-trick-sesh.test.tsx.
+function SessionSummary() {
+  const { sessions } = usePracticeHistory();
+  return (
+    <>
+      {sessions.map((session, index) => (
+        <Text
+          key={session.id}
+          accessibilityLabel={`session-${index}-origin:${session.origin ?? 'none'}`}
+        />
+      ))}
+    </>
+  );
+}
+
 function advanceThroughCountdown() {
   act(() => {
     jest.advanceTimersByTime(1000);
@@ -85,6 +105,7 @@ async function mountAssessmentEntry() {
             <KenteiRankAutoPromotion />
             <AssessmentEntry />
           </NoteProvider>
+          <SessionSummary />
         </PracticeHistoryProvider>
       </UserProfileProvider>,
     );
@@ -118,16 +139,15 @@ describe('AssessmentEntry result copy', () => {
       pressByVisibleText(root, 'Current rank only');
     });
 
-    // Walk every rank-1 trick without ever pressing "Laced", so no trick in
-    // the rank records a lace and the auto-promotion effect never fires.
-    // AssessmentEntry always sets skipCountdownBetweenTricks, so only the
-    // very first trick shows a countdown to advance through.
+    // Press "End assessment" on the very first trick, without ever
+    // pressing "Laced", so no trick in the rank records a lace and the
+    // auto-promotion effect never fires. "End assessment" now ends the
+    // whole run immediately (not just the current trick), so a single
+    // press is enough to reach the result screen.
     advanceThroughCountdown();
-    for (let index = 0; index < RANK_1_TRICK_IDS.length; index += 1) {
-      act(() => {
-        pressByVisibleText(root, 'End assessment');
-      });
-    }
+    act(() => {
+      pressByVisibleText(root, 'End assessment');
+    });
 
     await act(async () => {});
 
@@ -175,6 +195,297 @@ describe('AssessmentEntry result copy', () => {
     const resultText = assessmentResultText(root);
     expect(resultText).toMatch(/rank up/i);
     expect(resultText).toContain('Rank 2');
+
+    act(() => {
+      root.unmount();
+    });
+  });
+});
+
+describe('AssessmentEntry origin (T062.1)', () => {
+  beforeEach(async () => {
+    await AsyncStorage.clear();
+    jest.useFakeTimers();
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  it('tags every practice-history session recorded through the assessment flow with an assessment origin', async () => {
+    await AsyncStorage.setItem(
+      USER_PROFILE_STORAGE_KEY,
+      serializeUserProfile({
+        hasCompletedOnboarding: true,
+        kenteiRank: 1,
+        selectedTrickIds: [],
+      }),
+    );
+
+    const root = await mountAssessmentEntry();
+
+    act(() => {
+      pressByVisibleText(root, 'Current rank only');
+    });
+
+    advanceThroughCountdown();
+    act(() => {
+      pressByAccessibilityLabel(root, 'Laced');
+    });
+
+    await act(async () => {});
+
+    expect(findByAccessibilityLabel(root, 'session-0-origin:assessment').length).toBeGreaterThan(0);
+
+    act(() => {
+      root.unmount();
+    });
+  });
+});
+
+describe('AssessmentEntry rank standing (T055)', () => {
+  beforeEach(async () => {
+    await AsyncStorage.clear();
+    jest.useFakeTimers();
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  it('shows the current rank/class while a rank-1 trick is in countdown, then active', async () => {
+    await AsyncStorage.setItem(
+      USER_PROFILE_STORAGE_KEY,
+      serializeUserProfile({
+        hasCompletedOnboarding: true,
+        kenteiRank: 1,
+        selectedTrickIds: [],
+      }),
+    );
+
+    const root = await mountAssessmentEntry();
+
+    act(() => {
+      pressByVisibleText(root, 'Current rank only');
+    });
+
+    const rank1Trick = KENDAMA_KENTEI_TRICKS.find((trick) => trick.kenteiRank === 1);
+    if (!rank1Trick) throw new Error('Expected at least one rank-1 trick in KENDAMA_KENTEI_TRICKS');
+    const expectedLabel = `Rank ${rank1Trick.kenteiRank} · ${rank1Trick.kenteiClass} · ${rank1Trick.kenteiLevel}`;
+
+    expect(JSON.stringify(root.toJSON())).toContain(expectedLabel);
+
+    advanceThroughCountdown();
+
+    expect(JSON.stringify(root.toJSON())).toContain(expectedLabel);
+
+    act(() => {
+      root.unmount();
+    });
+  });
+});
+
+describe('AssessmentEntry countdown cancel (T047)', () => {
+  beforeEach(async () => {
+    await AsyncStorage.clear();
+    jest.useFakeTimers();
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  it('returns to the flow picker when Cancel is pressed during the first trick countdown', async () => {
+    await AsyncStorage.setItem(
+      USER_PROFILE_STORAGE_KEY,
+      serializeUserProfile({
+        hasCompletedOnboarding: true,
+        kenteiRank: 1,
+        selectedTrickIds: [],
+      }),
+    );
+
+    const root = await mountAssessmentEntry();
+
+    act(() => {
+      pressByVisibleText(root, 'Current rank only');
+    });
+
+    // Advance partway through the first trick's countdown, not to completion.
+    act(() => {
+      jest.advanceTimersByTime(1000);
+    });
+
+    act(() => {
+      pressByVisibleText(root, 'Cancel');
+    });
+
+    expect(findByAccessibilityLabel(root, 'Assessment result')).toHaveLength(0);
+    expect(root.root.findAll((node) => node.props.children === 'Current rank only').length).toBeGreaterThan(0);
+
+    act(() => {
+      root.unmount();
+    });
+  });
+});
+
+describe('AssessmentEntry gap notice (T060)', () => {
+  beforeEach(async () => {
+    await AsyncStorage.clear();
+    jest.useFakeTimers();
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  it('shows the gap notice when a fromRank run starts above the stored rank and does not promote', async () => {
+    await AsyncStorage.setItem(
+      USER_PROFILE_STORAGE_KEY,
+      serializeUserProfile({
+        hasCompletedOnboarding: true,
+        kenteiRank: 1,
+        selectedTrickIds: [],
+      }),
+    );
+
+    const root = await mountAssessmentEntry();
+
+    act(() => {
+      pressByVisibleText(root, 'Start from a rank');
+    });
+    act(() => {
+      pressByAccessibilityLabel(root, 'Start from rank 3');
+    });
+
+    advanceThroughCountdown();
+    act(() => {
+      pressByVisibleText(root, 'End assessment');
+    });
+
+    await act(async () => {});
+
+    const [gapNotice] = findByAccessibilityLabel(root, 'Assessment gap notice');
+    expect(gapNotice).toBeDefined();
+    expect(String(gapNotice.props.children)).toMatch(/clear|earlier|skip/i);
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  it('does not show the gap notice when a skip happens but the run still promotes', async () => {
+    // Promotion (selectPromotedKenteiRank) only ever needs the profiles CURRENT stored rank
+    // (and any above it) fully laced in practice history — it never depends on which flow or
+    // order this run itself used to get there. So the only way a skip-containing run can still
+    // promote is by fully lacing the stored rank itself (rank 1 here) before skipping a later
+    // rank: that alone advances the profile from 1 to 2, regardless of the later skip.
+    await AsyncStorage.setItem(
+      USER_PROFILE_STORAGE_KEY,
+      serializeUserProfile({
+        hasCompletedOnboarding: true,
+        kenteiRank: 1,
+        selectedTrickIds: [],
+      }),
+    );
+
+    const root = await mountAssessmentEntry();
+
+    act(() => {
+      pressByVisibleText(root, 'Full assessment');
+    });
+
+    advanceThroughCountdown();
+    for (let index = 0; index < RANK_1_TRICK_IDS.length; index += 1) {
+      act(() => {
+        pressByAccessibilityLabel(root, 'Laced');
+      });
+    }
+
+    act(() => {
+      pressByVisibleText(root, 'Skip this rank');
+    });
+    act(() => {
+      pressByAccessibilityLabel(root, 'Confirm skip rank');
+    });
+    act(() => {
+      pressByVisibleText(root, 'End assessment');
+    });
+
+    await act(async () => {});
+
+    const resultText = assessmentResultText(root);
+    expect(resultText).toMatch(/rank up/i);
+
+    expect(findByAccessibilityLabel(root, 'Assessment gap notice')).toHaveLength(0);
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  it('does not show the gap notice for a normal in-order, non-promoting run', async () => {
+    await AsyncStorage.setItem(
+      USER_PROFILE_STORAGE_KEY,
+      serializeUserProfile({
+        hasCompletedOnboarding: true,
+        kenteiRank: 1,
+        selectedTrickIds: [],
+      }),
+    );
+
+    const root = await mountAssessmentEntry();
+
+    act(() => {
+      pressByVisibleText(root, 'Current rank only');
+    });
+
+    advanceThroughCountdown();
+    act(() => {
+      pressByVisibleText(root, 'End assessment');
+    });
+
+    await act(async () => {});
+
+    expect(findByAccessibilityLabel(root, 'Assessment gap notice')).toHaveLength(0);
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  it('shows the gap notice after a skip during the run, even though the run started in order', async () => {
+    await AsyncStorage.setItem(
+      USER_PROFILE_STORAGE_KEY,
+      serializeUserProfile({
+        hasCompletedOnboarding: true,
+        kenteiRank: 1,
+        selectedTrickIds: [],
+      }),
+    );
+
+    const root = await mountAssessmentEntry();
+
+    act(() => {
+      pressByVisibleText(root, 'Full assessment');
+    });
+
+    advanceThroughCountdown();
+    act(() => {
+      pressByVisibleText(root, 'Skip this rank');
+    });
+    act(() => {
+      pressByAccessibilityLabel(root, 'Confirm skip rank');
+    });
+    act(() => {
+      pressByVisibleText(root, 'End assessment');
+    });
+
+    await act(async () => {});
+
+    const [gapNotice] = findByAccessibilityLabel(root, 'Assessment gap notice');
+    expect(gapNotice).toBeDefined();
+    expect(String(gapNotice.props.children)).toMatch(/clear|earlier|skip/i);
 
     act(() => {
       root.unmount();

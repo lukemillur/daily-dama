@@ -38,8 +38,18 @@ export interface TrickDirectoryProps {
   readonly fixedFooter?: boolean;
   readonly hideScrollIndicator?: boolean;
   readonly showFocusedSection?: boolean;
+  /**
+   * The persisted profile focus list to section by when `showFocusedSection`
+   * is set. Defaults to `selection.selectedTrickIds` so callers like the
+   * Tricks screen — where the selection genuinely *is* the focus list — can
+   * omit it. Callers whose `selection` represents a separate, transient pick
+   * (e.g. an ad hoc multi-trick run) must pass this explicitly so sectioning
+   * isn't driven by in-progress selection.
+   */
+  readonly focusedTrickIds?: readonly string[];
   readonly lacedCountByTrickId?: ReadonlyMap<string, number>;
   readonly noteCountByTrickId?: ReadonlyMap<string, number>;
+  readonly goalCountByTrickId?: ReadonlyMap<string, number>;
   readonly unlockedTrickIds?: ReadonlySet<string>;
 }
 
@@ -66,14 +76,17 @@ export function TrickDirectory({
   fixedFooter = false,
   hideScrollIndicator = false,
   showFocusedSection = false,
+  focusedTrickIds,
   lacedCountByTrickId,
   noteCountByTrickId,
+  goalCountByTrickId,
   unlockedTrickIds,
 }: TrickDirectoryProps) {
   const selectedTrickIds = selection?.selectedTrickIds ?? NO_SELECTED_TRICKS;
+  const sectioningTrickIds = focusedTrickIds ?? selectedTrickIds;
   const sections = useMemo(
-    () => createTrickSections(tricks, showFocusedSection ? selectedTrickIds : undefined),
-    [tricks, showFocusedSection, selectedTrickIds],
+    () => createTrickSections(tricks, showFocusedSection ? sectioningTrickIds : undefined),
+    [tricks, showFocusedSection, sectioningTrickIds],
   );
   const selectedTrickIdSet = useMemo(() => new Set(selectedTrickIds), [selectedTrickIds]);
   const directoryHeader = (
@@ -92,6 +105,7 @@ export function TrickDirectory({
         selectedTrickIds,
         lacedCountByTrickId,
         noteCountByTrickId,
+        goalCountByTrickId,
         unlockedTrickIds,
         notesAction,
         goalsAction,
@@ -120,6 +134,7 @@ export function TrickDirectory({
           showPracticeAction={Boolean(practiceAction)}
           lacedCount={lacedCountByTrickId?.get(item.id) ?? 0}
           noteCount={noteCountByTrickId?.get(item.id) ?? 0}
+          goalCount={goalCountByTrickId?.get(item.id) ?? 0}
           isLaced={unlockedTrickIds?.has(item.id) ?? false}
         />
       )}
@@ -179,6 +194,7 @@ interface TrickRowProps {
   readonly showPracticeAction?: boolean;
   readonly lacedCount?: number;
   readonly noteCount?: number;
+  readonly goalCount?: number;
   readonly isLaced?: boolean;
 }
 
@@ -194,6 +210,7 @@ function TrickRow({
   showPracticeAction = false,
   lacedCount = 0,
   noteCount = 0,
+  goalCount = 0,
   isLaced = false,
 }: TrickRowProps) {
   const customDescription = isCustomDirectoryTrick(trick)
@@ -259,11 +276,11 @@ function TrickRow({
         ) : null}
         {onOpenGoals ? (
           <RowAction accessibilityLabel={`Goals for ${trick.name}`} accessibilityRole="button" onPress={onOpenGoals}>
-            <RowActionText>Goals</RowActionText>
+            <RowActionText>{goalCount > 0 ? `Goals — ${goalCount}` : 'Goals'}</RowActionText>
           </RowAction>
         ) : null}
         {showPracticeAction ? (
-          <Link asChild href={{ pathname: '/sesh', params: { trickId: trick.id } }}>
+          <Link asChild href={{ pathname: '/sesh', params: { trickId: trick.id, mode: 'practice' } }}>
             <RowAction accessibilityLabel={`Practice ${trick.name}`} accessibilityRole="button">
               <PracticeActionText>Practice</PracticeActionText>
             </RowAction>

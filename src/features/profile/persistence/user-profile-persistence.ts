@@ -1,6 +1,6 @@
 import type { LastSesh, UserProfile } from '@/features/profile/model/user-profile';
 import { INITIAL_USER_PROFILE, isValidStreakThresholdMinutes } from '@/features/profile/model/user-profile';
-import { isValidTimedSeshMinutes } from '@/features/sesh/model/sesh';
+import { isValidSeshTargetLandingCount, isValidTimedSeshMinutes } from '@/features/sesh/model/sesh';
 import type {
   KeyValueStorage,
   PersistenceLoadResult,
@@ -37,7 +37,15 @@ function isLastSesh(value: unknown): value is LastSesh {
   const { trickId, plan } = value;
   if (typeof trickId !== 'string' || trickId.length === 0 || !isRecord(plan)) return false;
 
-  if (plan.kind === 'openEnded') return Object.keys(plan).length === 1;
+  if (plan.kind === 'openEnded') {
+    const keys = Object.keys(plan);
+    if (keys.length === 1) return true;
+    return (
+      keys.length === 2 &&
+      'targetLandingCount' in plan &&
+      isValidSeshTargetLandingCount(Number(plan.targetLandingCount))
+    );
+  }
   if (plan.kind === 'timed') {
     return isValidTimedSeshMinutes(Number(plan.durationMinutes)) && Object.keys(plan).length === 2;
   }

@@ -1,6 +1,11 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { INITIAL_USER_PROFILE, userProfileReducer } from '@/features/profile/model/user-profile';
+import {
+  createLastSesh,
+  INITIAL_USER_PROFILE,
+  userProfileReducer,
+} from '@/features/profile/model/user-profile';
+import { createOpenEndedSeshPlan, OPEN_ENDED_SESH_PLAN } from '@/features/sesh/model/sesh';
 
 describe('user profile trick selection', () => {
   it('selects and deselects a custom trick by its stable identifier', () => {
@@ -156,5 +161,27 @@ describe('user profile trick selection', () => {
     const result = userProfileReducer(state, { type: 'kenteiRankAdvanced', rank: 3 });
 
     expect(result).toBe(state);
+  });
+});
+
+describe('createLastSesh', () => {
+  it('carries an open-ended target landing count forward', () => {
+    expect(createLastSesh('big-cup', createOpenEndedSeshPlan(10))).toEqual({
+      trickId: 'big-cup',
+      plan: { kind: 'openEnded', targetLandingCount: 10 },
+    });
+  });
+
+  it('omits the target key for an untargeted open-ended plan', () => {
+    expect(createLastSesh('big-cup', OPEN_ENDED_SESH_PLAN)).toEqual({
+      trickId: 'big-cup',
+      plan: { kind: 'openEnded' },
+    });
+    expect(
+      Object.prototype.hasOwnProperty.call(
+        createLastSesh('big-cup', OPEN_ENDED_SESH_PLAN).plan,
+        'targetLandingCount',
+      ),
+    ).toBe(false);
   });
 });

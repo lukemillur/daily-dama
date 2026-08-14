@@ -67,7 +67,7 @@ function PrimaryPractice({ summary }: { readonly summary: HomeSummary }) {
       </LastSeshLine>
       {canPracticeAgain ? (
         <Link
-          href={{ pathname: '/sesh', params: { trickId: recent.availableTrick.id } }}
+          href={{ pathname: '/sesh', params: { trickId: recent.availableTrick.id, mode: 'practice' } }}
           asChild>
           <HeroButton accessibilityRole="link">Practice again</HeroButton>
         </Link>
@@ -117,7 +117,7 @@ function PracticeQueue({ tricks }: { readonly tricks: readonly HomePracticeTrick
           {tricks.map((trick, index) => (
             <Link
               key={trick.id}
-              href={{ pathname: '/sesh', params: { trickId: trick.id } }}
+              href={{ pathname: '/sesh', params: { trickId: trick.id, mode: 'practice' } }}
               asChild>
               <QueueItem accessibilityRole="link">
                 <QueueNumber>{String(index + 1).padStart(2, '0')}</QueueNumber>

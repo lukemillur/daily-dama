@@ -1,10 +1,13 @@
+import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Platform, Pressable, TextInput, useWindowDimensions } from 'react-native';
 import { styled } from 'styled-components/native';
 
 import { Button } from '@/components/ui/button';
+import { BodyText, DisplayTitle, Eyebrow } from '@/components/ui/typography';
 import { AppColors, Radii } from '@/constants/theme';
 import { useCustomTricks } from '@/features/custom-tricks/state/custom-trick-provider';
+import { useUserProfile } from '@/features/profile/state/user-profile-provider';
 import { MultiTrickSesh } from '@/features/sesh/components/multi-trick-sesh';
 import {
   createTimedSeshPlan,
@@ -23,6 +26,7 @@ import type { PracticeTrick } from '@/features/tricks/model/trick';
 
 type MultiTrickSeshEntryStep =
   | { readonly kind: 'choosingTricks' }
+  | { readonly kind: 'configuringRun' }
   | { readonly kind: 'running'; readonly tricks: readonly PracticeTrick[]; readonly plan: SeshPlan };
 
 /**
@@ -35,11 +39,17 @@ type MultiTrickSeshEntryStep =
  * `toggleSelectedTrick`) — that list drives the single-trick Sesh picker
  * elsewhere in the app, and reusing its actions here would silently mutate
  * the user's persistent practice list every time they build a one-off run.
+ * The profile's focus list is still read (read-only) to section the picker,
+ * matching the Tricks screen's "Focused" section — but it stays a distinct
+ * input from this run's own in-progress selection, which is what drives the
+ * checkbox state.
  */
 export function MultiTrickSeshEntry() {
+  const router = useRouter();
   const { width } = useWindowDimensions();
   const shouldPinSelectionChrome = Platform.OS === 'web' && width >= 768;
   const { tricks: customTricks } = useCustomTricks();
+  const { selectedTrickIds: focusedTrickIds } = useUserProfile();
   const [step, setStep] = useState<MultiTrickSeshEntryStep>({ kind: 'choosingTricks' });
   const [selectedTrickIds, setSelectedTrickIds] = useState<string[]>([]);
   const [advanceOnFirstLace, setAdvanceOnFirstLace] = useState(false);
@@ -81,12 +91,66 @@ export function MultiTrickSeshEntry() {
         tricks={step.tricks}
         plan={step.plan}
         advanceOnFirstLace={advanceOnFirstLace}
+        pauseAfterLace={advanceOnFirstLace}
         onFinished={handleFinished}
+        onCancelRun={handleFinished}
       />
     );
   }
 
   const selectedCount = selectedTrickIds.length;
+
+  if (step.kind === 'configuringRun') {
+    return (
+      <Content>
+        <Eyebrow>Multi-trick sesh</Eyebrow>
+        <Title>Set your{`\n`}timing.</Title>
+        <Copy>
+          {selectedCount} {selectedCount === 1 ? 'trick' : 'tricks'} selected.
+        </Copy>
+        <PerTrickDurationField>
+          <PerTrickDurationLabel>Time per trick, minutes (optional)</PerTrickDurationLabel>
+          <PerTrickDurationInput
+            accessibilityLabel="Time per trick in minutes"
+            inputMode="numeric"
+            keyboardType="number-pad"
+            maxLength={2}
+            onChangeText={setPerTrickDurationMinutes}
+            placeholder="—"
+            selectTextOnFocus
+            value={perTrickDurationMinutes}
+          />
+          <PerTrickDurationHint $invalid={!hasValidPerTrickDuration}>
+            {hasValidPerTrickDuration
+              ? 'Leave blank to move on only when you end each trick yourself.'
+              : 'Enter a whole number from 1 to 60, or leave it blank.'}
+          </PerTrickDurationHint>
+        </PerTrickDurationField>
+        <AdvanceOnFirstLaceRow
+          accessibilityLabel={`Advance after one lace, ${advanceOnFirstLace ? 'checked' : 'unchecked'}`}
+          accessibilityRole="checkbox"
+          accessibilityState={{ checked: advanceOnFirstLace }}
+          onPress={() => setAdvanceOnFirstLace((current) => !current)}>
+          <AdvanceOnFirstLaceIndicator $checked={advanceOnFirstLace}>
+            <AdvanceOnFirstLaceMark>{advanceOnFirstLace ? '✓' : ''}</AdvanceOnFirstLaceMark>
+          </AdvanceOnFirstLaceIndicator>
+          <AdvanceOnFirstLaceLabel>Advance after one lace</AdvanceOnFirstLaceLabel>
+        </AdvanceOnFirstLaceRow>
+        <FinishButton
+          accessibilityLabel="Start sesh"
+          disabled={selectedCount === 0 || (hasPerTrickDuration && !hasValidPerTrickDuration)}
+          onPress={handleStart}>
+          Start sesh
+        </FinishButton>
+        <BackButton
+          accessibilityLabel="Back to trick selection"
+          variant="secondary"
+          onPress={() => setStep({ kind: 'choosingTricks' })}>
+          Back
+        </BackButton>
+      </Content>
+    );
+  }
 
   return (
     <SelectionContent>
@@ -95,12 +159,22 @@ export function MultiTrickSeshEntry() {
         fixedHeader={shouldPinSelectionChrome}
         fixedFooter={shouldPinSelectionChrome}
         hideScrollIndicator
+        showFocusedSection
+        focusedTrickIds={focusedTrickIds}
         selection={{ selectedTrickIds, onToggleTrick: handleToggleTrick }}
         header={{
           eyebrow: 'Multi-trick sesh',
           title: 'Pick your\nlineup.',
           introduction: 'Select any tricks you want to work through, one after another, in one sesh.',
         }}
+        headerAction={
+          <ExitBackButton
+            accessibilityLabel="Back to Sesh"
+            variant="secondary"
+            onPress={() => router.replace('/sesh')}>
+            Back
+          </ExitBackButton>
+        }
         footer={
           <FinishBackdrop $pinned={shouldPinSelectionChrome}>
             <FinishArea $pinned={shouldPinSelectionChrome}>
@@ -109,39 +183,12 @@ export function MultiTrickSeshEntry() {
                   ? 'Select at least one trick to continue.'
                   : `${selectedCount} ${selectedCount === 1 ? 'trick' : 'tricks'} selected.`}
               </SelectionCount>
-              <PerTrickDurationField>
-                <PerTrickDurationLabel>Time per trick, minutes (optional)</PerTrickDurationLabel>
-                <PerTrickDurationInput
-                  accessibilityLabel="Time per trick in minutes"
-                  inputMode="numeric"
-                  keyboardType="number-pad"
-                  maxLength={2}
-                  onChangeText={setPerTrickDurationMinutes}
-                  placeholder="—"
-                  selectTextOnFocus
-                  value={perTrickDurationMinutes}
-                />
-                <PerTrickDurationHint $invalid={!hasValidPerTrickDuration}>
-                  {hasValidPerTrickDuration
-                    ? 'Leave blank to move on only when you end each trick yourself.'
-                    : 'Enter a whole number from 1 to 60, or leave it blank.'}
-                </PerTrickDurationHint>
-              </PerTrickDurationField>
-              <AdvanceOnFirstLaceRow
-                accessibilityLabel={`Advance after one lace, ${advanceOnFirstLace ? 'checked' : 'unchecked'}`}
-                accessibilityRole="checkbox"
-                accessibilityState={{ checked: advanceOnFirstLace }}
-                onPress={() => setAdvanceOnFirstLace((current) => !current)}>
-                <AdvanceOnFirstLaceIndicator $checked={advanceOnFirstLace}>
-                  <AdvanceOnFirstLaceMark>{advanceOnFirstLace ? '✓' : ''}</AdvanceOnFirstLaceMark>
-                </AdvanceOnFirstLaceIndicator>
-                <AdvanceOnFirstLaceLabel>Advance after one lace</AdvanceOnFirstLaceLabel>
-              </AdvanceOnFirstLaceRow>
-              <FinishButton
-                disabled={selectedCount === 0 || (hasPerTrickDuration && !hasValidPerTrickDuration)}
-                onPress={handleStart}>
-                Start sesh
-              </FinishButton>
+              <ContinueButton
+                accessibilityLabel="Continue to timing setup"
+                disabled={selectedCount === 0}
+                onPress={() => setStep({ kind: 'configuringRun' })}>
+                Continue
+              </ContinueButton>
             </FinishArea>
           </FinishBackdrop>
         }
@@ -171,3 +218,28 @@ const AdvanceOnFirstLaceIndicator = styled.View<{ readonly $checked: boolean }>`
 const AdvanceOnFirstLaceMark = styled.Text`color: ${AppColors.yellow}; font-size: 14px; font-weight: 900;`;
 const AdvanceOnFirstLaceLabel = styled.Text`color: ${AppColors.textMuted}; font-size: 14px; font-weight: 700;`;
 const FinishButton = styled(Button).attrs({ fill: true })`min-height: 54px;`;
+const ContinueButton = styled(Button).attrs({ fill: true })`min-height: 54px;`;
+const Content = styled.View`
+  width: 100%;
+  max-width: 760px;
+  flex: 1;
+  justify-content: center;
+  padding: 40px 22px 130px;
+  align-self: center;
+`;
+const Title = styled(DisplayTitle)`
+  margin-top: 10px;
+`;
+const Copy = styled(BodyText)`
+  max-width: 500px;
+  margin-top: 16px;
+  color: ${AppColors.textMuted};
+`;
+const BackButton = styled(Button)`
+  align-self: flex-start;
+  margin-top: 30px;
+`;
+const ExitBackButton = styled(Button)`
+  align-self: flex-start;
+  margin-top: 16px;
+`;

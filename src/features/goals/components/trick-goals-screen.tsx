@@ -1,3 +1,4 @@
+import { Link } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { Pressable, ScrollView, TextInput } from 'react-native';
 import { styled } from 'styled-components/native';
@@ -20,12 +21,12 @@ import { usePracticeHistory } from '@/features/stats/state/practice-history-prov
 interface TrickGoalsScreenProps {
   readonly trickId: string;
   readonly trickName: string;
-  readonly onClose: () => void;
+  readonly onBack: () => void;
 }
 
 type ScreenStep = { readonly kind: 'list' } | { readonly kind: 'add' };
 
-export function TrickGoalsScreen({ trickId, trickName, onClose }: TrickGoalsScreenProps) {
+export function TrickGoalsScreen({ trickId, trickName, onBack }: TrickGoalsScreenProps) {
   const { goals } = useGoals();
   const { addGoal, deleteGoal } = useGoalActions();
   const { sessions } = usePracticeHistory();
@@ -72,8 +73,8 @@ export function TrickGoalsScreen({ trickId, trickName, onClose }: TrickGoalsScre
         </GoalList>
 
         <FormActions>
-          <Button fill variant="secondary" onPress={onClose}>
-            Close
+          <Button accessibilityLabel="Back to Tricks" fill variant="secondary" onPress={onBack}>
+            Back to Tricks
           </Button>
         </FormActions>
       </Content>
@@ -137,6 +138,11 @@ export function GoalRow({
       <GoalBody>{formatGoalTarget(goal)}</GoalBody>
       <ProgressText>{formatGoalProgress(progress)}</ProgressText>
       <GoalActionsRow>
+        <Link asChild href={{ pathname: '/sesh', params: { trickId: goal.trickId, mode: 'practice' } }}>
+          <GoalAction accessibilityLabel={`Practice ${goal.trickName}`} accessibilityRole="link">
+            <GoalActionText>Practice toward this goal</GoalActionText>
+          </GoalAction>
+        </Link>
         <GoalAction
           accessibilityLabel="Delete goal"
           accessibilityRole="button"
@@ -148,7 +154,7 @@ export function GoalRow({
   );
 }
 
-function GoalForm({
+export function GoalForm({
   onCancel,
   onSave,
   trickId,
@@ -222,7 +228,11 @@ function GoalForm({
         </Field>
 
         <FormActions>
-          <Button fill disabled={validation.status === 'invalid'} onPress={save}>
+          <Button
+            accessibilityLabel="Save goal"
+            fill
+            disabled={validation.status === 'invalid'}
+            onPress={save}>
             Save goal
           </Button>
           <Button fill variant="secondary" onPress={onCancel}>
