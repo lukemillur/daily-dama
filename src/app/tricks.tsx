@@ -1,4 +1,5 @@
-import { useMemo, useState } from 'react';
+import { useNavigation } from 'expo-router';
+import { useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, TextInput } from 'react-native';
 import { styled } from 'styled-components/native';
 
@@ -71,6 +72,27 @@ export default function TricksScreen() {
     () => selectEffectiveLacedTrickIds(lacedTrickIds, manuallyUnlockedTrickIds),
     [lacedTrickIds, manuallyUnlockedTrickIds],
   );
+
+  const navigation = useNavigation();
+
+  useEffect(() => {
+    const resetNestedView = () => {
+      setCreationStep('list');
+      setEditingTrick(undefined);
+      setDeletingTrick(undefined);
+      setNotesTrick(undefined);
+      setGoalsTrick(undefined);
+      setShowLacedTricks(false);
+      setShowAllGoals(false);
+      setShowAllNotes(false);
+    };
+
+    return navigation.addListener('tabPress' as never, () => {
+      if (navigation.isFocused()) {
+        resetNestedView();
+      }
+    });
+  }, [navigation]);
 
   if (!isOnboardingComplete) return null;
 
