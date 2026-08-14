@@ -140,7 +140,7 @@ _This next batch (T045–T069) comes from a QA pass over PR 55's suggested check
 
 - **Area:** Sesh (Kentei assessment)
 - **Priority:** Low
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Implementer
 - **Description:** The assessment wrap-up's final button is labeled "Finish sesh" and navigates to `/profile` (`onFinished` in `src/features/sesh/components/assessment-entry.tsx`) — both the copy and the destination are wrong for this context; the user should land on Home.
 - **Exit criteria:** Completing a Kentei assessment and tapping the final wrap-up button lands on Home (`/`); its copy describes that destination rather than "Finish sesh."
