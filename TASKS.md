@@ -139,7 +139,7 @@ _This next batch (T045–T069) comes from a QA pass over PR 55's suggested check
 
 - **Area:** Sesh / Navigation
 - **Priority:** Medium
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** Every existing "Practice" deep link into Sesh (`Link href={{ pathname: '/sesh', params: { trickId } }}`) still renders the full setup picker — format choice, duration/target input, and the complete trick list — with the linked trick only cosmetically pinned to the top and labeled "Up next." Add a distinct variant that shows just the preselected trick and a "Start sesh" button, reachable only from explicit practice entry points, not from a plain visit to the Sesh tab.
 - **Exit criteria:** Test: visiting Sesh via each of the identified practice-entry call sites (Tricks-row Practice action, Stats "Needs attention" Practice action, Home "Practice again" hero button, Home "In rotation" queue rows, Stats trick-detail "Challenge" action) renders the preselected trick plus a Start-sesh action only, with no other setup UI, and starting immediately begins that trick's countdown; a plain visit to the Sesh tab — including for a returning user whose `lastSesh` would otherwise prefill a trick — still renders the full setup picker exactly as today, unchanged.
