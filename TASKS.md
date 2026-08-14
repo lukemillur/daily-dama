@@ -146,16 +146,6 @@ _The following batch (T070–T079) comes from the QA checklist completed against
 - **Description:** Make pressing the Sesh navigation item a reliable return to the Sesh home screen from wrap-up screens and all nested Sesh routes, rather than exposing stale local state or leaving the user inside a child route.
 - **Notes:** Umbrella only — complete T076.1 and T076.2. The contract applies to both single-trick and multi-trick/assessment-related Sesh navigation surfaces; do not change the meaning of the Profile, Tricks, Stats, or Home tabs.
 
-### [T076.1] Define the Sesh tab reset route contract
-
-- **Area:** Sesh / Expo Router navigation
-- **Priority:** High (inherited from parent T076)
-- **Status:** Not started
-- **Planning:** Required
-- **Description:** Establish the route-level mechanism that maps a Sesh tab press to the canonical `/sesh` home route and clears or remounts nested Sesh state as necessary.
-- **Exit criteria:** A route/navigation test demonstrates that pressing the Sesh tab from a nested Sesh route resolves to `/sesh`, and a subsequent render shows the Sesh home picker rather than the previously active child or wrap-up screen; the mechanism works with the existing web tab implementation without changing the five-link order.
-- **Notes:** Inspect the root tabs layout and Expo Router tab behavior before implementing. Avoid storing navigation handles or transient Sesh UI state in persistent providers.
-
 ### [T076.2] Apply and verify the reset contract across Sesh screens
 
 - **Area:** Sesh / navigation
