@@ -67,7 +67,7 @@ function Harness() {
         accessibilityLabel="record-sesh-a"
         onPress={() => recordCompletedSesh(summaryFor(TRICK_A, 3))}
       />
-      <AllTrickGoalsScreen tricks={DIRECTORY_TRICKS} onClose={noop} />
+      <AllTrickGoalsScreen tricks={DIRECTORY_TRICKS} onBack={noop} />
     </>
   );
 }

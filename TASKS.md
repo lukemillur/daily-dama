@@ -135,24 +135,6 @@ The first pass used **locked/unlocked** for "the user can land this trick." User
 
 _This next batch (T045–T069) comes from a QA pass over PR 55's suggested checklist (the `development` → `main` release covering T002–T041), worked top to bottom. Where an entry names the task that shipped the behavior it's correcting, the archived entry in [TASKS_DONE.md](TASKS_DONE.md) stays as-written — history isn't rewritten, same as above._
 
-### [T069] Convert Tricks' nested pseudo-screens into real routes with back navigation
-
-- **Area:** Navigation / Tricks
-- **Priority:** Medium
-- **Status:** Not started
-- **Description:** Every "nested" view reachable from Tricks — trick edit, delete-confirm, notes (list/add/edit), all-notes archive, goals (list/add), all-trick-goals, laced-tricks grid, custom-trick creation — is conditional local-state rendering inside the single `src/app/tricks.tsx` route (confirmed: no `src/app/tricks/` directory exists), each dismissed only by its own hand-rolled "Close" button. None has its own URL, and none gets real back-button semantics for free. Give them real routes.
-- **Notes:** Umbrella only — complete T069.1 and T069.2. This was T027's deliberate design at the time ("standalone trick-goals screen," confirmed Close-returns-to-directory as intended), not an oversight — this task is a deliberate revisit, not a regression fix. [T068] already covers the tab-press-returns-home behavior as a faster standalone fix; this chain should verify that behavior still holds (adapting T068's mechanism as needed) once views become real routes, not re-solve it from scratch.
-
-### [T069.2] Apply the established convention to the remaining nested Tricks screens
-
-- **Area:** Navigation / Tricks
-- **Priority:** Medium (inherited from parent T069)
-- **Status:** In progress
-- **Planning:** Required
-- **Description:** Apply T069.1's pattern to the remaining nested views: trick notes, all-notes archive, all-trick-goals, laced-tricks grid, and custom-trick create/edit/delete. Depends on T069.1.
-- **Exit criteria:** Every screen listed is reachable via its own web route with real back navigation and no "Close" button remaining anywhere in the Tricks feature area; Tricks-tab-returns-home verified from each on web. Native device validation is deliberately deferred under `AGENTS.md`'s active platform scope.
-- **Notes:** Notes has the same internal list/add/edit nesting `TrickGoalsScreen` does (and one extra wrinkle: exiting a note _edit_ fully back to Tricks home today takes two taps — Cancel to the notes list, then Close — worth resolving as part of this pass, not carrying forward).
-
 ### [T042] Complete native tab iconography
 
 - **Area:** Navigation

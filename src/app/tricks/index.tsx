@@ -1,5 +1,5 @@
-import { useNavigation, useRouter } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
+import { useRouter } from 'expo-router';
+import { useMemo, useState } from 'react';
 import { Pressable, ScrollView, TextInput } from 'react-native';
 import { styled } from 'styled-components/native';
 
@@ -18,10 +18,7 @@ import {
   useCustomTrickActions,
   useCustomTricks,
 } from '@/features/custom-tricks/state/custom-trick-provider';
-import { AllTrickGoalsScreen } from '@/features/goals/components/all-trick-goals-screen';
 import { useGoals } from '@/features/goals/state/goal-provider';
-import { AllNotesScreen } from '@/features/notes/components/all-notes-screen';
-import { TrickNotesScreen } from '@/features/notes/components/trick-notes-screen';
 import { useNotes } from '@/features/notes/state/note-provider';
 import { useRequireOnboarding } from '@/features/onboarding/state/require-onboarding';
 import {
@@ -29,12 +26,10 @@ import {
   useUserProfileActions,
 } from '@/features/profile/state/user-profile-provider';
 import { usePracticeHistory } from '@/features/stats/state/practice-history-provider';
-import { LacedTricksScreen } from '@/features/tricks/components/laced-tricks-screen';
 import { TrickDirectory } from '@/features/tricks/components/trick-directory';
 import { KENDAMA_KENTEI_TRICKS } from '@/features/tricks/data/kendama-kentei-tricks';
 import {
   createProfileDirectoryTricks,
-  type DirectoryTrick,
   selectEffectiveLacedTrickIds,
   selectGoalCountByTrickId,
   selectLacedCountByTrickId,
@@ -47,17 +42,10 @@ export default function TricksScreen() {
   const isOnboardingComplete = useRequireOnboarding();
   const { tricks } = useCustomTricks();
   const { selectedTrickIds, manuallyUnlockedTrickIds = [] } = useUserProfile();
-  const { toggleSelectedTrick, toggleManualUnlock } = useUserProfileActions();
+  const { toggleSelectedTrick } = useUserProfileActions();
   const { sessions } = usePracticeHistory();
   const { notes } = useNotes();
   const { goals } = useGoals();
-  const [creationStep, setCreationStep] = useState<'list' | 'choose' | CustomTrick['kind']>('list');
-  const [editingTrick, setEditingTrick] = useState<CustomTrick | undefined>(undefined);
-  const [deletingTrick, setDeletingTrick] = useState<CustomTrick | undefined>(undefined);
-  const [notesTrick, setNotesTrick] = useState<DirectoryTrick | undefined>(undefined);
-  const [showLacedTricks, setShowLacedTricks] = useState(false);
-  const [showAllGoals, setShowAllGoals] = useState(false);
-  const [showAllNotes, setShowAllNotes] = useState(false);
   const directoryTricks = useMemo(
     () => createProfileDirectoryTricks(KENDAMA_KENTEI_TRICKS, tricks),
     [tricks],
@@ -71,123 +59,9 @@ export default function TricksScreen() {
     [lacedTrickIds, manuallyUnlockedTrickIds],
   );
 
-  const navigation = useNavigation();
   const router = useRouter();
 
-  useEffect(() => {
-    const resetNestedView = () => {
-      setCreationStep('list');
-      setEditingTrick(undefined);
-      setDeletingTrick(undefined);
-      setNotesTrick(undefined);
-      setShowLacedTricks(false);
-      setShowAllGoals(false);
-      setShowAllNotes(false);
-    };
-
-    const tabNavigation = navigation.getParent();
-    if (!tabNavigation) return undefined;
-
-    return tabNavigation.addListener('tabPress' as never, () => {
-      if (tabNavigation.isFocused()) {
-        resetNestedView();
-      }
-    });
-  }, [navigation]);
-
   if (!isOnboardingComplete) return null;
-
-  if (editingTrick) {
-    return (
-      <Screen edges={['top', 'left', 'right']}>
-        <CustomTrickForm
-          initialTrick={editingTrick}
-          kind={editingTrick.kind}
-          onCancel={() => setEditingTrick(undefined)}
-          onSaved={() => setEditingTrick(undefined)}
-        />
-      </Screen>
-    );
-  }
-
-  if (deletingTrick) {
-    return (
-      <Screen edges={['top', 'left', 'right']}>
-        <DeleteConfirmation
-          trick={deletingTrick}
-          onCancel={() => setDeletingTrick(undefined)}
-          onDeleted={() => setDeletingTrick(undefined)}
-        />
-      </Screen>
-    );
-  }
-
-  if (notesTrick) {
-    return (
-      <Screen edges={['top', 'left', 'right']}>
-        <TrickNotesScreen
-          trickId={notesTrick.id}
-          trickName={notesTrick.name}
-          onClose={() => setNotesTrick(undefined)}
-        />
-      </Screen>
-    );
-  }
-
-  if (showLacedTricks) {
-    return (
-      <Screen edges={['top', 'left', 'right']}>
-        <LacedTricksScreen
-          tricks={directoryTricks}
-          unlockedTrickIds={unlockedTrickIds}
-          onToggleTrick={toggleManualUnlock}
-          onClose={() => setShowLacedTricks(false)}
-        />
-      </Screen>
-    );
-  }
-
-  if (showAllGoals) {
-    return (
-      <Screen edges={['top', 'left', 'right']}>
-        <AllTrickGoalsScreen
-          tricks={directoryTricks}
-          onClose={() => setShowAllGoals(false)}
-        />
-      </Screen>
-    );
-  }
-
-  if (showAllNotes) {
-    return (
-      <Screen edges={['top', 'left', 'right']}>
-        <AllNotesScreen onClose={() => setShowAllNotes(false)} />
-      </Screen>
-    );
-  }
-
-  if (creationStep === 'choose') {
-    return (
-      <Screen edges={['top', 'left', 'right']}>
-        <ChoiceScreen
-          onCancel={() => setCreationStep('list')}
-          onChoose={setCreationStep}
-        />
-      </Screen>
-    );
-  }
-
-  if (creationStep === 'standalone' || creationStep === 'sequence') {
-    return (
-      <Screen edges={['top', 'left', 'right']}>
-        <CustomTrickForm
-          kind={creationStep}
-          onCancel={() => setCreationStep('list')}
-          onSaved={() => setCreationStep('list')}
-        />
-      </Screen>
-    );
-  }
 
   return (
     <Screen align="center" edges={['left', 'right']} includeWebHeaderInset={false}>
@@ -202,10 +76,12 @@ export default function TricksScreen() {
           unlockedTrickIds={unlockedTrickIds}
           selection={{ selectedTrickIds, onToggleTrick: toggleSelectedTrick }}
           customActions={{
-            onEdit: (trickId) => setEditingTrick(tricks.find((trick) => trick.id === trickId)),
-            onDelete: (trickId) => setDeletingTrick(tricks.find((trick) => trick.id === trickId)),
+            onEdit: (trickId) => router.push({ pathname: '/tricks/custom/[trickId]/edit', params: { trickId } }),
+            onDelete: (trickId) => router.push({ pathname: '/tricks/custom/[trickId]/delete', params: { trickId } }),
           }}
-          notesAction={{ onOpen: setNotesTrick }}
+          notesAction={{
+            onOpen: (trick) => router.push({ pathname: '/tricks/[trickId]/notes', params: { trickId: trick.id } }),
+          }}
           goalsAction={{
             onOpen: (trick) =>
               router.push({ pathname: '/tricks/[trickId]/goals', params: { trickId: trick.id } }),
@@ -221,14 +97,14 @@ export default function TricksScreen() {
           }}
           headerAction={
             <HeaderActions>
-              <DefineButton onPress={() => setCreationStep('choose')}>Define new trick</DefineButton>
-              <LacedTricksButton variant="secondary" onPress={() => setShowLacedTricks(true)}>
+              <DefineButton onPress={() => router.push('/tricks/custom/new')}>Define new trick</DefineButton>
+              <LacedTricksButton variant="secondary" onPress={() => router.push('/tricks/laced')}>
                 Laced tricks
               </LacedTricksButton>
-              <TrickGoalsButton variant="secondary" onPress={() => setShowAllGoals(true)}>
+              <TrickGoalsButton variant="secondary" onPress={() => router.push('/tricks/goals')}>
                 Trick goals
               </TrickGoalsButton>
-              <AllNotesButton variant="secondary" onPress={() => setShowAllNotes(true)}>
+              <AllNotesButton variant="secondary" onPress={() => router.push('/tricks/notes')}>
                 All notes
               </AllNotesButton>
             </HeaderActions>
@@ -239,7 +115,7 @@ export default function TricksScreen() {
   );
 }
 
-function ChoiceScreen({
+export function ChoiceScreen({
   onCancel,
   onChoose,
 }: {
@@ -270,7 +146,7 @@ function ChoiceScreen({
   );
 }
 
-function CustomTrickForm({
+export function CustomTrickForm({
   initialTrick,
   kind,
   onCancel,
@@ -595,7 +471,7 @@ function FocusedTrickToggle({
   );
 }
 
-function DeleteConfirmation({
+export function DeleteConfirmation({
   trick,
   onCancel,
   onDeleted,

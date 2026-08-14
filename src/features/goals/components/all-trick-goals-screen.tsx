@@ -16,7 +16,7 @@ import type { DirectoryTrick } from '@/features/tricks/model/trick-directory';
 
 interface AllTrickGoalsScreenProps {
   readonly tricks: readonly DirectoryTrick[];
-  readonly onClose: () => void;
+  readonly onBack: () => void;
 }
 
 type ScreenStep =
@@ -30,7 +30,7 @@ type ScreenStep =
 
 export function AllTrickGoalsScreen({
   tricks,
-  onClose,
+  onBack,
 }: AllTrickGoalsScreenProps) {
   const { goals } = useGoals();
   const { addGoal, deleteGoal } = useGoalActions();
@@ -106,8 +106,8 @@ export function AllTrickGoalsScreen({
         </Sections>
 
         <FormActions>
-          <Button fill variant="secondary" onPress={onClose}>
-            Close
+          <Button accessibilityLabel="Back to Tricks" fill variant="secondary" onPress={onBack}>
+            Back to Tricks
           </Button>
         </FormActions>
       </Content>

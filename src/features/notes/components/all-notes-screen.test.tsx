@@ -33,7 +33,7 @@ function Harness() {
           })
         }
       />
-      <AllNotesScreen onClose={noop} />
+      <AllNotesScreen onBack={noop} />
     </>
   );
 }
