@@ -123,6 +123,13 @@ interface MultiTrickSeshProps {
    * assessment flow.
    */
   readonly showRankStanding?: boolean;
+  /**
+   * Label for the wrap-up's final button, which also always fires
+   * `onFinished`. Defaults to "Finish sesh" — the ad hoc multi-trick flow's
+   * wrap-up just resets local run state, so that generic copy still fits.
+   * The Kentei assessment flow overrides it to describe navigating Home.
+   */
+  readonly finishButtonLabel?: string;
 }
 
 /**
@@ -153,6 +160,7 @@ export function MultiTrickSesh({
   wrapUpFooter,
   onCancelRun,
   showRankStanding,
+  finishButtonLabel,
 }: MultiTrickSeshProps) {
   const [sequence, setSequence] = useState(() => createTrickSequence(tricks));
   const [state, dispatch] = useReducer(
@@ -426,6 +434,7 @@ export function MultiTrickSesh({
         skippedEntries={skippedEntries}
         footer={wrapUpFooter}
         onContinue={() => onFinished?.()}
+        finishButtonLabel={finishButtonLabel}
       />
     );
   }
@@ -505,11 +514,13 @@ function MultiTrickWrapUp({
   skippedEntries,
   footer,
   onContinue,
+  finishButtonLabel = 'Finish sesh',
 }: {
   readonly summaries: readonly SeshSummary[];
   readonly skippedEntries: readonly string[];
   readonly footer?: ReactNode;
   readonly onContinue: () => void;
+  readonly finishButtonLabel?: string;
 }) {
   return (
     <ScrollArea contentContainerStyle={{ padding: 24, paddingBottom: 140 }}>
@@ -545,8 +556,8 @@ function MultiTrickWrapUp({
           </WrapUpList>
         )}
         {footer}
-        <FinishButton accessibilityLabel="Finish sesh" onPress={onContinue}>
-          Finish sesh
+        <FinishButton accessibilityLabel={finishButtonLabel} onPress={onContinue}>
+          {finishButtonLabel}
         </FinishButton>
       </ActiveContent>
     </ScrollArea>

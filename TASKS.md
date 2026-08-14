@@ -136,16 +136,6 @@ The first pass used **locked/unlocked** for "the user can land this trick." User
 _This next batch (T045–T069) comes from a QA pass over PR 55's suggested checklist (the `development` → `main` release covering T002–T041), worked top to bottom. Where an entry names the task that shipped the behavior it's correcting, the archived entry in [TASKS_DONE.md](TASKS_DONE.md) stays as-written — history isn't rewritten, same as above._
 
 
-### [T059] Navigate to Home from the Kentei assessment wrap-up screen
-
-- **Area:** Sesh (Kentei assessment)
-- **Priority:** Low
-- **Status:** Not started
-- **Planning:** Implementer
-- **Description:** The assessment wrap-up's final button is labeled "Finish sesh" and navigates to `/profile` (`onFinished` in `src/features/sesh/components/assessment-entry.tsx`) — both the copy and the destination are wrong for this context; the user should land on Home.
-- **Exit criteria:** Completing a Kentei assessment and tapping the final wrap-up button lands on Home (`/`); its copy describes that destination rather than "Finish sesh."
-- **Notes:** Scoped to the assessment call site only (`assessment-entry.tsx`'s `onFinished={() => router.replace('/profile')}`) — the ad hoc multi-trick flow (`multi-trick-sesh-entry.tsx`) has its own separate `handleFinished` that resets local state rather than navigating, and is unaffected. `RankUpCelebrationModal` is mounted at the app root independent of route, so it will still fire correctly on top of Home if a promotion happens at the end of the run.
-
 ### [T060] Explain when a Kentei rank didn't advance after an assessment
 
 - **Area:** Sesh / Profile (Kentei assessment)
