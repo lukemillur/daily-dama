@@ -141,7 +141,7 @@ _The following batch (T070–T079) comes from the QA checklist completed against
 
 - **Area:** Goals / Tricks UI
 - **Priority:** Medium
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** Replace the bespoke trick picker on the all-trick Add Goal screen with the shared directory presentation and ensure the user's focused tricks are represented in the same way as elsewhere in the product.
 - **Exit criteria:** Goal-screen tests verify that standard and custom tricks render through the shared directory component/style, focused tricks appear in the focused section in the expected order, selecting a trick still opens the existing goal form, search/selection remains functional, and goal creation persists the selected trick.
