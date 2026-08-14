@@ -6,6 +6,15 @@ Entries keep their content as it was at completion. Don't retroactively edit a d
 
 ---
 
+### [T070] Harden Kentei assessment exit behavior
+
+- **Area:** Kentei assessment / navigation
+- **Priority:** High
+- **Status:** Done
+- **Planning:** Required
+- **Description:** Correct the two post-assessment regressions found in the PR 83 QA pass: returning Home must clear the nested assessment route, and a laced assessment trick must advance without briefly showing the generic “Nice work” completion panel.
+- **Notes:** Umbrella only — T070.1 and T070.2 complete the parent. The existing assessment result and promotion behavior are preserved.
+
 ### [T070.2] Remove the transient Kentei “Nice work” panel after lacing
 
 - **Area:** Kentei assessment / Sesh sequencing

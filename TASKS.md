@@ -137,15 +137,6 @@ _This next batch (T045–T069) comes from a QA pass over PR 55's suggested check
 
 _The following batch (T070–T079) comes from the QA checklist completed against PR 83, worked top to bottom. New entries are intentionally placed before the older queue so the next actionable QA finding is selected first. Existing task history is not rewritten._
 
-### [T070] Harden Kentei assessment exit behavior
-
-- **Area:** Kentei assessment / navigation
-- **Priority:** High
-- **Status:** Not started
-- **Planning:** Required
-- **Description:** Correct the two post-assessment regressions found in the PR 83 QA pass: returning Home must clear the nested assessment route, and a laced assessment trick must advance without briefly showing the generic “Nice work” completion panel.
-- **Notes:** Umbrella only — complete T070.1 and T070.2. Preserve the existing assessment result and promotion behavior.
-
 ### [T071] Make multi-trick Sesh entry prominent
 
 - **Area:** Sesh / navigation UX
