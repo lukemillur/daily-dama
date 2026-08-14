@@ -1,3 +1,4 @@
+import { Link } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { Pressable, ScrollView, TextInput } from 'react-native';
 import { styled } from 'styled-components/native';
@@ -137,6 +138,11 @@ export function GoalRow({
       <GoalBody>{formatGoalTarget(goal)}</GoalBody>
       <ProgressText>{formatGoalProgress(progress)}</ProgressText>
       <GoalActionsRow>
+        <Link asChild href={{ pathname: '/sesh', params: { trickId: goal.trickId, mode: 'practice' } }}>
+          <GoalAction accessibilityLabel={`Practice ${goal.trickName}`} accessibilityRole="link">
+            <GoalActionText>Practice toward this goal</GoalActionText>
+          </GoalAction>
+        </Link>
         <GoalAction
           accessibilityLabel="Delete goal"
           accessibilityRole="button"

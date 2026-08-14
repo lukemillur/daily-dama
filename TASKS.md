@@ -135,16 +135,6 @@ The first pass used **locked/unlocked** for "the user can land this trick." User
 
 _This next batch (T045–T069) comes from a QA pass over PR 55's suggested checklist (the `development` → `main` release covering T002–T041), worked top to bottom. Where an entry names the task that shipped the behavior it's correcting, the archived entry in [TASKS_DONE.md](TASKS_DONE.md) stays as-written — history isn't rewritten, same as above._
 
-### [T066] Add a practice entry point from a rendered goal
-
-- **Area:** Goals
-- **Priority:** Medium
-- **Status:** In progress
-- **Planning:** Required
-- **Description:** A goal, wherever it's rendered (per-trick or all-trick goals screen), has no action to jump directly into Sesh for that trick — a user has to leave the goals screen and find the trick's separate Practice action. Add one, using copy oriented around advancing the goal rather than generic "Practice."
-- **Exit criteria:** Test: a rendered goal exposes a practice action; activating it lands on Sesh with that trick preselected via [T063]'s preselected "Start sesh" variant, not the legacy full-picker link.
-- **Notes:** Depends on [T063] landing first — this is explicitly meant to be one of the "distinct instances of the practice UX flow" the request asks to unify under the new preselected variant, not a sixth use of the legacy `/sesh?trickId=` full-picker pattern. Exact copy ("Practice toward this goal" or similar) left to implementer discretion.
-
 ### [T067] Add goal creation to the all-trick "Trick Goals" screen
 
 - **Area:** Goals

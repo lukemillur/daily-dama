@@ -132,6 +132,15 @@ describe('AllTrickGoalsScreen', () => {
     expect(findText(root, "No goals yet. Set one from a trick's Goals action.")).toHaveLength(1);
   });
 
+  it('links each goal\'s Practice action to /sesh with the correct trickId param', async () => {
+    const root = await mountHarness();
+
+    press(root, 'add-goal-a');
+
+    const link = root.root.findByProps({ accessibilityLabel: 'Practice Big Cup' });
+    expect(link.props.href).toBe('/sesh?trickId=big-cup&mode=practice');
+  });
+
   it('removes a goal from the list once deleted', async () => {
     const root = await mountHarness();
 
