@@ -199,7 +199,7 @@ describe('MultiTrickSesh advanceOnFirstLace', () => {
     });
   });
 
-  it('does not advance on a single lace when disabled (default), requiring an explicit End Sesh', async () => {
+  it('does not advance on a single lace when disabled (default), and "End Sesh" ends the whole run', async () => {
     const onFinished = jest.fn();
     const root = await mountMultiTrickSesh({ onFinished });
 
@@ -218,9 +218,216 @@ describe('MultiTrickSesh advanceOnFirstLace', () => {
       pressByVisibleText(root, 'End Sesh');
     });
 
+    // "End Sesh" ends the whole run, not just the current trick — reaches
+    // the wrap-up immediately instead of advancing to the next trick.
+    expect(findByText(root, 'Finish sesh').length).toBeGreaterThan(0);
+    expect(findByAccessibilityLabel(root, 'session-count:1').length).toBeGreaterThan(0);
+    expect(findByAccessibilityLabel(root, 'session-0-lace-count:1').length).toBeGreaterThan(0);
+    expect(findByText(root, TRICKS[1].name)).toHaveLength(0);
+    expect(findByText(root, TRICKS[2].name)).toHaveLength(0);
+
+    act(() => {
+      root.unmount();
+    });
+  });
+});
+
+describe('MultiTrickSesh "End Sesh" ends the run early', () => {
+  beforeEach(async () => {
+    await AsyncStorage.clear();
+    jest.useFakeTimers();
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  it("reaches the wrap-up immediately with only the current trick's laces-so-far recorded", async () => {
+    const onFinished = jest.fn();
+    const root = await mountMultiTrickSesh({ onFinished });
+
+    advanceThroughCountdown();
+    expect(findByText(root, TRICKS[0].name).length).toBeGreaterThan(0);
+
+    act(() => {
+      pressByAccessibilityLabel(root, 'Laced');
+    });
+    act(() => {
+      pressByAccessibilityLabel(root, 'Laced');
+    });
+
+    act(() => {
+      pressByVisibleText(root, 'End Sesh');
+    });
+
+    const wrapUpMatches = root.root.findAll(
+      (node) =>
+        typeof node.props.accessibilityLabel === 'string' &&
+        node.props.accessibilityLabel.startsWith(`Wrap-up entry: ${TRICKS[0].name}, 2 laces,`),
+    );
+    expect(wrapUpMatches.length).toBeGreaterThan(0);
+
+    const allWrapUpEntries = root.root.findAll(
+      (node) =>
+        typeof node.props.accessibilityLabel === 'string' &&
+        node.props.accessibilityLabel.startsWith('Wrap-up entry:'),
+    );
+    expect(new Set(allWrapUpEntries.map((node) => node.props.accessibilityLabel))).toEqual(
+      new Set([expect.stringContaining(`Wrap-up entry: ${TRICKS[0].name}, 2 laces,`)]),
+    );
+
+    expect(onFinished).not.toHaveBeenCalled();
+    act(() => {
+      pressByAccessibilityLabel(root, 'Finish sesh');
+    });
+    expect(onFinished).toHaveBeenCalledTimes(1);
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  it('records tricks already advanced past via "Next trick" before "End Sesh" stops the run', async () => {
+    const onFinished = jest.fn();
+    const root = await mountMultiTrickSesh({ onFinished });
+
+    advanceThroughCountdown();
+    expect(findByText(root, TRICKS[0].name).length).toBeGreaterThan(0);
+
+    act(() => {
+      pressByAccessibilityLabel(root, 'Laced');
+    });
+    act(() => {
+      pressByVisibleText(root, 'Next trick');
+    });
+
     advanceThroughCountdown();
     expect(findByText(root, TRICKS[1].name).length).toBeGreaterThan(0);
+
+    act(() => {
+      pressByAccessibilityLabel(root, 'Laced');
+    });
+    act(() => {
+      pressByVisibleText(root, 'End Sesh');
+    });
+
+    expect(findByText(root, 'Finish sesh').length).toBeGreaterThan(0);
+    expect(findByAccessibilityLabel(root, 'session-count:2').length).toBeGreaterThan(0);
+
+    const allWrapUpEntries = root.root.findAll(
+      (node) =>
+        typeof node.props.accessibilityLabel === 'string' &&
+        node.props.accessibilityLabel.startsWith('Wrap-up entry:'),
+    );
+    const uniqueLabels = new Set(allWrapUpEntries.map((node) => node.props.accessibilityLabel));
+    expect(uniqueLabels).toEqual(
+      new Set([
+        expect.stringContaining(`Wrap-up entry: ${TRICKS[0].name}, 1 laces,`),
+        expect.stringContaining(`Wrap-up entry: ${TRICKS[1].name}, 1 laces,`),
+      ]),
+    );
+    expect(findByText(root, TRICKS[2].name)).toHaveLength(0);
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  it('ends the whole run when pressed via a custom endActionLabel (e.g. "End assessment")', async () => {
+    const onFinished = jest.fn();
+    const root = await mountMultiTrickSesh({ onFinished, endActionLabel: 'End assessment' });
+
+    advanceThroughCountdown();
+    expect(findByText(root, TRICKS[0].name).length).toBeGreaterThan(0);
+
+    act(() => {
+      pressByAccessibilityLabel(root, 'Laced');
+    });
+    act(() => {
+      pressByVisibleText(root, 'End assessment');
+    });
+
+    expect(findByText(root, 'Finish sesh').length).toBeGreaterThan(0);
     expect(findByAccessibilityLabel(root, 'session-count:1').length).toBeGreaterThan(0);
+    expect(findByAccessibilityLabel(root, 'session-0-lace-count:1').length).toBeGreaterThan(0);
+    expect(findByText(root, TRICKS[1].name)).toHaveLength(0);
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  it('reaches the wrap-up with both an attempted entry and a skipped-range entry when a rank was skipped earlier in the run (PR 55 QA)', async () => {
+    const onFinished = jest.fn();
+    const root = await mountMultiTrickSesh({
+      onFinished,
+      endActionLabel: 'End assessment',
+      // Skip only trick 1 (index 1), landing back on trick 2 (index 2) so
+      // the run isn't over yet -- exercises "Skip this rank" followed later
+      // by "End assessment", the exact combination the task's exit
+      // criteria calls out for confirming rank-skip wrap-up messaging.
+      skipTarget: () => 2,
+      describeSkippedRange: (start, end) => `Rank ${start + 1} — ${end - start} tricks skipped`,
+    });
+
+    advanceThroughCountdown();
+    expect(findByText(root, TRICKS[0].name).length).toBeGreaterThan(0);
+
+    act(() => {
+      pressByAccessibilityLabel(root, 'Laced');
+    });
+    act(() => {
+      pressByVisibleText(root, 'Next trick');
+    });
+
+    advanceThroughCountdown();
+    expect(findByText(root, TRICKS[1].name).length).toBeGreaterThan(0);
+
+    act(() => {
+      pressByVisibleText(root, 'Skip this rank');
+    });
+    act(() => {
+      pressByAccessibilityLabel(root, 'Confirm skip rank');
+    });
+
+    advanceThroughCountdown();
+    expect(findByText(root, TRICKS[2].name).length).toBeGreaterThan(0);
+
+    act(() => {
+      pressByAccessibilityLabel(root, 'Laced');
+    });
+    act(() => {
+      pressByVisibleText(root, 'End assessment');
+    });
+
+    // Reaches the wrap-up immediately (not the next trick -- there isn't
+    // one), with both attempted tricks recorded and the skipped rank
+    // rendered as its own "Skipped" entry, not as a failed attempt.
+    expect(findByText(root, 'Finish sesh').length).toBeGreaterThan(0);
+    expect(findByAccessibilityLabel(root, 'session-count:2').length).toBeGreaterThan(0);
+
+    const attemptedLabels = new Set(
+      root.root
+        .findAll(
+          (node) =>
+            typeof node.props.accessibilityLabel === 'string' &&
+            node.props.accessibilityLabel.startsWith('Wrap-up entry:'),
+        )
+        .map((node) => node.props.accessibilityLabel as string),
+    );
+    expect(attemptedLabels).toEqual(
+      new Set([
+        expect.stringContaining(`Wrap-up entry: ${TRICKS[0].name}, 1 laces,`),
+        expect.stringContaining(`Wrap-up entry: ${TRICKS[2].name}, 1 laces,`),
+      ]),
+    );
+
+    const skippedMatches = root.root.findAll(
+      (node) =>
+        typeof node.props.accessibilityLabel === 'string' &&
+        node.props.accessibilityLabel === 'Wrap-up skipped: Rank 2 — 1 tricks skipped',
+    );
+    expect(skippedMatches.length).toBeGreaterThan(0);
 
     act(() => {
       root.unmount();
@@ -924,7 +1131,7 @@ describe('MultiTrickSesh onCancelRun (T047)', () => {
       pressByAccessibilityLabel(root, 'Laced');
     });
     act(() => {
-      pressByVisibleText(root, 'End Sesh');
+      pressByVisibleText(root, 'Next trick');
     });
 
     // Second trick: still shows its own countdown (skipCountdownBetweenTricks is not set), but

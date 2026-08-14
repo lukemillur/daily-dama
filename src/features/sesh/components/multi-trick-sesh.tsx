@@ -66,9 +66,12 @@ interface MultiTrickSeshProps {
   readonly pauseAfterLace?: boolean;
   /**
    * Opaque to this component, forwarded to `ActiveSesh` as-is — replaces
-   * the default "End Sesh" copy on the primary end action. Used by callers
-   * (e.g. the assessment flow) that need different framing without this
-   * component or `ActiveSesh` knowing what an assessment is.
+   * the default "End Sesh" copy on the primary end action. This action ends
+   * the *whole run* (see `handleEndRun`), not just the current trick — the
+   * current trick's landings-so-far are still recorded, but no further
+   * tricks in the sequence are run or recorded. Used by callers (e.g. the
+   * assessment flow) that need different framing without this component or
+   * `ActiveSesh` knowing what an assessment is.
    */
   readonly endActionLabel?: string;
   /**
@@ -163,6 +166,7 @@ export function MultiTrickSesh({
   const { recordCompletedSesh } = usePracticeHistoryActions();
   const { notes } = useNotes();
   const recordedSummaryId = useRef<string | undefined>(undefined);
+  const endRunRequestedRef = useRef(false);
   const [summaries, setSummaries] = useState<SeshSummary[]>([]);
   const [skippedEntries, setSkippedEntries] = useState<string[]>([]);
   // Set between a "Skip this rank" tap and the user confirming or
@@ -227,6 +231,14 @@ export function MultiTrickSesh({
     recordedSummaryId.current = summaryId;
     recordCompletedSesh(state.summary);
     setSummaries((prev) => [...prev, state.summary]);
+
+    if (endRunRequestedRef.current) {
+      endRunRequestedRef.current = false;
+      setIsFirstCountdown(false);
+      setSequence((prev) => advanceTrickSequenceToIndex(prev, prev.tricks.length));
+      dispatch({ type: 'seshReset' });
+      return;
+    }
 
     const nextSequence = advanceTrickSequence(sequence);
     setSequence(nextSequence);
@@ -341,6 +353,18 @@ export function MultiTrickSesh({
       }
     };
 
+    // Ends the *whole run*, not just the current trick: the current
+    // trick's landings-so-far are still recorded (same as today's
+    // per-trick completion), but the `completed` effect above reads this
+    // ref and jumps the sequence straight to its end instead of advancing
+    // to the next trick — see `endRunRequestedRef`. Backs both the
+    // primary "End Sesh"/"End assessment" button and the "End anyway"
+    // confirmation in `ActiveSesh`, since both call this same `onEnd` prop.
+    const handleEndRun = () => {
+      endRunRequestedRef.current = true;
+      dispatch({ type: 'seshEnded', now: Date.now() });
+    };
+
     if (laceAcknowledgment) {
       return (
         <CenteredPanel accessibilityLabel="Trick landed">
@@ -365,16 +389,18 @@ export function MultiTrickSesh({
         onLaced={handleLaced}
         onPause={() => dispatch({ type: 'seshPaused', now: Date.now() })}
         onResume={() => dispatch({ type: 'seshResumed', now: Date.now() })}
-        onEnd={() => dispatch({ type: 'seshEnded', now: Date.now() })}
+        onEnd={handleEndRun}
         onTimerElapsed={() => dispatch({ type: 'timerElapsed', now: Date.now() })}
         attemptsReminder={showAttemptsReminder}
         onSkipRank={skipTarget ? handleSkipRankRequest : undefined}
-        // "Next trick" reuses the same completed-effect advance path as
-        // "End Sesh" above — it's the identical `seshEnded` dispatch, not a
-        // second advance mechanism. Unlike `handleSkipRank`, this always
-        // records the current trick's landings before moving on. Omitted
-        // on the final trick of the run, where it would be functionally
-        // identical to "End Sesh" but mislabeled, and omitted entirely when
+        // "Next trick" is a distinct action from "End Sesh"/handleEndRun
+        // above: both dispatch `seshEnded` and reuse the same
+        // completed-effect advance path, but "Next trick" never sets
+        // `endRunRequestedRef`, so it always advances one trick and keeps
+        // the run going — unlike `handleSkipRank`, it always records the
+        // current trick's landings before moving on. Omitted on the final
+        // trick of the run, where it would be functionally identical to
+        // "End Sesh" but mislabeled, and omitted entirely when
         // `advanceOnFirstLace` is set: there, "Laced" on an untouched trick
         // already dispatches this same `seshEnded` action, so "Next trick"
         // would be pure redundant chrome.
