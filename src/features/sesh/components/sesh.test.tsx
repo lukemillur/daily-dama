@@ -1950,11 +1950,7 @@ describe('ActiveSesh rank standing', () => {
 });
 
 
-describe('Sesh quick-start variant (T063)', () => {
-  // quickStart is the signal a practice entry point (Tricks-row Practice, Stats "Needs
-  // attention" Practice, Home "Practice again"/"In rotation", Stats trick-detail Challenge)
-  // sends alongside trickId -- it must render only the preselected trick and a Start-sesh
-  // action, never the full format/duration/trick-list picker.
+describe('Sesh direct-practice planning (T077.2)', () => {
 
   const OTHER_TRICK: PracticeTrick = { id: 'lighthouse-flip', name: 'Lighthouse Flip' };
 
@@ -1980,15 +1976,22 @@ describe('Sesh quick-start variant (T063)', () => {
     return root;
   }
 
-  it('renders only the preselected trick and a Start-sesh action, no format/duration/trick-list UI', async () => {
-    const root = await mountSesh({ quickStart: true, preferredTrickId: TRICK.id });
+  it('uses the normal picker while prioritizing the direct-practice trick', async () => {
+    const root = await mountSesh({ preferredTrickId: TRICK.id });
 
     const text = JSON.stringify(root.toJSON());
     expect(text).toContain(TRICK.name);
-    expect(text).not.toContain(OTHER_TRICK.name);
-    expect(text).not.toContain('Timed');
-    expect(text).not.toContain('Open-ended');
-    expect(text).not.toContain('Practice format');
+    expect(text).toContain(OTHER_TRICK.name);
+    expect(text).toContain('Timed');
+    expect(text).toContain('Open-ended');
+    expect(text).toContain('Practice format');
+    const trickChoices = root.root.findAll(
+      (node) =>
+        typeof node.props.accessibilityLabel === 'string' &&
+        node.props.accessibilityLabel.startsWith('Start a sesh with ') &&
+        typeof node.props.onPress === 'function',
+    );
+    expect(trickChoices[0]?.props.accessibilityLabel).toBe(`Start a sesh with ${TRICK.name}`);
     expect(findByAccessibilityLabel(root, `Start a sesh with ${TRICK.name}`).length).toBeGreaterThan(0);
 
     act(() => {
@@ -1996,16 +1999,29 @@ describe('Sesh quick-start variant (T063)', () => {
     });
   });
 
-  it("pressing Start sesh begins that trick's countdown", async () => {
+  it("passes a customized timed plan into the linked trick's countdown", async () => {
     jest.useFakeTimers();
     try {
-      const root = await mountSesh({ quickStart: true, preferredTrickId: TRICK.id });
+      const root = await mountSesh({ preferredTrickId: TRICK.id });
+
+      act(() => {
+        root.root.findByProps({ accessibilityLabel: 'Sesh duration in minutes' }).props.onChangeText('0');
+      });
+      const disabledChoice = root.root.find(
+        (node) => node.props.accessibilityLabel === `Start a sesh with ${TRICK.name}`,
+      );
+      expect(disabledChoice.props.disabled).toBe(true);
+      expect(JSON.stringify(root.toJSON())).toContain('Enter a whole number from 1 to 60.');
+
+      act(() => {
+        root.root.findByProps({ accessibilityLabel: 'Sesh duration in minutes' }).props.onChangeText('7');
+      });
 
       act(() => {
         pressByAccessibilityLabel(root, `Start a sesh with ${TRICK.name}`);
       });
 
-      expect(JSON.stringify(root.toJSON())).toContain('Get ready');
+      expect(JSON.stringify(root.toJSON())).toContain('7:00 begins after the countdown.');
 
       act(() => {
         root.unmount();
@@ -2015,13 +2031,25 @@ describe('Sesh quick-start variant (T063)', () => {
     }
   });
 
-  it('returns to the full Sesh home picker after completing a direct-practice sesh', async () => {
+  it('passes a customized open-ended target into the linked trick session', async () => {
     jest.useFakeTimers();
     try {
-      const root = await mountSesh({
-        quickStart: true,
-        preferredTrickId: TRICK.id,
-        initialPlan: createOpenEndedSeshPlan(),
+      const root = await mountSesh({ preferredTrickId: TRICK.id });
+
+      act(() => {
+        pressByVisibleText(root, 'Open-ended');
+      });
+      act(() => {
+        root.root.findByProps({ accessibilityLabel: 'Target lace count' }).props.onChangeText('0');
+      });
+      const disabledChoice = root.root.find(
+        (node) => node.props.accessibilityLabel === `Start a sesh with ${TRICK.name}`,
+      );
+      expect(disabledChoice.props.disabled).toBe(true);
+      expect(JSON.stringify(root.toJSON())).toContain('Enter a whole number from 1 to 999, or leave it blank.');
+
+      act(() => {
+        root.root.findByProps({ accessibilityLabel: 'Target lace count' }).props.onChangeText('3');
       });
 
       act(() => {
@@ -2036,24 +2064,10 @@ describe('Sesh quick-start variant (T063)', () => {
       act(() => {
         jest.advanceTimersByTime(1_000);
       });
-      expect(JSON.stringify(root.toJSON())).toContain('Sesh in progress');
-
       act(() => {
-        pressByVisibleText(root, 'End Sesh');
+        jest.advanceTimersByTime(1_000);
       });
-      expect(JSON.stringify(root.toJSON())).toContain('Sesh complete');
-
-      act(() => {
-        pressByVisibleText(root, 'Start another sesh');
-      });
-
-      const text = JSON.stringify(root.toJSON());
-      expect(text).toContain('Practice format');
-      expect(text).toContain('Timed');
-      expect(text).toContain('Open-ended');
-      expect(text).toContain(TRICK.name);
-      expect(text).toContain(OTHER_TRICK.name);
-      expect(text).not.toContain('Ready when you are');
+      expect(JSON.stringify(root.toJSON())).toContain('0 of 3 to hit your target');
 
       act(() => {
         root.unmount();
@@ -2063,8 +2077,8 @@ describe('Sesh quick-start variant (T063)', () => {
     }
   });
 
-  it('falls back to the full picker when the preselected trick is not practiceable', async () => {
-    const root = await mountSesh({ quickStart: true, preferredTrickId: 'not-a-real-trick' });
+  it('falls back to the focused practice list when the preferred trick is unavailable', async () => {
+    const root = await mountSesh({ preferredTrickId: 'not-a-real-trick' });
 
     const text = JSON.stringify(root.toJSON());
     expect(text).toContain('Practice format');
@@ -2076,7 +2090,7 @@ describe('Sesh quick-start variant (T063)', () => {
     });
   });
 
-  it('still renders the full picker with "Up next" when quickStart is not set (plain visit, incl. lastSesh)', async () => {
+  it('keeps the plain visit picker behavior unchanged', async () => {
     const root = await mountSesh({ preferredTrickId: TRICK.id });
 
     const text = JSON.stringify(root.toJSON());

@@ -137,25 +137,6 @@ _This next batch (T045–T069) comes from a QA pass over PR 55's suggested check
 
 _The following batch (T070–T079) comes from the QA checklist completed against PR 83, worked top to bottom. New entries are intentionally placed before the older queue so the next actionable QA finding is selected first. Existing task history is not rewritten._
 
-### [T077] Correct direct-practice entry lifecycle
-
-- **Area:** Sesh / practice entry points
-- **Priority:** High
-- **Status:** Not started
-- **Planning:** Required
-- **Description:** Make direct practice entry points, including neglected-trick practice, return to canonical Sesh home after completion and preserve access to normal Sesh navigation instead of leaving the user in a locked quick-start state.
-- **Notes:** Umbrella only — complete T077.1 and T077.2. Preserve the useful preselected-trick context at the initial entry point, but do not let it dictate post-completion navigation.
-
-### [T077.2] Allow direct-practice users to customize before starting
-
-- **Area:** Sesh / practice entry points
-- **Priority:** High (inherited from parent T077)
-- **Status:** In progress
-- **Planning:** Required
-- **Description:** Preserve the preselected trick when entering Sesh from practice, but expose the normal timed/open-ended format and duration/target customization before the user starts the run.
-- **Exit criteria:** A component test mounts Sesh with a practice-entry trick, verifies that the trick is preselected or prioritized, exposes timed/open-ended controls and their validation, and confirms the chosen plan is passed into the countdown; the plain `/sesh` picker behavior remains unchanged. Depends on T077.1.
-- **Notes:** Do not silently discard the practice-entry trick or mutate the focused-trick list. Reuse the existing `TrickPicker` plan model where practical instead of creating a second customization form. Depends on T077.1 because the entry-state refactor must establish the canonical post-practice route before customization is exposed.
-
 ### [T078] Reuse the trick directory in all-trick goal creation
 
 - **Area:** Goals / Tricks UI
