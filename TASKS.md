@@ -150,7 +150,7 @@ _The following batch (T070–T079) comes from the QA checklist completed against
 
 - **Area:** Sesh / Expo Router navigation
 - **Priority:** High (inherited from parent T076)
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** Establish the route-level mechanism that maps a Sesh tab press to the canonical `/sesh` home route and clears or remounts nested Sesh state as necessary.
 - **Exit criteria:** A route/navigation test demonstrates that pressing the Sesh tab from a nested Sesh route resolves to `/sesh`, and a subsequent render shows the Sesh home picker rather than the previously active child or wrap-up screen; the mechanism works with the existing web tab implementation without changing the five-link order.
