@@ -137,16 +137,6 @@ _This next batch (T045–T069) comes from a QA pass over PR 55's suggested check
 
 _The following batch (T070–T079) comes from the QA checklist completed against PR 83, worked top to bottom. New entries are intentionally placed before the older queue so the next actionable QA finding is selected first. Existing task history is not rewritten._
 
-### [T072] Return multi-trick completion to Sesh home
-
-- **Area:** Multi-trick Sesh / navigation
-- **Priority:** High
-- **Status:** In progress
-- **Planning:** Required
-- **Description:** Change the casual multi-trick flow's wrap-up “Finish sesh” action to return to the Sesh home route instead of resetting the local wizard to trick selection.
-- **Exit criteria:** A component or route integration test completes a multi-trick run, presses “Finish sesh,” and verifies that `/sesh` is shown with the Sesh home picker rather than the multi-trick selection step; canceling from the setup screen still returns to Sesh home.
-- **Notes:** `MultiTrickSeshEntry.handleFinished` currently resets local state, while the setup exit already calls `router.replace('/sesh')`. Preserve practice-history recording and the ability to start a fresh multi-trick run from its route.
-
 ### [T073] Keep “Next trick” available with auto-advance enabled
 
 - **Area:** Multi-trick Sesh / controls

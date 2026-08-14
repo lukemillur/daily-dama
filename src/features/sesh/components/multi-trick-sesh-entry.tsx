@@ -79,10 +79,7 @@ export function MultiTrickSeshEntry() {
   };
 
   const handleFinished = () => {
-    setStep({ kind: 'choosingTricks' });
-    setSelectedTrickIds([]);
-    setAdvanceOnFirstLace(false);
-    setPerTrickDurationMinutes('');
+    router.replace('/sesh');
   };
 
   if (step.kind === 'running') {

@@ -6,6 +6,16 @@ Entries keep their content as it was at completion. Don't retroactively edit a d
 
 ---
 
+### [T072] Return multi-trick completion to Sesh home
+
+- **Area:** Multi-trick Sesh / navigation
+- **Priority:** High
+- **Status:** Done
+- **Planning:** Required
+- **Description:** Change the casual multi-trick flow's wrap-up “Finish sesh” action to return to the Sesh home route instead of resetting the local wizard to trick selection.
+- **Exit criteria:** A component or route integration test completes a multi-trick run, presses “Finish sesh,” and verifies that `/sesh` is shown with the Sesh home picker rather than the multi-trick selection step; canceling from the setup screen still returns to Sesh home.
+- **Notes:** `MultiTrickSeshEntry.handleFinished` now routes to `/sesh`. Added route-harness integration coverage for a two-trick completion, per-trick practice-history recording, fresh multi-trick re-entry, setup back, and first-countdown cancellation. Full verification passed; native validation remains deferred under the active web-only platform scope.
+
 ### [T071] Make multi-trick Sesh entry prominent
 
 - **Area:** Sesh / navigation UX
