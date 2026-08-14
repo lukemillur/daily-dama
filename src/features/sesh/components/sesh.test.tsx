@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
-import type { ReactElement } from 'react';
+import type { ComponentProps, ReactElement } from 'react';
 import { Pressable, Text } from 'react-native';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 
@@ -1932,6 +1932,99 @@ describe('ActiveSesh rank standing', () => {
     });
 
     expect(JSON.stringify(root.toJSON())).not.toContain('Rank');
+
+    act(() => {
+      root.unmount();
+    });
+  });
+});
+
+
+describe('Sesh quick-start variant (T063)', () => {
+  // quickStart is the signal a practice entry point (Tricks-row Practice, Stats "Needs
+  // attention" Practice, Home "Practice again"/"In rotation", Stats trick-detail Challenge)
+  // sends alongside trickId -- it must render only the preselected trick and a Start-sesh
+  // action, never the full format/duration/trick-list picker.
+
+  const OTHER_TRICK: PracticeTrick = { id: 'lighthouse-flip', name: 'Lighthouse Flip' };
+
+  async function mountSesh(props: Partial<ComponentProps<typeof Sesh>> = {}) {
+    let root!: ReactTestRenderer;
+    await act(async () => {
+      root = create(
+        <NoteProvider>
+          <GoalProvider>
+            <PracticeHistoryProvider>
+              <UserProfileProvider>
+                <Sesh
+                  availableTricks={[TRICK, OTHER_TRICK]}
+                  selectedTrickIds={[TRICK.id, OTHER_TRICK.id]}
+                  {...props}
+                />
+              </UserProfileProvider>
+            </PracticeHistoryProvider>
+          </GoalProvider>
+        </NoteProvider>,
+      );
+    });
+    return root;
+  }
+
+  it('renders only the preselected trick and a Start-sesh action, no format/duration/trick-list UI', async () => {
+    const root = await mountSesh({ quickStart: true, preferredTrickId: TRICK.id });
+
+    const text = JSON.stringify(root.toJSON());
+    expect(text).toContain(TRICK.name);
+    expect(text).not.toContain(OTHER_TRICK.name);
+    expect(text).not.toContain('Timed');
+    expect(text).not.toContain('Open-ended');
+    expect(text).not.toContain('Practice format');
+    expect(findByAccessibilityLabel(root, `Start a sesh with ${TRICK.name}`).length).toBeGreaterThan(0);
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  it("pressing Start sesh begins that trick's countdown", async () => {
+    jest.useFakeTimers();
+    try {
+      const root = await mountSesh({ quickStart: true, preferredTrickId: TRICK.id });
+
+      act(() => {
+        pressByAccessibilityLabel(root, `Start a sesh with ${TRICK.name}`);
+      });
+
+      expect(JSON.stringify(root.toJSON())).toContain('Get ready');
+
+      act(() => {
+        root.unmount();
+      });
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it('falls back to the full picker when the preselected trick is not practiceable', async () => {
+    const root = await mountSesh({ quickStart: true, preferredTrickId: 'not-a-real-trick' });
+
+    const text = JSON.stringify(root.toJSON());
+    expect(text).toContain('Practice format');
+    expect(text).toContain(TRICK.name);
+    expect(text).toContain(OTHER_TRICK.name);
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  it('still renders the full picker with "Up next" when quickStart is not set (plain visit, incl. lastSesh)', async () => {
+    const root = await mountSesh({ preferredTrickId: TRICK.id });
+
+    const text = JSON.stringify(root.toJSON());
+    expect(text).toContain('Practice format');
+    expect(text).toContain('Up next');
+    expect(text).toContain(OTHER_TRICK.name);
 
     act(() => {
       root.unmount();

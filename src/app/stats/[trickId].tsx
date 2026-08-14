@@ -79,7 +79,7 @@ export default function TrickDetailScreen() {
                       <BestValue>{best} {best === 1 ? 'lace' : 'laces'}</BestValue>
                     </BestRowInfo>
                     <Link
-                      href={{ pathname: '/sesh', params: { trickId, plannedDurationMs: durationMs } }}
+                      href={{ pathname: '/sesh', params: { trickId, plannedDurationMs: durationMs, mode: 'practice' } }}
                       asChild>
                       <ChallengeButton accessibilityRole="link">Challenge</ChallengeButton>
                     </Link>

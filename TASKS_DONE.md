@@ -6,6 +6,16 @@ Entries keep their content as it was at completion. Don't retroactively edit a d
 
 ---
 
+### [T063] Add a preselected-trick "Start sesh" variant for practice entry points
+
+- **Area:** Sesh / Navigation
+- **Priority:** Medium
+- **Status:** Done
+- **Planning:** Required
+- **Description:** Every existing "Practice" deep link into Sesh (`Link href={{ pathname: '/sesh', params: { trickId } }}`) still renders the full setup picker — format choice, duration/target input, and the complete trick list — with the linked trick only cosmetically pinned to the top and labeled "Up next." Add a distinct variant that shows just the preselected trick and a "Start sesh" button, reachable only from explicit practice entry points, not from a plain visit to the Sesh tab.
+- **Exit criteria:** Test: visiting Sesh via each of the identified practice-entry call sites (Tricks-row Practice action, Stats "Needs attention" Practice action, Home "Practice again" hero button, Home "In rotation" queue rows, Stats trick-detail "Challenge" action) renders the preselected trick plus a Start-sesh action only, with no other setup UI, and starting immediately begins that trick's countdown; a plain visit to the Sesh tab — including for a returning user whose `lastSesh` would otherwise prefill a trick — still renders the full setup picker exactly as today, unchanged.
+- **Notes:** "Should only be accessible via the practice flow" is the requester's own scoping language. This must be a genuinely distinct signal from the existing `trickId`/`lastSesh` mechanism in `src/app/sesh/index.tsx` — that mechanism is *already* the everyday returning-user experience (every plain Sesh visit reads `lastSesh.trickId` the same way an explicit deep link reads its `trickId` param), so reusing it as-is for this variant would silently change the default Sesh-tab UX for all returning users, which is out of scope. Likely shape: a new param (e.g. a `mode`/`practice` flag) alongside `trickId`, and a new early-return branch in `Sesh`/`TrickPicker` gated on both that flag and `validatedPreferredTrickId` (already computed in `sesh.tsx`, confirms the trick is actually practiceable) being present. [T066] (goal → practice entry point) depends on this landing first — it's meant to be one of the "distinct instances of the practice UX flow" that converge on this new variant rather than the legacy full-picker link. Implemented via a `mode=practice` search param sent alongside `trickId` from all five call sites, gated in `Sesh` on both the raw param and `validatedPreferredTrickId` resolving against `practiceTricks`; added a `QuickStart` component reusing existing styled primitives, and a shared `handleTrickSelected` so both quick-start and the full picker record sessions identically. Fixed an existing `neglected-tricks-section.test.tsx` assertion that hardcoded the old href shape. Verified with `node .claude/scripts/verify.mjs` (full suite, after running `yarn install` in this worktree whose `node_modules` was missing on entry).
+
 ### [T062] Exclude Kentei-assessment sessions from Stats and Home aggregation
 
 - **Area:** Stats / Home / persistence (practice-history domain)

@@ -62,6 +62,12 @@ interface SeshProps {
   readonly preferredTrickId?: string;
   readonly initialPlan?: SeshPlan;
   /**
+   * True only when the caller explicitly navigated in via a practice entry
+   * point (deep link with `mode=practice`), never on a plain Sesh-tab visit
+   * — see `isQuickStart` below for the full gate.
+   */
+  readonly quickStart?: boolean;
+  /**
    * Opaque pass-through recorded on the practice-history record for this
    * sesh, forwarded as-is to `recordCompletedSesh`. No current caller sets
    * this — `Sesh` only has one call site, always regular practice — but it
@@ -74,6 +80,7 @@ export function Sesh({
   availableTricks,
   initialPlan,
   preferredTrickId,
+  quickStart,
   selectedTrickIds,
   origin,
 }: SeshProps) {
@@ -99,6 +106,7 @@ export function Sesh({
   )
     ? preferredTrickId
     : undefined;
+  const isQuickStart = Boolean(quickStart) && validatedPreferredTrickId !== undefined;
   const activeTrickId = state.status === 'active' ? state.trick.id : undefined;
   const trickNotes = useMemo(
     () => (activeTrickId ? selectNotesForTrick(notes, activeTrickId) : []),
@@ -143,25 +151,42 @@ export function Sesh({
     };
   }, [state.status]);
 
+  const handleTrickSelected = (
+    trick: PracticeTrick,
+    plan: SeshPlan,
+    best: number | undefined,
+    liveChallenge: boolean,
+  ) => {
+    setPersonalBest(best);
+    setLiveChallengeEnabled(liveChallenge);
+    setHadPriorLaceAtSeshStart(hasPriorLaceForTrick(sessions, trick.id));
+    setGoalBaselines(
+      selectGoalsForTrick(goals, trick.id).map((goal) => selectGoalProgress(goal, sessions)),
+    );
+    dispatch({ type: 'trickSelected', trick, plan });
+    setLastSesh(trick.id, plan);
+  };
+
   if (state.status === 'choosing') {
-    return practiceTricks.length === 0 ? (
-      <EmptyState />
-    ) : (
+    if (practiceTricks.length === 0) return <EmptyState />;
+    if (isQuickStart) {
+      const trick = practiceTricks.find((candidate) => candidate.id === validatedPreferredTrickId)!;
+      return (
+        <QuickStart
+          trick={trick}
+          initialPlan={initialPlan}
+          sessions={sessions}
+          onStart={handleTrickSelected}
+        />
+      );
+    }
+    return (
       <TrickPicker
         initialPlan={initialPlan}
         preferredTrickId={validatedPreferredTrickId}
         tricks={practiceTricks}
         sessions={sessions}
-        onSelect={(trick, plan, best, liveChallenge) => {
-          setPersonalBest(best);
-          setLiveChallengeEnabled(liveChallenge);
-          setHadPriorLaceAtSeshStart(hasPriorLaceForTrick(sessions, trick.id));
-          setGoalBaselines(
-            selectGoalsForTrick(goals, trick.id).map((goal) => selectGoalProgress(goal, sessions)),
-          );
-          dispatch({ type: 'trickSelected', trick, plan });
-          setLastSesh(trick.id, plan);
-        }}
+        onSelect={handleTrickSelected}
       />
     );
   }
@@ -247,6 +272,46 @@ function EmptyState() {
           Choose tricks
         </PrimaryButton>
       </Link>
+    </CenteredPanel>
+  );
+}
+
+function QuickStart({
+  trick,
+  initialPlan,
+  sessions,
+  onStart,
+}: {
+  readonly trick: PracticeTrick;
+  readonly initialPlan?: SeshPlan;
+  readonly sessions: readonly PracticeSessionRecord[];
+  readonly onStart: (
+    trick: PracticeTrick,
+    plan: SeshPlan,
+    personalBest: number | undefined,
+    liveChallengeEnabled: boolean,
+  ) => void;
+}) {
+  const plan = initialPlan ?? createTimedSeshPlan(5);
+  const personalBest =
+    plan.kind === 'timed' ? getPersonalBest(sessions, trick.id, plan.durationMs) : undefined;
+
+  return (
+    <CenteredPanel>
+      <Eyebrow>Ready when you are</Eyebrow>
+      <DisplayTitle>{trick.name}</DisplayTitle>
+      {trick.descriptor ? <BodyCopy>{trick.descriptor}</BodyCopy> : null}
+      <SequenceSteps trick={trick} />
+      {plan.kind === 'timed' && personalBest !== undefined ? (
+        <ChoiceBest>
+          Best at {formatDuration(plan.durationMs)} — {personalBest} {personalBest === 1 ? 'lace' : 'laces'}
+        </ChoiceBest>
+      ) : null}
+      <PrimaryButton
+        accessibilityLabel={`Start a sesh with ${trick.name}`}
+        onPress={() => onStart(trick, plan, personalBest, false)}>
+        Start sesh
+      </PrimaryButton>
     </CenteredPanel>
   );
 }
