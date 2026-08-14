@@ -139,7 +139,7 @@ _This next batch (T045–T069) comes from a QA pass over PR 55's suggested check
 
 - **Area:** Goals
 - **Priority:** High
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** `selectGoalProgress` (`src/features/goals/model/goal.ts`) sums laces/duration across *all* historical practice sessions for a goal's trick, with no filter against when the goal was created — so a goal set against a trick with existing lace history shows inflated progress immediately, e.g. a trick with 50 prior laces and a new "land it 100 times" goal reads 50/100 on creation, not 0/100.
 - **Exit criteria:** Test: a trick with N prior laces, then a new goal with target M created against it — progress reads 0/M immediately after creation, not N/M; lacing the trick after creation increments progress normally; existing in-Sesh goal-achievement-celebration detection (`isGoalNewlyAchieved`/`goalBaselines` in `sesh.tsx` — an unrelated use of "baseline," see note) continues to fire correctly, unaffected by this change.
