@@ -1007,3 +1007,12 @@ Entries keep their content as it was at completion. Don't retroactively edit a d
 - **Description:** Apply T076.1's reset behavior to the single-trick completion screen, casual multi-trick wrap-up, assessment wrap-up, and any nested Sesh setup/active routes that can be reached through the Sesh tab.
 - **Exit criteria:** Focused web checks and automated coverage exercise Sesh-tab presses from each listed screen and confirm the canonical Sesh home picker is rendered every time; direct finish/cancel actions retain their existing destinations and practice-history behavior. Depends on T076.1.
 - **Notes:** Added a route-host integration matrix covering single-trick completion, casual multi-trick selection/setup/countdown/active/wrap-up, and assessment picker/countdown/active/wrap-up. Every target-scoped Sesh-tab press asserts `/sesh`, the canonical home-picker marker, and removal of the stale child marker; unrelated-tab filtering remains covered. Existing focused Sesh, casual multi-trick, and assessment suites pass, including direct cancel/finish routing and practice-history origin/deduplication behavior. Full web-only verification passes; native validation remains deferred under AGENTS.md.
+### [T079] Keep custom-trick save actionable with inline validation
+
+- **Area:** Tricks / custom-trick forms
+- **Priority:** Medium
+- **Status:** Done
+- **Planning:** Required
+- **Description:** Keep “Save custom trick” enabled even when the draft is invalid; pressing it should leave the form open and populate each invalid associated field with a concise, actionable error message explaining what is missing or incorrect.
+- **Exit criteria:** Form tests verify the save action is enabled for invalid standalone and sequence drafts, pressing it does not persist or navigate away, and the relevant name, sequence-step, and rank validation messages appear beside their fields; valid drafts still save exactly once and preserve existing edit behavior.
+- **Notes:** Added submitted-state error presentation while retaining `validateCustomTrickDraft` as the sole validation source of truth. Invalid saves leave the form mounted without provider persistence or `onSaved`; focused tests cover standalone, sequence, invalid rank, creation, and stable-ID edit behavior. Full web-only verification passes; native validation remains deferred under the active platform scope.
