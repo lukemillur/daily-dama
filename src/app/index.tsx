@@ -10,6 +10,7 @@ import { HOME_CLOCK_INTERVAL_MS, useLiveClock } from '@/features/home/hooks/use-
 import { createHomeSummary } from '@/features/home/model/home-summary';
 import { KenteiOnboarding } from '@/features/onboarding/components/kentei-onboarding';
 import { useUserProfile } from '@/features/profile/state/user-profile-provider';
+import { selectRegularSessions } from '@/features/stats/model/practice-history';
 import { usePracticeHistory } from '@/features/stats/state/practice-history-provider';
 import { KENDAMA_KENTEI_TRICKS } from '@/features/tricks/data/kendama-kentei-tricks';
 
@@ -17,8 +18,9 @@ export default function HomeScreen() {
   const profile = useUserProfile();
   const { tricks: customTricks } = useCustomTricks();
   const { sessions } = usePracticeHistory();
+  const regularSessions = selectRegularSessions(sessions);
   const liveNow = useLiveClock(HOME_CLOCK_INTERVAL_MS);
-  const summaryNow = sessions.reduce(
+  const summaryNow = regularSessions.reduce(
     (latest, session) => Math.max(latest, session.completedAt),
     liveNow,
   );
@@ -28,10 +30,10 @@ export default function HomeScreen() {
         profile,
         standardTricks: KENDAMA_KENTEI_TRICKS,
         customTricks,
-        sessions,
+        sessions: regularSessions,
         now: summaryNow,
       }),
-    [customTricks, profile, sessions, summaryNow],
+    [customTricks, profile, regularSessions, summaryNow],
   );
 
   return (

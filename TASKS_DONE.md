@@ -6,6 +6,24 @@ Entries keep their content as it was at completion. Don't retroactively edit a d
 
 ---
 
+### [T062] Exclude Kentei-assessment sessions from Stats and Home aggregation
+
+- **Area:** Stats / Home / persistence (practice-history domain)
+- **Priority:** Medium
+- **Status:** Done
+- **Description:** Landings recorded during a Kentei assessment write ordinary `PracticeSessionRecord`s — identical in shape to regular Sesh/ad hoc multi-trick practice, with no field distinguishing origin — so they currently dilute the Stats screen's "By trick" list and Overview metrics, the per-trick history/personal-best page, and Home's momentum/streak/recent-session summary, all of which pull the full unfiltered practice-history pool.
+- **Notes:** Umbrella only — complete T062.1 and T062.2. Kentei rank promotion (`KenteiRankAutoPromotion`/`selectLacedTrickIds`) deliberately depends on assessment-sourced landings flowing into the same session pool ("a full pass through a rank promotes you automatically" is Profile's own stated promise) — any fix must filter *display* reads only, never what gets written or what promotion logic counts. Going-forward only: sessions already recorded from past assessments predate any new origin tag and can't be reliably reclassified after the fact; no retroactive cleanup/migration is in scope, consistent with this being local-first prototype data. Both children (T062.1, T062.2) are complete.
+
+### [T062.2] Filter Stats and Home reads to exclude Kentei-assessment sessions
+
+- **Area:** Stats / Home
+- **Priority:** Medium (inherited from parent T062)
+- **Status:** Done
+- **Planning:** Required
+- **Description:** Using T062.1's new field, exclude Kentei-assessment-sourced sessions from Stats' Overview metrics and "By trick" list (`src/app/stats/index.tsx`), the per-trick detail/personal-best page (`src/app/stats/[trickId].tsx`, a separate independent read site — does not inherit filtering from the Stats index screen), the neglected-tricks "Needs attention" section, and Home's momentum/streak/recent-session summary (`src/app/index.tsx`). Depends on T062.1.
+- **Exit criteria:** Test: a practice-history pool containing both regular and Kentei-assessment-tagged sessions for the same trick produces Stats/Home aggregates that reflect only the regular sessions; `KenteiRankAutoPromotion`'s rank-promotion behavior is unchanged (still sees assessment-sourced landings) — verified by an explicit test that promotion still fires correctly off assessment-only lacing.
+- **Notes:** Four independent read sites identified, all needed the same filter applied since none shared a filtered intermediate value: `src/app/stats/index.tsx` (feeds Overview, By-trick, and neglected-tricks in one `sessions` pull), `src/app/stats/[trickId].tsx` (its own separate `usePracticeHistory()` call), and `src/app/index.tsx` (Home). `KenteiRankAutoPromotion` reads `usePracticeHistory()` independently and was deliberately left untouched. Added `selectRegularSessions` (filters out `origin === 'assessment'`) to `src/features/stats/model/practice-history.ts` as the single shared selector, applied at each of the three call sites (including Home's `summaryNow` derivation, so an assessment session's `completedAt` doesn't count as "now" either), while keeping `aggregatePracticeStats`, `selectNeglectedFocusedTricks`, `getPersonalBest`, and `createHomeSummary` themselves origin-agnostic per the plan. New coverage: unit tests for `selectRegularSessions`; screen-level tests for `stats/index.tsx` (Overview/By-trick totals, empty state when only assessment sessions exist), `stats/[trickId].tsx` (personal best and Past-seshes list exclude an assessment session that would otherwise win), and an extension to Home's existing test file (Momentum and "Last sesh" reflect only the regular session, even when the assessment session is more recent). Added a regression test to `kentei-rank-auto-promotion.test.tsx` proving promotion still fires off assessment-only lacing. Verified with `node .claude/scripts/verify.mjs` (full suite, after running `yarn install` in this worktree whose `node_modules` was missing on entry).
+
 ### [T057] Remove the redundant "Next trick" button from the Kentei assessment flow
 
 - **Area:** Sesh (Kentei assessment)

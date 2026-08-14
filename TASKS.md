@@ -135,24 +135,6 @@ The first pass used **locked/unlocked** for "the user can land this trick." User
 
 _This next batch (T045–T069) comes from a QA pass over PR 55's suggested checklist (the `development` → `main` release covering T002–T041), worked top to bottom. Where an entry names the task that shipped the behavior it's correcting, the archived entry in [TASKS_DONE.md](TASKS_DONE.md) stays as-written — history isn't rewritten, same as above._
 
-### [T062] Exclude Kentei-assessment sessions from Stats and Home aggregation
-
-- **Area:** Stats / Home / persistence (practice-history domain)
-- **Priority:** Medium
-- **Status:** Not started
-- **Description:** Landings recorded during a Kentei assessment write ordinary `PracticeSessionRecord`s — identical in shape to regular Sesh/ad hoc multi-trick practice, with no field distinguishing origin — so they currently dilute the Stats screen's "By trick" list and Overview metrics, the per-trick history/personal-best page, and Home's momentum/streak/recent-session summary, all of which pull the full unfiltered practice-history pool.
-- **Notes:** Umbrella only — complete T062.1 and T062.2. Kentei rank promotion (`KenteiRankAutoPromotion`/`selectLacedTrickIds`) deliberately depends on assessment-sourced landings flowing into the same session pool ("a full pass through a rank promotes you automatically" is Profile's own stated promise) — any fix must filter *display* reads only, never what gets written or what promotion logic counts. Going-forward only: sessions already recorded from past assessments predate any new origin tag and can't be reliably reclassified after the fact; no retroactive cleanup/migration is in scope, consistent with this being local-first prototype data.
-
-### [T062.2] Filter Stats and Home reads to exclude Kentei-assessment sessions
-
-- **Area:** Stats / Home
-- **Priority:** Medium (inherited from parent T062)
-- **Status:** In progress
-- **Planning:** Required
-- **Description:** Using T062.1's new field, exclude Kentei-assessment-sourced sessions from Stats' Overview metrics and "By trick" list (`src/app/stats/index.tsx`), the per-trick detail/personal-best page (`src/app/stats/[trickId].tsx`, a separate independent read site — does not inherit filtering from the Stats index screen), the neglected-tricks "Needs attention" section, and Home's momentum/streak/recent-session summary (`src/app/index.tsx`). Depends on T062.1.
-- **Exit criteria:** Test: a practice-history pool containing both regular and Kentei-assessment-tagged sessions for the same trick produces Stats/Home aggregates that reflect only the regular sessions; `KenteiRankAutoPromotion`'s rank-promotion behavior is unchanged (still sees assessment-sourced landings) — verified by an explicit test that promotion still fires correctly off assessment-only lacing.
-- **Notes:** Four independent read sites identified, all need the same filter applied since none of them share a filtered intermediate value today: `src/app/stats/index.tsx` (feeds Overview, By-trick, and neglected-tricks in one `sessions` pull), `src/app/stats/[trickId].tsx` (its own separate `usePracticeHistory()` call), and `src/app/index.tsx` (Home). Do not filter at the `PracticeHistoryProvider`/`usePracticeHistory()` level itself, since `KenteiRankAutoPromotion` reads from the same hook and must keep seeing everything.
-
 ### [T063] Add a preselected-trick "Start sesh" variant for practice entry points
 
 - **Area:** Sesh / Navigation
