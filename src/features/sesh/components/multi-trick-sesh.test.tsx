@@ -128,6 +128,8 @@ async function mountMultiTrickSesh(props: {
   readonly tricks?: readonly PracticeTrick[];
   readonly showRankStanding?: boolean;
   readonly origin?: 'assessment';
+  readonly suppressTransientCompletionFallback?: boolean;
+  readonly finishButtonLabel?: string;
 }) {
   let root!: ReactTestRenderer;
   await act(async () => {
@@ -149,6 +151,8 @@ async function mountMultiTrickSesh(props: {
             onCancelRun={props.onCancelRun}
             showRankStanding={props.showRankStanding}
             origin={props.origin}
+            suppressTransientCompletionFallback={props.suppressTransientCompletionFallback}
+            finishButtonLabel={props.finishButtonLabel}
           />
           <SessionSummary />
         </PracticeHistoryProvider>
@@ -198,6 +202,59 @@ describe('MultiTrickSesh advanceOnFirstLace', () => {
     });
   });
 
+  it('does not show the generic completion panel while an assessment advances to the next trick', async () => {
+    const onFinished = jest.fn();
+    const root = await mountMultiTrickSesh({
+      advanceOnFirstLace: true,
+      origin: 'assessment',
+      suppressTransientCompletionFallback: true,
+      skipCountdownBetweenTricks: true,
+      onFinished,
+    });
+
+    advanceThroughCountdown();
+    act(() => {
+      pressByAccessibilityLabel(root, 'Laced');
+    });
+
+    expect(findByText(root, 'Sequence complete')).toHaveLength(0);
+    expect(findByText(root, 'Nice work.')).toHaveLength(0);
+    expect(findByText(root, TRICKS[1].name).length).toBeGreaterThan(0);
+    expect(findByAccessibilityLabel(root, 'Laced').length).toBeGreaterThan(0);
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  it('does not show the generic completion panel while an assessment reaches its wrap-up', async () => {
+    const onFinished = jest.fn();
+    const assessmentTricks = TRICKS.slice(0, 1);
+    const root = await mountMultiTrickSesh({
+      tricks: assessmentTricks,
+      advanceOnFirstLace: true,
+      origin: 'assessment',
+      suppressTransientCompletionFallback: true,
+      finishButtonLabel: 'Go to Home',
+      wrapUpFooter: <Text accessibilityLabel="Assessment result">Rank 2</Text>,
+      onFinished,
+    });
+
+    advanceThroughCountdown();
+    act(() => {
+      pressByAccessibilityLabel(root, 'Laced');
+    });
+
+    expect(findByText(root, 'Sequence complete')).toHaveLength(0);
+    expect(findByText(root, 'You worked through every trick in this sesh.')).toHaveLength(0);
+    expect(findByAccessibilityLabel(root, 'Assessment result').length).toBeGreaterThan(0);
+    expect(findByAccessibilityLabel(root, 'Go to Home').length).toBeGreaterThan(0);
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
   it('does not render "Next trick" when advanceOnFirstLace is set, since it duplicates the Laced/End-assessment advance path', async () => {
     const onFinished = jest.fn();
     const root = await mountMultiTrickSesh({
@@ -239,6 +296,7 @@ describe('MultiTrickSesh advanceOnFirstLace', () => {
     // "End Sesh" ends the whole run, not just the current trick — reaches
     // the wrap-up immediately instead of advancing to the next trick.
     expect(findByText(root, 'Finish sesh').length).toBeGreaterThan(0);
+    expect(findByText(root, 'Nice work.').length).toBeGreaterThan(0);
     expect(findByAccessibilityLabel(root, 'session-count:1').length).toBeGreaterThan(0);
     expect(findByAccessibilityLabel(root, 'session-0-lace-count:1').length).toBeGreaterThan(0);
     expect(findByText(root, TRICKS[1].name)).toHaveLength(0);

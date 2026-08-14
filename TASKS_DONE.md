@@ -6,6 +6,16 @@ Entries keep their content as it was at completion. Don't retroactively edit a d
 
 ---
 
+### [T070.2] Remove the transient Kentei “Nice work” panel after lacing
+
+- **Area:** Kentei assessment / Sesh sequencing
+- **Priority:** High (inherited from parent T070)
+- **Status:** Done
+- **Planning:** Required
+- **Description:** Prevent the shared multi-trick Sesh renderer from exposing its one-render “Sequence complete / Nice work” fallback when a Kentei assessment advances from a laced trick to another trick or to the assessment wrap-up.
+- **Exit criteria:** Component tests cover lacing the final assessment trick and lacing a non-final assessment trick, and in neither case render the generic “Nice work.” panel during the transition; the intended assessment wrap-up or next trick remains visible and existing regular multi-trick completion behavior is unchanged.
+- **Notes:** Added an explicit `suppressTransientCompletionFallback` prop at the `AssessmentEntry`/`MultiTrickSesh` boundary. Assessment auto-advance now renders neither the transient generic panel nor its copy while the existing completed-state effect records the summary and advances to the next trick or `MultiTrickWrapUp`; regular multi-trick runs retain the fallback. Added component coverage for final and non-final assessment transitions and preserved the intentional regular wrap-up “Nice work.” heading. Verified with the supplied full verification script using the repository's required Node runtime. Native validation remains deferred under the active web-only platform scope.
+
 ### [T063] Add a preselected-trick "Start sesh" variant for practice entry points
 
 - **Area:** Sesh / Navigation
