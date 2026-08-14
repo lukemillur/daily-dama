@@ -137,15 +137,6 @@ _This next batch (T045–T069) comes from a QA pass over PR 55's suggested check
 
 _The following batch (T070–T079) comes from the QA checklist completed against PR 83, worked top to bottom. New entries are intentionally placed before the older queue so the next actionable QA finding is selected first. Existing task history is not rewritten._
 
-### [T076] Establish Sesh-tab return-home behavior
-
-- **Area:** Sesh / navigation
-- **Priority:** High
-- **Status:** Not started
-- **Planning:** Required
-- **Description:** Make pressing the Sesh navigation item a reliable return to the Sesh home screen from wrap-up screens and all nested Sesh routes, rather than exposing stale local state or leaving the user inside a child route.
-- **Notes:** Umbrella only — complete T076.1 and T076.2. The contract applies to both single-trick and multi-trick/assessment-related Sesh navigation surfaces; do not change the meaning of the Profile, Tricks, Stats, or Home tabs.
-
 ### [T077] Correct direct-practice entry lifecycle
 
 - **Area:** Sesh / practice entry points
