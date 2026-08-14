@@ -97,6 +97,10 @@ export function Sesh({
   const [hadPriorLaceAtSeshStart, setHadPriorLaceAtSeshStart] = useState(false);
   const [goalBaselines, setGoalBaselines] = useState<readonly GoalProgress[]>([]);
   const [justAchievedGoals, setJustAchievedGoals] = useState<readonly Goal[]>([]);
+  // A direct-practice link owns only the initial choosing state. Once the user
+  // asks for another sesh, the mounted route should behave like the canonical
+  // Sesh home rather than re-locking onto the deep-linked trick.
+  const [quickStartActive, setQuickStartActive] = useState(() => Boolean(quickStart));
   const practiceTricks = useMemo(
     () => selectSeshPracticeTricks(availableTricks, selectedTrickIds, preferredTrickId),
     [availableTricks, preferredTrickId, selectedTrickIds],
@@ -106,7 +110,7 @@ export function Sesh({
   )
     ? preferredTrickId
     : undefined;
-  const isQuickStart = Boolean(quickStart) && validatedPreferredTrickId !== undefined;
+  const isQuickStart = quickStartActive && validatedPreferredTrickId !== undefined;
   const activeTrickId = state.status === 'active' ? state.trick.id : undefined;
   const trickNotes = useMemo(
     () => (activeTrickId ? selectNotesForTrick(notes, activeTrickId) : []),
@@ -234,6 +238,7 @@ export function Sesh({
       isFirstLace={firstLaceCelebration}
       justAchievedGoals={justAchievedGoals}
       onReset={() => {
+        setQuickStartActive(false);
         setFirstLaceCelebration(false);
         setHadPriorLaceAtSeshStart(false);
         setJustAchievedGoals([]);

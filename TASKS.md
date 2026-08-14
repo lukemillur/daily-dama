@@ -146,16 +146,6 @@ _The following batch (T070–T079) comes from the QA checklist completed against
 - **Description:** Make direct practice entry points, including neglected-trick practice, return to canonical Sesh home after completion and preserve access to normal Sesh navigation instead of leaving the user in a locked quick-start state.
 - **Notes:** Umbrella only — complete T077.1 and T077.2. Preserve the useful preselected-trick context at the initial entry point, but do not let it dictate post-completion navigation.
 
-### [T077.1] Exit direct-practice wrap-up to Sesh home
-
-- **Area:** Sesh / practice entry points
-- **Priority:** High (inherited from parent T077)
-- **Status:** Not started
-- **Planning:** Required
-- **Description:** When a Sesh launched with a direct practice entry point completes, make “Start another sesh” leave the quick-start route/state and return to the normal Sesh home picker instead of returning to “Ready when you are” for the same trick.
-- **Exit criteria:** An integration test starts Sesh from a neglected-trick/practice link, completes the run, presses “Start another sesh,” and verifies the Sesh home picker is rendered; pressing the Sesh tab afterward also reaches the same home picker without a route lock.
-- **Notes:** Current `/sesh?trickId=...&mode=practice` sets `quickStart`, and `CompletedSesh.onRepeat` re-enters the same local reducer. Separate initial quick-start behavior from post-completion behavior.
-
 ### [T077.2] Allow direct-practice users to customize before starting
 
 - **Area:** Sesh / practice entry points
