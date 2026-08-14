@@ -1,11 +1,15 @@
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { act, create } from 'react-test-renderer';
-import type { ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
+import { Text } from 'react-native';
 
 import SeshLayout from '@/app/sesh/_layout';
 import SeshScreen from '@/app/sesh/index';
 
-const mockRouter = { replace: jest.fn() };
+let mockResetRoute: ((route: string) => void) | undefined;
+const mockRouter = {
+  replace: jest.fn((route: string) => mockResetRoute?.(route)),
+};
 const mockTabNavigation = {
   addListener: jest.fn(),
   getState: () => ({
@@ -47,7 +51,8 @@ jest.mock('@/features/sesh/components/sesh', () => ({
 describe('SeshLayout', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    mockTabNavigation.addListener.mockImplementation((_event, listener) => listener);
+    mockResetRoute = undefined;
+    mockTabNavigation.addListener.mockImplementation(() => undefined);
   });
 
   it('returns a nested Sesh route to its index when the Sesh tab is pressed', () => {
@@ -108,5 +113,64 @@ describe('SeshLayout', () => {
 
     expect(screen.root.findByProps({ accessibilityLabel: 'Sesh home picker' })).toBeDefined();
     expect(screen.root.findByProps({ children: 'Choose a trick' })).toBeDefined();
+  });
+
+  it.each([
+    ['single-trick completion', '/sesh/completed'],
+    ['casual multi-trick selection', '/sesh/multi-trick'],
+    ['casual multi-trick setup', '/sesh/multi-trick/setup'],
+    ['casual multi-trick countdown', '/sesh/multi-trick/countdown'],
+    ['casual multi-trick active practice', '/sesh/multi-trick/active'],
+    ['casual multi-trick wrap-up', '/sesh/multi-trick/completed'],
+    ['assessment flow picker', '/profile/kentei-assessment'],
+    ['assessment countdown', '/profile/kentei-assessment/countdown'],
+    ['assessment active practice', '/profile/kentei-assessment/active'],
+    ['assessment wrap-up', '/profile/kentei-assessment/completed'],
+  ])('renders a fresh canonical picker after pressing Sesh from %s', (_surface, initialRoute) => {
+    function RouteHost() {
+      const [route, setRoute] = useState(initialRoute);
+
+      useEffect(() => {
+        mockResetRoute = setRoute;
+        return () => {
+          mockResetRoute = undefined;
+        };
+      }, []);
+
+      return (
+        <>
+          <Text accessibilityLabel={`route:${route}`} />
+          {route === '/sesh' ? <SeshScreen /> : <Text accessibilityLabel="stale child route" />}
+        </>
+      );
+    }
+
+    let rendered!: ReturnType<typeof create>;
+    act(() => {
+      rendered = create(
+        <>
+          <SeshLayout />
+          <RouteHost />
+        </>,
+      );
+    });
+
+    expect(rendered.root.findByProps({ accessibilityLabel: `route:${initialRoute}` })).toBeDefined();
+
+    const listener = mockTabNavigation.addListener.mock.calls[0]![1] as (event: {
+      target?: string;
+    }) => void;
+    act(() => {
+      listener({ target: 'sesh-tab' });
+    });
+
+    expect(mockRouter.replace).toHaveBeenCalledWith('/sesh');
+    expect(rendered.root.findByProps({ accessibilityLabel: 'route:/sesh' })).toBeDefined();
+    expect(rendered.root.findByProps({ accessibilityLabel: 'Sesh home picker' })).toBeDefined();
+    expect(rendered.root.findAllByProps({ accessibilityLabel: 'stale child route' })).toHaveLength(0);
+
+    act(() => {
+      rendered.unmount();
+    });
   });
 });

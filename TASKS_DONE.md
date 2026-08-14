@@ -950,3 +950,13 @@ Entries keep their content as it was at completion. Don't retroactively edit a d
 - **Description:** Establish the route-level mechanism that maps a Sesh tab press to the canonical `/sesh` home route and clears or remounts nested Sesh state as necessary.
 - **Exit criteria:** A route/navigation test demonstrates that pressing the Sesh tab from a nested Sesh route resolves to `/sesh`, and a subsequent render shows the Sesh home picker rather than the previously active child or wrap-up screen; the mechanism works with the existing web tab implementation without changing the five-link order.
 - **Notes:** Added a route-level `tabPress` listener to the Sesh nested Stack layout, scoped to the declared Sesh tab key, which replaces nested routes with `/sesh`. Focused tests cover target filtering, cleanup, and rendering the home picker after the reset boundary. The existing five-link order and persistent providers are unchanged. Verified with the full web-only repository verification sequence; native validation remains deferred under AGENTS.md.
+
+### [T076.2] Apply and verify the reset contract across Sesh screens
+
+- **Area:** Sesh / navigation
+- **Priority:** High (inherited from parent T076)
+- **Status:** Done
+- **Planning:** Required
+- **Description:** Apply T076.1's reset behavior to the single-trick completion screen, casual multi-trick wrap-up, assessment wrap-up, and any nested Sesh setup/active routes that can be reached through the Sesh tab.
+- **Exit criteria:** Focused web checks and automated coverage exercise Sesh-tab presses from each listed screen and confirm the canonical Sesh home picker is rendered every time; direct finish/cancel actions retain their existing destinations and practice-history behavior. Depends on T076.1.
+- **Notes:** Added a route-host integration matrix covering single-trick completion, casual multi-trick selection/setup/countdown/active/wrap-up, and assessment picker/countdown/active/wrap-up. Every target-scoped Sesh-tab press asserts `/sesh`, the canonical home-picker marker, and removal of the stale child marker; unrelated-tab filtering remains covered. Existing focused Sesh, casual multi-trick, and assessment suites pass, including direct cancel/finish routing and practice-history origin/deduplication behavior. Full web-only verification passes; native validation remains deferred under AGENTS.md.

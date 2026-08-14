@@ -146,16 +146,6 @@ _The following batch (T070–T079) comes from the QA checklist completed against
 - **Description:** Make pressing the Sesh navigation item a reliable return to the Sesh home screen from wrap-up screens and all nested Sesh routes, rather than exposing stale local state or leaving the user inside a child route.
 - **Notes:** Umbrella only — complete T076.1 and T076.2. The contract applies to both single-trick and multi-trick/assessment-related Sesh navigation surfaces; do not change the meaning of the Profile, Tricks, Stats, or Home tabs.
 
-### [T076.2] Apply and verify the reset contract across Sesh screens
-
-- **Area:** Sesh / navigation
-- **Priority:** High (inherited from parent T076)
-- **Status:** In progress
-- **Planning:** Required
-- **Description:** Apply T076.1's reset behavior to the single-trick completion screen, casual multi-trick wrap-up, assessment wrap-up, and any nested Sesh setup/active routes that can be reached through the Sesh tab.
-- **Exit criteria:** Focused web checks and automated coverage exercise Sesh-tab presses from each listed screen and confirm the canonical Sesh home picker is rendered every time; direct finish/cancel actions retain their existing destinations and practice-history behavior. Depends on T076.1.
-- **Notes:** This is a verification/integration child, not permission to redesign the Sesh flows. Native validation remains deferred under the repository's active platform scope.
-
 ### [T077] Correct direct-practice entry lifecycle
 
 - **Area:** Sesh / practice entry points
