@@ -150,7 +150,7 @@ _The following batch (T070–T079) comes from the QA checklist completed against
 
 - **Area:** Sesh / navigation
 - **Priority:** High (inherited from parent T076)
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** Apply T076.1's reset behavior to the single-trick completion screen, casual multi-trick wrap-up, assessment wrap-up, and any nested Sesh setup/active routes that can be reached through the Sesh tab.
 - **Exit criteria:** Focused web checks and automated coverage exercise Sesh-tab presses from each listed screen and confirm the canonical Sesh home picker is rendered every time; direct finish/cancel actions retain their existing destinations and practice-history behavior. Depends on T076.1.
