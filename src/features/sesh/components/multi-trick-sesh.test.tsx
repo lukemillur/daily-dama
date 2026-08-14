@@ -772,6 +772,103 @@ describe('MultiTrickSesh skipCountdownBetweenTricks', () => {
   });
 });
 
+describe('MultiTrickSesh countdown Skip (T075)', () => {
+  beforeEach(async () => {
+    await AsyncStorage.clear();
+    jest.useFakeTimers();
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  it('skips the first casual countdown into the active trick without recording a landing', async () => {
+    const onFinished = jest.fn();
+    const root = await mountMultiTrickSesh({ onFinished });
+
+    expect(findByAccessibilityLabel(root, 'Skip countdown').length).toBeGreaterThan(0);
+    expect(findByAccessibilityLabel(root, 'Laced')).toHaveLength(0);
+
+    act(() => {
+      pressByAccessibilityLabel(root, 'Skip countdown');
+    });
+
+    expect(findByAccessibilityLabel(root, 'Laced').length).toBeGreaterThan(0);
+    expect(findByAccessibilityLabel(root, 'Skip countdown')).toHaveLength(0);
+    expect(findByAccessibilityLabel(root, 'session-count:0').length).toBeGreaterThan(0);
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  it('skips a later casual countdown without waiting or creating a skipped-trick record', async () => {
+    const onFinished = jest.fn();
+    const root = await mountMultiTrickSesh({ onFinished });
+
+    act(() => {
+      pressByAccessibilityLabel(root, 'Skip countdown');
+    });
+    expect(findByAccessibilityLabel(root, 'Laced').length).toBeGreaterThan(0);
+
+    // Advance without lacing the first trick so its ordinary completion path records no landing;
+    // the second trick still receives its own countdown because the default is enabled.
+    act(() => {
+      pressByVisibleText(root, 'Next trick');
+    });
+
+    expect(findByText(root, TRICKS[1].name).length).toBeGreaterThan(0);
+    expect(findByAccessibilityLabel(root, 'Skip countdown').length).toBeGreaterThan(0);
+
+    act(() => {
+      pressByAccessibilityLabel(root, 'Skip countdown');
+    });
+
+    expect(findByAccessibilityLabel(root, 'Laced').length).toBeGreaterThan(0);
+    expect(findByAccessibilityLabel(root, 'Skip countdown')).toHaveLength(0);
+    expect(findByAccessibilityLabel(root, 'session-count:1').length).toBeGreaterThan(0);
+    expect(findByAccessibilityLabel(root, 'session-0-lace-count:0').length).toBeGreaterThan(0);
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  it('starts the elapsed clock at the skip timestamp', async () => {
+    jest.setSystemTime(100_000);
+    const onFinished = jest.fn();
+    const root = await mountMultiTrickSesh({ onFinished, tricks: TRICKS.slice(0, 1) });
+
+    act(() => {
+      pressByAccessibilityLabel(root, 'Skip countdown');
+    });
+    act(() => {
+      jest.advanceTimersByTime(2_500);
+    });
+    act(() => {
+      pressByVisibleText(root, 'End Sesh');
+    });
+
+    expect(findSessionDurationMs(root, 0)).toBe(2_500);
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  it('does not expose the casual countdown Skip action to assessment runs', async () => {
+    const onFinished = jest.fn();
+    const root = await mountMultiTrickSesh({ onFinished, origin: 'assessment' });
+
+    expect(findByAccessibilityLabel(root, 'Skip countdown')).toHaveLength(0);
+    expect(findByText(root, 'Cancel')).toHaveLength(0);
+
+    act(() => {
+      root.unmount();
+    });
+  });
+});
+
 
 describe('MultiTrickSesh "Skip this rank" confirmation (T056)', () => {
   beforeEach(async () => {

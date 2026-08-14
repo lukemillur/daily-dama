@@ -358,6 +358,14 @@ export function MultiTrickSesh({
           setIsFirstCountdown(false);
           dispatch({ type: 'countdownCompleted', now: Date.now() });
         }}
+        onSkipCountdown={
+          origin === undefined
+            ? () => {
+                setIsFirstCountdown(false);
+                dispatch({ type: 'countdownCompleted', now: Date.now() });
+              }
+            : undefined
+        }
         attemptsReminder={showAttemptsReminder}
         onSkipRank={skipTarget ? handleSkipRankRequest : undefined}
         onCancel={isFirstCountdown ? onCancelRun : undefined}

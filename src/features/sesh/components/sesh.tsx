@@ -497,6 +497,7 @@ export function Countdown({
   onComplete,
   attemptsReminder,
   onSkipRank,
+  onSkipCountdown,
   onCancel,
   showRankStanding,
 }: {
@@ -505,6 +506,7 @@ export function Countdown({
   readonly onComplete: () => void;
   readonly attemptsReminder?: boolean;
   readonly onSkipRank?: () => void;
+  readonly onSkipCountdown?: () => void;
   readonly onCancel?: () => void;
   readonly showRankStanding?: boolean;
 }) {
@@ -548,6 +550,11 @@ export function Countdown({
         <CancelButton variant="secondary" size="medium" onPress={onCancel}>
           Cancel
         </CancelButton>
+      ) : null}
+      {onSkipCountdown ? (
+        <CountdownSkipButton accessibilityLabel="Skip countdown" accessibilityRole="button" onPress={onSkipCountdown}>
+          <CountdownSkipButtonText>Skip</CountdownSkipButtonText>
+        </CountdownSkipButton>
       ) : null}
       {onSkipRank ? (
         <SkipRankButton accessibilityRole="button" onPress={onSkipRank}>
@@ -1215,6 +1222,8 @@ const EndAnywayButtonText = styled.Text`color: ${AppColors.textMuted}; font-size
 const AttemptsReminder = styled.Text`width: 100%; text-align: center; color: ${AppColors.textMuted}; font-size: 12px; font-weight: 800; letter-spacing: 0.4px; margin-top: 10px; text-transform: uppercase;`;
 
 const RankStandingLabel = styled.Text`width: 100%; text-align: center; color: ${AppColors.textMuted}; font-size: 12px; font-weight: 800; letter-spacing: 0.4px; margin-bottom: 10px; text-transform: uppercase;`;
+const CountdownSkipButton = styled(Pressable)`min-height: 40px; align-items: center; justify-content: center; margin-top: 14px; padding: 8px 24px;`;
+const CountdownSkipButtonText = styled.Text`color: ${AppColors.textMuted}; font-size: 13px; font-weight: 800; text-decoration-line: underline;`;
 const SkipRankButton = styled(Pressable)`min-height: 40px; align-items: center; justify-content: center; margin-top: 14px; padding: 8px 24px;`;
 const CancelButton = styled(Button)`margin-top: 14px;`;
 const SkipRankButtonText = styled.Text`color: ${AppColors.textMuted}; font-size: 13px; font-weight: 800; text-decoration-line: underline;`;

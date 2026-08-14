@@ -6,6 +6,16 @@ Entries keep their content as it was at completion. Don't retroactively edit a d
 
 ---
 
+### [T075] Allow users to skip every multi-trick countdown
+
+- **Area:** Multi-trick Sesh / countdown
+- **Priority:** High
+- **Status:** Done
+- **Planning:** Required
+- **Description:** Add a simple accessible “Skip” action to every countdown encountered in the casual multi-trick flow, including the first trick and later tricks when inter-trick countdowns are enabled, so the user can begin practicing immediately.
+- **Exit criteria:** Component tests show “Skip” during the first and subsequent multi-trick countdowns, pressing it enters the corresponding trick's active state without waiting for the timer, and skipping does not record a landing or skip a trick; the existing countdown cancel behavior and assessment-specific countdown behavior remain unchanged unless the shared implementation requires an explicitly tested compatibility adjustment.
+- **Notes:** Added an accessible `Skip` countdown action to casual multi-trick countdowns only, including the first and inter-trick countdowns when enabled. The action reuses the timestamped `countdownCompleted` transition, so skipped countdowns start valid elapsed durations without recording a landing or adding persistence. Added focused first/later skip, duration, single-trick, cancel, and assessment compatibility coverage. All 46 test suites (576 tests), lint, TypeScript, and web export passed under the supplied Node runtime; the repository wrapper itself remains unable to start its Yarn test subprocess because the machine's default Node is missing ICU 74. Native validation remains deferred under the active web-only platform scope.
+
 ### [T074] Use compact back navigation in multi-trick setup
 
 - **Area:** Multi-trick Sesh / navigation UX
