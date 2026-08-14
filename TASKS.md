@@ -137,16 +137,6 @@ _This next batch (T045–T069) comes from a QA pass over PR 55's suggested check
 
 _The following batch (T070–T079) comes from the QA checklist completed against PR 83, worked top to bottom. New entries are intentionally placed before the older queue so the next actionable QA finding is selected first. Existing task history is not rewritten._
 
-### [T073] Keep “Next trick” available with auto-advance enabled
-
-- **Area:** Multi-trick Sesh / controls
-- **Priority:** High
-- **Status:** Not started
-- **Planning:** Required
-- **Description:** Render the explicit “Next trick” action on non-final active tricks even when “Advance after first lace” is enabled, so a user can move on without lacing the current trick.
-- **Exit criteria:** Multi-trick component tests enable auto-advance, advance to an active non-final trick, verify “Next trick” is present, press it without lacing, and verify the next trick becomes active; lacing still auto-advances as before and the final trick does not show a redundant next action.
-- **Notes:** Current `MultiTrickSesh` deliberately sets `onNextTrick` to `undefined` when `advanceOnFirstLace` is true. Keep the existing lace acknowledgment/automatic transition semantics separate from the manual action.
-
 ### [T074] Use compact back navigation in multi-trick setup
 
 - **Area:** Multi-trick Sesh / navigation UX

@@ -176,13 +176,17 @@ describe('MultiTrickSesh advanceOnFirstLace', () => {
     const onFinished = jest.fn();
     const root = await mountMultiTrickSesh({ advanceOnFirstLace: true, onFinished });
 
-    for (const trick of TRICKS) {
+    for (const [index, trick] of TRICKS.entries()) {
       advanceThroughCountdown();
       expect(findByText(root, trick.name).length).toBeGreaterThan(0);
 
       act(() => {
         pressByAccessibilityLabel(root, 'Laced');
       });
+
+      if (index === TRICKS.length - 1) {
+        expect(findByText(root, 'Next trick')).toHaveLength(0);
+      }
     }
 
     expect(onFinished).not.toHaveBeenCalled();
@@ -255,19 +259,29 @@ describe('MultiTrickSesh advanceOnFirstLace', () => {
     });
   });
 
-  it('does not render "Next trick" when advanceOnFirstLace is set, since it duplicates the Laced/End-assessment advance path', async () => {
+  it('allows manual advancement without lacing when advanceOnFirstLace is set', async () => {
     const onFinished = jest.fn();
     const root = await mountMultiTrickSesh({
       advanceOnFirstLace: true,
-      endActionLabel: 'End assessment',
       onFinished,
     });
 
     advanceThroughCountdown();
     expect(findByText(root, TRICKS[0].name).length).toBeGreaterThan(0);
     expect(findByAccessibilityLabel(root, 'Laced').length).toBeGreaterThan(0);
-    expect(findByText(root, 'End assessment').length).toBeGreaterThan(0);
-    expect(findByText(root, 'Next trick')).toHaveLength(0);
+    expect(findByText(root, 'Next trick').length).toBeGreaterThan(0);
+    expect(findByAccessibilityLabel(root, 'session-count:0').length).toBeGreaterThan(0);
+
+    act(() => {
+      pressByVisibleText(root, 'Next trick');
+    });
+
+    expect(findByAccessibilityLabel(root, 'session-count:1').length).toBeGreaterThan(0);
+    expect(findByAccessibilityLabel(root, 'session-0-lace-count:0').length).toBeGreaterThan(0);
+
+    advanceThroughCountdown();
+    expect(findByText(root, TRICKS[1].name).length).toBeGreaterThan(0);
+    expect(findByText(root, 'Next trick').length).toBeGreaterThan(0);
 
     act(() => {
       root.unmount();
