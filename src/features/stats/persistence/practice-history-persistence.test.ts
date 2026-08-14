@@ -110,6 +110,33 @@ describe('practice history persistence', () => {
     expect(deserializePracticeHistory(JSON.stringify(withInvalidPlannedDuration))).toBeUndefined();
   });
 
+  it('round-trips a session with an assessment origin', () => {
+    const withOrigin: PracticeHistory = {
+      sessions: [{ ...HISTORY.sessions[0], origin: 'assessment' }],
+    };
+    const serialized = serializePracticeHistory(withOrigin);
+    expect(deserializePracticeHistory(serialized)).toEqual(withOrigin);
+  });
+
+  it('loads pre-existing records with no origin key as regular practice, no migration required', () => {
+    // Simulates a document persisted before the `origin` field existed.
+    const legacyDocument = {
+      version: PRACTICE_HISTORY_SCHEMA_VERSION,
+      sessions: HISTORY.sessions,
+    };
+    const result = deserializePracticeHistory(JSON.stringify(legacyDocument));
+    expect(result).not.toBeUndefined();
+    expect(result?.sessions[0]?.origin).toBeUndefined();
+  });
+
+  it('rejects a session with an unrecognized origin', () => {
+    const withInvalidOrigin = {
+      version: PRACTICE_HISTORY_SCHEMA_VERSION,
+      sessions: [{ ...HISTORY.sessions[0], origin: 'not-a-real-origin' }],
+    };
+    expect(deserializePracticeHistory(JSON.stringify(withInvalidOrigin))).toBeUndefined();
+  });
+
   it('uses empty history when storage has no document', async () => {
     await expect(loadPracticeHistory(createStorage())).resolves.toEqual({
       status: 'empty',

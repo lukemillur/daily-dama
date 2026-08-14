@@ -1663,6 +1663,83 @@ describe('Sesh single-trick entry point - "Next trick" absence', () => {
   });
 });
 
+describe('Sesh regular practice origin (T062.1)', () => {
+  // Regular single-trick Sesh never passes an origin prop, so a completed run's practice-history
+  // record must carry no origin — distinguishing it from the Kentei assessment flow's tagged
+  // records at read time.
+
+  function Harness() {
+    const { sessions } = usePracticeHistory();
+    return (
+      <>
+        {sessions.map((session, index) => (
+          <Text
+            key={session.id}
+            accessibilityLabel={`session-${index}-origin:${session.origin ?? 'none'}`}
+          />
+        ))}
+        <Sesh availableTricks={[TRICK]} selectedTrickIds={[TRICK.id]} />
+      </>
+    );
+  }
+
+  async function mountHarness() {
+    let root!: ReactTestRenderer;
+    await act(async () => {
+      root = create(
+        <NoteProvider>
+          <GoalProvider>
+            <PracticeHistoryProvider>
+              <UserProfileProvider>
+                <Harness />
+              </UserProfileProvider>
+            </PracticeHistoryProvider>
+          </GoalProvider>
+        </NoteProvider>,
+      );
+    });
+    return root;
+  }
+
+  it('records a completed sesh with no origin', async () => {
+    await AsyncStorage.clear();
+    jest.useFakeTimers();
+    try {
+      const root = await mountHarness();
+
+      act(() => {
+        pressByAccessibilityLabel(root, `Start a sesh with ${TRICK.name}`);
+      });
+
+      act(() => {
+        jest.advanceTimersByTime(1000);
+      });
+      act(() => {
+        jest.advanceTimersByTime(1000);
+      });
+      act(() => {
+        jest.advanceTimersByTime(1000);
+      });
+
+      act(() => {
+        pressByAccessibilityLabel(root, 'Laced');
+      });
+
+      act(() => {
+        pressByVisibleText(root, 'End Sesh');
+      });
+
+      expect(findByAccessibilityLabel(root, 'session-0-origin:none').length).toBeGreaterThan(0);
+
+      act(() => {
+        root.unmount();
+      });
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+});
+
 describe('Sesh wiring - countdown cancel (T047)', () => {
   // A user who starts a sesh by accident must be able to back out during the countdown, before
   // any practice history is recorded, and land back on the trick picker.

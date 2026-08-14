@@ -28,7 +28,8 @@ function isFiniteNonNegativeNumber(value: unknown): value is number {
 function isSessionRecord(value: unknown): value is PracticeSessionRecord {
   if (!isRecord(value)) return false;
 
-  const { id, trickId, trickName, startedAt, completedAt, durationMs, laceCount, plannedDurationMs } = value;
+  const { id, trickId, trickName, startedAt, completedAt, durationMs, laceCount, plannedDurationMs, origin } =
+    value;
   return (
     typeof id === 'string' &&
     id.length > 0 &&
@@ -46,7 +47,8 @@ function isSessionRecord(value: unknown): value is PracticeSessionRecord {
     Number.isInteger(laceCount) &&
     Number(laceCount) >= 0 &&
     (plannedDurationMs === undefined ||
-      (typeof plannedDurationMs === 'number' && Number.isFinite(plannedDurationMs) && plannedDurationMs > 0))
+      (typeof plannedDurationMs === 'number' && Number.isFinite(plannedDurationMs) && plannedDurationMs > 0)) &&
+    (origin === undefined || origin === 'assessment')
   );
 }
 
