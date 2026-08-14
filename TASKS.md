@@ -139,7 +139,7 @@ _This next batch (T045–T069) comes from a QA pass over PR 55's suggested check
 
 - **Area:** Goals
 - **Priority:** Medium
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** A goal, wherever it's rendered (per-trick or all-trick goals screen), has no action to jump directly into Sesh for that trick — a user has to leave the goals screen and find the trick's separate Practice action. Add one, using copy oriented around advancing the goal rather than generic "Practice."
 - **Exit criteria:** Test: a rendered goal exposes a practice action; activating it lands on Sesh with that trick preselected via [T063]'s preselected "Start sesh" variant, not the legacy full-picker link.
