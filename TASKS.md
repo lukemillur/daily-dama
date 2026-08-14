@@ -141,7 +141,7 @@ _The following batch (T070–T079) comes from the QA checklist completed against
 
 - **Area:** Multi-trick Sesh / navigation
 - **Priority:** High
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** Change the casual multi-trick flow's wrap-up “Finish sesh” action to return to the Sesh home route instead of resetting the local wizard to trick selection.
 - **Exit criteria:** A component or route integration test completes a multi-trick run, presses “Finish sesh,” and verifies that `/sesh` is shown with the Sesh home picker rather than the multi-trick selection step; canceling from the setup screen still returns to Sesh home.
