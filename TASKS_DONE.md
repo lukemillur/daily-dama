@@ -941,6 +941,15 @@ Entries keep their content as it was at completion. Don't retroactively edit a d
 - **Description:** When the Kentei assessment wrap-up's “Go to Home” action is pressed, reset the nested assessment route so a later visit to Profile renders the default Profile screen rather than the stale assessment wrap-up.
 - **Exit criteria:** A component-level regression test preserves the assessment result copy before pressing “Go to Home,” then verifies the route reset targets Home; the default Profile screen remains covered by its focused route component tests.
 - **Notes:** Replaced the assessment completion callback's `router.replace('/')` with Expo Router 57's `router.dismissTo('/')`, which unwinds the nested Profile stack while targeting Home and leaves transient assessment state local. Focused assessment/Profile tests pass (12/12), and `node .claude/scripts/verify.mjs` passes all four steps: test, lint, typecheck, and web export. Native validation remains deferred under the active web-only scope.
+### [T076] Establish Sesh-tab return-home behavior
+
+- **Area:** Sesh / navigation
+- **Priority:** High
+- **Status:** Done
+- **Planning:** Required
+- **Description:** Make pressing the Sesh navigation item a reliable return to the Sesh home screen from wrap-up screens and all nested Sesh routes, rather than exposing stale local state or leaving the user inside a child route.
+- **Notes:** Umbrella only — complete T076.1 and T076.2. The contract applies to both single-trick and multi-trick/assessment-related Sesh navigation surfaces; do not change the meaning of the Profile, Tricks, Stats, or Home tabs.
+
 ### [T076.1] Define the Sesh tab reset route contract
 
 - **Area:** Sesh / Expo Router navigation
