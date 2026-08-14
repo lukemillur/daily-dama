@@ -19,6 +19,7 @@ import {
 } from '@/features/custom-tricks/state/custom-trick-provider';
 import { AllTrickGoalsScreen } from '@/features/goals/components/all-trick-goals-screen';
 import { TrickGoalsScreen } from '@/features/goals/components/trick-goals-screen';
+import { useGoals } from '@/features/goals/state/goal-provider';
 import { AllNotesScreen } from '@/features/notes/components/all-notes-screen';
 import { TrickNotesScreen } from '@/features/notes/components/trick-notes-screen';
 import { useNotes } from '@/features/notes/state/note-provider';
@@ -35,6 +36,7 @@ import {
   createProfileDirectoryTricks,
   type DirectoryTrick,
   selectEffectiveLacedTrickIds,
+  selectGoalCountByTrickId,
   selectLacedCountByTrickId,
   selectLacedTrickIds,
   selectNoteCountByTrickId,
@@ -48,6 +50,7 @@ export default function TricksScreen() {
   const { toggleSelectedTrick, toggleManualUnlock } = useUserProfileActions();
   const { sessions } = usePracticeHistory();
   const { notes } = useNotes();
+  const { goals } = useGoals();
   const [creationStep, setCreationStep] = useState<'list' | 'choose' | CustomTrick['kind']>('list');
   const [editingTrick, setEditingTrick] = useState<CustomTrick | undefined>(undefined);
   const [deletingTrick, setDeletingTrick] = useState<CustomTrick | undefined>(undefined);
@@ -62,6 +65,7 @@ export default function TricksScreen() {
   );
   const lacedCountByTrickId = useMemo(() => selectLacedCountByTrickId(sessions), [sessions]);
   const noteCountByTrickId = useMemo(() => selectNoteCountByTrickId(notes), [notes]);
+  const goalCountByTrickId = useMemo(() => selectGoalCountByTrickId(goals), [goals]);
   const lacedTrickIds = useMemo(() => selectLacedTrickIds(sessions), [sessions]);
   const unlockedTrickIds = useMemo(
     () => selectEffectiveLacedTrickIds(lacedTrickIds, manuallyUnlockedTrickIds),
@@ -180,6 +184,7 @@ export default function TricksScreen() {
           showFocusedSection
           lacedCountByTrickId={lacedCountByTrickId}
           noteCountByTrickId={noteCountByTrickId}
+          goalCountByTrickId={goalCountByTrickId}
           unlockedTrickIds={unlockedTrickIds}
           selection={{ selectedTrickIds, onToggleTrick: toggleSelectedTrick }}
           customActions={{

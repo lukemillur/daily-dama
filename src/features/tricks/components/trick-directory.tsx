@@ -49,6 +49,7 @@ export interface TrickDirectoryProps {
   readonly focusedTrickIds?: readonly string[];
   readonly lacedCountByTrickId?: ReadonlyMap<string, number>;
   readonly noteCountByTrickId?: ReadonlyMap<string, number>;
+  readonly goalCountByTrickId?: ReadonlyMap<string, number>;
   readonly unlockedTrickIds?: ReadonlySet<string>;
 }
 
@@ -78,6 +79,7 @@ export function TrickDirectory({
   focusedTrickIds,
   lacedCountByTrickId,
   noteCountByTrickId,
+  goalCountByTrickId,
   unlockedTrickIds,
 }: TrickDirectoryProps) {
   const selectedTrickIds = selection?.selectedTrickIds ?? NO_SELECTED_TRICKS;
@@ -103,6 +105,7 @@ export function TrickDirectory({
         selectedTrickIds,
         lacedCountByTrickId,
         noteCountByTrickId,
+        goalCountByTrickId,
         unlockedTrickIds,
         notesAction,
         goalsAction,
@@ -131,6 +134,7 @@ export function TrickDirectory({
           showPracticeAction={Boolean(practiceAction)}
           lacedCount={lacedCountByTrickId?.get(item.id) ?? 0}
           noteCount={noteCountByTrickId?.get(item.id) ?? 0}
+          goalCount={goalCountByTrickId?.get(item.id) ?? 0}
           isLaced={unlockedTrickIds?.has(item.id) ?? false}
         />
       )}
@@ -190,6 +194,7 @@ interface TrickRowProps {
   readonly showPracticeAction?: boolean;
   readonly lacedCount?: number;
   readonly noteCount?: number;
+  readonly goalCount?: number;
   readonly isLaced?: boolean;
 }
 
@@ -205,6 +210,7 @@ function TrickRow({
   showPracticeAction = false,
   lacedCount = 0,
   noteCount = 0,
+  goalCount = 0,
   isLaced = false,
 }: TrickRowProps) {
   const customDescription = isCustomDirectoryTrick(trick)
@@ -270,7 +276,7 @@ function TrickRow({
         ) : null}
         {onOpenGoals ? (
           <RowAction accessibilityLabel={`Goals for ${trick.name}`} accessibilityRole="button" onPress={onOpenGoals}>
-            <RowActionText>Goals</RowActionText>
+            <RowActionText>{goalCount > 0 ? `Goals — ${goalCount}` : 'Goals'}</RowActionText>
           </RowAction>
         ) : null}
         {showPracticeAction ? (

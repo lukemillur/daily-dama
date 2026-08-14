@@ -178,4 +178,39 @@ describe('TrickDirectory', () => {
     expect(flatTexts.some((text) => text.includes('—'))).toBe(false);
     expect(flatTexts).toContain('Notes');
   });
+
+  it('includes the goal count in the Goals action label for a trick with goals', () => {
+    let root!: import('react-test-renderer').ReactTestRenderer;
+    act(() => {
+      root = create(
+        <TrickDirectory
+          tricks={FIXTURE_TRICKS}
+          goalsAction={{ onOpen: () => {} }}
+          goalCountByTrickId={new Map([['trick-1', 2]])}
+        />,
+      );
+    });
+
+    const flatTexts = allText(root);
+
+    expect(flatTexts).toContain('Goals — 2');
+  });
+
+  it('omits the separator and count from the Goals action label for a trick with no goals', () => {
+    let root!: import('react-test-renderer').ReactTestRenderer;
+    act(() => {
+      root = create(
+        <TrickDirectory
+          tricks={FIXTURE_TRICKS}
+          goalsAction={{ onOpen: () => {} }}
+          goalCountByTrickId={new Map([['trick-1', 0]])}
+        />,
+      );
+    });
+
+    const flatTexts = allText(root);
+
+    expect(flatTexts.some((text) => text.includes('—'))).toBe(false);
+    expect(flatTexts).toContain('Goals');
+  });
 });

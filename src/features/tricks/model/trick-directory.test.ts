@@ -1,6 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
 
 import type { CustomTrick } from '@/features/custom-tricks/model/custom-trick';
+import type { Goal } from '@/features/goals/model/goal';
 import type { Note } from '@/features/notes/model/note';
 import type { PracticeSessionRecord } from '@/features/stats/model/practice-history';
 import { KENDAMA_KENTEI_TRICKS } from '@/features/tricks/data/kendama-kentei-tricks';
@@ -10,6 +11,7 @@ import {
   isKenteiRankComplete,
   selectAvailablePracticeTricks,
   selectEffectiveLacedTrickIds,
+  selectGoalCountByTrickId,
   selectLacedCountByTrickId,
   selectLacedTrickIds,
   selectNoteCountByTrickId,
@@ -171,6 +173,45 @@ describe('selectNoteCountByTrickId', () => {
       note({ id: 'note-1', trickId: 'big-cup' }),
       note({ id: 'note-2', trickId: 'airplane' }),
       note({ id: 'note-3', trickId: 'airplane' }),
+    ]);
+
+    expect(counts.get('big-cup')).toBe(1);
+    expect(counts.get('airplane')).toBe(2);
+  });
+});
+
+function goal(overrides: { readonly id?: string; readonly trickId: string }): Goal {
+  return {
+    id: overrides.id ?? 'goal-1',
+    trickId: overrides.trickId,
+    trickName: 'Big cup',
+    kind: 'count',
+    targetCount: 10,
+    createdAt: 1_000,
+  };
+}
+
+describe('selectGoalCountByTrickId', () => {
+  it('sums multiple goals for the same trick', () => {
+    const counts = selectGoalCountByTrickId([
+      goal({ id: 'goal-1', trickId: 'big-cup' }),
+      goal({ id: 'goal-2', trickId: 'big-cup' }),
+    ]);
+
+    expect(counts.get('big-cup')).toBe(2);
+  });
+
+  it('leaves a trick with zero goals absent from the map', () => {
+    const counts = selectGoalCountByTrickId([goal({ id: 'goal-1', trickId: 'big-cup' })]);
+
+    expect(counts.has('airplane')).toBe(false);
+  });
+
+  it('does not let unrelated trick IDs bleed into each other', () => {
+    const counts = selectGoalCountByTrickId([
+      goal({ id: 'goal-1', trickId: 'big-cup' }),
+      goal({ id: 'goal-2', trickId: 'airplane' }),
+      goal({ id: 'goal-3', trickId: 'airplane' }),
     ]);
 
     expect(counts.get('big-cup')).toBe(1);

@@ -135,16 +135,6 @@ The first pass used **locked/unlocked** for "the user can land this trick." User
 
 _This next batch (T045–T069) comes from a QA pass over PR 55's suggested checklist (the `development` → `main` release covering T002–T041), worked top to bottom. Where an entry names the task that shipped the behavior it's correcting, the archived entry in [TASKS_DONE.md](TASKS_DONE.md) stays as-written — history isn't rewritten, same as above._
 
-### [T065] Show a per-trick goal count in the Tricks list
-
-- **Area:** Tricks
-- **Priority:** Low
-- **Status:** In progress
-- **Planning:** Implementer
-- **Description:** Each trick row's "Goals" action (`src/features/tricks/components/trick-directory.tsx`) always renders the bare label "Goals," unlike the adjacent "Notes" action, which shows a count via T024's `selectNoteCountByTrickId` pattern. Add the equivalent for goals.
-- **Exit criteria:** Test: a trick with N goals shows "Goals — N" on its row; a trick with 0 goals shows plain "Goals" — matching the notes-count zero-state convention exactly.
-- **Notes:** Direct mirror of T024: add `selectGoalCountByTrickId` in `src/features/tricks/model/trick-directory.ts` (same shape as `selectNoteCountByTrickId`), thread a `goalCountByTrickId` prop through `TrickDirectory` into the existing Goals `RowAction`, wire it from `src/app/tricks.tsx`. Assumption: count includes all goals for the trick (achieved and unachieved), mirroring notes' count exactly, per "similar to the notes count" in the request — flag if an active/unachieved-only count was intended instead.
-
 ### [T066] Add a practice entry point from a rendered goal
 
 - **Area:** Goals
