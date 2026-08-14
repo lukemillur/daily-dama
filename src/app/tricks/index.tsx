@@ -1,4 +1,4 @@
-import { useNavigation } from 'expo-router';
+import { useNavigation, useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, TextInput } from 'react-native';
 import { styled } from 'styled-components/native';
@@ -19,7 +19,6 @@ import {
   useCustomTricks,
 } from '@/features/custom-tricks/state/custom-trick-provider';
 import { AllTrickGoalsScreen } from '@/features/goals/components/all-trick-goals-screen';
-import { TrickGoalsScreen } from '@/features/goals/components/trick-goals-screen';
 import { useGoals } from '@/features/goals/state/goal-provider';
 import { AllNotesScreen } from '@/features/notes/components/all-notes-screen';
 import { TrickNotesScreen } from '@/features/notes/components/trick-notes-screen';
@@ -56,7 +55,6 @@ export default function TricksScreen() {
   const [editingTrick, setEditingTrick] = useState<CustomTrick | undefined>(undefined);
   const [deletingTrick, setDeletingTrick] = useState<CustomTrick | undefined>(undefined);
   const [notesTrick, setNotesTrick] = useState<DirectoryTrick | undefined>(undefined);
-  const [goalsTrick, setGoalsTrick] = useState<DirectoryTrick | undefined>(undefined);
   const [showLacedTricks, setShowLacedTricks] = useState(false);
   const [showAllGoals, setShowAllGoals] = useState(false);
   const [showAllNotes, setShowAllNotes] = useState(false);
@@ -74,6 +72,7 @@ export default function TricksScreen() {
   );
 
   const navigation = useNavigation();
+  const router = useRouter();
 
   useEffect(() => {
     const resetNestedView = () => {
@@ -81,14 +80,16 @@ export default function TricksScreen() {
       setEditingTrick(undefined);
       setDeletingTrick(undefined);
       setNotesTrick(undefined);
-      setGoalsTrick(undefined);
       setShowLacedTricks(false);
       setShowAllGoals(false);
       setShowAllNotes(false);
     };
 
-    return navigation.addListener('tabPress' as never, () => {
-      if (navigation.isFocused()) {
+    const tabNavigation = navigation.getParent();
+    if (!tabNavigation) return undefined;
+
+    return tabNavigation.addListener('tabPress' as never, () => {
+      if (tabNavigation.isFocused()) {
         resetNestedView();
       }
     });
@@ -128,18 +129,6 @@ export default function TricksScreen() {
           trickId={notesTrick.id}
           trickName={notesTrick.name}
           onClose={() => setNotesTrick(undefined)}
-        />
-      </Screen>
-    );
-  }
-
-  if (goalsTrick) {
-    return (
-      <Screen edges={['top', 'left', 'right']}>
-        <TrickGoalsScreen
-          trickId={goalsTrick.id}
-          trickName={goalsTrick.name}
-          onClose={() => setGoalsTrick(undefined)}
         />
       </Screen>
     );
@@ -217,7 +206,10 @@ export default function TricksScreen() {
             onDelete: (trickId) => setDeletingTrick(tricks.find((trick) => trick.id === trickId)),
           }}
           notesAction={{ onOpen: setNotesTrick }}
-          goalsAction={{ onOpen: setGoalsTrick }}
+          goalsAction={{
+            onOpen: (trick) =>
+              router.push({ pathname: '/tricks/[trickId]/goals', params: { trickId: trick.id } }),
+          }}
           practiceAction
           header={{
             eyebrow: 'Your trick lab',

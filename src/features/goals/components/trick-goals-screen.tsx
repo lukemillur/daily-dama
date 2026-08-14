@@ -21,12 +21,12 @@ import { usePracticeHistory } from '@/features/stats/state/practice-history-prov
 interface TrickGoalsScreenProps {
   readonly trickId: string;
   readonly trickName: string;
-  readonly onClose: () => void;
+  readonly onBack: () => void;
 }
 
 type ScreenStep = { readonly kind: 'list' } | { readonly kind: 'add' };
 
-export function TrickGoalsScreen({ trickId, trickName, onClose }: TrickGoalsScreenProps) {
+export function TrickGoalsScreen({ trickId, trickName, onBack }: TrickGoalsScreenProps) {
   const { goals } = useGoals();
   const { addGoal, deleteGoal } = useGoalActions();
   const { sessions } = usePracticeHistory();
@@ -73,8 +73,8 @@ export function TrickGoalsScreen({ trickId, trickName, onClose }: TrickGoalsScre
         </GoalList>
 
         <FormActions>
-          <Button fill variant="secondary" onPress={onClose}>
-            Close
+          <Button accessibilityLabel="Back to Tricks" fill variant="secondary" onPress={onBack}>
+            Back to Tricks
           </Button>
         </FormActions>
       </Content>
