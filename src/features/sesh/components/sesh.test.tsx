@@ -1843,6 +1843,7 @@ describe('Countdown rank standing', () => {
     });
 
     expect(JSON.stringify(root.toJSON())).not.toContain('Rank 5');
+    expect(JSON.stringify(root.toJSON())).not.toContain('Skip');
 
     act(() => {
       root.unmount();

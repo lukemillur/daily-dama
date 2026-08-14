@@ -137,16 +137,6 @@ _This next batch (T045–T069) comes from a QA pass over PR 55's suggested check
 
 _The following batch (T070–T079) comes from the QA checklist completed against PR 83, worked top to bottom. New entries are intentionally placed before the older queue so the next actionable QA finding is selected first. Existing task history is not rewritten._
 
-### [T075] Allow users to skip every multi-trick countdown
-
-- **Area:** Multi-trick Sesh / countdown
-- **Priority:** High
-- **Status:** In progress
-- **Planning:** Required
-- **Description:** Add a simple accessible “Skip” action to every countdown encountered in the casual multi-trick flow, including the first trick and later tricks when inter-trick countdowns are enabled, so the user can begin practicing immediately.
-- **Exit criteria:** Component tests show “Skip” during the first and subsequent multi-trick countdowns, pressing it enters the corresponding trick's active state without waiting for the timer, and skipping does not record a landing or skip a trick; the existing countdown cancel behavior and assessment-specific countdown behavior remain unchanged unless the shared implementation requires an explicitly tested compatibility adjustment.
-- **Notes:** Keep countdown completion timestamp semantics valid when skipped. Do not broaden this into a persisted countdown preference; the requested control is per-run.
-
 ### [T076] Establish Sesh-tab return-home behavior
 
 - **Area:** Sesh / navigation
