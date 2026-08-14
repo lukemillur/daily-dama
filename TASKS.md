@@ -136,16 +136,6 @@ The first pass used **locked/unlocked** for "the user can land this trick." User
 _This next batch (T045–T069) comes from a QA pass over PR 55's suggested checklist (the `development` → `main` release covering T002–T041), worked top to bottom. Where an entry names the task that shipped the behavior it's correcting, the archived entry in [TASKS_DONE.md](TASKS_DONE.md) stays as-written — history isn't rewritten, same as above._
 
 
-### [T056] Show the rank's trick list before skipping it in a Kentei assessment
-
-- **Area:** Sesh (Kentei assessment)
-- **Priority:** Medium
-- **Status:** In progress
-- **Planning:** Required
-- **Description:** "Skip this rank" (`SkipRankButton`, `src/features/sesh/components/sesh.tsx`) is a bare text link with no preview of what it skips — no trick list, no count, no confirmation. A user can't tell what they're giving up before tapping it. The only place a description of what got skipped appears (`describeSkippedRange`, e.g. "Rank 10 — 3 tricks skipped") is after the fact, on the final wrap-up screen.
-- **Exit criteria:** Tapping "Skip this rank" surfaces the specific tricks in that rank before the skip is committed; canceling leaves the run unaffected; confirming skips exactly as today (no history written for skipped tricks, unchanged).
-- **Notes:** Independent of [T055], related by theme only. `selectAssessmentTricks`/the rank's trick list is already computable from data in scope (`kentei-assessment-run.ts`) — this is new UI (a preview or confirmation step), not new data plumbing.
-
 ### [T057] Remove the redundant "Next trick" button from the Kentei assessment flow
 
 - **Area:** Sesh (Kentei assessment)

@@ -165,6 +165,14 @@ export function MultiTrickSesh({
   const recordedSummaryId = useRef<string | undefined>(undefined);
   const [summaries, setSummaries] = useState<SeshSummary[]>([]);
   const [skippedEntries, setSkippedEntries] = useState<string[]>([]);
+  // Set between a "Skip this rank" tap and the user confirming or
+  // canceling that skip. Holds the range a confirmed skip would commit,
+  // computed once at request time so the preview and the eventual commit
+  // can never disagree. Nothing observable (`sequence`, `state`,
+  // `isFirstCountdown`) changes while this is set — canceling just clears it.
+  const [pendingSkip, setPendingSkip] = useState<
+    { readonly fromIndex: number; readonly targetIndex: number } | undefined
+  >(undefined);
   // Tracks whether the run is still on its very first trick's countdown, so
   // the Cancel control (wired via `onCancelRun`) only ever renders there —
   // never on a later trick's countdown. Flipped to false the moment the run
@@ -256,14 +264,26 @@ export function MultiTrickSesh({
     return () => clearTimeout(timeoutId);
   }, [laceAcknowledgment]);
 
-  const handleSkipRank = () => {
+  const handleSkipRankRequest = () => {
     if (!skipTarget) return;
+
+    const targetIndex = skipTarget(sequence.currentIndex);
+    setPendingSkip({ fromIndex: sequence.currentIndex, targetIndex });
+  };
+
+  const handleCancelSkip = () => {
+    setPendingSkip(undefined);
+  };
+
+  const handleConfirmSkip = () => {
+    if (!pendingSkip) return;
+
+    const { fromIndex, targetIndex } = pendingSkip;
 
     setIsFirstCountdown(false);
 
-    const targetIndex = skipTarget(sequence.currentIndex);
     if (describeSkippedRange) {
-      setSkippedEntries((prev) => [...prev, describeSkippedRange(sequence.currentIndex, targetIndex)]);
+      setSkippedEntries((prev) => [...prev, describeSkippedRange(fromIndex, targetIndex)]);
     }
 
     const nextSequence = advanceTrickSequenceToIndex(sequence, targetIndex);
@@ -275,7 +295,21 @@ export function MultiTrickSesh({
     } else {
       dispatch({ type: 'seshReset' });
     }
+
+    setPendingSkip(undefined);
   };
+
+  if (pendingSkip) {
+    const skippedTricks = sequence.tricks.slice(pendingSkip.fromIndex, pendingSkip.targetIndex);
+    return (
+      <SkipRankConfirmation
+        tricks={skippedTricks}
+        description={describeSkippedRange?.(pendingSkip.fromIndex, pendingSkip.targetIndex)}
+        onCancel={handleCancelSkip}
+        onConfirm={handleConfirmSkip}
+      />
+    );
+  }
 
   if (state.status === 'countdown') {
     return (
@@ -287,7 +321,7 @@ export function MultiTrickSesh({
           dispatch({ type: 'countdownCompleted', now: Date.now() });
         }}
         attemptsReminder={showAttemptsReminder}
-        onSkipRank={skipTarget ? handleSkipRank : undefined}
+        onSkipRank={skipTarget ? handleSkipRankRequest : undefined}
         onCancel={isFirstCountdown ? onCancelRun : undefined}
         showRankStanding={showRankStanding}
       />
@@ -334,7 +368,7 @@ export function MultiTrickSesh({
         onEnd={() => dispatch({ type: 'seshEnded', now: Date.now() })}
         onTimerElapsed={() => dispatch({ type: 'timerElapsed', now: Date.now() })}
         attemptsReminder={showAttemptsReminder}
-        onSkipRank={skipTarget ? handleSkipRank : undefined}
+        onSkipRank={skipTarget ? handleSkipRankRequest : undefined}
         // "Next trick" reuses the same completed-effect advance path as
         // "End Sesh" above — it's the identical `seshEnded` dispatch, not a
         // second advance mechanism. Unlike `handleSkipRank`, this always
@@ -378,6 +412,58 @@ export function MultiTrickSesh({
     </CenteredPanel>
   );
 }
+
+/**
+ * Confirmation panel shown after a "Skip this rank" tap, before the skip is
+ * committed. Full-screen replace, same pattern as `laceAcknowledgment`
+ * above -- reads only local state and dispatches nothing, so canceling
+ * returns exactly to whatever countdown/active render was already correct.
+ */
+function SkipRankConfirmation({
+  tricks,
+  description,
+  onCancel,
+  onConfirm,
+}: {
+  readonly tricks: readonly PracticeTrick[];
+  readonly description?: string;
+  readonly onCancel: () => void;
+  readonly onConfirm: () => void;
+}) {
+  const heading =
+    description ?? `${tricks.length} trick${tricks.length === 1 ? '' : 's'} in this rank`;
+
+  return (
+    <ScrollArea contentContainerStyle={{ padding: 24, paddingBottom: 140 }}>
+      <ActiveContent accessibilityLabel="Skip rank confirmation">
+        <Eyebrow>Skip this rank?</Eyebrow>
+        <DisplayTitle>{heading}</DisplayTitle>
+        <BodyCopy>
+          These tricks won&apos;t be recorded -- you can revisit this rank later.
+        </BodyCopy>
+        <WrapUpList>
+          {tricks.map((trick) => (
+            <WrapUpRow key={trick.id} accessibilityLabel={`Skip preview: ${trick.name}`}>
+              <WrapUpTrickName>{trick.name}</WrapUpTrickName>
+            </WrapUpRow>
+          ))}
+        </WrapUpList>
+        <SkipConfirmationActions>
+          <SkipConfirmationButton
+            accessibilityLabel="Cancel skip rank"
+            variant="secondary"
+            onPress={onCancel}>
+            Cancel
+          </SkipConfirmationButton>
+          <SkipConfirmationButton accessibilityLabel="Confirm skip rank" onPress={onConfirm}>
+            Skip rank
+          </SkipConfirmationButton>
+        </SkipConfirmationActions>
+      </ActiveContent>
+    </ScrollArea>
+  );
+}
+
 
 /**
  * Wrap-up shown once a multi-trick run is over, whether every trick ran to
@@ -455,3 +541,14 @@ const FinishButton = styled(Button).attrs({ size: 'medium' })`
   margin-top: 28px;
   border-radius: 5px;
 `;
+const SkipConfirmationActions = styled.View`
+  width: 100%;
+  flex-direction: row;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 28px;
+`;
+const SkipConfirmationButton = styled(Button).attrs({ size: 'medium' })`
+  border-radius: 5px;
+`;
+

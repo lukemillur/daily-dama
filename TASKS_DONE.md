@@ -6,6 +6,18 @@ Entries keep their content as it was at completion. Don't retroactively edit a d
 
 ---
 
+### [T056] Show the rank's trick list before skipping it in a Kentei assessment
+
+- **Area:** Sesh (Kentei assessment)
+- **Priority:** Medium
+- **Status:** Done
+- **Planning:** Required
+- **Description:** "Skip this rank" (`SkipRankButton`, `src/features/sesh/components/sesh.tsx`) is a bare text link with no preview of what it skips — no trick list, no count, no confirmation. A user can't tell what they're giving up before tapping it. The only place a description of what got skipped appears (`describeSkippedRange`, e.g. "Rank 10 — 3 tricks skipped") is after the fact, on the final wrap-up screen.
+- **Exit criteria:** Tapping "Skip this rank" surfaces the specific tricks in that rank before the skip is committed; canceling leaves the run unaffected; confirming skips exactly as today (no history written for skipped tricks, unchanged).
+- **Notes:** Independent of [T055], related by theme only. `selectAssessmentTricks`/the rank's trick list is already computable from data in scope (`kentei-assessment-run.ts`) — this is new UI (a preview or confirmation step), not new data plumbing. Implemented per the plan (`.claude/plans/T056.md`): `MultiTrickSesh` now holds a local `pendingSkip` state, splitting the old immediate `handleSkipRank` into `handleSkipRankRequest`/`handleConfirmSkip`/`handleCancelSkip`. A new `SkipRankConfirmation` panel (full-screen replace, same pattern as the existing `laceAcknowledgment` panel) lists the specific tricks `sequence.tricks.slice(fromIndex, targetIndex)` would discard, reusing `describeSkippedRange` for its heading when supplied. Canceling only clears local state — no dispatch, no `sequence`/`isFirstCountdown` mutation — so the run is provably unaffected. Confirming runs the same commit logic as before, unchanged. Updated `multi-trick-sesh.test.tsx`: inserted a confirm-button press into every existing test that presses "Skip this rank", plus new coverage for the preview (lists tricks, records nothing yet) and cancel (dismisses, resumes exactly, subsequent completion still records). Full verification (`node .claude/scripts/verify.mjs`) passes.
+
+
+
 ### [T055] Show current rank/class standing during a Kentei assessment run
 
 - **Area:** Sesh (Kentei assessment)
