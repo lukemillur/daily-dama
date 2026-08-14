@@ -140,7 +140,7 @@ _This next batch (T045–T069) comes from a QA pass over PR 55's suggested check
 
 - **Area:** Sesh / Profile (Kentei assessment)
 - **Priority:** Medium
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** `selectPromotedKenteiRank` (`src/features/tricks/model/trick-directory.ts`) requires gapless completion from the user's current stored rank upward, by design — confirmed correct, not a bug. But "Start from a rank" and "Skip this rank" both let a user generate real lace history far above their stored rank while lower ranks stay incomplete (or, for skipped ranks, get zero history at all), which permanently caps promotion at the first gap with no explanation anywhere in the UI. Per product decision, promotion logic itself is not changing — add messaging so this isn't silent.
 - **Exit criteria:** Completing an out-of-order assessment (e.g. via "Start from a rank" above the current stored rank, or after skipping ranks) that does not result in a promotion shows copy explaining that earlier/skipped ranks still need to be cleared; a normal in-order assessment that does promote shows no such message.
