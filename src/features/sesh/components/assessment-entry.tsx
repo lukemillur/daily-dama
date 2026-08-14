@@ -54,7 +54,8 @@ export function AssessmentEntry() {
       <MultiTrickSesh
         tricks={tricks}
         plan={OPEN_ENDED_SESH_PLAN}
-        onFinished={() => router.replace('/profile')}
+        onFinished={() => router.replace('/')}
+        finishButtonLabel="Go to Home"
         onCancelRun={() => setStep({ kind: 'choosingFlow' })}
         showAttemptsReminder
         skipTarget={isMultiRankFlow ? (index) => selectNextRankStartIndex(tricks, index) : undefined}
