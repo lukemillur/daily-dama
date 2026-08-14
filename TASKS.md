@@ -135,16 +135,6 @@ The first pass used **locked/unlocked** for "the user can land this trick." User
 
 _This next batch (T045–T069) comes from a QA pass over PR 55's suggested checklist (the `development` → `main` release covering T002–T041), worked top to bottom. Where an entry names the task that shipped the behavior it's correcting, the archived entry in [TASKS_DONE.md](TASKS_DONE.md) stays as-written — history isn't rewritten, same as above._
 
-### [T067] Add goal creation to the all-trick "Trick Goals" screen
-
-- **Area:** Goals
-- **Priority:** Medium
-- **Status:** In progress
-- **Planning:** Implementer
-- **Description:** Goal creation exists today only on the per-trick goals screen (`TrickGoalsScreen`'s "Add goal" step, reached via a trick row's own Goals action) — the cross-trick "Trick goals" screen reached from the Tricks header button (`AllTrickGoalsScreen`) has no add-goal affordance at all; its own empty-state copy says "Set one from a trick's Goals action" as the only path. Add goal creation there too.
-- **Exit criteria:** Test: from the all-trick-goals screen, a user can create a new goal by selecting a trick and defining a target, and it appears in that screen's list afterward.
-- **Notes:** Interpreting "the 'Trick Goals' screen" as `AllTrickGoalsScreen` specifically (the screen behind the header button literally labeled "Trick goals" in `src/app/tricks.tsx`) rather than the per-trick `TrickGoalsScreen`, which already has this capability — flag if the per-trick screen was actually meant. Unlike the per-trick screen, there's no trick already in context here, so this needs an added trick-selection step before the existing `GoalForm`/`addGoal` flow; reusing `TrickDirectory`'s selection UI is one option, implementer's call.
-
 ### [T068] Return to Tricks home when the Tricks tab is pressed from a nested view
 
 - **Area:** Navigation / Tricks

@@ -11,6 +11,7 @@ import {
   usePracticeHistoryActions,
 } from '@/features/stats/state/practice-history-provider';
 import type { PracticeTrick } from '@/features/tricks/model/trick';
+import type { DirectoryTrick } from '@/features/tricks/model/trick-directory';
 
 // AllTrickGoalsScreen transitively imports practice-history-provider, which pulls in
 // AsyncStorage. Mock it the same way sesh.test.tsx and kentei-rank-auto-promotion.test.tsx do.
@@ -21,6 +22,10 @@ jest.mock('@react-native-async-storage/async-storage', () =>
 
 const TRICK_A: PracticeTrick = { id: 'big-cup', name: 'Big Cup' };
 const TRICK_B: PracticeTrick = { id: 'stall', name: 'Stall' };
+const DIRECTORY_TRICKS: DirectoryTrick[] = [
+  { ...TRICK_A, customKind: 'standalone' },
+  { ...TRICK_B, customKind: 'standalone' },
+];
 const PLAN = createTimedSeshPlan(5);
 
 function landing(elapsedMs: number): Landing {
@@ -62,7 +67,7 @@ function Harness() {
         accessibilityLabel="record-sesh-a"
         onPress={() => recordCompletedSesh(summaryFor(TRICK_A, 3))}
       />
-      <AllTrickGoalsScreen onClose={noop} />
+      <AllTrickGoalsScreen tricks={DIRECTORY_TRICKS} onClose={noop} />
     </>
   );
 }
@@ -129,7 +134,7 @@ describe('AllTrickGoalsScreen', () => {
   it('shows the empty state when there are no goals', async () => {
     const root = await mountHarness();
 
-    expect(findText(root, "No goals yet. Set one from a trick's Goals action.")).toHaveLength(1);
+    expect(findText(root, "No goals yet. Set one from a trick's Goals action, or add one below.")).toHaveLength(1);
   });
 
   it('links each goal\'s Practice action to /sesh with the correct trickId param', async () => {
@@ -162,5 +167,30 @@ describe('AllTrickGoalsScreen', () => {
     });
 
     expect(findText(root, 'Big Cup')).toHaveLength(0);
+  });
+
+  it('creates a goal for a chosen trick from the all-trick-goals screen and it appears in the list', async () => {
+    const root = await mountHarness();
+
+    press(root, 'Add goal');
+
+    const [trickOption] = root.root.findAll(
+      (node) => node.props.accessibilityLabel === 'Choose Stall',
+    );
+    act(() => {
+      trickOption.props.onPress();
+    });
+
+    const [targetInput] = root.root.findAll(
+      (node) => node.props.accessibilityLabel === 'Target lace count',
+    );
+    act(() => {
+      targetInput.props.onChangeText('10');
+    });
+
+    press(root, 'Save goal');
+
+    expect(findText(root, 'Stall')).toHaveLength(1);
+    expect(findText(root, '0 / 10 laces')).toHaveLength(1);
   });
 });
