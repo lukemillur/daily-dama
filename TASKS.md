@@ -150,7 +150,7 @@ _The following batch (T070–T079) comes from the QA checklist completed against
 
 - **Area:** Kentei assessment / Sesh sequencing
 - **Priority:** High (inherited from parent T070)
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** Prevent the shared multi-trick Sesh renderer from exposing its one-render “Sequence complete / Nice work” fallback when a Kentei assessment advances from a laced trick to another trick or to the assessment wrap-up.
 - **Exit criteria:** Component tests cover lacing the final assessment trick and lacing a non-final assessment trick, and in neither case render the generic “Nice work.” panel during the transition; the intended assessment wrap-up or next trick remains visible and existing regular multi-trick completion behavior is unchanged.
