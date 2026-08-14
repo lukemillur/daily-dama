@@ -150,7 +150,7 @@ _The following batch (T070–T079) comes from the QA checklist completed against
 
 - **Area:** Kentei assessment / navigation
 - **Priority:** High (inherited from parent T070)
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** When the Kentei assessment wrap-up's “Go to Home” action is pressed, replace or otherwise reset the assessment route state so a later visit to Profile renders the default Profile screen rather than the stale assessment wrap-up.
 - **Exit criteria:** A route-level or component-level regression test starts from Profile, enters Kentei assessment, completes a run, presses “Go to Home,” then navigates to Profile and finds the default Profile content with no assessment wrap-up; the assessment wrap-up still navigates Home and retains its result copy before leaving.
