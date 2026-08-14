@@ -140,7 +140,7 @@ _This next batch (T045–T069) comes from a QA pass over PR 55's suggested check
 
 - **Area:** Sesh (Kentei assessment)
 - **Priority:** Medium
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** "Skip this rank" (`SkipRankButton`, `src/features/sesh/components/sesh.tsx`) is a bare text link with no preview of what it skips — no trick list, no count, no confirmation. A user can't tell what they're giving up before tapping it. The only place a description of what got skipped appears (`describeSkippedRange`, e.g. "Rank 10 — 3 tricks skipped") is after the fact, on the final wrap-up screen.
 - **Exit criteria:** Tapping "Skip this rank" surfaces the specific tricks in that rank before the skip is committed; canceling leaves the run unaffected; confirming skips exactly as today (no history written for skipped tricks, unchanged).
