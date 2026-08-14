@@ -141,7 +141,7 @@ _The following batch (T070–T079) comes from the QA checklist completed against
 
 - **Area:** Sesh / navigation UX
 - **Priority:** Medium
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** Promote the multi-trick Sesh flow from the current inline text link into a clearly identifiable primary route option on the Sesh home screen, while retaining access to single-trick practice and the existing multi-trick setup flow.
 - **Exit criteria:** A component test identifies an obvious, accessible multi-trick entry action with dedicated copy and verifies that activating it links to `/sesh/multi-trick`; the Sesh home still renders the single-trick format controls and the web layout remains usable at the supported narrow width.
