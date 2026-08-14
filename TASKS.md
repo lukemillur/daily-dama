@@ -146,16 +146,6 @@ _The following batch (T070–T079) comes from the QA checklist completed against
 - **Description:** Correct the two post-assessment regressions found in the PR 83 QA pass: returning Home must clear the nested assessment route, and a laced assessment trick must advance without briefly showing the generic “Nice work” completion panel.
 - **Notes:** Umbrella only — complete T070.1 and T070.2. Preserve the existing assessment result and promotion behavior.
 
-### [T070.1] Reset the Profile route after leaving Kentei assessment
-
-- **Area:** Kentei assessment / navigation
-- **Priority:** High (inherited from parent T070)
-- **Status:** In progress
-- **Planning:** Required
-- **Description:** When the Kentei assessment wrap-up's “Go to Home” action is pressed, replace or otherwise reset the assessment route state so a later visit to Profile renders the default Profile screen rather than the stale assessment wrap-up.
-- **Exit criteria:** A route-level or component-level regression test starts from Profile, enters Kentei assessment, completes a run, presses “Go to Home,” then navigates to Profile and finds the default Profile content with no assessment wrap-up; the assessment wrap-up still navigates Home and retains its result copy before leaving.
-- **Notes:** Current assessment entry uses local `AssessmentEntry` state and `router.replace('/')`; inspect the Expo Router stack/tab interaction before choosing a reset mechanism. Do not persist assessment UI state.
-
 ### [T070.2] Remove the transient Kentei “Nice work” panel after lacing
 
 - **Area:** Kentei assessment / Sesh sequencing
