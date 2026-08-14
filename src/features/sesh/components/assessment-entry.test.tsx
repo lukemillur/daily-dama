@@ -118,16 +118,15 @@ describe('AssessmentEntry result copy', () => {
       pressByVisibleText(root, 'Current rank only');
     });
 
-    // Walk every rank-1 trick without ever pressing "Laced", so no trick in
-    // the rank records a lace and the auto-promotion effect never fires.
-    // AssessmentEntry always sets skipCountdownBetweenTricks, so only the
-    // very first trick shows a countdown to advance through.
+    // Press "End assessment" on the very first trick, without ever
+    // pressing "Laced", so no trick in the rank records a lace and the
+    // auto-promotion effect never fires. "End assessment" now ends the
+    // whole run immediately (not just the current trick), so a single
+    // press is enough to reach the result screen.
     advanceThroughCountdown();
-    for (let index = 0; index < RANK_1_TRICK_IDS.length; index += 1) {
-      act(() => {
-        pressByVisibleText(root, 'End assessment');
-      });
-    }
+    act(() => {
+      pressByVisibleText(root, 'End assessment');
+    });
 
     await act(async () => {});
 
