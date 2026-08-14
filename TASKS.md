@@ -139,7 +139,7 @@ _This next batch (T045–T069) comes from a QA pass over PR 55's suggested check
 
 - **Area:** Profile
 - **Priority:** Medium
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Implementer
 - **Description:** The Profile screen (`src/app/profile/index.tsx`) shows two adjacent, overlapping-in-purpose sections: "Assessment" ("Retake assessment", which resets `kenteiRank`/`hasCompletedOnboarding` and routes the user back through the first-run `KenteiOnboarding` self-report quiz) and "Kentei assessment" (the real, timed, promotion-only flow at `/profile/kentei-assessment`). Remove the former; keep the latter as Profile's sole assessment entry point.
 - **Exit criteria:** Profile screen no longer shows a "Retake assessment" section or button; the "Kentei assessment" section is unchanged; onboarding's first-run flow (fresh profile, `hasCompletedOnboarding: false`) still renders and completes correctly, unchanged.
