@@ -141,7 +141,7 @@ _The following batch (T070–T079) comes from the QA checklist completed against
 
 - **Area:** Kentei assessment / navigation
 - **Priority:** High
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** Correct the two post-assessment regressions found in the PR 83 QA pass: returning Home must clear the nested assessment route, and a laced assessment trick must advance without briefly showing the generic “Nice work” completion panel.
 - **Notes:** Umbrella only — complete T070.1 and T070.2. Preserve the existing assessment result and promotion behavior.
