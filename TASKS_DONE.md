@@ -951,6 +951,24 @@ Entries keep their content as it was at completion. Don't retroactively edit a d
 - **Exit criteria:** An integration test starts Sesh from a neglected-trick/practice link, completes the run, presses “Start another sesh,” and verifies the Sesh home picker is rendered; pressing the Sesh tab afterward also reaches the same home picker without a route lock.
 - **Notes:** Added a mount-local quick-start activation flag so `/sesh?trickId=...&mode=practice` retains its initial quick-start presentation but “Start another sesh” clears that entry context before the existing reducer reset. Added component lifecycle coverage through completion and an app-level route harness covering query-entry to Sesh-tab canonical reset. Completion recording, direct destinations, and practice-history persistence remain unchanged. Full test, lint, typecheck, and web-export verification passed under the supplied Node runtime; native validation remains deferred under the active web-only platform scope.
 
+### [T077.2] Allow direct-practice users to customize before starting
+
+- **Area:** Sesh / practice entry points
+- **Priority:** High (inherited from parent T077)
+- **Status:** Done
+- **Planning:** Required
+- **Description:** Preserve the preselected trick when entering Sesh from practice, but expose the normal timed/open-ended format and duration/target customization before the user starts the run.
+- **Exit criteria:** A component test mounts Sesh with a practice-entry trick, verifies that the trick is preselected or prioritized, exposes timed/open-ended controls and their validation, and confirms the chosen plan is passed into the countdown; the plain `/sesh` picker behavior remains unchanged. Depends on T077.1.
+- **Notes:** Direct practice now uses the canonical `TrickPicker`, preserving the linked trick as the prioritized first choice without mutating focused-trick state. Focused Sesh and route tests cover timed duration validation, open-ended target validation, countdown plan propagation, preferred ordering, direct-entry route reset, and unchanged plain visits. Full test, lint, typecheck, and web-export verification passes under the supplied Node runtime; native validation remains deferred under the active web-only platform scope.
+
+### [T077] Correct direct-practice entry lifecycle
+
+- **Area:** Sesh / practice entry points
+- **Priority:** High
+- **Status:** Done
+- **Description:** Make direct practice entry points, including neglected-trick practice, return to canonical Sesh home after completion and preserve access to normal Sesh navigation instead of leaving the user in a locked quick-start state.
+- **Notes:** Umbrella completed by T077.1 and T077.2. Native validation remains deferred under the active web-only platform scope.
+
 ### [T076] Establish Sesh-tab return-home behavior
 
 - **Area:** Sesh / navigation

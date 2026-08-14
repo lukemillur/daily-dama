@@ -62,12 +62,6 @@ interface SeshProps {
   readonly preferredTrickId?: string;
   readonly initialPlan?: SeshPlan;
   /**
-   * True only when the caller explicitly navigated in via a practice entry
-   * point (deep link with `mode=practice`), never on a plain Sesh-tab visit
-   * — see `isQuickStart` below for the full gate.
-   */
-  readonly quickStart?: boolean;
-  /**
    * Opaque pass-through recorded on the practice-history record for this
    * sesh, forwarded as-is to `recordCompletedSesh`. No current caller sets
    * this — `Sesh` only has one call site, always regular practice — but it
@@ -80,7 +74,6 @@ export function Sesh({
   availableTricks,
   initialPlan,
   preferredTrickId,
-  quickStart,
   selectedTrickIds,
   origin,
 }: SeshProps) {
@@ -97,10 +90,6 @@ export function Sesh({
   const [hadPriorLaceAtSeshStart, setHadPriorLaceAtSeshStart] = useState(false);
   const [goalBaselines, setGoalBaselines] = useState<readonly GoalProgress[]>([]);
   const [justAchievedGoals, setJustAchievedGoals] = useState<readonly Goal[]>([]);
-  // A direct-practice link owns only the initial choosing state. Once the user
-  // asks for another sesh, the mounted route should behave like the canonical
-  // Sesh home rather than re-locking onto the deep-linked trick.
-  const [quickStartActive, setQuickStartActive] = useState(() => Boolean(quickStart));
   const practiceTricks = useMemo(
     () => selectSeshPracticeTricks(availableTricks, selectedTrickIds, preferredTrickId),
     [availableTricks, preferredTrickId, selectedTrickIds],
@@ -110,7 +99,6 @@ export function Sesh({
   )
     ? preferredTrickId
     : undefined;
-  const isQuickStart = quickStartActive && validatedPreferredTrickId !== undefined;
   const activeTrickId = state.status === 'active' ? state.trick.id : undefined;
   const trickNotes = useMemo(
     () => (activeTrickId ? selectNotesForTrick(notes, activeTrickId) : []),
@@ -173,17 +161,6 @@ export function Sesh({
 
   if (state.status === 'choosing') {
     if (practiceTricks.length === 0) return <EmptyState />;
-    if (isQuickStart) {
-      const trick = practiceTricks.find((candidate) => candidate.id === validatedPreferredTrickId)!;
-      return (
-        <QuickStart
-          trick={trick}
-          initialPlan={initialPlan}
-          sessions={sessions}
-          onStart={handleTrickSelected}
-        />
-      );
-    }
     return (
       <TrickPicker
         initialPlan={initialPlan}
@@ -238,7 +215,6 @@ export function Sesh({
       isFirstLace={firstLaceCelebration}
       justAchievedGoals={justAchievedGoals}
       onReset={() => {
-        setQuickStartActive(false);
         setFirstLaceCelebration(false);
         setHadPriorLaceAtSeshStart(false);
         setJustAchievedGoals([]);
@@ -277,46 +253,6 @@ function EmptyState() {
           Choose tricks
         </PrimaryButton>
       </Link>
-    </CenteredPanel>
-  );
-}
-
-function QuickStart({
-  trick,
-  initialPlan,
-  sessions,
-  onStart,
-}: {
-  readonly trick: PracticeTrick;
-  readonly initialPlan?: SeshPlan;
-  readonly sessions: readonly PracticeSessionRecord[];
-  readonly onStart: (
-    trick: PracticeTrick,
-    plan: SeshPlan,
-    personalBest: number | undefined,
-    liveChallengeEnabled: boolean,
-  ) => void;
-}) {
-  const plan = initialPlan ?? createTimedSeshPlan(5);
-  const personalBest =
-    plan.kind === 'timed' ? getPersonalBest(sessions, trick.id, plan.durationMs) : undefined;
-
-  return (
-    <CenteredPanel>
-      <Eyebrow>Ready when you are</Eyebrow>
-      <DisplayTitle>{trick.name}</DisplayTitle>
-      {trick.descriptor ? <BodyCopy>{trick.descriptor}</BodyCopy> : null}
-      <SequenceSteps trick={trick} />
-      {plan.kind === 'timed' && personalBest !== undefined ? (
-        <ChoiceBest>
-          Best at {formatDuration(plan.durationMs)} — {personalBest} {personalBest === 1 ? 'lace' : 'laces'}
-        </ChoiceBest>
-      ) : null}
-      <PrimaryButton
-        accessibilityLabel={`Start a sesh with ${trick.name}`}
-        onPress={() => onStart(trick, plan, personalBest, false)}>
-        Start sesh
-      </PrimaryButton>
     </CenteredPanel>
   );
 }

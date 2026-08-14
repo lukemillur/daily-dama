@@ -43,13 +43,9 @@ jest.mock('@/features/custom-tricks/state/custom-trick-provider', () => ({
   useCustomTricks: () => ({ tricks: [] }),
 }));
 jest.mock('@/features/sesh/components/sesh', () => ({
-  Sesh: ({ quickStart }: { quickStart?: boolean }) => {
+  Sesh: () => {
     const { Text: MockText } = require('react-native');
-    return quickStart ? (
-      <MockText accessibilityLabel="Sesh direct-practice quick start">Ready when you are</MockText>
-    ) : (
-      <MockText accessibilityLabel="Sesh home picker">Choose a trick</MockText>
-    );
+    return <MockText accessibilityLabel="Sesh home picker">Choose a trick</MockText>;
   },
 }));
 
@@ -159,7 +155,7 @@ describe('SeshLayout', () => {
       );
     });
 
-    expect(rendered.root.findByProps({ accessibilityLabel: 'Sesh direct-practice quick start' })).toBeDefined();
+    expect(rendered.root.findByProps({ accessibilityLabel: 'Sesh home picker' })).toBeDefined();
 
     const listener = mockTabNavigation.addListener.mock.calls[0]![1] as (event: {
       target?: string;
@@ -170,7 +166,7 @@ describe('SeshLayout', () => {
 
     expect(rendered.root.findByProps({ accessibilityLabel: 'route:/sesh' })).toBeDefined();
     expect(rendered.root.findByProps({ accessibilityLabel: 'Sesh home picker' })).toBeDefined();
-    expect(rendered.root.findAllByProps({ accessibilityLabel: 'Sesh direct-practice quick start' })).toHaveLength(0);
+    expect(rendered.root.findAllByProps({ accessibilityLabel: 'Sesh home picker' }).length).toBeGreaterThan(0);
 
     act(() => {
       rendered.unmount();
