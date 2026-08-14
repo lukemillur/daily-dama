@@ -2040,3 +2040,49 @@ describe('Sesh quick-start variant (T063)', () => {
     });
   });
 });
+
+describe('Sesh multi-trick entry (T071)', () => {
+  async function mountSeshHome() {
+    let root!: ReactTestRenderer;
+    await act(async () => {
+      root = create(
+        <NoteProvider>
+          <GoalProvider>
+            <PracticeHistoryProvider>
+              <UserProfileProvider>
+                <Sesh
+                  availableTricks={[TRICK]}
+                  selectedTrickIds={[TRICK.id]}
+                />
+              </UserProfileProvider>
+            </PracticeHistoryProvider>
+          </GoalProvider>
+        </NoteProvider>,
+      );
+    });
+    return root;
+  }
+
+  it('renders an accessible multi-trick route action while retaining single-trick controls', async () => {
+    const root = await mountSeshHome();
+
+    const [multiTrickAction] = root.root.findAll(
+      (node) =>
+        node.props.accessibilityRole === 'link' &&
+        node.props.accessibilityLabel === 'Practice several tricks',
+    );
+    expect(multiTrickAction).toBeDefined();
+    expect(multiTrickAction.props.href).toBe('/sesh/multi-trick');
+    expect(JSON.stringify(root.toJSON())).toContain('Build a line and work through it one trick at a time.');
+
+    const text = JSON.stringify(root.toJSON());
+    expect(text).toContain('Practice format');
+    expect(text).toContain('Timed');
+    expect(text).toContain('Open-ended');
+    expect(findByAccessibilityLabel(root, 'Sesh duration in minutes').length).toBeGreaterThan(0);
+
+    act(() => {
+      root.unmount();
+    });
+  });
+});

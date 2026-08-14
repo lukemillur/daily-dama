@@ -6,6 +6,16 @@ Entries keep their content as it was at completion. Don't retroactively edit a d
 
 ---
 
+### [T071] Make multi-trick Sesh entry prominent
+
+- **Area:** Sesh / navigation UX
+- **Priority:** Medium
+- **Status:** Done
+- **Planning:** Required
+- **Description:** Promote the multi-trick Sesh flow from the current inline text link into a clearly identifiable primary route option on the Sesh home screen, while retaining access to single-trick practice and the existing multi-trick setup flow.
+- **Exit criteria:** A component test identifies an obvious, accessible multi-trick entry action with dedicated copy and verifies that activating it links to `/sesh/multi-trick`; the Sesh home still renders the single-trick format controls and the web layout remains usable at the supported narrow width.
+- **Notes:** Replaced the inline text link in `TrickPicker` with a dedicated accessible route action using the existing visual system and `Link href="/sesh/multi-trick"`. Added focused component coverage for the action's role, copy, route target, and retained single-trick controls. Full verification passed; native validation remains deferred under the active web-only platform scope.
+
 ### [T070] Harden Kentei assessment exit behavior
 
 - **Area:** Kentei assessment / navigation
