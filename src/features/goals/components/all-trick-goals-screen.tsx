@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Pressable, ScrollView, TextInput } from 'react-native';
+import { ScrollView } from 'react-native';
 import { styled } from 'styled-components/native';
 
 import { Button } from '@/components/ui/button';
@@ -12,11 +12,13 @@ import {
 import { selectGoalProgressByTrick } from '@/features/goals/model/goal';
 import { useGoalActions, useGoals } from '@/features/goals/state/goal-provider';
 import { usePracticeHistory } from '@/features/stats/state/practice-history-provider';
+import { TrickDirectory } from '@/features/tricks/components/trick-directory';
 import type { DirectoryTrick } from '@/features/tricks/model/trick-directory';
 
 interface AllTrickGoalsScreenProps {
   readonly tricks: readonly DirectoryTrick[];
   readonly onBack: () => void;
+  readonly focusedTrickIds?: readonly string[];
 }
 
 type ScreenStep =
@@ -31,6 +33,7 @@ type ScreenStep =
 export function AllTrickGoalsScreen({
   tricks,
   onBack,
+  focusedTrickIds = [],
 }: AllTrickGoalsScreenProps) {
   const { goals } = useGoals();
   const { addGoal, deleteGoal } = useGoalActions();
@@ -43,12 +46,11 @@ export function AllTrickGoalsScreen({
 
   if (step.kind === 'select-trick') {
     return (
-      <TrickPicker
+      <GoalTrickPicker
         tricks={tricks}
+        focusedTrickIds={focusedTrickIds}
         onCancel={() => setStep({ kind: 'list' })}
-        onSelect={(trick) =>
-          setStep({ kind: 'add', trickId: trick.id, trickName: trick.name })
-        }
+        onSelect={(trick) => setStep({ kind: 'add', trickId: trick.id, trickName: trick.name })}
       />
     );
   }
@@ -115,66 +117,31 @@ export function AllTrickGoalsScreen({
   );
 }
 
-function TrickPicker({
+function GoalTrickPicker({
   tricks,
+  focusedTrickIds,
   onCancel,
   onSelect,
 }: {
   readonly tricks: readonly DirectoryTrick[];
   readonly onCancel: () => void;
   readonly onSelect: (trick: DirectoryTrick) => void;
+  readonly focusedTrickIds: readonly string[];
 }) {
   const [query, setQuery] = useState('');
-  const filteredTricks = useMemo(() => {
-    const normalizedQuery = query.trim().toLowerCase();
-    const sorted = [...tricks].sort((a, b) => a.name.localeCompare(b.name));
-    if (normalizedQuery.length === 0) return sorted;
-    return sorted.filter((trick) =>
-      trick.name.toLowerCase().includes(normalizedQuery),
-    );
-  }, [query, tricks]);
 
   return (
-    <Scroll
-      keyboardShouldPersistTaps="handled"
-      contentContainerStyle={{ paddingBottom: 120 + BottomTabInset }}
-    >
-      <Content>
-        <Eyebrow>New goal</Eyebrow>
-        <PageTitle>Choose a trick.</PageTitle>
-        <Introduction>Pick the trick you want to set a goal for.</Introduction>
-
-        <SearchField
-          accessibilityLabel="Search tricks"
-          onChangeText={setQuery}
-          placeholder="Search tricks"
-          placeholderTextColor={AppColors.textSubtle}
-          value={query}
-        />
-
-        <TrickList>
-          {filteredTricks.map((trick) => (
-            <TrickOption
-              accessibilityLabel={`Choose ${trick.name}`}
-              accessibilityRole="button"
-              key={trick.id}
-              onPress={() => onSelect(trick)}
-            >
-              <TrickOptionText>{trick.name}</TrickOptionText>
-            </TrickOption>
-          ))}
-          {filteredTricks.length === 0 ? (
-            <EmptyResultText>No tricks match your search.</EmptyResultText>
-          ) : null}
-        </TrickList>
-
-        <FormActions>
-          <Button fill variant="secondary" onPress={onCancel}>
-            Cancel
-          </Button>
-        </FormActions>
-      </Content>
-    </Scroll>
+    <TrickDirectory
+      tricks={tricks}
+      focusedTrickIds={focusedTrickIds}
+      showFocusedSection
+      search={{ query, onChangeText: setQuery }}
+      onActivate={onSelect}
+      header={{ eyebrow: 'New goal', title: 'Choose a trick.', introduction: 'Pick the trick you want to set a goal for.' }}
+      footer={<FormActions><Button fill variant="secondary" onPress={onCancel}>Cancel</Button></FormActions>}
+      fixedHeader
+      fixedFooter
+    />
   );
 }
 
@@ -223,33 +190,4 @@ const SectionTitle = styled.Text`
 `;
 const GoalList = styled.View`
   gap: 12px;
-`;
-const SearchField = styled(TextInput)`
-  min-height: 52px;
-  background-color: ${AppColors.paper};
-  border: 2px solid ${AppColors.ink};
-  color: ${AppColors.ink};
-  font-size: 16px;
-  font-weight: 700;
-  margin-top: 22px;
-  padding: 12px 14px;
-`;
-const TrickList = styled.View`
-  gap: 8px;
-  margin-top: 20px;
-`;
-const TrickOption = styled(Pressable)`
-  min-height: 48px;
-  justify-content: center;
-  background-color: ${AppColors.paper};
-  border: 2px solid ${AppColors.ink};
-  padding: 10px 14px;
-`;
-const TrickOptionText = styled.Text`
-  color: ${AppColors.ink};
-  font-size: 15px;
-  font-weight: 800;
-`;
-const EmptyResultText = styled(BodyText)`
-  margin-top: 4px;
 `;

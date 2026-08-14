@@ -137,16 +137,6 @@ _This next batch (T045–T069) comes from a QA pass over PR 55's suggested check
 
 _The following batch (T070–T079) comes from the QA checklist completed against PR 83, worked top to bottom. New entries are intentionally placed before the older queue so the next actionable QA finding is selected first. Existing task history is not rewritten._
 
-### [T078] Reuse the trick directory in all-trick goal creation
-
-- **Area:** Goals / Tricks UI
-- **Priority:** Medium
-- **Status:** Not started
-- **Planning:** Required
-- **Description:** Replace the bespoke trick picker on the all-trick Add Goal screen with the shared directory presentation and ensure the user's focused tricks are represented in the same way as elsewhere in the product.
-- **Exit criteria:** Goal-screen tests verify that standard and custom tricks render through the shared directory component/style, focused tricks appear in the focused section in the expected order, selecting a trick still opens the existing goal form, search/selection remains functional, and goal creation persists the selected trick.
-- **Notes:** `AllTrickGoalsScreen` currently sorts `DirectoryTrick` values into custom `TrickOption` rows. Reuse `TrickDirectory` and its focused-section contract without changing goal-domain persistence or the existing per-trick goal screen.
-
 ### [T079] Keep custom-trick save actionable with inline validation
 
 - **Area:** Tricks / custom-trick forms
