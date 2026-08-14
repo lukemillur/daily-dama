@@ -150,7 +150,7 @@ _The following batch (T070–T079) comes from the QA checklist completed against
 
 - **Area:** Sesh / practice entry points
 - **Priority:** High (inherited from parent T077)
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** Preserve the preselected trick when entering Sesh from practice, but expose the normal timed/open-ended format and duration/target customization before the user starts the run.
 - **Exit criteria:** A component test mounts Sesh with a practice-entry trick, verifies that the trick is preselected or prioritized, exposes timed/open-ended controls and their validation, and confirms the chosen plan is passed into the countdown; the plain `/sesh` picker behavior remains unchanged. Depends on T077.1.
