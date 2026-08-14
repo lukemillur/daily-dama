@@ -108,6 +108,56 @@ function getForegroundHandler() {
   return call[1] as (state: string) => void;
 }
 
+describe('HomeScreen excludes assessment-origin sessions', () => {
+  beforeEach(async () => {
+    await AsyncStorage.clear();
+  });
+
+  it('reflects only regular sessions in Momentum and the Last sesh summary', async () => {
+    jest.useFakeTimers();
+    const start = Date.parse('2026-06-15T12:00:00.000Z');
+    jest.setSystemTime(start);
+
+    await seedProfile();
+    const regularSession = makeSession({
+      completedAt: start - 60 * 60 * 1000,
+      durationMs: 120_000,
+      laceCount: 4,
+    });
+    const assessmentSession = makeSession({
+      completedAt: start - 30 * 60 * 1000,
+      durationMs: 90_000,
+      laceCount: 9,
+      origin: 'assessment',
+    });
+    await seedSessions([regularSession, assessmentSession]);
+
+    const root = await mountHomeScreen();
+
+    // Momentum totals should reflect only the regular session.
+    expect(findByText(root, '1').length).toBeGreaterThan(0); // Seshes count
+    expect(findByText(root, '4').length).toBeGreaterThan(0); // Laces count
+
+    // "Last sesh" should surface the regular session, not the more-recent assessment session.
+    const lastSeshLine = root.root.findAll((node) => {
+      const { children } = node.props;
+      if (!Array.isArray(children)) return false;
+      return children.some((child) => typeof child === 'string' && child.includes('Last sesh'));
+    });
+    expect(lastSeshLine.length).toBeGreaterThan(0);
+    const lastSeshText = lastSeshLine.map((node) => (node.props.children as unknown[]).join('')).join(' ');
+    expect(lastSeshText).toContain('02:00');
+    expect(lastSeshText).toContain('4');
+    expect(lastSeshText).not.toContain('01:30');
+    expect(lastSeshText).not.toContain('9 laces');
+
+    await act(async () => {
+      root.unmount();
+    });
+    jest.useRealTimers();
+  });
+});
+
 describe('HomeScreen live time-based summaries', () => {
   beforeEach(async () => {
     await AsyncStorage.clear();

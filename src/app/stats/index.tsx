@@ -14,7 +14,11 @@ import { formatDuration } from '@/features/sesh/model/sesh';
 import { NeglectedTricksSection } from '@/features/stats/components/neglected-tricks-section';
 import { formatPracticeDate } from '@/features/stats/model/format-practice-date';
 import { selectNeglectedFocusedTricks, type NeglectedTrick } from '@/features/stats/model/neglected-tricks';
-import { aggregatePracticeStats, type PracticeSessionRecord } from '@/features/stats/model/practice-history';
+import {
+  aggregatePracticeStats,
+  selectRegularSessions,
+  type PracticeSessionRecord,
+} from '@/features/stats/model/practice-history';
 import { usePracticeHistory } from '@/features/stats/state/practice-history-provider';
 import { KENDAMA_KENTEI_TRICKS } from '@/features/tricks/data/kendama-kentei-tricks';
 import { selectAvailablePracticeTricks } from '@/features/tricks/model/trick-directory';
@@ -22,10 +26,11 @@ import { selectAvailablePracticeTricks } from '@/features/tricks/model/trick-dir
 export default function StatsScreen() {
   const isOnboardingComplete = useRequireOnboarding();
   const { sessions } = usePracticeHistory();
+  const regularSessions = selectRegularSessions(sessions);
   const { selectedTrickIds } = useUserProfile();
   const { tricks: customTricks } = useCustomTricks();
-  const stats = aggregatePracticeStats(sessions);
-  const neglectedTricks = useSelectNeglectedTricks(selectedTrickIds, customTricks, sessions);
+  const stats = aggregatePracticeStats(regularSessions);
+  const neglectedTricks = useSelectNeglectedTricks(selectedTrickIds, customTricks, regularSessions);
 
   if (!isOnboardingComplete) return null;
 

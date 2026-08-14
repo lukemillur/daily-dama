@@ -83,6 +83,14 @@ export function isFirstLaceForTrick(
   return !hasPriorLaceForTrick(priorSessions, summary.trick.id);
 }
 
+// Excludes Kentei-assessment-sourced sessions from Stats/Home reads. `KenteiRankAutoPromotion`
+// deliberately reads unfiltered history and must not call this.
+export function selectRegularSessions(
+  sessions: readonly PracticeSessionRecord[],
+): readonly PracticeSessionRecord[] {
+  return sessions.filter((session) => session.origin === undefined);
+}
+
 export function createPracticeSessionRecordId(summary: SeshSummary): string {
   return `${summary.startedAt}:${summary.endedAt}:${summary.trick.id}`;
 }

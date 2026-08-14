@@ -9,6 +9,7 @@ import {
   hasPriorLaceForTrick,
   isFirstLaceForTrick,
   practiceHistoryReducer,
+  selectRegularSessions,
   type PracticeSessionRecord,
 } from '@/features/stats/model/practice-history';
 import { OPEN_ENDED_SESH_PLAN, type Landing, type SeshSummary } from '@/features/sesh/model/sesh';
@@ -283,6 +284,25 @@ describe('isFirstLaceForTrick', () => {
   it('is false when this sesh itself landed zero laces', () => {
     const summary = makeSummary({ trick: { id: 'whirlwind', name: 'Whirlwind' }, landings: [] });
     expect(isFirstLaceForTrick([], summary)).toBe(false);
+  });
+});
+
+describe('selectRegularSessions', () => {
+  it('keeps a session with no origin', () => {
+    expect(selectRegularSessions([BIG_CUP_FIRST])).toEqual([BIG_CUP_FIRST]);
+  });
+
+  it('drops a session with origin "assessment"', () => {
+    const assessmentSession: PracticeSessionRecord = { ...BIG_CUP_FIRST, origin: 'assessment' };
+    expect(selectRegularSessions([assessmentSession])).toEqual([]);
+  });
+
+  it('preserves order of kept sessions in a mixed array', () => {
+    const assessmentSession: PracticeSessionRecord = { ...BIG_CUP_SECOND, origin: 'assessment' };
+    expect(selectRegularSessions([BIG_CUP_FIRST, assessmentSession, AIRPLANE_ZERO_LACES])).toEqual([
+      BIG_CUP_FIRST,
+      AIRPLANE_ZERO_LACES,
+    ]);
   });
 });
 
