@@ -12,9 +12,14 @@ import { selectAvailablePracticeTricks } from '@/features/tricks/model/trick-dir
 
 export default function SeshScreen() {
   const isOnboardingComplete = useRequireOnboarding();
-  const { trickId: trickIdParam, plannedDurationMs: plannedDurationMsParam } = useLocalSearchParams<{
+  const {
+    trickId: trickIdParam,
+    plannedDurationMs: plannedDurationMsParam,
+    mode: modeParam,
+  } = useLocalSearchParams<{
     trickId?: string | string[];
     plannedDurationMs?: string | string[];
+    mode?: string | string[];
   }>();
   const { lastSesh, selectedTrickIds } = useUserProfile();
   const { tricks: customTricks } = useCustomTricks();
@@ -24,6 +29,7 @@ export default function SeshScreen() {
   );
   const preferredTrickId =
     (typeof trickIdParam === 'string' ? trickIdParam : undefined) ?? lastSesh?.trickId;
+  const isQuickStartRequested = modeParam === 'practice' && typeof trickIdParam === 'string';
   const challengeDurationMs =
     typeof plannedDurationMsParam === 'string' ? Number(plannedDurationMsParam) : undefined;
   const initialPlan: SeshPlan | undefined = challengeDurationMs
@@ -42,6 +48,7 @@ export default function SeshScreen() {
         availableTricks={availableTricks}
         initialPlan={initialPlan}
         preferredTrickId={preferredTrickId}
+        quickStart={isQuickStartRequested}
         selectedTrickIds={selectedTrickIds}
       />
     </Screen>
