@@ -139,7 +139,7 @@ _This next batch (T045–T069) comes from a QA pass over PR 55's suggested check
 
 - **Area:** Tricks
 - **Priority:** Low
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Implementer
 - **Description:** Each trick row's "Goals" action (`src/features/tricks/components/trick-directory.tsx`) always renders the bare label "Goals," unlike the adjacent "Notes" action, which shows a count via T024's `selectNoteCountByTrickId` pattern. Add the equivalent for goals.
 - **Exit criteria:** Test: a trick with N goals shows "Goals — N" on its row; a trick with 0 goals shows plain "Goals" — matching the notes-count zero-state convention exactly.
