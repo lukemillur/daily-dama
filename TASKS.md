@@ -147,7 +147,7 @@ _This next batch (T045–T069) comes from a QA pass over PR 55's suggested check
 
 - **Area:** Stats / Home
 - **Priority:** Medium (inherited from parent T062)
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** Using T062.1's new field, exclude Kentei-assessment-sourced sessions from Stats' Overview metrics and "By trick" list (`src/app/stats/index.tsx`), the per-trick detail/personal-best page (`src/app/stats/[trickId].tsx`, a separate independent read site — does not inherit filtering from the Stats index screen), the neglected-tricks "Needs attention" section, and Home's momentum/streak/recent-session summary (`src/app/index.tsx`). Depends on T062.1.
 - **Exit criteria:** Test: a practice-history pool containing both regular and Kentei-assessment-tagged sessions for the same trick produces Stats/Home aggregates that reflect only the regular sessions; `KenteiRankAutoPromotion`'s rank-promotion behavior is unchanged (still sees assessment-sourced landings) — verified by an explicit test that promotion still fires correctly off assessment-only lacing.
