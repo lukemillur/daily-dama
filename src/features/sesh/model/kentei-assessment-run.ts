@@ -88,3 +88,41 @@ export function selectAssessmentResultCopy(
   }
   return `You held Rank ${resultRank}. Land every trick in a rank to advance.`;
 }
+
+/**
+ * Whether this run started at a rank strictly above the profile's own
+ * stored rank at the time — i.e. an out-of-order `fromRank` start that
+ * skips the user's current frontier rank (and, structurally, everything
+ * below it). `fullBottomToTop` always starts at the true bottom and
+ * `currentRankOnly` always pins `rank` to the stored rank, so neither can
+ * ever be out-of-order this way. Starting a `fromRank` run exactly at the
+ * stored rank (a re-test) is not out-of-order.
+ */
+export function selectStartedAboveStoredRank(
+  flow: AssessmentFlow,
+  startingKenteiRank: number | undefined,
+  minRank: number,
+): boolean {
+  if (flow.kind !== 'fromRank') return false;
+  return flow.startingRank > (startingKenteiRank ?? minRank);
+}
+
+/**
+ * Explanatory copy for the wrap-up screen when an out-of-order run (started
+ * above the stored rank via "Start from a rank", or one where a rank was
+ * skipped mid-run) did not result in a promotion. Returns `undefined` when
+ * the run wasn't out-of-order, or when it was but still promoted anyway —
+ * in both of those cases the existing `selectAssessmentResultCopy` message
+ * is sufficient on its own.
+ */
+export function selectAssessmentGapNotice(
+  startingRank: number | undefined,
+  resultRank: number | undefined,
+  wasOutOfOrder: boolean,
+): string | undefined {
+  if (!wasOutOfOrder) return undefined;
+  const promoted =
+    resultRank !== undefined && (startingRank === undefined || resultRank > startingRank);
+  if (promoted) return undefined;
+  return 'Promotion needs every rank cleared in order — go back and clear the earlier or skipped ranks to unlock it.';
+}

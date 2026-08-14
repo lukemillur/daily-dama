@@ -266,3 +266,167 @@ describe('AssessmentEntry countdown cancel (T047)', () => {
     });
   });
 });
+
+describe('AssessmentEntry gap notice (T060)', () => {
+  beforeEach(async () => {
+    await AsyncStorage.clear();
+    jest.useFakeTimers();
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  it('shows the gap notice when a fromRank run starts above the stored rank and does not promote', async () => {
+    await AsyncStorage.setItem(
+      USER_PROFILE_STORAGE_KEY,
+      serializeUserProfile({
+        hasCompletedOnboarding: true,
+        kenteiRank: 1,
+        selectedTrickIds: [],
+      }),
+    );
+
+    const root = await mountAssessmentEntry();
+
+    act(() => {
+      pressByVisibleText(root, 'Start from a rank');
+    });
+    act(() => {
+      pressByAccessibilityLabel(root, 'Start from rank 3');
+    });
+
+    advanceThroughCountdown();
+    act(() => {
+      pressByVisibleText(root, 'End assessment');
+    });
+
+    await act(async () => {});
+
+    const [gapNotice] = findByAccessibilityLabel(root, 'Assessment gap notice');
+    expect(gapNotice).toBeDefined();
+    expect(String(gapNotice.props.children)).toMatch(/clear|earlier|skip/i);
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  it('does not show the gap notice when a skip happens but the run still promotes', async () => {
+    // Promotion (selectPromotedKenteiRank) only ever needs the profiles CURRENT stored rank
+    // (and any above it) fully laced in practice history — it never depends on which flow or
+    // order this run itself used to get there. So the only way a skip-containing run can still
+    // promote is by fully lacing the stored rank itself (rank 1 here) before skipping a later
+    // rank: that alone advances the profile from 1 to 2, regardless of the later skip.
+    await AsyncStorage.setItem(
+      USER_PROFILE_STORAGE_KEY,
+      serializeUserProfile({
+        hasCompletedOnboarding: true,
+        kenteiRank: 1,
+        selectedTrickIds: [],
+      }),
+    );
+
+    const root = await mountAssessmentEntry();
+
+    act(() => {
+      pressByVisibleText(root, 'Full assessment');
+    });
+
+    advanceThroughCountdown();
+    for (let index = 0; index < RANK_1_TRICK_IDS.length; index += 1) {
+      act(() => {
+        pressByAccessibilityLabel(root, 'Laced');
+      });
+    }
+
+    act(() => {
+      pressByVisibleText(root, 'Skip this rank');
+    });
+    act(() => {
+      pressByAccessibilityLabel(root, 'Confirm skip rank');
+    });
+    act(() => {
+      pressByVisibleText(root, 'End assessment');
+    });
+
+    await act(async () => {});
+
+    const resultText = assessmentResultText(root);
+    expect(resultText).toMatch(/rank up/i);
+
+    expect(findByAccessibilityLabel(root, 'Assessment gap notice')).toHaveLength(0);
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  it('does not show the gap notice for a normal in-order, non-promoting run', async () => {
+    await AsyncStorage.setItem(
+      USER_PROFILE_STORAGE_KEY,
+      serializeUserProfile({
+        hasCompletedOnboarding: true,
+        kenteiRank: 1,
+        selectedTrickIds: [],
+      }),
+    );
+
+    const root = await mountAssessmentEntry();
+
+    act(() => {
+      pressByVisibleText(root, 'Current rank only');
+    });
+
+    advanceThroughCountdown();
+    act(() => {
+      pressByVisibleText(root, 'End assessment');
+    });
+
+    await act(async () => {});
+
+    expect(findByAccessibilityLabel(root, 'Assessment gap notice')).toHaveLength(0);
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  it('shows the gap notice after a skip during the run, even though the run started in order', async () => {
+    await AsyncStorage.setItem(
+      USER_PROFILE_STORAGE_KEY,
+      serializeUserProfile({
+        hasCompletedOnboarding: true,
+        kenteiRank: 1,
+        selectedTrickIds: [],
+      }),
+    );
+
+    const root = await mountAssessmentEntry();
+
+    act(() => {
+      pressByVisibleText(root, 'Full assessment');
+    });
+
+    advanceThroughCountdown();
+    act(() => {
+      pressByVisibleText(root, 'Skip this rank');
+    });
+    act(() => {
+      pressByAccessibilityLabel(root, 'Confirm skip rank');
+    });
+    act(() => {
+      pressByVisibleText(root, 'End assessment');
+    });
+
+    await act(async () => {});
+
+    const [gapNotice] = findByAccessibilityLabel(root, 'Assessment gap notice');
+    expect(gapNotice).toBeDefined();
+    expect(String(gapNotice.props.children)).toMatch(/clear|earlier|skip/i);
+
+    act(() => {
+      root.unmount();
+    });
+  });
+});

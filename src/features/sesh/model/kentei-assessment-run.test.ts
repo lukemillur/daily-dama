@@ -2,10 +2,12 @@ import { describe, expect, it } from '@jest/globals';
 
 import { KENDAMA_KENTEI_TRICKS } from '@/features/tricks/data/kendama-kentei-tricks';
 import {
+  selectAssessmentGapNotice,
   selectAssessmentRankBounds,
   selectAssessmentResultCopy,
   selectAssessmentTricks,
   selectNextRankStartIndex,
+  selectStartedAboveStoredRank,
 } from '@/features/sesh/model/kentei-assessment-run';
 
 describe('selectAssessmentTricks', () => {
@@ -124,5 +126,57 @@ describe('selectAssessmentResultCopy', () => {
 
     expect(result).toMatch(/held/i);
     expect(result).not.toMatch(/assess/i);
+  });
+});
+
+describe('selectStartedAboveStoredRank', () => {
+  it('fromRank starting strictly above the stored rank is out-of-order', () => {
+    expect(selectStartedAboveStoredRank({ kind: 'fromRank', startingRank: 3 }, 1, 1)).toBe(true);
+  });
+
+  it('fromRank starting exactly at the stored rank is not out-of-order (a re-test)', () => {
+    expect(selectStartedAboveStoredRank({ kind: 'fromRank', startingRank: 3 }, 3, 1)).toBe(false);
+  });
+
+  it('fromRank starting below the stored rank is not out-of-order', () => {
+    expect(selectStartedAboveStoredRank({ kind: 'fromRank', startingRank: 2 }, 5, 1)).toBe(false);
+  });
+
+  it('falls back to minRank when startingKenteiRank is undefined', () => {
+    expect(selectStartedAboveStoredRank({ kind: 'fromRank', startingRank: 2 }, undefined, 1)).toBe(true);
+    expect(selectStartedAboveStoredRank({ kind: 'fromRank', startingRank: 1 }, undefined, 1)).toBe(false);
+  });
+
+  it('fullBottomToTop is never out-of-order', () => {
+    expect(selectStartedAboveStoredRank({ kind: 'fullBottomToTop' }, 1, 1)).toBe(false);
+    expect(selectStartedAboveStoredRank({ kind: 'fullBottomToTop' }, undefined, 1)).toBe(false);
+  });
+
+  it('currentRankOnly is never out-of-order', () => {
+    expect(selectStartedAboveStoredRank({ kind: 'currentRankOnly', rank: 5 }, 5, 1)).toBe(false);
+  });
+});
+
+describe('selectAssessmentGapNotice', () => {
+  it('returns undefined when the run was not out-of-order, regardless of promotion outcome', () => {
+    expect(selectAssessmentGapNotice(3, 3, false)).toBeUndefined();
+    expect(selectAssessmentGapNotice(3, 4, false)).toBeUndefined();
+  });
+
+  it('returns undefined when out-of-order but the run still promoted', () => {
+    expect(selectAssessmentGapNotice(3, 4, true)).toBeUndefined();
+    expect(selectAssessmentGapNotice(undefined, 1, true)).toBeUndefined();
+  });
+
+  it('returns explanatory copy when out-of-order and the run did not promote', () => {
+    const result = selectAssessmentGapNotice(3, 3, true);
+
+    expect(result).toMatch(/clear|earlier|skip/i);
+  });
+
+  it('returns explanatory copy when out-of-order and no rank was earned at all', () => {
+    const result = selectAssessmentGapNotice(undefined, undefined, true);
+
+    expect(result).toMatch(/clear|earlier|skip/i);
   });
 });

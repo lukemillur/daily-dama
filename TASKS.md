@@ -135,17 +135,6 @@ The first pass used **locked/unlocked** for "the user can land this trick." User
 
 _This next batch (T045–T069) comes from a QA pass over PR 55's suggested checklist (the `development` → `main` release covering T002–T041), worked top to bottom. Where an entry names the task that shipped the behavior it's correcting, the archived entry in [TASKS_DONE.md](TASKS_DONE.md) stays as-written — history isn't rewritten, same as above._
 
-
-### [T060] Explain when a Kentei rank didn't advance after an assessment
-
-- **Area:** Sesh / Profile (Kentei assessment)
-- **Priority:** Medium
-- **Status:** In progress
-- **Planning:** Required
-- **Description:** `selectPromotedKenteiRank` (`src/features/tricks/model/trick-directory.ts`) requires gapless completion from the user's current stored rank upward, by design — confirmed correct, not a bug. But "Start from a rank" and "Skip this rank" both let a user generate real lace history far above their stored rank while lower ranks stay incomplete (or, for skipped ranks, get zero history at all), which permanently caps promotion at the first gap with no explanation anywhere in the UI. Per product decision, promotion logic itself is not changing — add messaging so this isn't silent.
-- **Exit criteria:** Completing an out-of-order assessment (e.g. via "Start from a rank" above the current stored rank, or after skipping ranks) that does not result in a promotion shows copy explaining that earlier/skipped ranks still need to be cleared; a normal in-order assessment that does promote shows no such message.
-- **Notes:** Decision resolved during scoping (conversation that created this batch of tasks): keep `selectPromotedKenteiRank`'s gapless-from-current-rank behavior exactly as-is; add transparency only — a larger rework of promotion semantics was explicitly declined in favor of this smaller, lower-risk fix. Simplest correct signal is comparing the profile's `kenteiRank` before vs. after the run — if landings were recorded but the rank didn't move, show the explanatory copy; no deeper per-rank diagnosis is required for a first pass. Consider also (implementer's judgment on whether it fits this same ticket or is worth splitting off) a heads-up at the point of choosing "Start from a rank" above the current stored rank, so the expectation is set before the run rather than only explained after. Related to but independent of [T058]/[T059] — different concern (post-hoc rank-promotion clarity vs. mid-run early-exit), both happen to touch `assessment-entry.tsx`/the wrap-up area.
-
 ### [T061] Remove Profile's "Retake assessment" section in favor of Kentei Assessment
 
 - **Area:** Profile
