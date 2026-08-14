@@ -376,7 +376,12 @@ function TrickPicker({
         <DisplayTitle>What are we{`\n`}working on?</DisplayTitle>
         <BodyCopy>Choose how long you want to focus, then pick one of the tricks from your practice list.</BodyCopy>
         <Link href="/sesh/multi-trick" asChild>
-          <MultiTrickLink accessibilityRole="link">Or work through several tricks in a row.</MultiTrickLink>
+          <MultiTrickAction
+            accessibilityLabel="Practice several tricks"
+            accessibilityRole="link">
+            <MultiTrickActionTitle>Practice several tricks</MultiTrickActionTitle>
+            <MultiTrickActionCopy>Build a line and work through it one trick at a time.</MultiTrickActionCopy>
+          </MultiTrickAction>
         </Link>
         <PlanLabel>Practice format</PlanLabel>
         <PlanChoices>
@@ -1215,7 +1220,17 @@ const CancelButton = styled(Button)`margin-top: 14px;`;
 const SkipRankButtonText = styled.Text`color: ${AppColors.textMuted}; font-size: 13px; font-weight: 800; text-decoration-line: underline;`;
 const NextTrickButton = styled(Pressable)`width: 100%; min-height: 52px; align-items: center; justify-content: center; margin-top: 20px; padding: 12px 24px; background-color: ${AppColors.yellow}; border: 2px solid ${AppColors.ink}; border-radius: 5px;`;
 const NextTrickButtonText = styled.Text`color: ${AppColors.ink}; font-size: 16px; font-weight: 900;`;
-const MultiTrickLink = styled.Text`margin-top: 14px; color: ${AppColors.textMuted}; font-size: 13px; font-weight: 800; text-decoration-line: underline;`;
+const MultiTrickAction = styled(Pressable)`
+  min-height: 78px;
+  justify-content: center;
+  margin-top: 26px;
+  padding: 14px 16px;
+  background-color: ${AppColors.yellow};
+  border: 2px solid ${AppColors.ink};
+  border-radius: 5px;
+`;
+const MultiTrickActionTitle = styled.Text`color: ${AppColors.ink}; font-size: 18px; font-weight: 900;`;
+const MultiTrickActionCopy = styled.Text`color: ${AppColors.inkSoft}; font-size: 13px; font-weight: 650; line-height: 18px; margin-top: 4px;`;
 const TargetStatus = styled.Text<{ $met: boolean }>`width: 100%; text-align: center; margin-top: 12px; color: ${({ $met }) => ($met ? AppColors.red : AppColors.ink)}; font-size: 15px; font-weight: 900;`;
 const ResultBanner = styled.Text<{ $beaten: boolean }>`width: 100%; text-align: center; margin-top: 18px; padding: 12px 16px; background-color: ${({ $beaten }) => ($beaten ? '#e5edcf' : '#f8f1dd')}; border-left-width: 5px; border-left-color: ${({ $beaten }) => ($beaten ? AppColors.red : AppColors.ink)}; color: ${AppColors.ink}; font-size: 15px; font-weight: 900;`;
 const CelebrationBannerCard = styled.View`width: 100%; max-width: 500px; align-items: center; background-color: ${AppColors.yellow}; border: 3px solid ${AppColors.ink}; border-radius: 6px; padding: 18px 20px; margin-bottom: 20px;`;
