@@ -71,11 +71,11 @@ describe('ProfileScreen Kentei assessment copy', () => {
     });
   });
 
-  it('leaves the separate "Retake assessment" section untouched, distinct from the Kentei assessment copy', async () => {
+  it('no longer shows the removed "Retake assessment" section', async () => {
     const root = await mountProfileScreen();
 
-    expect(findByText(root, 'Retake assessment').length).toBeGreaterThan(0);
-    expect(findByText(root, /updates your rank/i).length).toBeGreaterThan(0);
+    expect(findByText(root, 'Retake assessment')).toHaveLength(0);
+    expect(findByText(root, /updates your rank/i)).toHaveLength(0);
 
     act(() => {
       root.unmount();

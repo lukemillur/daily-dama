@@ -135,16 +135,6 @@ The first pass used **locked/unlocked** for "the user can land this trick." User
 
 _This next batch (T045–T069) comes from a QA pass over PR 55's suggested checklist (the `development` → `main` release covering T002–T041), worked top to bottom. Where an entry names the task that shipped the behavior it's correcting, the archived entry in [TASKS_DONE.md](TASKS_DONE.md) stays as-written — history isn't rewritten, same as above._
 
-### [T061] Remove Profile's "Retake assessment" section in favor of Kentei Assessment
-
-- **Area:** Profile
-- **Priority:** Medium
-- **Status:** In progress
-- **Planning:** Implementer
-- **Description:** The Profile screen (`src/app/profile/index.tsx`) shows two adjacent, overlapping-in-purpose sections: "Assessment" ("Retake assessment", which resets `kenteiRank`/`hasCompletedOnboarding` and routes the user back through the first-run `KenteiOnboarding` self-report quiz) and "Kentei assessment" (the real, timed, promotion-only flow at `/profile/kentei-assessment`). Remove the former; keep the latter as Profile's sole assessment entry point.
-- **Exit criteria:** Profile screen no longer shows a "Retake assessment" section or button; the "Kentei assessment" section is unchanged; onboarding's first-run flow (fresh profile, `hasCompletedOnboarding: false`) still renders and completes correctly, unchanged.
-- **Notes:** Confirmed surgical: "Retake assessment" only calls `restartOnboarding()` (dispatches `onboardingRestarted`) — it imports nothing from `src/features/onboarding/` and shares no component code with it. Removing the button and its Profile-side wiring cannot affect the onboarding flow itself, since nothing in `src/features/onboarding/` references Profile. Per AGENTS.md, onboarding's own flow must not be modified by this task — confirmed unnecessary here, since the two are already independent.
-
 ### [T062] Exclude Kentei-assessment sessions from Stats and Home aggregation
 
 - **Area:** Stats / Home / persistence (practice-history domain)
