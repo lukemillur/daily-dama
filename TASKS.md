@@ -139,7 +139,7 @@ _This next batch (T045–T069) comes from a QA pass over PR 55's suggested check
 
 - **Area:** Navigation / Tricks
 - **Priority:** Medium
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** Every nested view under Tricks (trick edit/delete, notes, goals, laced-tricks grid, custom-trick creation — all local `useState` in `src/app/tricks.tsx`) is invisible to the tab bar itself, since the URL never leaves `/tricks`. Pressing the Tricks tab while already on one of these views is a confirmed complete no-op on web today — `expo-router/ui`'s `TabTrigger` only dispatches a tab switch when the pressed tab is *not* already focused, and it already is. Make re-pressing Tricks from a nested view return to the trick list.
 - **Exit criteria:** From any of the nested Tricks views listed above, pressing the Tricks tab returns to the trick list — verified on web, iOS, and Android (native uses a different tab primitive, `NativeTabs`, which may already handle this via a platform default or may not — confirm rather than assume).
