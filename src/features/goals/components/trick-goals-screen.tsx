@@ -154,7 +154,7 @@ export function GoalRow({
   );
 }
 
-function GoalForm({
+export function GoalForm({
   onCancel,
   onSave,
   trickId,
@@ -228,7 +228,11 @@ function GoalForm({
         </Field>
 
         <FormActions>
-          <Button fill disabled={validation.status === 'invalid'} onPress={save}>
+          <Button
+            accessibilityLabel="Save goal"
+            fill
+            disabled={validation.status === 'invalid'}
+            onPress={save}>
             Save goal
           </Button>
           <Button fill variant="secondary" onPress={onCancel}>

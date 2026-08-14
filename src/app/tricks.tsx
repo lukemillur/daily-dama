@@ -139,7 +139,10 @@ export default function TricksScreen() {
   if (showAllGoals) {
     return (
       <Screen edges={['top', 'left', 'right']}>
-        <AllTrickGoalsScreen onClose={() => setShowAllGoals(false)} />
+        <AllTrickGoalsScreen
+          tricks={directoryTricks}
+          onClose={() => setShowAllGoals(false)}
+        />
       </Screen>
     );
   }
