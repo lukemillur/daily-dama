@@ -6,6 +6,16 @@ Entries keep their content as it was at completion. Don't retroactively edit a d
 
 ---
 
+### [T055] Show current rank/class standing during a Kentei assessment run
+
+- **Area:** Sesh (Kentei assessment)
+- **Priority:** Medium
+- **Status:** Done
+- **Planning:** Required
+- **Description:** While working through an assessment, nothing on screen shows which rank/class the user is currently on — `Countdown`/`ActiveSesh` (`src/features/sesh/components/sesh.tsx`) render a generic "Sesh in progress" eyebrow regardless of context, even though the trick objects flowing through already carry `kenteiRank`/`kenteiLevel`/`kenteiClass` (`TrickSummary`, via `selectAssessmentTricks`).
+- **Exit criteria:** During an active/countdown trick within a Kentei assessment, the current rank/class is visibly rendered; regular single-trick Sesh and ad hoc multi-trick screens (where custom tricks may have no Kentei metadata at all) are unchanged.
+- **Notes:** Added `isTrickSummary`/`formatKenteiStanding` to `src/features/tricks/model/trick.ts`. Threaded a new opaque `showRankStanding?: boolean` prop from `AssessmentEntry` → `MultiTrickSesh` → `Countdown`/`ActiveSesh` (same pattern as `attemptsReminder`/`onSkipRank`); inside `Countdown`/`ActiveSesh` it's combined with a runtime `isTrickSummary` narrow of the already-present `trick` prop and rendered as a new `RankStandingLabel` right after the `Eyebrow` in both. `MultiTrickSeshEntry` and the dev sandbox never pass the flag, so regular/ad hoc Sesh screens are unchanged by construction. Added unit tests for the two new `trick.ts` helpers, `Countdown`/`ActiveSesh` rank-standing rendering (including the defensive "flag true but no Kentei metadata" case), `MultiTrickSesh` forwarding, and an `AssessmentEntry` integration test asserting the label through countdown and active phases. Full verification (`node .claude/scripts/verify.mjs`) passes.
+
 ### [T054] Add spacing above the Laced button
 
 - **Area:** Sesh

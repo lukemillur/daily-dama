@@ -70,6 +70,7 @@ export function AssessmentEntry() {
         skipCountdownBetweenTricks
         hideTimer
         advanceOnFirstLace
+        showRankStanding
         wrapUpFooter={
           <ResultCopy accessibilityLabel="Assessment result">
             {selectAssessmentResultCopy(step.startingKenteiRank, kenteiRank)}

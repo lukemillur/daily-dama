@@ -15,3 +15,11 @@ export interface TrickSummary extends PracticeTrick {
   readonly kenteiLevel: KenteiLevel;
   readonly kenteiClass: KenteiClass;
 }
+
+export function isTrickSummary(trick: PracticeTrick): trick is TrickSummary {
+  return 'kenteiRank' in trick && 'kenteiLevel' in trick && 'kenteiClass' in trick;
+}
+
+export function formatKenteiStanding(trick: TrickSummary): string {
+  return `Rank ${trick.kenteiRank} · ${trick.kenteiClass} · ${trick.kenteiLevel}`;
+}

@@ -182,6 +182,48 @@ describe('AssessmentEntry result copy', () => {
   });
 });
 
+describe('AssessmentEntry rank standing (T055)', () => {
+  beforeEach(async () => {
+    await AsyncStorage.clear();
+    jest.useFakeTimers();
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  it('shows the current rank/class while a rank-1 trick is in countdown, then active', async () => {
+    await AsyncStorage.setItem(
+      USER_PROFILE_STORAGE_KEY,
+      serializeUserProfile({
+        hasCompletedOnboarding: true,
+        kenteiRank: 1,
+        selectedTrickIds: [],
+      }),
+    );
+
+    const root = await mountAssessmentEntry();
+
+    act(() => {
+      pressByVisibleText(root, 'Current rank only');
+    });
+
+    const rank1Trick = KENDAMA_KENTEI_TRICKS.find((trick) => trick.kenteiRank === 1);
+    if (!rank1Trick) throw new Error('Expected at least one rank-1 trick in KENDAMA_KENTEI_TRICKS');
+    const expectedLabel = `Rank ${rank1Trick.kenteiRank} · ${rank1Trick.kenteiClass} · ${rank1Trick.kenteiLevel}`;
+
+    expect(JSON.stringify(root.toJSON())).toContain(expectedLabel);
+
+    advanceThroughCountdown();
+
+    expect(JSON.stringify(root.toJSON())).toContain(expectedLabel);
+
+    act(() => {
+      root.unmount();
+    });
+  });
+});
+
 describe('AssessmentEntry countdown cancel (T047)', () => {
   beforeEach(async () => {
     await AsyncStorage.clear();
