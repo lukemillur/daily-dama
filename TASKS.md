@@ -147,7 +147,7 @@ _This next batch (T045–T069) comes from a QA pass over PR 55's suggested check
 
 - **Area:** Navigation / Tricks
 - **Priority:** Medium (inherited from parent T069)
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** Convert the per-trick goals screen (`TrickGoalsScreen`, today's `goalsTrick` local state in `src/app/tricks.tsx`) into a real nested route with its own URL and a back control in place of its "Close" button, establishing the pattern the rest of this chain will reuse.
 - **Exit criteria:** Navigating Tricks → a trick's Goals is a real, distinct route; a back control (not a "Close" button) returns to Tricks home; pressing the Tricks tab while on that route also returns to Tricks home ([T068]'s behavior, confirmed still working or adapted for the new route); verified on web and both native platforms.
