@@ -147,7 +147,7 @@ _This next batch (T045–T069) comes from a QA pass over PR 55's suggested check
 
 - **Area:** persistence (practice-history domain)
 - **Priority:** Medium (inherited from parent T062)
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** Add an optional origin/source field to `PracticeSessionRecord` (`src/features/stats/model/practice-history.ts`) and thread it through from wherever a session is recorded, so a Kentei-assessment-sourced landing can be distinguished from regular Sesh/ad hoc multi-trick practice at read time.
 - **Exit criteria:** Test confirms a session recorded via the Kentei assessment flow carries a distinguishing value on this new field, a session recorded via regular Sesh or ad hoc multi-trick does not (or carries the "regular" value), and existing persisted records with no value at all round-trip correctly (treated as regular practice, no migration required).
