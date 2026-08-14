@@ -912,22 +912,31 @@ describe('CompletedSesh goals panel ordering (regression)', () => {
   }
 
   it('reflects the just-completed sesh in goal progress, not the sesh before it', async () => {
-    const root = await mountHarness();
+    // The goal is created against a real Date.now() timestamp, but this fixture's sesh
+    // uses a fixed, unrealistic `summary.endedAt` (5000) as its completed-session timestamp.
+    // Pin Date.now() so the goal's createdAt precedes that fixed completedAt, matching
+    // production where both timestamps come from the same real clock.
+    const dateNowSpy = jest.spyOn(Date, 'now').mockReturnValue(0);
+    try {
+      const root = await mountHarness();
 
-    act(() => {
-      pressByAccessibilityLabel(root, 'add-count-goal');
-    });
+      act(() => {
+        pressByAccessibilityLabel(root, 'add-count-goal');
+      });
 
-    // Before the sesh is recorded, progress should show zero landings toward the goal.
-    expect(JSON.stringify(root.toJSON())).toContain('0 / 3 laces');
+      // Before the sesh is recorded, progress should show zero landings toward the goal.
+      expect(JSON.stringify(root.toJSON())).toContain('0 / 3 laces');
 
-    act(() => {
-      pressByAccessibilityLabel(root, 'record-sesh');
-    });
+      act(() => {
+        pressByAccessibilityLabel(root, 'record-sesh');
+      });
 
-    // After recordCompletedSesh runs, progress must include this sesh's 2 landings — not be
-    // stale by one sesh.
-    expect(JSON.stringify(root.toJSON())).toContain('2 / 3 laces');
+      // After recordCompletedSesh runs, progress must include this sesh's 2 landings — not be
+      // stale by one sesh.
+      expect(JSON.stringify(root.toJSON())).toContain('2 / 3 laces');
+    } finally {
+      dateNowSpy.mockRestore();
+    }
   });
 });
 

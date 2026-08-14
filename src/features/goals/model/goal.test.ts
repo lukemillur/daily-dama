@@ -367,6 +367,50 @@ describe('selectGoalProgress', () => {
       achieved: false,
     });
   });
+
+  it('excludes sessions completed before the goal was created, so prior history does not inflate initial progress', () => {
+    const validation = validateGoalCreation({
+      kind: 'count',
+      trickId: 'big-cup',
+      trickName: 'Big cup',
+      targetCount: 100,
+    });
+    if (validation.status !== 'valid') throw new Error('Expected a valid draft.');
+    const goalCreatedAt = 100_000;
+    const goal = createGoal('goal-1', validation.value, goalCreatedAt);
+
+    const priorHistoryOnly = [
+      session({ id: 's-1', trickId: 'big-cup', laceCount: 50, completedAt: goalCreatedAt - 1 }),
+    ];
+    expect(selectGoalProgress(goal, priorHistoryOnly)).toEqual({
+      goal,
+      current: 0,
+      target: 100,
+      achieved: false,
+    });
+
+    const withSessionExactlyAtCreation = [
+      ...priorHistoryOnly,
+      session({ id: 's-2', trickId: 'big-cup', laceCount: 10, completedAt: goalCreatedAt }),
+    ];
+    expect(selectGoalProgress(goal, withSessionExactlyAtCreation)).toEqual({
+      goal,
+      current: 10,
+      target: 100,
+      achieved: false,
+    });
+
+    const withSessionAfterCreation = [
+      ...withSessionExactlyAtCreation,
+      session({ id: 's-3', trickId: 'big-cup', laceCount: 15, completedAt: goalCreatedAt + 1 }),
+    ];
+    expect(selectGoalProgress(goal, withSessionAfterCreation)).toEqual({
+      goal,
+      current: 25,
+      target: 100,
+      achieved: false,
+    });
+  });
 });
 
 describe('getGoalContribution', () => {

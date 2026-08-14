@@ -147,7 +147,9 @@ export function selectGoalProgress(
   goal: Goal,
   sessions: readonly PracticeSessionRecord[],
 ): GoalProgress {
-  const trickSessions = sessions.filter((session) => session.trickId === goal.trickId);
+  const trickSessions = sessions.filter(
+    (session) => session.trickId === goal.trickId && session.completedAt >= goal.createdAt,
+  );
   const current =
     goal.kind === 'count'
       ? trickSessions.reduce((sum, session) => sum + session.laceCount, 0)

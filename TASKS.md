@@ -135,16 +135,6 @@ The first pass used **locked/unlocked** for "the user can land this trick." User
 
 _This next batch (T045–T069) comes from a QA pass over PR 55's suggested checklist (the `development` → `main` release covering T002–T041), worked top to bottom. Where an entry names the task that shipped the behavior it's correcting, the archived entry in [TASKS_DONE.md](TASKS_DONE.md) stays as-written — history isn't rewritten, same as above._
 
-### [T064] Baseline goal progress at creation time
-
-- **Area:** Goals
-- **Priority:** High
-- **Status:** In progress
-- **Planning:** Required
-- **Description:** `selectGoalProgress` (`src/features/goals/model/goal.ts`) sums laces/duration across *all* historical practice sessions for a goal's trick, with no filter against when the goal was created — so a goal set against a trick with existing lace history shows inflated progress immediately, e.g. a trick with 50 prior laces and a new "land it 100 times" goal reads 50/100 on creation, not 0/100.
-- **Exit criteria:** Test: a trick with N prior laces, then a new goal with target M created against it — progress reads 0/M immediately after creation, not N/M; lacing the trick after creation increments progress normally; existing in-Sesh goal-achievement-celebration detection (`isGoalNewlyAchieved`/`goalBaselines` in `sesh.tsx` — an unrelated use of "baseline," see note) continues to fire correctly, unaffected by this change.
-- **Notes:** `Goal`/`GoalBase` (`goal.ts`) already carries a `createdAt` timestamp — this doesn't need a new persisted field or schema/migration, just filtering `selectGoalProgress`'s session sum to `session.completedAt >= goal.createdAt`. Marked Required despite the small fix because `selectGoalProgress` has several call sites (`trick-goals-screen.tsx`, `all-trick-goals-screen.tsx`/`selectGoalProgressByTrick`, and four places in `sesh.tsx`) and the file already uses "baseline" for a different, unrelated concept (`goalBaselines` = progress snapshotted at trick-selection time *within* a sesh, used to detect newly-crossed goals mid-session) — worth a careful pass to avoid conflating the two or missing a call site.
-
 ### [T065] Show a per-trick goal count in the Tricks list
 
 - **Area:** Tricks
