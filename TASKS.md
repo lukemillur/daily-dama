@@ -140,7 +140,7 @@ _This next batch (T045–T069) comes from a QA pass over PR 55's suggested check
 
 - **Area:** Sesh
 - **Priority:** High
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** "End assessment"/"End Sesh" (`multi-trick-sesh.tsx`) only ever completes the *current* trick and lets the run's completion effect auto-advance to the next one — there is no "abort the whole run" action. For a long sequence (a full bottom-to-top or from-rank Kentei assessment, dozens of tricks) this means a user has to click through every remaining trick one at a time to reach the wrap-up screen, which reads as the button simply not working. `handleSkipRank` already proves the sequence can be jumped to its end (`advanceTrickSequenceToIndex`) — "End" needs the equivalent.
 - **Exit criteria:** Test: starting a full (multi-rank) Kentei assessment and pressing "End assessment" partway through immediately reaches the wrap-up screen, not the next trick; the current trick's landings-so-far are recorded exactly as today's per-trick End already does; remaining un-started tricks are not recorded as attempted (consistent with "Skip this rank" writing no history for tricks it skips). As part of verifying this fix, also manually confirm the rank-skip messaging on the wrap-up screen (`describeSkippedRange`/`WrapUpSkippedText`) renders correctly when a rank was skipped during the run this fix makes it fast to reach — this closes out the one item PR 55's QA checklist left unchecked ("confirm rank-skip messaging is correct when a rank is skipped"), which the messaging logic itself doesn't need a fix for (see below) but which couldn't practically be exercised until now.
