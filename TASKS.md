@@ -139,7 +139,7 @@ _This next batch (T045–T069) comes from a QA pass over PR 55's suggested check
 
 - **Area:** Goals
 - **Priority:** Medium
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Implementer
 - **Description:** Goal creation exists today only on the per-trick goals screen (`TrickGoalsScreen`'s "Add goal" step, reached via a trick row's own Goals action) — the cross-trick "Trick goals" screen reached from the Tricks header button (`AllTrickGoalsScreen`) has no add-goal affordance at all; its own empty-state copy says "Set one from a trick's Goals action" as the only path. Add goal creation there too.
 - **Exit criteria:** Test: from the all-trick-goals screen, a user can create a new goal by selecting a trick and defining a target, and it appears in that screen's list afterward.
