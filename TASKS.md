@@ -141,7 +141,7 @@ _The following batch (T070–T079) comes from the QA checklist completed against
 
 - **Area:** Tricks / custom-trick forms
 - **Priority:** Medium
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** Keep “Save custom trick” enabled even when the draft is invalid; pressing it should leave the form open and populate each invalid associated field with a concise, actionable error message explaining what is missing or incorrect.
 - **Exit criteria:** Form tests verify the save action is enabled for invalid standalone and sequence drafts, pressing it does not persist or navigate away, and the relevant name, sequence-step, and rank validation messages appear beside their fields; valid drafts still save exactly once and preserve existing edit behavior.
