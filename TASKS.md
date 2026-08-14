@@ -135,16 +135,6 @@ The first pass used **locked/unlocked** for "the user can land this trick." User
 
 _This next batch (T045–T069) comes from a QA pass over PR 55's suggested checklist (the `development` → `main` release covering T002–T041), worked top to bottom. Where an entry names the task that shipped the behavior it's correcting, the archived entry in [TASKS_DONE.md](TASKS_DONE.md) stays as-written — history isn't rewritten, same as above._
 
-### [T068] Return to Tricks home when the Tricks tab is pressed from a nested view
-
-- **Area:** Navigation / Tricks
-- **Priority:** Medium
-- **Status:** In progress
-- **Planning:** Required
-- **Description:** Every nested view under Tricks (trick edit/delete, notes, goals, laced-tricks grid, custom-trick creation — all local `useState` in `src/app/tricks.tsx`) is invisible to the tab bar itself, since the URL never leaves `/tricks`. Pressing the Tricks tab while already on one of these views is a confirmed complete no-op on web today — `expo-router/ui`'s `TabTrigger` only dispatches a tab switch when the pressed tab is *not* already focused, and it already is. Make re-pressing Tricks from a nested view return to the trick list.
-- **Exit criteria:** From any of the nested Tricks views listed above, pressing the Tricks tab returns to the trick list — verified on web, iOS, and Android (native uses a different tab primitive, `NativeTabs`, which may already handle this via a platform default or may not — confirm rather than assume).
-- **Notes:** This is a narrower, faster fix than [T069]'s full route conversion, addressing the same reported friction without waiting on that larger effort — likely superseded/adapted once (or if) screens migrate to real routes there, since this fix necessarily targets today's local-state mechanism (probably: detect "Tricks tab pressed while already focused" and explicitly reset all of `tricks.tsx`'s nested-view state vars, on both `app-tabs.web.tsx` and `app-tabs.tsx`).
-
 ### [T069] Convert Tricks' nested pseudo-screens into real routes with back navigation
 
 - **Area:** Navigation / Tricks
