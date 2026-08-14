@@ -393,9 +393,81 @@ describe('MultiTrickSesh skipCountdownBetweenTricks', () => {
       pressByVisibleText(root, 'Skip this rank');
     });
 
+    act(() => {
+      pressByAccessibilityLabel(root, 'Confirm skip rank');
+    });
+
     // No advanceThroughCountdown() — TRICKS[2] should already be active.
     expect(findByText(root, TRICKS[2].name).length).toBeGreaterThan(0);
     expect(findByAccessibilityLabel(root, 'Laced').length).toBeGreaterThan(0);
+
+    act(() => {
+      root.unmount();
+    });
+  });
+});
+
+
+describe('MultiTrickSesh "Skip this rank" confirmation (T056)', () => {
+  beforeEach(async () => {
+    await AsyncStorage.clear();
+    jest.useFakeTimers();
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  it('shows the specific tricks a skip would discard before committing anything', async () => {
+    const onFinished = jest.fn();
+    const root = await mountMultiTrickSesh({ onFinished, skipTarget: () => 2 });
+
+    advanceThroughCountdown();
+    expect(findByText(root, TRICKS[0].name).length).toBeGreaterThan(0);
+
+    act(() => {
+      pressByVisibleText(root, 'Skip this rank');
+    });
+
+    expect(findByAccessibilityLabel(root, 'Skip rank confirmation').length).toBeGreaterThan(0);
+    expect(findByText(root, TRICKS[0].name).length).toBeGreaterThan(0);
+    expect(findByText(root, TRICKS[1].name).length).toBeGreaterThan(0);
+
+    expect(findByAccessibilityLabel(root, 'session-count:0').length).toBeGreaterThan(0);
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  it('leaves the run unaffected when the skip is canceled', async () => {
+    const onFinished = jest.fn();
+    const root = await mountMultiTrickSesh({ onFinished, skipTarget: () => 2 });
+
+    advanceThroughCountdown();
+
+    act(() => {
+      pressByVisibleText(root, 'Skip this rank');
+    });
+    expect(findByAccessibilityLabel(root, 'Skip rank confirmation').length).toBeGreaterThan(0);
+
+    act(() => {
+      pressByAccessibilityLabel(root, 'Cancel skip rank');
+    });
+
+    expect(findByAccessibilityLabel(root, 'Skip rank confirmation').length).toBe(0);
+    expect(findByText(root, TRICKS[0].name).length).toBeGreaterThan(0);
+    expect(findByAccessibilityLabel(root, 'Laced').length).toBeGreaterThan(0);
+
+    act(() => {
+      pressByAccessibilityLabel(root, 'Laced');
+    });
+    act(() => {
+      pressByVisibleText(root, 'End Sesh');
+    });
+
+    expect(findByAccessibilityLabel(root, 'session-count:1').length).toBeGreaterThan(0);
+    expect(findByAccessibilityLabel(root, 'session-0-lace-count:1').length).toBeGreaterThan(0);
 
     act(() => {
       root.unmount();
@@ -653,6 +725,10 @@ describe('MultiTrickSesh wrap-up', () => {
       pressByVisibleText(root, 'Skip this rank');
     });
 
+    act(() => {
+      pressByAccessibilityLabel(root, 'Confirm skip rank');
+    });
+
     const attemptedMatches = root.root.findAll(
       (node) =>
         typeof node.props.accessibilityLabel === 'string' &&
@@ -734,6 +810,10 @@ describe('MultiTrickSesh wrap-up', () => {
 
     act(() => {
       pressByVisibleText(root, 'Skip this rank');
+    });
+
+    act(() => {
+      pressByAccessibilityLabel(root, 'Confirm skip rank');
     });
 
     const skippedMatches = root.root.findAll(
@@ -855,6 +935,10 @@ describe('MultiTrickSesh onCancelRun (T047)', () => {
 
     act(() => {
       pressByVisibleText(root, 'Skip this rank');
+    });
+
+    act(() => {
+      pressByAccessibilityLabel(root, 'Confirm skip rank');
     });
 
     expect(findByText(root, TRICKS[1].name).length).toBeGreaterThan(0);
