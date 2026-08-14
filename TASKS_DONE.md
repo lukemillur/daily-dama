@@ -862,3 +862,13 @@ Entries keep their content as it was at completion. Don't retroactively edit a d
 - **Description:** Apply T069.1's pattern to the remaining nested views: trick notes, all-notes archive, all-trick-goals, laced-tricks grid, and custom-trick create/edit/delete. Depends on T069.1.
 - **Exit criteria:** Every screen listed is reachable via its own web route with real back navigation and no "Close" button remaining anywhere in the Tricks feature area; Tricks-tab-returns-home verified from each on web. Native device validation is deliberately deferred under `AGENTS.md`'s active platform scope.
 - **Notes:** Added `/tricks/[trickId]/notes`, `/tricks/notes`, `/tricks/goals`, `/tricks/laced`, `/tricks/custom/new`, and custom edit/delete routes. Notes edit Cancel now exits directly to Tricks; add/edit successful saves retain their existing local-list behavior. Automated verification was blocked by the local Node binary's missing ICU 74 runtime library; browser click-through was unavailable in this environment. Native validation is deferred.
+
+### [T070.1] Reset the Profile route after leaving Kentei assessment
+
+- **Area:** Kentei assessment / navigation
+- **Priority:** High (inherited from parent T070)
+- **Status:** Done
+- **Planning:** Required
+- **Description:** When the Kentei assessment wrap-up's “Go to Home” action is pressed, reset the nested assessment route so a later visit to Profile renders the default Profile screen rather than the stale assessment wrap-up.
+- **Exit criteria:** A component-level regression test preserves the assessment result copy before pressing “Go to Home,” then verifies the route reset targets Home; the default Profile screen remains covered by its focused route component tests.
+- **Notes:** Replaced the assessment completion callback's `router.replace('/')` with Expo Router 57's `router.dismissTo('/')`, which unwinds the nested Profile stack while targeting Home and leaves transient assessment state local. Focused assessment/Profile tests pass (12/12), and `node .claude/scripts/verify.mjs` passes all four steps: test, lint, typecheck, and web export. Native validation remains deferred under the active web-only scope.

@@ -32,9 +32,14 @@ jest.mock('react-native-reanimated', () =>
   // eslint-disable-next-line @typescript-eslint/no-require-imports -- required by jest hoisting
   require('react-native-reanimated/mock'),
 );
-// AssessmentEntry calls useRouter() directly for the post-run redirect. No test in the repo
-// currently mocks expo-router, so this is new.
-jest.mock('expo-router', () => ({ useRouter: () => ({ replace: jest.fn(), push: jest.fn() }) }));
+const mockDismissTo = jest.fn();
+
+// AssessmentEntry calls useRouter() directly for the post-run route reset. Keep the mock shared
+// so the completion test can verify that the nested Profile route is dismissed only by its
+// explicit wrap-up action.
+jest.mock('expo-router', () => ({
+  useRouter: () => ({ dismissTo: mockDismissTo, replace: jest.fn(), push: jest.fn() }),
+}));
 
 const RANK_1_TRICK_IDS = KENDAMA_KENTEI_TRICKS.filter((trick) => trick.kenteiRank === 1).map(
   (trick) => trick.id,
@@ -116,6 +121,7 @@ async function mountAssessmentEntry() {
 describe('AssessmentEntry result copy', () => {
   beforeEach(async () => {
     await AsyncStorage.clear();
+    mockDismissTo.mockClear();
     jest.useFakeTimers();
   });
 
@@ -155,6 +161,45 @@ describe('AssessmentEntry result copy', () => {
     expect(resultText).toMatch(/held/i);
     expect(resultText).toContain('Rank 1');
     expect(resultText).not.toMatch(/assess/i);
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  it('resets the Profile assessment route to Home from the result screen', async () => {
+    await AsyncStorage.setItem(
+      USER_PROFILE_STORAGE_KEY,
+      serializeUserProfile({
+        hasCompletedOnboarding: true,
+        kenteiRank: 1,
+        selectedTrickIds: [],
+      }),
+    );
+
+    const root = await mountAssessmentEntry();
+
+    act(() => {
+      pressByVisibleText(root, 'Current rank only');
+    });
+    advanceThroughCountdown();
+    act(() => {
+      pressByVisibleText(root, 'End assessment');
+    });
+    await act(async () => {});
+
+    expect(assessmentResultText(root)).toMatch(/held/i);
+    expect(
+      root.root.findAll((node) => node.props.children === 'Go to Home').length,
+    ).toBeGreaterThan(0);
+    expect(mockDismissTo).not.toHaveBeenCalled();
+
+    act(() => {
+      pressByVisibleText(root, 'Go to Home');
+    });
+
+    expect(mockDismissTo).toHaveBeenCalledTimes(1);
+    expect(mockDismissTo).toHaveBeenCalledWith('/');
 
     act(() => {
       root.unmount();
