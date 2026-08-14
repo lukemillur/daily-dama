@@ -180,6 +180,25 @@ describe('MultiTrickSesh advanceOnFirstLace', () => {
     });
   });
 
+  it('does not render "Next trick" when advanceOnFirstLace is set, since it duplicates the Laced/End-assessment advance path', async () => {
+    const onFinished = jest.fn();
+    const root = await mountMultiTrickSesh({
+      advanceOnFirstLace: true,
+      endActionLabel: 'End assessment',
+      onFinished,
+    });
+
+    advanceThroughCountdown();
+    expect(findByText(root, TRICKS[0].name).length).toBeGreaterThan(0);
+    expect(findByAccessibilityLabel(root, 'Laced').length).toBeGreaterThan(0);
+    expect(findByText(root, 'End assessment').length).toBeGreaterThan(0);
+    expect(findByText(root, 'Next trick')).toHaveLength(0);
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
   it('does not advance on a single lace when disabled (default), requiring an explicit End Sesh', async () => {
     const onFinished = jest.fn();
     const root = await mountMultiTrickSesh({ onFinished });

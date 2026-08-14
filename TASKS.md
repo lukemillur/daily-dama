@@ -136,16 +136,6 @@ The first pass used **locked/unlocked** for "the user can land this trick." User
 _This next batch (T045–T069) comes from a QA pass over PR 55's suggested checklist (the `development` → `main` release covering T002–T041), worked top to bottom. Where an entry names the task that shipped the behavior it's correcting, the archived entry in [TASKS_DONE.md](TASKS_DONE.md) stays as-written — history isn't rewritten, same as above._
 
 
-### [T057] Remove the redundant "Next trick" button from the Kentei assessment flow
-
-- **Area:** Sesh (Kentei assessment)
-- **Priority:** Low
-- **Status:** In progress
-- **Planning:** Implementer
-- **Description:** In assessment, `advanceOnFirstLace` makes pressing "Laced" on an untouched trick dispatch the identical `seshEnded` action "Next trick" and "End assessment" both use (`src/features/sesh/components/multi-trick-sesh.tsx`) — on any untouched trick all three buttons converge on "advance," making "Next trick" pure redundant chrome specific to assessment. Stop rendering it there.
-- **Exit criteria:** Test: during an assessment trick, only "Laced" and "End assessment" are present, no "Next trick"; non-assessment multi-trick runs (no `advanceOnFirstLace`) keep "Next trick" exactly as today, since there it's genuinely non-redundant (confirmed by existing coverage in `multi-trick-sesh.test.tsx`: without `advanceOnFirstLace`, "Laced" just accumulates landings and only "Next trick" advances).
-- **Notes:** Gate on the same `advanceOnFirstLace` flag already used for the auto-advance behavior, not on "is this an assessment" as a separate signal. Independent of [T052] (final-trick hiding) — different gating condition, no conflict, but both touch `onNextTrick` wiring in `multi-trick-sesh.tsx`.
-
 ### [T058] Let "End assessment" actually end a multi-rank run early
 
 - **Area:** Sesh

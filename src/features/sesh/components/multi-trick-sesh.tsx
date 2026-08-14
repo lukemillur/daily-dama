@@ -374,9 +374,12 @@ export function MultiTrickSesh({
         // second advance mechanism. Unlike `handleSkipRank`, this always
         // records the current trick's landings before moving on. Omitted
         // on the final trick of the run, where it would be functionally
-        // identical to "End Sesh" but mislabeled.
+        // identical to "End Sesh" but mislabeled, and omitted entirely when
+        // `advanceOnFirstLace` is set: there, "Laced" on an untouched trick
+        // already dispatches this same `seshEnded` action, so "Next trick"
+        // would be pure redundant chrome.
         onNextTrick={
-          sequence.currentIndex < sequence.tricks.length - 1
+          !advanceOnFirstLace && sequence.currentIndex < sequence.tricks.length - 1
             ? () => dispatch({ type: 'seshEnded', now: Date.now() })
             : undefined
         }

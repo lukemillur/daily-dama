@@ -6,6 +6,17 @@ Entries keep their content as it was at completion. Don't retroactively edit a d
 
 ---
 
+### [T057] Remove the redundant "Next trick" button from the Kentei assessment flow
+
+- **Area:** Sesh (Kentei assessment)
+- **Priority:** Low
+- **Status:** Done
+- **Planning:** Implementer
+- **Description:** In assessment, `advanceOnFirstLace` makes pressing "Laced" on an untouched trick dispatch the identical `seshEnded` action "Next trick" and "End assessment" both use (`src/features/sesh/components/multi-trick-sesh.tsx`) — on any untouched trick all three buttons converge on "advance," making "Next trick" pure redundant chrome specific to assessment. Stop rendering it there.
+- **Exit criteria:** Test: during an assessment trick, only "Laced" and "End assessment" are present, no "Next trick"; non-assessment multi-trick runs (no `advanceOnFirstLace`) keep "Next trick" exactly as today, since there it's genuinely non-redundant (confirmed by existing coverage in `multi-trick-sesh.test.tsx`: without `advanceOnFirstLace`, "Laced" just accumulates landings and only "Next trick" advances).
+- **Notes:** Gate on the same `advanceOnFirstLace` flag already used for the auto-advance behavior, not on "is this an assessment" as a separate signal. Independent of [T052] (final-trick hiding) — different gating condition, no conflict, but both touch `onNextTrick` wiring in `multi-trick-sesh.tsx`.
+
+
 ### [T056] Show the rank's trick list before skipping it in a Kentei assessment
 
 - **Area:** Sesh (Kentei assessment)
