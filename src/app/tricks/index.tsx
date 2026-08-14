@@ -175,6 +175,7 @@ export function CustomTrickForm({
         ],
   );
   const [trickSearch, setTrickSearch] = useState('');
+  const [hasSubmitted, setHasSubmitted] = useState(false);
   const selectableTricks = useMemo(
     () => selectSequenceStepCandidates(KENDAMA_KENTEI_TRICKS, customTricks),
     [customTricks],
@@ -195,7 +196,7 @@ export function CustomTrickForm({
     [kenteiRank, kind, name, steps],
   );
   const validation = validateCustomTrickDraft(draft);
-  const errors = validation.status === 'invalid' ? validation.errors : {};
+  const errors = hasSubmitted && validation.status === 'invalid' ? validation.errors : {};
 
   const updateStep = (index: number, value: string) => {
     setSteps((current) => current.map((step, stepIndex) =>
@@ -230,7 +231,10 @@ export function CustomTrickForm({
     const result = initialTrick
       ? updateCustomTrick(initialTrick.id, draft)
       : addCustomTrick(draft);
-    if (result.status !== 'saved') return;
+    if (result.status !== 'saved') {
+      setHasSubmitted(true);
+      return;
+    }
 
     const isCurrentlyFocused = selectedTrickIds.includes(result.trick.id);
     if (addToFocusedTricks && !isCurrentlyFocused) toggleSelectedTrick(result.trick.id);
@@ -363,7 +367,10 @@ export function CustomTrickForm({
         </Field>
 
         <FormActions>
-          <Button fill disabled={validation.status === 'invalid'} onPress={save}>
+          <Button
+            accessibilityLabel={initialTrick ? 'Save changes' : 'Save custom trick'}
+            fill
+            onPress={save}>
             {initialTrick ? 'Save changes' : 'Save custom trick'}
           </Button>
           <Button fill variant="secondary" onPress={onCancel}>Cancel</Button>

@@ -137,16 +137,6 @@ _This next batch (T045–T069) comes from a QA pass over PR 55's suggested check
 
 _The following batch (T070–T079) comes from the QA checklist completed against PR 83, worked top to bottom. New entries are intentionally placed before the older queue so the next actionable QA finding is selected first. Existing task history is not rewritten._
 
-### [T079] Keep custom-trick save actionable with inline validation
-
-- **Area:** Tricks / custom-trick forms
-- **Priority:** Medium
-- **Status:** In progress
-- **Planning:** Required
-- **Description:** Keep “Save custom trick” enabled even when the draft is invalid; pressing it should leave the form open and populate each invalid associated field with a concise, actionable error message explaining what is missing or incorrect.
-- **Exit criteria:** Form tests verify the save action is enabled for invalid standalone and sequence drafts, pressing it does not persist or navigate away, and the relevant name, sequence-step, and rank validation messages appear beside their fields; valid drafts still save exactly once and preserve existing edit behavior.
-- **Notes:** Current `CustomTrickForm` disables the primary button from `validation.status` and `save()` silently returns on an invalid result. Reuse `validateCustomTrickDraft` as the source of truth; distinguish untouched fields from a submitted invalid form without adding a new persistence schema.
-
 ### [T042] Complete native tab iconography
 
 - **Area:** Navigation
