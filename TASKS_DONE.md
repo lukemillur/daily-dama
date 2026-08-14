@@ -941,3 +941,12 @@ Entries keep their content as it was at completion. Don't retroactively edit a d
 - **Description:** When the Kentei assessment wrap-up's “Go to Home” action is pressed, reset the nested assessment route so a later visit to Profile renders the default Profile screen rather than the stale assessment wrap-up.
 - **Exit criteria:** A component-level regression test preserves the assessment result copy before pressing “Go to Home,” then verifies the route reset targets Home; the default Profile screen remains covered by its focused route component tests.
 - **Notes:** Replaced the assessment completion callback's `router.replace('/')` with Expo Router 57's `router.dismissTo('/')`, which unwinds the nested Profile stack while targeting Home and leaves transient assessment state local. Focused assessment/Profile tests pass (12/12), and `node .claude/scripts/verify.mjs` passes all four steps: test, lint, typecheck, and web export. Native validation remains deferred under the active web-only scope.
+### [T076.1] Define the Sesh tab reset route contract
+
+- **Area:** Sesh / Expo Router navigation
+- **Priority:** High (inherited from parent T076)
+- **Status:** Done
+- **Planning:** Required
+- **Description:** Establish the route-level mechanism that maps a Sesh tab press to the canonical `/sesh` home route and clears or remounts nested Sesh state as necessary.
+- **Exit criteria:** A route/navigation test demonstrates that pressing the Sesh tab from a nested Sesh route resolves to `/sesh`, and a subsequent render shows the Sesh home picker rather than the previously active child or wrap-up screen; the mechanism works with the existing web tab implementation without changing the five-link order.
+- **Notes:** Added a route-level `tabPress` listener to the Sesh nested Stack layout, scoped to the declared Sesh tab key, which replaces nested routes with `/sesh`. Focused tests cover target filtering, cleanup, and rendering the home picker after the reset boundary. The existing five-link order and persistent providers are unchanged. Verified with the full web-only repository verification sequence; native validation remains deferred under AGENTS.md.
