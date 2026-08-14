@@ -15,14 +15,14 @@ interface LacedTricksScreenProps {
   readonly tricks: readonly DirectoryTrick[];
   readonly unlockedTrickIds: ReadonlySet<string>;
   readonly onToggleTrick: (trickId: string) => void;
-  readonly onClose: () => void;
+  readonly onBack: () => void;
 }
 
 export function LacedTricksScreen({
   tricks,
   unlockedTrickIds,
   onToggleTrick,
-  onClose,
+  onBack,
 }: LacedTricksScreenProps) {
   const sections = useMemo(() => createTrickSections(tricks), [tricks]);
 
@@ -37,8 +37,8 @@ export function LacedTricksScreen({
         </Introduction>
 
         <FormActions>
-          <Button fill variant="secondary" onPress={onClose}>
-            Close
+          <Button accessibilityLabel="Back to Tricks" fill variant="secondary" onPress={onBack}>
+            Back to Tricks
           </Button>
         </FormActions>
 

@@ -845,3 +845,20 @@ Entries keep their content as it was at completion. Don't retroactively edit a d
 - **Description:** Convert the per-trick goals screen (`TrickGoalsScreen`, today's `goalsTrick` local state in `src/app/tricks.tsx`) into a real nested route with its own URL and a back control in place of its "Close" button, establishing the pattern the rest of this chain will reuse.
 - **Exit criteria:** Navigating Tricks → a trick's Goals is a real, distinct route; a back control (not a "Close" button) returns to Tricks home; pressing the Tricks tab while on that route also returns to Tricks home ([T068]'s behavior, confirmed still working or adapted for the new route); verified on web. Native device validation is deliberately deferred under AGENTS.md's active platform scope.
 - **Notes:** Established `/tricks/[trickId]/goals` as a headerless child-stack route. `TrickGoalsScreen` now receives route-owned `onBack` and presents "Back to Tricks"; it never depends on history, so a direct URL deterministically returns to `/tricks`. The `tricks` layout listens only for the Tricks tab's `tabPress` and replaces the child route with `/tricks`, while the index route continues to reset T069.2's remaining local pseudo-screens through the parent tab navigator. The destination's internal `list`/`add` steps intentionally remain local state: Cancel/Save return to list, only the screen-level Back leaves the route; T069.2 must apply the same convention to Notes rather than route unsaved form state. Added six focused route/layout/component tests covering standard/custom lookup, invalid-route redirect, Back target, tab filtering, and add cancel/save. Full `node .claude/scripts/verify.mjs` passed (test, lint, typecheck, web export). A privileged Expo web server started correctly, but the in-app browser's isolated localhost namespace refused that server; the interactive click-through is therefore unperformed, though the compiled route tree and behavior are covered by automated checks.
+### [T069] Convert Tricks' nested pseudo-screens into real routes with back navigation
+
+- **Area:** Navigation / Tricks
+- **Priority:** Medium
+- **Status:** Done
+- **Description:** Every nested Tricks destination now uses a real headerless Expo Router route with deterministic back navigation.
+- **Notes:** Umbrella completed by T069.1 and T069.2. Native validation remains deferred under the active web-only platform scope.
+
+### [T069.2] Apply the established convention to the remaining nested Tricks screens
+
+- **Area:** Navigation / Tricks
+- **Priority:** Medium (inherited from parent T069)
+- **Status:** Done
+- **Planning:** Required
+- **Description:** Apply T069.1's pattern to the remaining nested views: trick notes, all-notes archive, all-trick-goals, laced-tricks grid, and custom-trick create/edit/delete. Depends on T069.1.
+- **Exit criteria:** Every screen listed is reachable via its own web route with real back navigation and no "Close" button remaining anywhere in the Tricks feature area; Tricks-tab-returns-home verified from each on web. Native device validation is deliberately deferred under `AGENTS.md`'s active platform scope.
+- **Notes:** Added `/tricks/[trickId]/notes`, `/tricks/notes`, `/tricks/goals`, `/tricks/laced`, `/tricks/custom/new`, and custom edit/delete routes. Notes edit Cancel now exits directly to Tricks; add/edit successful saves retain their existing local-list behavior. Automated verification was blocked by the local Node binary's missing ICU 74 runtime library; browser click-through was unavailable in this environment. Native validation is deferred.

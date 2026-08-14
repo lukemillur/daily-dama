@@ -10,10 +10,10 @@ import { useNoteActions, useNotes } from '@/features/notes/state/note-provider';
 import { formatPracticeDate } from '@/features/stats/model/format-practice-date';
 
 interface AllNotesScreenProps {
-  readonly onClose: () => void;
+  readonly onBack: () => void;
 }
 
-export function AllNotesScreen({ onClose }: AllNotesScreenProps) {
+export function AllNotesScreen({ onBack }: AllNotesScreenProps) {
   const { notes } = useNotes();
   const [editingNote, setEditingNote] = useState<Note | undefined>(undefined);
   const sortedNotes = useMemo(() => selectAllNotesSorted(notes), [notes]);
@@ -40,8 +40,8 @@ export function AllNotesScreen({ onClose }: AllNotesScreenProps) {
         </Introduction>
 
         <FormActions>
-          <Button fill variant="secondary" onPress={onClose}>
-            Close
+          <Button accessibilityLabel="Back to Tricks" fill variant="secondary" onPress={onBack}>
+            Back to Tricks
           </Button>
         </FormActions>
 

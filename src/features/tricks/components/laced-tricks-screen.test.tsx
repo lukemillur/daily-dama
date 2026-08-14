@@ -34,7 +34,7 @@ function Harness({ onToggleTrickId }: { readonly onToggleTrickId: (trickId: stri
           current.includes(trickId) ? current.filter((id) => id !== trickId) : [...current, trickId],
         );
       }}
-      onClose={() => {}}
+      onBack={() => {}}
     />
   );
 }
@@ -64,7 +64,7 @@ describe('LacedTricksScreen', () => {
           tricks={FIXTURE_TRICKS}
           unlockedTrickIds={new Set(['trick-2'])}
           onToggleTrick={() => {}}
-          onClose={() => {}}
+          onBack={() => {}}
         />,
       );
     });
