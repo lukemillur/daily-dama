@@ -6,6 +6,16 @@ Entries keep their content as it was at completion. Don't retroactively edit a d
 
 ---
 
+### [T078] Reuse the trick directory in all-trick goal creation
+
+- **Area:** Goals / Tricks UI
+- **Priority:** Medium
+- **Status:** Done
+- **Planning:** Required
+- **Description:** Replace the bespoke trick picker on the all-trick Add Goal screen with the shared directory presentation and ensure the user's focused tricks are represented in the same way as elsewhere in the product.
+- **Exit criteria:** Goal-screen tests verify that standard and custom tricks render through the shared directory component/style, focused tricks appear in the focused section in the expected order, selecting a trick still opens the existing goal form, search/selection remains functional, and goal creation persists the selected trick.
+- **Notes:** `AllTrickGoalsScreen` now consumes `TrickDirectory` for the picker, with explicit profile focus IDs, shared search and activation behavior, and coverage for route wiring and queued goal persistence. Goal-domain persistence and the per-trick goal screen were unchanged. Full web verification passed; native validation remains deferred under the active web-only platform scope.
+
 ### [T075] Allow users to skip every multi-trick countdown
 
 - **Area:** Multi-trick Sesh / countdown

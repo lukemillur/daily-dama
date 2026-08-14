@@ -4,6 +4,7 @@ import { Pressable } from 'react-native';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 
 import { AllTrickGoalsScreen } from '@/features/goals/components/all-trick-goals-screen';
+import { GOALS_STORAGE_KEY } from '@/features/goals/persistence/goal-persistence';
 import { GoalProvider, useGoalActions } from '@/features/goals/state/goal-provider';
 import { createTimedSeshPlan, type Landing, type SeshSummary } from '@/features/sesh/model/sesh';
 import {
@@ -23,7 +24,7 @@ jest.mock('@react-native-async-storage/async-storage', () =>
 const TRICK_A: PracticeTrick = { id: 'big-cup', name: 'Big Cup' };
 const TRICK_B: PracticeTrick = { id: 'stall', name: 'Stall' };
 const DIRECTORY_TRICKS: DirectoryTrick[] = [
-  { ...TRICK_A, customKind: 'standalone' },
+  { ...TRICK_A, kenteiRank: 1, kenteiLevel: 'Basic', kenteiClass: '3rd Class' },
   { ...TRICK_B, customKind: 'standalone' },
 ];
 const PLAN = createTimedSeshPlan(5);
@@ -45,7 +46,7 @@ function summaryFor(trick: PracticeTrick, landingCount: number): SeshSummary {
 
 function noop() {}
 
-function Harness() {
+function Harness({ focusedTrickIds = [] }: { readonly focusedTrickIds?: readonly string[] }) {
   const { addGoal } = useGoalActions();
   const { recordCompletedSesh } = usePracticeHistoryActions();
 
@@ -67,18 +68,18 @@ function Harness() {
         accessibilityLabel="record-sesh-a"
         onPress={() => recordCompletedSesh(summaryFor(TRICK_A, 3))}
       />
-      <AllTrickGoalsScreen tricks={DIRECTORY_TRICKS} onBack={noop} />
+      <AllTrickGoalsScreen tricks={DIRECTORY_TRICKS} focusedTrickIds={focusedTrickIds} onBack={noop} />
     </>
   );
 }
 
-async function mountHarness() {
+async function mountHarness(focusedTrickIds: readonly string[] = []) {
   let root!: ReactTestRenderer;
   await act(async () => {
     root = create(
       <GoalProvider>
         <PracticeHistoryProvider>
-          <Harness />
+          <Harness focusedTrickIds={focusedTrickIds} />
         </PracticeHistoryProvider>
       </GoalProvider>,
     );
@@ -192,5 +193,52 @@ describe('AllTrickGoalsScreen', () => {
 
     expect(findText(root, 'Stall')).toHaveLength(1);
     expect(findText(root, '0 / 10 laces')).toHaveLength(1);
+  });
+
+  it('uses shared focused, ranked, and custom directory sections in source order', async () => {
+    const root = await mountHarness(['stall', 'big-cup']);
+
+    press(root, 'Add goal');
+
+    const text = root.root.findAll(
+      (node) => typeof node.type === 'string' && typeof node.props.children === 'string',
+    ).flatMap((node) => [node.props.children]);
+    expect(text.indexOf('Focused tricks')).toBeGreaterThanOrEqual(0);
+    expect(text.indexOf('Big Cup')).toBeLessThan(text.indexOf('Stall'));
+    expect(text.indexOf('Focused tricks')).toBeLessThan(text.indexOf('Rank 1'));
+    expect(text).toContain('Custom trick');
+  });
+
+  it('filters shared rows and opens the existing goal form for a selected custom trick', async () => {
+    const root = await mountHarness();
+    press(root, 'Add goal');
+
+    const [search] = root.root.findAll((node) => node.props.accessibilityLabel === 'Search tricks');
+    act(() => search.props.onChangeText('stall'));
+
+    expect(root.root.findAll((node) => node.props.accessibilityLabel === 'Choose Big Cup')).toHaveLength(0);
+    const [choose] = root.root.findAll((node) => node.props.accessibilityLabel === 'Choose Stall');
+    act(() => choose.props.onPress());
+    expect(findText(root, 'Set a target.')).toHaveLength(1);
+  });
+
+  it('persists a selected trick snapshot through the existing goal provider', async () => {
+    const root = await mountHarness();
+    press(root, 'Add goal');
+    const [choose] = root.root.findAll((node) => node.props.accessibilityLabel === 'Choose Big Cup');
+    act(() => choose.props.onPress());
+    const [targetInput] = root.root.findAll((node) => node.props.accessibilityLabel === 'Target lace count');
+    act(() => targetInput.props.onChangeText('7'));
+    press(root, 'Save goal');
+
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+    const serialized = await AsyncStorage.getItem(GOALS_STORAGE_KEY);
+    expect(JSON.parse(serialized ?? '{}').goals).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ trickId: 'big-cup', trickName: 'Big Cup', targetCount: 7 }),
+      ]),
+    );
   });
 });

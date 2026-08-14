@@ -1,6 +1,6 @@
 import { Link } from 'expo-router';
 import { type ReactElement, useMemo } from 'react';
-import { Pressable, SectionList, type SectionListData } from 'react-native';
+import { Pressable, SectionList, TextInput, type SectionListData } from 'react-native';
 import { styled } from 'styled-components/native';
 
 import {
@@ -22,6 +22,12 @@ export interface TrickDirectoryProps {
     readonly introduction: string;
   };
   readonly headerAction?: ReactElement;
+  readonly search?: {
+    readonly query: string;
+    readonly onChangeText: (query: string) => void;
+    readonly placeholder?: string;
+  };
+  readonly onActivate?: (trick: DirectoryTrick) => void;
   readonly customActions?: {
     readonly onEdit: (trickId: string) => void;
     readonly onDelete: (trickId: string) => void;
@@ -67,6 +73,8 @@ export function TrickDirectory({
   selection,
   header,
   headerAction,
+  search,
+  onActivate,
   customActions,
   notesAction,
   goalsAction,
@@ -85,8 +93,14 @@ export function TrickDirectory({
   const selectedTrickIds = selection?.selectedTrickIds ?? NO_SELECTED_TRICKS;
   const sectioningTrickIds = focusedTrickIds ?? selectedTrickIds;
   const sections = useMemo(
-    () => createTrickSections(tricks, showFocusedSection ? sectioningTrickIds : undefined),
-    [tricks, showFocusedSection, sectioningTrickIds],
+    () => {
+      const normalizedQuery = search?.query.trim().toLowerCase() ?? '';
+      const visibleTricks = normalizedQuery.length === 0
+        ? tricks
+        : tricks.filter((trick) => trick.name.toLowerCase().includes(normalizedQuery));
+      return createTrickSections(visibleTricks, showFocusedSection ? sectioningTrickIds : undefined);
+    },
+    [tricks, search?.query, showFocusedSection, sectioningTrickIds],
   );
   const selectedTrickIdSet = useMemo(() => new Set(selectedTrickIds), [selectedTrickIds]);
   const directoryHeader = (
@@ -95,6 +109,14 @@ export function TrickDirectory({
       <Title>{header?.title ?? DEFAULT_HEADER.title}</Title>
       <Introduction>{header?.introduction ?? DEFAULT_HEADER.introduction(tricks.length)}</Introduction>
       {headerAction}
+      {search ? (
+        <DirectorySearch
+          accessibilityLabel="Search tricks"
+          onChangeText={search.onChangeText}
+          placeholder={search.placeholder ?? 'Search tricks'}
+          value={search.query}
+        />
+      ) : null}
     </DirectoryHeader>
   );
 
@@ -131,6 +153,7 @@ export function TrickDirectory({
           onDelete={isCustomDirectoryTrick(item) && customActions ? () => customActions.onDelete(item.id) : undefined}
           onOpenNotes={notesAction ? () => notesAction.onOpen(item) : undefined}
           onOpenGoals={goalsAction ? () => goalsAction.onOpen(item) : undefined}
+          onActivate={onActivate ? () => onActivate(item) : undefined}
           showPracticeAction={Boolean(practiceAction)}
           lacedCount={lacedCountByTrickId?.get(item.id) ?? 0}
           noteCount={noteCountByTrickId?.get(item.id) ?? 0}
@@ -138,6 +161,7 @@ export function TrickDirectory({
           isLaced={unlockedTrickIds?.has(item.id) ?? false}
         />
       )}
+      ListEmptyComponent={search?.query.trim() ? <SearchEmptyState>No tricks match your search.</SearchEmptyState> : null}
       ItemSeparatorComponent={ItemSeparator}
       SectionSeparatorComponent={SectionSeparator}
     />
@@ -191,6 +215,7 @@ interface TrickRowProps {
   readonly onDelete?: () => void;
   readonly onOpenNotes?: () => void;
   readonly onOpenGoals?: () => void;
+  readonly onActivate?: () => void;
   readonly showPracticeAction?: boolean;
   readonly lacedCount?: number;
   readonly noteCount?: number;
@@ -207,6 +232,7 @@ function TrickRow({
   onDelete,
   onOpenNotes,
   onOpenGoals,
+  onActivate,
   showPracticeAction = false,
   lacedCount = 0,
   noteCount = 0,
@@ -277,6 +303,11 @@ function TrickRow({
         {onOpenGoals ? (
           <RowAction accessibilityLabel={`Goals for ${trick.name}`} accessibilityRole="button" onPress={onOpenGoals}>
             <RowActionText>{goalCount > 0 ? `Goals — ${goalCount}` : 'Goals'}</RowActionText>
+          </RowAction>
+        ) : null}
+        {onActivate ? (
+          <RowAction accessibilityLabel={`Choose ${trick.name}`} accessibilityRole="button" onPress={onActivate}>
+            <RowActionText>Choose</RowActionText>
           </RowAction>
         ) : null}
         {showPracticeAction ? (
@@ -465,6 +496,21 @@ const RowAction = styled(Pressable)`min-width: 48px; min-height: 44px; align-ite
 const RowActionText = styled.Text`color: #18382e; font-size: 10px; font-weight: 900; text-transform: uppercase;`;
 const DeleteActionText = styled(RowActionText)`color: #d84929;`;
 const PracticeActionText = styled(RowActionText)`color: #274137;`;
+const DirectorySearch = styled(TextInput)`
+  min-height: 52px;
+  background-color: #f8f1dd;
+  border: 2px solid #18382e;
+  color: #18382e;
+  font-size: 16px;
+  font-weight: 700;
+  padding: 12px 14px;
+`;
+const SearchEmptyState = styled.Text`
+  padding: 22px;
+  color: #53635d;
+  font-size: 15px;
+  font-weight: 650;
+`;
 
 const ItemSeparator = styled.View`
   height: 1px;
