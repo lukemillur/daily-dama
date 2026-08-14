@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
+import { Text } from 'react-native';
 
 import { AssessmentEntry } from '@/features/sesh/components/assessment-entry';
 import { NoteProvider } from '@/features/notes/state/note-provider';
@@ -10,7 +11,10 @@ import {
   USER_PROFILE_STORAGE_KEY,
 } from '@/features/profile/persistence/user-profile-persistence';
 import { UserProfileProvider } from '@/features/profile/state/user-profile-provider';
-import { PracticeHistoryProvider } from '@/features/stats/state/practice-history-provider';
+import {
+  PracticeHistoryProvider,
+  usePracticeHistory,
+} from '@/features/stats/state/practice-history-provider';
 import { PRACTICE_HISTORY_STORAGE_KEY } from '@/features/stats/persistence/practice-history-persistence';
 import { KENDAMA_KENTEI_TRICKS } from '@/features/tricks/data/kendama-kentei-tricks';
 
@@ -63,6 +67,22 @@ function assessmentResultText(root: ReactTestRenderer): string {
   return String(match.props.children);
 }
 
+// Renders each recorded session's origin behind an accessibility label so tests can assert on
+// practice-history writes, mirroring the SessionSummary pattern in multi-trick-sesh.test.tsx.
+function SessionSummary() {
+  const { sessions } = usePracticeHistory();
+  return (
+    <>
+      {sessions.map((session, index) => (
+        <Text
+          key={session.id}
+          accessibilityLabel={`session-${index}-origin:${session.origin ?? 'none'}`}
+        />
+      ))}
+    </>
+  );
+}
+
 function advanceThroughCountdown() {
   act(() => {
     jest.advanceTimersByTime(1000);
@@ -85,6 +105,7 @@ async function mountAssessmentEntry() {
             <KenteiRankAutoPromotion />
             <AssessmentEntry />
           </NoteProvider>
+          <SessionSummary />
         </PracticeHistoryProvider>
       </UserProfileProvider>,
     );
@@ -174,6 +195,47 @@ describe('AssessmentEntry result copy', () => {
     const resultText = assessmentResultText(root);
     expect(resultText).toMatch(/rank up/i);
     expect(resultText).toContain('Rank 2');
+
+    act(() => {
+      root.unmount();
+    });
+  });
+});
+
+describe('AssessmentEntry origin (T062.1)', () => {
+  beforeEach(async () => {
+    await AsyncStorage.clear();
+    jest.useFakeTimers();
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  it('tags every practice-history session recorded through the assessment flow with an assessment origin', async () => {
+    await AsyncStorage.setItem(
+      USER_PROFILE_STORAGE_KEY,
+      serializeUserProfile({
+        hasCompletedOnboarding: true,
+        kenteiRank: 1,
+        selectedTrickIds: [],
+      }),
+    );
+
+    const root = await mountAssessmentEntry();
+
+    act(() => {
+      pressByVisibleText(root, 'Current rank only');
+    });
+
+    advanceThroughCountdown();
+    act(() => {
+      pressByAccessibilityLabel(root, 'Laced');
+    });
+
+    await act(async () => {});
+
+    expect(findByAccessibilityLabel(root, 'session-0-origin:assessment').length).toBeGreaterThan(0);
 
     act(() => {
       root.unmount();

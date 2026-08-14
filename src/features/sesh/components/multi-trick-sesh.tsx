@@ -24,7 +24,10 @@ import {
   isTrickSequenceFinished,
 } from '@/features/sesh/model/trick-sequence';
 import type { PracticeTrick } from '@/features/tricks/model/trick';
-import { createPracticeSessionRecordId } from '@/features/stats/model/practice-history';
+import {
+  createPracticeSessionRecordId,
+  type PracticeSessionOrigin,
+} from '@/features/stats/model/practice-history';
 import { usePracticeHistoryActions } from '@/features/stats/state/practice-history-provider';
 import { selectNotesForTrick } from '@/features/notes/model/note';
 import { useNotes } from '@/features/notes/state/note-provider';
@@ -130,6 +133,13 @@ interface MultiTrickSeshProps {
    * The Kentei assessment flow overrides it to describe navigating Home.
    */
   readonly finishButtonLabel?: string;
+  /**
+   * Opaque pass-through recorded on every trick's practice-history record
+   * for this run, forwarded as-is to `recordCompletedSesh`. Omit for
+   * regular ad hoc multi-trick practice; the Kentei assessment flow passes
+   * `'assessment'`.
+   */
+  readonly origin?: PracticeSessionOrigin;
 }
 
 /**
@@ -161,6 +171,7 @@ export function MultiTrickSesh({
   onCancelRun,
   showRankStanding,
   finishButtonLabel,
+  origin,
 }: MultiTrickSeshProps) {
   const [sequence, setSequence] = useState(() => createTrickSequence(tricks));
   const [state, dispatch] = useReducer(
@@ -237,7 +248,7 @@ export function MultiTrickSesh({
     if (recordedSummaryId.current === summaryId) return;
 
     recordedSummaryId.current = summaryId;
-    recordCompletedSesh(state.summary);
+    recordCompletedSesh(state.summary, origin);
     setSummaries((prev) => [...prev, state.summary]);
 
     if (endRunRequestedRef.current) {
@@ -255,7 +266,7 @@ export function MultiTrickSesh({
     if (nextTrick) {
       seedNextTrick(nextTrick);
     }
-  }, [recordCompletedSesh, sequence, state, seedNextTrick]);
+  }, [origin, recordCompletedSesh, sequence, state, seedNextTrick]);
 
   useEffect(() => {
     if (!shouldKeepScreenAwake(state.status)) return;

@@ -83,6 +83,12 @@ function SessionSummary() {
       {sessions.map((session, index) => (
         <Text key={session.id} accessibilityLabel={`session-${index}-duration:${session.durationMs}`} />
       ))}
+      {sessions.map((session, index) => (
+        <Text
+          key={session.id}
+          accessibilityLabel={`session-${index}-origin:${session.origin ?? 'none'}`}
+        />
+      ))}
     </>
   );
 }
@@ -95,6 +101,16 @@ function findSessionDurationMs(root: ReactTestRenderer, index: number): number {
   );
   if (!match) throw new Error(`No duration label found for session ${index}`);
   return Number(match.props.accessibilityLabel.split(':')[1]);
+}
+
+function findSessionOrigin(root: ReactTestRenderer, index: number): string {
+  const [match] = root.root.findAll(
+    (node) =>
+      typeof node.props.accessibilityLabel === 'string' &&
+      node.props.accessibilityLabel.startsWith(`session-${index}-origin:`),
+  );
+  if (!match) throw new Error(`No origin label found for session ${index}`);
+  return match.props.accessibilityLabel.split(':')[1];
 }
 
 async function mountMultiTrickSesh(props: {
@@ -111,6 +127,7 @@ async function mountMultiTrickSesh(props: {
   readonly onCancelRun?: () => void;
   readonly tricks?: readonly PracticeTrick[];
   readonly showRankStanding?: boolean;
+  readonly origin?: 'assessment';
 }) {
   let root!: ReactTestRenderer;
   await act(async () => {
@@ -131,6 +148,7 @@ async function mountMultiTrickSesh(props: {
             wrapUpFooter={props.wrapUpFooter}
             onCancelRun={props.onCancelRun}
             showRankStanding={props.showRankStanding}
+            origin={props.origin}
           />
           <SessionSummary />
         </PracticeHistoryProvider>
@@ -225,6 +243,55 @@ describe('MultiTrickSesh advanceOnFirstLace', () => {
     expect(findByAccessibilityLabel(root, 'session-0-lace-count:1').length).toBeGreaterThan(0);
     expect(findByText(root, TRICKS[1].name)).toHaveLength(0);
     expect(findByText(root, TRICKS[2].name)).toHaveLength(0);
+
+    act(() => {
+      root.unmount();
+    });
+  });
+});
+
+describe('MultiTrickSesh origin', () => {
+  beforeEach(async () => {
+    await AsyncStorage.clear();
+    jest.useFakeTimers();
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  it('tags the recorded session with the given origin', async () => {
+    const onFinished = jest.fn();
+    const root = await mountMultiTrickSesh({ onFinished, origin: 'assessment' });
+
+    advanceThroughCountdown();
+    act(() => {
+      pressByAccessibilityLabel(root, 'Laced');
+    });
+    act(() => {
+      pressByVisibleText(root, 'End Sesh');
+    });
+
+    expect(findSessionOrigin(root, 0)).toBe('assessment');
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  it('leaves the recorded session untagged when no origin is passed', async () => {
+    const onFinished = jest.fn();
+    const root = await mountMultiTrickSesh({ onFinished });
+
+    advanceThroughCountdown();
+    act(() => {
+      pressByAccessibilityLabel(root, 'Laced');
+    });
+    act(() => {
+      pressByVisibleText(root, 'End Sesh');
+    });
+
+    expect(findSessionOrigin(root, 0)).toBe('none');
 
     act(() => {
       root.unmount();

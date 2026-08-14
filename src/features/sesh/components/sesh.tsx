@@ -46,6 +46,7 @@ import {
   getPersonalBest,
   hasPriorLaceForTrick,
   isFirstLaceForTrick,
+  type PracticeSessionOrigin,
   type PracticeSessionRecord,
 } from '@/features/stats/model/practice-history';
 import { usePracticeHistory, usePracticeHistoryActions } from '@/features/stats/state/practice-history-provider';
@@ -60,9 +61,22 @@ interface SeshProps {
   readonly availableTricks: readonly PracticeTrick[];
   readonly preferredTrickId?: string;
   readonly initialPlan?: SeshPlan;
+  /**
+   * Opaque pass-through recorded on the practice-history record for this
+   * sesh, forwarded as-is to `recordCompletedSesh`. No current caller sets
+   * this — `Sesh` only has one call site, always regular practice — but it
+   * mirrors `MultiTrickSeshProps.origin` for structural consistency.
+   */
+  readonly origin?: PracticeSessionOrigin;
 }
 
-export function Sesh({ availableTricks, initialPlan, preferredTrickId, selectedTrickIds }: SeshProps) {
+export function Sesh({
+  availableTricks,
+  initialPlan,
+  preferredTrickId,
+  selectedTrickIds,
+  origin,
+}: SeshProps) {
   const [state, dispatch] = useReducer(seshReducer, INITIAL_SESH_STATE);
   const { sessions } = usePracticeHistory();
   const { goals } = useGoals();
@@ -110,8 +124,8 @@ export function Sesh({ availableTricks, initialPlan, preferredTrickId, selectedT
         return isGoalNewlyAchieved(goal, baseline.current, contribution);
       }),
     );
-    recordCompletedSesh(state.summary);
-  }, [goals, recordCompletedSesh, sessions, state]);
+    recordCompletedSesh(state.summary, origin);
+  }, [goals, origin, recordCompletedSesh, sessions, state]);
 
   useEffect(() => {
     if (!shouldKeepScreenAwake(state.status)) return;

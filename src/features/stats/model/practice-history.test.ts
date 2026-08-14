@@ -329,3 +329,35 @@ describe('getPersonalBest', () => {
     expect(getPersonalBest(sessions, 'unknown-trick', 300_000)).toBeUndefined();
   });
 });
+
+
+describe('createPracticeSessionRecord origin', () => {
+  it('carries an assessment origin when passed', () => {
+    const summary = makeSummary();
+    const record = createPracticeSessionRecord(summary, undefined, 'assessment');
+    expect(record.origin).toBe('assessment');
+  });
+
+  it('leaves origin undefined when not passed', () => {
+    const summary = makeSummary();
+    const record = createPracticeSessionRecord(summary, undefined);
+    expect(record.origin).toBeUndefined();
+  });
+});
+
+describe('sessionRecorded reducer origin', () => {
+  it('carries an assessment origin through to the recorded session', () => {
+    const summary = makeSummary();
+    const result = practiceHistoryReducer(
+      { sessions: [] },
+      { type: 'sessionRecorded', summary, origin: 'assessment' },
+    );
+    expect(result.sessions[0]?.origin).toBe('assessment');
+  });
+
+  it('leaves origin absent when the action carries none', () => {
+    const summary = makeSummary();
+    const result = practiceHistoryReducer({ sessions: [] }, { type: 'sessionRecorded', summary });
+    expect(result.sessions[0]?.origin).toBeUndefined();
+  });
+});

@@ -143,16 +143,6 @@ _This next batch (T045–T069) comes from a QA pass over PR 55's suggested check
 - **Description:** Landings recorded during a Kentei assessment write ordinary `PracticeSessionRecord`s — identical in shape to regular Sesh/ad hoc multi-trick practice, with no field distinguishing origin — so they currently dilute the Stats screen's "By trick" list and Overview metrics, the per-trick history/personal-best page, and Home's momentum/streak/recent-session summary, all of which pull the full unfiltered practice-history pool.
 - **Notes:** Umbrella only — complete T062.1 and T062.2. Kentei rank promotion (`KenteiRankAutoPromotion`/`selectLacedTrickIds`) deliberately depends on assessment-sourced landings flowing into the same session pool ("a full pass through a rank promotes you automatically" is Profile's own stated promise) — any fix must filter *display* reads only, never what gets written or what promotion logic counts. Going-forward only: sessions already recorded from past assessments predate any new origin tag and can't be reliably reclassified after the fact; no retroactive cleanup/migration is in scope, consistent with this being local-first prototype data.
 
-### [T062.1] Tag practice-history records with their originating flow
-
-- **Area:** persistence (practice-history domain)
-- **Priority:** Medium (inherited from parent T062)
-- **Status:** Not started
-- **Planning:** Required
-- **Description:** Add an optional origin/source field to `PracticeSessionRecord` (`src/features/stats/model/practice-history.ts`) and thread it through from wherever a session is recorded, so a Kentei-assessment-sourced landing can be distinguished from regular Sesh/ad hoc multi-trick practice at read time.
-- **Exit criteria:** Test confirms a session recorded via the Kentei assessment flow carries a distinguishing value on this new field, a session recorded via regular Sesh or ad hoc multi-trick does not (or carries the "regular" value), and existing persisted records with no value at all round-trip correctly (treated as regular practice, no migration required).
-- **Notes:** `createPracticeSessionRecord` (`practice-history.ts`) is the single construction site for every `PracticeSessionRecord`, called from both `Sesh` (`sesh.tsx`) and `MultiTrickSesh` (`multi-trick-sesh.tsx`, shared by both the ad hoc multi-trick route and `AssessmentEntry`) — the new field needs to originate as a prop/param passed into `MultiTrickSesh`/`Sesh` (distinguishing `AssessmentEntry`'s usage from `MultiTrickSeshEntry`'s) and flow through `SeshSummary` to the record. Practice-history's persistence schema/validator (`src/features/stats/persistence/practice-history-persistence.ts`) needs the corresponding optional-field update. This is a persistence-domain schema change per AGENTS.md.
-
 ### [T062.2] Filter Stats and Home reads to exclude Kentei-assessment sessions
 
 - **Area:** Stats / Home

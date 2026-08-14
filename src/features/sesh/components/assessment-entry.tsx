@@ -60,6 +60,7 @@ export function AssessmentEntry() {
       <MultiTrickSesh
         tricks={tricks}
         plan={OPEN_ENDED_SESH_PLAN}
+        origin="assessment"
         onFinished={() => router.replace('/')}
         finishButtonLabel="Go to Home"
         onCancelRun={() => setStep({ kind: 'choosingFlow' })}
