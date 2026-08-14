@@ -2015,6 +2015,54 @@ describe('Sesh quick-start variant (T063)', () => {
     }
   });
 
+  it('returns to the full Sesh home picker after completing a direct-practice sesh', async () => {
+    jest.useFakeTimers();
+    try {
+      const root = await mountSesh({
+        quickStart: true,
+        preferredTrickId: TRICK.id,
+        initialPlan: createOpenEndedSeshPlan(),
+      });
+
+      act(() => {
+        pressByAccessibilityLabel(root, `Start a sesh with ${TRICK.name}`);
+      });
+      act(() => {
+        jest.advanceTimersByTime(1_000);
+      });
+      act(() => {
+        jest.advanceTimersByTime(1_000);
+      });
+      act(() => {
+        jest.advanceTimersByTime(1_000);
+      });
+      expect(JSON.stringify(root.toJSON())).toContain('Sesh in progress');
+
+      act(() => {
+        pressByVisibleText(root, 'End Sesh');
+      });
+      expect(JSON.stringify(root.toJSON())).toContain('Sesh complete');
+
+      act(() => {
+        pressByVisibleText(root, 'Start another sesh');
+      });
+
+      const text = JSON.stringify(root.toJSON());
+      expect(text).toContain('Practice format');
+      expect(text).toContain('Timed');
+      expect(text).toContain('Open-ended');
+      expect(text).toContain(TRICK.name);
+      expect(text).toContain(OTHER_TRICK.name);
+      expect(text).not.toContain('Ready when you are');
+
+      act(() => {
+        root.unmount();
+      });
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
   it('falls back to the full picker when the preselected trick is not practiceable', async () => {
     const root = await mountSesh({ quickStart: true, preferredTrickId: 'not-a-real-trick' });
 

@@ -7,6 +7,7 @@ import SeshLayout from '@/app/sesh/_layout';
 import SeshScreen from '@/app/sesh/index';
 
 let mockResetRoute: ((route: string) => void) | undefined;
+let mockSearchParams: Record<string, string> = {};
 const mockRouter = {
   replace: jest.fn((route: string) => mockResetRoute?.(route)),
 };
@@ -24,7 +25,7 @@ const mockNavigation = { getParent: () => mockTabNavigation };
 
 jest.mock('expo-router', () => ({
   Stack: () => null,
-  useLocalSearchParams: () => ({}),
+  useLocalSearchParams: () => mockSearchParams,
   useNavigation: () => mockNavigation,
   useRouter: () => mockRouter,
 }));
@@ -42,9 +43,13 @@ jest.mock('@/features/custom-tricks/state/custom-trick-provider', () => ({
   useCustomTricks: () => ({ tricks: [] }),
 }));
 jest.mock('@/features/sesh/components/sesh', () => ({
-  Sesh: () => {
+  Sesh: ({ quickStart }: { quickStart?: boolean }) => {
     const { Text: MockText } = require('react-native');
-    return <MockText accessibilityLabel="Sesh home picker">Choose a trick</MockText>;
+    return quickStart ? (
+      <MockText accessibilityLabel="Sesh direct-practice quick start">Ready when you are</MockText>
+    ) : (
+      <MockText accessibilityLabel="Sesh home picker">Choose a trick</MockText>
+    );
   },
 }));
 
@@ -52,6 +57,7 @@ describe('SeshLayout', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockResetRoute = undefined;
+    mockSearchParams = {};
     mockTabNavigation.addListener.mockImplementation(() => undefined);
   });
 
@@ -113,6 +119,62 @@ describe('SeshLayout', () => {
 
     expect(screen.root.findByProps({ accessibilityLabel: 'Sesh home picker' })).toBeDefined();
     expect(screen.root.findByProps({ children: 'Choose a trick' })).toBeDefined();
+  });
+
+  it('releases a direct-practice query entry when the Sesh tab is pressed', () => {
+    mockSearchParams = { trickId: 'big-cup', mode: 'practice' };
+
+    function RouteHost() {
+      const [route, setRoute] = useState('/sesh?trickId=big-cup&mode=practice');
+
+      useEffect(() => {
+        mockResetRoute = (nextRoute) => {
+          if (nextRoute === '/sesh') mockSearchParams = {};
+          setRoute(nextRoute);
+        };
+        return () => {
+          mockResetRoute = undefined;
+        };
+      }, []);
+
+      return (
+        <>
+          <Text accessibilityLabel={`route:${route}`} />
+          {route === '/sesh' || route.startsWith('/sesh?') ? (
+            <SeshScreen />
+          ) : (
+            <Text accessibilityLabel="stale child route" />
+          )}
+        </>
+      );
+    }
+
+    let rendered!: ReturnType<typeof create>;
+    act(() => {
+      rendered = create(
+        <>
+          <SeshLayout />
+          <RouteHost />
+        </>,
+      );
+    });
+
+    expect(rendered.root.findByProps({ accessibilityLabel: 'Sesh direct-practice quick start' })).toBeDefined();
+
+    const listener = mockTabNavigation.addListener.mock.calls[0]![1] as (event: {
+      target?: string;
+    }) => void;
+    act(() => {
+      listener({ target: 'sesh-tab' });
+    });
+
+    expect(rendered.root.findByProps({ accessibilityLabel: 'route:/sesh' })).toBeDefined();
+    expect(rendered.root.findByProps({ accessibilityLabel: 'Sesh home picker' })).toBeDefined();
+    expect(rendered.root.findAllByProps({ accessibilityLabel: 'Sesh direct-practice quick start' })).toHaveLength(0);
+
+    act(() => {
+      rendered.unmount();
+    });
   });
 
   it.each([

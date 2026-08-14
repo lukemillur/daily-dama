@@ -941,6 +941,16 @@ Entries keep their content as it was at completion. Don't retroactively edit a d
 - **Description:** When the Kentei assessment wrap-up's “Go to Home” action is pressed, reset the nested assessment route so a later visit to Profile renders the default Profile screen rather than the stale assessment wrap-up.
 - **Exit criteria:** A component-level regression test preserves the assessment result copy before pressing “Go to Home,” then verifies the route reset targets Home; the default Profile screen remains covered by its focused route component tests.
 - **Notes:** Replaced the assessment completion callback's `router.replace('/')` with Expo Router 57's `router.dismissTo('/')`, which unwinds the nested Profile stack while targeting Home and leaves transient assessment state local. Focused assessment/Profile tests pass (12/12), and `node .claude/scripts/verify.mjs` passes all four steps: test, lint, typecheck, and web export. Native validation remains deferred under the active web-only scope.
+### [T077.1] Exit direct-practice wrap-up to Sesh home
+
+- **Area:** Sesh / practice entry points
+- **Priority:** High (inherited from parent T077)
+- **Status:** Done
+- **Planning:** Required
+- **Description:** When a Sesh launched with a direct practice entry point completes, make “Start another sesh” leave the quick-start route/state and return to the normal Sesh home picker instead of returning to “Ready when you are” for the same trick.
+- **Exit criteria:** An integration test starts Sesh from a neglected-trick/practice link, completes the run, presses “Start another sesh,” and verifies the Sesh home picker is rendered; pressing the Sesh tab afterward also reaches the same home picker without a route lock.
+- **Notes:** Added a mount-local quick-start activation flag so `/sesh?trickId=...&mode=practice` retains its initial quick-start presentation but “Start another sesh” clears that entry context before the existing reducer reset. Added component lifecycle coverage through completion and an app-level route harness covering query-entry to Sesh-tab canonical reset. Completion recording, direct destinations, and practice-history persistence remain unchanged. Full test, lint, typecheck, and web-export verification passed under the supplied Node runtime; native validation remains deferred under the active web-only platform scope.
+
 ### [T076] Establish Sesh-tab return-home behavior
 
 - **Area:** Sesh / navigation
