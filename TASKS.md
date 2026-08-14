@@ -147,7 +147,7 @@ _This next batch (T045–T069) comes from a QA pass over PR 55's suggested check
 
 - **Area:** Navigation / Tricks
 - **Priority:** Medium (inherited from parent T069)
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** Apply T069.1's pattern to the remaining nested views: trick notes, all-notes archive, all-trick-goals, laced-tricks grid, and custom-trick create/edit/delete. Depends on T069.1.
 - **Exit criteria:** Every screen listed is reachable via its own web route with real back navigation and no "Close" button remaining anywhere in the Tricks feature area; Tricks-tab-returns-home verified from each on web. Native device validation is deliberately deferred under `AGENTS.md`'s active platform scope.
