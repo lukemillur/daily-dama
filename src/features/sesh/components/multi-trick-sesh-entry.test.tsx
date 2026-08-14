@@ -329,4 +329,30 @@ describe('MultiTrickSeshEntry route completion', () => {
       root.unmount();
     });
   });
+
+  it('uses the compact linked back action on selection and preserves timing setup back', async () => {
+    const trick = KENDAMA_KENTEI_TRICKS[0]!;
+    const root = await mountRouteHarness([trick.id]);
+
+    const [backLink] = root.root.findAll(
+      (node) =>
+        node.props.accessibilityLabel === 'Back to Sesh' &&
+        node.props.accessibilityRole === 'link' &&
+        node.props.children === '← Back to Sesh' &&
+        typeof node.props.onPress === 'function',
+    );
+    expect(backLink).toBeDefined();
+
+    selectTrick(root, trick.name);
+    pressByAccessibilityLabel(root, 'Continue to timing setup');
+    expect(root.root.findAll((node) => node.props.accessibilityLabel === 'Back to trick selection').length).toBeGreaterThan(0);
+
+    pressByAccessibilityLabel(root, 'Back to trick selection');
+    expect(allText(root)).toContain('Pick your\nlineup.');
+    expect(root.root.findAll((node) => node.props.accessibilityLabel === 'Back to Sesh').length).toBeGreaterThan(0);
+
+    await act(async () => {
+      root.unmount();
+    });
+  });
 });

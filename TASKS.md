@@ -137,16 +137,6 @@ _This next batch (T045–T069) comes from a QA pass over PR 55's suggested check
 
 _The following batch (T070–T079) comes from the QA checklist completed against PR 83, worked top to bottom. New entries are intentionally placed before the older queue so the next actionable QA finding is selected first. Existing task history is not rewritten._
 
-### [T074] Use compact back navigation in multi-trick setup
-
-- **Area:** Multi-trick Sesh / navigation UX
-- **Priority:** Low
-- **Status:** In progress
-- **Planning:** Required
-- **Description:** Replace the large first-step multi-trick setup “Back” control with the compact back-to-parent treatment used by the trick-specific Stats screen, while preserving its return to Sesh home.
-- **Exit criteria:** A component test exposes the first-step action with the established compact back-navigation label/accessibility semantics and pressing it routes to `/sesh`; the timing setup step retains its separate “Back to trick selection” action.
-- **Notes:** Inspect the existing trick-specific Stats route/component for the authoritative compact treatment before introducing a new button variant. This is a visual/navigation refinement, not a change to the wizard state model.
-
 ### [T075] Allow users to skip every multi-trick countdown
 
 - **Area:** Multi-trick Sesh / countdown

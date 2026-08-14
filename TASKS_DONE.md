@@ -6,6 +6,16 @@ Entries keep their content as it was at completion. Don't retroactively edit a d
 
 ---
 
+### [T074] Use compact back navigation in multi-trick setup
+
+- **Area:** Multi-trick Sesh / navigation UX
+- **Priority:** Low
+- **Status:** Done
+- **Planning:** Required
+- **Description:** Replace the large first-step multi-trick setup “Back” control with the compact back-to-parent treatment used by the trick-specific Stats screen, while preserving its return to Sesh home.
+- **Exit criteria:** A component test exposes the first-step action with the established compact back-navigation label/accessibility semantics and pressing it routes to `/sesh`; the timing setup step retains its separate “Back to trick selection” action.
+- **Notes:** Replaced the large first-step button with the Stats-style underlined `← Back to Sesh` link using `accessibilityRole="link"`, while preserving the imperative `/sesh` route replacement. Added component coverage for the link semantics and timing-step back transition. Full verification passed; native validation remains deferred under the active web-only platform scope.
+
 ### [T073] Keep “Next trick” available with auto-advance enabled
 
 - **Area:** Multi-trick Sesh / controls
