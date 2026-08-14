@@ -140,6 +140,12 @@ interface MultiTrickSeshProps {
    * `'assessment'`.
    */
   readonly origin?: PracticeSessionOrigin;
+  /**
+   * Hides the one-render completed-state fallback while an assessment's
+   * auto-advance effect moves to its next trick or wrap-up. Regular
+   * multi-trick runs deliberately retain that fallback behavior.
+   */
+  readonly suppressTransientCompletionFallback?: boolean;
 }
 
 /**
@@ -172,6 +178,7 @@ export function MultiTrickSesh({
   showRankStanding,
   finishButtonLabel,
   origin,
+  suppressTransientCompletionFallback,
 }: MultiTrickSeshProps) {
   const [sequence, setSequence] = useState(() => createTrickSequence(tricks));
   const [state, dispatch] = useReducer(
@@ -453,6 +460,8 @@ export function MultiTrickSesh({
   // Reached for the one tick between a trick's sesh completing and the
   // effect above reacting to it. Not terminal — never the resting state a
   // user actually sees.
+  if (suppressTransientCompletionFallback) return null;
+
   return (
     <CenteredPanel>
       <Eyebrow>Sequence complete</Eyebrow>
@@ -602,4 +611,3 @@ const SkipConfirmationActions = styled.View`
 const SkipConfirmationButton = styled(Button).attrs({ size: 'medium' })`
   border-radius: 5px;
 `;
-
