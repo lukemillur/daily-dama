@@ -6,6 +6,16 @@ Entries keep their content as it was at completion. Don't retroactively edit a d
 
 ---
 
+### [T073] Keep “Next trick” available with auto-advance enabled
+
+- **Area:** Multi-trick Sesh / controls
+- **Priority:** High
+- **Status:** Done
+- **Planning:** Required
+- **Description:** Render the explicit “Next trick” action on non-final active tricks even when “Advance after first lace” is enabled, so a user can move on without lacing the current trick.
+- **Exit criteria:** Multi-trick component tests enable auto-advance, advance to an active non-final trick, verify “Next trick” is present, press it without lacing, and verify the next trick becomes active; lacing still auto-advances as before and the final trick does not show a redundant next action.
+- **Notes:** `MultiTrickSesh` now keeps the manual “Next trick” action available on non-final tricks regardless of auto-advance. Manual advancement and first-lace automatic transition remain separate actions sharing the completed-state path. Component coverage verifies manual advancement without a lace, automatic lace advancement, and final-trick action visibility; full verification passed. Native validation remains deferred under the active web-only platform scope.
+
 ### [T072] Return multi-trick completion to Sesh home
 
 - **Area:** Multi-trick Sesh / navigation

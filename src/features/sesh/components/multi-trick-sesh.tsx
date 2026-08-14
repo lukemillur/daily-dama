@@ -427,11 +427,12 @@ export function MultiTrickSesh({
         // current trick's landings before moving on. Omitted on the final
         // trick of the run, where it would be functionally identical to
         // "End Sesh" but mislabeled, and omitted entirely when
-        // `advanceOnFirstLace` is set: there, "Laced" on an untouched trick
-        // already dispatches this same `seshEnded` action, so "Next trick"
-        // would be pure redundant chrome.
+        // `advanceOnFirstLace` does not suppress this manual escape hatch:
+        // "Next trick" and first-lace auto-advance are separate actions that
+        // share the completed-effect path. The final trick still omits it,
+        // where it would be functionally identical to "End Sesh".
         onNextTrick={
-          !advanceOnFirstLace && sequence.currentIndex < sequence.tricks.length - 1
+          sequence.currentIndex < sequence.tricks.length - 1
             ? () => dispatch({ type: 'seshEnded', now: Date.now() })
             : undefined
         }
