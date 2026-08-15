@@ -6,6 +6,16 @@ Entries keep their content as it was at completion. Don't retroactively edit a d
 
 ---
 
+### [T083.2] Build the free-form color picker with a contrast guardrail
+
+- **Area:** Profile / Theming
+- **Priority:** Medium (inherited from parent T083)
+- **Status:** Done
+- **Planning:** Required
+- **Description:** Add a color-picker UI (background + accent, picked independently) to Profile, backed by T083.1. Validate the chosen pair against a minimum contrast ratio (WCAG AA, 4.5:1) versus the app's fixed text color and block/warn on combinations that would be illegible.
+- **Exit criteria:** Component tests confirm picking valid colors saves them via the profile provider, an insufficient-contrast pair is rejected with a visible message, and the picker is reachable from Profile.
+- **Notes:** Depends on T083.1. Added a generic `src/shared/color/contrast.ts` WCAG relative-luminance utility (pinned against the standard `#767676` boundary gray), `isValidThemeHexColor` on the profile model (persistence now delegates to it instead of a second hand-copied regex), and `ThemeColorPicker` in `src/features/profile/components/` with independent background/accent hex fields, a live swatch, contrast feedback text, per-field dirty-gated Save, and a shared Reset-to-default. Wired into `src/app/profile/index.tsx` after the streak-settings section. Contrast is checked against `AppColors.ink` only, per the task's "versus the app's fixed text color" wording — not cross-checked against the other picked color.
+
 ### [T083.1] Add theme color fields to the Profile persistence domain
 
 - **Area:** Profile persistence

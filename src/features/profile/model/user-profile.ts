@@ -32,6 +32,10 @@ export function isValidStreakThresholdMinutes(minutes: number) {
   );
 }
 
+export function isValidThemeHexColor(value: string): boolean {
+  return /^#[0-9a-fA-F]{6}$/.test(value);
+}
+
 export function createStreakThresholdMs(minutes: number): number {
   if (!isValidStreakThresholdMinutes(minutes)) {
     throw new RangeError('A streak threshold must be a whole number of minutes from 1 to 60.');
