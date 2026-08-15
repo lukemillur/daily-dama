@@ -32,13 +32,12 @@ jest.mock('react-native-reanimated', () =>
   // eslint-disable-next-line @typescript-eslint/no-require-imports -- required by jest hoisting
   require('react-native-reanimated/mock'),
 );
-const mockDismissTo = jest.fn();
+const mockNavigate = jest.fn();
 
 // AssessmentEntry calls useRouter() directly for the post-run route reset. Keep the mock shared
-// so the completion test can verify that the nested Profile route is dismissed only by its
-// explicit wrap-up action.
+// so the completion test can verify Home is navigated to only by its explicit wrap-up action.
 jest.mock('expo-router', () => ({
-  useRouter: () => ({ dismissTo: mockDismissTo, replace: jest.fn(), push: jest.fn() }),
+  useRouter: () => ({ navigate: mockNavigate, replace: jest.fn(), push: jest.fn() }),
 }));
 
 const RANK_1_TRICK_IDS = KENDAMA_KENTEI_TRICKS.filter((trick) => trick.kenteiRank === 1).map(
@@ -121,7 +120,7 @@ async function mountAssessmentEntry() {
 describe('AssessmentEntry result copy', () => {
   beforeEach(async () => {
     await AsyncStorage.clear();
-    mockDismissTo.mockClear();
+    mockNavigate.mockClear();
     jest.useFakeTimers();
   });
 
@@ -167,7 +166,7 @@ describe('AssessmentEntry result copy', () => {
     });
   });
 
-  it('resets the Profile assessment route to Home from the result screen', async () => {
+  it('navigates Home from the result screen', async () => {
     await AsyncStorage.setItem(
       USER_PROFILE_STORAGE_KEY,
       serializeUserProfile({
@@ -192,14 +191,14 @@ describe('AssessmentEntry result copy', () => {
     expect(
       root.root.findAll((node) => node.props.children === 'Go to Home').length,
     ).toBeGreaterThan(0);
-    expect(mockDismissTo).not.toHaveBeenCalled();
+    expect(mockNavigate).not.toHaveBeenCalled();
 
     act(() => {
       pressByVisibleText(root, 'Go to Home');
     });
 
-    expect(mockDismissTo).toHaveBeenCalledTimes(1);
-    expect(mockDismissTo).toHaveBeenCalledWith('/');
+    expect(mockNavigate).toHaveBeenCalledTimes(1);
+    expect(mockNavigate).toHaveBeenCalledWith('/');
 
     act(() => {
       root.unmount();
