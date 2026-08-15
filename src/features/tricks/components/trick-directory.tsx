@@ -373,7 +373,7 @@ const SectionHeaderContainer = styled.View<{ readonly $custom: boolean }>`
   justify-content: space-between;
   gap: 16px;
   padding: 14px 22px;
-  background-color: ${({ $custom }) => ($custom ? '#d84929' : '#f4c94d')};
+  background-color: ${({ $custom, theme }) => ($custom ? '#d84929' : theme.accent)};
   border-top-width: 2px;
   border-bottom-width: 2px;
   border-color: #18382e;
