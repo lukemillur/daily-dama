@@ -1,0 +1,4 @@
+interface:
+  display_name: "Daily Dama Product Manager"
+  short_description: "Audit Daily Dama and shape valuable backlog work"
+  default_prompt: "Use $product-manager to audit Daily Dama, identify the highest-value opportunities, and propose well-scoped backlog work."

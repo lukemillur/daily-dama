@@ -11,6 +11,7 @@
 //   node .claude/scripts/verify.mjs --skip-export  # omit the web export
 //   node .claude/scripts/verify.mjs --only lint    # one step (repeatable)
 //   node .claude/scripts/verify.mjs --keep-going   # run every step even after a failure
+//   node .claude/scripts/verify.mjs --json         # machine-readable result
 //
 // Run it with a generous tool timeout (the sequence routinely exceeds the
 // default): the full run takes minutes.
@@ -31,11 +32,12 @@ export const STEPS = [
 ];
 
 export function parseArgs(argv) {
-  const options = { skipExport: false, only: [], keepGoing: false };
+  const options = { skipExport: false, only: [], keepGoing: false, json: false };
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index];
     if (arg === '--skip-export') options.skipExport = true;
     else if (arg === '--keep-going') options.keepGoing = true;
+    else if (arg === '--json') options.json = true;
     else if (arg === '--only') options.only.push(argv[++index]);
     else throw new Error(`unrecognized argument: ${arg}`);
   }
@@ -61,12 +63,17 @@ function tail(text, lines) {
   return `…(${split.length - lines} earlier lines in the log file)\n${split.slice(-lines).join('\n')}`;
 }
 
+function emitJson(result) {
+  process.stdout.write(`${JSON.stringify({ schemaVersion: 1, ...result })}\n`);
+}
+
 function main() {
   let options;
   try {
     options = parseArgs(process.argv.slice(2));
   } catch (error) {
-    process.stderr.write(`${error.message}\n`);
+    if (process.argv.includes('--json')) emitJson({ status: 'invalid-arguments', error: error.message });
+    else process.stderr.write(`${error.message}\n`);
     process.exit(2);
   }
 
@@ -90,12 +97,43 @@ function main() {
     const seconds = ((Date.now() - started) / 1000).toFixed(1);
     const output = `${proc.stdout ?? ''}${proc.stderr ?? ''}`;
     const code = proc.status === null ? 1 : proc.status;
-    results.push({ name: step.name, code, seconds, output, argv });
+    results.push({
+      name: step.name,
+      status: code === 0 ? 'passed' : 'failed',
+      code,
+      exitCode: code,
+      seconds,
+      durationMs: Date.now() - started,
+      command: argv.join(' '),
+      ...(code === 0 ? {} : { outputTail: tail(output.trim(), FAILURE_TAIL_LINES) }),
+    });
     fs.appendFileSync(logPath, `\n===== ${step.name}: ${argv.join(' ')} (exit ${code}, ${seconds}s) =====\n${output}`);
     if (code !== 0) {
       failure = failure ?? { name: step.name, code };
       if (!options.keepGoing) break;
     }
+  }
+
+  if (options.json) {
+    if (failure) {
+      emitJson({
+        status: 'failed',
+        firstFailedStep: failure.name,
+        options: { skipExport: options.skipExport, only: options.only, keepGoing: options.keepGoing },
+        steps: results,
+        logPath,
+      });
+      process.exit(failure.code || 1);
+    }
+    emitJson({
+      status: 'passed',
+      options: { skipExport: options.skipExport, only: options.only, keepGoing: options.keepGoing },
+      steps: results,
+      skippedSteps: STEPS.filter((step) => !planned.includes(step)).map((step) => step.name),
+      logPath,
+    });
+    fs.rmSync(exportDir, { recursive: true, force: true });
+    process.exit(0);
   }
 
   for (const result of results) {
