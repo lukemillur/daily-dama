@@ -8,6 +8,7 @@ import { Screen } from "@/components/ui/screen";
 import { BodyText, DisplayTitle, Eyebrow } from "@/components/ui/typography";
 import { AppColors, BottomTabInset } from "@/constants/theme";
 import { useRequireOnboarding } from "@/features/onboarding/state/require-onboarding";
+import { ThemeColorPicker } from "@/features/profile/components/theme-color-picker";
 import {
   createStreakThresholdMs,
   DEFAULT_STREAK_THRESHOLD_MS,
@@ -62,6 +63,8 @@ export default function ProfileScreen() {
             streakThresholdMs={streakThresholdMs}
             onSave={setStreakThresholdMs}
           />
+          <Divider />
+          <ThemeColorPicker />
         </Content>
       </ProfileScroll>
     </Screen>

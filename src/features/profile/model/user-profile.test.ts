@@ -3,6 +3,7 @@ import { describe, expect, it } from '@jest/globals';
 import {
   createLastSesh,
   INITIAL_USER_PROFILE,
+  isValidThemeHexColor,
   userProfileReducer,
 } from '@/features/profile/model/user-profile';
 import { createOpenEndedSeshPlan, OPEN_ENDED_SESH_PLAN } from '@/features/sesh/model/sesh';
@@ -229,5 +230,20 @@ describe('createLastSesh', () => {
         'targetLandingCount',
       ),
     ).toBe(false);
+  });
+});
+
+describe('isValidThemeHexColor', () => {
+  it('accepts a 6-digit hex color', () => {
+    expect(isValidThemeHexColor('#4477aa')).toBe(true);
+    expect(isValidThemeHexColor('#FFFFFF')).toBe(true);
+  });
+
+  it('rejects a 3-digit shorthand hex color', () => {
+    expect(isValidThemeHexColor('#fff')).toBe(false);
+  });
+
+  it('rejects a hex value missing its leading hash', () => {
+    expect(isValidThemeHexColor('4477aa')).toBe(false);
   });
 });

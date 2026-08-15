@@ -149,16 +149,6 @@ _The following batch (T083–T084) comes from a product-manager audit scoping tw
 - **Description:** Let a user pick a free-form background color and accent color, independently, so the app's post-onboarding look can match their physical kendama. Umbrella only — complete T083.1–T083.3.
 - **Notes:** Full free-form picker, not curated presets (explicit decision). Applies to post-onboarding screens only; pre-onboarding yellow state and functional colors (errors/success) stay fixed.
 
-### [T083.2] Build the free-form color picker with a contrast guardrail
-
-- **Area:** Profile / Theming
-- **Priority:** Medium (inherited from parent T083)
-- **Status:** In progress
-- **Planning:** Required
-- **Description:** Add a color-picker UI (background + accent, picked independently) to Profile, backed by T083.1. Validate the chosen pair against a minimum contrast ratio (WCAG AA, 4.5:1) versus the app's fixed text color and block/warn on combinations that would be illegible.
-- **Exit criteria:** Component tests confirm picking valid colors saves them via the profile provider, an insufficient-contrast pair is rejected with a visible message, and the picker is reachable from Profile.
-- **Notes:** Depends on T083.1.
-
 ### [T083.3] Apply theme colors to post-onboarding screens
 
 - **Area:** Theming (cross-cutting)

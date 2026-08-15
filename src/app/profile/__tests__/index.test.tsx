@@ -81,4 +81,14 @@ describe('ProfileScreen Kentei assessment copy', () => {
       root.unmount();
     });
   });
+
+  it('renders the theme color picker so it is reachable from Profile', async () => {
+    const root = await mountProfileScreen();
+
+    expect(findByText(root, 'App theme').length).toBeGreaterThan(0);
+
+    act(() => {
+      root.unmount();
+    });
+  });
 });

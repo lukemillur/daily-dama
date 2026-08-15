@@ -1,5 +1,5 @@
 import type { LastSesh, UserProfile } from '@/features/profile/model/user-profile';
-import { INITIAL_USER_PROFILE, isValidStreakThresholdMinutes } from '@/features/profile/model/user-profile';
+import { INITIAL_USER_PROFILE, isValidStreakThresholdMinutes, isValidThemeHexColor } from '@/features/profile/model/user-profile';
 import { isValidSeshTargetLandingCount, isValidTimedSeshMinutes } from '@/features/sesh/model/sesh';
 import type {
   KeyValueStorage,
@@ -53,7 +53,7 @@ function isLastSesh(value: unknown): value is LastSesh {
 }
 
 function isThemeColor(value: unknown): value is string {
-  return typeof value === 'string' && /^#[0-9a-fA-F]{6}$/.test(value);
+  return typeof value === 'string' && isValidThemeHexColor(value);
 }
 
 function isStreakThresholdMs(value: unknown): value is number {
