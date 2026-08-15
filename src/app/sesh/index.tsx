@@ -15,9 +15,11 @@ export default function SeshScreen() {
   const {
     trickId: trickIdParam,
     plannedDurationMs: plannedDurationMsParam,
+    mode: modeParam,
   } = useLocalSearchParams<{
     trickId?: string | string[];
     plannedDurationMs?: string | string[];
+    mode?: string | string[];
   }>();
   const { lastSesh, selectedTrickIds } = useUserProfile();
   const { tricks: customTricks } = useCustomTricks();
@@ -25,8 +27,10 @@ export default function SeshScreen() {
     () => selectAvailablePracticeTricks(KENDAMA_KENTEI_TRICKS, customTricks),
     [customTricks],
   );
-  const preferredTrickId =
-    (typeof trickIdParam === 'string' ? trickIdParam : undefined) ?? lastSesh?.trickId;
+  const linkedTrickId = typeof trickIdParam === 'string' ? trickIdParam : undefined;
+  const isDirectPractice =
+    linkedTrickId !== undefined && (typeof modeParam === 'string' ? modeParam : undefined) === 'practice';
+  const preferredTrickId = linkedTrickId ?? lastSesh?.trickId;
   const challengeDurationMs =
     typeof plannedDurationMsParam === 'string' ? Number(plannedDurationMsParam) : undefined;
   const initialPlan: SeshPlan | undefined = challengeDurationMs
@@ -45,6 +49,7 @@ export default function SeshScreen() {
         availableTricks={availableTricks}
         initialPlan={initialPlan}
         preferredTrickId={preferredTrickId}
+        directPracticeTrickId={isDirectPractice ? linkedTrickId : undefined}
         selectedTrickIds={selectedTrickIds}
       />
     </Screen>

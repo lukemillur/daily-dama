@@ -91,7 +91,7 @@ export interface SeshSummary {
 }
 
 export type SeshState =
-  | { readonly status: 'choosing' }
+  | { readonly status: 'choosing'; readonly directPracticeTrickId?: string }
   | { readonly status: 'countdown'; readonly trick: PracticeTrick; readonly plan: SeshPlan }
   | {
       readonly status: 'active';

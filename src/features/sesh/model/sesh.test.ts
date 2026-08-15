@@ -235,6 +235,31 @@ describe('sesh reducer', () => {
     expect(formatRemainingDuration(1)).toBe('00:01');
     expect(formatRemainingDuration(0)).toBe('00:00');
   });
+
+  it('clears directPracticeTrickId when seshReset is dispatched (T081)', () => {
+    const directPracticeChoosing: SeshState = {
+      status: 'choosing',
+      directPracticeTrickId: 'big-cup',
+    };
+    expect(seshReducer(directPracticeChoosing, { type: 'seshReset' })).toEqual(
+      INITIAL_SESH_STATE,
+    );
+  });
+
+  it('still transitions to countdown from a direct-practice choosing state (T081)', () => {
+    const directPracticeChoosing: SeshState = {
+      status: 'choosing',
+      directPracticeTrickId: 'big-cup',
+    };
+    const plan = OPEN_ENDED_SESH_PLAN;
+    expect(
+      seshReducer(directPracticeChoosing, { type: 'trickSelected', trick: BIG_CUP, plan }),
+    ).toMatchObject({
+      status: 'countdown',
+      trick: BIG_CUP,
+      plan,
+    });
+  });
 });
 
 describe('preferred Sesh trick', () => {
