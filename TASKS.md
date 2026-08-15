@@ -145,7 +145,7 @@ _The following batch (T080–T082) comes from the QA checklist completed against
 
 - **Area:** Sesh
 - **Priority:** High
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** Starting a Sesh from a direct-practice link (e.g. `src/features/stats/components/neglected-tricks-section.tsx:37`, `src/features/goals/components/trick-goals-screen.tsx:141`, `src/features/tricks/components/trick-directory.tsx`'s `showPracticeAction` row) passes `trickId` and `mode` params to `/sesh`, but `src/app/sesh/index.tsx:16-29` never reads `mode`, and `Sesh` (`src/features/sesh/components/sesh.tsx`) always starts in the general `TrickPicker` choosing state — `preferredTrickId` only highlights that trick in the full picker instead of preselecting it. Fix this so a direct-practice link renders only the linked trick as a card on the Sesh screen (format/duration/target still adjustable before starting), with no other trick cards shown, plus a "Cancel practice" control that returns to the standard Sesh choosing screen.
 - **Exit criteria:** Starting a Sesh via a direct-practice link shows only the linked trick's card (no other tricks listed), format and duration/target remain editable before starting, and a visible "Cancel practice" control returns the user to the standard multi-trick Sesh choosing screen. Automated coverage exercises the new reducer/state path where practical.
