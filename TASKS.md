@@ -116,8 +116,6 @@ Tasks here may be picked up by more than one agent at a time — possibly differ
 
 _Raw ideas land here — a name and a one-line description, nothing more. Discuss and apply the promotion checklist above before moving an entry down to Backlog._
 
-- **Custom app theming** (Medium) — undecided: what's themeable, curated presets vs. full customization, where preferences persist.
-- **Lesson programs** (Medium) — structured content moving a user from one rank to the next; content model and authoring are entirely undefined.
 - **First-lace "extra flashy" tiering** (Medium, follow-on to T008) — escalate the celebration based on time/attempts/sessions spent before landing; thresholds undefined.
 - **Competition mode** (Low) — trick lists by competition skill level, portable into sesh mode.
 - **Longest-grind-per-trick metric** (Low) — time-to-first-lace per trick; display surface (Stats?) undecided.
@@ -140,6 +138,56 @@ _This next batch (T045–T069) comes from a QA pass over PR 55's suggested check
 _The following batch (T070–T079) comes from the QA checklist completed against PR 83, worked top to bottom. New entries are intentionally placed before the older queue so the next actionable QA finding is selected first. Existing task history is not rewritten._
 
 _The following batch (T080–T082) comes from the QA checklist completed against PR 99, worked top to bottom. New entries are intentionally placed before the older queue so the next actionable QA finding is selected first. Existing task history is not rewritten._
+
+_The following batch (T083–T084) comes from a product-manager audit scoping two new product surfaces: custom app theming and rank-progression suggestions. Promoted from `Needs scoping` after resolving their open product/technical questions with the user._
+
+### [T083] Custom app theming — match a user's kendama color scheme
+
+- **Area:** Theming / Profile
+- **Priority:** Medium
+- **Status:** Not started
+- **Description:** Let a user pick a free-form background color and accent color, independently, so the app's post-onboarding look can match their physical kendama. Umbrella only — complete T083.1–T083.3.
+- **Notes:** Full free-form picker, not curated presets (explicit decision). Applies to post-onboarding screens only; pre-onboarding yellow state and functional colors (errors/success) stay fixed.
+
+### [T083.1] Add theme color fields to the Profile persistence domain
+
+- **Area:** Profile persistence
+- **Priority:** Medium (inherited from parent T083)
+- **Status:** Not started
+- **Planning:** Required
+- **Description:** Extend the user-profile schema with optional `themeBackgroundColor`/`themeAccentColor` fields, following the existing v1-is-provisional pattern for this domain (per AGENTS.md — no migration infra needed).
+- **Exit criteria:** Reducer/persistence tests confirm the new fields round-trip through hydration, default to `undefined` (fixed app colors) when unset, and don't affect existing profile fields.
+- **Notes:** First child of T083; no dependency on other children.
+
+### [T083.2] Build the free-form color picker with a contrast guardrail
+
+- **Area:** Profile / Theming
+- **Priority:** Medium (inherited from parent T083)
+- **Status:** Not started
+- **Planning:** Required
+- **Description:** Add a color-picker UI (background + accent, picked independently) to Profile, backed by T083.1. Validate the chosen pair against a minimum contrast ratio (WCAG AA, 4.5:1) versus the app's fixed text color and block/warn on combinations that would be illegible.
+- **Exit criteria:** Component tests confirm picking valid colors saves them via the profile provider, an insufficient-contrast pair is rejected with a visible message, and the picker is reachable from Profile.
+- **Notes:** Depends on T083.1.
+
+### [T083.3] Apply theme colors to post-onboarding screens
+
+- **Area:** Theming (cross-cutting)
+- **Priority:** Medium (inherited from parent T083)
+- **Status:** Not started
+- **Planning:** Required
+- **Description:** Replace the fixed decorative background (`AppColors.sage`, etc.) and primary accent color across Home/Sesh/Tricks/Stats/Profile with the user's stored theme when set, falling back to current fixed colors when unset. Functional colors (errors, success states, text) are out of scope.
+- **Exit criteria:** In-browser check confirms every post-onboarding screen reflects a saved custom background/accent, an unset theme renders identically to today's fixed colors, and pre-onboarding yellow state is unaffected.
+- **Notes:** Depends on T083.2. The planner should enumerate every current fixed-color usage this touches before implementation — that enumeration itself is the risk in this ticket.
+
+### [T084] Suggest the next trick for the user's Kentei rank on Home
+
+- **Area:** Home
+- **Priority:** Medium
+- **Status:** Not started
+- **Planning:** Implementer
+- **Description:** Add a Home card suggesting the next standard Kentei trick to learn: the first trick in rank order, at the user's current rank, not yet in `manuallyUnlockedTrickIds`; once the rank is fully laced, suggest the next rank's first trick. Standard tricks only — custom tricks are excluded since rank data doesn't apply to them. Separate, additive card alongside the existing neglected-tricks surface (Stats), not a merge.
+- **Exit criteria:** A test on `createHomeSummary` (or a new sibling model function) confirms the correct next trick is chosen across: mid-rank with some tricks laced, a fully-laced rank rolling to the next rank's first trick, and the top rank fully laced (no suggestion). A `DailyHome` component test confirms the card renders the suggested trick and a practice entry point.
+- **Notes:** Mirrors the existing `neglected-tricks-section.tsx` pattern for structure. Reuses `KENDAMA_KENTEI_TRICKS`'s existing rank/order and `profile.manuallyUnlockedTrickIds`; no persistence or schema change.
 
 ## Done
 
