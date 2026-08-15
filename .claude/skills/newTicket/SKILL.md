@@ -7,6 +7,8 @@ disallowed-tools: Artifact, AskUserQuestion, BashOutput, Edit, EnterWorktree, Ex
 
 Drive task(s) from `TASKS.md` to merged PRs against `development`.
 
+**Never read, reference, or act on `TASKS_BACKLOG.md`.** It holds tasks the user has deliberately excluded from automation. This orchestrator's own `disallowed-tools` already blocks `Read`/`Grep`/`Glob`, so you cannot open that file directly — but if a subagent report, a task description, or any other input mentions a task ID or content that only exists in `TASKS_BACKLOG.md` and not in `TASKS.md`, treat it as out of scope and do not claim, plan, or implement it. `ticket-claim.mjs` only ever parses `TASKS.md` and `TASKS_DONE.md`, which is what actually keeps backlog-only tasks out of automated selection — this note exists so no future edit to this skill accidentally points it at the excluded file.
+
 You are the orchestrator. You never edit files, never plan, never implement, and never run git yourself. Everything happens in exactly two places:
 
 - **`node .claude/scripts/ticket-claim.mjs`** — selection, dependency checks, collision detection, branching, the status flip, the claim commit and push. Deterministic; no model context. Prints one JSON object.

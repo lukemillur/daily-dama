@@ -86,7 +86,7 @@ yarn tsc --noEmit
 yarn expo export --platform web --output-dir /tmp/daily-dama-web-export
 ```
 
-`node .claude/scripts/verify.mjs` runs all four in order as one command, prints one line per step, and on failure prints the failing command's output and exits non-zero (`--skip-export` omits the export for docs- or test-only changes). Use it when you'd otherwise spend four separate tool calls; run the individual commands when you're iterating on one of them.
+`node .claude/scripts/verify.mjs` runs all four in order as one command, prints one line per step, and on failure prints the failing command's output and exits non-zero (`--skip-export` omits the export for docs- or test-only changes). Add `--json` when an agent or workflow needs machine-readable step evidence. Use it when you'd otherwise spend four separate tool calls; run the individual commands when you're iterating on one of them.
 
 The workflow tooling under `.claude/scripts/` has its own dependency-free test suite, separate from the app's jest suite: `yarn test:workflow`.
 

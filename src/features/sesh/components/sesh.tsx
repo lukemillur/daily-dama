@@ -62,12 +62,6 @@ interface SeshProps {
   readonly preferredTrickId?: string;
   readonly initialPlan?: SeshPlan;
   /**
-   * True only when the caller explicitly navigated in via a practice entry
-   * point (deep link with `mode=practice`), never on a plain Sesh-tab visit
-   * — see `isQuickStart` below for the full gate.
-   */
-  readonly quickStart?: boolean;
-  /**
    * Opaque pass-through recorded on the practice-history record for this
    * sesh, forwarded as-is to `recordCompletedSesh`. No current caller sets
    * this — `Sesh` only has one call site, always regular practice — but it
@@ -80,7 +74,6 @@ export function Sesh({
   availableTricks,
   initialPlan,
   preferredTrickId,
-  quickStart,
   selectedTrickIds,
   origin,
 }: SeshProps) {
@@ -106,7 +99,6 @@ export function Sesh({
   )
     ? preferredTrickId
     : undefined;
-  const isQuickStart = Boolean(quickStart) && validatedPreferredTrickId !== undefined;
   const activeTrickId = state.status === 'active' ? state.trick.id : undefined;
   const trickNotes = useMemo(
     () => (activeTrickId ? selectNotesForTrick(notes, activeTrickId) : []),
@@ -169,17 +161,6 @@ export function Sesh({
 
   if (state.status === 'choosing') {
     if (practiceTricks.length === 0) return <EmptyState />;
-    if (isQuickStart) {
-      const trick = practiceTricks.find((candidate) => candidate.id === validatedPreferredTrickId)!;
-      return (
-        <QuickStart
-          trick={trick}
-          initialPlan={initialPlan}
-          sessions={sessions}
-          onStart={handleTrickSelected}
-        />
-      );
-    }
     return (
       <TrickPicker
         initialPlan={initialPlan}
@@ -276,46 +257,6 @@ function EmptyState() {
   );
 }
 
-function QuickStart({
-  trick,
-  initialPlan,
-  sessions,
-  onStart,
-}: {
-  readonly trick: PracticeTrick;
-  readonly initialPlan?: SeshPlan;
-  readonly sessions: readonly PracticeSessionRecord[];
-  readonly onStart: (
-    trick: PracticeTrick,
-    plan: SeshPlan,
-    personalBest: number | undefined,
-    liveChallengeEnabled: boolean,
-  ) => void;
-}) {
-  const plan = initialPlan ?? createTimedSeshPlan(5);
-  const personalBest =
-    plan.kind === 'timed' ? getPersonalBest(sessions, trick.id, plan.durationMs) : undefined;
-
-  return (
-    <CenteredPanel>
-      <Eyebrow>Ready when you are</Eyebrow>
-      <DisplayTitle>{trick.name}</DisplayTitle>
-      {trick.descriptor ? <BodyCopy>{trick.descriptor}</BodyCopy> : null}
-      <SequenceSteps trick={trick} />
-      {plan.kind === 'timed' && personalBest !== undefined ? (
-        <ChoiceBest>
-          Best at {formatDuration(plan.durationMs)} — {personalBest} {personalBest === 1 ? 'lace' : 'laces'}
-        </ChoiceBest>
-      ) : null}
-      <PrimaryButton
-        accessibilityLabel={`Start a sesh with ${trick.name}`}
-        onPress={() => onStart(trick, plan, personalBest, false)}>
-        Start sesh
-      </PrimaryButton>
-    </CenteredPanel>
-  );
-}
-
 function TrickPicker({
   initialPlan,
   preferredTrickId,
@@ -376,7 +317,12 @@ function TrickPicker({
         <DisplayTitle>What are we{`\n`}working on?</DisplayTitle>
         <BodyCopy>Choose how long you want to focus, then pick one of the tricks from your practice list.</BodyCopy>
         <Link href="/sesh/multi-trick" asChild>
-          <MultiTrickLink accessibilityRole="link">Or work through several tricks in a row.</MultiTrickLink>
+          <MultiTrickAction
+            accessibilityLabel="Practice several tricks"
+            accessibilityRole="link">
+            <MultiTrickActionTitle>Practice several tricks</MultiTrickActionTitle>
+            <MultiTrickActionCopy>Build a line and work through it one trick at a time.</MultiTrickActionCopy>
+          </MultiTrickAction>
         </Link>
         <PlanLabel>Practice format</PlanLabel>
         <PlanChoices>
@@ -492,6 +438,7 @@ export function Countdown({
   onComplete,
   attemptsReminder,
   onSkipRank,
+  onSkipCountdown,
   onCancel,
   showRankStanding,
 }: {
@@ -500,6 +447,7 @@ export function Countdown({
   readonly onComplete: () => void;
   readonly attemptsReminder?: boolean;
   readonly onSkipRank?: () => void;
+  readonly onSkipCountdown?: () => void;
   readonly onCancel?: () => void;
   readonly showRankStanding?: boolean;
 }) {
@@ -543,6 +491,11 @@ export function Countdown({
         <CancelButton variant="secondary" size="medium" onPress={onCancel}>
           Cancel
         </CancelButton>
+      ) : null}
+      {onSkipCountdown ? (
+        <CountdownSkipButton accessibilityLabel="Skip countdown" accessibilityRole="button" onPress={onSkipCountdown}>
+          <CountdownSkipButtonText>Skip</CountdownSkipButtonText>
+        </CountdownSkipButton>
       ) : null}
       {onSkipRank ? (
         <SkipRankButton accessibilityRole="button" onPress={onSkipRank}>
@@ -1210,12 +1163,24 @@ const EndAnywayButtonText = styled.Text`color: ${AppColors.textMuted}; font-size
 const AttemptsReminder = styled.Text`width: 100%; text-align: center; color: ${AppColors.textMuted}; font-size: 12px; font-weight: 800; letter-spacing: 0.4px; margin-top: 10px; text-transform: uppercase;`;
 
 const RankStandingLabel = styled.Text`width: 100%; text-align: center; color: ${AppColors.textMuted}; font-size: 12px; font-weight: 800; letter-spacing: 0.4px; margin-bottom: 10px; text-transform: uppercase;`;
+const CountdownSkipButton = styled(Pressable)`min-height: 40px; align-items: center; justify-content: center; margin-top: 14px; padding: 8px 24px;`;
+const CountdownSkipButtonText = styled.Text`color: ${AppColors.textMuted}; font-size: 13px; font-weight: 800; text-decoration-line: underline;`;
 const SkipRankButton = styled(Pressable)`min-height: 40px; align-items: center; justify-content: center; margin-top: 14px; padding: 8px 24px;`;
 const CancelButton = styled(Button)`margin-top: 14px;`;
 const SkipRankButtonText = styled.Text`color: ${AppColors.textMuted}; font-size: 13px; font-weight: 800; text-decoration-line: underline;`;
 const NextTrickButton = styled(Pressable)`width: 100%; min-height: 52px; align-items: center; justify-content: center; margin-top: 20px; padding: 12px 24px; background-color: ${AppColors.yellow}; border: 2px solid ${AppColors.ink}; border-radius: 5px;`;
 const NextTrickButtonText = styled.Text`color: ${AppColors.ink}; font-size: 16px; font-weight: 900;`;
-const MultiTrickLink = styled.Text`margin-top: 14px; color: ${AppColors.textMuted}; font-size: 13px; font-weight: 800; text-decoration-line: underline;`;
+const MultiTrickAction = styled(Pressable)`
+  min-height: 78px;
+  justify-content: center;
+  margin-top: 26px;
+  padding: 14px 16px;
+  background-color: ${AppColors.yellow};
+  border: 2px solid ${AppColors.ink};
+  border-radius: 5px;
+`;
+const MultiTrickActionTitle = styled.Text`color: ${AppColors.ink}; font-size: 18px; font-weight: 900;`;
+const MultiTrickActionCopy = styled.Text`color: ${AppColors.inkSoft}; font-size: 13px; font-weight: 650; line-height: 18px; margin-top: 4px;`;
 const TargetStatus = styled.Text<{ $met: boolean }>`width: 100%; text-align: center; margin-top: 12px; color: ${({ $met }) => ($met ? AppColors.red : AppColors.ink)}; font-size: 15px; font-weight: 900;`;
 const ResultBanner = styled.Text<{ $beaten: boolean }>`width: 100%; text-align: center; margin-top: 18px; padding: 12px 16px; background-color: ${({ $beaten }) => ($beaten ? '#e5edcf' : '#f8f1dd')}; border-left-width: 5px; border-left-color: ${({ $beaten }) => ($beaten ? AppColors.red : AppColors.ink)}; color: ${AppColors.ink}; font-size: 15px; font-weight: 900;`;
 const CelebrationBannerCard = styled.View`width: 100%; max-width: 500px; align-items: center; background-color: ${AppColors.yellow}; border: 3px solid ${AppColors.ink}; border-radius: 6px; padding: 18px 20px; margin-bottom: 20px;`;

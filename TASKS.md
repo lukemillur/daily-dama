@@ -4,6 +4,8 @@ Working backlog for Daily Dama **core-functionality** work. This file is the che
 
 **Scope note:** Trick visualization (`src/features/trick-viz/`) is intentionally excluded from this file right now. Its own backlog lives in [TRICK_VIZ_HANDOFF.md](TRICK_VIZ_HANDOFF.md) §15. Do not pull items from there into this file unless explicitly told to resume that thread.
 
+**Automation note:** [TASKS_BACKLOG.md](TASKS_BACKLOG.md) holds scoped, ready-to-work tasks that are deliberately kept out of this file so the `newTicket` workflow (`.claude/skills/newTicket/SKILL.md`) never claims, plans, or implements them automatically. Moving an entry between the two files is a deliberate human decision, not something to do as a side effect of other work.
+
 ## How to use this file
 
 **Picking up work:**
@@ -137,228 +139,37 @@ _This next batch (T045–T069) comes from a QA pass over PR 55's suggested check
 
 _The following batch (T070–T079) comes from the QA checklist completed against PR 83, worked top to bottom. New entries are intentionally placed before the older queue so the next actionable QA finding is selected first. Existing task history is not rewritten._
 
-### [T070] Harden Kentei assessment exit behavior
+_The following batch (T080–T082) comes from the QA checklist completed against PR 99, worked top to bottom. New entries are intentionally placed before the older queue so the next actionable QA finding is selected first. Existing task history is not rewritten._
 
-- **Area:** Kentei assessment / navigation
+### [T080] Fix Kentei assessment exit and stale wrap-up leak
+
+- **Area:** Navigation / Sesh
 - **Priority:** High
 - **Status:** Not started
 - **Planning:** Required
-- **Description:** Correct the two post-assessment regressions found in the PR 83 QA pass: returning Home must clear the nested assessment route, and a laced assessment trick must advance without briefly showing the generic “Nice work” completion panel.
-- **Notes:** Umbrella only — complete T070.1 and T070.2. Preserve the existing assessment result and promotion behavior.
+- **Description:** The Kentei assessment wrap-up screen's "Go to Home" button (`src/features/sesh/components/assessment-entry.tsx:65-66`) calls `router.dismissTo('/')`, but the wrap-up screen lives on the nested Profile stack (`/profile/kentei-assessment`, pushed via `router.push` in `src/app/profile/index.tsx:56`) and `'/'` is not part of that stack's history, so the call is a no-op and the button does nothing. Separately, `src/app/profile/_layout.tsx` has no `tabPress` listener resetting its stack on tab re-press, unlike `src/app/sesh/_layout.tsx` and `src/app/tricks/_layout.tsx` — so if a user routes around the stuck wrap-up screen, re-entering Profile can still show the stale wrap-up instead of the normal Profile screen.
+- **Exit criteria:** From the Kentei wrap-up screen, pressing "Go to Home" navigates to the Home tab. Separately, after completing a Kentei assessment and pressing "Go to Home," navigating to Profile shows the normal Profile screen, not a stale wrap-up — checked both immediately and after re-pressing the Profile tab.
+- **Notes:** Consider mirroring the existing `tabPress`-reset pattern already used in `src/app/sesh/_layout.tsx` / `src/app/tricks/_layout.tsx` for `src/app/profile/_layout.tsx`, and fixing the dismiss target so it actually lands on Home rather than no-op'ing. Confirm the fix doesn't regress normal (non-assessment) Profile stack navigation.
 
-### [T070.1] Reset the Profile route after leaving Kentei assessment
+### [T081] Preselect direct-practice trick on the Sesh screen with a cancel affordance
 
-- **Area:** Kentei assessment / navigation
-- **Priority:** High (inherited from parent T070)
-- **Status:** Not started
-- **Planning:** Required
-- **Description:** When the Kentei assessment wrap-up's “Go to Home” action is pressed, replace or otherwise reset the assessment route state so a later visit to Profile renders the default Profile screen rather than the stale assessment wrap-up.
-- **Exit criteria:** A route-level or component-level regression test starts from Profile, enters Kentei assessment, completes a run, presses “Go to Home,” then navigates to Profile and finds the default Profile content with no assessment wrap-up; the assessment wrap-up still navigates Home and retains its result copy before leaving.
-- **Notes:** Current assessment entry uses local `AssessmentEntry` state and `router.replace('/')`; inspect the Expo Router stack/tab interaction before choosing a reset mechanism. Do not persist assessment UI state.
-
-### [T070.2] Remove the transient Kentei “Nice work” panel after lacing
-
-- **Area:** Kentei assessment / Sesh sequencing
-- **Priority:** High (inherited from parent T070)
-- **Status:** Not started
-- **Planning:** Required
-- **Description:** Prevent the shared multi-trick Sesh renderer from exposing its one-render “Sequence complete / Nice work” fallback when a Kentei assessment advances from a laced trick to another trick or to the assessment wrap-up.
-- **Exit criteria:** Component tests cover lacing the final assessment trick and lacing a non-final assessment trick, and in neither case render the generic “Nice work.” panel during the transition; the intended assessment wrap-up or next trick remains visible and existing regular multi-trick completion behavior is unchanged.
-- **Notes:** The fallback is currently reachable between `completed` state and the effect that advances `MultiTrickSesh`; keep the fix scoped to the assessment/auto-advance path unless a shared sequencing correction is demonstrably safer.
-
-### [T071] Make multi-trick Sesh entry prominent
-
-- **Area:** Sesh / navigation UX
-- **Priority:** Medium
-- **Status:** Not started
-- **Planning:** Required
-- **Description:** Promote the multi-trick Sesh flow from the current inline text link into a clearly identifiable primary route option on the Sesh home screen, while retaining access to single-trick practice and the existing multi-trick setup flow.
-- **Exit criteria:** A component test identifies an obvious, accessible multi-trick entry action with dedicated copy and verifies that activating it links to `/sesh/multi-trick`; the Sesh home still renders the single-trick format controls and the web layout remains usable at the supported narrow width.
-- **Notes:** Current entry is `MultiTrickLink` inside `TrickPicker`; choose hierarchy and copy that fit the existing visual system rather than adding a generic card or decorative treatment.
-
-### [T072] Return multi-trick completion to Sesh home
-
-- **Area:** Multi-trick Sesh / navigation
+- **Area:** Sesh
 - **Priority:** High
 - **Status:** Not started
 - **Planning:** Required
-- **Description:** Change the casual multi-trick flow's wrap-up “Finish sesh” action to return to the Sesh home route instead of resetting the local wizard to trick selection.
-- **Exit criteria:** A component or route integration test completes a multi-trick run, presses “Finish sesh,” and verifies that `/sesh` is shown with the Sesh home picker rather than the multi-trick selection step; canceling from the setup screen still returns to Sesh home.
-- **Notes:** `MultiTrickSeshEntry.handleFinished` currently resets local state, while the setup exit already calls `router.replace('/sesh')`. Preserve practice-history recording and the ability to start a fresh multi-trick run from its route.
+- **Description:** Starting a Sesh from a direct-practice link (e.g. `src/features/stats/components/neglected-tricks-section.tsx:37`, `src/features/goals/components/trick-goals-screen.tsx:141`, `src/features/tricks/components/trick-directory.tsx`'s `showPracticeAction` row) passes `trickId` and `mode` params to `/sesh`, but `src/app/sesh/index.tsx:16-29` never reads `mode`, and `Sesh` (`src/features/sesh/components/sesh.tsx`) always starts in the general `TrickPicker` choosing state — `preferredTrickId` only highlights that trick in the full picker instead of preselecting it. Fix this so a direct-practice link renders only the linked trick as a card on the Sesh screen (format/duration/target still adjustable before starting), with no other trick cards shown, plus a "Cancel practice" control that returns to the standard Sesh choosing screen.
+- **Exit criteria:** Starting a Sesh via a direct-practice link shows only the linked trick's card (no other tricks listed), format and duration/target remain editable before starting, and a visible "Cancel practice" control returns the user to the standard multi-trick Sesh choosing screen. Automated coverage exercises the new reducer/state path where practical.
+- **Notes:** `seshReducer`'s existing `'seshReset'` action (`src/features/sesh/model/sesh.ts:187-188`) already resets to `INITIAL_SESH_STATE` and is reused for "cancel countdown" and "reset after completed" — the cancel-practice control can likely dispatch the same action rather than introducing a new one. Keep the direct-practice entry state distinct from the general choosing state so the single-trick, no-picker rendering is unambiguous.
 
-### [T073] Keep “Next trick” available with auto-advance enabled
+### [T082] Add horizontal margin to the Trick Goals shared trick-directory picker
 
-- **Area:** Multi-trick Sesh / controls
-- **Priority:** High
-- **Status:** Not started
-- **Planning:** Required
-- **Description:** Render the explicit “Next trick” action on non-final active tricks even when “Advance after first lace” is enabled, so a user can move on without lacing the current trick.
-- **Exit criteria:** Multi-trick component tests enable auto-advance, advance to an active non-final trick, verify “Next trick” is present, press it without lacing, and verify the next trick becomes active; lacing still auto-advances as before and the final trick does not show a redundant next action.
-- **Notes:** Current `MultiTrickSesh` deliberately sets `onNextTrick` to `undefined` when `advanceOnFirstLace` is true. Keep the existing lace acknowledgment/automatic transition semantics separate from the manual action.
-
-### [T074] Use compact back navigation in multi-trick setup
-
-- **Area:** Multi-trick Sesh / navigation UX
+- **Area:** Tricks / Goals
 - **Priority:** Low
 - **Status:** Not started
-- **Planning:** Required
-- **Description:** Replace the large first-step multi-trick setup “Back” control with the compact back-to-parent treatment used by the trick-specific Stats screen, while preserving its return to Sesh home.
-- **Exit criteria:** A component test exposes the first-step action with the established compact back-navigation label/accessibility semantics and pressing it routes to `/sesh`; the timing setup step retains its separate “Back to trick selection” action.
-- **Notes:** Inspect the existing trick-specific Stats route/component for the authoritative compact treatment before introducing a new button variant. This is a visual/navigation refinement, not a change to the wizard state model.
-
-### [T075] Allow users to skip every multi-trick countdown
-
-- **Area:** Multi-trick Sesh / countdown
-- **Priority:** High
-- **Status:** Not started
-- **Planning:** Required
-- **Description:** Add a simple accessible “Skip” action to every countdown encountered in the casual multi-trick flow, including the first trick and later tricks when inter-trick countdowns are enabled, so the user can begin practicing immediately.
-- **Exit criteria:** Component tests show “Skip” during the first and subsequent multi-trick countdowns, pressing it enters the corresponding trick's active state without waiting for the timer, and skipping does not record a landing or skip a trick; the existing countdown cancel behavior and assessment-specific countdown behavior remain unchanged unless the shared implementation requires an explicitly tested compatibility adjustment.
-- **Notes:** Keep countdown completion timestamp semantics valid when skipped. Do not broaden this into a persisted countdown preference; the requested control is per-run.
-
-### [T076] Establish Sesh-tab return-home behavior
-
-- **Area:** Sesh / navigation
-- **Priority:** High
-- **Status:** Not started
-- **Planning:** Required
-- **Description:** Make pressing the Sesh navigation item a reliable return to the Sesh home screen from wrap-up screens and all nested Sesh routes, rather than exposing stale local state or leaving the user inside a child route.
-- **Notes:** Umbrella only — complete T076.1 and T076.2. The contract applies to both single-trick and multi-trick/assessment-related Sesh navigation surfaces; do not change the meaning of the Profile, Tricks, Stats, or Home tabs.
-
-### [T076.1] Define the Sesh tab reset route contract
-
-- **Area:** Sesh / Expo Router navigation
-- **Priority:** High (inherited from parent T076)
-- **Status:** Not started
-- **Planning:** Required
-- **Description:** Establish the route-level mechanism that maps a Sesh tab press to the canonical `/sesh` home route and clears or remounts nested Sesh state as necessary.
-- **Exit criteria:** A route/navigation test demonstrates that pressing the Sesh tab from a nested Sesh route resolves to `/sesh`, and a subsequent render shows the Sesh home picker rather than the previously active child or wrap-up screen; the mechanism works with the existing web tab implementation without changing the five-link order.
-- **Notes:** Inspect the root tabs layout and Expo Router tab behavior before implementing. Avoid storing navigation handles or transient Sesh UI state in persistent providers.
-
-### [T076.2] Apply and verify the reset contract across Sesh screens
-
-- **Area:** Sesh / navigation
-- **Priority:** High (inherited from parent T076)
-- **Status:** Not started
-- **Planning:** Required
-- **Description:** Apply T076.1's reset behavior to the single-trick completion screen, casual multi-trick wrap-up, assessment wrap-up, and any nested Sesh setup/active routes that can be reached through the Sesh tab.
-- **Exit criteria:** Focused web checks and automated coverage exercise Sesh-tab presses from each listed screen and confirm the canonical Sesh home picker is rendered every time; direct finish/cancel actions retain their existing destinations and practice-history behavior. Depends on T076.1.
-- **Notes:** This is a verification/integration child, not permission to redesign the Sesh flows. Native validation remains deferred under the repository's active platform scope.
-
-### [T077] Correct direct-practice entry lifecycle
-
-- **Area:** Sesh / practice entry points
-- **Priority:** High
-- **Status:** Not started
-- **Planning:** Required
-- **Description:** Make direct practice entry points, including neglected-trick practice, return to canonical Sesh home after completion and preserve access to normal Sesh navigation instead of leaving the user in a locked quick-start state.
-- **Notes:** Umbrella only — complete T077.1 and T077.2. Preserve the useful preselected-trick context at the initial entry point, but do not let it dictate post-completion navigation.
-
-### [T077.1] Exit direct-practice wrap-up to Sesh home
-
-- **Area:** Sesh / practice entry points
-- **Priority:** High (inherited from parent T077)
-- **Status:** Not started
-- **Planning:** Required
-- **Description:** When a Sesh launched with a direct practice entry point completes, make “Start another sesh” leave the quick-start route/state and return to the normal Sesh home picker instead of returning to “Ready when you are” for the same trick.
-- **Exit criteria:** An integration test starts Sesh from a neglected-trick/practice link, completes the run, presses “Start another sesh,” and verifies the Sesh home picker is rendered; pressing the Sesh tab afterward also reaches the same home picker without a route lock.
-- **Notes:** Current `/sesh?trickId=...&mode=practice` sets `quickStart`, and `CompletedSesh.onRepeat` re-enters the same local reducer. Separate initial quick-start behavior from post-completion behavior.
-
-### [T077.2] Allow direct-practice users to customize before starting
-
-- **Area:** Sesh / practice entry points
-- **Priority:** High (inherited from parent T077)
-- **Status:** Not started
-- **Planning:** Required
-- **Description:** Preserve the preselected trick when entering Sesh from practice, but expose the normal timed/open-ended format and duration/target customization before the user starts the run.
-- **Exit criteria:** A component test mounts Sesh with a practice-entry trick, verifies that the trick is preselected or prioritized, exposes timed/open-ended controls and their validation, and confirms the chosen plan is passed into the countdown; the plain `/sesh` picker behavior remains unchanged. Depends on T077.1.
-- **Notes:** Do not silently discard the practice-entry trick or mutate the focused-trick list. Reuse the existing `TrickPicker` plan model where practical instead of creating a second customization form. Depends on T077.1 because the entry-state refactor must establish the canonical post-practice route before customization is exposed.
-
-### [T078] Reuse the trick directory in all-trick goal creation
-
-- **Area:** Goals / Tricks UI
-- **Priority:** Medium
-- **Status:** Not started
-- **Planning:** Required
-- **Description:** Replace the bespoke trick picker on the all-trick Add Goal screen with the shared directory presentation and ensure the user's focused tricks are represented in the same way as elsewhere in the product.
-- **Exit criteria:** Goal-screen tests verify that standard and custom tricks render through the shared directory component/style, focused tricks appear in the focused section in the expected order, selecting a trick still opens the existing goal form, search/selection remains functional, and goal creation persists the selected trick.
-- **Notes:** `AllTrickGoalsScreen` currently sorts `DirectoryTrick` values into custom `TrickOption` rows. Reuse `TrickDirectory` and its focused-section contract without changing goal-domain persistence or the existing per-trick goal screen.
-
-### [T079] Keep custom-trick save actionable with inline validation
-
-- **Area:** Tricks / custom-trick forms
-- **Priority:** Medium
-- **Status:** Not started
-- **Planning:** Required
-- **Description:** Keep “Save custom trick” enabled even when the draft is invalid; pressing it should leave the form open and populate each invalid associated field with a concise, actionable error message explaining what is missing or incorrect.
-- **Exit criteria:** Form tests verify the save action is enabled for invalid standalone and sequence drafts, pressing it does not persist or navigate away, and the relevant name, sequence-step, and rank validation messages appear beside their fields; valid drafts still save exactly once and preserve existing edit behavior.
-- **Notes:** Current `CustomTrickForm` disables the primary button from `validation.status` and `save()` silently returns on an invalid result. Reuse `validateCustomTrickDraft` as the source of truth; distinguish untouched fields from a submitted invalid form without adding a new persistence schema.
-
-### [T042] Complete native tab iconography
-
-- **Area:** Navigation
-- **Priority:** Medium
-- **Status:** Not started
-- **Planning:** Required
-- **Description:** Give Sesh, Tricks, Stats, and Profile distinct, subject-appropriate native tab icons rather than relying on incomplete or repeated icon treatment.
-- **Exit criteria:** Deliberate iOS and Android checks confirm all five native tabs have distinct, route-appropriate icons that remain legible and unclipped in selected and unselected states, while the existing web navigation and its verified 320 px fit remain unchanged.
-- **Notes:** This is native navigation polish, not a web-navigation redesign. Update navigation tests or snapshots where they provide useful regression protection.
-
-### [T043] Harden active Sesh behavior across app backgrounding
-
-- **Area:** Sesh
-- **Priority:** High
-- **Status:** Not started
-- **Description:** Make timed, open-ended, paused, and multi-trick Sesh behavior reliable when the app moves between foreground and background.
-- **Notes:** Umbrella only — complete T043.1 and T043.2. Route-navigation and process-death recovery are intentionally out of scope for this task — they are a separate concern from foreground/background reconciliation and are not tracked anywhere in this file.
-
-### [T043.1] Reconcile active Sesh state after foregrounding
-
-- **Area:** Sesh
-- **Priority:** High (inherited from parent T043)
-- **Status:** Not started
-- **Planning:** Required
-- **Description:** Add explicit app-lifecycle coordination that reconciles timed, open-ended, paused, and multi-trick Sesh state against timestamps when the app returns to the foreground.
-- **Exit criteria:** Automated state-transition tests confirm an overdue timed Sesh completes at its logical deadline, an open-ended Sesh reports correct elapsed active time, a paused Sesh remains paused without accruing active duration, and a multi-trick run retains coherent current-trick state after a background/foreground cycle.
-- **Notes:** Keep timestamp acquisition and app-state effects outside the reducer, passing explicit timestamps through actions. Do not add persisted in-progress Sesh state.
-
-### [T043.2] Verify backgrounded Sesh behavior on iOS and Android
-
-- **Area:** Sesh
-- **Priority:** High (inherited from parent T043)
-- **Status:** Not started
-- **Planning:** Required
-- **Description:** Exercise T043.1's lifecycle behavior on both native platforms and fix any platform-specific integration defects without changing the Sesh domain model. Depends on T043.1.
-- **Exit criteria:** Deliberate iOS and Android checks cover timed, open-ended, paused, and multi-trick Sesh background/foreground cycles, confirm any overdue timer resolves at its logical deadline, and confirm the wake lock releases after completion or cancellation; any platform-specific regressions found are covered by an automated test where practical.
-- **Notes:** This is native hardening of the lifecycle model established in T043.1, not process-death recovery or route-leave protection.
-
-### [T044] Prevent mobile keyboards from obscuring form actions
-
-- **Area:** Forms / mobile layout
-- **Priority:** Medium
-- **Status:** Not started
-- **Description:** Establish a reusable keyboard-aware form layout and apply it to custom-trick editing, notes, goals, Profile streak editing, and the access gate.
-- **Notes:** Umbrella only — complete T044.1 and T044.2. Use safe-area and keyboard behavior rather than fixed device-specific offsets; preserve existing web layouts.
-
-### [T044.1] Establish a shared keyboard-aware form layout
-
-- **Area:** Forms / mobile layout
-- **Priority:** Medium (inherited from parent T044)
-- **Status:** Not started
-- **Planning:** Required
-- **Description:** Create the smallest reusable layout primitive or convention needed to keep long mobile forms scrollable and their primary actions reachable while the keyboard is open, proving it through the custom-trick form.
-- **Exit criteria:** On representative small iOS and Android viewports, the custom-trick form's final input and primary action remain reachable with the keyboard open, scrolling and keyboard dismissal behave predictably, safe-area and tab-bar insets do not overlap content, and the web layout remains unchanged.
-- **Notes:** Avoid fixed device-specific offsets. Keep the abstraction narrow enough to accommodate screen-specific headers and action layouts rather than forcing every form into an identical visual shell.
-
-### [T044.2] Apply the keyboard-aware layout to remaining forms
-
-- **Area:** Forms / mobile layout
-- **Priority:** Medium (inherited from parent T044)
-- **Status:** Not started
-- **Planning:** Required
-- **Description:** Apply T044.1's proven layout pattern to notes, goals, Profile streak editing, and the access gate. Depends on T044.1.
-- **Exit criteria:** Focused checks on representative small iOS and Android viewports confirm the final input and primary action remain reachable with the keyboard open on every notes, goals, Profile streak, and access-gate form; scrolling, dismissal, safe-area, and tab-bar behavior are consistent and web rendering is unchanged.
-- **Notes:** Adapt the shared convention where a screen's structure requires it; do not introduce fixed offsets or unrelated form redesigns.
+- **Planning:** Implementer
+- **Description:** `GoalTrickPicker` (`src/features/goals/components/all-trick-goals-screen.tsx:134-145`) renders `TrickDirectory` without a `selection` prop, so rows fall back to the unpadded `identity` block in `src/features/tricks/components/trick-directory.tsx` instead of the padded `SelectableIdentity` block (~line 283) that the Tricks tab gets via its `selection` prop (`src/app/tricks/index.tsx:69-77`). As a result the picker paints edge-to-edge on the all-trick Trick Goals screen.
+- **Exit criteria:** The trick-directory picker on the all-trick Trick Goals screen renders with horizontal margin matching (or visually consistent with) its usage on the Tricks tab, confirmed in-browser at the standard web viewport; goal creation via the picker still works end to end.
+- **Notes:** Prefer a fix that keeps `TrickDirectory`'s existing conditional padding centralized (e.g. adjust the non-`selection` fallback spacing or how `GoalTrickPicker` wraps it) rather than a one-off inline style override at the Trick Goals call site.
 
 ## Done
 

@@ -79,10 +79,7 @@ export function MultiTrickSeshEntry() {
   };
 
   const handleFinished = () => {
-    setStep({ kind: 'choosingTricks' });
-    setSelectedTrickIds([]);
-    setAdvanceOnFirstLace(false);
-    setPerTrickDurationMinutes('');
+    router.replace('/sesh');
   };
 
   if (step.kind === 'running') {
@@ -168,12 +165,12 @@ export function MultiTrickSeshEntry() {
           introduction: 'Select any tricks you want to work through, one after another, in one sesh.',
         }}
         headerAction={
-          <ExitBackButton
+          <CompactBackLink
             accessibilityLabel="Back to Sesh"
-            variant="secondary"
+            accessibilityRole="link"
             onPress={() => router.replace('/sesh')}>
-            Back
-          </ExitBackButton>
+            ← Back to Sesh
+          </CompactBackLink>
         }
         footer={
           <FinishBackdrop $pinned={shouldPinSelectionChrome}>
@@ -239,7 +236,12 @@ const BackButton = styled(Button)`
   align-self: flex-start;
   margin-top: 30px;
 `;
-const ExitBackButton = styled(Button)`
+const CompactBackLink = styled.Text`
   align-self: flex-start;
+  padding: 8px 0;
+  color: ${AppColors.ink};
+  font-size: 13px;
+  font-weight: 900;
   margin-top: 16px;
+  text-decoration-line: underline;
 `;

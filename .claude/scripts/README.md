@@ -59,9 +59,15 @@ node .claude/scripts/verify.mjs                 # test, lint, typecheck, web exp
 node .claude/scripts/verify.mjs --skip-export   # docs/test-only changes
 node .claude/scripts/verify.mjs --only lint     # one step, repeatable
 node .claude/scripts/verify.mjs --keep-going    # don't stop at the first failure
+node .claude/scripts/verify.mjs --json          # machine-readable result
 ```
 
 One line per step on success; on failure, the failing command's output tail plus a non-zero exit. The complete log of every step is always written to a temp file whose path is printed. Give it a 600000 ms tool timeout.
+
+`--json` emits one JSON object with `status`, the planned options, per-step
+status/exit code/duration/command, the first failed step when applicable, and
+the complete log path. Successful steps omit their output; failed steps include
+an output tail. The process exit code remains non-zero on verification failure.
 
 ## `worktree-cleanup.mjs`
 

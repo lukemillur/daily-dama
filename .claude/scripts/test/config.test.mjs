@@ -123,6 +123,8 @@ test('verify wrapper: step planning', () => {
     ['test', 'lint', 'typecheck'],
   );
   assert.deepEqual(planSteps(parseVerifyArgs(['--only', 'lint'])).map((step) => step.name), ['lint']);
+  assert.equal(parseVerifyArgs(['--json']).json, true);
+  assert.equal(parseVerifyArgs(['--skip-export', '--json']).json, true);
   assert.throws(() => parseVerifyArgs(['--only', 'nope']), /unknown step/);
   assert.throws(() => parseVerifyArgs(['--wat']), /unrecognized argument/);
 });

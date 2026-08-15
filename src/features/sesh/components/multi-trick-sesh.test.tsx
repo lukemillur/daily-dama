@@ -128,6 +128,8 @@ async function mountMultiTrickSesh(props: {
   readonly tricks?: readonly PracticeTrick[];
   readonly showRankStanding?: boolean;
   readonly origin?: 'assessment';
+  readonly suppressTransientCompletionFallback?: boolean;
+  readonly finishButtonLabel?: string;
 }) {
   let root!: ReactTestRenderer;
   await act(async () => {
@@ -149,6 +151,8 @@ async function mountMultiTrickSesh(props: {
             onCancelRun={props.onCancelRun}
             showRankStanding={props.showRankStanding}
             origin={props.origin}
+            suppressTransientCompletionFallback={props.suppressTransientCompletionFallback}
+            finishButtonLabel={props.finishButtonLabel}
           />
           <SessionSummary />
         </PracticeHistoryProvider>
@@ -172,13 +176,17 @@ describe('MultiTrickSesh advanceOnFirstLace', () => {
     const onFinished = jest.fn();
     const root = await mountMultiTrickSesh({ advanceOnFirstLace: true, onFinished });
 
-    for (const trick of TRICKS) {
+    for (const [index, trick] of TRICKS.entries()) {
       advanceThroughCountdown();
       expect(findByText(root, trick.name).length).toBeGreaterThan(0);
 
       act(() => {
         pressByAccessibilityLabel(root, 'Laced');
       });
+
+      if (index === TRICKS.length - 1) {
+        expect(findByText(root, 'Next trick')).toHaveLength(0);
+      }
     }
 
     expect(onFinished).not.toHaveBeenCalled();
@@ -198,19 +206,82 @@ describe('MultiTrickSesh advanceOnFirstLace', () => {
     });
   });
 
-  it('does not render "Next trick" when advanceOnFirstLace is set, since it duplicates the Laced/End-assessment advance path', async () => {
+  it('does not show the generic completion panel while an assessment advances to the next trick', async () => {
     const onFinished = jest.fn();
     const root = await mountMultiTrickSesh({
       advanceOnFirstLace: true,
-      endActionLabel: 'End assessment',
+      origin: 'assessment',
+      suppressTransientCompletionFallback: true,
+      skipCountdownBetweenTricks: true,
+      onFinished,
+    });
+
+    advanceThroughCountdown();
+    act(() => {
+      pressByAccessibilityLabel(root, 'Laced');
+    });
+
+    expect(findByText(root, 'Sequence complete')).toHaveLength(0);
+    expect(findByText(root, 'Nice work.')).toHaveLength(0);
+    expect(findByText(root, TRICKS[1].name).length).toBeGreaterThan(0);
+    expect(findByAccessibilityLabel(root, 'Laced').length).toBeGreaterThan(0);
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  it('does not show the generic completion panel while an assessment reaches its wrap-up', async () => {
+    const onFinished = jest.fn();
+    const assessmentTricks = TRICKS.slice(0, 1);
+    const root = await mountMultiTrickSesh({
+      tricks: assessmentTricks,
+      advanceOnFirstLace: true,
+      origin: 'assessment',
+      suppressTransientCompletionFallback: true,
+      finishButtonLabel: 'Go to Home',
+      wrapUpFooter: <Text accessibilityLabel="Assessment result">Rank 2</Text>,
+      onFinished,
+    });
+
+    advanceThroughCountdown();
+    act(() => {
+      pressByAccessibilityLabel(root, 'Laced');
+    });
+
+    expect(findByText(root, 'Sequence complete')).toHaveLength(0);
+    expect(findByText(root, 'You worked through every trick in this sesh.')).toHaveLength(0);
+    expect(findByAccessibilityLabel(root, 'Assessment result').length).toBeGreaterThan(0);
+    expect(findByAccessibilityLabel(root, 'Go to Home').length).toBeGreaterThan(0);
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  it('allows manual advancement without lacing when advanceOnFirstLace is set', async () => {
+    const onFinished = jest.fn();
+    const root = await mountMultiTrickSesh({
+      advanceOnFirstLace: true,
       onFinished,
     });
 
     advanceThroughCountdown();
     expect(findByText(root, TRICKS[0].name).length).toBeGreaterThan(0);
     expect(findByAccessibilityLabel(root, 'Laced').length).toBeGreaterThan(0);
-    expect(findByText(root, 'End assessment').length).toBeGreaterThan(0);
-    expect(findByText(root, 'Next trick')).toHaveLength(0);
+    expect(findByText(root, 'Next trick').length).toBeGreaterThan(0);
+    expect(findByAccessibilityLabel(root, 'session-count:0').length).toBeGreaterThan(0);
+
+    act(() => {
+      pressByVisibleText(root, 'Next trick');
+    });
+
+    expect(findByAccessibilityLabel(root, 'session-count:1').length).toBeGreaterThan(0);
+    expect(findByAccessibilityLabel(root, 'session-0-lace-count:0').length).toBeGreaterThan(0);
+
+    advanceThroughCountdown();
+    expect(findByText(root, TRICKS[1].name).length).toBeGreaterThan(0);
+    expect(findByText(root, 'Next trick').length).toBeGreaterThan(0);
 
     act(() => {
       root.unmount();
@@ -239,6 +310,7 @@ describe('MultiTrickSesh advanceOnFirstLace', () => {
     // "End Sesh" ends the whole run, not just the current trick — reaches
     // the wrap-up immediately instead of advancing to the next trick.
     expect(findByText(root, 'Finish sesh').length).toBeGreaterThan(0);
+    expect(findByText(root, 'Nice work.').length).toBeGreaterThan(0);
     expect(findByAccessibilityLabel(root, 'session-count:1').length).toBeGreaterThan(0);
     expect(findByAccessibilityLabel(root, 'session-0-lace-count:1').length).toBeGreaterThan(0);
     expect(findByText(root, TRICKS[1].name)).toHaveLength(0);
@@ -693,6 +765,103 @@ describe('MultiTrickSesh skipCountdownBetweenTricks', () => {
     // No advanceThroughCountdown() — TRICKS[2] should already be active.
     expect(findByText(root, TRICKS[2].name).length).toBeGreaterThan(0);
     expect(findByAccessibilityLabel(root, 'Laced').length).toBeGreaterThan(0);
+
+    act(() => {
+      root.unmount();
+    });
+  });
+});
+
+describe('MultiTrickSesh countdown Skip (T075)', () => {
+  beforeEach(async () => {
+    await AsyncStorage.clear();
+    jest.useFakeTimers();
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  it('skips the first casual countdown into the active trick without recording a landing', async () => {
+    const onFinished = jest.fn();
+    const root = await mountMultiTrickSesh({ onFinished });
+
+    expect(findByAccessibilityLabel(root, 'Skip countdown').length).toBeGreaterThan(0);
+    expect(findByAccessibilityLabel(root, 'Laced')).toHaveLength(0);
+
+    act(() => {
+      pressByAccessibilityLabel(root, 'Skip countdown');
+    });
+
+    expect(findByAccessibilityLabel(root, 'Laced').length).toBeGreaterThan(0);
+    expect(findByAccessibilityLabel(root, 'Skip countdown')).toHaveLength(0);
+    expect(findByAccessibilityLabel(root, 'session-count:0').length).toBeGreaterThan(0);
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  it('skips a later casual countdown without waiting or creating a skipped-trick record', async () => {
+    const onFinished = jest.fn();
+    const root = await mountMultiTrickSesh({ onFinished });
+
+    act(() => {
+      pressByAccessibilityLabel(root, 'Skip countdown');
+    });
+    expect(findByAccessibilityLabel(root, 'Laced').length).toBeGreaterThan(0);
+
+    // Advance without lacing the first trick so its ordinary completion path records no landing;
+    // the second trick still receives its own countdown because the default is enabled.
+    act(() => {
+      pressByVisibleText(root, 'Next trick');
+    });
+
+    expect(findByText(root, TRICKS[1].name).length).toBeGreaterThan(0);
+    expect(findByAccessibilityLabel(root, 'Skip countdown').length).toBeGreaterThan(0);
+
+    act(() => {
+      pressByAccessibilityLabel(root, 'Skip countdown');
+    });
+
+    expect(findByAccessibilityLabel(root, 'Laced').length).toBeGreaterThan(0);
+    expect(findByAccessibilityLabel(root, 'Skip countdown')).toHaveLength(0);
+    expect(findByAccessibilityLabel(root, 'session-count:1').length).toBeGreaterThan(0);
+    expect(findByAccessibilityLabel(root, 'session-0-lace-count:0').length).toBeGreaterThan(0);
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  it('starts the elapsed clock at the skip timestamp', async () => {
+    jest.setSystemTime(100_000);
+    const onFinished = jest.fn();
+    const root = await mountMultiTrickSesh({ onFinished, tricks: TRICKS.slice(0, 1) });
+
+    act(() => {
+      pressByAccessibilityLabel(root, 'Skip countdown');
+    });
+    act(() => {
+      jest.advanceTimersByTime(2_500);
+    });
+    act(() => {
+      pressByVisibleText(root, 'End Sesh');
+    });
+
+    expect(findSessionDurationMs(root, 0)).toBe(2_500);
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  it('does not expose the casual countdown Skip action to assessment runs', async () => {
+    const onFinished = jest.fn();
+    const root = await mountMultiTrickSesh({ onFinished, origin: 'assessment' });
+
+    expect(findByAccessibilityLabel(root, 'Skip countdown')).toHaveLength(0);
+    expect(findByText(root, 'Cancel')).toHaveLength(0);
 
     act(() => {
       root.unmount();
