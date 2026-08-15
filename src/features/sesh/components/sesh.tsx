@@ -36,6 +36,7 @@ import {
   selectSeshPracticeTricks,
   seshReducer,
   type SeshPlan,
+  type SeshState,
   shouldKeepScreenAwake,
   shouldPromptSeshNote,
   type SeshSummary,
@@ -60,6 +61,7 @@ interface SeshProps {
   readonly selectedTrickIds: readonly string[];
   readonly availableTricks: readonly PracticeTrick[];
   readonly preferredTrickId?: string;
+  readonly directPracticeTrickId?: string;
   readonly initialPlan?: SeshPlan;
   /**
    * Opaque pass-through recorded on the practice-history record for this
@@ -74,10 +76,16 @@ export function Sesh({
   availableTricks,
   initialPlan,
   preferredTrickId,
+  directPracticeTrickId,
   selectedTrickIds,
   origin,
 }: SeshProps) {
-  const [state, dispatch] = useReducer(seshReducer, INITIAL_SESH_STATE);
+  const [state, dispatch] = useReducer(
+    seshReducer,
+    directPracticeTrickId,
+    (id): SeshState =>
+      id ? { status: 'choosing', directPracticeTrickId: id } : INITIAL_SESH_STATE,
+  );
   const { sessions } = usePracticeHistory();
   const { goals } = useGoals();
   const { recordCompletedSesh } = usePracticeHistoryActions();
@@ -160,6 +168,20 @@ export function Sesh({
   };
 
   if (state.status === 'choosing') {
+    const directPracticeTrick = state.directPracticeTrickId
+      ? availableTricks.find((trick) => trick.id === state.directPracticeTrickId)
+      : undefined;
+    if (directPracticeTrick) {
+      return (
+        <TrickPicker
+          initialPlan={initialPlan}
+          tricks={[directPracticeTrick]}
+          sessions={sessions}
+          onSelect={handleTrickSelected}
+          onCancel={() => dispatch({ type: 'seshReset' })}
+        />
+      );
+    }
     if (practiceTricks.length === 0) return <EmptyState />;
     return (
       <TrickPicker
@@ -263,6 +285,7 @@ function TrickPicker({
   tricks,
   sessions,
   onSelect,
+  onCancel,
 }: {
   readonly initialPlan?: SeshPlan;
   readonly preferredTrickId?: string;
@@ -274,7 +297,9 @@ function TrickPicker({
     personalBest: number | undefined,
     liveChallengeEnabled: boolean,
   ) => void;
+  readonly onCancel?: () => void;
 }) {
+  const isDirectPractice = onCancel !== undefined;
   const [planKind, setPlanKind] = useState<SeshPlan['kind']>(initialPlan?.kind ?? 'timed');
   const [durationMinutes, setDurationMinutes] = useState(
     initialPlan?.kind === 'timed' ? String(initialPlan.durationMs / 60_000) : '5',
@@ -313,17 +338,27 @@ function TrickPicker({
   return (
     <ScrollArea contentContainerStyle={{ padding: 24, paddingBottom: 140 }}>
       <PickerContent>
-        <Eyebrow>Start a sesh</Eyebrow>
-        <DisplayTitle>What are we{`\n`}working on?</DisplayTitle>
-        <BodyCopy>Choose how long you want to focus, then pick one of the tricks from your practice list.</BodyCopy>
-        <Link href="/sesh/multi-trick" asChild>
-          <MultiTrickAction
-            accessibilityLabel="Practice several tricks"
-            accessibilityRole="link">
-            <MultiTrickActionTitle>Practice several tricks</MultiTrickActionTitle>
-            <MultiTrickActionCopy>Build a line and work through it one trick at a time.</MultiTrickActionCopy>
-          </MultiTrickAction>
-        </Link>
+        {isDirectPractice ? (
+          <>
+            <Eyebrow>Direct practice</Eyebrow>
+            <DisplayTitle>{tricks[0]?.name}</DisplayTitle>
+            <BodyCopy>Adjust the format below, then start whenever you&apos;re ready.</BodyCopy>
+          </>
+        ) : (
+          <>
+            <Eyebrow>Start a sesh</Eyebrow>
+            <DisplayTitle>What are we{`\n`}working on?</DisplayTitle>
+            <BodyCopy>Choose how long you want to focus, then pick one of the tricks from your practice list.</BodyCopy>
+            <Link href="/sesh/multi-trick" asChild>
+              <MultiTrickAction
+                accessibilityLabel="Practice several tricks"
+                accessibilityRole="link">
+                <MultiTrickActionTitle>Practice several tricks</MultiTrickActionTitle>
+                <MultiTrickActionCopy>Build a line and work through it one trick at a time.</MultiTrickActionCopy>
+              </MultiTrickAction>
+            </Link>
+          </>
+        )}
         <PlanLabel>Practice format</PlanLabel>
         <PlanChoices>
           <PlanChoice
@@ -427,6 +462,15 @@ function TrickPicker({
             </TrickChoice>;
           })}
         </TrickChoices>
+        {onCancel ? (
+          <CancelPracticeButton
+            accessibilityLabel="Cancel practice"
+            variant="secondary"
+            size="medium"
+            onPress={onCancel}>
+            Cancel practice
+          </CancelPracticeButton>
+        ) : null}
       </PickerContent>
     </ScrollArea>
   );
@@ -1167,6 +1211,7 @@ const CountdownSkipButton = styled(Pressable)`min-height: 40px; align-items: cen
 const CountdownSkipButtonText = styled.Text`color: ${AppColors.textMuted}; font-size: 13px; font-weight: 800; text-decoration-line: underline;`;
 const SkipRankButton = styled(Pressable)`min-height: 40px; align-items: center; justify-content: center; margin-top: 14px; padding: 8px 24px;`;
 const CancelButton = styled(Button)`margin-top: 14px;`;
+const CancelPracticeButton = styled(Button)`margin-top: 20px;`;
 const SkipRankButtonText = styled.Text`color: ${AppColors.textMuted}; font-size: 13px; font-weight: 800; text-decoration-line: underline;`;
 const NextTrickButton = styled(Pressable)`width: 100%; min-height: 52px; align-items: center; justify-content: center; margin-top: 20px; padding: 12px 24px; background-color: ${AppColors.yellow}; border: 2px solid ${AppColors.ink}; border-radius: 5px;`;
 const NextTrickButtonText = styled.Text`color: ${AppColors.ink}; font-size: 16px; font-weight: 900;`;

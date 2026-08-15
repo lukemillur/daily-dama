@@ -2104,6 +2104,172 @@ describe('Sesh direct-practice planning (T077.2)', () => {
   });
 });
 
+describe('Sesh direct-practice entry (T081)', () => {
+
+  const OTHER_TRICK: PracticeTrick = { id: 'lighthouse-flip', name: 'Lighthouse Flip' };
+
+  async function mountSesh(props: Partial<ComponentProps<typeof Sesh>> = {}) {
+    let root!: ReactTestRenderer;
+    await act(async () => {
+      root = create(
+        <NoteProvider>
+          <GoalProvider>
+            <PracticeHistoryProvider>
+              <UserProfileProvider>
+                <Sesh
+                  availableTricks={[TRICK, OTHER_TRICK]}
+                  selectedTrickIds={[TRICK.id, OTHER_TRICK.id]}
+                  {...props}
+                />
+              </UserProfileProvider>
+            </PracticeHistoryProvider>
+          </GoalProvider>
+        </NoteProvider>,
+      );
+    });
+    return root;
+  }
+
+  it('renders only the linked trick, with no other trick cards shown', async () => {
+    const root = await mountSesh({ directPracticeTrickId: TRICK.id });
+
+    const text = JSON.stringify(root.toJSON());
+    expect(text).toContain(`Start a sesh with ${TRICK.name}`);
+    expect(text).not.toContain(OTHER_TRICK.name);
+    expect(text).not.toContain('Practice several tricks');
+    expect(findByAccessibilityLabel(root, `Start a sesh with ${TRICK.name}`).length).toBeGreaterThan(0);
+    expect(findByAccessibilityLabel(root, `Start a sesh with ${OTHER_TRICK.name}`)).toHaveLength(0);
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  it("keeps the linked trick's timed plan editable before starting", async () => {
+    jest.useFakeTimers();
+    try {
+      const root = await mountSesh({ directPracticeTrickId: TRICK.id });
+
+      act(() => {
+        root.root.findByProps({ accessibilityLabel: 'Sesh duration in minutes' }).props.onChangeText('0');
+      });
+      const disabledChoice = root.root.find(
+        (node) => node.props.accessibilityLabel === `Start a sesh with ${TRICK.name}`,
+      );
+      expect(disabledChoice.props.disabled).toBe(true);
+      expect(JSON.stringify(root.toJSON())).toContain('Enter a whole number from 1 to 60.');
+
+      act(() => {
+        root.root.findByProps({ accessibilityLabel: 'Sesh duration in minutes' }).props.onChangeText('7');
+      });
+
+      act(() => {
+        pressByAccessibilityLabel(root, `Start a sesh with ${TRICK.name}`);
+      });
+
+      expect(JSON.stringify(root.toJSON())).toContain('7:00 begins after the countdown.');
+
+      act(() => {
+        root.unmount();
+      });
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it('keeps an open-ended target editable and carries it into the started session', async () => {
+    jest.useFakeTimers();
+    try {
+      const root = await mountSesh({ directPracticeTrickId: TRICK.id });
+
+      act(() => {
+        pressByVisibleText(root, 'Open-ended');
+      });
+      act(() => {
+        root.root.findByProps({ accessibilityLabel: 'Target lace count' }).props.onChangeText('0');
+      });
+      const disabledChoice = root.root.find(
+        (node) => node.props.accessibilityLabel === `Start a sesh with ${TRICK.name}`,
+      );
+      expect(disabledChoice.props.disabled).toBe(true);
+      expect(JSON.stringify(root.toJSON())).toContain('Enter a whole number from 1 to 999, or leave it blank.');
+
+      act(() => {
+        root.root.findByProps({ accessibilityLabel: 'Target lace count' }).props.onChangeText('3');
+      });
+
+      act(() => {
+        pressByAccessibilityLabel(root, `Start a sesh with ${TRICK.name}`);
+      });
+      act(() => {
+        jest.advanceTimersByTime(1_000);
+      });
+      act(() => {
+        jest.advanceTimersByTime(1_000);
+      });
+      act(() => {
+        jest.advanceTimersByTime(1_000);
+      });
+      act(() => {
+        jest.advanceTimersByTime(1_000);
+      });
+      expect(JSON.stringify(root.toJSON())).toContain('0 of 3 to hit your target');
+
+      act(() => {
+        root.unmount();
+      });
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it('returns to the standard multi-trick picker when "Cancel practice" is pressed', async () => {
+    const root = await mountSesh({ directPracticeTrickId: TRICK.id });
+
+    expect(findByAccessibilityLabel(root, 'Cancel practice').length).toBeGreaterThan(0);
+
+    act(() => {
+      pressByAccessibilityLabel(root, 'Cancel practice');
+    });
+
+    const text = JSON.stringify(root.toJSON());
+    expect(text).toContain(`Start a sesh with ${TRICK.name}`);
+    expect(text).toContain(`Start a sesh with ${OTHER_TRICK.name}`);
+    expect(text).toContain('Practice several tricks');
+    expect(findByAccessibilityLabel(root, 'Cancel practice')).toHaveLength(0);
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  it('falls back to the normal multi-trick picker when the linked trick is unavailable', async () => {
+    const root = await mountSesh({ directPracticeTrickId: 'not-a-real-trick' });
+
+    const text = JSON.stringify(root.toJSON());
+    expect(text).toContain('Practice format');
+    expect(text).toContain(TRICK.name);
+    expect(text).toContain(OTHER_TRICK.name);
+    expect(findByAccessibilityLabel(root, 'Cancel practice')).toHaveLength(0);
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  it('renders the single card even when the focused practice list is empty', async () => {
+    const root = await mountSesh({ directPracticeTrickId: TRICK.id, selectedTrickIds: [] });
+
+    const text = JSON.stringify(root.toJSON());
+    expect(text).toContain(`Start a sesh with ${TRICK.name}`);
+    expect(text).not.toContain('Nothing queued');
+
+    act(() => {
+      root.unmount();
+    });
+  });
+});
+
 describe('Sesh multi-trick entry (T071)', () => {
   async function mountSeshHome() {
     let root!: ReactTestRenderer;
