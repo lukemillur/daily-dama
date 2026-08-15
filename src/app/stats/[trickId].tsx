@@ -120,7 +120,7 @@ const BestRow = styled.View`flex-direction: row; align-items: center; justify-co
 const BestRowInfo = styled.View``;
 const ChallengeButton = styled(Button).attrs({ size: 'medium', variant: 'secondary' })`min-height: 40px; padding: 8px 16px;`;
 const BestDuration = styled.Text`color: ${AppColors.cream}; font-size: 15px; font-weight: 800;`;
-const BestValue = styled.Text`color: ${AppColors.yellow}; font-size: 18px; font-weight: 900; font-variant: tabular-nums;`;
+const BestValue = styled.Text`color: ${({ theme }) => theme.accent}; font-size: 18px; font-weight: 900; font-variant: tabular-nums;`;
 const SessionList = styled.View`gap: 10px;`;
 const SessionRow = styled.View`flex-direction: row; align-items: center; justify-content: space-between; background-color: ${AppColors.paper}; border-left-width: 5px; border-left-color: ${AppColors.red}; padding: 14px 18px;`;
 const SessionDate = styled.Text`color: ${AppColors.ink}; font-size: 14px; font-weight: 800;`;

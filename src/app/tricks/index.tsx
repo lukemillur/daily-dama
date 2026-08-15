@@ -540,7 +540,7 @@ const ErrorText = styled.Text`color: ${AppColors.red}; font-size: 12px; font-wei
 const RankPicker = styled.View`gap: 14px; margin-top: 12px;`;
 const ToggleRow = styled(Pressable)<{ readonly $selected: boolean }>`min-height: 58px; flex-direction: row; align-items: center; gap: 12px; background-color: ${({ $selected }) => $selected ? AppColors.ink : AppColors.paper}; border: 2px solid ${AppColors.ink}; padding: 10px 13px;`;
 const FocusedToggleRow = styled(ToggleRow)`margin-top: 12px;`;
-const ToggleMark = styled.Text<{ readonly $selected: boolean }>`width: 24px; color: ${({ $selected }) => $selected ? AppColors.yellow : AppColors.red}; font-size: 18px; font-weight: 900; text-align: center;`;
+const ToggleMark = styled.Text<{ readonly $selected: boolean }>`width: 24px; color: ${({ $selected, theme }) => $selected ? theme.accent : AppColors.red}; font-size: 18px; font-weight: 900; text-align: center;`;
 const ToggleIdentity = styled.View`flex: 1;`;
 const ToggleTitle = styled.Text<{ readonly $selected: boolean }>`color: ${({ $selected }) => $selected ? AppColors.cream : AppColors.ink}; font-size: 15px; font-weight: 900;`;
 const ToggleCopy = styled.Text<{ readonly $selected: boolean }>`color: ${({ $selected }) => $selected ? '#d8dfcb' : AppColors.textMuted}; font-size: 11px; font-weight: 700; margin-top: 2px;`;
