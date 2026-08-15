@@ -1,7 +1,7 @@
 import { Link } from 'expo-router';
 import { type ReactElement, useMemo } from 'react';
 import { Pressable, SectionList, TextInput, type SectionListData } from 'react-native';
-import { styled } from 'styled-components/native';
+import { css, styled } from 'styled-components/native';
 
 import {
   createTrickSections,
@@ -283,7 +283,9 @@ function TrickRow({
             <SelectionMark>{isSelected ? '✓' : ''}</SelectionMark>
           </SelectionIndicator>
         </SelectableIdentity>
-      ) : identity}
+      ) : (
+        <IdentityContainer>{identity}</IdentityContainer>
+      )}
       <RowActions>
         {onEdit && onDelete ? (
           <>
@@ -414,13 +416,21 @@ const TrickRowContainer = styled.View<{ readonly $selected: boolean; readonly $l
   border-left-color: ${({ $laced }) => ($laced ? '#274137' : 'transparent')};
 `;
 
-const SelectableIdentity = styled(Pressable)`
+const identityLayout = css`
   min-width: 180px;
   flex: 1;
   flex-direction: row;
   align-items: center;
   gap: 18px;
   padding: 15px 22px;
+`;
+
+const IdentityContainer = styled.View`
+  ${identityLayout}
+`;
+
+const SelectableIdentity = styled(Pressable)`
+  ${identityLayout}
 `;
 
 const Position = styled.Text<{ readonly $laced: boolean }>`
