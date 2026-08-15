@@ -34,6 +34,10 @@ interface UserProfileActions {
   readonly removeManualUnlock: (trickId: string) => void;
   readonly setLastSesh: (trickId: string, plan: SeshPlan) => void;
   readonly setStreakThresholdMs: (thresholdMs: number) => void;
+  readonly setThemeColors: (
+    themeBackgroundColor: string | undefined,
+    themeAccentColor: string | undefined,
+  ) => void;
   readonly completeOnboarding: (
     kenteiRank: number,
     selectedTrickIds: readonly string[],
@@ -117,6 +121,13 @@ export function UserProfileProvider({ children }: PropsWithChildren) {
     dispatch({ type: 'streakThresholdUpdated', thresholdMs });
   }, []);
 
+  const setThemeColors = useCallback(
+    (themeBackgroundColor: string | undefined, themeAccentColor: string | undefined) => {
+      dispatch({ type: 'themeColorsUpdated', themeBackgroundColor, themeAccentColor });
+    },
+    [],
+  );
+
   const completeOnboarding = useCallback(
     (kenteiRank: number, selectedTrickIds: readonly string[], lacedTrickIds: readonly string[]) => {
       dispatch({ type: 'onboardingCompleted', kenteiRank, selectedTrickIds, lacedTrickIds });
@@ -141,6 +152,7 @@ export function UserProfileProvider({ children }: PropsWithChildren) {
       removeManualUnlock,
       setLastSesh,
       setStreakThresholdMs,
+      setThemeColors,
       completeOnboarding,
       restartOnboarding,
       advanceKenteiRank,
@@ -154,6 +166,7 @@ export function UserProfileProvider({ children }: PropsWithChildren) {
       restartOnboarding,
       setLastSesh,
       setStreakThresholdMs,
+      setThemeColors,
       toggleManualUnlock,
       toggleSelectedTrick,
     ],

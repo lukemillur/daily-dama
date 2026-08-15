@@ -52,6 +52,10 @@ function isLastSesh(value: unknown): value is LastSesh {
   return false;
 }
 
+function isThemeColor(value: unknown): value is string {
+  return typeof value === 'string' && /^#[0-9a-fA-F]{6}$/.test(value);
+}
+
 function isStreakThresholdMs(value: unknown): value is number {
   return (
     typeof value === 'number' &&
@@ -71,6 +75,8 @@ function parseUserProfile(value: unknown): UserProfile | undefined {
     lastSesh,
     streakThresholdMs,
     manuallyUnlockedTrickIds,
+    themeBackgroundColor,
+    themeAccentColor,
   } = value;
   if (typeof hasCompletedOnboarding !== 'boolean' || !isStringArray(selectedTrickIds)) {
     return undefined;
@@ -80,6 +86,8 @@ function parseUserProfile(value: unknown): UserProfile | undefined {
   if (manuallyUnlockedTrickIds !== undefined && !isStringArray(manuallyUnlockedTrickIds)) {
     return undefined;
   }
+  if (themeBackgroundColor !== undefined && !isThemeColor(themeBackgroundColor)) return undefined;
+  if (themeAccentColor !== undefined && !isThemeColor(themeAccentColor)) return undefined;
 
   const lastSeshField = lastSesh === undefined ? {} : { lastSesh: lastSesh as LastSesh };
   const streakThresholdField =
@@ -88,6 +96,10 @@ function parseUserProfile(value: unknown): UserProfile | undefined {
     manuallyUnlockedTrickIds === undefined
       ? {}
       : { manuallyUnlockedTrickIds: manuallyUnlockedTrickIds as string[] };
+  const themeBackgroundColorField =
+    themeBackgroundColor === undefined ? {} : { themeBackgroundColor: themeBackgroundColor as string };
+  const themeAccentColorField =
+    themeAccentColor === undefined ? {} : { themeAccentColor: themeAccentColor as string };
 
   if (hasCompletedOnboarding) {
     if (!isKenteiRank(kenteiRank)) return undefined;
@@ -98,6 +110,8 @@ function parseUserProfile(value: unknown): UserProfile | undefined {
       ...lastSeshField,
       ...streakThresholdField,
       ...manuallyUnlockedTrickIdsField,
+      ...themeBackgroundColorField,
+      ...themeAccentColorField,
     };
   }
 
@@ -108,6 +122,8 @@ function parseUserProfile(value: unknown): UserProfile | undefined {
     ...lastSeshField,
     ...streakThresholdField,
     ...manuallyUnlockedTrickIdsField,
+    ...themeBackgroundColorField,
+    ...themeAccentColorField,
   };
 }
 

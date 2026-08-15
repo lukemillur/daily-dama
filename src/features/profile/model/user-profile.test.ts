@@ -148,6 +148,52 @@ describe('user profile trick selection', () => {
     });
   });
 
+  it('sets both theme colors and allows clearing one independently', () => {
+    const withBoth = userProfileReducer(INITIAL_USER_PROFILE, {
+      type: 'themeColorsUpdated',
+      themeBackgroundColor: '#abcdef',
+      themeAccentColor: '#123456',
+    });
+    expect(withBoth.themeBackgroundColor).toBe('#abcdef');
+    expect(withBoth.themeAccentColor).toBe('#123456');
+
+    const clearedBackground = userProfileReducer(withBoth, {
+      type: 'themeColorsUpdated',
+      themeBackgroundColor: undefined,
+      themeAccentColor: '#123456',
+    });
+    expect(clearedBackground.themeBackgroundColor).toBeUndefined();
+    expect(clearedBackground.themeAccentColor).toBe('#123456');
+  });
+
+  it('does not clobber unrelated profile fields when updating theme colors', () => {
+    const state = { ...INITIAL_USER_PROFILE, selectedTrickIds: ['big-cup'] };
+
+    const result = userProfileReducer(state, {
+      type: 'themeColorsUpdated',
+      themeBackgroundColor: '#abcdef',
+      themeAccentColor: undefined,
+    });
+
+    expect(result.selectedTrickIds).toEqual(['big-cup']);
+  });
+
+  it('leaves theme colors untouched when an unrelated action is dispatched', () => {
+    const state = {
+      ...INITIAL_USER_PROFILE,
+      themeBackgroundColor: '#abcdef',
+      themeAccentColor: '#123456',
+    };
+
+    const result = userProfileReducer(state, {
+      type: 'selectedTrickToggled',
+      trickId: 'big-cup',
+    });
+
+    expect(result.themeBackgroundColor).toBe('#abcdef');
+    expect(result.themeAccentColor).toBe('#123456');
+  });
+
   it('advances the assessed Kentei rank', () => {
     const state = { ...INITIAL_USER_PROFILE, kenteiRank: 1 };
 

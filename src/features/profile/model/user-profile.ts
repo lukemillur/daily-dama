@@ -16,6 +16,8 @@ export interface UserProfile {
   readonly lastSesh?: LastSesh;
   readonly streakThresholdMs?: number;
   readonly manuallyUnlockedTrickIds?: readonly string[];
+  readonly themeBackgroundColor?: string;
+  readonly themeAccentColor?: string;
 }
 
 export const MIN_STREAK_THRESHOLD_MINUTES = 1;
@@ -63,6 +65,11 @@ export type UserProfileAction =
   | { readonly type: 'manualUnlockRemoved'; readonly trickId: string }
   | { readonly type: 'lastSeshUpdated'; readonly lastSesh: LastSesh }
   | { readonly type: 'streakThresholdUpdated'; readonly thresholdMs: number }
+  | {
+      readonly type: 'themeColorsUpdated';
+      readonly themeBackgroundColor?: string;
+      readonly themeAccentColor?: string;
+    }
   | {
       readonly type: 'onboardingCompleted';
       readonly kenteiRank: number;
@@ -126,6 +133,12 @@ export function userProfileReducer(
       return { ...state, lastSesh: action.lastSesh };
     case 'streakThresholdUpdated':
       return { ...state, streakThresholdMs: action.thresholdMs };
+    case 'themeColorsUpdated':
+      return {
+        ...state,
+        themeBackgroundColor: action.themeBackgroundColor,
+        themeAccentColor: action.themeAccentColor,
+      };
     case 'onboardingCompleted':
       return {
         ...state,

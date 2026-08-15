@@ -6,6 +6,16 @@ Entries keep their content as it was at completion. Don't retroactively edit a d
 
 ---
 
+### [T083.1] Add theme color fields to the Profile persistence domain
+
+- **Area:** Profile persistence
+- **Priority:** Medium (inherited from parent T083)
+- **Status:** Done
+- **Planning:** Required
+- **Description:** Extend the user-profile schema with optional `themeBackgroundColor`/`themeAccentColor` fields, following the existing v1-is-provisional pattern for this domain (per AGENTS.md — no migration infra needed).
+- **Exit criteria:** Reducer/persistence tests confirm the new fields round-trip through hydration, default to `undefined` (fixed app colors) when unset, and don't affect existing profile fields.
+- **Notes:** First child of T083; no dependency on other children. Added `themeBackgroundColor`/`themeAccentColor` (6-digit hex, validated case-insensitively) to `UserProfile`, a `themeColorsUpdated` reducer action with explicit-clear-via-`undefined` semantics, matching persistence validation/round-trip support, and a `setThemeColors` provider action for T083.2 to consume. No schema version bump per AGENTS.md's provisional-v1 policy.
+
 ### [T078] Reuse the trick directory in all-trick goal creation
 
 - **Area:** Goals / Tricks UI

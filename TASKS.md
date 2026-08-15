@@ -149,16 +149,6 @@ _The following batch (T083–T084) comes from a product-manager audit scoping tw
 - **Description:** Let a user pick a free-form background color and accent color, independently, so the app's post-onboarding look can match their physical kendama. Umbrella only — complete T083.1–T083.3.
 - **Notes:** Full free-form picker, not curated presets (explicit decision). Applies to post-onboarding screens only; pre-onboarding yellow state and functional colors (errors/success) stay fixed.
 
-### [T083.1] Add theme color fields to the Profile persistence domain
-
-- **Area:** Profile persistence
-- **Priority:** Medium (inherited from parent T083)
-- **Status:** Not started
-- **Planning:** Required
-- **Description:** Extend the user-profile schema with optional `themeBackgroundColor`/`themeAccentColor` fields, following the existing v1-is-provisional pattern for this domain (per AGENTS.md — no migration infra needed).
-- **Exit criteria:** Reducer/persistence tests confirm the new fields round-trip through hydration, default to `undefined` (fixed app colors) when unset, and don't affect existing profile fields.
-- **Notes:** First child of T083; no dependency on other children.
-
 ### [T083.2] Build the free-form color picker with a contrast guardrail
 
 - **Area:** Profile / Theming
