@@ -260,6 +260,37 @@ describe('sesh reducer', () => {
       plan,
     });
   });
+
+  it('enters direct-practice choosing for a newly requested trick while already choosing', () => {
+    expect(
+      seshReducer(INITIAL_SESH_STATE, { type: 'directPracticeRequested', trickId: 'big-cup' }),
+    ).toEqual({ status: 'choosing', directPracticeTrickId: 'big-cup' });
+
+    const alreadyDirectPractice: SeshState = {
+      status: 'choosing',
+      directPracticeTrickId: 'big-cup',
+    };
+    expect(
+      seshReducer(alreadyDirectPractice, {
+        type: 'directPracticeRequested',
+        trickId: 'lighthouse-flip',
+      }),
+    ).toEqual({ status: 'choosing', directPracticeTrickId: 'lighthouse-flip' });
+  });
+
+  it('ignores a direct-practice request while a sesh is already in progress', () => {
+    const active: SeshState = {
+      status: 'active',
+      trick: BIG_CUP,
+      plan: OPEN_ENDED_SESH_PLAN,
+      startedAt: 0,
+      landings: [],
+      pausedDurationMs: 0,
+    };
+    expect(
+      seshReducer(active, { type: 'directPracticeRequested', trickId: 'lighthouse-flip' }),
+    ).toBe(active);
+  });
 });
 
 describe('preferred Sesh trick', () => {

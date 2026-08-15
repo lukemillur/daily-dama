@@ -2268,6 +2268,68 @@ describe('Sesh direct-practice entry (T081)', () => {
       root.unmount();
     });
   });
+
+  function seshElement(props: Partial<ComponentProps<typeof Sesh>>) {
+    return (
+      <NoteProvider>
+        <GoalProvider>
+          <PracticeHistoryProvider>
+            <UserProfileProvider>
+              <Sesh
+                availableTricks={[TRICK, OTHER_TRICK]}
+                selectedTrickIds={[TRICK.id, OTHER_TRICK.id]}
+                {...props}
+              />
+            </UserProfileProvider>
+          </PracticeHistoryProvider>
+        </GoalProvider>
+      </NoteProvider>
+    );
+  }
+
+  it('picks up a newly linked trick when the screen instance is reused across navigations', async () => {
+    // Expo Router keeps this route's screen instance mounted across param
+    // changes rather than remounting it, so `update` (not a fresh `mountSesh`)
+    // is what actually reproduces following a second, different
+    // direct-practice link without ever leaving the Sesh tab.
+    const root = await mountSesh({ directPracticeTrickId: TRICK.id });
+
+    await act(async () => {
+      root.update(seshElement({ directPracticeTrickId: OTHER_TRICK.id }));
+    });
+
+    const text = JSON.stringify(root.toJSON());
+    expect(text).toContain(`Start a sesh with ${OTHER_TRICK.name}`);
+    expect(text).not.toContain(`Start a sesh with ${TRICK.name}`);
+    expect(findByAccessibilityLabel(root, `Start a sesh with ${OTHER_TRICK.name}`).length).toBeGreaterThan(0);
+    expect(findByAccessibilityLabel(root, `Start a sesh with ${TRICK.name}`)).toHaveLength(0);
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  it('stays on the standard picker after Cancel practice even though the route param is unchanged', async () => {
+    const root = await mountSesh({ directPracticeTrickId: TRICK.id });
+
+    act(() => {
+      pressByAccessibilityLabel(root, 'Cancel practice');
+    });
+
+    // A re-render with the same directPracticeTrickId (e.g. an unrelated
+    // provider update) must not snap the user back into direct-practice mode.
+    await act(async () => {
+      root.update(seshElement({ directPracticeTrickId: TRICK.id }));
+    });
+
+    const text = JSON.stringify(root.toJSON());
+    expect(text).toContain('Practice several tricks');
+    expect(findByAccessibilityLabel(root, 'Cancel practice')).toHaveLength(0);
+
+    act(() => {
+      root.unmount();
+    });
+  });
 });
 
 describe('Sesh multi-trick entry (T071)', () => {

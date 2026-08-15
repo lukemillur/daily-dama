@@ -107,6 +107,16 @@ export function Sesh({
   )
     ? preferredTrickId
     : undefined;
+  useEffect(() => {
+    if (!directPracticeTrickId) return;
+    dispatch({ type: 'directPracticeRequested', trickId: directPracticeTrickId });
+    // Runs whenever a new direct-practice link is followed while this route's
+    // screen instance is already mounted from an earlier visit — Expo Router
+    // reuses the instance across param changes rather than remounting it, so
+    // the lazy useReducer initializer above only ever fires once and can't by
+    // itself pick up a later trickId. Guarded to 'choosing' in the reducer so
+    // it never interrupts an in-progress countdown/active session.
+  }, [directPracticeTrickId]);
   const activeTrickId = state.status === 'active' ? state.trick.id : undefined;
   const trickNotes = useMemo(
     () => (activeTrickId ? selectNotesForTrick(notes, activeTrickId) : []),
