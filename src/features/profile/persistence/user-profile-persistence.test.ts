@@ -86,6 +86,65 @@ describe('user profile persistence', () => {
     expect(deserializeUserProfile(serialized)).toEqual(profileWithManualUnlocks);
   });
 
+  it('round-trips a profile with both theme colors set', () => {
+    const profileWithThemeColors = {
+      ...COMPLETE_PROFILE,
+      themeBackgroundColor: '#ABCDEF',
+      themeAccentColor: '#123456',
+    } as const;
+
+    const serialized = serializeUserProfile(profileWithThemeColors);
+
+    expect(deserializeUserProfile(serialized)).toEqual(profileWithThemeColors);
+  });
+
+  it('defaults theme colors to undefined when unset', () => {
+    const serialized = serializeUserProfile(COMPLETE_PROFILE);
+
+    const result = deserializeUserProfile(serialized);
+
+    expect(result?.themeBackgroundColor).toBeUndefined();
+    expect(result?.themeAccentColor).toBeUndefined();
+  });
+
+  it.each(['not-a-color', '#fff', '#1234567', '#gggggg', ''])(
+    'rejects a malformed themeBackgroundColor: %p',
+    (themeBackgroundColor) => {
+      const serialized = JSON.stringify({
+        version: USER_PROFILE_SCHEMA_VERSION,
+        profile: { ...COMPLETE_PROFILE, themeBackgroundColor },
+      });
+
+      expect(deserializeUserProfile(serialized)).toBeUndefined();
+    },
+  );
+
+  it.each(['not-a-color', '#fff', '#1234567', '#gggggg', ''])(
+    'rejects a malformed themeAccentColor: %p',
+    (themeAccentColor) => {
+      const serialized = JSON.stringify({
+        version: USER_PROFILE_SCHEMA_VERSION,
+        profile: { ...COMPLETE_PROFILE, themeAccentColor },
+      });
+
+      expect(deserializeUserProfile(serialized)).toBeUndefined();
+    },
+  );
+
+  it('loads a valid persisted profile with theme colors through the full hydration path', async () => {
+    const profileWithThemeColors = {
+      ...COMPLETE_PROFILE,
+      themeBackgroundColor: '#abcdef',
+      themeAccentColor: '#123456',
+    } as const;
+
+    const result = await loadUserProfile(
+      createStorage(serializeUserProfile(profileWithThemeColors)),
+    );
+
+    expect(result).toEqual({ status: 'loaded', value: profileWithThemeColors });
+  });
+
   it.each([0, 'not-an-array', ['big-cup', 'big-cup'], ['big-cup', ''], [1, 2]])(
     'rejects a malformed manuallyUnlockedTrickIds: %p',
     (manuallyUnlockedTrickIds) => {
