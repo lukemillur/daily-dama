@@ -32,6 +32,7 @@ export interface HomeSummary {
   readonly momentum: HomeMomentum;
   readonly currentStreak: number;
   readonly timeLoggedWindows: readonly TimeLoggedWindow[];
+  readonly nextKenteiTrick?: HomePracticeTrick;
 }
 
 interface CreateHomeSummaryInput {
@@ -87,7 +88,43 @@ export function createHomeSummary({
     currentStreak: calculateStreak(sessions, profile.streakThresholdMs ?? DEFAULT_STREAK_THRESHOLD_MS, now)
       .currentStreak,
     timeLoggedWindows: calculateTimeLogged(sessions, now),
+    nextKenteiTrick: selectNextKenteiTrick(profile, standardTricks),
   };
+}
+
+// Pure selector: the first standard Kentei trick (in existing rank/data order) at the user's
+// current rank that is not yet in manuallyUnlockedTrickIds. Once every trick at the current
+// rank is laced, rolls forward to the first not-yet-laced trick at the next rank with tricks,
+// and so on. Returns undefined once no rank at or above the user's current rank has an
+// unlaced trick (including when the user has no assessed rank yet). Standard tricks only:
+// rank data doesn't apply to custom tricks, so they're excluded from this suggestion.
+export function selectNextKenteiTrick(
+  profile: UserProfile,
+  standardTricks: readonly TrickSummary[],
+): HomePracticeTrick | undefined {
+  if (profile.kenteiRank === undefined) return undefined;
+
+  const lacedTrickIds = new Set(profile.manuallyUnlockedTrickIds ?? []);
+  const eligibleRanks = Array.from(new Set(standardTricks.map((trick) => trick.kenteiRank)))
+    .filter((rank) => rank >= profile.kenteiRank!)
+    .sort((left, right) => left - right);
+
+  for (const rank of eligibleRanks) {
+    const nextTrick = standardTricks.find(
+      (trick) => trick.kenteiRank === rank && !lacedTrickIds.has(trick.id),
+    );
+    if (nextTrick) {
+      return {
+        id: nextTrick.id,
+        name: nextTrick.name,
+        kind: 'standard',
+        kenteiRank: nextTrick.kenteiRank,
+        kenteiLevel: nextTrick.kenteiLevel,
+      };
+    }
+  }
+
+  return undefined;
 }
 
 function createAvailableTrickMap(
