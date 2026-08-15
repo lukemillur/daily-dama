@@ -153,7 +153,7 @@ _The following batch (T083–T084) comes from a product-manager audit scoping tw
 
 - **Area:** Theming (cross-cutting)
 - **Priority:** Medium (inherited from parent T083)
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** Replace the fixed decorative background (`AppColors.sage`, etc.) and primary accent color across Home/Sesh/Tricks/Stats/Profile with the user's stored theme when set, falling back to current fixed colors when unset. Functional colors (errors, success states, text) are out of scope.
 - **Exit criteria:** In-browser check confirms every post-onboarding screen reflects a saved custom background/accent, an unset theme renders identically to today's fixed colors, and pre-onboarding yellow state is unaffected.
