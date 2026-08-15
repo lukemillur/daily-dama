@@ -145,7 +145,7 @@ _The following batch (T080–T082) comes from the QA checklist completed against
 
 - **Area:** Tricks / Goals
 - **Priority:** Low
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Implementer
 - **Description:** `GoalTrickPicker` (`src/features/goals/components/all-trick-goals-screen.tsx:134-145`) renders `TrickDirectory` without a `selection` prop, so rows fall back to the unpadded `identity` block in `src/features/tricks/components/trick-directory.tsx` instead of the padded `SelectableIdentity` block (~line 283) that the Tricks tab gets via its `selection` prop (`src/app/tricks/index.tsx:69-77`). As a result the picker paints edge-to-edge on the all-trick Trick Goals screen.
 - **Exit criteria:** The trick-directory picker on the all-trick Trick Goals screen renders with horizontal margin matching (or visually consistent with) its usage on the Tricks tab, confirmed in-browser at the standard web viewport; goal creation via the picker still works end to end.
