@@ -195,7 +195,7 @@ export function MultiTrickSeshEntry() {
 }
 
 const SelectionContent = styled.View`width: 100%; max-width: 760px; max-height: 864px; flex: 1; align-self: center; overflow: hidden; background-color: ${AppColors.paper}; border-radius: ${Radii.panel}px;`;
-const FinishBackdrop = styled.View<{ readonly $pinned: boolean }>`background-color: ${({ $pinned }) => $pinned ? AppColors.yellow : AppColors.paper};`;
+const FinishBackdrop = styled.View<{ readonly $pinned: boolean }>`background-color: ${({ $pinned, theme }) => $pinned ? theme.accent : AppColors.paper};`;
 const FinishArea = styled.View<{ readonly $pinned: boolean }>`align-items: center; margin-top: ${({ $pinned }) => $pinned ? 54 : 0}px; padding: 20px 22px 22px; background-color: ${AppColors.paper}; border-top-width: 1px; border-top-color: ${AppColors.borderMuted};`;
 const SelectionCount = styled.Text`color: ${AppColors.textMuted}; font-size: 14px; font-weight: 700; margin-bottom: 12px;`;
 const PerTrickDurationField = styled.View`align-self: stretch; margin-bottom: 12px;`;
@@ -212,7 +212,7 @@ const AdvanceOnFirstLaceIndicator = styled.View<{ readonly $checked: boolean }>`
   border: 2px solid ${AppColors.ink};
   border-radius: ${Radii.control}px;
 `;
-const AdvanceOnFirstLaceMark = styled.Text`color: ${AppColors.yellow}; font-size: 14px; font-weight: 900;`;
+const AdvanceOnFirstLaceMark = styled.Text`color: ${({ theme }) => theme.accent}; font-size: 14px; font-weight: 900;`;
 const AdvanceOnFirstLaceLabel = styled.Text`color: ${AppColors.textMuted}; font-size: 14px; font-weight: 700;`;
 const FinishButton = styled(Button).attrs({ fill: true })`min-height: 54px;`;
 const ContinueButton = styled(Button).attrs({ fill: true })`min-height: 54px;`;

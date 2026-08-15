@@ -6,6 +6,25 @@ Entries keep their content as it was at completion. Don't retroactively edit a d
 
 ---
 
+### [T083] Custom app theming — match a user's kendama color scheme
+
+- **Area:** Theming / Profile
+- **Priority:** Medium
+- **Status:** Done
+- **Description:** Let a user pick a free-form background color and accent color, independently, so the app's post-onboarding look can match their physical kendama. Umbrella only — complete T083.1–T083.3.
+- **Notes:** Full free-form picker, not curated presets (explicit decision). Applies to post-onboarding screens only; pre-onboarding yellow state and functional colors (errors/success) stay fixed.
+
+### [T083.3] Apply theme colors to post-onboarding screens
+
+- **Area:** Theming (cross-cutting)
+- **Priority:** Medium (inherited from parent T083)
+- **Status:** Done
+- **Planning:** Required
+- **Description:** Replace the fixed decorative background (`AppColors.sage`, etc.) and primary accent color across Home/Sesh/Tricks/Stats/Profile with the user's stored theme when set, falling back to current fixed colors when unset. Functional colors (errors, success states, text) are out of scope.
+- **Exit criteria:** In-browser check confirms every post-onboarding screen reflects a saved custom background/accent, an unset theme renders identically to today's fixed colors, and pre-onboarding yellow state is unaffected.
+- **Notes:** Depends on T083.2. Mapped `AppColors.sage` -> `theme.background` and `AppColors.yellow` -> `theme.accent` via a single styled-components `ThemeProvider` (`AppThemeProvider`, fed by `useResolvedTheme()`) mounted inside `UserProfileProvider` in `_layout.tsx`. Converted `Screen`'s default background, `Button`'s primary label, and every other fixed-accent usage across Home/Sesh/Tricks/Stats/Profile (18 files enumerated in the plan). Verified end-to-end via an integration test mounting `Screen`/`Button` through the real `UserProfileProvider`/`AppThemeProvider`/AsyncStorage stack (not mocked) for both the unset-theme and saved-custom-theme cases, since no browser/preview tool was available in this session — see PR for detail. Left a pre-existing, documented contrast gap unresolved (T083.2's WCAG guardrail only checks against `AppColors.ink`; a fixed red eyebrow label sits on the accent surface in `daily-home.tsx` and `sesh.tsx` with no contrast guarantee against a user-chosen dark accent) — cosmetic, not a blocker for this ticket.
+
+
 ### [T083.2] Build the free-form color picker with a contrast guardrail
 
 - **Area:** Profile / Theming

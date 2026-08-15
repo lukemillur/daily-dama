@@ -141,24 +141,6 @@ _The following batch (T080–T082) comes from the QA checklist completed against
 
 _The following batch (T083–T084) comes from a product-manager audit scoping two new product surfaces: custom app theming and rank-progression suggestions. Promoted from `Needs scoping` after resolving their open product/technical questions with the user._
 
-### [T083] Custom app theming — match a user's kendama color scheme
-
-- **Area:** Theming / Profile
-- **Priority:** Medium
-- **Status:** Not started
-- **Description:** Let a user pick a free-form background color and accent color, independently, so the app's post-onboarding look can match their physical kendama. Umbrella only — complete T083.1–T083.3.
-- **Notes:** Full free-form picker, not curated presets (explicit decision). Applies to post-onboarding screens only; pre-onboarding yellow state and functional colors (errors/success) stay fixed.
-
-### [T083.3] Apply theme colors to post-onboarding screens
-
-- **Area:** Theming (cross-cutting)
-- **Priority:** Medium (inherited from parent T083)
-- **Status:** In progress
-- **Planning:** Required
-- **Description:** Replace the fixed decorative background (`AppColors.sage`, etc.) and primary accent color across Home/Sesh/Tricks/Stats/Profile with the user's stored theme when set, falling back to current fixed colors when unset. Functional colors (errors, success states, text) are out of scope.
-- **Exit criteria:** In-browser check confirms every post-onboarding screen reflects a saved custom background/accent, an unset theme renders identically to today's fixed colors, and pre-onboarding yellow state is unaffected.
-- **Notes:** Depends on T083.2. The planner should enumerate every current fixed-color usage this touches before implementation — that enumeration itself is the risk in this ticket.
-
 ### [T084] Suggest the next trick for the user's Kentei rank on Home
 
 - **Area:** Home

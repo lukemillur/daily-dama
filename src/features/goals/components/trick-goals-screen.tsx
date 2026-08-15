@@ -266,6 +266,6 @@ const FieldInput = styled(TextInput)`min-height: 56px; background-color: ${AppCo
 const ErrorText = styled.Text`color: ${AppColors.red}; font-size: 12px; font-weight: 800; margin-top: 7px;`;
 const KindPicker = styled.View`flex-direction: row; gap: 10px; margin-top: 8px;`;
 const KindOption = styled(Pressable)<{ readonly $selected: boolean }>`min-width: 140px; flex: 1; min-height: 54px; flex-direction: row; align-items: center; gap: 10px; background-color: ${({ $selected }) => ($selected ? AppColors.ink : AppColors.paper)}; border: 2px solid ${AppColors.ink}; padding: 10px 13px;`;
-const KindMark = styled.Text<{ readonly $selected: boolean }>`width: 18px; color: ${({ $selected }) => ($selected ? AppColors.yellow : AppColors.red)}; font-size: 16px; font-weight: 900; text-align: center;`;
+const KindMark = styled.Text<{ readonly $selected: boolean }>`width: 18px; color: ${({ $selected, theme }) => ($selected ? theme.accent : AppColors.red)}; font-size: 16px; font-weight: 900; text-align: center;`;
 const KindTitle = styled.Text<{ readonly $selected: boolean }>`color: ${({ $selected }) => ($selected ? AppColors.cream : AppColors.ink)}; font-size: 14px; font-weight: 900;`;
 const FormActions = styled.View`gap: 10px; margin-top: 36px;`;

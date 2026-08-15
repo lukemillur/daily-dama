@@ -154,7 +154,7 @@ const CenteredBody = styled(BodyText)`max-width: 480px; text-align: center; marg
 const StartButton = styled(Button).attrs({ size: 'medium' })`margin-top: 28px;`;
 const Overview = styled.View`flex-direction: row; flex-wrap: wrap; gap: 10px; margin-top: 30px;`;
 const OverviewMetric = styled.View`min-width: 150px; flex: 1; background-color: ${AppColors.ink}; padding: 20px; border-radius: 4px;`;
-const OverviewValue = styled.Text`color: ${AppColors.yellow}; font-size: 30px; font-weight: 900; font-variant: tabular-nums;`;
+const OverviewValue = styled.Text`color: ${({ theme }) => theme.accent}; font-size: 30px; font-weight: 900; font-variant: tabular-nums;`;
 const OverviewLabel = styled.Text`color: ${AppColors.cream}; font-size: 12px; font-weight: 800; margin-top: 4px; text-transform: uppercase;`;
 const SectionLabel = styled.Text`color: ${AppColors.red}; font-size: 13px; font-weight: 900; letter-spacing: 1.8px; margin: 38px 0 12px; text-transform: uppercase;`;
 const TrickList = styled.View`gap: 12px;`;
