@@ -145,7 +145,7 @@ _The following batch (T083–T084) comes from a product-manager audit scoping tw
 
 - **Area:** Home
 - **Priority:** Medium
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Implementer
 - **Description:** Add a Home card suggesting the next standard Kentei trick to learn: the first trick in rank order, at the user's current rank, not yet in `manuallyUnlockedTrickIds`; once the rank is fully laced, suggest the next rank's first trick. Standard tricks only — custom tricks are excluded since rank data doesn't apply to them. Separate, additive card alongside the existing neglected-tricks surface (Stats), not a merge.
 - **Exit criteria:** A test on `createHomeSummary` (or a new sibling model function) confirms the correct next trick is chosen across: mid-rank with some tricks laced, a fully-laced rank rolling to the next rank's first trick, and the top rank fully laced (no suggestion). A `DailyHome` component test confirms the card renders the suggested trick and a practice entry point.
