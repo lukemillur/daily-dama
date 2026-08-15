@@ -1007,6 +1007,16 @@ Entries keep their content as it was at completion. Don't retroactively edit a d
 - **Description:** Apply T076.1's reset behavior to the single-trick completion screen, casual multi-trick wrap-up, assessment wrap-up, and any nested Sesh setup/active routes that can be reached through the Sesh tab.
 - **Exit criteria:** Focused web checks and automated coverage exercise Sesh-tab presses from each listed screen and confirm the canonical Sesh home picker is rendered every time; direct finish/cancel actions retain their existing destinations and practice-history behavior. Depends on T076.1.
 - **Notes:** Added a route-host integration matrix covering single-trick completion, casual multi-trick selection/setup/countdown/active/wrap-up, and assessment picker/countdown/active/wrap-up. Every target-scoped Sesh-tab press asserts `/sesh`, the canonical home-picker marker, and removal of the stale child marker; unrelated-tab filtering remains covered. Existing focused Sesh, casual multi-trick, and assessment suites pass, including direct cancel/finish routing and practice-history origin/deduplication behavior. Full web-only verification passes; native validation remains deferred under AGENTS.md.
+### [T080] Fix Kentei assessment exit and stale wrap-up leak
+
+- **Area:** Navigation / Sesh
+- **Priority:** High
+- **Status:** Done
+- **Planning:** Required
+- **Description:** The Kentei assessment wrap-up screen's "Go to Home" button (`src/features/sesh/components/assessment-entry.tsx:65-66`) calls `router.dismissTo('/')`, but the wrap-up screen lives on the nested Profile stack (`/profile/kentei-assessment`, pushed via `router.push` in `src/app/profile/index.tsx:56`) and `'/'` is not part of that stack's history, so the call is a no-op and the button does nothing. Separately, `src/app/profile/_layout.tsx` has no `tabPress` listener resetting its stack on tab re-press, unlike `src/app/sesh/_layout.tsx` and `src/app/tricks/_layout.tsx` — so if a user routes around the stuck wrap-up screen, re-entering Profile can still show the stale wrap-up instead of the normal Profile screen.
+- **Exit criteria:** From the Kentei wrap-up screen, pressing "Go to Home" navigates to the Home tab. Separately, after completing a Kentei assessment and pressing "Go to Home," navigating to Profile shows the normal Profile screen, not a stale wrap-up — checked both immediately and after re-pressing the Profile tab.
+- **Notes:** Replaced the no-op `router.dismissTo('/')` (target href not present in the Profile stack's own history) with `router.navigate('/')`, which resolves across the full route tree to the Home tab. Added a `tabPress` listener to `src/app/profile/_layout.tsx` mirroring the existing pattern in `sesh/_layout.tsx` / `tricks/_layout.tsx`, resetting the Profile stack to `/profile` on every Profile-tab press so a stale wrap-up screen never reappears, whether checked immediately after "Go to Home" or after a later re-press. New `src/app/profile/__tests__/layout.test.tsx` covers the listener; `assessment-entry.test.tsx` updated for the `navigate` mock. Full web-only verification passes; native validation remains deferred under the active platform scope.
+
 ### [T079] Keep custom-trick save actionable with inline validation
 
 - **Area:** Tricks / custom-trick forms

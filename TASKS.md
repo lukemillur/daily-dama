@@ -141,16 +141,6 @@ _The following batch (T070–T079) comes from the QA checklist completed against
 
 _The following batch (T080–T082) comes from the QA checklist completed against PR 99, worked top to bottom. New entries are intentionally placed before the older queue so the next actionable QA finding is selected first. Existing task history is not rewritten._
 
-### [T080] Fix Kentei assessment exit and stale wrap-up leak
-
-- **Area:** Navigation / Sesh
-- **Priority:** High
-- **Status:** Not started
-- **Planning:** Required
-- **Description:** The Kentei assessment wrap-up screen's "Go to Home" button (`src/features/sesh/components/assessment-entry.tsx:65-66`) calls `router.dismissTo('/')`, but the wrap-up screen lives on the nested Profile stack (`/profile/kentei-assessment`, pushed via `router.push` in `src/app/profile/index.tsx:56`) and `'/'` is not part of that stack's history, so the call is a no-op and the button does nothing. Separately, `src/app/profile/_layout.tsx` has no `tabPress` listener resetting its stack on tab re-press, unlike `src/app/sesh/_layout.tsx` and `src/app/tricks/_layout.tsx` — so if a user routes around the stuck wrap-up screen, re-entering Profile can still show the stale wrap-up instead of the normal Profile screen.
-- **Exit criteria:** From the Kentei wrap-up screen, pressing "Go to Home" navigates to the Home tab. Separately, after completing a Kentei assessment and pressing "Go to Home," navigating to Profile shows the normal Profile screen, not a stale wrap-up — checked both immediately and after re-pressing the Profile tab.
-- **Notes:** Consider mirroring the existing `tabPress`-reset pattern already used in `src/app/sesh/_layout.tsx` / `src/app/tricks/_layout.tsx` for `src/app/profile/_layout.tsx`, and fixing the dismiss target so it actually lands on Home rather than no-op'ing. Confirm the fix doesn't regress normal (non-assessment) Profile stack navigation.
-
 ### [T081] Preselect direct-practice trick on the Sesh screen with a cancel affordance
 
 - **Area:** Sesh
