@@ -4,6 +4,16 @@ Completed entries move here from `TASKS.md`'s `Backlog`, in the same commit that
 
 Entries keep their content as it was at completion. Don't retroactively edit a description or exit criteria after the fact; if something about a completed task turns out to be wrong or misleading, note that in a new entry or in code, not by rewriting history here.
 
+### [T084] Suggest the next trick for the user's Kentei rank on Home
+
+- **Area:** Home
+- **Priority:** Medium
+- **Status:** Done
+- **Planning:** Implementer
+- **Description:** Add a Home card suggesting the next standard Kentei trick to learn: the first trick in rank order, at the user's current rank, not yet in `manuallyUnlockedTrickIds`; once the rank is fully laced, suggest the next rank's first trick. Standard tricks only — custom tricks are excluded since rank data doesn't apply to them. Separate, additive card alongside the existing neglected-tricks surface (Stats), not a merge.
+- **Exit criteria:** A test on `createHomeSummary` (or a new sibling model function) confirms the correct next trick is chosen across: mid-rank with some tricks laced, a fully-laced rank rolling to the next rank's first trick, and the top rank fully laced (no suggestion). A `DailyHome` component test confirms the card renders the suggested trick and a practice entry point.
+- **Notes:** Mirrors the existing `neglected-tricks-section.tsx` pattern for structure. Reuses `KENDAMA_KENTEI_TRICKS`'s existing rank/order and `profile.manuallyUnlockedTrickIds`; no persistence or schema change. Added `selectNextKenteiTrick` as an exported sibling selector in `home-summary.ts`, wired into `createHomeSummary` as `HomeSummary.nextKenteiTrick`, and a new `NextKenteiTrick` card in `daily-home.tsx` placed between the primary practice hero and the in-rotation queue. No browser preview tool was available in this session (Bash-only tool access); verified via model and `DailyHome` render tests instead of an in-browser check.
+
 ---
 
 ### [T083] Custom app theming — match a user's kendama color scheme

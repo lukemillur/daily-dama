@@ -29,6 +29,7 @@ export function DailyHome({ summary }: { readonly summary: HomeSummary }) {
         </HomeHeader>
 
         <PrimaryPractice summary={summary} />
+        <NextKenteiTrick trick={summary.nextKenteiTrick} />
         <PracticeQueue tricks={summary.selectedTricks} />
         <TimeLogged summary={summary} />
         <Momentum summary={summary} />
@@ -82,6 +83,34 @@ function PrimaryPractice({ summary }: { readonly summary: HomeSummary }) {
         </UnavailableAction>
       )}
     </Hero>
+  );
+}
+
+// Separate, additive nudge alongside the in-rotation queue: the next standard Kentei trick
+// to learn at the user's current rank (or the next rank's first trick once the current rank
+// is fully laced). Standard tricks only, since rank data doesn't apply to custom tricks.
+// Renders nothing once every rank is fully laced.
+function NextKenteiTrick({ trick }: { readonly trick?: HomePracticeTrick }) {
+  if (!trick) return null;
+
+  return (
+    <Section>
+      <SectionHeading>
+        <SectionHeadingCopy>
+          <SectionEyebrow>Next up in Kentei</SectionEyebrow>
+          <SectionTitle>Learn your next trick</SectionTitle>
+        </SectionHeadingCopy>
+      </SectionHeading>
+      <NextTrickCard>
+        <NextTrickMeta>Rank {trick.kenteiRank} · {trick.kenteiLevel}</NextTrickMeta>
+        <NextTrickName>{trick.name}</NextTrickName>
+        <Link
+          href={{ pathname: '/sesh', params: { trickId: trick.id, mode: 'practice' } }}
+          asChild>
+          <NextTrickAction accessibilityRole="link">Practice →</NextTrickAction>
+        </Link>
+      </NextTrickCard>
+    </Section>
   );
 }
 
@@ -233,6 +262,10 @@ const SectionHeadingCopy = styled.View`flex: 1;`;
 const SectionEyebrow = styled(Eyebrow)`font-size: 11px;`;
 const SectionTitle = styled.Text`color: ${AppColors.ink}; font-size: 26px; font-weight: 900; letter-spacing: -0.7px; margin-top: 7px;`;
 const TextLink = styled.Text`padding: 8px 0; color: ${AppColors.ink}; font-size: 13px; font-weight: 900; text-decoration-line: underline;`;
+const NextTrickCard = styled.View`background-color: ${AppColors.paper}; border-left-width: 6px; border-left-color: ${AppColors.red}; padding: 20px 22px;`;
+const NextTrickMeta = styled.Text`color: ${AppColors.red}; font-size: 11px; font-weight: 900; letter-spacing: 0.8px; text-transform: uppercase;`;
+const NextTrickName = styled.Text`color: ${AppColors.ink}; font-size: 22px; font-weight: 900; margin-top: 6px;`;
+const NextTrickAction = styled.Text`align-self: flex-start; color: ${AppColors.ink}; font-size: 13px; font-weight: 900; margin-top: 16px;`;
 const QueueList = styled.View`border-top-width: 2px; border-top-color: ${AppColors.ink};`;
 const QueueItem = styled(Pressable)`min-height: 88px; flex-direction: row; align-items: center; gap: 14px; border-bottom-width: 1px; border-bottom-color: #b9c3aa; padding: 15px 2px;`;
 const QueueNumber = styled.Text`width: 24px; color: ${AppColors.red}; font-size: 11px; font-weight: 900;`;

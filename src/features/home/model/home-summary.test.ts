@@ -1,7 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
 
 import type { CustomTrick } from '@/features/custom-tricks/model/custom-trick';
-import { createHomeSummary } from '@/features/home/model/home-summary';
+import { createHomeSummary, selectNextKenteiTrick } from '@/features/home/model/home-summary';
 import type { UserProfile } from '@/features/profile/model/user-profile';
 import type { PracticeSessionRecord } from '@/features/stats/model/practice-history';
 import type { TrickSummary } from '@/features/tricks/model/trick';
@@ -214,5 +214,92 @@ describe('daily home summary', () => {
         sessions: [shortToday],
       }).currentStreak,
     ).toBe(1);
+  });
+});
+
+
+describe('selectNextKenteiTrick', () => {
+  const RANK_1_A: TrickSummary = {
+    id: 'rank1-a',
+    name: 'Rank 1 A',
+    kenteiRank: 1,
+    kenteiLevel: 'Basic',
+    kenteiClass: '3rd Class',
+  };
+  const RANK_1_B: TrickSummary = {
+    id: 'rank1-b',
+    name: 'Rank 1 B',
+    kenteiRank: 1,
+    kenteiLevel: 'Basic',
+    kenteiClass: '3rd Class',
+  };
+  const RANK_2_A: TrickSummary = {
+    id: 'rank2-a',
+    name: 'Rank 2 A',
+    kenteiRank: 2,
+    kenteiLevel: 'Basic',
+    kenteiClass: '2nd Class',
+  };
+  const RANK_2_B: TrickSummary = {
+    id: 'rank2-b',
+    name: 'Rank 2 B',
+    kenteiRank: 2,
+    kenteiLevel: 'Basic',
+    kenteiClass: '2nd Class',
+  };
+  const TRICKS: readonly TrickSummary[] = [RANK_1_A, RANK_1_B, RANK_2_A, RANK_2_B];
+
+  it('suggests the first not-yet-laced trick at the current rank, in rank order', () => {
+    const profile: UserProfile = {
+      hasCompletedOnboarding: true,
+      kenteiRank: 1,
+      selectedTrickIds: [],
+      manuallyUnlockedTrickIds: [RANK_1_A.id],
+    };
+
+    expect(selectNextKenteiTrick(profile, TRICKS)).toEqual({
+      id: RANK_1_B.id,
+      name: RANK_1_B.name,
+      kind: 'standard',
+      kenteiRank: 1,
+      kenteiLevel: 'Basic',
+    });
+  });
+
+  it('rolls forward to the next rank once the current rank is fully laced', () => {
+    const profile: UserProfile = {
+      hasCompletedOnboarding: true,
+      kenteiRank: 1,
+      selectedTrickIds: [],
+      manuallyUnlockedTrickIds: [RANK_1_A.id, RANK_1_B.id],
+    };
+
+    expect(selectNextKenteiTrick(profile, TRICKS)).toEqual({
+      id: RANK_2_A.id,
+      name: RANK_2_A.name,
+      kind: 'standard',
+      kenteiRank: 2,
+      kenteiLevel: 'Basic',
+    });
+  });
+
+  it('returns undefined once the top rank is fully laced', () => {
+    const profile: UserProfile = {
+      hasCompletedOnboarding: true,
+      kenteiRank: 1,
+      selectedTrickIds: [],
+      manuallyUnlockedTrickIds: [RANK_1_A.id, RANK_1_B.id, RANK_2_A.id, RANK_2_B.id],
+    };
+
+    expect(selectNextKenteiTrick(profile, TRICKS)).toBeUndefined();
+  });
+
+  it('returns undefined when the profile has no assessed rank yet', () => {
+    const profile: UserProfile = {
+      hasCompletedOnboarding: true,
+      selectedTrickIds: [],
+    };
+
+    expect(selectNextKenteiTrick(profile, TRICKS)).toBeUndefined();
   });
 });
