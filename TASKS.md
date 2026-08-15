@@ -145,7 +145,7 @@ _The following batch (T080–T082) comes from the QA checklist completed against
 
 - **Area:** Navigation / Sesh
 - **Priority:** High
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** The Kentei assessment wrap-up screen's "Go to Home" button (`src/features/sesh/components/assessment-entry.tsx:65-66`) calls `router.dismissTo('/')`, but the wrap-up screen lives on the nested Profile stack (`/profile/kentei-assessment`, pushed via `router.push` in `src/app/profile/index.tsx:56`) and `'/'` is not part of that stack's history, so the call is a no-op and the button does nothing. Separately, `src/app/profile/_layout.tsx` has no `tabPress` listener resetting its stack on tab re-press, unlike `src/app/sesh/_layout.tsx` and `src/app/tricks/_layout.tsx` — so if a user routes around the stuck wrap-up screen, re-entering Profile can still show the stale wrap-up instead of the normal Profile screen.
 - **Exit criteria:** From the Kentei wrap-up screen, pressing "Go to Home" navigates to the Home tab. Separately, after completing a Kentei assessment and pressing "Go to Home," navigating to Profile shows the normal Profile screen, not a stale wrap-up — checked both immediately and after re-pressing the Profile tab.
