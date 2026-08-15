@@ -141,16 +141,6 @@ _The following batch (T070–T079) comes from the QA checklist completed against
 
 _The following batch (T080–T082) comes from the QA checklist completed against PR 99, worked top to bottom. New entries are intentionally placed before the older queue so the next actionable QA finding is selected first. Existing task history is not rewritten._
 
-### [T082] Add horizontal margin to the Trick Goals shared trick-directory picker
-
-- **Area:** Tricks / Goals
-- **Priority:** Low
-- **Status:** In progress
-- **Planning:** Implementer
-- **Description:** `GoalTrickPicker` (`src/features/goals/components/all-trick-goals-screen.tsx:134-145`) renders `TrickDirectory` without a `selection` prop, so rows fall back to the unpadded `identity` block in `src/features/tricks/components/trick-directory.tsx` instead of the padded `SelectableIdentity` block (~line 283) that the Tricks tab gets via its `selection` prop (`src/app/tricks/index.tsx:69-77`). As a result the picker paints edge-to-edge on the all-trick Trick Goals screen.
-- **Exit criteria:** The trick-directory picker on the all-trick Trick Goals screen renders with horizontal margin matching (or visually consistent with) its usage on the Tricks tab, confirmed in-browser at the standard web viewport; goal creation via the picker still works end to end.
-- **Notes:** Prefer a fix that keeps `TrickDirectory`'s existing conditional padding centralized (e.g. adjust the non-`selection` fallback spacing or how `GoalTrickPicker` wraps it) rather than a one-off inline style override at the Trick Goals call site.
-
 ## Done
 
 Completed entries live in [TASKS_DONE.md](TASKS_DONE.md) — not part of the top-to-bottom read above; see step 5 under _Completing a task_.
