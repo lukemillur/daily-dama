@@ -4,6 +4,16 @@ Completed entries move here from `TASKS.md`'s `Backlog`, in the same commit that
 
 Entries keep their content as it was at completion. Don't retroactively edit a description or exit criteria after the fact; if something about a completed task turns out to be wrong or misleading, note that in a new entry or in code, not by rewriting history here.
 
+### [T091] Fix trick-list horizontal margin in the shared trick-directory container
+
+- **Area:** Tricks
+- **Priority:** High
+- **Status:** Done
+- **Planning:** Implementer
+- **Description:** Revert T088's `margin: 0 22px;` addition to `TrickRowContainer` (`src/features/tricks/components/trick-directory.tsx`, added in commit `6aafb76`) — it regressed the Tricks tab's previously-correct selected-row margin. Move the horizontal inset into `TrickDirectory`'s own shared list container (`ListContainer`/`DirectoryLayout`, ~lines 327–334) instead, since both the Tricks tab (`src/app/tricks/index.tsx`) and the Trick Goals picker (`GoalTrickPicker` in `src/features/goals/components/all-trick-goals-screen.tsx`) render through the same `TrickDirectory` internals with no natural separate per-screen parent to place it in.
+- **Exit criteria:** In-browser check at the standard web viewport (320px+) on both the Tricks tab and the all-trick Trick Goals picker: row background bands show horizontal margin matching the "Search Tricks" box's inset, and the Tricks tab's selected-row appearance matches its pre-T088 look.
+- **Notes:** The source story suggested fixing this per-screen at each screen's parent container; investigation found both call sites share the same `TrickDirectory` internals with no separate per-screen parent to place a duplicate fix in, so the real shared fix belongs inside `TrickDirectory`'s own container. Flagging this as a correction to the story's suggested location, not a silent reinterpretation — the user-visible outcome is unchanged. Fixed by removing the `margin: 0 22px;` line from `TrickRowContainer` and adding `padding: 0 22px;` to `ListContainer` (the shared wrapper used only by `fixedHeader`/`fixedFooter` consumers, i.e. the Trick Goals picker — the Tricks tab doesn't use that wrapper at all, so it's naturally unaffected). Verified in-browser at a 320px viewport (own dev server in the worktree, onboarding bypassed via a direct `localStorage` profile write, driven headlessly over the Chrome DevTools Protocol since no browser-preview tool was available in this run): the Tricks tab's selected-row background again spans edge-to-edge as before T088, and the Trick Goals picker's row backgrounds inset to exactly match the search box's 22px padding on both sides once the headless browser's classic (non-overlay) scrollbar — a rendering artifact absent under normal overlay-scrollbar browsers — is accounted for. Full web-only verification (`yarn test`, `yarn lint`, `yarn tsc --noEmit`, web export) passes; native validation remains deferred under the active platform scope.
+
 ### [T090] Make the color picker's puck follow live-typed hex text
 
 - **Area:** Profile / Theming

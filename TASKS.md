@@ -148,16 +148,6 @@ _T089 comes from story S014 in [BACKLOG_STORIES.md](BACKLOG_STORIES.md), scoped 
 
 _T090–T097 come from stories S005–S009 and S011–S013 in [BACKLOG_STORIES.md](BACKLOG_STORIES.md), scoped in the same `scope-tickets` pass. S010 (preset text colors) was not scoped this round — see the note on its `BACKLOG_STORIES.md` entry; investigation found its premise doesn't hold up and it needs re-refinement by `product-manager` before it's scopable. New entries are placed after T089, since T096/T097 depend on it landing first._
 
-### [T091] Fix trick-list horizontal margin in the shared trick-directory container
-
-- **Area:** Tricks
-- **Priority:** High
-- **Status:** Not started
-- **Planning:** Implementer
-- **Description:** Revert T088's `margin: 0 22px;` addition to `TrickRowContainer` (`src/features/tricks/components/trick-directory.tsx`, added in commit `6aafb76`) — it regressed the Tricks tab's previously-correct selected-row margin. Move the horizontal inset into `TrickDirectory`'s own shared list container (`ListContainer`/`DirectoryLayout`, ~lines 327–334) instead, since both the Tricks tab (`src/app/tricks/index.tsx`) and the Trick Goals picker (`GoalTrickPicker` in `src/features/goals/components/all-trick-goals-screen.tsx`) render through the same `TrickDirectory` internals with no natural separate per-screen parent to place it in.
-- **Exit criteria:** In-browser check at the standard web viewport (320px+) on both the Tricks tab and the all-trick Trick Goals picker: row background bands show horizontal margin matching the "Search Tricks" box's inset, and the Tricks tab's selected-row appearance matches its pre-T088 look.
-- **Notes:** The source story suggested fixing this per-screen at each screen's parent container; investigation found both call sites share the same `TrickDirectory` internals with no separate per-screen parent to place a duplicate fix in, so the real shared fix belongs inside `TrickDirectory`'s own container. Flagging this as a correction to the story's suggested location, not a silent reinterpretation — the user-visible outcome is unchanged.
-
 ### [T092] Add a preset-theme step to onboarding
 
 - **Area:** Onboarding
