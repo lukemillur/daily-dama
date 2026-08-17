@@ -18,6 +18,7 @@ export interface UserProfile {
   readonly manuallyUnlockedTrickIds?: readonly string[];
   readonly themeBackgroundColor?: string;
   readonly themeAccentColor?: string;
+  readonly themeTextColor?: string;
 }
 
 export const MIN_STREAK_THRESHOLD_MINUTES = 1;
@@ -74,6 +75,7 @@ export type UserProfileAction =
       readonly themeBackgroundColor?: string;
       readonly themeAccentColor?: string;
     }
+  | { readonly type: 'themeTextColorUpdated'; readonly themeTextColor?: string }
   | {
       readonly type: 'onboardingCompleted';
       readonly kenteiRank: number;
@@ -143,6 +145,8 @@ export function userProfileReducer(
         themeBackgroundColor: action.themeBackgroundColor,
         themeAccentColor: action.themeAccentColor,
       };
+    case 'themeTextColorUpdated':
+      return { ...state, themeTextColor: action.themeTextColor };
     case 'onboardingCompleted':
       return {
         ...state,

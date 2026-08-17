@@ -38,6 +38,7 @@ interface UserProfileActions {
     themeBackgroundColor: string | undefined,
     themeAccentColor: string | undefined,
   ) => void;
+  readonly setThemeTextColor: (themeTextColor: string | undefined) => void;
   readonly completeOnboarding: (
     kenteiRank: number,
     selectedTrickIds: readonly string[],
@@ -128,6 +129,10 @@ export function UserProfileProvider({ children }: PropsWithChildren) {
     [],
   );
 
+  const setThemeTextColor = useCallback((themeTextColor: string | undefined) => {
+    dispatch({ type: 'themeTextColorUpdated', themeTextColor });
+  }, []);
+
   const completeOnboarding = useCallback(
     (kenteiRank: number, selectedTrickIds: readonly string[], lacedTrickIds: readonly string[]) => {
       dispatch({ type: 'onboardingCompleted', kenteiRank, selectedTrickIds, lacedTrickIds });
@@ -153,6 +158,7 @@ export function UserProfileProvider({ children }: PropsWithChildren) {
       setLastSesh,
       setStreakThresholdMs,
       setThemeColors,
+      setThemeTextColor,
       completeOnboarding,
       restartOnboarding,
       advanceKenteiRank,
@@ -167,6 +173,7 @@ export function UserProfileProvider({ children }: PropsWithChildren) {
       setLastSesh,
       setStreakThresholdMs,
       setThemeColors,
+      setThemeTextColor,
       toggleManualUnlock,
       toggleSelectedTrick,
     ],

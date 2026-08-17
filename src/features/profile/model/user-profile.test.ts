@@ -195,6 +195,42 @@ describe('user profile trick selection', () => {
     expect(result.themeAccentColor).toBe('#123456');
   });
 
+  it('sets and clears the custom text color', () => {
+    const withColor = userProfileReducer(INITIAL_USER_PROFILE, {
+      type: 'themeTextColorUpdated',
+      themeTextColor: '#abcdef',
+    });
+    expect(withColor.themeTextColor).toBe('#abcdef');
+
+    const cleared = userProfileReducer(withColor, {
+      type: 'themeTextColorUpdated',
+      themeTextColor: undefined,
+    });
+    expect(cleared.themeTextColor).toBeUndefined();
+  });
+
+  it('does not clobber unrelated profile fields when updating the theme text color', () => {
+    const state = { ...INITIAL_USER_PROFILE, selectedTrickIds: ['big-cup'] };
+
+    const result = userProfileReducer(state, {
+      type: 'themeTextColorUpdated',
+      themeTextColor: '#abcdef',
+    });
+
+    expect(result.selectedTrickIds).toEqual(['big-cup']);
+  });
+
+  it('leaves the theme text color untouched when an unrelated action is dispatched', () => {
+    const state = { ...INITIAL_USER_PROFILE, themeTextColor: '#abcdef' };
+
+    const result = userProfileReducer(state, {
+      type: 'selectedTrickToggled',
+      trickId: 'big-cup',
+    });
+
+    expect(result.themeTextColor).toBe('#abcdef');
+  });
+
   it('advances the assessed Kentei rank', () => {
     const state = { ...INITIAL_USER_PROFILE, kenteiRank: 1 };
 

@@ -145,6 +145,54 @@ describe('user profile persistence', () => {
     expect(result).toEqual({ status: 'loaded', value: profileWithThemeColors });
   });
 
+  it('round-trips a profile with theme colors and a custom theme text color', () => {
+    const profileWithThemeColors = {
+      ...COMPLETE_PROFILE,
+      themeBackgroundColor: '#ABCDEF',
+      themeAccentColor: '#123456',
+      themeTextColor: '#654321',
+    } as const;
+
+    const serialized = serializeUserProfile(profileWithThemeColors);
+
+    expect(deserializeUserProfile(serialized)).toEqual(profileWithThemeColors);
+  });
+
+  it('defaults themeTextColor to undefined when unset', () => {
+    const serialized = serializeUserProfile(COMPLETE_PROFILE);
+
+    const result = deserializeUserProfile(serialized);
+
+    expect(result?.themeTextColor).toBeUndefined();
+  });
+
+  it.each(['not-a-color', '#fff', '#1234567', '#gggggg', ''])(
+    'rejects a malformed themeTextColor: %p',
+    (themeTextColor) => {
+      const serialized = JSON.stringify({
+        version: USER_PROFILE_SCHEMA_VERSION,
+        profile: { ...COMPLETE_PROFILE, themeTextColor },
+      });
+
+      expect(deserializeUserProfile(serialized)).toBeUndefined();
+    },
+  );
+
+  it('loads a valid persisted profile with a theme text color through the full hydration path', async () => {
+    const profileWithThemeTextColor = {
+      ...COMPLETE_PROFILE,
+      themeBackgroundColor: '#abcdef',
+      themeAccentColor: '#123456',
+      themeTextColor: '#654321',
+    } as const;
+
+    const result = await loadUserProfile(
+      createStorage(serializeUserProfile(profileWithThemeTextColor)),
+    );
+
+    expect(result).toEqual({ status: 'loaded', value: profileWithThemeTextColor });
+  });
+
   it.each([0, 'not-an-array', ['big-cup', 'big-cup'], ['big-cup', ''], [1, 2]])(
     'rejects a malformed manuallyUnlockedTrickIds: %p',
     (manuallyUnlockedTrickIds) => {
