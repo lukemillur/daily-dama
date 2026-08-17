@@ -58,13 +58,22 @@ Carry `Priority` over from the story unless the codebase surfaces a reason to di
 Scoping a story is not done when `TASKS.md` is written — it's done when `BACKLOG_STORIES.md` reflects it too. The two writes are one unit of work, not a main step plus an optional follow-up:
 
 - Update the source story's `Status` to `Scoped → T###` (or one `Scoped →` line per child task if it split into several) in the same turn you write the `TASKS.md` entry.
-- Do not delete the story or touch any other field — it's the product record for why the ticket exists, not dead weight to clean up.
+- Do not touch any other field while doing this — the status line is the only thing this step changes.
 - A story left at `Ready for scoping` after its ticket exists in `TASKS.md` is a bug in this skill's own output, not a stylistic choice — treat it as a reason to go back and fix the status before considering the run finished.
-- If scoping a story is deferred, rejected, or sent back to `product-manager` instead of promoted (see the opening section), that is also a status change worth recording — don't leave `BACKLOG_STORIES.md` silently stale either way.
+- If scoping a story is deferred, rejected, or sent back to `product-manager` instead of promoted (see the opening section), that is also a status change worth recording — don't leave `BACKLOG_STORIES.md` silently stale either way. Deferred/rejected/sent-back stories are never removed — only a promoted (`Scoped → T###`) story is a removal candidate, per the cleanup step below.
+
+## Cleanup: remove scoped stories from the backlog
+
+As the final step of a scoping run, delete each story entry this run promoted to `Scoped → T###` from `BACKLOG_STORIES.md` entirely — heading, all fields, everything. `TASKS.md` is the entry's permanent record from this point forward (the ticket's own `Description`/`Notes` carry the "why," and the batch-note comment above each ticket range already cites the originating story ID), so the backlog no longer needs to hold it.
+
+- Only delete entries that reached `Scoped → T###` in *this* run. Don't sweep up older `Scoped →` entries left over from previous runs as a side effect — that's a separate, deliberate cleanup pass, not an automatic consequence of running this skill.
+- Never delete a `Proposed`, `Ready for scoping`, or `Rejected` entry, or one sent back to `product-manager` this run — only a promoted entry qualifies.
+- Do this after the status-flip write, not instead of it — the sequence is: write `TASKS.md`, flip the status to `Scoped → T###`, then remove that same entry. Even though both edits land in the same diff, skipping straight to deletion without ever writing `Scoped → T###` leaves no intermediate record of which story produced which ticket.
+- Show the deleted entry (or a summary of which story IDs were removed and their resulting ticket IDs) in the response, since it no longer exists in the file for the user to see afterward.
 
 ## File ownership and safe writes
 
-`TASKS.md` is the actionable source of truth for implementation work; this skill is one of its writers. `BACKLOG_STORIES.md` is owned by `product-manager`, but this skill is responsible for flipping a story's `Status` field as part of promotion — every `TASKS.md` write this skill makes has a matching `BACKLOG_STORIES.md` status update. Touch nothing else in that file.
+`TASKS.md` is the actionable source of truth for implementation work; this skill is one of its writers. `BACKLOG_STORIES.md` is owned by `product-manager`, but this skill is responsible for flipping a story's `Status` field as part of promotion, and for removing the entry per the cleanup step above once that's done — every `TASKS.md` write this skill makes has a matching `BACKLOG_STORIES.md` status update followed by that entry's removal. Touch nothing else in that file.
 
 Before writing:
 
@@ -74,4 +83,4 @@ Before writing:
 - show the intended `TASKS.md` and `BACKLOG_STORIES.md` changes in the response or explain them clearly;
 - do not commit, push, open PRs, or invoke `newTicket`/implementation agents unless separately requested.
 
-After writing, run a focused structural check covering both files — inspect the diff and confirm every new `TASKS.md` entry has the required fields and a real, mechanical exit criterion, *and* that every story scoped this run shows a matching `Scoped → T###` status in `BACKLOG_STORIES.md`. Full application verification isn't needed; this skill doesn't change application code.
+After writing, run a focused structural check covering both files — inspect the diff and confirm every new `TASKS.md` entry has the required fields and a real, mechanical exit criterion, that every story promoted this run was removed from `BACKLOG_STORIES.md` (not just status-flipped), and that no non-promoted entry was touched. Full application verification isn't needed; this skill doesn't change application code.

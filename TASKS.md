@@ -143,6 +143,112 @@ _The following batch (T083–T084) comes from a product-manager audit scoping tw
 
 _The following batch (T085–T088) comes from user stories S001–S004 in [BACKLOG_STORIES.md](BACKLOG_STORIES.md), scoped via the `scope-tickets` skill after `product-manager` refined a round of theming UX feedback into stories. New entries are intentionally placed before the older queue (there is none currently) so they're picked up first._
 
+_T089 comes from story S014 in [BACKLOG_STORIES.md](BACKLOG_STORIES.md), scoped via `scope-tickets` after a QA pass on T085–T088 surfaced a pattern of theming being bolted onto surfaces one hardcoded literal at a time. It is deliberately scoped as schema-only groundwork, sequenced ahead of the not-yet-scoped S009/S012/S013 so those consume this token set instead of inventing their own._
+
+### [T089] Add button-background tokens to the resolved-theme system
+
+- **Area:** Profile / Theming (theme derivation state, not persistence schema)
+- **Priority:** High
+- **Status:** Not started
+- **Planning:** Implementer
+- **Description:** `ResolvedTheme`/`resolveTheme()` (`src/features/profile/state/use-resolved-theme.ts`) currently derives only `background`, `accent`, and `text`, so every themed surface added since T085–T087 that isn't one of those three (buttons, Sesh's laced-state button) falls back to hardcoded `AppColors`/hex literals. Add a `buttonBackground` / `buttonBackgroundSecondary` token pair to `ResolvedTheme`, derived alongside the existing fields using the same pattern `deriveAutomaticTextColor` already establishes, so it correctly resolves for the default/unset theme, any saved custom background/accent pair, and each of the seven T087 presets.
+- **Exit criteria:** New unit tests on the theme-resolution logic assert correct `buttonBackground`/`buttonBackgroundSecondary` values for (a) no saved preference, (b) a saved custom theme, and (c) each T087 preset. `yarn tsc --noEmit` and the full existing test suite pass unmodified, confirming the new fields don't disturb any current consumer of `ResolvedTheme`.
+- **Notes:** Schema-only groundwork for story S014 — no component wiring is in scope here. Wiring `Button`'s `ButtonRoot` (`src/components/ui/button.tsx:45`) to `buttonBackground`/`buttonBackgroundSecondary` is T096's job; wiring Sesh's laced button (`src/features/sesh/components/sesh.tsx:1191`) to reuse `buttonBackground` is T097's job. Both are placed after this ticket in the queue deliberately — neither should be picked up before T089 is `Done`.
+
+_T090–T097 come from stories S005–S009 and S011–S013 in [BACKLOG_STORIES.md](BACKLOG_STORIES.md), scoped in the same `scope-tickets` pass. S010 (preset text colors) was not scoped this round — see the note on its `BACKLOG_STORIES.md` entry; investigation found its premise doesn't hold up and it needs re-refinement by `product-manager` before it's scopable. New entries are placed after T089, since T096/T097 depend on it landing first._
+
+### [T090] Make the color picker's puck follow live-typed hex text
+
+- **Area:** Profile / Theming
+- **Priority:** High
+- **Status:** Not started
+- **Planning:** Implementer
+- **Description:** `ColorSpectrumPicker`'s puck only resyncs from `persistedHex` after Save (`src/features/profile/components/theme-color-picker.tsx` lines 46–60), deliberately not on typed hex text, to avoid disrupting an in-progress drag. Wire validated, complete typed hex text into the picker's displayed color live (gated by the same `isValidThemeHexColor` check already used for the swatch), without disturbing the existing persisted-value resync path or active pointer drags.
+- **Exit criteria:** Component tests assert that typing a complete, valid hex value into the hex `TextInput` updates the picker's puck position/derived hue-sat-val state immediately, before Save is pressed; typing an incomplete or invalid hex (e.g. `"#12"`) does not move the puck or throw. Existing drag-then-save and manual-hex-then-save tests in `theme-color-picker.test.tsx` continue to pass unmodified.
+- **Notes:** Introduce a live-hex input path distinct from the persisted-value resync effect (lines 46–60) so the two don't fight each other mid-drag. Confirm `hexToHsv` (`src/shared/color/hsv.ts`) behavior on partial/invalid strings before wiring — the existing `isValidThemeHexColor` gate should be sufficient protection.
+
+### [T091] Fix trick-list horizontal margin in the shared trick-directory container
+
+- **Area:** Tricks
+- **Priority:** High
+- **Status:** Not started
+- **Planning:** Implementer
+- **Description:** Revert T088's `margin: 0 22px;` addition to `TrickRowContainer` (`src/features/tricks/components/trick-directory.tsx`, added in commit `6aafb76`) — it regressed the Tricks tab's previously-correct selected-row margin. Move the horizontal inset into `TrickDirectory`'s own shared list container (`ListContainer`/`DirectoryLayout`, ~lines 327–334) instead, since both the Tricks tab (`src/app/tricks/index.tsx`) and the Trick Goals picker (`GoalTrickPicker` in `src/features/goals/components/all-trick-goals-screen.tsx`) render through the same `TrickDirectory` internals with no natural separate per-screen parent to place it in.
+- **Exit criteria:** In-browser check at the standard web viewport (320px+) on both the Tricks tab and the all-trick Trick Goals picker: row background bands show horizontal margin matching the "Search Tricks" box's inset, and the Tricks tab's selected-row appearance matches its pre-T088 look.
+- **Notes:** The source story suggested fixing this per-screen at each screen's parent container; investigation found both call sites share the same `TrickDirectory` internals with no separate per-screen parent to place a duplicate fix in, so the real shared fix belongs inside `TrickDirectory`'s own container. Flagging this as a correction to the story's suggested location, not a silent reinterpretation — the user-visible outcome is unchanged.
+
+### [T092] Add a preset-theme step to onboarding
+
+- **Area:** Onboarding
+- **Priority:** Medium
+- **Status:** Not started
+- **Planning:** Required
+- **Description:** Insert a new preset-theme-selection step into the onboarding flow (`kentei-onboarding.tsx`'s reducer: `intro` → `levelSelect` → `assessing` → `rankReveal` → `selecting` → complete), before onboarding completion, offering the same seven presets as Profile's `RainbowThemePresets` and applying a choice via the existing `setThemeColors` action from `useUserProfileActions()`. Copy reads to the effect of "Select a theme that matches your setup." Skipping the step leaves the app on its default theme.
+- **Exit criteria:** An onboarding-flow test drives through the new step, selects a preset, and verifies the selected preset's background/accent persist via the profile provider identically to selecting it from Profile; a second case confirms skipping the step completes onboarding normally with no theme preference set. Existing onboarding-flow tests through `completeOnboarding` → `router.replace('/sesh')` continue to pass with the new step inserted.
+- **Notes:** Reuses T087's existing `RAINBOW_THEME_PRESETS`/`setThemeColors` mechanism — no new preset design needed. Marked `Required` because it changes the onboarding reducer's step sequence, which the project's `Required` criteria explicitly calls out (state machines).
+
+### [T093] Reorder Profile's theme screen and refresh its copy
+
+- **Area:** Profile / Theming
+- **Priority:** Low
+- **Status:** Not started
+- **Planning:** Implementer
+- **Description:** In `src/app/profile/index.tsx`, move the `StreakSettings` ("How much practice counts as a day?", lines 63–66) section to render after both theme sections (`RainbowThemePresets` line 68, `ThemeColorPicker` line 70). Update `RainbowThemePresets`' heading from "Or grab a rainbow." to "Select a preset" (`rainbow-theme-presets.tsx:23`) and `ThemeColorPicker`'s heading from "Make it yours." to "Or, make it yours" (`theme-color-picker.tsx:25`).
+- **Exit criteria:** A test on `src/app/profile/index.tsx` asserts the new heading copy renders and that the streak section's content appears after both theme sections' content in render order. No behavioral change to any control.
+- **Notes:** Pure reorder + copy change; existing tests use `findByText` without order assertions, so new order-specific coverage needs to be added rather than relying on what's there.
+
+### [T094] Make the web splash overlay reflect the user's theme
+
+- **Area:** App shell / Theming
+- **Priority:** Medium
+- **Status:** Not started
+- **Planning:** Required
+- **Description:** Two distinct splashes exist: the native `expo-splash-screen` (`app.json`, build-time-only `"#208AEF"`, cannot react to runtime state) and the web-only `AnimatedSplashOverlay` (`src/components/animated-icon.web.tsx`), rendered from `src/app/_layout.tsx:24` before `UserProfileProvider`/`AppThemeProvider` mount. Make `AnimatedSplashOverlay` reflect the user's last-applied theme background (or the app's default theme background pre-selection) by reading a synchronously-available cached value ahead of normal provider hydration. Update `app.json`'s static splash `backgroundColor` to match the app's default theme background as the build-time baseline.
+- **Exit criteria:** A user who has saved a custom background color sees `AnimatedSplashOverlay` render in that color on the next web refresh, verified in-browser (reload, computed-style check before the main app UI mounts). A user with no saved theme sees it render in the app's default theme background. `app.json`'s static `backgroundColor` literal is updated to match the resolved default.
+- **Notes:** The overlay mounts before `AppThemeProvider` resolves theme through its normal async-hydration path, so this needs a synchronous pre-hydration read rather than consuming `ResolvedTheme` through context — this is the architectural risk that makes the ticket `Required` rather than `Implementer`. The native `app.json` splash literal can only ever reflect the app's default, not a live per-user value — that limitation is inherent to build-time native config, not a shortfall of this ticket.
+
+### [T095] Initialize color pickers from the resolved default theme
+
+- **Area:** Profile / Theming
+- **Priority:** Medium
+- **Status:** Not started
+- **Planning:** Implementer
+- **Description:** `ColorField` in `theme-color-picker.tsx` initializes `hexText` from `useState(persistedValue ?? "")` (line 81), where `persistedValue` is the raw, often-`undefined` stored preference (lines 32, 39, 53). Thread `useResolvedTheme()`'s `background`/`accent`/`text` output through as the fallback instead of `""`, so the picker shows the app's real current colors before any save.
+- **Exit criteria:** A component test mounts `ThemeColorPicker` with no saved theme preference and asserts each `ColorField`'s swatch/hex text shows the resolved default theme's values (not blank); saving still works and persists identically to today.
+- **Notes:** No new persistence field — purely an initial-value fix.
+
+### [T096] Theme Button's background color
+
+- **Area:** UI components / Theming
+- **Priority:** Medium
+- **Status:** Not started
+- **Planning:** Implementer
+- **Description:** `Button`'s `ButtonRoot` (`src/components/ui/button.tsx:35-49`) hardcodes its background from `AppColors.ink`/`AppColors.paperStrong` (line 45) regardless of theme, while `ButtonLabel` already reads `theme.accent`/`theme.text`. Wire `ButtonRoot`'s background to `theme.buttonBackground` (primary) / `theme.buttonBackgroundSecondary` (secondary), the tokens T089 adds.
+- **Exit criteria:** New component tests (no `button.test.tsx` exists yet — follow `theme-color-picker.test.tsx`'s render-through-a-real-provider pattern) render `Button` under a custom `AppThemeProvider` theme for both variants and assert `ButtonRoot`'s resolved background matches `theme.buttonBackground`/`theme.buttonBackgroundSecondary` rather than the fixed `AppColors` constants.
+- **Notes:** Depends on T089 (`buttonBackground`/`buttonBackgroundSecondary` tokens) — do not pick this up before T089 is `Done`.
+
+### [T097] Theme Sesh's countdown and laced-button colors
+
+- **Area:** Sesh
+- **Priority:** Medium
+- **Status:** Not started
+- **Planning:** Implementer
+- **Description:** `sesh.tsx` hardcodes the countdown number color (`#d84929`, line 1182) and the laced button's background/text/count colors (`#d84929`/`#fff8e5`/`#f4c94d`, lines 1191–1193). Wire the countdown color to `theme.accent`, the laced button's background to `theme.buttonBackground` (T089), and its label/count text to `theme.text`, replacing the four hardcoded literals.
+- **Exit criteria:** Component tests in `sesh.test.tsx` (following its existing pattern of rendering `ActiveSesh`/`Countdown` directly) render under a custom `AppThemeProvider` theme and assert the countdown number and laced button's background/text/count resolve to `theme.accent`/`theme.buttonBackground`/`theme.text` rather than the fixed hex literals; existing laced-button interaction tests (`onLaced` callback, ~30 cases) continue to pass unmodified.
+- **Notes:** Depends on T089 — do not pick this up before T089 is `Done`. If `theme.text` doesn't read as sufficiently legible against `theme.buttonBackground` once real derived values exist, the implementer may need one additional small "on-button text" token following T089's pattern — flagging as a possible small follow-on, not a blocker to starting this ticket.
+
+_T098 comes from story S010 in [BACKLOG_STORIES.md](BACKLOG_STORIES.md), rewritten by `product-manager` after the original preset-scoped framing turned out to rest on a false premise, then scoped in this pass._
+
+### [T098] Derive a secondary text color alongside the existing primary text color
+
+- **Area:** Profile / Theming
+- **Priority:** Medium
+- **Status:** Not started
+- **Planning:** Implementer
+- **Description:** `resolveTheme()`/`ResolvedTheme` (`src/features/profile/state/use-resolved-theme.ts`) derives exactly one `text` color today, used identically by all three shared typography primitives (`Eyebrow`, `DisplayTitle`, `BodyText` in `src/components/ui/typography.tsx`) — every themed text role renders the same flat color. Add a second derived field (e.g. `textMuted`) by blending the resolved primary `text` color partway toward the resolved `background`, so it works uniformly whether `text` came from automatic derivation, a preset, or the user's explicit `themeTextColor` override. Wire `Eyebrow` and `BodyText` to the new muted color, leaving `DisplayTitle` on the primary `text` color as the anchor/majority role.
+- **Exit criteria:** Unit tests on the theme-resolution logic assert `textMuted` is distinct from `text` and legibly blended toward `background` for (a) the default theme, (b) a custom background/accent/text combination, and (c) each T087 preset. Component tests confirm `Eyebrow`/`BodyText` render with `theme.textMuted` and `DisplayTitle` still renders with `theme.text`. `yarn tsc --noEmit` and the full existing test suite pass unmodified elsewhere.
+- **Notes:** Deliberately minimal: two roles (primary anchor + one complementary secondary), not a full title/eyebrow/subtext-each-distinct system — this is the smallest change that satisfies "not one flat color repeated everywhere" from S010's acceptance criteria. A blend-toward-background algorithm was chosen over hand-picking new fixed `AppColors` constants (e.g. a cream-family equivalent of `inkSoft`/`textMuted`/`textSubtle`, which only exist for the ink family today) because it generalizes to any base color — default, preset, or custom override — without a second derivation path per direction. One-off styled-text usages outside the three shared typography primitives (e.g. `daily-home.tsx`'s `SectionTitle`, `NextTrickName`, etc., flagged as a known gap in T085's own notes) are out of scope for this ticket — a broader inventory/migration onto the shared primitives is a separate follow-on, not blocking here.
+
 ## Done
 
 Completed entries live in [TASKS_DONE.md](TASKS_DONE.md) — not part of the top-to-bottom read above; see step 5 under _Completing a task_.
