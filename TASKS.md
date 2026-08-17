@@ -152,7 +152,7 @@ _T090–T097 come from stories S005–S009 and S011–S013 in [BACKLOG_STORIES.m
 
 - **Area:** Onboarding
 - **Priority:** Medium
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** Insert a new preset-theme-selection step into the onboarding flow (`kentei-onboarding.tsx`'s reducer: `intro` → `levelSelect` → `assessing` → `rankReveal` → `selecting` → complete), before onboarding completion, offering the same seven presets as Profile's `RainbowThemePresets` and applying a choice via the existing `setThemeColors` action from `useUserProfileActions()`. Copy reads to the effect of "Select a theme that matches your setup." Skipping the step leaves the app on its default theme.
 - **Exit criteria:** An onboarding-flow test drives through the new step, selects a preset, and verifies the selected preset's background/accent persist via the profile provider identically to selecting it from Profile; a second case confirms skipping the step completes onboarding normally with no theme preference set. Existing onboarding-flow tests through `completeOnboarding` → `router.replace('/sesh')` continue to pass with the new step inserted.
