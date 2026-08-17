@@ -4,6 +4,16 @@ Completed entries move here from `TASKS.md`'s `Backlog`, in the same commit that
 
 Entries keep their content as it was at completion. Don't retroactively edit a description or exit criteria after the fact; if something about a completed task turns out to be wrong or misleading, note that in a new entry or in code, not by rewriting history here.
 
+### [T088] Restore horizontal margin on the Trick Goals trick-directory picker
+
+- **Area:** Tricks / Goals
+- **Priority:** Medium
+- **Status:** Done
+- **Planning:** Implementer
+- **Description:** `TrickRowContainer` in `src/features/tricks/components/trick-directory.tsx` (~line 410) paints its selected/laced background full-width with no horizontal margin, unlike `DirectorySearch` which sits inset by `DirectoryHeader`'s `22px` padding — so the all-trick Trick Goals picker (`GoalTrickPicker`) still renders edge-to-edge even after T082's row-text padding fix. Add horizontal margin to the row container itself (not just its inner text) to match the search box's inset.
+- **Exit criteria:** In-browser check at the standard web viewport confirms the trick-directory row backgrounds on the Trick Goals picker have visible horizontal margin matching the "Search Tricks" input's inset, and goal creation via the picker still works end to end.
+- **Notes:** Corresponds to story S004; corrects T082 (already `Done` — its archived entry in `TASKS_DONE.md` stays as-written, history isn't rewritten). Fixed by adding `margin: 0 22px;` to `TrickRowContainer` in `src/features/tricks/components/trick-directory.tsx`, matching `DirectoryHeader`'s `22px` horizontal padding that insets the search box. This is additive to the existing `identityLayout` row-text padding (also `22px`), mirroring how the search box itself has an outer 22px inset plus its own inner text padding. Verified in-browser at 320px viewport (own dev server in the worktree, onboarding bypassed via a direct `localStorage` profile write): the Trick Goals picker's row backgrounds now sit inset to match the "Search tricks" box, and a goal-creation flow through the picker (choose a trick, set a lace-count target, save) completed successfully. Also re-checked the Tricks tab's `selection`-mode rows (`SelectableIdentity`) — the selected/laced row background now shows the same margin without disturbing existing spacing. Full web-only verification (`yarn test`, `yarn lint`, `yarn tsc --noEmit`, web export) passes; native validation remains deferred under the active platform scope.
+
 ### [T087] Add pre-configured rainbow theme presets
 
 - **Area:** Profile / Theming
