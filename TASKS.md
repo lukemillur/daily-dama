@@ -148,16 +148,6 @@ _T089 comes from story S014 in [BACKLOG_STORIES.md](BACKLOG_STORIES.md), scoped 
 
 _T090–T097 come from stories S005–S009 and S011–S013 in [BACKLOG_STORIES.md](BACKLOG_STORIES.md), scoped in the same `scope-tickets` pass. S010 (preset text colors) was not scoped this round — see the note on its `BACKLOG_STORIES.md` entry; investigation found its premise doesn't hold up and it needs re-refinement by `product-manager` before it's scopable. New entries are placed after T089, since T096/T097 depend on it landing first._
 
-### [T094] Make the web splash overlay reflect the user's theme
-
-- **Area:** App shell / Theming
-- **Priority:** Medium
-- **Status:** In progress
-- **Planning:** Required
-- **Description:** Two distinct splashes exist: the native `expo-splash-screen` (`app.json`, build-time-only `"#208AEF"`, cannot react to runtime state) and the web-only `AnimatedSplashOverlay` (`src/components/animated-icon.web.tsx`), rendered from `src/app/_layout.tsx:24` before `UserProfileProvider`/`AppThemeProvider` mount. Make `AnimatedSplashOverlay` reflect the user's last-applied theme background (or the app's default theme background pre-selection) by reading a synchronously-available cached value ahead of normal provider hydration. Update `app.json`'s static splash `backgroundColor` to match the app's default theme background as the build-time baseline.
-- **Exit criteria:** A user who has saved a custom background color sees `AnimatedSplashOverlay` render in that color on the next web refresh, verified in-browser (reload, computed-style check before the main app UI mounts). A user with no saved theme sees it render in the app's default theme background. `app.json`'s static `backgroundColor` literal is updated to match the resolved default.
-- **Notes:** The overlay mounts before `AppThemeProvider` resolves theme through its normal async-hydration path, so this needs a synchronous pre-hydration read rather than consuming `ResolvedTheme` through context — this is the architectural risk that makes the ticket `Required` rather than `Implementer`. The native `app.json` splash literal can only ever reflect the app's default, not a live per-user value — that limitation is inherent to build-time native config, not a shortfall of this ticket.
-
 ### [T095] Initialize color pickers from the resolved default theme
 
 - **Area:** Profile / Theming
