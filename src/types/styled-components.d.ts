@@ -5,5 +5,7 @@ declare module 'styled-components/native' {
     readonly background: string;
     readonly accent: string;
     readonly text: string;
+    readonly buttonBackground: string;
+    readonly buttonBackgroundSecondary: string;
   }
 }

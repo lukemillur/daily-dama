@@ -145,15 +145,6 @@ _The following batch (T085–T088) comes from user stories S001–S004 in [BACKL
 
 _T089 comes from story S014 in [BACKLOG_STORIES.md](BACKLOG_STORIES.md), scoped via `scope-tickets` after a QA pass on T085–T088 surfaced a pattern of theming being bolted onto surfaces one hardcoded literal at a time. It is deliberately scoped as schema-only groundwork, sequenced ahead of the not-yet-scoped S009/S012/S013 so those consume this token set instead of inventing their own._
 
-### [T089] Add button-background tokens to the resolved-theme system
-
-- **Area:** Profile / Theming (theme derivation state, not persistence schema)
-- **Priority:** High
-- **Status:** In progress
-- **Planning:** Implementer
-- **Description:** `ResolvedTheme`/`resolveTheme()` (`src/features/profile/state/use-resolved-theme.ts`) currently derives only `background`, `accent`, and `text`, so every themed surface added since T085–T087 that isn't one of those three (buttons, Sesh's laced-state button) falls back to hardcoded `AppColors`/hex literals. Add a `buttonBackground` / `buttonBackgroundSecondary` token pair to `ResolvedTheme`, derived alongside the existing fields using the same pattern `deriveAutomaticTextColor` already establishes, so it correctly resolves for the default/unset theme, any saved custom background/accent pair, and each of the seven T087 presets.
-- **Exit criteria:** New unit tests on the theme-resolution logic assert correct `buttonBackground`/`buttonBackgroundSecondary` values for (a) no saved preference, (b) a saved custom theme, and (c) each T087 preset. `yarn tsc --noEmit` and the full existing test suite pass unmodified, confirming the new fields don't disturb any current consumer of `ResolvedTheme`.
-- **Notes:** Schema-only groundwork for story S014 — no component wiring is in scope here. Wiring `Button`'s `ButtonRoot` (`src/components/ui/button.tsx:45`) to `buttonBackground`/`buttonBackgroundSecondary` is T096's job; wiring Sesh's laced button (`src/features/sesh/components/sesh.tsx:1191`) to reuse `buttonBackground` is T097's job. Both are placed after this ticket in the queue deliberately — neither should be picked up before T089 is `Done`.
 
 _T090–T097 come from stories S005–S009 and S011–S013 in [BACKLOG_STORIES.md](BACKLOG_STORIES.md), scoped in the same `scope-tickets` pass. S010 (preset text colors) was not scoped this round — see the note on its `BACKLOG_STORIES.md` entry; investigation found its premise doesn't hold up and it needs re-refinement by `product-manager` before it's scopable. New entries are placed after T089, since T096/T097 depend on it landing first._
 

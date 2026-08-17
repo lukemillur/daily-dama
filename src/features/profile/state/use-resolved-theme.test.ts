@@ -9,6 +9,7 @@ jest.mock('@react-native-async-storage/async-storage', () =>
 );
 
 import { AppColors } from '@/constants/theme';
+import { RAINBOW_THEME_PRESETS } from '@/features/profile/model/theme-presets';
 import { resolveTheme } from '@/features/profile/state/use-resolved-theme';
 
 describe('resolveTheme', () => {
@@ -43,4 +44,34 @@ describe('resolveTheme', () => {
 
     expect(theme.text).toBe(AppColors.cream);
   });
+
+  it('derives ink/paperStrong button backgrounds when there is no saved preference', () => {
+    const theme = resolveTheme({});
+
+    expect(theme.buttonBackground).toBe(AppColors.ink);
+    expect(theme.buttonBackgroundSecondary).toBe(AppColors.paperStrong);
+  });
+
+  it('flips to paperStrong/ink button backgrounds for a dark saved custom theme', () => {
+    const theme = resolveTheme({
+      themeBackgroundColor: '#101418',
+      themeAccentColor: '#1a1f24',
+    });
+
+    expect(theme.buttonBackground).toBe(AppColors.paperStrong);
+    expect(theme.buttonBackgroundSecondary).toBe(AppColors.ink);
+  });
+
+  it.each(RAINBOW_THEME_PRESETS.map((preset) => [preset.label, preset] as const))(
+    'derives ink/paperStrong button backgrounds for the %s preset',
+    (_label, preset) => {
+      const theme = resolveTheme({
+        themeBackgroundColor: preset.backgroundColor,
+        themeAccentColor: preset.accentColor,
+      });
+
+      expect(theme.buttonBackground).toBe(AppColors.ink);
+      expect(theme.buttonBackgroundSecondary).toBe(AppColors.paperStrong);
+    },
+  );
 });

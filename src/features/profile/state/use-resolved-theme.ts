@@ -6,6 +6,8 @@ export interface ResolvedTheme {
   readonly background: string;
   readonly accent: string;
   readonly text: string;
+  readonly buttonBackground: string;
+  readonly buttonBackgroundSecondary: string;
 }
 
 interface ThemeColorPreferences {
@@ -34,20 +36,44 @@ export function deriveAutomaticTextColor(background: string, accent: string): st
 }
 
 /**
+ * Picks whichever fixed neutral pair (ink/paperStrong) gives the primary button surface better
+ * contrast against the resolved page `background`, then assigns the other neutral to the
+ * secondary button. Unlike `deriveAutomaticTextColor`, this only contrasts against `background`
+ * and deliberately ignores `accent` -- a button's own background surface always sits on top of
+ * the page background in the current UI, never on top of the accent color, so there's no second
+ * surface to average against here.
+ */
+export function deriveAutomaticButtonBackgrounds(background: string): {
+  buttonBackground: string;
+  buttonBackgroundSecondary: string;
+} {
+  const inkContrast = contrastRatio(AppColors.ink, background) ?? 0;
+  const paperContrast = contrastRatio(AppColors.paperStrong, background) ?? 0;
+
+  return inkContrast >= paperContrast
+    ? { buttonBackground: AppColors.ink, buttonBackgroundSecondary: AppColors.paperStrong }
+    : { buttonBackground: AppColors.paperStrong, buttonBackgroundSecondary: AppColors.ink };
+}
+
+/**
  * Resolves the app's decorative background/accent/text colors from the user's saved theme
  * preferences, falling back to the fixed prototype palette when a field is unset. Theme fields
  * can only be set post-onboarding (Profile is onboarding-gated), so all fields are always
  * `undefined` for the entire lifetime of the onboarding flow and this resolves to the fixed
  * `AppColors` values there. `text` uses the user's custom `themeTextColor` when set, otherwise a
  * value automatically derived from the resolved background/accent (see
- * `deriveAutomaticTextColor`).
+ * `deriveAutomaticTextColor`). `buttonBackground`/`buttonBackgroundSecondary` are always derived
+ * from the resolved background (see `deriveAutomaticButtonBackgrounds`) -- there is no
+ * user-settable preference for button colors.
  */
 export function resolveTheme(preferences: ThemeColorPreferences): ResolvedTheme {
   const background = preferences.themeBackgroundColor ?? AppColors.sage;
   const accent = preferences.themeAccentColor ?? AppColors.yellow;
   const text = preferences.themeTextColor ?? deriveAutomaticTextColor(background, accent);
+  const { buttonBackground, buttonBackgroundSecondary } =
+    deriveAutomaticButtonBackgrounds(background);
 
-  return { background, accent, text };
+  return { background, accent, text, buttonBackground, buttonBackgroundSecondary };
 }
 
 export function useResolvedTheme(): ResolvedTheme {
