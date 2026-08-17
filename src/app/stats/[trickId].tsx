@@ -114,7 +114,7 @@ const StyledEyebrow = styled(Eyebrow)`margin-bottom: 14px;`;
 const CenteredTitle = styled(DisplayTitle)`text-align: center;`;
 const StartButton = styled(Button).attrs({ size: 'medium' })`margin-top: 28px;`;
 const Title = styled(DisplayTitle)``;
-const SectionLabel = styled.Text`color: ${AppColors.red}; font-size: 13px; font-weight: 900; letter-spacing: 1.8px; margin: 32px 0 12px; text-transform: uppercase;`;
+const SectionLabel = styled.Text`color: ${({ theme }) => theme.text}; font-size: 13px; font-weight: 900; letter-spacing: 1.8px; margin: 32px 0 12px; text-transform: uppercase;`;
 const BestList = styled.View`gap: 10px;`;
 const BestRow = styled.View`flex-direction: row; align-items: center; justify-content: space-between; background-color: ${AppColors.ink}; padding: 16px 18px; border-radius: 4px;`;
 const BestRowInfo = styled.View``;
@@ -123,5 +123,5 @@ const BestDuration = styled.Text`color: ${AppColors.cream}; font-size: 15px; fon
 const BestValue = styled.Text`color: ${({ theme }) => theme.accent}; font-size: 18px; font-weight: 900; font-variant: tabular-nums;`;
 const SessionList = styled.View`gap: 10px;`;
 const SessionRow = styled.View`flex-direction: row; align-items: center; justify-content: space-between; background-color: ${AppColors.paper}; border-left-width: 5px; border-left-color: ${AppColors.red}; padding: 14px 18px;`;
-const SessionDate = styled.Text`color: ${AppColors.ink}; font-size: 14px; font-weight: 800;`;
-const SessionMeta = styled(BodyText)`color: ${AppColors.textMuted}; font-size: 13px;`;
+const SessionDate = styled.Text`color: ${({ theme }) => theme.text}; font-size: 14px; font-weight: 800;`;
+const SessionMeta = styled(BodyText)`font-size: 13px;`;

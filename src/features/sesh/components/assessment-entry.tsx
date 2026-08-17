@@ -211,7 +211,6 @@ const Title = styled(DisplayTitle)`
 const Copy = styled(BodyText)`
   max-width: 500px;
   margin-top: 16px;
-  color: ${AppColors.textMuted};
 `;
 const FlowButton = styled(Button).attrs({ fill: true, size: 'large' })`
   margin-top: 26px;
@@ -235,7 +234,7 @@ const RankChoice = styled.Pressable`
   border: 2px solid ${AppColors.ink};
 `;
 const RankNumber = styled.Text`
-  color: ${AppColors.ink};
+  color: ${({ theme }) => theme.text};
   font-size: 20px;
   font-weight: 900;
 `;
@@ -252,11 +251,9 @@ const GapNotice = styled(BodyText)`
   margin-top: 12px;
   text-align: center;
   font-size: 13px;
-  color: ${AppColors.textMuted};
 `;
 const GapHint = styled(BodyText)`
   margin-top: 18px;
   font-size: 13px;
   max-width: 500px;
-  color: ${AppColors.textMuted};
 `;

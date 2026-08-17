@@ -197,11 +197,11 @@ export function MultiTrickSeshEntry() {
 const SelectionContent = styled.View`width: 100%; max-width: 760px; max-height: 864px; flex: 1; align-self: center; overflow: hidden; background-color: ${AppColors.paper}; border-radius: ${Radii.panel}px;`;
 const FinishBackdrop = styled.View<{ readonly $pinned: boolean }>`background-color: ${({ $pinned, theme }) => $pinned ? theme.accent : AppColors.paper};`;
 const FinishArea = styled.View<{ readonly $pinned: boolean }>`align-items: center; margin-top: ${({ $pinned }) => $pinned ? 54 : 0}px; padding: 20px 22px 22px; background-color: ${AppColors.paper}; border-top-width: 1px; border-top-color: ${AppColors.borderMuted};`;
-const SelectionCount = styled.Text`color: ${AppColors.textMuted}; font-size: 14px; font-weight: 700; margin-bottom: 12px;`;
+const SelectionCount = styled.Text`color: ${({ theme }) => theme.text}; font-size: 14px; font-weight: 700; margin-bottom: 12px;`;
 const PerTrickDurationField = styled.View`align-self: stretch; margin-bottom: 12px;`;
-const PerTrickDurationLabel = styled.Text`color: ${AppColors.ink}; font-size: 12px; font-weight: 900; margin-bottom: 6px; text-transform: uppercase;`;
+const PerTrickDurationLabel = styled.Text`color: ${({ theme }) => theme.text}; font-size: 12px; font-weight: 900; margin-bottom: 6px; text-transform: uppercase;`;
 const PerTrickDurationInput = styled(TextInput)`height: 54px; width: 110px; background-color: ${AppColors.paper}; border: 2px solid ${AppColors.ink}; color: ${AppColors.ink}; font-size: 24px; font-weight: 900; padding: 8px 12px; border-radius: ${Radii.control}px;`;
-const PerTrickDurationHint = styled.Text<{ readonly $invalid: boolean }>`color: ${({ $invalid }) => ($invalid ? AppColors.red : AppColors.textMuted)}; font-size: 12px; font-weight: 700; margin-top: 7px;`;
+const PerTrickDurationHint = styled.Text<{ readonly $invalid: boolean }>`color: ${({ $invalid, theme }) => ($invalid ? AppColors.red : theme.text)}; font-size: 12px; font-weight: 700; margin-top: 7px;`;
 const AdvanceOnFirstLaceRow = styled(Pressable)`flex-direction: row; align-items: center; gap: 12px; align-self: stretch; padding: 10px 2px; margin-bottom: 12px;`;
 const AdvanceOnFirstLaceIndicator = styled.View<{ readonly $checked: boolean }>`
   width: 22px;
@@ -213,7 +213,7 @@ const AdvanceOnFirstLaceIndicator = styled.View<{ readonly $checked: boolean }>`
   border-radius: ${Radii.control}px;
 `;
 const AdvanceOnFirstLaceMark = styled.Text`color: ${({ theme }) => theme.accent}; font-size: 14px; font-weight: 900;`;
-const AdvanceOnFirstLaceLabel = styled.Text`color: ${AppColors.textMuted}; font-size: 14px; font-weight: 700;`;
+const AdvanceOnFirstLaceLabel = styled.Text`color: ${({ theme }) => theme.text}; font-size: 14px; font-weight: 700;`;
 const FinishButton = styled(Button).attrs({ fill: true })`min-height: 54px;`;
 const ContinueButton = styled(Button).attrs({ fill: true })`min-height: 54px;`;
 const Content = styled.View`
@@ -230,7 +230,6 @@ const Title = styled(DisplayTitle)`
 const Copy = styled(BodyText)`
   max-width: 500px;
   margin-top: 16px;
-  color: ${AppColors.textMuted};
 `;
 const BackButton = styled(Button)`
   align-self: flex-start;

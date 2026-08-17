@@ -156,13 +156,13 @@ const Overview = styled.View`flex-direction: row; flex-wrap: wrap; gap: 10px; ma
 const OverviewMetric = styled.View`min-width: 150px; flex: 1; background-color: ${AppColors.ink}; padding: 20px; border-radius: 4px;`;
 const OverviewValue = styled.Text`color: ${({ theme }) => theme.accent}; font-size: 30px; font-weight: 900; font-variant: tabular-nums;`;
 const OverviewLabel = styled.Text`color: ${AppColors.cream}; font-size: 12px; font-weight: 800; margin-top: 4px; text-transform: uppercase;`;
-const SectionLabel = styled.Text`color: ${AppColors.red}; font-size: 13px; font-weight: 900; letter-spacing: 1.8px; margin: 38px 0 12px; text-transform: uppercase;`;
+const SectionLabel = styled.Text`color: ${({ theme }) => theme.text}; font-size: 13px; font-weight: 900; letter-spacing: 1.8px; margin: 38px 0 12px; text-transform: uppercase;`;
 const TrickList = styled.View`gap: 12px;`;
 const TrickStat = styled(Pressable)`background-color: ${AppColors.paper}; border-left-width: 5px; border-left-color: ${AppColors.red}; padding: 18px;`;
 const TrickHeader = styled.View`flex-direction: row; align-items: baseline; justify-content: space-between; gap: 16px;`;
-const TrickName = styled.Text`flex: 1; color: ${AppColors.ink}; font-size: 22px; font-weight: 900;`;
-const LastPracticed = styled.Text`color: ${AppColors.textMuted}; font-size: 12px; font-weight: 700;`;
+const TrickName = styled.Text`flex: 1; color: ${({ theme }) => theme.text}; font-size: 22px; font-weight: 900;`;
+const LastPracticed = styled.Text`color: ${({ theme }) => theme.text}; font-size: 12px; font-weight: 700;`;
 const TrickMetrics = styled.View`flex-direction: row; gap: 24px; margin-top: 18px;`;
 const TrickMetric = styled.View``;
-const TrickMetricValue = styled.Text`color: ${AppColors.ink}; font-size: 20px; font-weight: 900; font-variant: tabular-nums;`;
-const TrickMetricLabel = styled.Text`color: ${AppColors.textMuted}; font-size: 11px; font-weight: 800; margin-top: 2px; text-transform: uppercase;`;
+const TrickMetricValue = styled.Text`color: ${({ theme }) => theme.text}; font-size: 20px; font-weight: 900; font-variant: tabular-nums;`;
+const TrickMetricLabel = styled.Text`color: ${({ theme }) => theme.text}; font-size: 11px; font-weight: 800; margin-top: 2px; text-transform: uppercase;`;

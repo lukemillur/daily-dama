@@ -52,7 +52,7 @@ const ButtonLabel = styled.Text<{
   readonly $size: NonNullable<ButtonProps['size']>;
   readonly $variant: NonNullable<ButtonProps['variant']>;
 }>`
-  color: ${({ $variant, theme }) => ($variant === 'primary' ? theme.accent : AppColors.ink)};
+  color: ${({ $variant, theme }) => ($variant === 'primary' ? theme.accent : theme.text)};
   font-size: ${({ $size }) => ($size === 'large' ? 17 : 16)}px;
   font-weight: 900;
 `;
