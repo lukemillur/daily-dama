@@ -141,6 +141,76 @@ _The following batch (T080–T082) comes from the QA checklist completed against
 
 _The following batch (T083–T084) comes from a product-manager audit scoping two new product surfaces: custom app theming and rank-progression suggestions. Promoted from `Needs scoping` after resolving their open product/technical questions with the user._
 
+_The following batch (T085–T088) comes from user stories S001–S004 in [BACKLOG_STORIES.md](BACKLOG_STORIES.md), scoped via the `scope-tickets` skill after `product-manager` refined a round of theming UX feedback into stories. New entries are intentionally placed before the older queue (there is none currently) so they're picked up first._
+
+### [T085] Reactive theme text color, contrast requirement removed
+
+- **Area:** Theming (cross-cutting)
+- **Priority:** Medium
+- **Status:** Not started
+- **Description:** Remove the WCAG contrast gate that currently blocks saving a background/accent theme pair, and make text color part of the same reactive theme system — automatically derived from the chosen background/accent, or explicitly overridden by the user. Umbrella only — complete T085.1–T085.3.
+- **Notes:** Corresponds to story S003 in `BACKLOG_STORIES.md`. Deliberate accessibility trade-off, made by the user with the guardrail's origin (T083.2) in view — not re-litigated here. Mirrors T083's umbrella/child shape.
+
+### [T085.1] Add automatic and custom text color to the theme model
+
+- **Area:** Profile persistence / Theming
+- **Priority:** Medium (inherited from parent T085)
+- **Status:** Not started
+- **Planning:** Required
+- **Description:** Extend `UserProfile` with an optional `themeTextColor` field, following the existing hex-validation pattern used by `themeBackgroundColor`/`themeAccentColor` (`src/features/profile/model/user-profile.ts`). Extend `ResolvedTheme`/`useResolvedTheme` (`src/features/profile/state/use-resolved-theme.ts`) with a `text` value: the user's custom `themeTextColor` when set, otherwise a value automatically derived from the resolved background/accent (e.g. a luminance-based light/dark choice), replacing today's fixed text color.
+- **Exit criteria:** Reducer/persistence tests confirm `themeTextColor` round-trips through hydration, defaults to `undefined`, and doesn't affect existing profile fields. A test on the resolved-theme text logic confirms it returns the custom value when set and a derived light/dark value from background+accent when unset, covering at least one light-background and one dark-background case.
+- **Notes:** First child of T085; no dependency on other children. Follows AGENTS.md's provisional-v1, no-migration policy for this persistence domain (same as T083.1). The automatic-derivation algorithm is an implementation choice, not specified here.
+
+### [T085.2] Remove the contrast Save gate; add a custom text-color control
+
+- **Area:** Profile / Theming
+- **Priority:** Medium (inherited from parent T085)
+- **Status:** Not started
+- **Planning:** Required
+- **Description:** In `ThemeColorPicker`/`ColorField` (`src/features/profile/components/theme-color-picker.tsx`), remove `hasSufficientContrast` from the `canSave` gate (currently `canSave = isDirty && hasSufficientContrast`, `theme-color-picker.tsx:72`) and its blocking hint copy, so any valid hex pair saves regardless of contrast. Add a third `ColorField`-style control for a custom text color that writes to `themeTextColor` (T085.1) and can be reset independently.
+- **Exit criteria:** Component tests confirm a background/accent pair that previously failed the contrast check now saves successfully with no blocking message, and setting/clearing a custom text color persists via the profile provider and is reflected in a live swatch/preview.
+- **Notes:** Depends on T085.1. Touches the same file as T086 (S001's visual color picker) — whichever lands second should expect to rebase around the other's changes to `theme-color-picker.tsx`. Any leftover contrast-ratio copy must not block saving; remove it or make it purely informational.
+
+### [T085.3] Apply theme text color across post-onboarding screens
+
+- **Area:** Theming (cross-cutting)
+- **Priority:** Medium (inherited from parent T085)
+- **Status:** Not started
+- **Planning:** Required
+- **Description:** Replace fixed text colors on title/eyebrow/label/body text across post-onboarding screens — `Eyebrow`, `DisplayTitle`, `BodyText` (`src/components/ui/typography.tsx`) plus one-off fixed-color text such as `SectionTitle`/`NextTrickName`/`NextTrickMeta` in `daily-home.tsx`, and equivalents in `sesh.tsx`, `assessment-entry.tsx`, `multi-trick-sesh.tsx`, `multi-trick-sesh-entry.tsx`, `laced-tricks-screen.tsx`, `neglected-tricks-section.tsx`, `stats/index.tsx`, `stats/[trickId].tsx`, `tricks/index.tsx`, `profile/index.tsx` — with the resolved `theme.text` value from T085.1, falling back identically to today's fixed colors when no theme is set.
+- **Exit criteria:** In-browser check confirms every enumerated screen's title/eyebrow/label text reflects a saved custom theme's text color (both auto-derived and custom-override cases), an unset theme renders identically to today's fixed colors, and pre-onboarding yellow state and functional colors (errors/success) are unaffected.
+- **Notes:** Depends on T085.1; can proceed in parallel with T085.2 since it doesn't touch the picker component. Mirrors T083.3's screen-sweep approach. File list was identified via `grep -rln "AppColors\.\(red\|ink\|inkSoft\|textMuted\)"` across post-onboarding areas and should be re-verified at implementation time since it will drift; `button.tsx`, `practice-history-provider.tsx`, and `user-profile-provider.tsx` also matched but looked like non-text or non-rendering usages — confirm during implementation whether they need inclusion.
+
+### [T086] Add a visual color picker for theme colors
+
+- **Area:** Profile / Theming
+- **Priority:** Medium
+- **Status:** Not started
+- **Planning:** Required
+- **Description:** Replace `ColorField`'s raw hex-only `TextInput` in `ThemeColorPicker` (`src/features/profile/components/theme-color-picker.tsx`) with a real visual color-picker control (swatches/spectrum/sliders) for background and accent color, vetted for a free/permissive license and React Native Web compatibility. Keep manual hex entry available as a secondary input.
+- **Exit criteria:** Component tests confirm picking a color via the visual picker saves it through the same `onSave`/profile-provider path as today, manual hex entry still works, and an in-browser check confirms the picker renders and functions on web.
+- **Notes:** Corresponds to story S001. No third-party color-picker library is currently a project dependency — vet license (MIT/BSD/Apache-2.0 only) and React Native Web support before adding one; a hand-built picker (e.g. HSV wheel + slider) is an acceptable fallback if no suitable library is found. Touches the same file as T085.2 — expect to coordinate/rebase if both are in flight together.
+
+### [T087] Add pre-configured rainbow theme presets
+
+- **Area:** Profile / Theming
+- **Priority:** Medium
+- **Status:** Not started
+- **Planning:** Implementer
+- **Description:** Add a preset-theme control to Profile, visually and structurally separate from `ThemeColorPicker`, offering seven pre-configured background/accent pairs — one per rainbow color (red, orange, yellow, green, blue, indigo, violet). Selecting a preset writes background/accent via the existing `setThemeColors` profile action.
+- **Exit criteria:** Component tests confirm each of the seven presets is selectable, selecting one calls `setThemeColors` with that preset's background/accent and persists via the profile provider, and the preset control renders as a component distinct from `ThemeColorPicker` (not a shared mode toggle within it).
+- **Notes:** Corresponds to story S002. Exact hex values per preset are an implementation/design choice — pick visually distinct pairs; contrast is no longer a save-blocking concern once T085.2 lands, but isn't a hard dependency (see below). No hard dependency on T085/T086: presets only set background/accent, and text color (fixed today, reactive once T085 lands) resolves automatically regardless of ship order.
+
+### [T088] Restore horizontal margin on the Trick Goals trick-directory picker
+
+- **Area:** Tricks / Goals
+- **Priority:** Medium
+- **Status:** Not started
+- **Planning:** Implementer
+- **Description:** `TrickRowContainer` in `src/features/tricks/components/trick-directory.tsx` (~line 410) paints its selected/laced background full-width with no horizontal margin, unlike `DirectorySearch` which sits inset by `DirectoryHeader`'s `22px` padding — so the all-trick Trick Goals picker (`GoalTrickPicker`) still renders edge-to-edge even after T082's row-text padding fix. Add horizontal margin to the row container itself (not just its inner text) to match the search box's inset.
+- **Exit criteria:** In-browser check at the standard web viewport confirms the trick-directory row backgrounds on the Trick Goals picker have visible horizontal margin matching the "Search Tricks" input's inset, and goal creation via the picker still works end to end.
+- **Notes:** Corresponds to story S004; corrects T082 (already `Done` — its archived entry in `TASKS_DONE.md` stays as-written, history isn't rewritten). Re-verify the fix doesn't disturb the Tricks tab's own `selection`-mode rendering (`SelectableIdentity`), which already has correct margin via `identityLayout` — the row-container-level fix should apply to both paths without changing spacing that already looks right on the Tricks tab.
+
 ## Done
 
 Completed entries live in [TASKS_DONE.md](TASKS_DONE.md) — not part of the top-to-bottom read above; see step 5 under _Completing a task_.

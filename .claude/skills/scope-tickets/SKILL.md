@@ -55,11 +55,16 @@ Carry `Priority` over from the story unless the codebase surfaces a reason to di
 
 ## Traceability
 
-After writing the `TASKS.md` entry, update the source story's `Status` in `BACKLOG_STORIES.md` to `Scoped → T###` (or one `Scoped →` line per child task if it split into several). Do not delete the story — it's the product record for why the ticket exists.
+Scoping a story is not done when `TASKS.md` is written — it's done when `BACKLOG_STORIES.md` reflects it too. The two writes are one unit of work, not a main step plus an optional follow-up:
+
+- Update the source story's `Status` to `Scoped → T###` (or one `Scoped →` line per child task if it split into several) in the same turn you write the `TASKS.md` entry.
+- Do not delete the story or touch any other field — it's the product record for why the ticket exists, not dead weight to clean up.
+- A story left at `Ready for scoping` after its ticket exists in `TASKS.md` is a bug in this skill's own output, not a stylistic choice — treat it as a reason to go back and fix the status before considering the run finished.
+- If scoping a story is deferred, rejected, or sent back to `product-manager` instead of promoted (see the opening section), that is also a status change worth recording — don't leave `BACKLOG_STORIES.md` silently stale either way.
 
 ## File ownership and safe writes
 
-`TASKS.md` is the actionable source of truth for implementation work; this skill is one of its writers. `BACKLOG_STORIES.md` is owned by `product-manager`, but this skill may flip a story's `Status` field as part of promotion — touch nothing else in that file.
+`TASKS.md` is the actionable source of truth for implementation work; this skill is one of its writers. `BACKLOG_STORIES.md` is owned by `product-manager`, but this skill is responsible for flipping a story's `Status` field as part of promotion — every `TASKS.md` write this skill makes has a matching `BACKLOG_STORIES.md` status update. Touch nothing else in that file.
 
 Before writing:
 
@@ -69,4 +74,4 @@ Before writing:
 - show the intended `TASKS.md` and `BACKLOG_STORIES.md` changes in the response or explain them clearly;
 - do not commit, push, open PRs, or invoke `newTicket`/implementation agents unless separately requested.
 
-After writing, run a focused structural check — inspect the diff and confirm every new entry has the required fields and a real, mechanical exit criterion. Full application verification isn't needed; this skill doesn't change application code.
+After writing, run a focused structural check covering both files — inspect the diff and confirm every new `TASKS.md` entry has the required fields and a real, mechanical exit criterion, *and* that every story scoped this run shows a matching `Scoped → T###` status in `BACKLOG_STORIES.md`. Full application verification isn't needed; this skill doesn't change application code.
