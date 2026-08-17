@@ -148,7 +148,7 @@ _The following batch (T085–T088) comes from user stories S001–S004 in [BACKL
 
 - **Area:** Tricks / Goals
 - **Priority:** Medium
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Implementer
 - **Description:** `TrickRowContainer` in `src/features/tricks/components/trick-directory.tsx` (~line 410) paints its selected/laced background full-width with no horizontal margin, unlike `DirectorySearch` which sits inset by `DirectoryHeader`'s `22px` padding — so the all-trick Trick Goals picker (`GoalTrickPicker`) still renders edge-to-edge even after T082's row-text padding fix. Add horizontal margin to the row container itself (not just its inner text) to match the search box's inset.
 - **Exit criteria:** In-browser check at the standard web viewport confirms the trick-directory row backgrounds on the Trick Goals picker have visible horizontal margin matching the "Search Tricks" input's inset, and goal creation via the picker still works end to end.
