@@ -149,7 +149,7 @@ _T089 comes from story S014 in [BACKLOG_STORIES.md](BACKLOG_STORIES.md), scoped 
 
 - **Area:** Profile / Theming (theme derivation state, not persistence schema)
 - **Priority:** High
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Implementer
 - **Description:** `ResolvedTheme`/`resolveTheme()` (`src/features/profile/state/use-resolved-theme.ts`) currently derives only `background`, `accent`, and `text`, so every themed surface added since T085–T087 that isn't one of those three (buttons, Sesh's laced-state button) falls back to hardcoded `AppColors`/hex literals. Add a `buttonBackground` / `buttonBackgroundSecondary` token pair to `ResolvedTheme`, derived alongside the existing fields using the same pattern `deriveAutomaticTextColor` already establishes, so it correctly resolves for the default/unset theme, any saved custom background/accent pair, and each of the seven T087 presets.
 - **Exit criteria:** New unit tests on the theme-resolution logic assert correct `buttonBackground`/`buttonBackgroundSecondary` values for (a) no saved preference, (b) a saved custom theme, and (c) each T087 preset. `yarn tsc --noEmit` and the full existing test suite pass unmodified, confirming the new fields don't disturb any current consumer of `ResolvedTheme`.
