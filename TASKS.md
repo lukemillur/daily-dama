@@ -147,7 +147,7 @@ _The following batch (T085–T088) comes from user stories S001–S004 in [BACKL
 
 - **Area:** Profile / Theming
 - **Priority:** Medium
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** Replace `ColorField`'s raw hex-only `TextInput` in `ThemeColorPicker` (`src/features/profile/components/theme-color-picker.tsx`) with a real visual color-picker control (swatches/spectrum/sliders) for background and accent color, vetted for a free/permissive license and React Native Web compatibility. Keep manual hex entry available as a secondary input.
 - **Exit criteria:** Component tests confirm picking a color via the visual picker saves it through the same `onSave`/profile-provider path as today, manual hex entry still works, and an in-browser check confirms the picker renders and functions on web.
