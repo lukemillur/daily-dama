@@ -9,6 +9,7 @@ import {
   useUserProfile,
   UserProfileProvider,
 } from "@/features/profile/state/user-profile-provider";
+import { hsvToHex } from "@/shared/color/hsv";
 
 // ThemeColorPicker (transitively, via user-profile-provider) pulls in AsyncStorage - mocked the
 // same way other provider-backed tests in this repo do.
@@ -24,7 +25,10 @@ function findByLabel(renderer: ReactTestRenderer, label: string) {
   const matches = renderer.root.findAll((node) => node.props.accessibilityLabel === label);
   const interactive = matches.find(
     (node) =>
-      typeof node.props.onChangeText === "function" || typeof node.props.onPress === "function",
+      typeof node.props.onChangeText === "function" ||
+      typeof node.props.onPress === "function" ||
+      typeof node.props.onResponderGrant === "function" ||
+      typeof node.props.onResponderMove === "function",
   );
   return interactive ?? matches[0];
 }
@@ -177,6 +181,54 @@ describe("ThemeColorPicker", () => {
 
     expect(probeValue(root, "probe-text")).toBe("unset");
     expect(findByLabel(root, "Reset text color").props.disabled).toBe(true);
+
+    act(() => root.unmount());
+  });
+
+  it("saves a background color picked via the visual spectrum picker", async () => {
+    const root = await mountPicker();
+
+    const svSquare = findByLabel(root, "Background color saturation and lightness");
+    act(() => svSquare.props.onResponderGrant({ nativeEvent: { locationX: 200, locationY: 0 } }));
+    const hueBar = findByLabel(root, "Background color hue");
+    act(() => hueBar.props.onResponderGrant({ nativeEvent: { locationX: 100 } }));
+
+    act(() => findByLabel(root, "Background color save").props.onPress());
+
+    const expectedHex = hsvToHex(180, 1, 1);
+    expect(probeValue(root, "probe-background")).toBe(expectedHex);
+
+    act(() => root.unmount());
+  });
+
+  it("saves an accent color picked via the visual spectrum picker", async () => {
+    const root = await mountPicker();
+
+    const svSquare = findByLabel(root, "Accent color saturation and lightness");
+    act(() => svSquare.props.onResponderGrant({ nativeEvent: { locationX: 200, locationY: 0 } }));
+    const hueBar = findByLabel(root, "Accent color hue");
+    act(() => hueBar.props.onResponderGrant({ nativeEvent: { locationX: 100 } }));
+
+    act(() => findByLabel(root, "Accent color save").props.onPress());
+
+    const expectedHex = hsvToHex(180, 1, 1);
+    expect(probeValue(root, "probe-accent")).toBe(expectedHex);
+
+    act(() => root.unmount());
+  });
+
+  it("saves a text color picked via the visual spectrum picker", async () => {
+    const root = await mountPicker();
+
+    const svSquare = findByLabel(root, "Text color saturation and lightness");
+    act(() => svSquare.props.onResponderGrant({ nativeEvent: { locationX: 200, locationY: 0 } }));
+    const hueBar = findByLabel(root, "Text color hue");
+    act(() => hueBar.props.onResponderGrant({ nativeEvent: { locationX: 100 } }));
+
+    act(() => findByLabel(root, "Text color save").props.onPress());
+
+    const expectedHex = hsvToHex(180, 1, 1);
+    expect(probeValue(root, "probe-text")).toBe(expectedHex);
 
     act(() => root.unmount());
   });

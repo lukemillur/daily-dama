@@ -143,15 +143,6 @@ _The following batch (T083–T084) comes from a product-manager audit scoping tw
 
 _The following batch (T085–T088) comes from user stories S001–S004 in [BACKLOG_STORIES.md](BACKLOG_STORIES.md), scoped via the `scope-tickets` skill after `product-manager` refined a round of theming UX feedback into stories. New entries are intentionally placed before the older queue (there is none currently) so they're picked up first._
 
-### [T086] Add a visual color picker for theme colors
-
-- **Area:** Profile / Theming
-- **Priority:** Medium
-- **Status:** Not started
-- **Planning:** Required
-- **Description:** Replace `ColorField`'s raw hex-only `TextInput` in `ThemeColorPicker` (`src/features/profile/components/theme-color-picker.tsx`) with a real visual color-picker control (swatches/spectrum/sliders) for background and accent color, vetted for a free/permissive license and React Native Web compatibility. Keep manual hex entry available as a secondary input.
-- **Exit criteria:** Component tests confirm picking a color via the visual picker saves it through the same `onSave`/profile-provider path as today, manual hex entry still works, and an in-browser check confirms the picker renders and functions on web.
-- **Notes:** Corresponds to story S001. No third-party color-picker library is currently a project dependency — vet license (MIT/BSD/Apache-2.0 only) and React Native Web support before adding one; a hand-built picker (e.g. HSV wheel + slider) is an acceptable fallback if no suitable library is found. Touches the same file as T085.2 — expect to coordinate/rebase if both are in flight together.
 
 ### [T087] Add pre-configured rainbow theme presets
 
