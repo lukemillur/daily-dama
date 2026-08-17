@@ -150,16 +150,6 @@ _T090–T097 come from stories S005–S009 and S011–S013 in [BACKLOG_STORIES.m
 
 _T098 comes from story S010 in [BACKLOG_STORIES.md](BACKLOG_STORIES.md), rewritten by `product-manager` after the original preset-scoped framing turned out to rest on a false premise, then scoped in this pass._
 
-### [T098] Derive a secondary text color alongside the existing primary text color
-
-- **Area:** Profile / Theming
-- **Priority:** Medium
-- **Status:** Not started
-- **Planning:** Implementer
-- **Description:** `resolveTheme()`/`ResolvedTheme` (`src/features/profile/state/use-resolved-theme.ts`) derives exactly one `text` color today, used identically by all three shared typography primitives (`Eyebrow`, `DisplayTitle`, `BodyText` in `src/components/ui/typography.tsx`) — every themed text role renders the same flat color. Add a second derived field (e.g. `textMuted`) by blending the resolved primary `text` color partway toward the resolved `background`, so it works uniformly whether `text` came from automatic derivation, a preset, or the user's explicit `themeTextColor` override. Wire `Eyebrow` and `BodyText` to the new muted color, leaving `DisplayTitle` on the primary `text` color as the anchor/majority role.
-- **Exit criteria:** Unit tests on the theme-resolution logic assert `textMuted` is distinct from `text` and legibly blended toward `background` for (a) the default theme, (b) a custom background/accent/text combination, and (c) each T087 preset. Component tests confirm `Eyebrow`/`BodyText` render with `theme.textMuted` and `DisplayTitle` still renders with `theme.text`. `yarn tsc --noEmit` and the full existing test suite pass unmodified elsewhere.
-- **Notes:** Deliberately minimal: two roles (primary anchor + one complementary secondary), not a full title/eyebrow/subtext-each-distinct system — this is the smallest change that satisfies "not one flat color repeated everywhere" from S010's acceptance criteria. A blend-toward-background algorithm was chosen over hand-picking new fixed `AppColors` constants (e.g. a cream-family equivalent of `inkSoft`/`textMuted`/`textSubtle`, which only exist for the ink family today) because it generalizes to any base color — default, preset, or custom override — without a second derivation path per direction. One-off styled-text usages outside the three shared typography primitives (e.g. `daily-home.tsx`'s `SectionTitle`, `NextTrickName`, etc., flagged as a known gap in T085's own notes) are out of scope for this ticket — a broader inventory/migration onto the shared primitives is a separate follow-on, not blocking here.
-
 ## Done
 
 Completed entries live in [TASKS_DONE.md](TASKS_DONE.md) — not part of the top-to-bottom read above; see step 5 under _Completing a task_.

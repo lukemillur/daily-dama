@@ -1,11 +1,13 @@
 import { AppColors } from '@/constants/theme';
 import { useUserProfile } from '@/features/profile/state/user-profile-provider';
+import { blendHexColors } from '@/shared/color/blend';
 import { contrastRatio } from '@/shared/color/contrast';
 
 export interface ResolvedTheme {
   readonly background: string;
   readonly accent: string;
   readonly text: string;
+  readonly textMuted: string;
   readonly buttonBackground: string;
   readonly buttonBackgroundSecondary: string;
 }
@@ -56,6 +58,19 @@ export function deriveAutomaticButtonBackgrounds(background: string): {
 }
 
 /**
+ * Derives a secondary/muted text color by blending the resolved primary `text` color partway
+ * toward the resolved `background`, so every themed text role isn't the exact same flat color.
+ * Works uniformly regardless of whether `text` came from automatic derivation, a preset, or the
+ * user's explicit `themeTextColor` override, since it only operates on the two already-resolved
+ * colors. Weighted 65% text / 35% background -- enough separation to read as a distinct
+ * secondary tone while staying legible against `background` across the default theme and all
+ * T087 rainbow presets (verified in use-resolved-theme.test.ts).
+ */
+export function deriveMutedTextColor(text: string, background: string): string {
+  return blendHexColors(text, background, 0.65);
+}
+
+/**
  * Resolves the app's decorative background/accent/text colors from the user's saved theme
  * preferences, falling back to the fixed prototype palette when a field is unset. Theme fields
  * can only be set post-onboarding (Profile is onboarding-gated), so all fields are always
@@ -70,10 +85,11 @@ export function resolveTheme(preferences: ThemeColorPreferences): ResolvedTheme 
   const background = preferences.themeBackgroundColor ?? AppColors.sage;
   const accent = preferences.themeAccentColor ?? AppColors.yellow;
   const text = preferences.themeTextColor ?? deriveAutomaticTextColor(background, accent);
+  const textMuted = deriveMutedTextColor(text, background);
   const { buttonBackground, buttonBackgroundSecondary } =
     deriveAutomaticButtonBackgrounds(background);
 
-  return { background, accent, text, buttonBackground, buttonBackgroundSecondary };
+  return { background, accent, text, textMuted, buttonBackground, buttonBackgroundSecondary };
 }
 
 export function useResolvedTheme(): ResolvedTheme {

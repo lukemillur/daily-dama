@@ -11,6 +11,7 @@ const customTheme: DefaultTheme = {
   background: '#123456',
   accent: '#abcdef',
   text: '#fedcba',
+  textMuted: '#997755',
   buttonBackground: '#111111',
   buttonBackgroundSecondary: '#222222',
 };
