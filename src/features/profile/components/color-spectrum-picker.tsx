@@ -21,10 +21,17 @@ function clamp(value: number, min: number, max: number): number {
 
 export function ColorSpectrumPicker({
   accessibilityLabelPrefix,
+  liveHex,
   onChange,
   persistedHex,
 }: {
   readonly accessibilityLabelPrefix: string;
+  /**
+   * A validated, complete hex string reflecting the sibling TextInput's current typed value
+   * (undefined while it's empty/incomplete/invalid). Distinct from `persistedHex`: this drives
+   * the puck live as the user types, without waiting for Save.
+   */
+  readonly liveHex?: string;
   readonly onChange: (hex: string) => void;
   readonly persistedHex?: string;
 }) {
@@ -56,6 +63,25 @@ export function ColorSpectrumPicker({
       setHue(nextHsv.h);
       setSat(nextHsv.s);
       setVal(nextHsv.v);
+    }
+  }
+
+  // Same guarded-setState-during-render pattern as the persistedHex resync above, but for live
+  // typed hex text. Only re-derives hue/sat/val when liveHex differs from what this picker's own
+  // hue/sat/val state would already produce - that keeps typing in sync with the puck while
+  // *not* reacting to the picker's own onChange(hsvToHex(...)) calls during an active drag, which
+  // would otherwise round-trip through hex and introduce drift/jitter mid-gesture.
+  const [lastLiveHex, setLastLiveHex] = useState(liveHex);
+  if (liveHex !== lastLiveHex) {
+    setLastLiveHex(liveHex);
+    const currentHex = hsvToHex(hue, sat, val);
+    if (liveHex && liveHex !== currentHex) {
+      const nextHsv = hexToHsv(liveHex);
+      if (nextHsv) {
+        setHue(nextHsv.h);
+        setSat(nextHsv.s);
+        setVal(nextHsv.v);
+      }
     }
   }
 
