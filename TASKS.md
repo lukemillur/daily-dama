@@ -148,16 +148,6 @@ _T089 comes from story S014 in [BACKLOG_STORIES.md](BACKLOG_STORIES.md), scoped 
 
 _T090–T097 come from stories S005–S009 and S011–S013 in [BACKLOG_STORIES.md](BACKLOG_STORIES.md), scoped in the same `scope-tickets` pass. S010 (preset text colors) was not scoped this round — see the note on its `BACKLOG_STORIES.md` entry; investigation found its premise doesn't hold up and it needs re-refinement by `product-manager` before it's scopable. New entries are placed after T089, since T096/T097 depend on it landing first._
 
-### [T095] Initialize color pickers from the resolved default theme
-
-- **Area:** Profile / Theming
-- **Priority:** Medium
-- **Status:** In progress
-- **Planning:** Implementer
-- **Description:** `ColorField` in `theme-color-picker.tsx` initializes `hexText` from `useState(persistedValue ?? "")` (line 81), where `persistedValue` is the raw, often-`undefined` stored preference (lines 32, 39, 53). Thread `useResolvedTheme()`'s `background`/`accent`/`text` output through as the fallback instead of `""`, so the picker shows the app's real current colors before any save.
-- **Exit criteria:** A component test mounts `ThemeColorPicker` with no saved theme preference and asserts each `ColorField`'s swatch/hex text shows the resolved default theme's values (not blank); saving still works and persists identically to today.
-- **Notes:** No new persistence field — purely an initial-value fix.
-
 ### [T096] Theme Button's background color
 
 - **Area:** UI components / Theming

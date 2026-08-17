@@ -4,6 +4,16 @@ Completed entries move here from `TASKS.md`'s `Backlog`, in the same commit that
 
 Entries keep their content as it was at completion. Don't retroactively edit a description or exit criteria after the fact; if something about a completed task turns out to be wrong or misleading, note that in a new entry or in code, not by rewriting history here.
 
+### [T095] Initialize color pickers from the resolved default theme
+
+- **Area:** Profile / Theming
+- **Priority:** Medium
+- **Status:** Done
+- **Planning:** Implementer
+- **Description:** `ColorField` in `theme-color-picker.tsx` initializes `hexText` from `useState(persistedValue ?? "")` (line 81), where `persistedValue` is the raw, often-`undefined` stored preference (lines 32, 39, 53). Thread `useResolvedTheme()`'s `background`/`accent`/`text` output through as the fallback instead of `""`, so the picker shows the app's real current colors before any save.
+- **Exit criteria:** A component test mounts `ThemeColorPicker` with no saved theme preference and asserts each `ColorField`'s swatch/hex text shows the resolved default theme's values (not blank); saving still works and persists identically to today.
+- **Notes:** No new persistence field — purely an initial-value fix. Added `fallbackColor` prop to `ColorField`, sourced from `useResolvedTheme()` in the parent, and used it to seed `hexText`. Also had to change the dirty/`canSave` check from comparing against `(persistedValue ?? fallbackColor)` to comparing against raw `persistedValue` only — with the fallback in play, a typed value that coincidentally matches the resolved default (e.g. saving the default accent `#f4c94d` verbatim) would otherwise be treated as unchanged and block Save, which would have broken existing save behavior. New test asserts each field's initial hex-input value and swatch color equal `resolveTheme({})`'s output when no preference is saved.
+
 ### [T092] Add a preset-theme step to onboarding
 
 - **Area:** Onboarding
