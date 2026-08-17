@@ -20,7 +20,7 @@ export function RainbowThemePresets() {
   return (
     <>
       <SectionLabel>Quick presets</SectionLabel>
-      <Title>Or grab{"\n"}a rainbow.</Title>
+      <Title>Select a preset</Title>
       <Copy>Tap a color to set both background and accent at once.</Copy>
       <ThemePresetGrid
         presets={RAINBOW_THEME_PRESETS}

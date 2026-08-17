@@ -45,6 +45,16 @@ Entries keep their content as it was at completion. Don't retroactively edit a d
 - **Exit criteria:** New unit tests on the theme-resolution logic assert correct `buttonBackground`/`buttonBackgroundSecondary` values for (a) no saved preference, (b) a saved custom theme, and (c) each T087 preset. `yarn tsc --noEmit` and the full existing test suite pass unmodified, confirming the new fields don't disturb any current consumer of `ResolvedTheme`.
 - **Notes:** Schema-only groundwork for story S014 — no component wiring is in scope here. Wiring `Button`'s `ButtonRoot` (`src/components/ui/button.tsx:45`) to `buttonBackground`/`buttonBackgroundSecondary` is T096's job; wiring Sesh's laced button (`src/features/sesh/components/sesh.tsx:1191`) to reuse `buttonBackground` is T097's job. Both are placed after this ticket in the queue deliberately — neither should be picked up before T089 is `Done`.
 
+### [T093] Reorder Profile's theme screen and refresh its copy
+
+- **Area:** Profile / Theming
+- **Priority:** Low
+- **Status:** Done
+- **Planning:** Implementer
+- **Description:** In `src/app/profile/index.tsx`, move the `StreakSettings` ("How much practice counts as a day?", lines 63–66) section to render after both theme sections (`RainbowThemePresets` line 68, `ThemeColorPicker` line 70). Update `RainbowThemePresets`' heading from "Or grab a rainbow." to "Select a preset" (`rainbow-theme-presets.tsx:23`) and `ThemeColorPicker`'s heading from "Make it yours." to "Or, make it yours" (`theme-color-picker.tsx:25`).
+- **Exit criteria:** A test on `src/app/profile/index.tsx` asserts the new heading copy renders and that the streak section's content appears after both theme sections' content in render order. No behavioral change to any control.
+- **Notes:** Pure reorder + copy change; existing tests used `findByText` without order assertions, so added a `collectTextInOrder` helper (walks `toJSON()` output) in `src/app/profile/__tests__/index.test.tsx` for order-specific coverage. Implemented exactly as scoped: moved `StreakSettings` to render after `RainbowThemePresets`/`ThemeColorPicker`, updated both headings to single-string copy (no embedded `\n` line breaks, matching the shorter phrasing). Full verification (`yarn test`, `yarn lint`, `yarn tsc --noEmit`, web export) passes.
+
 ### [T088] Restore horizontal margin on the Trick Goals trick-directory picker
 
 - **Area:** Tricks / Goals

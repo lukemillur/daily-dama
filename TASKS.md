@@ -148,16 +148,6 @@ _T089 comes from story S014 in [BACKLOG_STORIES.md](BACKLOG_STORIES.md), scoped 
 
 _T090–T097 come from stories S005–S009 and S011–S013 in [BACKLOG_STORIES.md](BACKLOG_STORIES.md), scoped in the same `scope-tickets` pass. S010 (preset text colors) was not scoped this round — see the note on its `BACKLOG_STORIES.md` entry; investigation found its premise doesn't hold up and it needs re-refinement by `product-manager` before it's scopable. New entries are placed after T089, since T096/T097 depend on it landing first._
 
-### [T093] Reorder Profile's theme screen and refresh its copy
-
-- **Area:** Profile / Theming
-- **Priority:** Low
-- **Status:** In progress
-- **Planning:** Implementer
-- **Description:** In `src/app/profile/index.tsx`, move the `StreakSettings` ("How much practice counts as a day?", lines 63–66) section to render after both theme sections (`RainbowThemePresets` line 68, `ThemeColorPicker` line 70). Update `RainbowThemePresets`' heading from "Or grab a rainbow." to "Select a preset" (`rainbow-theme-presets.tsx:23`) and `ThemeColorPicker`'s heading from "Make it yours." to "Or, make it yours" (`theme-color-picker.tsx:25`).
-- **Exit criteria:** A test on `src/app/profile/index.tsx` asserts the new heading copy renders and that the streak section's content appears after both theme sections' content in render order. No behavioral change to any control.
-- **Notes:** Pure reorder + copy change; existing tests use `findByText` without order assertions, so new order-specific coverage needs to be added rather than relying on what's there.
-
 ### [T094] Make the web splash overlay reflect the user's theme
 
 - **Area:** App shell / Theming

@@ -60,14 +60,14 @@ export default function ProfileScreen() {
             Start Kentei assessment
           </RetakeButton>
           <Divider />
+          <RainbowThemePresets />
+          <Divider />
+          <ThemeColorPicker />
+          <Divider />
           <StreakSettings
             streakThresholdMs={streakThresholdMs}
             onSave={setStreakThresholdMs}
           />
-          <Divider />
-          <RainbowThemePresets />
-          <Divider />
-          <ThemeColorPicker />
         </Content>
       </ProfileScroll>
     </Screen>
