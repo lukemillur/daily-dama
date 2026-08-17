@@ -1,7 +1,7 @@
 import { styled } from 'styled-components/native';
 
 export const Eyebrow = styled.Text`
-  color: ${({ theme }) => theme.text};
+  color: ${({ theme }) => theme.textMuted};
   font-size: 13px;
   font-weight: 900;
   letter-spacing: 1.8px;
@@ -17,7 +17,7 @@ export const DisplayTitle = styled.Text`
 `;
 
 export const BodyText = styled.Text`
-  color: ${({ theme }) => theme.text};
+  color: ${({ theme }) => theme.textMuted};
   font-size: 16px;
   line-height: 24px;
 `;
