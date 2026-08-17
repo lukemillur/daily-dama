@@ -22,7 +22,7 @@ export function ThemeColorPicker() {
   return (
     <>
       <SectionLabel>App theme</SectionLabel>
-      <Title>Make it{"\n"}yours.</Title>
+      <Title>Or, make it yours</Title>
       <Copy>
         Pick a background, accent, and text color to make the app your own.
       </Copy>
