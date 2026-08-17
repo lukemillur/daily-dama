@@ -49,10 +49,10 @@ export function NeglectedTricksSection({
 }
 
 const Section = styled.View`margin-top: 30px;`;
-const SectionLabel = styled.Text`color: ${AppColors.textMuted}; font-size: 12px; font-weight: 800; letter-spacing: 1.4px; margin-bottom: 10px; text-transform: uppercase;`;
+const SectionLabel = styled.Text`color: ${({ theme }) => theme.text}; font-size: 12px; font-weight: 800; letter-spacing: 1.4px; margin-bottom: 10px; text-transform: uppercase;`;
 const List = styled.View`gap: 8px;`;
 const Row = styled.View`flex-direction: row; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 0; border-bottom-width: 1px; border-bottom-color: ${AppColors.paper};`;
 const RowText = styled.View`flex: 1;`;
-const RowName = styled.Text`color: ${AppColors.ink}; font-size: 15px; font-weight: 700;`;
-const RowMeta = styled.Text`color: ${AppColors.textMuted}; font-size: 11px; font-weight: 600; margin-top: 2px;`;
-const PracticeAction = styled.Text`color: ${AppColors.red}; font-size: 13px; font-weight: 800;`;
+const RowName = styled.Text`color: ${({ theme }) => theme.text}; font-size: 15px; font-weight: 700;`;
+const RowMeta = styled.Text`color: ${({ theme }) => theme.text}; font-size: 11px; font-weight: 600; margin-top: 2px;`;
+const PracticeAction = styled.Text`color: ${({ theme }) => theme.text}; font-size: 13px; font-weight: 800;`;

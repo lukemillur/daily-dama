@@ -602,10 +602,10 @@ const BodyCopy = styled(BodyText)`max-width: 470px; text-align: center; margin-t
 const WrapUpList = styled.View`width: 100%; margin-top: 28px;`;
 const WrapUpRow = styled.View`min-height: 50px; flex-direction: row; align-items: center; border-bottom-width: 1px; border-bottom-color: #c7ceb7;`;
 const WrapUpTrickName = styled.Text`flex: 1; color: #18382e; font-size: 17px; font-weight: 800;`;
-const WrapUpLaceCount = styled.Text`color: ${AppColors.textMuted}; font-size: 14px; font-weight: 700; margin-right: 14px;`;
+const WrapUpLaceCount = styled.Text`color: ${({ theme }) => theme.text}; font-size: 14px; font-weight: 700; margin-right: 14px;`;
 const WrapUpTime = styled.Text`color: #18382e; font-size: 15px; font-variant: tabular-nums; font-weight: 800;`;
 const WrapUpSkippedRow = styled.View`min-height: 50px; flex-direction: row; align-items: center; border-bottom-width: 1px; border-bottom-color: ${AppColors.borderMuted};`;
-const WrapUpSkippedText = styled.Text`flex: 1; color: ${AppColors.textMuted}; font-size: 15px; font-weight: 700; font-style: italic;`;
+const WrapUpSkippedText = styled.Text`flex: 1; color: ${({ theme }) => theme.text}; font-size: 15px; font-weight: 700; font-style: italic;`;
 const FinishButton = styled(Button).attrs({ size: 'medium' })`
   margin-top: 28px;
   border-radius: 5px;

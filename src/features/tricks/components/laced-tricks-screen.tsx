@@ -124,8 +124,8 @@ const FormActions = styled.View`gap: 10px; margin-top: 26px;`;
 const Sections = styled.View`gap: 24px; margin-top: 30px;`;
 const Section = styled.View`gap: 12px;`;
 const SectionHeader = styled.View`flex-direction: row; align-items: baseline; justify-content: space-between; gap: 12px;`;
-const SectionTitle = styled.Text`color: ${AppColors.ink}; font-size: 18px; font-weight: 900;`;
-const SectionSubtitle = styled.Text`flex-shrink: 1; color: ${AppColors.textMuted}; font-size: 12px; font-weight: 800; text-align: right; text-transform: uppercase;`;
+const SectionTitle = styled.Text`color: ${({ theme }) => theme.text}; font-size: 18px; font-weight: 900;`;
+const SectionSubtitle = styled.Text`flex-shrink: 1; color: ${({ theme }) => theme.text}; font-size: 12px; font-weight: 800; text-align: right; text-transform: uppercase;`;
 const CardGrid = styled.View`flex-direction: row; flex-wrap: wrap; gap: 10px;`;
 const Card = styled(Pressable)<{ readonly $laced: boolean }>`
   min-width: 140px;
