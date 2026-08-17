@@ -155,7 +155,7 @@ _The following batch (T085–T088) comes from user stories S001–S004 in [BACKL
 
 - **Area:** Profile persistence / Theming
 - **Priority:** Medium (inherited from parent T085)
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** Extend `UserProfile` with an optional `themeTextColor` field, following the existing hex-validation pattern used by `themeBackgroundColor`/`themeAccentColor` (`src/features/profile/model/user-profile.ts`). Extend `ResolvedTheme`/`useResolvedTheme` (`src/features/profile/state/use-resolved-theme.ts`) with a `text` value: the user's custom `themeTextColor` when set, otherwise a value automatically derived from the resolved background/accent (e.g. a luminance-based light/dark choice), replacing today's fixed text color.
 - **Exit criteria:** Reducer/persistence tests confirm `themeTextColor` round-trips through hydration, defaults to `undefined`, and doesn't affect existing profile fields. A test on the resolved-theme text logic confirms it returns the custom value when set and a derived light/dark value from background+accent when unset, covering at least one light-background and one dark-background case.
