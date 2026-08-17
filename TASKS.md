@@ -152,7 +152,7 @@ _T090–T097 come from stories S005–S009 and S011–S013 in [BACKLOG_STORIES.m
 
 - **Area:** UI components / Theming
 - **Priority:** Medium
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Implementer
 - **Description:** `Button`'s `ButtonRoot` (`src/components/ui/button.tsx:35-49`) hardcodes its background from `AppColors.ink`/`AppColors.paperStrong` (line 45) regardless of theme, while `ButtonLabel` already reads `theme.accent`/`theme.text`. Wire `ButtonRoot`'s background to `theme.buttonBackground` (primary) / `theme.buttonBackgroundSecondary` (secondary), the tokens T089 adds.
 - **Exit criteria:** New component tests (no `button.test.tsx` exists yet — follow `theme-color-picker.test.tsx`'s render-through-a-real-provider pattern) render `Button` under a custom `AppThemeProvider` theme for both variants and assert `ButtonRoot`'s resolved background matches `theme.buttonBackground`/`theme.buttonBackgroundSecondary` rather than the fixed `AppColors` constants.
