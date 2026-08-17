@@ -152,7 +152,7 @@ _T090–T097 come from stories S005–S009 and S011–S013 in [BACKLOG_STORIES.m
 
 - **Area:** Sesh
 - **Priority:** Medium
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Implementer
 - **Description:** `sesh.tsx` hardcodes the countdown number color (`#d84929`, line 1182) and the laced button's background/text/count colors (`#d84929`/`#fff8e5`/`#f4c94d`, lines 1191–1193). Wire the countdown color to `theme.accent`, the laced button's background to `theme.buttonBackground` (T089), and its label/count text to `theme.text`, replacing the four hardcoded literals.
 - **Exit criteria:** Component tests in `sesh.test.tsx` (following its existing pattern of rendering `ActiveSesh`/`Countdown` directly) render under a custom `AppThemeProvider` theme and assert the countdown number and laced button's background/text/count resolve to `theme.accent`/`theme.buttonBackground`/`theme.text` rather than the fixed hex literals; existing laced-button interaction tests (`onLaced` callback, ~30 cases) continue to pass unmodified.
