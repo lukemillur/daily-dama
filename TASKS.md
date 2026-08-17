@@ -148,7 +148,7 @@ _The following batch (T085–T088) comes from user stories S001–S004 in [BACKL
 
 - **Area:** Profile / Theming
 - **Priority:** Medium
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Implementer
 - **Description:** Add a preset-theme control to Profile, visually and structurally separate from `ThemeColorPicker`, offering seven pre-configured background/accent pairs — one per rainbow color (red, orange, yellow, green, blue, indigo, violet). Selecting a preset writes background/accent via the existing `setThemeColors` profile action.
 - **Exit criteria:** Component tests confirm each of the seven presets is selectable, selecting one calls `setThemeColors` with that preset's background/accent and persists via the profile provider, and the preset control renders as a component distinct from `ThemeColorPicker` (not a shared mode toggle within it).
