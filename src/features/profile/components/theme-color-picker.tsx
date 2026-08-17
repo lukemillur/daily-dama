@@ -98,6 +98,7 @@ function ColorField({
       <FieldLabel>{label}</FieldLabel>
       <ColorSpectrumPicker
         accessibilityLabelPrefix={label}
+        liveHex={isValidHex ? hexText : undefined}
         persistedHex={persistedValue}
         onChange={setHexText}
       />

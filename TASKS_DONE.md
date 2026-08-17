@@ -4,6 +4,17 @@ Completed entries move here from `TASKS.md`'s `Backlog`, in the same commit that
 
 Entries keep their content as it was at completion. Don't retroactively edit a description or exit criteria after the fact; if something about a completed task turns out to be wrong or misleading, note that in a new entry or in code, not by rewriting history here.
 
+### [T090] Make the color picker's puck follow live-typed hex text
+
+- **Area:** Profile / Theming
+- **Priority:** High
+- **Status:** Done
+- **Planning:** Implementer
+- **Description:** `ColorSpectrumPicker`'s puck only resyncs from `persistedHex` after Save (`src/features/profile/components/theme-color-picker.tsx` lines 46–60), deliberately not on typed hex text, to avoid disrupting an in-progress drag. Wire validated, complete typed hex text into the picker's displayed color live (gated by the same `isValidThemeHexColor` check already used for the swatch), without disturbing the existing persisted-value resync path or active pointer drags.
+- **Exit criteria:** Component tests assert that typing a complete, valid hex value into the hex `TextInput` updates the picker's puck position/derived hue-sat-val state immediately, before Save is pressed; typing an incomplete or invalid hex (e.g. `"#12"`) does not move the puck or throw. Existing drag-then-save and manual-hex-then-save tests in `theme-color-picker.test.tsx` continue to pass unmodified.
+- **Notes:** Introduce a live-hex input path distinct from the persisted-value resync effect (lines 46–60) so the two don't fight each other mid-drag. Confirm `hexToHsv` (`src/shared/color/hsv.ts`) behavior on partial/invalid strings before wiring — the existing `isValidThemeHexColor` gate should be sufficient protection.
+
+
 ### [T089] Add button-background tokens to the resolved-theme system
 
 - **Area:** Profile / Theming (theme derivation state, not persistence schema)

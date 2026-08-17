@@ -63,6 +63,24 @@ function probeValue(renderer: ReactTestRenderer, label: string) {
   return findByLabel(renderer, label).props.children;
 }
 
+// The saturation/lightness puck is an unlabeled absolutely-positioned View with both `left` and
+// `top` in its style (the hue puck only ever has `left`), nested under the "... saturation and
+// lightness" responder View found via findByLabel.
+function findSvPuckStyle(renderer: ReactTestRenderer, svSquareLabel: string) {
+  const svSquare = findByLabel(renderer, svSquareLabel);
+  const puck = svSquare
+    .findAll(
+      (node) =>
+        typeof node.props.style === "object" &&
+        node.props.style !== null &&
+        typeof node.props.style.left === "number" &&
+        typeof node.props.style.top === "number",
+    )
+    .find((node) => node !== svSquare);
+  if (!puck) throw new Error("Could not find saturation/lightness puck");
+  return puck.props.style as { left: number; top: number };
+}
+
 describe("ThemeColorPicker", () => {
   beforeEach(async () => {
     await AsyncStorage.clear();
@@ -213,6 +231,37 @@ describe("ThemeColorPicker", () => {
 
     const expectedHex = hsvToHex(180, 1, 1);
     expect(probeValue(root, "probe-accent")).toBe(expectedHex);
+
+    act(() => root.unmount());
+  });
+
+  it("moves the puck live as a complete, valid hex is typed, without waiting for Save", async () => {
+    const root = await mountPicker();
+
+    const before = findSvPuckStyle(root, "Background color saturation and lightness");
+
+    act(() => findByLabel(root, "Background color hex").props.onChangeText("#00ff00"));
+
+    const after = findSvPuckStyle(root, "Background color saturation and lightness");
+    expect(after).not.toEqual(before);
+
+    // Not saved yet - the profile provider is untouched.
+    expect(probeValue(root, "probe-background")).toBe("unset");
+
+    act(() => root.unmount());
+  });
+
+  it("does not move the puck or throw while typing an incomplete/invalid hex", async () => {
+    const root = await mountPicker();
+
+    const before = findSvPuckStyle(root, "Background color saturation and lightness");
+
+    expect(() =>
+      act(() => findByLabel(root, "Background color hex").props.onChangeText("#12")),
+    ).not.toThrow();
+
+    const after = findSvPuckStyle(root, "Background color saturation and lightness");
+    expect(after).toEqual(before);
 
     act(() => root.unmount());
   });
