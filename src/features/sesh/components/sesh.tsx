@@ -1179,7 +1179,7 @@ const ChoiceBest = styled.Text`color: ${({ theme }) => theme.text}; font-size: 1
 const CompactSequence = styled.Text`color: ${({ theme }) => theme.text}; font-size: 11px; font-weight: 700; line-height: 16px; margin-top: 5px;`;
 const ChoiceArrow = styled.Text`position: absolute; right: 20px; color: ${AppColors.ink}; font-size: 28px; font-weight: 900;`;
 const CountdownTrick = styled.Text`max-width: 560px; color: #18382e; font-size: 26px; font-weight: 900; text-align: center;`;
-const CountdownNumber = styled.Text`color: #d84929; font-size: 156px; font-weight: 900; line-height: 180px; text-align: center;`;
+const CountdownNumber = styled.Text`color: ${({ theme }) => theme.accent}; font-size: 156px; font-weight: 900; line-height: 180px; text-align: center;`;
 const ActiveTrick = styled.Text`color: #18382e; font-size: 30px; font-weight: 900; text-align: center;`;
 const SequenceBlock = styled.View<{ readonly $prominent: boolean }>`width: 100%; max-width: 500px; gap: 4px; background-color: ${({ $prominent }) => $prominent ? '#e5edcf' : 'transparent'}; border-left-width: ${({ $prominent }) => $prominent ? '5px' : '0'}; border-left-color: ${AppColors.red}; margin-top: 16px; padding: ${({ $prominent }) => $prominent ? '14px 16px' : '0'};`;
 const SequenceLabel = styled.Text`color: ${({ theme }) => theme.text}; font-size: 10px; font-weight: 900; letter-spacing: 1.2px; margin-bottom: 3px; text-transform: uppercase;`;
@@ -1188,9 +1188,14 @@ const SequenceNumber = styled.Text`width: 22px; color: ${({ theme }) => theme.te
 const SequenceName = styled.Text`flex: 1; color: ${({ theme }) => theme.text}; font-size: 14px; font-weight: 800; line-height: 20px;`;
 const TimerLabel = styled.Text`color: ${({ theme }) => theme.text}; font-size: 12px; font-weight: 900; letter-spacing: 1.4px; margin-top: 22px; text-transform: uppercase;`;
 const Timer = styled.Text`color: #18382e; font-size: 78px; font-variant: tabular-nums; font-weight: 900; letter-spacing: -4px; margin: 4px 0 22px;`;
-const LacedButton = styled(Pressable)<{ $disabled: boolean; $extraTopSpacing?: boolean }>`width: 100%; min-height: 108px; flex-direction: row; align-items: center; justify-content: space-between; background-color: #d84929; opacity: ${({ $disabled }) => ($disabled ? 0.45 : 1)}; padding: 22px 26px; border-radius: 6px; margin-top: ${({ $extraTopSpacing }) => ($extraTopSpacing ? '24px' : '0')};`;
-const LacedButtonText = styled.Text`color: #fff8e5; font-size: 34px; font-weight: 900;`;
-const LacedCount = styled.Text`color: #f4c94d; font-size: 40px; font-weight: 900;`;
+// theme.buttonBackground is derived only against the page background (ink or paperStrong,
+// see deriveAutomaticButtonBackgrounds), so it can coincide with theme.text (also ink in the
+// default theme) and render invisibly. theme.accent is derived against background *and*
+// accent together and already pairs with a dark buttonBackground via Button's primary variant
+// (see button.tsx), so it's reused here instead of introducing a dedicated on-button-text token.
+const LacedButton = styled(Pressable)<{ $disabled: boolean; $extraTopSpacing?: boolean }>`width: 100%; min-height: 108px; flex-direction: row; align-items: center; justify-content: space-between; background-color: ${({ theme }) => theme.buttonBackground}; opacity: ${({ $disabled }) => ($disabled ? 0.45 : 1)}; padding: 22px 26px; border-radius: 6px; margin-top: ${({ $extraTopSpacing }) => ($extraTopSpacing ? '24px' : '0')};`;
+const LacedButtonText = styled.Text`color: ${({ theme }) => theme.accent}; font-size: 34px; font-weight: 900;`;
+const LacedCount = styled.Text`color: ${({ theme }) => theme.accent}; font-size: 40px; font-weight: 900;`;
 const ChallengeStatus = styled.Text<{ $beaten: boolean }>`width: 100%; text-align: center; margin-top: 12px; color: ${({ $beaten }) => ($beaten ? AppColors.red : AppColors.ink)}; font-size: 15px; font-weight: 900;`;
 const History = styled.View`width: 100%; margin-top: 28px;`;
 const HistoryTitle = styled.Text`color: #18382e; font-size: 14px; font-weight: 900; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 8px;`;

@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals
 import type { ComponentProps, ReactElement } from 'react';
 import { Pressable, Text } from 'react-native';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
+import { ThemeProvider as StyledThemeProvider, type DefaultTheme } from 'styled-components/native';
 
 import { formatGoalTarget } from '@/features/goals/components/trick-goals-screen';
 import type { Goal, GoalProgress } from '@/features/goals/model/goal';
@@ -2371,6 +2372,86 @@ describe('Sesh multi-trick entry (T071)', () => {
     expect(text).toContain('Timed');
     expect(text).toContain('Open-ended');
     expect(findByAccessibilityLabel(root, 'Sesh duration in minutes').length).toBeGreaterThan(0);
+
+    act(() => {
+      root.unmount();
+    });
+  });
+});
+
+describe('Sesh theming (T097)', () => {
+  const customTheme: DefaultTheme = {
+    background: '#123456',
+    accent: '#abcdef',
+    text: '#fedcba',
+    buttonBackground: '#111111',
+    buttonBackgroundSecondary: '#222222',
+  };
+
+  function resolvedHostStyle(matches: ReadonlyArray<{ props: { style?: unknown } }>) {
+    const withPlainStyle = matches.find(
+      (node) => typeof node.props.style === 'object' && node.props.style !== null && !Array.isArray(node.props.style),
+    );
+    return withPlainStyle?.props.style as { color?: string; backgroundColor?: string } | undefined;
+  }
+
+  beforeEach(() => {
+    jest.useFakeTimers();
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  it('resolves the countdown number color from theme.accent', () => {
+    let root!: ReactTestRenderer;
+    act(() => {
+      root = create(
+        <StyledThemeProvider theme={customTheme}>
+          <Countdown trick={TRICK} plan={PLAN} onComplete={noop} />
+        </StyledThemeProvider>,
+      );
+    });
+
+    const style = resolvedHostStyle(root.root.findAll((node) => node.props.children === 3));
+    expect(style?.color).toBe(customTheme.accent);
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  it("resolves the laced button's background from theme.buttonBackground and its text/count from theme.accent", () => {
+    let root!: ReactTestRenderer;
+    act(() => {
+      root = create(
+        <StyledThemeProvider theme={customTheme}>
+          <ActiveSesh
+            trick={TRICK}
+            plan={PLAN}
+            startedAt={Date.now()}
+            landings={[]}
+            pausedDurationMs={0}
+            liveChallengeEnabled={false}
+            hadPriorLaceAtSeshStart={false}
+            onLaced={noop}
+            onPause={noop}
+            onResume={noop}
+            onEnd={noop}
+            onTimerElapsed={noop}
+          />
+        </StyledThemeProvider>,
+      );
+    });
+
+    const buttonStyle = resolvedHostStyle(root.root.findAll((node) => node.props.accessibilityLabel === 'Laced'));
+    expect(buttonStyle?.backgroundColor).toBe(customTheme.buttonBackground);
+
+    const textStyle = resolvedHostStyle(root.root.findAll((node) => node.props.children === 'Laced.'));
+    expect(textStyle?.color).toBe(customTheme.accent);
+
+    const countStyle = resolvedHostStyle(root.root.findAll((node) => node.props.children === 0));
+    expect(countStyle?.color).toBe(customTheme.accent);
 
     act(() => {
       root.unmount();

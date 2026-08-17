@@ -148,16 +148,6 @@ _T089 comes from story S014 in [BACKLOG_STORIES.md](BACKLOG_STORIES.md), scoped 
 
 _T090–T097 come from stories S005–S009 and S011–S013 in [BACKLOG_STORIES.md](BACKLOG_STORIES.md), scoped in the same `scope-tickets` pass. S010 (preset text colors) was not scoped this round — see the note on its `BACKLOG_STORIES.md` entry; investigation found its premise doesn't hold up and it needs re-refinement by `product-manager` before it's scopable. New entries are placed after T089, since T096/T097 depend on it landing first._
 
-### [T097] Theme Sesh's countdown and laced-button colors
-
-- **Area:** Sesh
-- **Priority:** Medium
-- **Status:** Not started
-- **Planning:** Implementer
-- **Description:** `sesh.tsx` hardcodes the countdown number color (`#d84929`, line 1182) and the laced button's background/text/count colors (`#d84929`/`#fff8e5`/`#f4c94d`, lines 1191–1193). Wire the countdown color to `theme.accent`, the laced button's background to `theme.buttonBackground` (T089), and its label/count text to `theme.text`, replacing the four hardcoded literals.
-- **Exit criteria:** Component tests in `sesh.test.tsx` (following its existing pattern of rendering `ActiveSesh`/`Countdown` directly) render under a custom `AppThemeProvider` theme and assert the countdown number and laced button's background/text/count resolve to `theme.accent`/`theme.buttonBackground`/`theme.text` rather than the fixed hex literals; existing laced-button interaction tests (`onLaced` callback, ~30 cases) continue to pass unmodified.
-- **Notes:** Depends on T089 — do not pick this up before T089 is `Done`. If `theme.text` doesn't read as sufficiently legible against `theme.buttonBackground` once real derived values exist, the implementer may need one additional small "on-button text" token following T089's pattern — flagging as a possible small follow-on, not a blocker to starting this ticket.
-
 _T098 comes from story S010 in [BACKLOG_STORIES.md](BACKLOG_STORIES.md), rewritten by `product-manager` after the original preset-scoped framing turned out to rest on a false premise, then scoped in this pass._
 
 ### [T098] Derive a secondary text color alongside the existing primary text color
