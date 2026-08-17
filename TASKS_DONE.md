@@ -4,6 +4,16 @@ Completed entries move here from `TASKS.md`'s `Backlog`, in the same commit that
 
 Entries keep their content as it was at completion. Don't retroactively edit a description or exit criteria after the fact; if something about a completed task turns out to be wrong or misleading, note that in a new entry or in code, not by rewriting history here.
 
+### [T092] Add a preset-theme step to onboarding
+
+- **Area:** Onboarding
+- **Priority:** Medium
+- **Status:** Done
+- **Planning:** Required
+- **Description:** Insert a new preset-theme-selection step into the onboarding flow (`kentei-onboarding.tsx`'s reducer: `intro` → `levelSelect` → `assessing` → `rankReveal` → `selecting` → complete), before onboarding completion, offering the same seven presets as Profile's `RainbowThemePresets` and applying a choice via the existing `setThemeColors` action from `useUserProfileActions()`. Copy reads to the effect of "Select a theme that matches your setup." Skipping the step leaves the app on its default theme.
+- **Exit criteria:** An onboarding-flow test drives through the new step, selects a preset, and verifies the selected preset's background/accent persist via the profile provider identically to selecting it from Profile; a second case confirms skipping the step completes onboarding normally with no theme preference set. Existing onboarding-flow tests through `completeOnboarding` → `router.replace('/sesh')` continue to pass with the new step inserted.
+- **Notes:** Reuses T087's existing `RAINBOW_THEME_PRESETS`/`setThemeColors` mechanism — no new preset design needed. Marked `Required` because it changes the onboarding reducer's step sequence, which the project's `Required` criteria explicitly calls out (state machines). Inserted a new `themeSelect` reducer status between `selecting` and completion in `kentei-assessment.ts` (spreading `selecting`'s fields, guarded no-op elsewhere), moving `completeOnboarding`/`router.replace('/sesh')` out of `selecting`'s handler into the new step's. Extracted the existing swatch-grid UI out of `rainbow-theme-presets.tsx` into a new shared `ThemePresetGrid` component (`src/features/profile/components/theme-preset-grid.tsx`) so the new `OnboardingThemeStep` (`src/features/onboarding/components/onboarding-theme-step.tsx`) reuses it exactly; `rainbow-theme-presets.test.tsx` kept passing unmodified, confirming the extraction was behavior-preserving. Tapping a preset applies it via `setThemeColors` and immediately finishes onboarding; a separate secondary-variant "Skip for now" button finishes onboarding without touching theme colors. New `kentei-onboarding.test.tsx` drives the full reducer + component sequence end-to-end for both cases (no such test existed before this task) — confirms identical persisted background/accent to selecting the same preset from Profile, and confirms the skip path leaves `themeBackgroundColor`/`themeAccentColor` unset. Full web-only verification (`yarn test`, `yarn lint`, `yarn tsc --noEmit`, web export) passes; native validation remains deferred under the active platform scope.
+
 ### [T091] Fix trick-list horizontal margin in the shared trick-directory container
 
 - **Area:** Tricks
