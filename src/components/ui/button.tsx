@@ -42,7 +42,7 @@ const ButtonRoot = styled(Pressable)<{
   align-items: center;
   justify-content: center;
   padding: ${({ $size }) => ($size === 'large' ? '12px 20px' : '10px 18px')};
-  background-color: ${({ $variant }) => ($variant === 'primary' ? AppColors.ink : AppColors.paperStrong)};
+  background-color: ${({ $variant, theme }) => ($variant === 'primary' ? theme.buttonBackground : theme.buttonBackgroundSecondary)};
   border: 2px solid ${AppColors.ink};
   border-radius: ${Radii.control}px;
   opacity: ${({ disabled }) => (disabled ? 0.35 : 1)};

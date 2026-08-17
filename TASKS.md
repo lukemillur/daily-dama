@@ -148,16 +148,6 @@ _T089 comes from story S014 in [BACKLOG_STORIES.md](BACKLOG_STORIES.md), scoped 
 
 _T090–T097 come from stories S005–S009 and S011–S013 in [BACKLOG_STORIES.md](BACKLOG_STORIES.md), scoped in the same `scope-tickets` pass. S010 (preset text colors) was not scoped this round — see the note on its `BACKLOG_STORIES.md` entry; investigation found its premise doesn't hold up and it needs re-refinement by `product-manager` before it's scopable. New entries are placed after T089, since T096/T097 depend on it landing first._
 
-### [T096] Theme Button's background color
-
-- **Area:** UI components / Theming
-- **Priority:** Medium
-- **Status:** In progress
-- **Planning:** Implementer
-- **Description:** `Button`'s `ButtonRoot` (`src/components/ui/button.tsx:35-49`) hardcodes its background from `AppColors.ink`/`AppColors.paperStrong` (line 45) regardless of theme, while `ButtonLabel` already reads `theme.accent`/`theme.text`. Wire `ButtonRoot`'s background to `theme.buttonBackground` (primary) / `theme.buttonBackgroundSecondary` (secondary), the tokens T089 adds.
-- **Exit criteria:** New component tests (no `button.test.tsx` exists yet — follow `theme-color-picker.test.tsx`'s render-through-a-real-provider pattern) render `Button` under a custom `AppThemeProvider` theme for both variants and assert `ButtonRoot`'s resolved background matches `theme.buttonBackground`/`theme.buttonBackgroundSecondary` rather than the fixed `AppColors` constants.
-- **Notes:** Depends on T089 (`buttonBackground`/`buttonBackgroundSecondary` tokens) — do not pick this up before T089 is `Done`.
-
 ### [T097] Theme Sesh's countdown and laced-button colors
 
 - **Area:** Sesh
