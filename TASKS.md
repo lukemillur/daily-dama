@@ -144,16 +144,6 @@ _The following batch (T083–T084) comes from a product-manager audit scoping tw
 _The following batch (T085–T088) comes from user stories S001–S004 in [BACKLOG_STORIES.md](BACKLOG_STORIES.md), scoped via the `scope-tickets` skill after `product-manager` refined a round of theming UX feedback into stories. New entries are intentionally placed before the older queue (there is none currently) so they're picked up first._
 
 
-### [T087] Add pre-configured rainbow theme presets
-
-- **Area:** Profile / Theming
-- **Priority:** Medium
-- **Status:** Not started
-- **Planning:** Implementer
-- **Description:** Add a preset-theme control to Profile, visually and structurally separate from `ThemeColorPicker`, offering seven pre-configured background/accent pairs — one per rainbow color (red, orange, yellow, green, blue, indigo, violet). Selecting a preset writes background/accent via the existing `setThemeColors` profile action.
-- **Exit criteria:** Component tests confirm each of the seven presets is selectable, selecting one calls `setThemeColors` with that preset's background/accent and persists via the profile provider, and the preset control renders as a component distinct from `ThemeColorPicker` (not a shared mode toggle within it).
-- **Notes:** Corresponds to story S002. Exact hex values per preset are an implementation/design choice — pick visually distinct pairs; contrast is no longer a save-blocking concern once T085.2 lands, but isn't a hard dependency (see below). No hard dependency on T085/T086: presets only set background/accent, and text color (fixed today, reactive once T085 lands) resolves automatically regardless of ship order.
-
 ### [T088] Restore horizontal margin on the Trick Goals trick-directory picker
 
 - **Area:** Tricks / Goals
