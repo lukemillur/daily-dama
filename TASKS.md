@@ -152,7 +152,7 @@ _T090–T097 come from stories S005–S009 and S011–S013 in [BACKLOG_STORIES.m
 
 - **Area:** Profile / Theming
 - **Priority:** High
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Implementer
 - **Description:** `ColorSpectrumPicker`'s puck only resyncs from `persistedHex` after Save (`src/features/profile/components/theme-color-picker.tsx` lines 46–60), deliberately not on typed hex text, to avoid disrupting an in-progress drag. Wire validated, complete typed hex text into the picker's displayed color live (gated by the same `isValidThemeHexColor` check already used for the swatch), without disturbing the existing persisted-value resync path or active pointer drags.
 - **Exit criteria:** Component tests assert that typing a complete, valid hex value into the hex `TextInput` updates the picker's puck position/derived hue-sat-val state immediately, before Save is pressed; typing an incomplete or invalid hex (e.g. `"#12"`) does not move the puck or throw. Existing drag-then-save and manual-hex-then-save tests in `theme-color-picker.test.tsx` continue to pass unmodified.
