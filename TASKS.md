@@ -155,7 +155,7 @@ _The following batch (T085–T088) comes from user stories S001–S004 in [BACKL
 
 - **Area:** Profile / Theming
 - **Priority:** Medium (inherited from parent T085)
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** In `ThemeColorPicker`/`ColorField` (`src/features/profile/components/theme-color-picker.tsx`), remove `hasSufficientContrast` from the `canSave` gate (currently `canSave = isDirty && hasSufficientContrast`, `theme-color-picker.tsx:72`) and its blocking hint copy, so any valid hex pair saves regardless of contrast. Add a third `ColorField`-style control for a custom text color that writes to `themeTextColor` (T085.1) and can be reset independently.
 - **Exit criteria:** Component tests confirm a background/accent pair that previously failed the contrast check now saves successfully with no blocking message, and setting/clearing a custom text color persists via the profile provider and is reflected in a live swatch/preview.
