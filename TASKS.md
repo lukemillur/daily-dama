@@ -152,7 +152,7 @@ _T090–T097 come from stories S005–S009 and S011–S013 in [BACKLOG_STORIES.m
 
 - **Area:** App shell / Theming
 - **Priority:** Medium
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** Two distinct splashes exist: the native `expo-splash-screen` (`app.json`, build-time-only `"#208AEF"`, cannot react to runtime state) and the web-only `AnimatedSplashOverlay` (`src/components/animated-icon.web.tsx`), rendered from `src/app/_layout.tsx:24` before `UserProfileProvider`/`AppThemeProvider` mount. Make `AnimatedSplashOverlay` reflect the user's last-applied theme background (or the app's default theme background pre-selection) by reading a synchronously-available cached value ahead of normal provider hydration. Update `app.json`'s static splash `backgroundColor` to match the app's default theme background as the build-time baseline.
 - **Exit criteria:** A user who has saved a custom background color sees `AnimatedSplashOverlay` render in that color on the next web refresh, verified in-browser (reload, computed-style check before the main app UI mounts). A user with no saved theme sees it render in the app's default theme background. `app.json`'s static `backgroundColor` literal is updated to match the resolved default.
