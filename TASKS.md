@@ -152,7 +152,7 @@ _T090–T097 come from stories S005–S009 and S011–S013 in [BACKLOG_STORIES.m
 
 - **Area:** Tricks
 - **Priority:** High
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Implementer
 - **Description:** Revert T088's `margin: 0 22px;` addition to `TrickRowContainer` (`src/features/tricks/components/trick-directory.tsx`, added in commit `6aafb76`) — it regressed the Tricks tab's previously-correct selected-row margin. Move the horizontal inset into `TrickDirectory`'s own shared list container (`ListContainer`/`DirectoryLayout`, ~lines 327–334) instead, since both the Tricks tab (`src/app/tricks/index.tsx`) and the Trick Goals picker (`GoalTrickPicker` in `src/features/goals/components/all-trick-goals-screen.tsx`) render through the same `TrickDirectory` internals with no natural separate per-screen parent to place it in.
 - **Exit criteria:** In-browser check at the standard web viewport (320px+) on both the Tricks tab and the all-trick Trick Goals picker: row background bands show horizontal margin matching the "Search Tricks" box's inset, and the Tricks tab's selected-row appearance matches its pre-T088 look.
