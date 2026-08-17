@@ -9,6 +9,7 @@ import {
   useUserProfile,
   UserProfileProvider,
 } from "@/features/profile/state/user-profile-provider";
+import { resolveTheme } from "@/features/profile/state/use-resolved-theme";
 import { hsvToHex } from "@/shared/color/hsv";
 
 // ThemeColorPicker (transitively, via user-profile-provider) pulls in AsyncStorage - mocked the
@@ -278,6 +279,24 @@ describe("ThemeColorPicker", () => {
 
     const expectedHex = hsvToHex(180, 1, 1);
     expect(probeValue(root, "probe-text")).toBe(expectedHex);
+
+    act(() => root.unmount());
+  });
+
+  it("initializes each ColorField from the resolved default theme when no theme preference is saved", async () => {
+    const root = await mountPicker();
+    const defaults = resolveTheme({});
+
+    expect(findByLabel(root, "Background color hex").props.value).toBe(defaults.background);
+    expect(findByLabel(root, "Accent color hex").props.value).toBe(defaults.accent);
+    expect(findByLabel(root, "Text color hex").props.value).toBe(defaults.text);
+
+    const backgroundSwatch = root.root.findAll((node) => node.props.$hex === defaults.background);
+    expect(backgroundSwatch.length).toBeGreaterThan(0);
+    const accentSwatch = root.root.findAll((node) => node.props.$hex === defaults.accent);
+    expect(accentSwatch.length).toBeGreaterThan(0);
+    const textSwatch = root.root.findAll((node) => node.props.$hex === defaults.text);
+    expect(textSwatch.length).toBeGreaterThan(0);
 
     act(() => root.unmount());
   });

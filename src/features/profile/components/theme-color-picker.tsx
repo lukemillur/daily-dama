@@ -7,6 +7,7 @@ import { BodyText, DisplayTitle, Eyebrow } from "@/components/ui/typography";
 import { AppColors } from "@/constants/theme";
 import { ColorSpectrumPicker } from "@/features/profile/components/color-spectrum-picker";
 import { isValidThemeHexColor } from "@/features/profile/model/user-profile";
+import { useResolvedTheme } from "@/features/profile/state/use-resolved-theme";
 import {
   useUserProfile,
   useUserProfileActions,
@@ -16,6 +17,7 @@ import { contrastRatio, WCAG_AA_MIN_CONTRAST_RATIO } from "@/shared/color/contra
 export function ThemeColorPicker() {
   const { themeBackgroundColor, themeAccentColor, themeTextColor } = useUserProfile();
   const { setThemeColors, setThemeTextColor } = useUserProfileActions();
+  const resolvedTheme = useResolvedTheme();
 
   const hasCustomColors = themeBackgroundColor !== undefined || themeAccentColor !== undefined;
 
@@ -28,6 +30,7 @@ export function ThemeColorPicker() {
       </Copy>
       <ColorField
         accessibilityLabel="Background color hex"
+        fallbackColor={resolvedTheme.background}
         label="Background color"
         persistedValue={themeBackgroundColor}
         referenceColor={AppColors.ink}
@@ -35,6 +38,7 @@ export function ThemeColorPicker() {
       />
       <ColorField
         accessibilityLabel="Accent color hex"
+        fallbackColor={resolvedTheme.accent}
         label="Accent color"
         persistedValue={themeAccentColor}
         referenceColor={AppColors.ink}
@@ -49,6 +53,7 @@ export function ThemeColorPicker() {
       </ResetButton>
       <ColorField
         accessibilityLabel="Text color hex"
+        fallbackColor={resolvedTheme.text}
         label="Text color"
         persistedValue={themeTextColor}
         referenceColor={themeBackgroundColor ?? AppColors.sage}
@@ -67,21 +72,31 @@ export function ThemeColorPicker() {
 
 function ColorField({
   accessibilityLabel,
+  fallbackColor,
   label,
   onSave,
   persistedValue,
   referenceColor,
 }: {
   readonly accessibilityLabel: string;
+  /**
+   * The app's current resolved color for this field (from `useResolvedTheme()`), used to seed
+   * `hexText` and to compute dirtiness when there is no saved preference yet, so the field shows
+   * the real current color instead of a blank input before any save.
+   */
+  readonly fallbackColor: string;
   readonly label: string;
   readonly onSave: (hex: string) => void;
   readonly persistedValue?: string;
   readonly referenceColor: string;
 }) {
-  const [hexText, setHexText] = useState(persistedValue ?? "");
+  const [hexText, setHexText] = useState(persistedValue ?? fallbackColor);
   const isValidHex = isValidThemeHexColor(hexText);
   const ratio = isValidHex ? contrastRatio(hexText, referenceColor) : undefined;
-  const isDirty = isValidHex && hexText !== (persistedValue ?? "");
+  // Compares against the raw persisted value (not the fallback default) so Save stays enabled
+  // whenever there is no saved preference yet, even if the typed hex happens to match the
+  // resolved default -- explicitly saving that value is still a meaningful action.
+  const isDirty = isValidHex && hexText !== persistedValue;
   const canSave = isDirty;
   const ratioLabel = ratio === undefined ? "unknown" : ratio.toFixed(1);
 
