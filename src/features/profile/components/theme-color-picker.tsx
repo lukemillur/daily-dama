@@ -5,6 +5,7 @@ import { styled } from "styled-components/native";
 import { Button } from "@/components/ui/button";
 import { BodyText, DisplayTitle, Eyebrow } from "@/components/ui/typography";
 import { AppColors } from "@/constants/theme";
+import { ColorSpectrumPicker } from "@/features/profile/components/color-spectrum-picker";
 import { isValidThemeHexColor } from "@/features/profile/model/user-profile";
 import {
   useUserProfile,
@@ -95,6 +96,11 @@ function ColorField({
   return (
     <ColorFieldWrapper>
       <FieldLabel>{label}</FieldLabel>
+      <ColorSpectrumPicker
+        accessibilityLabelPrefix={label}
+        persistedHex={persistedValue}
+        onChange={setHexText}
+      />
       <FieldRow>
         <Swatch $hex={isValidHex ? hexText : undefined} />
         <HexInput
