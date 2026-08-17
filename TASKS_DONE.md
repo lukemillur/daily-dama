@@ -4,6 +4,16 @@ Completed entries move here from `TASKS.md`'s `Backlog`, in the same commit that
 
 Entries keep their content as it was at completion. Don't retroactively edit a description or exit criteria after the fact; if something about a completed task turns out to be wrong or misleading, note that in a new entry or in code, not by rewriting history here.
 
+### [T089] Add button-background tokens to the resolved-theme system
+
+- **Area:** Profile / Theming (theme derivation state, not persistence schema)
+- **Priority:** High
+- **Status:** Done
+- **Planning:** Implementer
+- **Description:** `ResolvedTheme`/`resolveTheme()` (`src/features/profile/state/use-resolved-theme.ts`) currently derives only `background`, `accent`, and `text`, so every themed surface added since T085–T087 that isn't one of those three (buttons, Sesh's laced-state button) falls back to hardcoded `AppColors`/hex literals. Add a `buttonBackground` / `buttonBackgroundSecondary` token pair to `ResolvedTheme`, derived alongside the existing fields using the same pattern `deriveAutomaticTextColor` already establishes, so it correctly resolves for the default/unset theme, any saved custom background/accent pair, and each of the seven T087 presets.
+- **Exit criteria:** New unit tests on the theme-resolution logic assert correct `buttonBackground`/`buttonBackgroundSecondary` values for (a) no saved preference, (b) a saved custom theme, and (c) each T087 preset. `yarn tsc --noEmit` and the full existing test suite pass unmodified, confirming the new fields don't disturb any current consumer of `ResolvedTheme`.
+- **Notes:** Schema-only groundwork for story S014 — no component wiring is in scope here. Wiring `Button`'s `ButtonRoot` (`src/components/ui/button.tsx:45`) to `buttonBackground`/`buttonBackgroundSecondary` is T096's job; wiring Sesh's laced button (`src/features/sesh/components/sesh.tsx:1191`) to reuse `buttonBackground` is T097's job. Both are placed after this ticket in the queue deliberately — neither should be picked up before T089 is `Done`.
+
 ### [T088] Restore horizontal margin on the Trick Goals trick-directory picker
 
 - **Area:** Tricks / Goals
