@@ -155,7 +155,7 @@ _The following batch (T085–T088) comes from user stories S001–S004 in [BACKL
 
 - **Area:** Theming (cross-cutting)
 - **Priority:** Medium (inherited from parent T085)
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** Replace fixed text colors on title/eyebrow/label/body text across post-onboarding screens — `Eyebrow`, `DisplayTitle`, `BodyText` (`src/components/ui/typography.tsx`) plus one-off fixed-color text such as `SectionTitle`/`NextTrickName`/`NextTrickMeta` in `daily-home.tsx`, and equivalents in `sesh.tsx`, `assessment-entry.tsx`, `multi-trick-sesh.tsx`, `multi-trick-sesh-entry.tsx`, `laced-tricks-screen.tsx`, `neglected-tricks-section.tsx`, `stats/index.tsx`, `stats/[trickId].tsx`, `tricks/index.tsx`, `profile/index.tsx` — with the resolved `theme.text` value from T085.1, falling back identically to today's fixed colors when no theme is set.
 - **Exit criteria:** In-browser check confirms every enumerated screen's title/eyebrow/label text reflects a saved custom theme's text color (both auto-derived and custom-override cases), an unset theme renders identically to today's fixed colors, and pre-onboarding yellow state and functional colors (errors/success) are unaffected.
