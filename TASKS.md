@@ -154,7 +154,7 @@ _T098 comes from story S010 in [BACKLOG_STORIES.md](BACKLOG_STORIES.md), rewritt
 
 - **Area:** Profile / Theming
 - **Priority:** Medium
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Implementer
 - **Description:** `resolveTheme()`/`ResolvedTheme` (`src/features/profile/state/use-resolved-theme.ts`) derives exactly one `text` color today, used identically by all three shared typography primitives (`Eyebrow`, `DisplayTitle`, `BodyText` in `src/components/ui/typography.tsx`) — every themed text role renders the same flat color. Add a second derived field (e.g. `textMuted`) by blending the resolved primary `text` color partway toward the resolved `background`, so it works uniformly whether `text` came from automatic derivation, a preset, or the user's explicit `themeTextColor` override. Wire `Eyebrow` and `BodyText` to the new muted color, leaving `DisplayTitle` on the primary `text` color as the anchor/majority role.
 - **Exit criteria:** Unit tests on the theme-resolution logic assert `textMuted` is distinct from `text` and legibly blended toward `background` for (a) the default theme, (b) a custom background/accent/text combination, and (c) each T087 preset. Component tests confirm `Eyebrow`/`BodyText` render with `theme.textMuted` and `DisplayTitle` still renders with `theme.text`. `yarn tsc --noEmit` and the full existing test suite pass unmodified elsewhere.
