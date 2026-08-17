@@ -4,6 +4,16 @@ Completed entries move here from `TASKS.md`'s `Backlog`, in the same commit that
 
 Entries keep their content as it was at completion. Don't retroactively edit a description or exit criteria after the fact; if something about a completed task turns out to be wrong or misleading, note that in a new entry or in code, not by rewriting history here.
 
+### [T087] Add pre-configured rainbow theme presets
+
+- **Area:** Profile / Theming
+- **Priority:** Medium
+- **Status:** Done
+- **Planning:** Implementer
+- **Description:** Add a preset-theme control to Profile, visually and structurally separate from `ThemeColorPicker`, offering seven pre-configured background/accent pairs — one per rainbow color (red, orange, yellow, green, blue, indigo, violet). Selecting a preset writes background/accent via the existing `setThemeColors` profile action.
+- **Exit criteria:** Component tests confirm each of the seven presets is selectable, selecting one calls `setThemeColors` with that preset's background/accent and persists via the profile provider, and the preset control renders as a component distinct from `ThemeColorPicker` (not a shared mode toggle within it).
+- **Notes:** Corresponds to story S002. Exact hex values per preset are an implementation/design choice — pick visually distinct pairs; contrast is no longer a save-blocking concern once T085.2 lands, but isn't a hard dependency (see below). No hard dependency on T085/T086: presets only set background/accent, and text color (fixed today, reactive once T085 lands) resolves automatically regardless of ship order. Implemented as a new `src/features/profile/components/rainbow-theme-presets.tsx` component (distinct file, distinct render tree from `ThemeColorPicker`, no shared mode toggle), backed by a plain data module `src/features/profile/model/theme-presets.ts` with seven light-background/deeper-accent hex pairs (all backgrounds pass WCAG AA against `AppColors.ink`). Rendered in `src/app/profile/index.tsx` above `ThemeColorPicker`, separated by the same `Divider` used elsewhere on the screen. New `rainbow-theme-presets.test.tsx` covers all seven presets via `it.each`, a persistence-across-remount check, and a check that the component's tree carries none of `ThemeColorPicker`'s hex-input affordances. Full web-only verification passes; native validation remains deferred under the active platform scope.
+
 ### [T085.1] Add automatic and custom text color to the theme model
 
 - **Area:** Profile persistence / Theming
