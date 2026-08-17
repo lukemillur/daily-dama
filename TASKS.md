@@ -143,17 +143,6 @@ _The following batch (T083–T084) comes from a product-manager audit scoping tw
 
 _The following batch (T085–T088) comes from user stories S001–S004 in [BACKLOG_STORIES.md](BACKLOG_STORIES.md), scoped via the `scope-tickets` skill after `product-manager` refined a round of theming UX feedback into stories. New entries are intentionally placed before the older queue (there is none currently) so they're picked up first._
 
-
-### [T088] Restore horizontal margin on the Trick Goals trick-directory picker
-
-- **Area:** Tricks / Goals
-- **Priority:** Medium
-- **Status:** In progress
-- **Planning:** Implementer
-- **Description:** `TrickRowContainer` in `src/features/tricks/components/trick-directory.tsx` (~line 410) paints its selected/laced background full-width with no horizontal margin, unlike `DirectorySearch` which sits inset by `DirectoryHeader`'s `22px` padding — so the all-trick Trick Goals picker (`GoalTrickPicker`) still renders edge-to-edge even after T082's row-text padding fix. Add horizontal margin to the row container itself (not just its inner text) to match the search box's inset.
-- **Exit criteria:** In-browser check at the standard web viewport confirms the trick-directory row backgrounds on the Trick Goals picker have visible horizontal margin matching the "Search Tricks" input's inset, and goal creation via the picker still works end to end.
-- **Notes:** Corresponds to story S004; corrects T082 (already `Done` — its archived entry in `TASKS_DONE.md` stays as-written, history isn't rewritten). Re-verify the fix doesn't disturb the Tricks tab's own `selection`-mode rendering (`SelectableIdentity`), which already has correct margin via `identityLayout` — the row-container-level fix should apply to both paths without changing spacing that already looks right on the Tricks tab.
-
 ## Done
 
 Completed entries live in [TASKS_DONE.md](TASKS_DONE.md) — not part of the top-to-bottom read above; see step 5 under _Completing a task_.

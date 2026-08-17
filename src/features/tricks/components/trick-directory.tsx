@@ -409,6 +409,7 @@ const FocusedEmptyText = styled.Text`
 
 const TrickRowContainer = styled.View<{ readonly $selected: boolean; readonly $laced: boolean }>`
   min-height: 66px;
+  margin: 0 22px;
   flex-direction: row;
   align-items: center;
   background-color: ${({ $selected, $laced }) => ($selected || $laced ? '#e5edcf' : '#f8f1dd')};
