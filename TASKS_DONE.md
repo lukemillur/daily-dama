@@ -16,6 +16,16 @@ Entries keep their content as it was at completion. Don't retroactively edit a d
 
 ---
 
+### [T085.2] Remove the contrast Save gate; add a custom text-color control
+
+- **Area:** Profile / Theming
+- **Priority:** Medium (inherited from parent T085)
+- **Status:** Done
+- **Planning:** Required
+- **Description:** In `ThemeColorPicker`/`ColorField` (`src/features/profile/components/theme-color-picker.tsx`), remove `hasSufficientContrast` from the `canSave` gate (currently `canSave = isDirty && hasSufficientContrast`, `theme-color-picker.tsx:72`) and its blocking hint copy, so any valid hex pair saves regardless of contrast. Add a third `ColorField`-style control for a custom text color that writes to `themeTextColor` (T085.1) and can be reset independently.
+- **Exit criteria:** Component tests confirm a background/accent pair that previously failed the contrast check now saves successfully with no blocking message, and setting/clearing a custom text color persists via the profile provider and is reflected in a live swatch/preview.
+- **Notes:** Depends on T085.1. Touches the same file as T086 (S001's visual color picker) — whichever lands second should expect to rebase around the other's changes to `theme-color-picker.tsx`. Any leftover contrast-ratio copy must not block saving; remove it or make it purely informational. Removed `hasSufficientContrast` from `canSave` (now just `isDirty`); contrast ratio is now shown as non-blocking informational copy (`"Contrast vs. text: {ratio}:1. Recommended: {WCAG_AA_MIN_CONTRAST_RATIO}:1+."`) for all three fields. Added a third `ColorField` for `themeTextColor` (wired to `setThemeTextColor`), with its own independent reset button ("Reset text color") separate from the existing background/accent reset (relabeled "Reset background & accent" for clarity). `ColorField` now takes an explicit `referenceColor` prop instead of hardcoding `AppColors.ink`; background/accent keep `AppColors.ink` (out of scope to change), the new text field uses `themeBackgroundColor ?? AppColors.sage` (mirroring `resolveTheme`'s fallback).
+
 ### [T084] Suggest the next trick for the user's Kentei rank on Home
 
 - **Area:** Home

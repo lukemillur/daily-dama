@@ -32,11 +32,12 @@ function findByLabel(renderer: ReactTestRenderer, label: string) {
 // Probe that reads the real provider state so saves can be asserted through the actual
 // reducer/provider round trip, not a mock.
 function ProfileProbe() {
-  const { themeBackgroundColor, themeAccentColor } = useUserProfile();
+  const { themeBackgroundColor, themeAccentColor, themeTextColor } = useUserProfile();
   return (
     <>
       <Text accessibilityLabel="probe-background">{themeBackgroundColor ?? "unset"}</Text>
       <Text accessibilityLabel="probe-accent">{themeAccentColor ?? "unset"}</Text>
+      <Text accessibilityLabel="probe-text">{themeTextColor ?? "unset"}</Text>
     </>
   );
 }
@@ -75,7 +76,7 @@ describe("ThemeColorPicker", () => {
     act(() => root.unmount());
   });
 
-  it("rejects an insufficient-contrast background color with a visible message and does not save it", async () => {
+  it("saves a background color even with insufficient contrast, without a blocking message", async () => {
     const root = await mountPicker();
 
     act(() =>
@@ -83,17 +84,17 @@ describe("ThemeColorPicker", () => {
     );
 
     const saveButton = findByLabel(root, "Background color save");
-    expect(saveButton.props.disabled).toBe(true);
+    expect(saveButton.props.disabled).toBe(false);
     act(() => saveButton.props.onPress());
 
-    expect(probeValue(root, "probe-background")).toBe("unset");
+    expect(probeValue(root, "probe-background")).toBe(AppColors.ink);
     expect(
       root.root.findAll(
         (node) =>
           typeof node.props.children === "string" &&
           /too hard to read/i.test(node.props.children),
       ).length,
-    ).toBeGreaterThan(0);
+    ).toBe(0);
 
     act(() => root.unmount());
   });
@@ -110,16 +111,23 @@ describe("ThemeColorPicker", () => {
     act(() => root.unmount());
   });
 
-  it("rejects an insufficient-contrast accent color and does not save it", async () => {
+  it("saves an accent color even with insufficient contrast, without a blocking message", async () => {
     const root = await mountPicker();
 
     act(() => findByLabel(root, "Accent color hex").props.onChangeText(AppColors.ink));
 
     const saveButton = findByLabel(root, "Accent color save");
-    expect(saveButton.props.disabled).toBe(true);
+    expect(saveButton.props.disabled).toBe(false);
     act(() => saveButton.props.onPress());
 
-    expect(probeValue(root, "probe-accent")).toBe("unset");
+    expect(probeValue(root, "probe-accent")).toBe(AppColors.ink);
+    expect(
+      root.root.findAll(
+        (node) =>
+          typeof node.props.children === "string" &&
+          /too hard to read/i.test(node.props.children),
+      ).length,
+    ).toBe(0);
 
     act(() => root.unmount());
   });
@@ -138,6 +146,37 @@ describe("ThemeColorPicker", () => {
 
     expect(probeValue(root, "probe-background")).toBe("unset");
     expect(findByLabel(root, "Reset theme colors").props.disabled).toBe(true);
+
+    act(() => root.unmount());
+  });
+
+  it("saves a text color via the profile provider, independently of background and accent", async () => {
+    const root = await mountPicker();
+
+    act(() => findByLabel(root, "Text color hex").props.onChangeText("#112233"));
+    act(() => findByLabel(root, "Text color save").props.onPress());
+
+    expect(probeValue(root, "probe-text")).toBe("#112233");
+    expect(probeValue(root, "probe-background")).toBe("unset");
+    expect(probeValue(root, "probe-accent")).toBe("unset");
+
+    act(() => root.unmount());
+  });
+
+  it("only enables text color reset once a text color has been saved, and clears only the text color", async () => {
+    const root = await mountPicker();
+
+    expect(findByLabel(root, "Reset text color").props.disabled).toBe(true);
+
+    act(() => findByLabel(root, "Text color hex").props.onChangeText("#112233"));
+    act(() => findByLabel(root, "Text color save").props.onPress());
+
+    expect(findByLabel(root, "Reset text color").props.disabled).toBe(false);
+
+    act(() => findByLabel(root, "Reset text color").props.onPress());
+
+    expect(probeValue(root, "probe-text")).toBe("unset");
+    expect(findByLabel(root, "Reset text color").props.disabled).toBe(true);
 
     act(() => root.unmount());
   });

@@ -10,15 +10,11 @@ import {
   useUserProfile,
   useUserProfileActions,
 } from "@/features/profile/state/user-profile-provider";
-import {
-  contrastRatio,
-  meetsMinimumContrast,
-  WCAG_AA_MIN_CONTRAST_RATIO,
-} from "@/shared/color/contrast";
+import { contrastRatio, WCAG_AA_MIN_CONTRAST_RATIO } from "@/shared/color/contrast";
 
 export function ThemeColorPicker() {
-  const { themeBackgroundColor, themeAccentColor } = useUserProfile();
-  const { setThemeColors } = useUserProfileActions();
+  const { themeBackgroundColor, themeAccentColor, themeTextColor } = useUserProfile();
+  const { setThemeColors, setThemeTextColor } = useUserProfileActions();
 
   const hasCustomColors = themeBackgroundColor !== undefined || themeAccentColor !== undefined;
 
@@ -27,19 +23,20 @@ export function ThemeColorPicker() {
       <SectionLabel>App theme</SectionLabel>
       <Title>Make it{"\n"}yours.</Title>
       <Copy>
-        Pick a background and accent color. Each must stay easy to read against the app&apos;s text
-        color.
+        Pick a background, accent, and text color to make the app your own.
       </Copy>
       <ColorField
         accessibilityLabel="Background color hex"
         label="Background color"
         persistedValue={themeBackgroundColor}
+        referenceColor={AppColors.ink}
         onSave={(hex) => setThemeColors(hex, themeAccentColor)}
       />
       <ColorField
         accessibilityLabel="Accent color hex"
         label="Accent color"
         persistedValue={themeAccentColor}
+        referenceColor={AppColors.ink}
         onSave={(hex) => setThemeColors(themeBackgroundColor, hex)}
       />
       <ResetButton
@@ -47,7 +44,21 @@ export function ThemeColorPicker() {
         disabled={!hasCustomColors}
         onPress={() => setThemeColors(undefined, undefined)}
       >
-        Reset to default
+        Reset background & accent
+      </ResetButton>
+      <ColorField
+        accessibilityLabel="Text color hex"
+        label="Text color"
+        persistedValue={themeTextColor}
+        referenceColor={themeBackgroundColor ?? AppColors.sage}
+        onSave={(hex) => setThemeTextColor(hex)}
+      />
+      <ResetButton
+        accessibilityLabel="Reset text color"
+        disabled={themeTextColor === undefined}
+        onPress={() => setThemeTextColor(undefined)}
+      >
+        Reset text color
       </ResetButton>
     </>
   );
@@ -58,32 +69,27 @@ function ColorField({
   label,
   onSave,
   persistedValue,
+  referenceColor,
 }: {
   readonly accessibilityLabel: string;
   readonly label: string;
   readonly onSave: (hex: string) => void;
   readonly persistedValue?: string;
+  readonly referenceColor: string;
 }) {
   const [hexText, setHexText] = useState(persistedValue ?? "");
   const isValidHex = isValidThemeHexColor(hexText);
-  const ratio = isValidHex ? contrastRatio(hexText, AppColors.ink) : undefined;
-  const hasSufficientContrast = isValidHex && meetsMinimumContrast(hexText, AppColors.ink);
+  const ratio = isValidHex ? contrastRatio(hexText, referenceColor) : undefined;
   const isDirty = isValidHex && hexText !== (persistedValue ?? "");
-  const canSave = isDirty && hasSufficientContrast;
+  const canSave = isDirty;
   const ratioLabel = ratio === undefined ? "unknown" : ratio.toFixed(1);
 
   let hint: string;
   if (!isValidHex) {
     hint = "Enter a 6-digit hex color, e.g. #4477aa.";
-  } else if (!hasSufficientContrast) {
-    hint =
-      "Too hard to read against the app's text color. Pick something darker or lighter. Contrast vs. text: " +
-      ratioLabel +
-      ":1, need at least " +
-      WCAG_AA_MIN_CONTRAST_RATIO +
-      ":1.";
   } else {
-    hint = "Contrast vs. text: " + ratioLabel + ":1. Easy to read.";
+    hint =
+      "Contrast vs. text: " + ratioLabel + ":1. Recommended: " + WCAG_AA_MIN_CONTRAST_RATIO + ":1+.";
   }
 
   return (
@@ -101,7 +107,7 @@ function ColorField({
           value={hexText}
         />
       </FieldRow>
-      <FieldHint $invalid={!isValidHex || !hasSufficientContrast}>{hint}</FieldHint>
+      <FieldHint $invalid={!isValidHex}>{hint}</FieldHint>
       <SaveButton
         accessibilityLabel={label + " save"}
         disabled={!canSave}
