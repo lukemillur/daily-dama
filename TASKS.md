@@ -151,16 +151,6 @@ _The following batch (T085–T088) comes from user stories S001–S004 in [BACKL
 - **Description:** Remove the WCAG contrast gate that currently blocks saving a background/accent theme pair, and make text color part of the same reactive theme system — automatically derived from the chosen background/accent, or explicitly overridden by the user. Umbrella only — complete T085.1–T085.3.
 - **Notes:** Corresponds to story S003 in `BACKLOG_STORIES.md`. Deliberate accessibility trade-off, made by the user with the guardrail's origin (T083.2) in view — not re-litigated here. Mirrors T083's umbrella/child shape.
 
-### [T085.1] Add automatic and custom text color to the theme model
-
-- **Area:** Profile persistence / Theming
-- **Priority:** Medium (inherited from parent T085)
-- **Status:** In progress
-- **Planning:** Required
-- **Description:** Extend `UserProfile` with an optional `themeTextColor` field, following the existing hex-validation pattern used by `themeBackgroundColor`/`themeAccentColor` (`src/features/profile/model/user-profile.ts`). Extend `ResolvedTheme`/`useResolvedTheme` (`src/features/profile/state/use-resolved-theme.ts`) with a `text` value: the user's custom `themeTextColor` when set, otherwise a value automatically derived from the resolved background/accent (e.g. a luminance-based light/dark choice), replacing today's fixed text color.
-- **Exit criteria:** Reducer/persistence tests confirm `themeTextColor` round-trips through hydration, defaults to `undefined`, and doesn't affect existing profile fields. A test on the resolved-theme text logic confirms it returns the custom value when set and a derived light/dark value from background+accent when unset, covering at least one light-background and one dark-background case.
-- **Notes:** First child of T085; no dependency on other children. Follows AGENTS.md's provisional-v1, no-migration policy for this persistence domain (same as T083.1). The automatic-derivation algorithm is an implementation choice, not specified here.
-
 ### [T085.2] Remove the contrast Save gate; add a custom text-color control
 
 - **Area:** Profile / Theming

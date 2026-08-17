@@ -4,6 +4,18 @@ Completed entries move here from `TASKS.md`'s `Backlog`, in the same commit that
 
 Entries keep their content as it was at completion. Don't retroactively edit a description or exit criteria after the fact; if something about a completed task turns out to be wrong or misleading, note that in a new entry or in code, not by rewriting history here.
 
+### [T085.1] Add automatic and custom text color to the theme model
+
+- **Area:** Profile persistence / Theming
+- **Priority:** Medium (inherited from parent T085)
+- **Status:** Done
+- **Planning:** Required
+- **Description:** Extend `UserProfile` with an optional `themeTextColor` field, following the existing hex-validation pattern used by `themeBackgroundColor`/`themeAccentColor` (`src/features/profile/model/user-profile.ts`). Extend `ResolvedTheme`/`useResolvedTheme` (`src/features/profile/state/use-resolved-theme.ts`) with a `text` value: the user's custom `themeTextColor` when set, otherwise a value automatically derived from the resolved background/accent (e.g. a luminance-based light/dark choice), replacing today's fixed text color.
+- **Exit criteria:** Reducer/persistence tests confirm `themeTextColor` round-trips through hydration, defaults to `undefined`, and doesn't affect existing profile fields. A test on the resolved-theme text logic confirms it returns the custom value when set and a derived light/dark value from background+accent when unset, covering at least one light-background and one dark-background case.
+- **Notes:** First child of T085; no dependency on other children. Follows AGENTS.md's provisional-v1, no-migration policy for this persistence domain (same as T083.1). The automatic-derivation algorithm is an implementation choice, not specified here. Added `themeTextColor` to `UserProfile`, a dedicated `themeTextColorUpdated` reducer action (kept separate from `themeColorsUpdated` so T085.2's control can reset it independently) and matching persistence/provider wiring (`setThemeTextColor`). Refactored `use-resolved-theme.ts` into a pure, independently-testable `resolveTheme` function plus a thin `useResolvedTheme` hook; added `deriveAutomaticTextColor`, which picks whichever of `AppColors.ink`/`AppColors.cream` maximizes the minimum WCAG contrast ratio against both the resolved background and accent (text can sit on either surface). No schema version bump per AGENTS.md's provisional-v1 policy. No screen consumes `theme.text` yet (T085.3).
+
+---
+
 ### [T084] Suggest the next trick for the user's Kentei rank on Home
 
 - **Area:** Home

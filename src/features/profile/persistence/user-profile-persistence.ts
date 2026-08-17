@@ -77,6 +77,7 @@ function parseUserProfile(value: unknown): UserProfile | undefined {
     manuallyUnlockedTrickIds,
     themeBackgroundColor,
     themeAccentColor,
+    themeTextColor,
   } = value;
   if (typeof hasCompletedOnboarding !== 'boolean' || !isStringArray(selectedTrickIds)) {
     return undefined;
@@ -88,6 +89,7 @@ function parseUserProfile(value: unknown): UserProfile | undefined {
   }
   if (themeBackgroundColor !== undefined && !isThemeColor(themeBackgroundColor)) return undefined;
   if (themeAccentColor !== undefined && !isThemeColor(themeAccentColor)) return undefined;
+  if (themeTextColor !== undefined && !isThemeColor(themeTextColor)) return undefined;
 
   const lastSeshField = lastSesh === undefined ? {} : { lastSesh: lastSesh as LastSesh };
   const streakThresholdField =
@@ -100,6 +102,8 @@ function parseUserProfile(value: unknown): UserProfile | undefined {
     themeBackgroundColor === undefined ? {} : { themeBackgroundColor: themeBackgroundColor as string };
   const themeAccentColorField =
     themeAccentColor === undefined ? {} : { themeAccentColor: themeAccentColor as string };
+  const themeTextColorField =
+    themeTextColor === undefined ? {} : { themeTextColor: themeTextColor as string };
 
   if (hasCompletedOnboarding) {
     if (!isKenteiRank(kenteiRank)) return undefined;
@@ -112,6 +116,7 @@ function parseUserProfile(value: unknown): UserProfile | undefined {
       ...manuallyUnlockedTrickIdsField,
       ...themeBackgroundColorField,
       ...themeAccentColorField,
+      ...themeTextColorField,
     };
   }
 
@@ -124,6 +129,7 @@ function parseUserProfile(value: unknown): UserProfile | undefined {
     ...manuallyUnlockedTrickIdsField,
     ...themeBackgroundColorField,
     ...themeAccentColorField,
+    ...themeTextColorField,
   };
 }
 
