@@ -151,16 +151,6 @@ _The following batch (T085–T088) comes from user stories S001–S004 in [BACKL
 - **Description:** Remove the WCAG contrast gate that currently blocks saving a background/accent theme pair, and make text color part of the same reactive theme system — automatically derived from the chosen background/accent, or explicitly overridden by the user. Umbrella only — complete T085.1–T085.3.
 - **Notes:** Corresponds to story S003 in `BACKLOG_STORIES.md`. Deliberate accessibility trade-off, made by the user with the guardrail's origin (T083.2) in view — not re-litigated here. Mirrors T083's umbrella/child shape.
 
-### [T085.2] Remove the contrast Save gate; add a custom text-color control
-
-- **Area:** Profile / Theming
-- **Priority:** Medium (inherited from parent T085)
-- **Status:** Not started
-- **Planning:** Required
-- **Description:** In `ThemeColorPicker`/`ColorField` (`src/features/profile/components/theme-color-picker.tsx`), remove `hasSufficientContrast` from the `canSave` gate (currently `canSave = isDirty && hasSufficientContrast`, `theme-color-picker.tsx:72`) and its blocking hint copy, so any valid hex pair saves regardless of contrast. Add a third `ColorField`-style control for a custom text color that writes to `themeTextColor` (T085.1) and can be reset independently.
-- **Exit criteria:** Component tests confirm a background/accent pair that previously failed the contrast check now saves successfully with no blocking message, and setting/clearing a custom text color persists via the profile provider and is reflected in a live swatch/preview.
-- **Notes:** Depends on T085.1. Touches the same file as T086 (S001's visual color picker) — whichever lands second should expect to rebase around the other's changes to `theme-color-picker.tsx`. Any leftover contrast-ratio copy must not block saving; remove it or make it purely informational.
-
 ### [T085.3] Apply theme text color across post-onboarding screens
 
 - **Area:** Theming (cross-cutting)
