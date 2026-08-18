@@ -167,7 +167,7 @@ _T106–T110 come from stories S022–S026 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 - **Area:** Web launch surface (cross-cutting)
 - **Priority:** High
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Implementer
 - **Description:** Create a 1200×630 PNG share-card image built from the app's existing design system (`AppColors`, typography components) reflecting Daily Dama's visual identity — the existing `logo-glow.png` / `icon.png` assets are square and the wrong shape for a link-preview card. Save it under `assets/images/` for T108's head tags to reference.
 - **Exit criteria:** A committed PNG at a defined path (e.g. `assets/images/share-card.png`) is exactly 1200×630 pixels, verified via image metadata inspection (e.g. `sips -g pixelWidth -g pixelHeight`); the composition uses the project's existing color/typography tokens rather than ad hoc values.
