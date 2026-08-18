@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Screen } from '@/components/ui/screen';
 import { BodyText, DisplayTitle, Eyebrow } from '@/components/ui/typography';
 import { AppColors } from '@/constants/theme';
-import { useAccessGateActions } from '@/features/access-gate/state/access-gate-provider';
+import { useAccessGateActions } from '@/features/access-gate/state/access-gate-context';
 
 export function AccessGateScreen() {
   const { attemptUnlock } = useAccessGateActions();
