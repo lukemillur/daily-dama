@@ -177,7 +177,7 @@ _T106–T110 come from stories S022–S026 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 - **Area:** Analytics
 - **Priority:** Low
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Implementer
 - **Description:** Fire a `track('onboarding_completed')` call via the already-installed `@vercel/analytics` when the `onboardingCompleted` action dispatches (`src/features/profile/state/user-profile-provider.tsx:138`), web-only — matching the existing `Platform.OS === 'web'` gating already used for `<Analytics />` in `src/app/_layout.tsx`.
 - **Exit criteria:** Completing onboarding in the browser triggers a `track('onboarding_completed')` call, verified via a mocked `@vercel/analytics` import in a test; the onboarding reducer, persistence, and flow are otherwise unchanged.
