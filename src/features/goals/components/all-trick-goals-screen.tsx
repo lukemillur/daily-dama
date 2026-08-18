@@ -13,6 +13,7 @@ import { selectGoalProgressByTrick } from '@/features/goals/model/goal';
 import { useGoalActions, useGoals } from '@/features/goals/state/goal-provider';
 import { usePracticeHistory } from '@/features/stats/state/practice-history-provider';
 import { TrickDirectory } from '@/features/tricks/components/trick-directory';
+import { TrickDirectoryColumn } from '@/features/tricks/components/trick-directory-column';
 import type { DirectoryTrick } from '@/features/tricks/model/trick-directory';
 
 interface AllTrickGoalsScreenProps {
@@ -131,17 +132,19 @@ function GoalTrickPicker({
   const [query, setQuery] = useState('');
 
   return (
-    <TrickDirectory
-      tricks={tricks}
-      focusedTrickIds={focusedTrickIds}
-      showFocusedSection
-      search={{ query, onChangeText: setQuery }}
-      onActivate={onSelect}
-      header={{ eyebrow: 'New goal', title: 'Choose a trick.', introduction: 'Pick the trick you want to set a goal for.' }}
-      footer={<FormActions><Button fill variant="secondary" onPress={onCancel}>Cancel</Button></FormActions>}
-      fixedHeader
-      fixedFooter
-    />
+    <TrickDirectoryColumn>
+      <TrickDirectory
+        tricks={tricks}
+        focusedTrickIds={focusedTrickIds}
+        showFocusedSection
+        search={{ query, onChangeText: setQuery }}
+        onActivate={onSelect}
+        header={{ eyebrow: 'New goal', title: 'Choose a trick.', introduction: 'Pick the trick you want to set a goal for.' }}
+        footer={<FormActions><Button fill variant="secondary" onPress={onCancel}>Cancel</Button></FormActions>}
+        fixedHeader
+        fixedFooter
+      />
+    </TrickDirectoryColumn>
   );
 }
 

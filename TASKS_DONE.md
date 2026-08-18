@@ -4,6 +4,16 @@ Completed entries move here from `TASKS.md`'s `Backlog`, in the same commit that
 
 Entries keep their content as it was at completion. Don't retroactively edit a description or exit criteria after the fact; if something about a completed task turns out to be wrong or misleading, note that in a new entry or in code, not by rewriting history here.
 
+### [T099] Match the Trick Goals picker's container width to the Tricks tab
+
+- **Area:** Tricks
+- **Priority:** Medium
+- **Status:** Done
+- **Planning:** Implementer
+- **Description:** The Tricks tab (`src/app/tricks/index.tsx:66-114`) wraps `TrickDirectory` in a `DirectoryContent` styled wrapper (`width:100%; max-width:760px;`, line 515) inside a centered `Screen`. The Trick Goals route (`src/app/tricks/goals.tsx:19`) and `GoalTrickPicker` (`src/features/goals/components/all-trick-goals-screen.tsx:120-146`) render `TrickDirectory` with no equivalent width-constraining wrapper, so the picker stretches to the full screen width instead of matching the Tricks tab's column. Add an equivalent max-width wrapper around the Goals route's `TrickDirectory` usage without touching `src/app/tricks/index.tsx` or `DirectoryContent` itself.
+- **Exit criteria:** In-browser check at 375px, 760px+, and 1200px+ web viewports: the Trick Goals picker's content column renders at the same width (760px cap, centered) as the Tricks tab's `DirectoryContent`. `git diff` confirms `src/app/tricks/index.tsx` is unchanged.
+- **Notes:** Story S015. Added `src/features/tricks/components/trick-directory-column.tsx`, a small standalone `TrickDirectoryColumn` styled wrapper (760px cap, centered, matching `DirectoryContent`'s width/overflow/background), and wrapped `GoalTrickPicker`'s `TrickDirectory` in it (`src/features/goals/components/all-trick-goals-screen.tsx`). Not literally reused by the Tricks tab itself, since doing so would require editing `src/app/tricks/index.tsx`'s existing `DirectoryContent` definition, which the ticket explicitly ruled out; the two wrappers share identical values instead. Verified in-browser at 375px, 760px, and 1200px viewports via a scripted Playwright check (seeded a completed-onboarding profile into `localStorage`, measured both the Tricks tab's `DirectoryContent` and the Goals picker's `TrickDirectoryColumn` bounding rects): widths and left offsets matched exactly at all three (375/0, 760/0, 760/220). `git diff` confirms `src/app/tricks/index.tsx` is untouched. Full web-only verification passes; native validation remains deferred under the active platform scope.
+
 ### [T098] Derive a secondary text color alongside the existing primary text color
 
 - **Area:** Profile / Theming
