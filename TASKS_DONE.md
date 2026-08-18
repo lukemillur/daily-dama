@@ -4,6 +4,17 @@ Completed entries move here from `TASKS.md`'s `Backlog`, in the same commit that
 
 Entries keep their content as it was at completion. Don't retroactively edit a description or exit criteria after the fact; if something about a completed task turns out to be wrong or misleading, note that in a new entry or in code, not by rewriting history here.
 
+### [T105] Move "Practice several tricks" below the format/time controls
+
+- **Area:** Sesh
+- **Priority:** Medium
+- **Status:** Done
+- **Planning:** Implementer
+- **Description:** In the Sesh home screen's non-direct-practice branch, the `MultiTrickAction` ("Practice several tricks") block currently renders immediately after the intro text and before the practice-format/duration controls (`sesh.tsx:362-369`, ahead of `PlanChoices`/`DurationField`/`ChallengeField` at `sesh.tsx:372-450`). Move it to render after those controls and before the focused-tricks list (`TrickChoices`, `sesh.tsx:451+`), so the format/time controls read as the screen's primary action and "Practice several tricks" reads as a secondary option.
+- **Exit criteria:** In-browser/component check: on the Sesh home screen, render order is intro text → format/duration controls → "Practice several tricks" → focused-tricks list. Existing `sesh.test.tsx` interaction tests for both single-trick and multi-trick flows continue to pass unmodified (tapping "Practice several tricks" still opens the same picker).
+- **Notes:** Story S021. Pure JSX-ordering change; no state or logic change.
+
+
 ### [T104] Clear a custom text color when a preset theme is selected
 
 - **Area:** Profile / Theming
