@@ -167,6 +167,24 @@ describe('user profile trick selection', () => {
     expect(clearedBackground.themeAccentColor).toBe('#123456');
   });
 
+  it('clears a custom text color when a preset theme is applied', () => {
+    const withTextColor = userProfileReducer(INITIAL_USER_PROFILE, {
+      type: 'themeTextColorUpdated',
+      themeTextColor: '#abcdef',
+    });
+    expect(withTextColor.themeTextColor).toBe('#abcdef');
+
+    const result = userProfileReducer(withTextColor, {
+      type: 'themeColorsUpdated',
+      themeBackgroundColor: '#111111',
+      themeAccentColor: '#222222',
+    });
+
+    expect(result.themeTextColor).toBeUndefined();
+    expect(result.themeBackgroundColor).toBe('#111111');
+    expect(result.themeAccentColor).toBe('#222222');
+  });
+
   it('does not clobber unrelated profile fields when updating theme colors', () => {
     const state = { ...INITIAL_USER_PROFILE, selectedTrickIds: ['big-cup'] };
 
