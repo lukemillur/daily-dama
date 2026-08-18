@@ -155,7 +155,7 @@ _The following batch (T099–T105) comes from stories S015–S021 in [BACKLOG_ST
 
 - **Area:** Profile / Theming
 - **Priority:** High
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Implementer
 - **Description:** `ColorSpectrumPicker` seeds its puck from `persistedHex` (`theme-color-picker.tsx:117`), which is `undefined` when no custom color is saved, falling back to a hardcoded `#4477aa` (`color-spectrum-picker.tsx:44-48`) instead of the resolved theme color T095 already threads into `ColorField` as `fallbackColor`. Pass the same `persistedValue ?? fallbackColor` value `ColorField` uses for its swatch/hex text into `ColorSpectrumPicker`'s puck-seed color.
 - **Exit criteria:** Component test mounts `ThemeColorPicker` with no saved theme preference and asserts the puck's initial derived HSV/position corresponds to the resolved default theme color (matching the swatch/hex), not the hardcoded `#4477aa` seed. Existing drag-then-save and manual-hex-then-save tests in `theme-color-picker.test.tsx` continue to pass unmodified.
