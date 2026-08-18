@@ -155,7 +155,7 @@ _The following batch (T099–T105) comes from stories S015–S021 in [BACKLOG_ST
 
 - **Area:** Profile / Theming
 - **Priority:** High
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** The `themeColorsUpdated` reducer case (`user-profile.ts:142-147`), fired by preset selection (`rainbow-theme-presets.tsx:30`), fully replaces `themeBackgroundColor`/`themeAccentColor` but never touches `themeTextColor` — so a previously saved custom text color survives a later preset selection instead of being replaced by the preset's look. Have preset selection also clear the custom text color, either by extending `setThemeColors`/`themeColorsUpdated` to reset `themeTextColor` to `undefined`, or by having the preset-tap handler additionally call the existing `setThemeTextColor(undefined)` action.
 - **Exit criteria:** Reducer test: dispatch a custom `themeTextColor` being set, then apply `themeColorsUpdated` (a preset), and assert `themeTextColor` is `undefined` afterward. Component test: select a preset in `RainbowThemePresets` after a custom text color was saved, and assert the persisted profile no longer carries a custom text color. Existing tests for a direct, manual `ThemeColorPicker` text-color save (an unaffected path) continue to pass unmodified.
