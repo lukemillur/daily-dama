@@ -91,6 +91,21 @@ function ColorField({
   readonly referenceColor: string;
 }) {
   const [hexText, setHexText] = useState(persistedValue ?? fallbackColor);
+
+  // Resync only when persistedValue changes to a new *defined* value (e.g. after a preset
+  // applies via setThemeColors), not on every render - same guarded-setState-during-render
+  // pattern ColorSpectrumPicker uses for its own persistedHex resync. Guarding on the actual
+  // transition (rather than an effect that would fire post-commit) avoids clobbering
+  // in-progress typing from unrelated rerenders, since it only reacts when persistedValue itself
+  // changes for this field.
+  const [lastPersistedValue, setLastPersistedValue] = useState(persistedValue);
+  if (persistedValue !== lastPersistedValue) {
+    setLastPersistedValue(persistedValue);
+    if (persistedValue !== undefined) {
+      setHexText(persistedValue);
+    }
+  }
+
   const isValidHex = isValidThemeHexColor(hexText);
   const ratio = isValidHex ? contrastRatio(hexText, referenceColor) : undefined;
   // Compares against the raw persisted value (not the fallback default) so Save stays enabled

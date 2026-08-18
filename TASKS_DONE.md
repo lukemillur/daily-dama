@@ -1288,3 +1288,12 @@ Entries keep their content as it was at completion. Don't retroactively edit a d
 - **Exit criteria:** Component test mounts `ThemeColorPicker` with no saved theme preference and asserts the puck's initial derived HSV/position corresponds to the resolved default theme color (matching the swatch/hex), not the hardcoded `#4477aa` seed. Existing drag-then-save and manual-hex-then-save tests in `theme-color-picker.test.tsx` continue to pass unmodified.
 - **Notes:** Story S017. Touches the same two files as T102 (`theme-color-picker.tsx`, `color-spectrum-picker.tsx`) but a distinct code path (initial puck seed vs. swatch/hex resync) — kept as separate tickets per one-exit-criterion scoping, but reasonable to pick up back-to-back.
 
+### [T102] Resync the color picker's swatch/hex text when a preset changes the saved color
+
+- **Area:** Profile / Theming
+- **Priority:** Medium
+- **Status:** Done
+- **Planning:** Implementer
+- **Description:** `ColorField`'s `hexText` (`theme-color-picker.tsx:93`) is seeded via `useState` on mount only and never resyncs when `persistedValue`/`fallbackColor` change later — e.g. after selecting a preset via `setThemeColors`, which updates profile state but leaves the picker's swatch/hex text showing the stale prior color. Add a resync effect, mirroring the pattern `ColorSpectrumPicker` already uses for its own resync (`color-spectrum-picker.tsx:58-67`), so `hexText` updates when `persistedValue` changes to a new defined value, without clobbering an in-progress manual edit.
+- **Exit criteria:** Component test: mount `ThemeColorPicker`, simulate applying a preset (parent re-renders with new `persistedValue` props matching what `setThemeColors` produces), and assert each `ColorField`'s swatch/hex text update to the preset's values without remounting. Existing hex-input-then-save and drag-then-save tests continue to pass unmodified.
+- **Notes:** Story S018. See T101's note on file overlap. Implemented the resync using the same guarded-setState-during-render pattern `ColorSpectrumPicker`'s own `persistedHex` resync uses (not a `useEffect`), so it resyncs `hexText` within the same commit as an external `setThemeColors` call rather than in a follow-up render, avoiding a visible flash of the stale value. Added a new test that applies a preset via `setThemeColors` from *outside* the `ColorField` (through a probe component calling `useUserProfileActions`), distinct from the field's own hex-input-then-save flow, and asserts both fields' hex text/swatch update without remounting.

@@ -7,6 +7,7 @@ import { AppColors } from "@/constants/theme";
 import { ThemeColorPicker } from "@/features/profile/components/theme-color-picker";
 import {
   useUserProfile,
+  useUserProfileActions,
   UserProfileProvider,
 } from "@/features/profile/state/user-profile-provider";
 import { resolveTheme } from "@/features/profile/state/use-resolved-theme";
@@ -47,6 +48,24 @@ function ProfileProbe() {
   );
 }
 
+// Simulates a preset applying via setThemeColors from outside the ColorFields (e.g. a
+// swatch-preset button elsewhere on the screen), the way T102 describes - not by typing into
+// the field own hex input, so the resync under test is genuinely external.
+function PresetButton({
+  accent,
+  background,
+}: {
+  readonly accent: string;
+  readonly background: string;
+}) {
+  const { setThemeColors } = useUserProfileActions();
+  return (
+    <Text accessibilityLabel="apply-preset" onPress={() => setThemeColors(background, accent)}>
+      Apply preset
+    </Text>
+  );
+}
+
 async function mountPicker() {
   let root!: ReactTestRenderer;
   await act(async () => {
@@ -54,6 +73,20 @@ async function mountPicker() {
       <UserProfileProvider>
         <ThemeColorPicker />
         <ProfileProbe />
+      </UserProfileProvider>,
+    );
+  });
+  return root;
+}
+
+async function mountPickerWithPresetButton(background: string, accent: string) {
+  let root!: ReactTestRenderer;
+  await act(async () => {
+    root = create(
+      <UserProfileProvider>
+        <ThemeColorPicker />
+        <ProfileProbe />
+        <PresetButton accent={accent} background={background} />
       </UserProfileProvider>,
     );
   });
@@ -279,6 +312,31 @@ describe("ThemeColorPicker", () => {
 
     const expectedHex = hsvToHex(180, 1, 1);
     expect(probeValue(root, "probe-text")).toBe(expectedHex);
+
+    act(() => root.unmount());
+  });
+
+  it("resyncs each ColorField swatch/hex text when an external preset changes persistedValue, without remounting", async () => {
+    const root = await mountPickerWithPresetButton("#112233", "#445566");
+
+    const backgroundInputBefore = findByLabel(root, "Background color hex");
+    const accentInputBefore = findByLabel(root, "Accent color hex");
+
+    act(() => findByLabel(root, "apply-preset").props.onPress());
+
+    expect(probeValue(root, "probe-background")).toBe("#112233");
+    expect(probeValue(root, "probe-accent")).toBe("#445566");
+    expect(findByLabel(root, "Background color hex").props.value).toBe("#112233");
+    expect(findByLabel(root, "Accent color hex").props.value).toBe("#445566");
+    expect(
+      root.root.findAll((node) => node.props.$hex === "#112233").length,
+    ).toBeGreaterThan(0);
+    expect(
+      root.root.findAll((node) => node.props.$hex === "#445566").length,
+    ).toBeGreaterThan(0);
+
+    expect(findByLabel(root, "Background color hex")).toBe(backgroundInputBefore);
+    expect(findByLabel(root, "Accent color hex")).toBe(accentInputBefore);
 
     act(() => root.unmount());
   });
