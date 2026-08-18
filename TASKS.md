@@ -177,7 +177,7 @@ _T106–T110 come from stories S022–S026 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 - **Area:** Web launch surface (cross-cutting)
 - **Priority:** High
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Implementer
 - **Description:** Drive the cold-start flow (onboarding intro → Kentei assessment → Tricks/Sesh) in the browser preview tool at representative mobile-web viewport widths (375px and 320px) and fix any console errors, broken states, or layout breaks found.
 - **Exit criteria:** With the dev server running, navigating the full cold-start flow at 375px and 320px shows zero console errors or warnings beyond the two known-benign ones documented in AGENTS.md, no visually broken or clipped layout, and no dead-end states; any defect found is fixed in this commit if it's self-contained to one area, otherwise filed as a new `Needs scoping` entry rather than expanding this ticket's scope.
