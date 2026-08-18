@@ -155,7 +155,7 @@ _The following batch (T099–T105) comes from stories S015–S021 in [BACKLOG_ST
 
 - **Area:** Sesh
 - **Priority:** Medium
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Implementer
 - **Description:** In the Sesh home screen's non-direct-practice branch, the `MultiTrickAction` ("Practice several tricks") block currently renders immediately after the intro text and before the practice-format/duration controls (`sesh.tsx:362-369`, ahead of `PlanChoices`/`DurationField`/`ChallengeField` at `sesh.tsx:372-450`). Move it to render after those controls and before the focused-tricks list (`TrickChoices`, `sesh.tsx:451+`), so the format/time controls read as the screen's primary action and "Practice several tricks" reads as a secondary option.
 - **Exit criteria:** In-browser/component check: on the Sesh home screen, render order is intro text → format/duration controls → "Practice several tricks" → focused-tricks list. Existing `sesh.test.tsx` interaction tests for both single-trick and multi-trick flows continue to pass unmodified (tapping "Practice several tricks" still opens the same picker).
