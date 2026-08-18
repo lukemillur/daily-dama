@@ -3,6 +3,7 @@ import { describe, expect, it } from '@jest/globals';
 import {
   createLastSesh,
   INITIAL_USER_PROFILE,
+  isValidThemeHexColor,
   userProfileReducer,
 } from '@/features/profile/model/user-profile';
 import { createOpenEndedSeshPlan, OPEN_ENDED_SESH_PLAN } from '@/features/sesh/model/sesh';
@@ -148,6 +149,106 @@ describe('user profile trick selection', () => {
     });
   });
 
+  it('sets both theme colors and allows clearing one independently', () => {
+    const withBoth = userProfileReducer(INITIAL_USER_PROFILE, {
+      type: 'themeColorsUpdated',
+      themeBackgroundColor: '#abcdef',
+      themeAccentColor: '#123456',
+    });
+    expect(withBoth.themeBackgroundColor).toBe('#abcdef');
+    expect(withBoth.themeAccentColor).toBe('#123456');
+
+    const clearedBackground = userProfileReducer(withBoth, {
+      type: 'themeColorsUpdated',
+      themeBackgroundColor: undefined,
+      themeAccentColor: '#123456',
+    });
+    expect(clearedBackground.themeBackgroundColor).toBeUndefined();
+    expect(clearedBackground.themeAccentColor).toBe('#123456');
+  });
+
+  it('clears a custom text color when a preset theme is applied', () => {
+    const withTextColor = userProfileReducer(INITIAL_USER_PROFILE, {
+      type: 'themeTextColorUpdated',
+      themeTextColor: '#abcdef',
+    });
+    expect(withTextColor.themeTextColor).toBe('#abcdef');
+
+    const result = userProfileReducer(withTextColor, {
+      type: 'themeColorsUpdated',
+      themeBackgroundColor: '#111111',
+      themeAccentColor: '#222222',
+    });
+
+    expect(result.themeTextColor).toBeUndefined();
+    expect(result.themeBackgroundColor).toBe('#111111');
+    expect(result.themeAccentColor).toBe('#222222');
+  });
+
+  it('does not clobber unrelated profile fields when updating theme colors', () => {
+    const state = { ...INITIAL_USER_PROFILE, selectedTrickIds: ['big-cup'] };
+
+    const result = userProfileReducer(state, {
+      type: 'themeColorsUpdated',
+      themeBackgroundColor: '#abcdef',
+      themeAccentColor: undefined,
+    });
+
+    expect(result.selectedTrickIds).toEqual(['big-cup']);
+  });
+
+  it('leaves theme colors untouched when an unrelated action is dispatched', () => {
+    const state = {
+      ...INITIAL_USER_PROFILE,
+      themeBackgroundColor: '#abcdef',
+      themeAccentColor: '#123456',
+    };
+
+    const result = userProfileReducer(state, {
+      type: 'selectedTrickToggled',
+      trickId: 'big-cup',
+    });
+
+    expect(result.themeBackgroundColor).toBe('#abcdef');
+    expect(result.themeAccentColor).toBe('#123456');
+  });
+
+  it('sets and clears the custom text color', () => {
+    const withColor = userProfileReducer(INITIAL_USER_PROFILE, {
+      type: 'themeTextColorUpdated',
+      themeTextColor: '#abcdef',
+    });
+    expect(withColor.themeTextColor).toBe('#abcdef');
+
+    const cleared = userProfileReducer(withColor, {
+      type: 'themeTextColorUpdated',
+      themeTextColor: undefined,
+    });
+    expect(cleared.themeTextColor).toBeUndefined();
+  });
+
+  it('does not clobber unrelated profile fields when updating the theme text color', () => {
+    const state = { ...INITIAL_USER_PROFILE, selectedTrickIds: ['big-cup'] };
+
+    const result = userProfileReducer(state, {
+      type: 'themeTextColorUpdated',
+      themeTextColor: '#abcdef',
+    });
+
+    expect(result.selectedTrickIds).toEqual(['big-cup']);
+  });
+
+  it('leaves the theme text color untouched when an unrelated action is dispatched', () => {
+    const state = { ...INITIAL_USER_PROFILE, themeTextColor: '#abcdef' };
+
+    const result = userProfileReducer(state, {
+      type: 'selectedTrickToggled',
+      trickId: 'big-cup',
+    });
+
+    expect(result.themeTextColor).toBe('#abcdef');
+  });
+
   it('advances the assessed Kentei rank', () => {
     const state = { ...INITIAL_USER_PROFILE, kenteiRank: 1 };
 
@@ -183,5 +284,20 @@ describe('createLastSesh', () => {
         'targetLandingCount',
       ),
     ).toBe(false);
+  });
+});
+
+describe('isValidThemeHexColor', () => {
+  it('accepts a 6-digit hex color', () => {
+    expect(isValidThemeHexColor('#4477aa')).toBe(true);
+    expect(isValidThemeHexColor('#FFFFFF')).toBe(true);
+  });
+
+  it('rejects a 3-digit shorthand hex color', () => {
+    expect(isValidThemeHexColor('#fff')).toBe(false);
+  });
+
+  it('rejects a hex value missing its leading hash', () => {
+    expect(isValidThemeHexColor('4477aa')).toBe(false);
   });
 });

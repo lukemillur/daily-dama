@@ -1,7 +1,7 @@
 import { Link } from 'expo-router';
 import { type ReactElement, useMemo } from 'react';
 import { Pressable, SectionList, TextInput, type SectionListData } from 'react-native';
-import { styled } from 'styled-components/native';
+import { css, styled } from 'styled-components/native';
 
 import {
   createTrickSections,
@@ -283,7 +283,9 @@ function TrickRow({
             <SelectionMark>{isSelected ? '✓' : ''}</SelectionMark>
           </SelectionIndicator>
         </SelectableIdentity>
-      ) : identity}
+      ) : (
+        <IdentityContainer>{identity}</IdentityContainer>
+      )}
       <RowActions>
         {onEdit && onDelete ? (
           <>
@@ -328,6 +330,7 @@ const DirectoryLayout = styled.View`
 
 const ListContainer = styled.View`
   flex: 1;
+  padding: 0 22px;
   overflow: hidden;
 `;
 
@@ -371,7 +374,7 @@ const SectionHeaderContainer = styled.View<{ readonly $custom: boolean }>`
   justify-content: space-between;
   gap: 16px;
   padding: 14px 22px;
-  background-color: ${({ $custom }) => ($custom ? '#d84929' : '#f4c94d')};
+  background-color: ${({ $custom, theme }) => ($custom ? '#d84929' : theme.accent)};
   border-top-width: 2px;
   border-bottom-width: 2px;
   border-color: #18382e;
@@ -414,13 +417,21 @@ const TrickRowContainer = styled.View<{ readonly $selected: boolean; readonly $l
   border-left-color: ${({ $laced }) => ($laced ? '#274137' : 'transparent')};
 `;
 
-const SelectableIdentity = styled(Pressable)`
+const identityLayout = css`
   min-width: 180px;
   flex: 1;
   flex-direction: row;
   align-items: center;
   gap: 18px;
   padding: 15px 22px;
+`;
+
+const IdentityContainer = styled.View`
+  ${identityLayout}
+`;
+
+const SelectableIdentity = styled(Pressable)`
+  ${identityLayout}
 `;
 
 const Position = styled.Text<{ readonly $laced: boolean }>`

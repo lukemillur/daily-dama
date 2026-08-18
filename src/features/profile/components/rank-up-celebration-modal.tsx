@@ -1,4 +1,6 @@
+import { useContext } from 'react';
 import { StyleSheet, View } from 'react-native';
+import { ThemeContext } from 'styled-components/native';
 
 import { AppColors } from '@/constants/theme';
 import { OnboardingRankRevealStep } from '@/features/onboarding/components/onboarding-rank-reveal-step';
@@ -16,8 +18,9 @@ export function RankUpCelebrationModal({
   readonly rank: number;
   readonly onDismiss: () => void;
 }) {
+  const theme = useContext(ThemeContext);
   return (
-    <View style={styles.overlay} accessibilityLabel="Rank up celebration">
+    <View style={[styles.overlay, { backgroundColor: theme?.accent ?? AppColors.yellow }]} accessibilityLabel="Rank up celebration">
       <OnboardingRankRevealStep
         rank={rank}
         onContinue={onDismiss}

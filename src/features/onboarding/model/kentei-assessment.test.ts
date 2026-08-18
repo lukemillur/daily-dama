@@ -260,6 +260,29 @@ describe('kenteiAssessmentReducer', () => {
     const toggledOff = kenteiAssessmentReducer(toggledOn, { type: 'practiceTrickToggled', trickId: 'trick-a' });
     expect(toggledOff.status === 'selecting' && toggledOff.selectedTrickIds).toEqual([]);
   });
+
+  it('moves from selecting to themeSelect on themeStepEntered, carrying fields through', () => {
+    const state: KenteiAssessmentState = {
+      status: 'selecting',
+      rank: 6,
+      selectedTrickIds: ['trick-a'],
+      startingRank: 4,
+      landedTrickIds: ['trick-b'],
+    };
+    const next = kenteiAssessmentReducer(state, { type: 'themeStepEntered' });
+    expect(next).toEqual({
+      status: 'themeSelect',
+      rank: 6,
+      selectedTrickIds: ['trick-a'],
+      startingRank: 4,
+      landedTrickIds: ['trick-b'],
+    });
+  });
+
+  it('ignores themeStepEntered outside of selecting', () => {
+    const state: KenteiAssessmentState = { status: 'intro' };
+    expect(kenteiAssessmentReducer(state, { type: 'themeStepEntered' })).toEqual(state);
+  });
 });
 
 describe('getCurrentAssessmentTrick', () => {

@@ -116,8 +116,6 @@ Tasks here may be picked up by more than one agent at a time — possibly differ
 
 _Raw ideas land here — a name and a one-line description, nothing more. Discuss and apply the promotion checklist above before moving an entry down to Backlog._
 
-- **Custom app theming** (Medium) — undecided: what's themeable, curated presets vs. full customization, where preferences persist.
-- **Lesson programs** (Medium) — structured content moving a user from one rank to the next; content model and authoring are entirely undefined.
 - **First-lace "extra flashy" tiering** (Medium, follow-on to T008) — escalate the celebration based on time/attempts/sessions spent before landing; thresholds undefined.
 - **Competition mode** (Low) — trick lists by competition skill level, portable into sesh mode.
 - **Longest-grind-per-trick metric** (Low) — time-to-first-lace per trick; display surface (Stats?) undecided.
@@ -141,35 +139,17 @@ _The following batch (T070–T079) comes from the QA checklist completed against
 
 _The following batch (T080–T082) comes from the QA checklist completed against PR 99, worked top to bottom. New entries are intentionally placed before the older queue so the next actionable QA finding is selected first. Existing task history is not rewritten._
 
-### [T080] Fix Kentei assessment exit and stale wrap-up leak
+_The following batch (T083–T084) comes from a product-manager audit scoping two new product surfaces: custom app theming and rank-progression suggestions. Promoted from `Needs scoping` after resolving their open product/technical questions with the user._
 
-- **Area:** Navigation / Sesh
-- **Priority:** High
-- **Status:** Not started
-- **Planning:** Required
-- **Description:** The Kentei assessment wrap-up screen's "Go to Home" button (`src/features/sesh/components/assessment-entry.tsx:65-66`) calls `router.dismissTo('/')`, but the wrap-up screen lives on the nested Profile stack (`/profile/kentei-assessment`, pushed via `router.push` in `src/app/profile/index.tsx:56`) and `'/'` is not part of that stack's history, so the call is a no-op and the button does nothing. Separately, `src/app/profile/_layout.tsx` has no `tabPress` listener resetting its stack on tab re-press, unlike `src/app/sesh/_layout.tsx` and `src/app/tricks/_layout.tsx` — so if a user routes around the stuck wrap-up screen, re-entering Profile can still show the stale wrap-up instead of the normal Profile screen.
-- **Exit criteria:** From the Kentei wrap-up screen, pressing "Go to Home" navigates to the Home tab. Separately, after completing a Kentei assessment and pressing "Go to Home," navigating to Profile shows the normal Profile screen, not a stale wrap-up — checked both immediately and after re-pressing the Profile tab.
-- **Notes:** Consider mirroring the existing `tabPress`-reset pattern already used in `src/app/sesh/_layout.tsx` / `src/app/tricks/_layout.tsx` for `src/app/profile/_layout.tsx`, and fixing the dismiss target so it actually lands on Home rather than no-op'ing. Confirm the fix doesn't regress normal (non-assessment) Profile stack navigation.
+_The following batch (T085–T088) comes from user stories S001–S004 in [BACKLOG_STORIES.md](BACKLOG_STORIES.md), scoped via the `scope-tickets` skill after `product-manager` refined a round of theming UX feedback into stories. New entries are intentionally placed before the older queue (there is none currently) so they're picked up first._
 
-### [T081] Preselect direct-practice trick on the Sesh screen with a cancel affordance
+_T089 comes from story S014 in [BACKLOG_STORIES.md](BACKLOG_STORIES.md), scoped via `scope-tickets` after a QA pass on T085–T088 surfaced a pattern of theming being bolted onto surfaces one hardcoded literal at a time. It is deliberately scoped as schema-only groundwork, sequenced ahead of the not-yet-scoped S009/S012/S013 so those consume this token set instead of inventing their own._
 
-- **Area:** Sesh
-- **Priority:** High
-- **Status:** Not started
-- **Planning:** Required
-- **Description:** Starting a Sesh from a direct-practice link (e.g. `src/features/stats/components/neglected-tricks-section.tsx:37`, `src/features/goals/components/trick-goals-screen.tsx:141`, `src/features/tricks/components/trick-directory.tsx`'s `showPracticeAction` row) passes `trickId` and `mode` params to `/sesh`, but `src/app/sesh/index.tsx:16-29` never reads `mode`, and `Sesh` (`src/features/sesh/components/sesh.tsx`) always starts in the general `TrickPicker` choosing state — `preferredTrickId` only highlights that trick in the full picker instead of preselecting it. Fix this so a direct-practice link renders only the linked trick as a card on the Sesh screen (format/duration/target still adjustable before starting), with no other trick cards shown, plus a "Cancel practice" control that returns to the standard Sesh choosing screen.
-- **Exit criteria:** Starting a Sesh via a direct-practice link shows only the linked trick's card (no other tricks listed), format and duration/target remain editable before starting, and a visible "Cancel practice" control returns the user to the standard multi-trick Sesh choosing screen. Automated coverage exercises the new reducer/state path where practical.
-- **Notes:** `seshReducer`'s existing `'seshReset'` action (`src/features/sesh/model/sesh.ts:187-188`) already resets to `INITIAL_SESH_STATE` and is reused for "cancel countdown" and "reset after completed" — the cancel-practice control can likely dispatch the same action rather than introducing a new one. Keep the direct-practice entry state distinct from the general choosing state so the single-trick, no-picker rendering is unambiguous.
+_T090–T097 come from stories S005–S009 and S011–S013 in [BACKLOG_STORIES.md](BACKLOG_STORIES.md), scoped in the same `scope-tickets` pass. S010 (preset text colors) was not scoped this round — see the note on its `BACKLOG_STORIES.md` entry; investigation found its premise doesn't hold up and it needs re-refinement by `product-manager` before it's scopable. New entries are placed after T089, since T096/T097 depend on it landing first._
 
-### [T082] Add horizontal margin to the Trick Goals shared trick-directory picker
+_T098 comes from story S010 in [BACKLOG_STORIES.md](BACKLOG_STORIES.md), rewritten by `product-manager` after the original preset-scoped framing turned out to rest on a false premise, then scoped in this pass._
 
-- **Area:** Tricks / Goals
-- **Priority:** Low
-- **Status:** Not started
-- **Planning:** Implementer
-- **Description:** `GoalTrickPicker` (`src/features/goals/components/all-trick-goals-screen.tsx:134-145`) renders `TrickDirectory` without a `selection` prop, so rows fall back to the unpadded `identity` block in `src/features/tricks/components/trick-directory.tsx` instead of the padded `SelectableIdentity` block (~line 283) that the Tricks tab gets via its `selection` prop (`src/app/tricks/index.tsx:69-77`). As a result the picker paints edge-to-edge on the all-trick Trick Goals screen.
-- **Exit criteria:** The trick-directory picker on the all-trick Trick Goals screen renders with horizontal margin matching (or visually consistent with) its usage on the Tricks tab, confirmed in-browser at the standard web viewport; goal creation via the picker still works end to end.
-- **Notes:** Prefer a fix that keeps `TrickDirectory`'s existing conditional padding centralized (e.g. adjust the non-`selection` fallback spacing or how `GoalTrickPicker` wraps it) rather than a one-off inline style override at the Trick Goals call site.
+_The following batch (T099–T105) comes from stories S015–S021 in [BACKLOG_STORIES.md](BACKLOG_STORIES.md), a QA pass over the T089–T098 theming batch refined into stories by `product-manager` and scoped in this pass. New entries are placed before the older queue (there is none currently) so they're picked up first._
 
 ## Done
 

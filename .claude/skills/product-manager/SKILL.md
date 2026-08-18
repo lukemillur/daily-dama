@@ -1,30 +1,33 @@
 ---
 name: product-manager
-description: Audit the Daily Dama product and repository, identify evidence-based product opportunities, prioritize them against the current product direction, and turn selected opportunities into small, mechanically verifiable backlog tasks. Use when the user asks to populate, refine, prioritize, prune, or review the Daily Dama backlog, or asks what valuable work should happen next.
+description: Audit the Daily Dama product and repository, identify evidence-based product opportunities, prioritize them against the current product direction, and turn selected opportunities into user stories in BACKLOG_STORIES.md. Use when the user asks to populate, refine, prioritize, prune, or review the Daily Dama backlog, or asks what valuable work should happen next. Does not write TASKS.md — see the scope-tickets skill for that.
 ---
 
 # Daily Dama Product Manager
 
-Maintain a healthy supply of valuable, buildable Daily Dama work without generating backlog noise. This skill is a product-thinking and backlog-shaping workflow; it does not implement application code and it does not run the `newTicket` implementation workflow.
+Maintain a healthy supply of valuable, buildable Daily Dama product thinking without generating backlog noise. This skill is a product-thinking workflow; it does not implement application code, does not perform technical scoping, and does not run the `newTicket` implementation workflow.
+
+This skill stops at the user story. Turning a `Ready for scoping` story into a `TASKS.md` entry is a separate concern that requires reading the codebase — that is the `scope-tickets` skill's job, not this one. Keeping the split means product value gets judged before anyone starts reasoning about implementation, and this skill never has to know what `TASKS.md`'s scoping rules currently look like.
 
 ## Operating modes
 
 Infer the mode from the request. If it is ambiguous, perform a read-only audit and ask what should be promoted.
 
-- **Audit**: inspect the product context, current backlog, recent work, routes, tests, and obvious UX friction. Report evidence, opportunities, risks, and the recommended next bet. Do not edit `TASKS.md`.
-- **Propose**: generate a small set of new opportunities, normally three to five. Record them in `OPPORTUNITIES.md` only if that file already exists or the user explicitly asks to maintain the opportunity log. Do not create actionable task entries yet.
-- **Refine**: turn a named opportunity into one or more candidate tickets with scope, acceptance criteria, dependencies, and a recommendation about whether it belongs in `Needs scoping` or `Backlog`.
-- **Promote**: after explicit authorization, update `TASKS.md` using its existing format and scoping rules. Preserve task IDs, ordering conventions, comments, and unrelated work.
-- **Prioritize**: rank existing `Needs scoping` and `Backlog` work against the current product objective. Explain meaningful reorderings; do not rewrite history in `TASKS_DONE.md`.
-- **Prune**: identify stale, duplicated, over-scoped, or directionally weak work. Recommend removal, merging, downgrading, or deferral. Delete or rewrite entries only when explicitly authorized.
+- **Audit**: inspect the product context, current backlog, recent work, routes, tests, and obvious UX friction. Report evidence, opportunities, risks, and the recommended next bet. Do not edit `BACKLOG_STORIES.md` or `TASKS.md`.
+- **Propose**: generate a small set of new opportunities, normally three to five. Record them in `OPPORTUNITIES.md` only if that file already exists or the user explicitly asks to maintain the opportunity log. Do not create user stories yet.
+- **Refine**: turn a named opportunity into one or more user stories in `BACKLOG_STORIES.md`, each with acceptance criteria stated in product/user terms and a `Status` of `Proposed` or, once you and the user agree it's ready, `Ready for scoping`. Do not describe implementation, files, or technical mechanism.
+- **Prioritize**: rank existing stories in `BACKLOG_STORIES.md` (and, read-only, existing `TASKS.md` work) against the current product objective. Explain meaningful reorderings; do not rewrite history in `TASKS_DONE.md`.
+- **Prune**: identify stale, duplicated, over-scoped, or directionally weak stories or opportunities. Recommend removal, merging, downgrading, or deferral. Delete or rewrite entries only when explicitly authorized.
+
+When one or more stories reach `Ready for scoping`, tell the user and suggest invoking `scope-tickets` next — do not invoke it yourself.
 
 ## Context gathering
 
 Read these sources before making product recommendations, in this order:
 
 1. `AGENTS.md`, including the Daily Dama handoff embedded in it.
-2. `TASKS.md` from top to bottom, including its scoping rules and active platform scope.
-3. `TASKS_DONE.md` when recent history or completed work is relevant.
+2. `BACKLOG_STORIES.md`, if it exists, so proposals don't duplicate stories already in flight.
+3. `TASKS.md` and `TASKS_DONE.md`, read-only, for a sense of what's already built or already queued — not to reason about how new work would be scoped.
 4. Relevant feature handoffs, especially `TRICK_VIZ_HANDOFF.md` or `DEPLOYMENT_HANDOFF.md`, only when the opportunity touches those areas.
 5. Recent commits and the current working tree status.
 6. The relevant routes, components, domain logic, persistence code, and tests needed to support an observation.
@@ -88,34 +91,32 @@ Maintain a balanced queue, using this as a default heuristic rather than a quota
 
 The current iteration objective overrides this mix. A backlog review should identify the next one to three best bets, not produce a fully ordered list of every conceivable idea.
 
-## Ticket shaping
+## User story shaping
 
-When refining or promoting work, follow `TASKS.md` exactly:
+A story is not a ticket. Keep it in product and user-behavior language; leave area, files, mechanism, and effort out — that judgment belongs to `scope-tickets`, which has the codebase context this skill deliberately doesn't gather.
 
-- Raw ideas stay in `Needs scoping` with a name and one-line description.
-- Actionable backlog entries must have one area, one coherent exit criterion, no unresolved product or technical decision, and fit in one focused commit.
-- Use an umbrella plus numbered children only for a genuinely sequential chain of S-sized tasks.
-- Set `Planning: Required` for persistence/schema changes, state machines, concurrency, architectural boundaries, unfamiliar APIs, or expensive-to-undo work. Use `Implementer` only for genuinely local S-sized work.
-- Make exit criteria mechanical and checkable: tests, commands, or a specific browser behavior. Never use “looks right” as the sole criterion.
-- Include deferred work and assumptions in `Notes`; do not smuggle a second feature into the ticket.
-- Respect the repository's web-only active scope. Do not create native implementation or validation work unless the user explicitly resumes mobile hardening.
-- Do not move completed entries or rewrite historical task records as part of ordinary backlog generation.
+- One story = one coherent user outcome. If it needs "and" to describe the outcome, it's probably two stories.
+- Acceptance criteria describe what the user can now do or perceive, not how it's built.
+- `Status` starts at `Proposed`. Move it to `Ready for scoping` only once you and the user agree the product decision is settled — no open question that would change what gets built.
+- Respect the repository's web-only active scope: don't write a story whose only fulfillment is native work, unless the user has explicitly resumed mobile hardening.
+- Do not assign task IDs (`T###`) or reference `TASKS.md` formatting — that happens downstream.
 
-Use this format when drafting a ticket:
+Use this format when drafting a story:
 
 ```md
-### [T###] <short imperative title>
+### [S###] <short title>
 
-- **Area:** <one feature area or persistence domain>
+- **As a:** <persona — maker, new learner, existing practitioner>
+- **I want:** <capability>
+- **So that:** <outcome>
+- **Evidence:** <specific repository or user evidence>
 - **Priority:** High / Medium / Low
-- **Status:** Not started
-- **Planning:** Required / Implementer
-- **Description:** <what changes and why, in 1–3 sentences>
-- **Exit criteria:** <one coherent, mechanical verification>
-- **Notes:** <assumptions, dependencies, deferred ideas>
+- **Status:** Proposed / Ready for scoping / Scoped → T### / Rejected
+- **Acceptance criteria:** <observable, testable by a user — not a mechanism>
+- **Notes:** <deferred scope, open product questions>
 ```
 
-Before promotion, check for duplicate IDs, existing related tasks, dependencies not yet in `TASKS_DONE.md`, and conflicts with dirty user changes. Never overwrite unrelated edits.
+Before adding a story, check `BACKLOG_STORIES.md` for duplicates or an existing story covering the same outcome. Never overwrite unrelated entries or flip another story's status without cause.
 
 ## Review output
 
@@ -125,7 +126,7 @@ Keep reports decision-oriented. A normal audit should contain:
 2. **Evidence** — three to seven concrete observations with file or task references.
 3. **Opportunities** — the most important candidate problems, not a feature dump.
 4. **Recommendation** — the next one to three bets, with value, confidence, learning value, and effort.
-5. **Proposed ticket(s)** — only when requested or clearly authorized.
+5. **Proposed story(-ies)** — only when requested or clearly authorized.
 6. **Questions / deferred work** — only decisions that genuinely require the user's input.
 
 At the end, separate:
@@ -138,14 +139,14 @@ When the user asks to “keep agents busy,” redirect toward a bounded queue of
 
 ## File ownership and safe writes
 
-`TASKS.md` is the actionable source of truth. `TASKS_DONE.md` is history. If `OPPORTUNITIES.md` does not exist, propose its creation and use the opportunity format above; do not create it silently during a read-only audit.
+`BACKLOG_STORIES.md` is this skill's file to own; create it with the story format above if it does not yet exist and the user is authorizing a story write. `TASKS.md` and `TASKS_DONE.md` are read-only from this skill — never edit them here, even when a story is marked `Ready for scoping`; that write belongs to `scope-tickets`. If `OPPORTUNITIES.md` does not exist, propose its creation and use the opportunity format above; do not create it silently during a read-only audit.
 
 Only write files when the user has requested the corresponding mutation. Before writing:
 
 - inspect `git status --short --branch`;
 - preserve unrelated changes;
-- show the intended task/opportunity changes in the response or explain them clearly;
-- validate IDs, formatting, and scoping against `TASKS.md`;
+- show the intended story/opportunity changes in the response or explain them clearly;
+- validate story IDs and formatting against existing entries in `BACKLOG_STORIES.md`;
 - do not commit, push, open PRs, or invoke implementation agents unless separately requested.
 
-After an authorized `TASKS.md` edit, run a focused structural check (for example, inspect the diff and verify every new entry has the required fields). Full application verification is not normally needed because this skill should not change application code.
+After an authorized `BACKLOG_STORIES.md` edit, run a focused structural check (inspect the diff and verify every new or updated entry has the required fields). Full application verification is never needed because this skill never changes application code or `TASKS.md`.

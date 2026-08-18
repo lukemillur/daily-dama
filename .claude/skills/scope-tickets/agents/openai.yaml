@@ -1,0 +1,4 @@
+interface:
+  display_name: "Daily Dama Ticket Scoping"
+  short_description: "Turn a ready backlog story into a scoped TASKS.md entry"
+  default_prompt: "Use $scope-tickets to turn the ready-for-scoping stories in BACKLOG_STORIES.md into scoped TASKS.md entries."

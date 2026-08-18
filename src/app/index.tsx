@@ -38,7 +38,7 @@ export default function HomeScreen() {
 
   return (
     <Screen
-      background={profile.hasCompletedOnboarding ? AppColors.sage : AppColors.yellow}
+      background={profile.hasCompletedOnboarding ? undefined : AppColors.yellow}
       edges={['top', 'left', 'right']}
       webBottomInset={24}>
       {profile.hasCompletedOnboarding && profile.kenteiRank ? <DailyHome summary={summary} /> : <KenteiOnboarding />}

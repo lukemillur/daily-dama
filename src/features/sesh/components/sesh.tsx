@@ -36,6 +36,7 @@ import {
   selectSeshPracticeTricks,
   seshReducer,
   type SeshPlan,
+  type SeshState,
   shouldKeepScreenAwake,
   shouldPromptSeshNote,
   type SeshSummary,
@@ -60,6 +61,7 @@ interface SeshProps {
   readonly selectedTrickIds: readonly string[];
   readonly availableTricks: readonly PracticeTrick[];
   readonly preferredTrickId?: string;
+  readonly directPracticeTrickId?: string;
   readonly initialPlan?: SeshPlan;
   /**
    * Opaque pass-through recorded on the practice-history record for this
@@ -74,10 +76,16 @@ export function Sesh({
   availableTricks,
   initialPlan,
   preferredTrickId,
+  directPracticeTrickId,
   selectedTrickIds,
   origin,
 }: SeshProps) {
-  const [state, dispatch] = useReducer(seshReducer, INITIAL_SESH_STATE);
+  const [state, dispatch] = useReducer(
+    seshReducer,
+    directPracticeTrickId,
+    (id): SeshState =>
+      id ? { status: 'choosing', directPracticeTrickId: id } : INITIAL_SESH_STATE,
+  );
   const { sessions } = usePracticeHistory();
   const { goals } = useGoals();
   const { recordCompletedSesh } = usePracticeHistoryActions();
@@ -99,6 +107,16 @@ export function Sesh({
   )
     ? preferredTrickId
     : undefined;
+  useEffect(() => {
+    if (!directPracticeTrickId) return;
+    dispatch({ type: 'directPracticeRequested', trickId: directPracticeTrickId });
+    // Runs whenever a new direct-practice link is followed while this route's
+    // screen instance is already mounted from an earlier visit — Expo Router
+    // reuses the instance across param changes rather than remounting it, so
+    // the lazy useReducer initializer above only ever fires once and can't by
+    // itself pick up a later trickId. Guarded to 'choosing' in the reducer so
+    // it never interrupts an in-progress countdown/active session.
+  }, [directPracticeTrickId]);
   const activeTrickId = state.status === 'active' ? state.trick.id : undefined;
   const trickNotes = useMemo(
     () => (activeTrickId ? selectNotesForTrick(notes, activeTrickId) : []),
@@ -160,6 +178,20 @@ export function Sesh({
   };
 
   if (state.status === 'choosing') {
+    const directPracticeTrick = state.directPracticeTrickId
+      ? availableTricks.find((trick) => trick.id === state.directPracticeTrickId)
+      : undefined;
+    if (directPracticeTrick) {
+      return (
+        <TrickPicker
+          initialPlan={initialPlan}
+          tricks={[directPracticeTrick]}
+          sessions={sessions}
+          onSelect={handleTrickSelected}
+          onCancel={() => dispatch({ type: 'seshReset' })}
+        />
+      );
+    }
     if (practiceTricks.length === 0) return <EmptyState />;
     return (
       <TrickPicker
@@ -263,6 +295,7 @@ function TrickPicker({
   tricks,
   sessions,
   onSelect,
+  onCancel,
 }: {
   readonly initialPlan?: SeshPlan;
   readonly preferredTrickId?: string;
@@ -274,7 +307,9 @@ function TrickPicker({
     personalBest: number | undefined,
     liveChallengeEnabled: boolean,
   ) => void;
+  readonly onCancel?: () => void;
 }) {
+  const isDirectPractice = onCancel !== undefined;
   const [planKind, setPlanKind] = useState<SeshPlan['kind']>(initialPlan?.kind ?? 'timed');
   const [durationMinutes, setDurationMinutes] = useState(
     initialPlan?.kind === 'timed' ? String(initialPlan.durationMs / 60_000) : '5',
@@ -313,17 +348,19 @@ function TrickPicker({
   return (
     <ScrollArea contentContainerStyle={{ padding: 24, paddingBottom: 140 }}>
       <PickerContent>
-        <Eyebrow>Start a sesh</Eyebrow>
-        <DisplayTitle>What are we{`\n`}working on?</DisplayTitle>
-        <BodyCopy>Choose how long you want to focus, then pick one of the tricks from your practice list.</BodyCopy>
-        <Link href="/sesh/multi-trick" asChild>
-          <MultiTrickAction
-            accessibilityLabel="Practice several tricks"
-            accessibilityRole="link">
-            <MultiTrickActionTitle>Practice several tricks</MultiTrickActionTitle>
-            <MultiTrickActionCopy>Build a line and work through it one trick at a time.</MultiTrickActionCopy>
-          </MultiTrickAction>
-        </Link>
+        {isDirectPractice ? (
+          <>
+            <Eyebrow>Direct practice</Eyebrow>
+            <DisplayTitle>{tricks[0]?.name}</DisplayTitle>
+            <BodyCopy>Adjust the format below, then start whenever you&apos;re ready.</BodyCopy>
+          </>
+        ) : (
+          <>
+            <Eyebrow>Start a sesh</Eyebrow>
+            <DisplayTitle>What are we{`\n`}working on?</DisplayTitle>
+            <BodyCopy>Choose how long you want to focus, then pick one of the tricks from your practice list.</BodyCopy>
+          </>
+        )}
         <PlanLabel>Practice format</PlanLabel>
         <PlanChoices>
           <PlanChoice
@@ -403,6 +440,16 @@ function TrickPicker({
             </ChallengeChoices>
           </ChallengeField>
         ) : null}
+        {isDirectPractice ? null : (
+          <Link href="/sesh/multi-trick" asChild>
+            <MultiTrickAction
+              accessibilityLabel="Practice several tricks"
+              accessibilityRole="link">
+              <MultiTrickActionTitle>Practice several tricks</MultiTrickActionTitle>
+              <MultiTrickActionCopy>Build a line and work through it one trick at a time.</MultiTrickActionCopy>
+            </MultiTrickAction>
+          </Link>
+        )}
         <TrickChoices>
           {tricks.map((trick) => {
             const isPreferred = trick.id === preferredTrickId;
@@ -427,6 +474,15 @@ function TrickPicker({
             </TrickChoice>;
           })}
         </TrickChoices>
+        {onCancel ? (
+          <CancelPracticeButton
+            accessibilityLabel="Cancel practice"
+            variant="secondary"
+            size="medium"
+            onPress={onCancel}>
+            Cancel practice
+          </CancelPracticeButton>
+        ) : null}
       </PickerContent>
     </ScrollArea>
   );
@@ -1093,8 +1149,8 @@ const CenteredPanel = styled.View`flex: 1; width: 100%; max-width: 680px; align-
 const PickerContent = styled.View`width: 100%; max-width: 680px; align-self: center;`;
 const ActiveContent = styled.View`width: 100%; max-width: 680px; align-self: center; align-items: center;`;
 const Eyebrow = styled(BaseEyebrow)`margin-bottom: 14px;`;
-const DisplayTitle = styled(BaseDisplayTitle)`text-align: center;`;
-const BodyCopy = styled(BodyText)`max-width: 470px; text-align: center; margin-top: 18px;`;
+const DisplayTitle = styled(BaseDisplayTitle)``;
+const BodyCopy = styled(BodyText)`max-width: 470px; margin-top: 18px;`;
 const PrimaryButton = styled(Button).attrs({ size: 'medium' })`
   margin-top: 28px;
   border-radius: 5px;
@@ -1103,40 +1159,45 @@ const SecondaryButton = styled(Button).attrs({ size: 'medium' })`
   margin-top: 12px;
   border-radius: 5px;
 `;
-const PlanLabel = styled.Text`color: ${AppColors.ink}; font-size: 13px; font-weight: 900; letter-spacing: 1.2px; margin-top: 30px; text-transform: uppercase;`;
+const PlanLabel = styled.Text`color: ${({ theme }) => theme.text}; font-size: 13px; font-weight: 900; letter-spacing: 1.2px; margin-top: 30px; text-transform: uppercase;`;
 const PlanChoices = styled.View`flex-direction: row; gap: 10px; margin-top: 10px;`;
 const PlanChoice = styled(Pressable)<{ $selected: boolean }>`flex: 1; min-height: 94px; background-color: ${({ $selected }) => ($selected ? AppColors.ink : AppColors.paper)}; border: 2px solid ${AppColors.ink}; padding: 15px;`;
-const PlanChoiceTitle = styled.Text<{ $selected: boolean }>`color: ${({ $selected }) => ($selected ? AppColors.yellow : AppColors.ink)}; font-size: 17px; font-weight: 900;`;
-const PlanChoiceCopy = styled.Text<{ $selected: boolean }>`color: ${({ $selected }) => ($selected ? AppColors.cream : AppColors.inkSoft)}; font-size: 12px; font-weight: 600; line-height: 17px; margin-top: 5px;`;
+const PlanChoiceTitle = styled.Text<{ $selected: boolean }>`color: ${({ $selected, theme }) => ($selected ? theme.accent : theme.text)}; font-size: 17px; font-weight: 900;`;
+const PlanChoiceCopy = styled.Text<{ $selected: boolean }>`color: ${({ $selected, theme }) => ($selected ? AppColors.cream : theme.text)}; font-size: 12px; font-weight: 600; line-height: 17px; margin-top: 5px;`;
 const DurationField = styled.View`margin-top: 16px;`;
-const DurationLabel = styled.Text`color: ${AppColors.ink}; font-size: 12px; font-weight: 900; margin-bottom: 6px; text-transform: uppercase;`;
+const DurationLabel = styled.Text`color: ${({ theme }) => theme.text}; font-size: 12px; font-weight: 900; margin-bottom: 6px; text-transform: uppercase;`;
 const DurationInput = styled(TextInput)`height: 54px; width: 110px; background-color: ${AppColors.paper}; border: 2px solid ${AppColors.ink}; color: ${AppColors.ink}; font-size: 24px; font-weight: 900; padding: 8px 12px;`;
-const DurationHint = styled.Text<{ $invalid: boolean }>`color: ${({ $invalid }) => ($invalid ? AppColors.red : AppColors.textMuted)}; font-size: 12px; font-weight: 700; margin-top: 7px;`;
+const DurationHint = styled.Text<{ $invalid: boolean }>`color: ${({ $invalid, theme }) => ($invalid ? AppColors.red : theme.text)}; font-size: 12px; font-weight: 700; margin-top: 7px;`;
 const ChallengeField = styled.View`margin-top: 16px;`;
 const ChallengeChoices = styled.View`flex-direction: row; gap: 10px; margin-top: 10px;`;
 const ChallengeChoice = styled(Pressable)<{ $selected: boolean }>`flex: 1; min-height: 82px; background-color: ${({ $selected }) => ($selected ? AppColors.ink : AppColors.paper)}; border: 2px solid ${AppColors.ink}; padding: 15px;`;
-const ChallengeChoiceTitle = styled.Text<{ $selected: boolean }>`color: ${({ $selected }) => ($selected ? AppColors.yellow : AppColors.ink)}; font-size: 15px; font-weight: 900;`;
-const ChallengeChoiceCopy = styled.Text<{ $selected: boolean }>`color: ${({ $selected }) => ($selected ? AppColors.cream : AppColors.inkSoft)}; font-size: 12px; font-weight: 600; line-height: 17px; margin-top: 5px;`;
+const ChallengeChoiceTitle = styled.Text<{ $selected: boolean }>`color: ${({ $selected, theme }) => ($selected ? theme.accent : theme.text)}; font-size: 15px; font-weight: 900;`;
+const ChallengeChoiceCopy = styled.Text<{ $selected: boolean }>`color: ${({ $selected, theme }) => ($selected ? AppColors.cream : theme.text)}; font-size: 12px; font-weight: 600; line-height: 17px; margin-top: 5px;`;
 const TrickChoices = styled.View`gap: 10px; margin-top: 28px;`;
 const TrickChoice = styled(Pressable)<{ $disabled: boolean }>`min-height: 82px; justify-content: center; background-color: #f8f1dd; border: 2px solid #18382e; opacity: ${({ $disabled }) => ($disabled ? 0.45 : 1)}; padding: 15px 58px 15px 18px; position: relative;`;
-const ChoiceMeta = styled.Text<{ $preferred: boolean }>`color: ${({ $preferred }) => ($preferred ? AppColors.red : AppColors.textMuted)}; font-size: 11px; font-weight: 900; letter-spacing: 1px; text-transform: uppercase;`;
-const ChoiceName = styled.Text`color: ${AppColors.ink}; font-size: 20px; font-weight: 800; margin-top: 5px;`;
-const ChoiceBest = styled.Text`color: ${AppColors.red}; font-size: 12px; font-weight: 800; margin-top: 6px;`;
-const CompactSequence = styled.Text`color: ${AppColors.textMuted}; font-size: 11px; font-weight: 700; line-height: 16px; margin-top: 5px;`;
+const ChoiceMeta = styled.Text<{ $preferred: boolean }>`color: ${({ $preferred, theme }) => ($preferred ? AppColors.red : theme.text)}; font-size: 11px; font-weight: 900; letter-spacing: 1px; text-transform: uppercase;`;
+const ChoiceName = styled.Text`color: ${({ theme }) => theme.text}; font-size: 20px; font-weight: 800; margin-top: 5px;`;
+const ChoiceBest = styled.Text`color: ${({ theme }) => theme.text}; font-size: 12px; font-weight: 800; margin-top: 6px;`;
+const CompactSequence = styled.Text`color: ${({ theme }) => theme.text}; font-size: 11px; font-weight: 700; line-height: 16px; margin-top: 5px;`;
 const ChoiceArrow = styled.Text`position: absolute; right: 20px; color: ${AppColors.ink}; font-size: 28px; font-weight: 900;`;
 const CountdownTrick = styled.Text`max-width: 560px; color: #18382e; font-size: 26px; font-weight: 900; text-align: center;`;
-const CountdownNumber = styled.Text`color: #d84929; font-size: 156px; font-weight: 900; line-height: 180px; text-align: center;`;
+const CountdownNumber = styled.Text`color: ${({ theme }) => theme.accent}; font-size: 156px; font-weight: 900; line-height: 180px; text-align: center;`;
 const ActiveTrick = styled.Text`color: #18382e; font-size: 30px; font-weight: 900; text-align: center;`;
 const SequenceBlock = styled.View<{ readonly $prominent: boolean }>`width: 100%; max-width: 500px; gap: 4px; background-color: ${({ $prominent }) => $prominent ? '#e5edcf' : 'transparent'}; border-left-width: ${({ $prominent }) => $prominent ? '5px' : '0'}; border-left-color: ${AppColors.red}; margin-top: 16px; padding: ${({ $prominent }) => $prominent ? '14px 16px' : '0'};`;
-const SequenceLabel = styled.Text`color: ${AppColors.red}; font-size: 10px; font-weight: 900; letter-spacing: 1.2px; margin-bottom: 3px; text-transform: uppercase;`;
+const SequenceLabel = styled.Text`color: ${({ theme }) => theme.text}; font-size: 10px; font-weight: 900; letter-spacing: 1.2px; margin-bottom: 3px; text-transform: uppercase;`;
 const SequenceRow = styled.View`flex-direction: row; align-items: baseline; gap: 10px;`;
-const SequenceNumber = styled.Text`width: 22px; color: ${AppColors.red}; font-size: 10px; font-weight: 900;`;
-const SequenceName = styled.Text`flex: 1; color: ${AppColors.ink}; font-size: 14px; font-weight: 800; line-height: 20px;`;
-const TimerLabel = styled.Text`color: ${AppColors.red}; font-size: 12px; font-weight: 900; letter-spacing: 1.4px; margin-top: 22px; text-transform: uppercase;`;
+const SequenceNumber = styled.Text`width: 22px; color: ${({ theme }) => theme.text}; font-size: 10px; font-weight: 900;`;
+const SequenceName = styled.Text`flex: 1; color: ${({ theme }) => theme.text}; font-size: 14px; font-weight: 800; line-height: 20px;`;
+const TimerLabel = styled.Text`color: ${({ theme }) => theme.text}; font-size: 12px; font-weight: 900; letter-spacing: 1.4px; margin-top: 22px; text-transform: uppercase;`;
 const Timer = styled.Text`color: #18382e; font-size: 78px; font-variant: tabular-nums; font-weight: 900; letter-spacing: -4px; margin: 4px 0 22px;`;
-const LacedButton = styled(Pressable)<{ $disabled: boolean; $extraTopSpacing?: boolean }>`width: 100%; min-height: 108px; flex-direction: row; align-items: center; justify-content: space-between; background-color: #d84929; opacity: ${({ $disabled }) => ($disabled ? 0.45 : 1)}; padding: 22px 26px; border-radius: 6px; margin-top: ${({ $extraTopSpacing }) => ($extraTopSpacing ? '24px' : '0')};`;
-const LacedButtonText = styled.Text`color: #fff8e5; font-size: 34px; font-weight: 900;`;
-const LacedCount = styled.Text`color: #f4c94d; font-size: 40px; font-weight: 900;`;
+// theme.buttonBackground is derived only against the page background (ink or paperStrong,
+// see deriveAutomaticButtonBackgrounds), so it can coincide with theme.text (also ink in the
+// default theme) and render invisibly. theme.accent is derived against background *and*
+// accent together and already pairs with a dark buttonBackground via Button's primary variant
+// (see button.tsx), so it's reused here instead of introducing a dedicated on-button-text token.
+const LacedButton = styled(Pressable)<{ $disabled: boolean; $extraTopSpacing?: boolean }>`width: 100%; min-height: 108px; flex-direction: row; align-items: center; justify-content: space-between; background-color: ${({ theme }) => theme.buttonBackground}; opacity: ${({ $disabled }) => ($disabled ? 0.45 : 1)}; padding: 22px 26px; border-radius: 6px; margin-top: ${({ $extraTopSpacing }) => ($extraTopSpacing ? '24px' : '0')};`;
+const LacedButtonText = styled.Text`color: ${({ theme }) => theme.accent}; font-size: 34px; font-weight: 900;`;
+const LacedCount = styled.Text`color: ${({ theme }) => theme.accent}; font-size: 40px; font-weight: 900;`;
 const ChallengeStatus = styled.Text<{ $beaten: boolean }>`width: 100%; text-align: center; margin-top: 12px; color: ${({ $beaten }) => ($beaten ? AppColors.red : AppColors.ink)}; font-size: 15px; font-weight: 900;`;
 const History = styled.View`width: 100%; margin-top: 28px;`;
 const HistoryTitle = styled.Text`color: #18382e; font-size: 14px; font-weight: 900; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 8px;`;
@@ -1149,9 +1210,9 @@ const GoalsSection = styled.View`width: 100%; margin-top: 28px;`;
 const GoalsTitle = styled.Text`color: #18382e; font-size: 14px; font-weight: 900; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 8px;`;
 const GoalsRow = styled.View`background-color: ${AppColors.paper}; border: 2px solid ${AppColors.ink}; padding: 14px 16px; margin-top: 10px;`;
 const GoalsRowHeader = styled.View`flex-direction: row; align-items: center; justify-content: space-between; gap: 10px;`;
-const GoalsKind = styled.Text`color: ${AppColors.red}; font-size: 11px; font-weight: 900; letter-spacing: 0.8px; text-transform: uppercase;`;
+const GoalsKind = styled.Text`color: ${({ theme }) => theme.text}; font-size: 11px; font-weight: 900; letter-spacing: 0.8px; text-transform: uppercase;`;
 const GoalsAchievedBadge = styled.Text`overflow: hidden; padding: 4px 8px; color: ${AppColors.paper}; background-color: ${AppColors.ink}; border-radius: 3px; font-size: 10px; font-weight: 900; letter-spacing: 0.8px; text-transform: uppercase;`;
-const GoalsTarget = styled.Text`color: ${AppColors.ink}; font-size: 16px; font-weight: 650; line-height: 23px; margin-top: 6px;`;
+const GoalsTarget = styled.Text`color: ${({ theme }) => theme.text}; font-size: 16px; font-weight: 650; line-height: 23px; margin-top: 6px;`;
 const GoalsProgress = styled.Text`color: #53635d; font-size: 13px; font-weight: 700; margin-top: 6px;`;
 const SecondaryActions = styled.View`flex-direction: row; gap: 10px; margin-top: 28px;`;
 const PauseButton = styled(Pressable)`min-height: 48px; flex: 1; align-items: center; justify-content: center; padding: 12px 24px; background-color: #18382e; border: 2px solid #18382e; border-radius: 5px;`;
@@ -1159,46 +1220,47 @@ const PauseButtonText = styled.Text`color: #f4c94d; font-size: 15px; font-weight
 const EndButton = styled(Pressable)<{ $disabled: boolean }>`min-height: 48px; flex: 1; align-items: center; justify-content: center; opacity: ${({ $disabled }) => ($disabled ? 0.45 : 1)}; padding: 12px 24px; border: 2px solid #18382e; border-radius: 5px;`;
 const EndButtonText = styled.Text`color: #18382e; font-size: 15px; font-weight: 900;`;
 const EndAnywayButton = styled(Pressable)`min-height: 40px; align-items: center; justify-content: center; margin-top: 10px; padding: 8px 24px;`;
-const EndAnywayButtonText = styled.Text`color: ${AppColors.textMuted}; font-size: 13px; font-weight: 800; text-decoration-line: underline;`;
-const AttemptsReminder = styled.Text`width: 100%; text-align: center; color: ${AppColors.textMuted}; font-size: 12px; font-weight: 800; letter-spacing: 0.4px; margin-top: 10px; text-transform: uppercase;`;
+const EndAnywayButtonText = styled.Text`color: ${({ theme }) => theme.text}; font-size: 13px; font-weight: 800; text-decoration-line: underline;`;
+const AttemptsReminder = styled.Text`width: 100%; text-align: center; color: ${({ theme }) => theme.text}; font-size: 12px; font-weight: 800; letter-spacing: 0.4px; margin-top: 10px; text-transform: uppercase;`;
 
-const RankStandingLabel = styled.Text`width: 100%; text-align: center; color: ${AppColors.textMuted}; font-size: 12px; font-weight: 800; letter-spacing: 0.4px; margin-bottom: 10px; text-transform: uppercase;`;
+const RankStandingLabel = styled.Text`width: 100%; text-align: center; color: ${({ theme }) => theme.text}; font-size: 12px; font-weight: 800; letter-spacing: 0.4px; margin-bottom: 10px; text-transform: uppercase;`;
 const CountdownSkipButton = styled(Pressable)`min-height: 40px; align-items: center; justify-content: center; margin-top: 14px; padding: 8px 24px;`;
-const CountdownSkipButtonText = styled.Text`color: ${AppColors.textMuted}; font-size: 13px; font-weight: 800; text-decoration-line: underline;`;
+const CountdownSkipButtonText = styled.Text`color: ${({ theme }) => theme.text}; font-size: 13px; font-weight: 800; text-decoration-line: underline;`;
 const SkipRankButton = styled(Pressable)`min-height: 40px; align-items: center; justify-content: center; margin-top: 14px; padding: 8px 24px;`;
 const CancelButton = styled(Button)`margin-top: 14px;`;
-const SkipRankButtonText = styled.Text`color: ${AppColors.textMuted}; font-size: 13px; font-weight: 800; text-decoration-line: underline;`;
-const NextTrickButton = styled(Pressable)`width: 100%; min-height: 52px; align-items: center; justify-content: center; margin-top: 20px; padding: 12px 24px; background-color: ${AppColors.yellow}; border: 2px solid ${AppColors.ink}; border-radius: 5px;`;
-const NextTrickButtonText = styled.Text`color: ${AppColors.ink}; font-size: 16px; font-weight: 900;`;
+const CancelPracticeButton = styled(Button)`margin-top: 20px;`;
+const SkipRankButtonText = styled.Text`color: ${({ theme }) => theme.text}; font-size: 13px; font-weight: 800; text-decoration-line: underline;`;
+const NextTrickButton = styled(Pressable)`width: 100%; min-height: 52px; align-items: center; justify-content: center; margin-top: 20px; padding: 12px 24px; background-color: ${({ theme }) => theme.accent}; border: 2px solid ${AppColors.ink}; border-radius: 5px;`;
+const NextTrickButtonText = styled.Text`color: ${({ theme }) => theme.text}; font-size: 16px; font-weight: 900;`;
 const MultiTrickAction = styled(Pressable)`
   min-height: 78px;
   justify-content: center;
   margin-top: 26px;
   padding: 14px 16px;
-  background-color: ${AppColors.yellow};
+  background-color: ${({ theme }) => theme.accent};
   border: 2px solid ${AppColors.ink};
   border-radius: 5px;
 `;
-const MultiTrickActionTitle = styled.Text`color: ${AppColors.ink}; font-size: 18px; font-weight: 900;`;
-const MultiTrickActionCopy = styled.Text`color: ${AppColors.inkSoft}; font-size: 13px; font-weight: 650; line-height: 18px; margin-top: 4px;`;
+const MultiTrickActionTitle = styled.Text`color: ${({ theme }) => theme.text}; font-size: 18px; font-weight: 900;`;
+const MultiTrickActionCopy = styled.Text`color: ${({ theme }) => theme.text}; font-size: 13px; font-weight: 650; line-height: 18px; margin-top: 4px;`;
 const TargetStatus = styled.Text<{ $met: boolean }>`width: 100%; text-align: center; margin-top: 12px; color: ${({ $met }) => ($met ? AppColors.red : AppColors.ink)}; font-size: 15px; font-weight: 900;`;
 const ResultBanner = styled.Text<{ $beaten: boolean }>`width: 100%; text-align: center; margin-top: 18px; padding: 12px 16px; background-color: ${({ $beaten }) => ($beaten ? '#e5edcf' : '#f8f1dd')}; border-left-width: 5px; border-left-color: ${({ $beaten }) => ($beaten ? AppColors.red : AppColors.ink)}; color: ${AppColors.ink}; font-size: 15px; font-weight: 900;`;
-const CelebrationBannerCard = styled.View`width: 100%; max-width: 500px; align-items: center; background-color: ${AppColors.yellow}; border: 3px solid ${AppColors.ink}; border-radius: 6px; padding: 18px 20px; margin-bottom: 20px;`;
-const CelebrationBannerEyebrow = styled.Text`color: ${AppColors.red}; font-size: 12px; font-weight: 900; letter-spacing: 1.6px; text-transform: uppercase;`;
-const CelebrationBannerTitle = styled.Text`color: ${AppColors.ink}; font-size: 20px; font-weight: 900; text-align: center; margin-top: 6px; line-height: 26px;`;
+const CelebrationBannerCard = styled.View`width: 100%; max-width: 500px; align-items: center; background-color: ${({ theme }) => theme.accent}; border: 3px solid ${AppColors.ink}; border-radius: 6px; padding: 18px 20px; margin-bottom: 20px;`;
+const CelebrationBannerEyebrow = styled.Text`color: ${({ theme }) => theme.text}; font-size: 12px; font-weight: 900; letter-spacing: 1.6px; text-transform: uppercase;`;
+const CelebrationBannerTitle = styled.Text`color: ${({ theme }) => theme.text}; font-size: 20px; font-weight: 900; text-align: center; margin-top: 6px; line-height: 26px;`;
 const TrickNotesCard = styled.View`width: 100%; max-width: 500px; background-color: ${AppColors.paper}; border: 2px solid ${AppColors.ink}; padding: 16px 18px; margin-top: 16px;`;
-const TrickNotesTitle = styled.Text`color: ${AppColors.ink}; font-size: 11px; font-weight: 900; letter-spacing: 1.2px; margin-bottom: 8px; text-transform: uppercase;`;
-const TrickNoteBody = styled.Text`color: ${AppColors.ink}; font-size: 14px; font-weight: 650; line-height: 20px; margin-bottom: 8px;`;
-const TrickNotesHiddenCount = styled.Text`color: ${AppColors.textMuted}; font-size: 12px; font-weight: 700;`;
+const TrickNotesTitle = styled.Text`color: ${({ theme }) => theme.text}; font-size: 11px; font-weight: 900; letter-spacing: 1.2px; margin-bottom: 8px; text-transform: uppercase;`;
+const TrickNoteBody = styled.Text`color: ${({ theme }) => theme.text}; font-size: 14px; font-weight: 650; line-height: 20px; margin-bottom: 8px;`;
+const TrickNotesHiddenCount = styled.Text`color: ${({ theme }) => theme.text}; font-size: 12px; font-weight: 700;`;
 const NotePromptCard = styled.View`width: 100%; max-width: 500px; background-color: #f8f1dd; border: 2px solid ${AppColors.ink}; padding: 18px; margin-top: 20px;`;
-const NotePromptTitle = styled.Text`color: ${AppColors.ink}; font-size: 17px; font-weight: 900;`;
-const NotePromptCopy = styled.Text`color: ${AppColors.inkSoft}; font-size: 13px; font-weight: 650; line-height: 19px; margin-top: 6px;`;
+const NotePromptTitle = styled.Text`color: ${({ theme }) => theme.text}; font-size: 17px; font-weight: 900;`;
+const NotePromptCopy = styled.Text`color: ${({ theme }) => theme.text}; font-size: 13px; font-weight: 650; line-height: 19px; margin-top: 6px;`;
 const NotePromptInput = styled(TextInput)`min-height: 110px; background-color: ${AppColors.paper}; border: 2px solid ${AppColors.ink}; color: ${AppColors.ink}; font-size: 15px; font-weight: 650; margin-top: 12px; padding: 12px 14px; text-align-vertical: top;`;
 const NotePromptActions = styled.View`flex-direction: row; gap: 10px; margin-top: 14px;`;
 const NotePromptButton = styled(Pressable)<{ $disabled?: boolean }>`min-height: 44px; flex: 1; align-items: center; justify-content: center; opacity: ${({ $disabled }) => ($disabled ? 0.45 : 1)}; background-color: ${AppColors.ink}; padding: 10px 18px; border-radius: 5px;`;
-const NotePromptButtonText = styled.Text`color: ${AppColors.yellow}; font-size: 14px; font-weight: 900;`;
+const NotePromptButtonText = styled.Text`color: ${({ theme }) => theme.accent}; font-size: 14px; font-weight: 900;`;
 const NotePromptSecondaryButton = styled(Pressable)`min-height: 44px; flex: 1; align-items: center; justify-content: center; padding: 10px 18px; border: 2px solid ${AppColors.ink}; border-radius: 5px;`;
-const NotePromptSecondaryButtonText = styled.Text`color: ${AppColors.ink}; font-size: 14px; font-weight: 900;`;
+const NotePromptSecondaryButtonText = styled.Text`color: ${({ theme }) => theme.text}; font-size: 14px; font-weight: 900;`;
 const SummaryGrid = styled.View`width: 100%; flex-direction: row; flex-wrap: wrap; gap: 10px; margin-top: 28px;`;
 const Metric = styled.View`min-width: 46%; flex-grow: 1; background-color: #f8f1dd; border-top-width: 5px; border-top-color: #d84929; padding: 18px;`;
 const MetricValue = styled.Text`color: #18382e; font-size: 30px; font-variant: tabular-nums; font-weight: 900;`;

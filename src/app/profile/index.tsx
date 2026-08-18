@@ -8,6 +8,8 @@ import { Screen } from "@/components/ui/screen";
 import { BodyText, DisplayTitle, Eyebrow } from "@/components/ui/typography";
 import { AppColors, BottomTabInset } from "@/constants/theme";
 import { useRequireOnboarding } from "@/features/onboarding/state/require-onboarding";
+import { RainbowThemePresets } from "@/features/profile/components/rainbow-theme-presets";
+import { ThemeColorPicker } from "@/features/profile/components/theme-color-picker";
 import {
   createStreakThresholdMs,
   DEFAULT_STREAK_THRESHOLD_MS,
@@ -57,6 +59,10 @@ export default function ProfileScreen() {
           >
             Start Kentei assessment
           </RetakeButton>
+          <Divider />
+          <RainbowThemePresets />
+          <Divider />
+          <ThemeColorPicker />
           <Divider />
           <StreakSettings
             streakThresholdMs={streakThresholdMs}
@@ -135,7 +141,7 @@ const RankLine = styled.View`
   margin-top: 18px;
 `;
 const RankNumber = styled.Text`
-  color: ${AppColors.red};
+  color: ${({ theme }) => theme.text};
   font-size: 78px;
   font-weight: 900;
   letter-spacing: -5px;
@@ -145,7 +151,7 @@ const RankIdentity = styled.View`
   flex: 1;
 `;
 const RankLabel = styled.Text`
-  color: ${AppColors.ink};
+  color: ${({ theme }) => theme.text};
   font-size: 17px;
   font-weight: 900;
   text-transform: uppercase;
@@ -169,7 +175,6 @@ const Title = styled(DisplayTitle)`
 const Copy = styled(BodyText)`
   max-width: 500px;
   margin-top: 16px;
-  color: ${AppColors.textMuted};
 `;
 const RetakeButton = styled(Button).attrs({
   variant: "secondary",
@@ -182,7 +187,7 @@ const DurationField = styled.View`
   margin-top: 22px;
 `;
 const DurationLabel = styled.Text`
-  color: ${AppColors.ink};
+  color: ${({ theme }) => theme.text};
   font-size: 12px;
   font-weight: 900;
   margin-bottom: 6px;
@@ -199,7 +204,7 @@ const DurationInput = styled(TextInput)`
   padding: 8px 12px;
 `;
 const DurationHint = styled.Text<{ $invalid: boolean }>`
-  color: ${({ $invalid }) => ($invalid ? AppColors.red : AppColors.textMuted)};
+  color: ${({ $invalid, theme }) => ($invalid ? AppColors.red : theme.text)};
   font-size: 12px;
   font-weight: 700;
   margin-top: 7px;

@@ -59,7 +59,7 @@ const RankStage = styled(Animated.View)`
   background-color: ${AppColors.ink};
   border-radius: 110px;
 `;
-const RankNumber = styled.Text`color: ${AppColors.yellow}; font-size: 100px; font-weight: 900; letter-spacing: -4px;`;
+const RankNumber = styled.Text`color: ${({ theme }) => theme.accent}; font-size: 100px; font-weight: 900; letter-spacing: -4px;`;
 const RevealTitle = styled.Text`
   color: ${AppColors.ink};
   font-size: 40px;

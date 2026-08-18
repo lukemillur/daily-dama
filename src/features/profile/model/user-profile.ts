@@ -16,6 +16,9 @@ export interface UserProfile {
   readonly lastSesh?: LastSesh;
   readonly streakThresholdMs?: number;
   readonly manuallyUnlockedTrickIds?: readonly string[];
+  readonly themeBackgroundColor?: string;
+  readonly themeAccentColor?: string;
+  readonly themeTextColor?: string;
 }
 
 export const MIN_STREAK_THRESHOLD_MINUTES = 1;
@@ -28,6 +31,10 @@ export function isValidStreakThresholdMinutes(minutes: number) {
     minutes >= MIN_STREAK_THRESHOLD_MINUTES &&
     minutes <= MAX_STREAK_THRESHOLD_MINUTES
   );
+}
+
+export function isValidThemeHexColor(value: string): boolean {
+  return /^#[0-9a-fA-F]{6}$/.test(value);
 }
 
 export function createStreakThresholdMs(minutes: number): number {
@@ -63,6 +70,12 @@ export type UserProfileAction =
   | { readonly type: 'manualUnlockRemoved'; readonly trickId: string }
   | { readonly type: 'lastSeshUpdated'; readonly lastSesh: LastSesh }
   | { readonly type: 'streakThresholdUpdated'; readonly thresholdMs: number }
+  | {
+      readonly type: 'themeColorsUpdated';
+      readonly themeBackgroundColor?: string;
+      readonly themeAccentColor?: string;
+    }
+  | { readonly type: 'themeTextColorUpdated'; readonly themeTextColor?: string }
   | {
       readonly type: 'onboardingCompleted';
       readonly kenteiRank: number;
@@ -126,6 +139,15 @@ export function userProfileReducer(
       return { ...state, lastSesh: action.lastSesh };
     case 'streakThresholdUpdated':
       return { ...state, streakThresholdMs: action.thresholdMs };
+    case 'themeColorsUpdated':
+      return {
+        ...state,
+        themeBackgroundColor: action.themeBackgroundColor,
+        themeAccentColor: action.themeAccentColor,
+        themeTextColor: undefined,
+      };
+    case 'themeTextColorUpdated':
+      return { ...state, themeTextColor: action.themeTextColor };
     case 'onboardingCompleted':
       return {
         ...state,

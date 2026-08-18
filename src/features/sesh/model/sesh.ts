@@ -91,7 +91,7 @@ export interface SeshSummary {
 }
 
 export type SeshState =
-  | { readonly status: 'choosing' }
+  | { readonly status: 'choosing'; readonly directPracticeTrickId?: string }
   | { readonly status: 'countdown'; readonly trick: PracticeTrick; readonly plan: SeshPlan }
   | {
       readonly status: 'active';
@@ -112,7 +112,8 @@ export type SeshAction =
   | { readonly type: 'seshResumed'; readonly now: number }
   | { readonly type: 'seshEnded'; readonly now: number }
   | { readonly type: 'timerElapsed'; readonly now: number }
-  | { readonly type: 'seshReset' };
+  | { readonly type: 'seshReset' }
+  | { readonly type: 'directPracticeRequested'; readonly trickId: string };
 
 export const INITIAL_SESH_STATE: SeshState = { status: 'choosing' };
 
@@ -186,6 +187,10 @@ export function seshReducer(state: SeshState, action: SeshAction): SeshState {
       return completeSesh(state, state.startedAt + state.plan.durationMs + state.pausedDurationMs);
     case 'seshReset':
       return INITIAL_SESH_STATE;
+    case 'directPracticeRequested':
+      return state.status === 'choosing'
+        ? { status: 'choosing', directPracticeTrickId: action.trickId }
+        : state;
   }
 }
 

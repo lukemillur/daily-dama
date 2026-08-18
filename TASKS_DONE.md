@@ -4,7 +4,229 @@ Completed entries move here from `TASKS.md`'s `Backlog`, in the same commit that
 
 Entries keep their content as it was at completion. Don't retroactively edit a description or exit criteria after the fact; if something about a completed task turns out to be wrong or misleading, note that in a new entry or in code, not by rewriting history here.
 
+### [T105] Move "Practice several tricks" below the format/time controls
+
+- **Area:** Sesh
+- **Priority:** Medium
+- **Status:** Done
+- **Planning:** Implementer
+- **Description:** In the Sesh home screen's non-direct-practice branch, the `MultiTrickAction` ("Practice several tricks") block currently renders immediately after the intro text and before the practice-format/duration controls (`sesh.tsx:362-369`, ahead of `PlanChoices`/`DurationField`/`ChallengeField` at `sesh.tsx:372-450`). Move it to render after those controls and before the focused-tricks list (`TrickChoices`, `sesh.tsx:451+`), so the format/time controls read as the screen's primary action and "Practice several tricks" reads as a secondary option.
+- **Exit criteria:** In-browser/component check: on the Sesh home screen, render order is intro text → format/duration controls → "Practice several tricks" → focused-tricks list. Existing `sesh.test.tsx` interaction tests for both single-trick and multi-trick flows continue to pass unmodified (tapping "Practice several tricks" still opens the same picker).
+- **Notes:** Story S021. Pure JSX-ordering change; no state or logic change.
+
+
+### [T104] Clear a custom text color when a preset theme is selected
+
+- **Area:** Profile / Theming
+- **Priority:** High
+- **Status:** Done
+- **Planning:** Required
+- **Description:** The `themeColorsUpdated` reducer case (`user-profile.ts:142-147`), fired by preset selection (`rainbow-theme-presets.tsx:30`), fully replaces `themeBackgroundColor`/`themeAccentColor` but never touches `themeTextColor` — so a previously saved custom text color survives a later preset selection instead of being replaced by the preset's look. Have preset selection also clear the custom text color, either by extending `setThemeColors`/`themeColorsUpdated` to reset `themeTextColor` to `undefined`, or by having the preset-tap handler additionally call the existing `setThemeTextColor(undefined)` action.
+- **Exit criteria:** Reducer test: dispatch a custom `themeTextColor` being set, then apply `themeColorsUpdated` (a preset), and assert `themeTextColor` is `undefined` afterward. Component test: select a preset in `RainbowThemePresets` after a custom text color was saved, and assert the persisted profile no longer carries a custom text color. Existing tests for a direct, manual `ThemeColorPicker` text-color save (an unaffected path) continue to pass unmodified.
+- **Notes:** Story S020. Marked `Required` because it changes reducer behavior for a persisted field, per this project's escalation rule for state-machine/reducer changes. Resolved by extending the `themeColorsUpdated` reducer case in `user-profile.ts` to always reset `themeTextColor` to `undefined`, since the exit criteria's reducer test dispatches that action alone. Flagged side effect: `ThemeColorPicker`'s manual background/accent saves also call `setThemeColors`, so they now clear a previously saved custom text color too — no existing test asserted that field survived those saves, so nothing broke, and this is arguably more correct (a background change can invalidate a tuned text-color contrast).
+
+### [T103] Left-align the Sesh home screen's intro text block
+
+- **Area:** Sesh
+- **Priority:** Medium
+- **Status:** Done
+- **Planning:** Implementer
+- **Description:** On the Sesh home (idle) screen, `Eyebrow` ("Start a sesh") renders left-aligned by default while the local `DisplayTitle` ("What are we working on?") and `BodyCopy` ("Choose how long you want...") overrides explicitly set `text-align: center` (`sesh.tsx:1149-1151`), producing a visually inconsistent intro block. Remove the centered `text-align` overrides so all three render left-aligned and share a common left edge.
+- **Exit criteria:** In-browser check on the Sesh home screen: the three intro lines share the same left edge; computed-style check confirms none of them resolve `text-align: center`. Existing `sesh.test.tsx` tests continue to pass unmodified.
+- **Notes:** Story S019. Purely a styled-components change inside `sesh.tsx`; no state or behavior change. Removed the `text-align: center` overrides from `DisplayTitle`/`BodyCopy` in `src/features/sesh/components/sesh.tsx`, which are shared across the idle picker, empty state, countdown, and completion screens. Verified in-browser with a scripted Puppeteer check (seeded a completed-onboarding profile into `localStorage`, navigated to `/sesh`): all three intro lines resolve `text-align: start` and share the same left offset (172px). `sesh.test.tsx` (57 tests) passes unmodified. Full verification sequence passes.
+
+### [T099] Match the Trick Goals picker's container width to the Tricks tab
+
+- **Area:** Tricks
+- **Priority:** Medium
+- **Status:** Done
+- **Planning:** Implementer
+- **Description:** The Tricks tab (`src/app/tricks/index.tsx:66-114`) wraps `TrickDirectory` in a `DirectoryContent` styled wrapper (`width:100%; max-width:760px;`, line 515) inside a centered `Screen`. The Trick Goals route (`src/app/tricks/goals.tsx:19`) and `GoalTrickPicker` (`src/features/goals/components/all-trick-goals-screen.tsx:120-146`) render `TrickDirectory` with no equivalent width-constraining wrapper, so the picker stretches to the full screen width instead of matching the Tricks tab's column. Add an equivalent max-width wrapper around the Goals route's `TrickDirectory` usage without touching `src/app/tricks/index.tsx` or `DirectoryContent` itself.
+- **Exit criteria:** In-browser check at 375px, 760px+, and 1200px+ web viewports: the Trick Goals picker's content column renders at the same width (760px cap, centered) as the Tricks tab's `DirectoryContent`. `git diff` confirms `src/app/tricks/index.tsx` is unchanged.
+- **Notes:** Story S015. Added `src/features/tricks/components/trick-directory-column.tsx`, a small standalone `TrickDirectoryColumn` styled wrapper (760px cap, centered, matching `DirectoryContent`'s width/overflow/background), and wrapped `GoalTrickPicker`'s `TrickDirectory` in it (`src/features/goals/components/all-trick-goals-screen.tsx`). Not literally reused by the Tricks tab itself, since doing so would require editing `src/app/tricks/index.tsx`'s existing `DirectoryContent` definition, which the ticket explicitly ruled out; the two wrappers share identical values instead. Verified in-browser at 375px, 760px, and 1200px viewports via a scripted Playwright check (seeded a completed-onboarding profile into `localStorage`, measured both the Tricks tab's `DirectoryContent` and the Goals picker's `TrickDirectoryColumn` bounding rects): widths and left offsets matched exactly at all three (375/0, 760/0, 760/220). `git diff` confirms `src/app/tricks/index.tsx` is untouched. Full web-only verification passes; native validation remains deferred under the active platform scope.
+
+### [T098] Derive a secondary text color alongside the existing primary text color
+
+- **Area:** Profile / Theming
+- **Priority:** Medium
+- **Status:** Done
+- **Planning:** Implementer
+- **Description:** `resolveTheme()`/`ResolvedTheme` (`src/features/profile/state/use-resolved-theme.ts`) derives exactly one `text` color today, used identically by all three shared typography primitives (`Eyebrow`, `DisplayTitle`, `BodyText` in `src/components/ui/typography.tsx`) — every themed text role renders the same flat color. Add a second derived field (e.g. `textMuted`) by blending the resolved primary `text` color partway toward the resolved `background`, so it works uniformly whether `text` came from automatic derivation, a preset, or the user's explicit `themeTextColor` override. Wire `Eyebrow` and `BodyText` to the new muted color, leaving `DisplayTitle` on the primary `text` color as the anchor/majority role.
+- **Exit criteria:** Unit tests on the theme-resolution logic assert `textMuted` is distinct from `text` and legibly blended toward `background` for (a) the default theme, (b) a custom background/accent/text combination, and (c) each T087 preset. Component tests confirm `Eyebrow`/`BodyText` render with `theme.textMuted` and `DisplayTitle` still renders with `theme.text`. `yarn tsc --noEmit` and the full existing test suite pass unmodified elsewhere.
+- **Notes:** Deliberately minimal: two roles (primary anchor + one complementary secondary), not a full title/eyebrow/subtext-each-distinct system — this is the smallest change that satisfies "not one flat color repeated everywhere" from S010's acceptance criteria. A blend-toward-background algorithm was chosen over hand-picking new fixed `AppColors` constants (e.g. a cream-family equivalent of `inkSoft`/`textMuted`/`textSubtle`, which only exist for the ink family today) because it generalizes to any base color — default, preset, or custom override — without a second derivation path per direction. One-off styled-text usages outside the three shared typography primitives (e.g. `daily-home.tsx`'s `SectionTitle`, `NextTrickName`, etc., flagged as a known gap in T085's own notes) are out of scope for this ticket — a broader inventory/migration onto the shared primitives is a separate follow-on, not blocking here.
+- **Verification:** `yarn test --runInBand`, `yarn lint`, `yarn tsc --noEmit`, and `yarn expo export --platform web` all pass (`node .claude/scripts/verify.mjs`). New unit tests in `use-resolved-theme.test.ts` cover the default theme, a custom background/accent/text combination, and all seven T087 presets; new component tests in `typography.test.tsx` confirm `Eyebrow`/`BodyText` resolve `theme.textMuted` and `DisplayTitle` resolves `theme.text`. Added a generic `blendHexColors` helper (`src/shared/color/blend.ts`) and `deriveMutedTextColor` (65% text / 35% background linear-RGB blend) alongside the existing `deriveAutomaticTextColor`/`deriveAutomaticButtonBackgrounds` derivation functions in `use-resolved-theme.ts`; extended `DefaultTheme` (`src/types/styled-components.d.ts`) and existing hardcoded theme fixtures in `button.test.tsx`/`sesh.test.tsx` with `textMuted`.
+
+### [T095] Initialize color pickers from the resolved default theme
+
+- **Area:** Profile / Theming
+- **Priority:** Medium
+- **Status:** Done
+- **Planning:** Implementer
+- **Description:** `ColorField` in `theme-color-picker.tsx` initializes `hexText` from `useState(persistedValue ?? "")` (line 81), where `persistedValue` is the raw, often-`undefined` stored preference (lines 32, 39, 53). Thread `useResolvedTheme()`'s `background`/`accent`/`text` output through as the fallback instead of `""`, so the picker shows the app's real current colors before any save.
+- **Exit criteria:** A component test mounts `ThemeColorPicker` with no saved theme preference and asserts each `ColorField`'s swatch/hex text shows the resolved default theme's values (not blank); saving still works and persists identically to today.
+- **Notes:** No new persistence field — purely an initial-value fix. Added `fallbackColor` prop to `ColorField`, sourced from `useResolvedTheme()` in the parent, and used it to seed `hexText`. Also had to change the dirty/`canSave` check from comparing against `(persistedValue ?? fallbackColor)` to comparing against raw `persistedValue` only — with the fallback in play, a typed value that coincidentally matches the resolved default (e.g. saving the default accent `#f4c94d` verbatim) would otherwise be treated as unchanged and block Save, which would have broken existing save behavior. New test asserts each field's initial hex-input value and swatch color equal `resolveTheme({})`'s output when no preference is saved.
+
+### [T092] Add a preset-theme step to onboarding
+
+- **Area:** Onboarding
+- **Priority:** Medium
+- **Status:** Done
+- **Planning:** Required
+- **Description:** Insert a new preset-theme-selection step into the onboarding flow (`kentei-onboarding.tsx`'s reducer: `intro` → `levelSelect` → `assessing` → `rankReveal` → `selecting` → complete), before onboarding completion, offering the same seven presets as Profile's `RainbowThemePresets` and applying a choice via the existing `setThemeColors` action from `useUserProfileActions()`. Copy reads to the effect of "Select a theme that matches your setup." Skipping the step leaves the app on its default theme.
+- **Exit criteria:** An onboarding-flow test drives through the new step, selects a preset, and verifies the selected preset's background/accent persist via the profile provider identically to selecting it from Profile; a second case confirms skipping the step completes onboarding normally with no theme preference set. Existing onboarding-flow tests through `completeOnboarding` → `router.replace('/sesh')` continue to pass with the new step inserted.
+- **Notes:** Reuses T087's existing `RAINBOW_THEME_PRESETS`/`setThemeColors` mechanism — no new preset design needed. Marked `Required` because it changes the onboarding reducer's step sequence, which the project's `Required` criteria explicitly calls out (state machines). Inserted a new `themeSelect` reducer status between `selecting` and completion in `kentei-assessment.ts` (spreading `selecting`'s fields, guarded no-op elsewhere), moving `completeOnboarding`/`router.replace('/sesh')` out of `selecting`'s handler into the new step's. Extracted the existing swatch-grid UI out of `rainbow-theme-presets.tsx` into a new shared `ThemePresetGrid` component (`src/features/profile/components/theme-preset-grid.tsx`) so the new `OnboardingThemeStep` (`src/features/onboarding/components/onboarding-theme-step.tsx`) reuses it exactly; `rainbow-theme-presets.test.tsx` kept passing unmodified, confirming the extraction was behavior-preserving. Tapping a preset applies it via `setThemeColors` and immediately finishes onboarding; a separate secondary-variant "Skip for now" button finishes onboarding without touching theme colors. New `kentei-onboarding.test.tsx` drives the full reducer + component sequence end-to-end for both cases (no such test existed before this task) — confirms identical persisted background/accent to selecting the same preset from Profile, and confirms the skip path leaves `themeBackgroundColor`/`themeAccentColor` unset. Full web-only verification (`yarn test`, `yarn lint`, `yarn tsc --noEmit`, web export) passes; native validation remains deferred under the active platform scope.
+
+### [T091] Fix trick-list horizontal margin in the shared trick-directory container
+
+- **Area:** Tricks
+- **Priority:** High
+- **Status:** Done
+- **Planning:** Implementer
+- **Description:** Revert T088's `margin: 0 22px;` addition to `TrickRowContainer` (`src/features/tricks/components/trick-directory.tsx`, added in commit `6aafb76`) — it regressed the Tricks tab's previously-correct selected-row margin. Move the horizontal inset into `TrickDirectory`'s own shared list container (`ListContainer`/`DirectoryLayout`, ~lines 327–334) instead, since both the Tricks tab (`src/app/tricks/index.tsx`) and the Trick Goals picker (`GoalTrickPicker` in `src/features/goals/components/all-trick-goals-screen.tsx`) render through the same `TrickDirectory` internals with no natural separate per-screen parent to place it in.
+- **Exit criteria:** In-browser check at the standard web viewport (320px+) on both the Tricks tab and the all-trick Trick Goals picker: row background bands show horizontal margin matching the "Search Tricks" box's inset, and the Tricks tab's selected-row appearance matches its pre-T088 look.
+- **Notes:** The source story suggested fixing this per-screen at each screen's parent container; investigation found both call sites share the same `TrickDirectory` internals with no separate per-screen parent to place a duplicate fix in, so the real shared fix belongs inside `TrickDirectory`'s own container. Flagging this as a correction to the story's suggested location, not a silent reinterpretation — the user-visible outcome is unchanged. Fixed by removing the `margin: 0 22px;` line from `TrickRowContainer` and adding `padding: 0 22px;` to `ListContainer` (the shared wrapper used only by `fixedHeader`/`fixedFooter` consumers, i.e. the Trick Goals picker — the Tricks tab doesn't use that wrapper at all, so it's naturally unaffected). Verified in-browser at a 320px viewport (own dev server in the worktree, onboarding bypassed via a direct `localStorage` profile write, driven headlessly over the Chrome DevTools Protocol since no browser-preview tool was available in this run): the Tricks tab's selected-row background again spans edge-to-edge as before T088, and the Trick Goals picker's row backgrounds inset to exactly match the search box's 22px padding on both sides once the headless browser's classic (non-overlay) scrollbar — a rendering artifact absent under normal overlay-scrollbar browsers — is accounted for. Full web-only verification (`yarn test`, `yarn lint`, `yarn tsc --noEmit`, web export) passes; native validation remains deferred under the active platform scope.
+
+### [T090] Make the color picker's puck follow live-typed hex text
+
+- **Area:** Profile / Theming
+- **Priority:** High
+- **Status:** Done
+- **Planning:** Implementer
+- **Description:** `ColorSpectrumPicker`'s puck only resyncs from `persistedHex` after Save (`src/features/profile/components/theme-color-picker.tsx` lines 46–60), deliberately not on typed hex text, to avoid disrupting an in-progress drag. Wire validated, complete typed hex text into the picker's displayed color live (gated by the same `isValidThemeHexColor` check already used for the swatch), without disturbing the existing persisted-value resync path or active pointer drags.
+- **Exit criteria:** Component tests assert that typing a complete, valid hex value into the hex `TextInput` updates the picker's puck position/derived hue-sat-val state immediately, before Save is pressed; typing an incomplete or invalid hex (e.g. `"#12"`) does not move the puck or throw. Existing drag-then-save and manual-hex-then-save tests in `theme-color-picker.test.tsx` continue to pass unmodified.
+- **Notes:** Introduce a live-hex input path distinct from the persisted-value resync effect (lines 46–60) so the two don't fight each other mid-drag. Confirm `hexToHsv` (`src/shared/color/hsv.ts`) behavior on partial/invalid strings before wiring — the existing `isValidThemeHexColor` gate should be sufficient protection.
+
+
+### [T089] Add button-background tokens to the resolved-theme system
+
+- **Area:** Profile / Theming (theme derivation state, not persistence schema)
+- **Priority:** High
+- **Status:** Done
+- **Planning:** Implementer
+- **Description:** `ResolvedTheme`/`resolveTheme()` (`src/features/profile/state/use-resolved-theme.ts`) currently derives only `background`, `accent`, and `text`, so every themed surface added since T085–T087 that isn't one of those three (buttons, Sesh's laced-state button) falls back to hardcoded `AppColors`/hex literals. Add a `buttonBackground` / `buttonBackgroundSecondary` token pair to `ResolvedTheme`, derived alongside the existing fields using the same pattern `deriveAutomaticTextColor` already establishes, so it correctly resolves for the default/unset theme, any saved custom background/accent pair, and each of the seven T087 presets.
+- **Exit criteria:** New unit tests on the theme-resolution logic assert correct `buttonBackground`/`buttonBackgroundSecondary` values for (a) no saved preference, (b) a saved custom theme, and (c) each T087 preset. `yarn tsc --noEmit` and the full existing test suite pass unmodified, confirming the new fields don't disturb any current consumer of `ResolvedTheme`.
+- **Notes:** Schema-only groundwork for story S014 — no component wiring is in scope here. Wiring `Button`'s `ButtonRoot` (`src/components/ui/button.tsx:45`) to `buttonBackground`/`buttonBackgroundSecondary` is T096's job; wiring Sesh's laced button (`src/features/sesh/components/sesh.tsx:1191`) to reuse `buttonBackground` is T097's job. Both are placed after this ticket in the queue deliberately — neither should be picked up before T089 is `Done`.
+
+### [T093] Reorder Profile's theme screen and refresh its copy
+
+- **Area:** Profile / Theming
+- **Priority:** Low
+- **Status:** Done
+- **Planning:** Implementer
+- **Description:** In `src/app/profile/index.tsx`, move the `StreakSettings` ("How much practice counts as a day?", lines 63–66) section to render after both theme sections (`RainbowThemePresets` line 68, `ThemeColorPicker` line 70). Update `RainbowThemePresets`' heading from "Or grab a rainbow." to "Select a preset" (`rainbow-theme-presets.tsx:23`) and `ThemeColorPicker`'s heading from "Make it yours." to "Or, make it yours" (`theme-color-picker.tsx:25`).
+- **Exit criteria:** A test on `src/app/profile/index.tsx` asserts the new heading copy renders and that the streak section's content appears after both theme sections' content in render order. No behavioral change to any control.
+- **Notes:** Pure reorder + copy change; existing tests used `findByText` without order assertions, so added a `collectTextInOrder` helper (walks `toJSON()` output) in `src/app/profile/__tests__/index.test.tsx` for order-specific coverage. Implemented exactly as scoped: moved `StreakSettings` to render after `RainbowThemePresets`/`ThemeColorPicker`, updated both headings to single-string copy (no embedded `\n` line breaks, matching the shorter phrasing). Full verification (`yarn test`, `yarn lint`, `yarn tsc --noEmit`, web export) passes.
+
+### [T088] Restore horizontal margin on the Trick Goals trick-directory picker
+
+- **Area:** Tricks / Goals
+- **Priority:** Medium
+- **Status:** Done
+- **Planning:** Implementer
+- **Description:** `TrickRowContainer` in `src/features/tricks/components/trick-directory.tsx` (~line 410) paints its selected/laced background full-width with no horizontal margin, unlike `DirectorySearch` which sits inset by `DirectoryHeader`'s `22px` padding — so the all-trick Trick Goals picker (`GoalTrickPicker`) still renders edge-to-edge even after T082's row-text padding fix. Add horizontal margin to the row container itself (not just its inner text) to match the search box's inset.
+- **Exit criteria:** In-browser check at the standard web viewport confirms the trick-directory row backgrounds on the Trick Goals picker have visible horizontal margin matching the "Search Tricks" input's inset, and goal creation via the picker still works end to end.
+- **Notes:** Corresponds to story S004; corrects T082 (already `Done` — its archived entry in `TASKS_DONE.md` stays as-written, history isn't rewritten). Fixed by adding `margin: 0 22px;` to `TrickRowContainer` in `src/features/tricks/components/trick-directory.tsx`, matching `DirectoryHeader`'s `22px` horizontal padding that insets the search box. This is additive to the existing `identityLayout` row-text padding (also `22px`), mirroring how the search box itself has an outer 22px inset plus its own inner text padding. Verified in-browser at 320px viewport (own dev server in the worktree, onboarding bypassed via a direct `localStorage` profile write): the Trick Goals picker's row backgrounds now sit inset to match the "Search tricks" box, and a goal-creation flow through the picker (choose a trick, set a lace-count target, save) completed successfully. Also re-checked the Tricks tab's `selection`-mode rows (`SelectableIdentity`) — the selected/laced row background now shows the same margin without disturbing existing spacing. Full web-only verification (`yarn test`, `yarn lint`, `yarn tsc --noEmit`, web export) passes; native validation remains deferred under the active platform scope.
+
+### [T087] Add pre-configured rainbow theme presets
+
+- **Area:** Profile / Theming
+- **Priority:** Medium
+- **Status:** Done
+- **Planning:** Implementer
+- **Description:** Add a preset-theme control to Profile, visually and structurally separate from `ThemeColorPicker`, offering seven pre-configured background/accent pairs — one per rainbow color (red, orange, yellow, green, blue, indigo, violet). Selecting a preset writes background/accent via the existing `setThemeColors` profile action.
+- **Exit criteria:** Component tests confirm each of the seven presets is selectable, selecting one calls `setThemeColors` with that preset's background/accent and persists via the profile provider, and the preset control renders as a component distinct from `ThemeColorPicker` (not a shared mode toggle within it).
+- **Notes:** Corresponds to story S002. Exact hex values per preset are an implementation/design choice — pick visually distinct pairs; contrast is no longer a save-blocking concern once T085.2 lands, but isn't a hard dependency (see below). No hard dependency on T085/T086: presets only set background/accent, and text color (fixed today, reactive once T085 lands) resolves automatically regardless of ship order. Implemented as a new `src/features/profile/components/rainbow-theme-presets.tsx` component (distinct file, distinct render tree from `ThemeColorPicker`, no shared mode toggle), backed by a plain data module `src/features/profile/model/theme-presets.ts` with seven light-background/deeper-accent hex pairs (all backgrounds pass WCAG AA against `AppColors.ink`). Rendered in `src/app/profile/index.tsx` above `ThemeColorPicker`, separated by the same `Divider` used elsewhere on the screen. New `rainbow-theme-presets.test.tsx` covers all seven presets via `it.each`, a persistence-across-remount check, and a check that the component's tree carries none of `ThemeColorPicker`'s hex-input affordances. Full web-only verification passes; native validation remains deferred under the active platform scope.
+
+### [T085.1] Add automatic and custom text color to the theme model
+
+- **Area:** Profile persistence / Theming
+- **Priority:** Medium (inherited from parent T085)
+- **Status:** Done
+- **Planning:** Required
+- **Description:** Extend `UserProfile` with an optional `themeTextColor` field, following the existing hex-validation pattern used by `themeBackgroundColor`/`themeAccentColor` (`src/features/profile/model/user-profile.ts`). Extend `ResolvedTheme`/`useResolvedTheme` (`src/features/profile/state/use-resolved-theme.ts`) with a `text` value: the user's custom `themeTextColor` when set, otherwise a value automatically derived from the resolved background/accent (e.g. a luminance-based light/dark choice), replacing today's fixed text color.
+- **Exit criteria:** Reducer/persistence tests confirm `themeTextColor` round-trips through hydration, defaults to `undefined`, and doesn't affect existing profile fields. A test on the resolved-theme text logic confirms it returns the custom value when set and a derived light/dark value from background+accent when unset, covering at least one light-background and one dark-background case.
+- **Notes:** First child of T085; no dependency on other children. Follows AGENTS.md's provisional-v1, no-migration policy for this persistence domain (same as T083.1). The automatic-derivation algorithm is an implementation choice, not specified here. Added `themeTextColor` to `UserProfile`, a dedicated `themeTextColorUpdated` reducer action (kept separate from `themeColorsUpdated` so T085.2's control can reset it independently) and matching persistence/provider wiring (`setThemeTextColor`). Refactored `use-resolved-theme.ts` into a pure, independently-testable `resolveTheme` function plus a thin `useResolvedTheme` hook; added `deriveAutomaticTextColor`, which picks whichever of `AppColors.ink`/`AppColors.cream` maximizes the minimum WCAG contrast ratio against both the resolved background and accent (text can sit on either surface). No schema version bump per AGENTS.md's provisional-v1 policy. No screen consumes `theme.text` yet (T085.3).
+
 ---
+
+### [T085.2] Remove the contrast Save gate; add a custom text-color control
+
+- **Area:** Profile / Theming
+- **Priority:** Medium (inherited from parent T085)
+- **Status:** Done
+- **Planning:** Required
+- **Description:** In `ThemeColorPicker`/`ColorField` (`src/features/profile/components/theme-color-picker.tsx`), remove `hasSufficientContrast` from the `canSave` gate (currently `canSave = isDirty && hasSufficientContrast`, `theme-color-picker.tsx:72`) and its blocking hint copy, so any valid hex pair saves regardless of contrast. Add a third `ColorField`-style control for a custom text color that writes to `themeTextColor` (T085.1) and can be reset independently.
+- **Exit criteria:** Component tests confirm a background/accent pair that previously failed the contrast check now saves successfully with no blocking message, and setting/clearing a custom text color persists via the profile provider and is reflected in a live swatch/preview.
+- **Notes:** Depends on T085.1. Touches the same file as T086 (S001's visual color picker) — whichever lands second should expect to rebase around the other's changes to `theme-color-picker.tsx`. Any leftover contrast-ratio copy must not block saving; remove it or make it purely informational. Removed `hasSufficientContrast` from `canSave` (now just `isDirty`); contrast ratio is now shown as non-blocking informational copy (`"Contrast vs. text: {ratio}:1. Recommended: {WCAG_AA_MIN_CONTRAST_RATIO}:1+."`) for all three fields. Added a third `ColorField` for `themeTextColor` (wired to `setThemeTextColor`), with its own independent reset button ("Reset text color") separate from the existing background/accent reset (relabeled "Reset background & accent" for clarity). `ColorField` now takes an explicit `referenceColor` prop instead of hardcoding `AppColors.ink`; background/accent keep `AppColors.ink` (out of scope to change), the new text field uses `themeBackgroundColor ?? AppColors.sage` (mirroring `resolveTheme`'s fallback).
+
+### [T085.3] Apply theme text color across post-onboarding screens
+
+- **Area:** Theming (cross-cutting)
+- **Priority:** Medium (inherited from parent T085)
+- **Status:** Done
+- **Planning:** Required
+- **Description:** Replace fixed text colors on title/eyebrow/label/body text across post-onboarding screens — `Eyebrow`, `DisplayTitle`, `BodyText` (`src/components/ui/typography.tsx`) plus one-off fixed-color text such as `SectionTitle`/`NextTrickName`/`NextTrickMeta` in `daily-home.tsx`, and equivalents in `sesh.tsx`, `assessment-entry.tsx`, `multi-trick-sesh.tsx`, `multi-trick-sesh-entry.tsx`, `laced-tricks-screen.tsx`, `neglected-tricks-section.tsx`, `stats/index.tsx`, `stats/[trickId].tsx`, `tricks/index.tsx`, `profile/index.tsx` — with the resolved `theme.text` value from T085.1, falling back identically to today's fixed colors when no theme is set.
+- **Exit criteria:** Auto-derived and custom-override theme text colors are correctly applied across the enumerated screens; pre-onboarding yellow state and functional colors (errors/success) are unaffected. Relaxed by explicit user decision: an unset theme is no longer required to render identically to today's fixed colors for `Eyebrow`/`BodyText`-family text (see Notes).
+- **Notes:** Depends on T085.1; can proceed in parallel with T085.2 since it doesn't touch the picker component. Mirrors T083.3's screen-sweep approach. File list was identified via `grep -rln "AppColors\.\(red\|ink\|inkSoft\|textMuted\)"` across post-onboarding areas and should be re-verified at implementation time since it will drift; `button.tsx`, `practice-history-provider.tsx`, and `user-profile-provider.tsx` also matched but looked like non-text or non-rendering usages — confirmed during implementation: `button.tsx`'s secondary-variant `ButtonLabel` was in scope and converted, `practice-history-provider.tsx`/`user-profile-provider.tsx` are hydration-fallback styles rendered before a profile exists and stay fixed. The Eyebrow/BodyText conversion (from `AppColors.red`/`AppColors.textMuted`/`AppColors.inkSoft` to `theme.text`) means an unset theme now renders these elements in the same ink-green as titles, rather than the prior red/muted shades — a real, visible unset-theme rendering change. A prior implementation pass flagged this as an internal tension with the original "renders identically when unset" exit-criterion wording and stopped short of committing; the user explicitly reviewed the trade-off and decided to accept the visual shift and relax that criterion accordingly (exit criteria text above reflects the relaxed wording). Verified in-browser: onboarding and a fresh unset-theme post-onboarding state keep the original palette look with the accepted ink-green shift on former red/muted text; setting a custom text color (`#7a1fa2`) via Profile propagates live across Home, Sesh, Tricks (button labels), and Stats, including on accent-colored surfaces, without affecting the Button primary-variant's `theme.accent` label; an invalid Sesh duration still shows the fixed functional red error color unaffected by the custom text color; `trick-directory.tsx`'s distinct raw-hex header color was left untouched per plan (not one of the four target tokens).
+
+### [T085] Reactive theme text color, contrast requirement removed
+
+- **Area:** Theming (cross-cutting)
+- **Priority:** Medium
+- **Status:** Done
+- **Description:** Remove the WCAG contrast gate that currently blocks saving a background/accent theme pair, and make text color part of the same reactive theme system — automatically derived from the chosen background/accent, or explicitly overridden by the user. Umbrella only — complete T085.1–T085.3.
+- **Notes:** Corresponds to story S003 in `BACKLOG_STORIES.md`. Deliberate accessibility trade-off, made by the user with the guardrail's origin (T083.2) in view — not re-litigated here. Mirrors T083's umbrella/child shape. All three children (T085.1–T085.3) complete.
+
+### [T084] Suggest the next trick for the user's Kentei rank on Home
+
+- **Area:** Home
+- **Priority:** Medium
+- **Status:** Done
+- **Planning:** Implementer
+- **Description:** Add a Home card suggesting the next standard Kentei trick to learn: the first trick in rank order, at the user's current rank, not yet in `manuallyUnlockedTrickIds`; once the rank is fully laced, suggest the next rank's first trick. Standard tricks only — custom tricks are excluded since rank data doesn't apply to them. Separate, additive card alongside the existing neglected-tricks surface (Stats), not a merge.
+- **Exit criteria:** A test on `createHomeSummary` (or a new sibling model function) confirms the correct next trick is chosen across: mid-rank with some tricks laced, a fully-laced rank rolling to the next rank's first trick, and the top rank fully laced (no suggestion). A `DailyHome` component test confirms the card renders the suggested trick and a practice entry point.
+- **Notes:** Mirrors the existing `neglected-tricks-section.tsx` pattern for structure. Reuses `KENDAMA_KENTEI_TRICKS`'s existing rank/order and `profile.manuallyUnlockedTrickIds`; no persistence or schema change. Added `selectNextKenteiTrick` as an exported sibling selector in `home-summary.ts`, wired into `createHomeSummary` as `HomeSummary.nextKenteiTrick`, and a new `NextKenteiTrick` card in `daily-home.tsx` placed between the primary practice hero and the in-rotation queue. No browser preview tool was available in this session (Bash-only tool access); verified via model and `DailyHome` render tests instead of an in-browser check.
+
+---
+
+### [T083] Custom app theming — match a user's kendama color scheme
+
+- **Area:** Theming / Profile
+- **Priority:** Medium
+- **Status:** Done
+- **Description:** Let a user pick a free-form background color and accent color, independently, so the app's post-onboarding look can match their physical kendama. Umbrella only — complete T083.1–T083.3.
+- **Notes:** Full free-form picker, not curated presets (explicit decision). Applies to post-onboarding screens only; pre-onboarding yellow state and functional colors (errors/success) stay fixed.
+
+### [T083.3] Apply theme colors to post-onboarding screens
+
+- **Area:** Theming (cross-cutting)
+- **Priority:** Medium (inherited from parent T083)
+- **Status:** Done
+- **Planning:** Required
+- **Description:** Replace the fixed decorative background (`AppColors.sage`, etc.) and primary accent color across Home/Sesh/Tricks/Stats/Profile with the user's stored theme when set, falling back to current fixed colors when unset. Functional colors (errors, success states, text) are out of scope.
+- **Exit criteria:** In-browser check confirms every post-onboarding screen reflects a saved custom background/accent, an unset theme renders identically to today's fixed colors, and pre-onboarding yellow state is unaffected.
+- **Notes:** Depends on T083.2. Mapped `AppColors.sage` -> `theme.background` and `AppColors.yellow` -> `theme.accent` via a single styled-components `ThemeProvider` (`AppThemeProvider`, fed by `useResolvedTheme()`) mounted inside `UserProfileProvider` in `_layout.tsx`. Converted `Screen`'s default background, `Button`'s primary label, and every other fixed-accent usage across Home/Sesh/Tricks/Stats/Profile (18 files enumerated in the plan). Verified end-to-end via an integration test mounting `Screen`/`Button` through the real `UserProfileProvider`/`AppThemeProvider`/AsyncStorage stack (not mocked) for both the unset-theme and saved-custom-theme cases, since no browser/preview tool was available in this session — see PR for detail. Left a pre-existing, documented contrast gap unresolved (T083.2's WCAG guardrail only checks against `AppColors.ink`; a fixed red eyebrow label sits on the accent surface in `daily-home.tsx` and `sesh.tsx` with no contrast guarantee against a user-chosen dark accent) — cosmetic, not a blocker for this ticket.
+
+
+### [T083.2] Build the free-form color picker with a contrast guardrail
+
+- **Area:** Profile / Theming
+- **Priority:** Medium (inherited from parent T083)
+- **Status:** Done
+- **Planning:** Required
+- **Description:** Add a color-picker UI (background + accent, picked independently) to Profile, backed by T083.1. Validate the chosen pair against a minimum contrast ratio (WCAG AA, 4.5:1) versus the app's fixed text color and block/warn on combinations that would be illegible.
+- **Exit criteria:** Component tests confirm picking valid colors saves them via the profile provider, an insufficient-contrast pair is rejected with a visible message, and the picker is reachable from Profile.
+- **Notes:** Depends on T083.1. Added a generic `src/shared/color/contrast.ts` WCAG relative-luminance utility (pinned against the standard `#767676` boundary gray), `isValidThemeHexColor` on the profile model (persistence now delegates to it instead of a second hand-copied regex), and `ThemeColorPicker` in `src/features/profile/components/` with independent background/accent hex fields, a live swatch, contrast feedback text, per-field dirty-gated Save, and a shared Reset-to-default. Wired into `src/app/profile/index.tsx` after the streak-settings section. Contrast is checked against `AppColors.ink` only, per the task's "versus the app's fixed text color" wording — not cross-checked against the other picked color.
+
+### [T083.1] Add theme color fields to the Profile persistence domain
+
+- **Area:** Profile persistence
+- **Priority:** Medium (inherited from parent T083)
+- **Status:** Done
+- **Planning:** Required
+- **Description:** Extend the user-profile schema with optional `themeBackgroundColor`/`themeAccentColor` fields, following the existing v1-is-provisional pattern for this domain (per AGENTS.md — no migration infra needed).
+- **Exit criteria:** Reducer/persistence tests confirm the new fields round-trip through hydration, default to `undefined` (fixed app colors) when unset, and don't affect existing profile fields.
+- **Notes:** First child of T083; no dependency on other children. Added `themeBackgroundColor`/`themeAccentColor` (6-digit hex, validated case-insensitively) to `UserProfile`, a `themeColorsUpdated` reducer action with explicit-clear-via-`undefined` semantics, matching persistence validation/round-trip support, and a `setThemeColors` provider action for T083.2 to consume. No schema version bump per AGENTS.md's provisional-v1 policy.
 
 ### [T078] Reuse the trick directory in all-trick goal creation
 
@@ -1007,6 +1229,56 @@ Entries keep their content as it was at completion. Don't retroactively edit a d
 - **Description:** Apply T076.1's reset behavior to the single-trick completion screen, casual multi-trick wrap-up, assessment wrap-up, and any nested Sesh setup/active routes that can be reached through the Sesh tab.
 - **Exit criteria:** Focused web checks and automated coverage exercise Sesh-tab presses from each listed screen and confirm the canonical Sesh home picker is rendered every time; direct finish/cancel actions retain their existing destinations and practice-history behavior. Depends on T076.1.
 - **Notes:** Added a route-host integration matrix covering single-trick completion, casual multi-trick selection/setup/countdown/active/wrap-up, and assessment picker/countdown/active/wrap-up. Every target-scoped Sesh-tab press asserts `/sesh`, the canonical home-picker marker, and removal of the stale child marker; unrelated-tab filtering remains covered. Existing focused Sesh, casual multi-trick, and assessment suites pass, including direct cancel/finish routing and practice-history origin/deduplication behavior. Full web-only verification passes; native validation remains deferred under AGENTS.md.
+### [T081] Preselect direct-practice trick on the Sesh screen with a cancel affordance
+
+- **Area:** Sesh
+- **Priority:** High
+- **Status:** Done
+- **Planning:** Required
+- **Description:** Starting a Sesh from a direct-practice link (e.g. `src/features/stats/components/neglected-tricks-section.tsx:37`, `src/features/goals/components/trick-goals-screen.tsx:141`, `src/features/tricks/components/trick-directory.tsx`'s `showPracticeAction` row) passes `trickId` and `mode` params to `/sesh`, but `src/app/sesh/index.tsx:16-29` never reads `mode`, and `Sesh` (`src/features/sesh/components/sesh.tsx`) always starts in the general `TrickPicker` choosing state — `preferredTrickId` only highlights that trick in the full picker instead of preselecting it. Fix this so a direct-practice link renders only the linked trick as a card on the Sesh screen (format/duration/target still adjustable before starting), with no other trick cards shown, plus a "Cancel practice" control that returns to the standard Sesh choosing screen.
+- **Exit criteria:** Starting a Sesh via a direct-practice link shows only the linked trick's card (no other tricks listed), format and duration/target remain editable before starting, and a visible "Cancel practice" control returns the user to the standard multi-trick Sesh choosing screen. Automated coverage exercises the new reducer/state path where practical.
+- **Notes:** `seshReducer`'s `'choosing'` state now carries an optional `directPracticeTrickId`; `Sesh` lazily initializes its reducer from the `directPracticeTrickId` prop, and `src/app/sesh/index.tsx` computes it from the `trickId`/`mode=practice` route params (separate from the existing `preferredTrickId`, which still just prioritizes within the full picker for plain visits). When set and the trick is found in `availableTricks`, `TrickPicker` renders a single-trick card with direct-practice heading copy, no "Practice several tricks" promo link, and a "Cancel practice" button (`accessibilityLabel="Cancel practice"`) that dispatches the existing `'seshReset'` action, per the plan's design. Falls back to the normal multi-trick picker if the linked trick isn't found (e.g. deleted custom trick), and works even with an empty focused practice list. New reducer tests cover `seshReset` clearing the field and `trickSelected` still transitioning normally from the direct-practice choosing state; new component tests cover single-card rendering, editable timed/open-ended plans, the Cancel control, the unavailable-trick fallback, and the empty-practice-list case. Full verification (`test`, `lint`, `tsc`, web export) passes; native validation remains deferred under the active platform scope.
+
+### [T082] Add horizontal margin to the Trick Goals shared trick-directory picker
+
+- **Area:** Tricks / Goals
+- **Priority:** Low
+- **Status:** Done
+- **Planning:** Implementer
+- **Description:** `GoalTrickPicker` (`src/features/goals/components/all-trick-goals-screen.tsx:134-145`) renders `TrickDirectory` without a `selection` prop, so rows fall back to the unpadded `identity` block in `src/features/tricks/components/trick-directory.tsx` instead of the padded `SelectableIdentity` block (~line 283) that the Tricks tab gets via its `selection` prop (`src/app/tricks/index.tsx:69-77`). As a result the picker paints edge-to-edge on the all-trick Trick Goals screen.
+- **Exit criteria:** The trick-directory picker on the all-trick Trick Goals screen renders with horizontal margin matching (or visually consistent with) its usage on the Tricks tab, confirmed in-browser at the standard web viewport; goal creation via the picker still works end to end.
+- **Notes:** Centralized the fix in `TrickDirectory` itself: factored the row-identity padding (`padding: 15px 22px`) into a shared `identityLayout` css block reused by both the pressable `SelectableIdentity` (selection mode) and a new plain `IdentityContainer` used when no `selection`/`onToggle` is passed, so any non-selection consumer (like `GoalTrickPicker`) automatically gets matching horizontal margin without an inline override at the call site. Verified in-browser (headless Chrome via Playwright against the worktree's own dev server): the picker's row text now sits at the same x-offset (66px) as the Tricks tab at a 320px viewport, and a full goal-creation flow through the picker (choose a trick, set a lace-count target, save) completes successfully. Full web-only verification passes.
+
+### [T094] Make the web splash overlay reflect the user's theme
+
+- **Area:** App shell / Theming
+- **Priority:** Medium
+- **Status:** Done
+- **Planning:** Required
+- **Description:** Two distinct splashes exist: the native `expo-splash-screen` (`app.json`, build-time-only `"#208AEF"`, cannot react to runtime state) and the web-only `AnimatedSplashOverlay` (`src/components/animated-icon.web.tsx`), rendered from `src/app/_layout.tsx:24` before `UserProfileProvider`/`AppThemeProvider` mount. Make `AnimatedSplashOverlay` reflect the user's last-applied theme background (or the app's default theme background pre-selection) by reading a synchronously-available cached value ahead of normal provider hydration. Update `app.json`'s static splash `backgroundColor` to match the app's default theme background as the build-time baseline.
+- **Exit criteria:** A user who has saved a custom background color sees `AnimatedSplashOverlay` render in that color on the next web refresh, verified in-browser (reload, computed-style check before the main app UI mounts). A user with no saved theme sees it render in the app's default theme background. `app.json`'s static `backgroundColor` literal is updated to match the resolved default.
+- **Notes:** The overlay mounts before `AppThemeProvider` resolves theme through its normal async-hydration path, so this needs a synchronous pre-hydration read rather than consuming `ResolvedTheme` through context — this is the architectural risk that made the ticket `Required` rather than `Implementer`. The native `app.json` splash literal can only ever reflect the app's default, not a live per-user value — that limitation is inherent to build-time native config, not a shortfall of this ticket. Implemented a new DI'd, unit-tested `readCachedThemeBackgroundColor` (`src/features/profile/persistence/read-cached-theme-background.ts`), which synchronously parses `window.localStorage`'s cached user-profile document (reusing `deserializeUserProfile`) and resolves it through `resolveTheme`. `animated-icon.web.tsx` adopts the same `useSyncExternalStore`-based hydration-safe pattern already established in `use-color-scheme.web.ts` to avoid an SSR crash and a hydration-mismatch warning, rendering the resolved default (`AppColors.sage`, `#dfe8ca`) on the server/first paint and swapping to the real cached color synchronously before the browser's next paint. `app.json`'s splash `backgroundColor` updated from `#208AEF` to `#dfe8ca` to match; the overlay's previous hardcoded `#f4c94d` was actually the accent-yellow default, not the background-sage default, so this is a real visual fix even for users with no saved theme. Verified in-browser via a scripted headless-Chrome CDP session (CPU-throttled, network-cache disabled) driving two reload scenarios: with no saved profile the overlay's computed `background-color` is `rgb(223, 232, 202)` (`#dfe8ca`) throughout; with a saved custom `themeBackgroundColor` (`#ff00ff`) the overlay renders the sage default first (pre-hydration/SSR paint) then swaps to `rgb(255, 0, 255)` before dismissing, with no hydration-mismatch console warning (only the two pre-existing known-benign warnings). Full web-only verification passes; native validation remains deferred under the active platform scope.
+
+### [T080] Fix Kentei assessment exit and stale wrap-up leak
+
+- **Area:** Navigation / Sesh
+- **Priority:** High
+- **Status:** Done
+- **Planning:** Required
+- **Description:** The Kentei assessment wrap-up screen's "Go to Home" button (`src/features/sesh/components/assessment-entry.tsx:65-66`) calls `router.dismissTo('/')`, but the wrap-up screen lives on the nested Profile stack (`/profile/kentei-assessment`, pushed via `router.push` in `src/app/profile/index.tsx:56`) and `'/'` is not part of that stack's history, so the call is a no-op and the button does nothing. Separately, `src/app/profile/_layout.tsx` has no `tabPress` listener resetting its stack on tab re-press, unlike `src/app/sesh/_layout.tsx` and `src/app/tricks/_layout.tsx` — so if a user routes around the stuck wrap-up screen, re-entering Profile can still show the stale wrap-up instead of the normal Profile screen.
+- **Exit criteria:** From the Kentei wrap-up screen, pressing "Go to Home" navigates to the Home tab. Separately, after completing a Kentei assessment and pressing "Go to Home," navigating to Profile shows the normal Profile screen, not a stale wrap-up — checked both immediately and after re-pressing the Profile tab.
+- **Notes:** Replaced the no-op `router.dismissTo('/')` (target href not present in the Profile stack's own history) with `router.navigate('/')`, which resolves across the full route tree to the Home tab. Added a `tabPress` listener to `src/app/profile/_layout.tsx` mirroring the existing pattern in `sesh/_layout.tsx` / `tricks/_layout.tsx`, resetting the Profile stack to `/profile` on every Profile-tab press so a stale wrap-up screen never reappears, whether checked immediately after "Go to Home" or after a later re-press. New `src/app/profile/__tests__/layout.test.tsx` covers the listener; `assessment-entry.test.tsx` updated for the `navigate` mock. Full web-only verification passes; native validation remains deferred under the active platform scope.
+
+### [T086] Add a visual color picker for theme colors
+
+- **Area:** Profile / Theming
+- **Priority:** Medium
+- **Status:** Done
+- **Planning:** Required
+- **Description:** Replace `ColorField`'s raw hex-only `TextInput` in `ThemeColorPicker` (`src/features/profile/components/theme-color-picker.tsx`) with a real visual color-picker control (swatches/spectrum/sliders) for background and accent color, vetted for a free/permissive license and React Native Web compatibility. Keep manual hex entry available as a secondary input.
+- **Exit criteria:** Component tests confirm picking a color via the visual picker saves it through the same `onSave`/profile-provider path as today, manual hex entry still works, and an in-browser check confirms the picker renders and functions on web.
+- **Notes:** Corresponds to story S001. No third-party color-picker library is currently a project dependency — vet license (MIT/BSD/Apache-2.0 only) and React Native Web support before adding one; a hand-built picker (e.g. HSV wheel + slider) is an acceptable fallback if no suitable library is found. Touches the same file as T085.2 — expect to coordinate/rebase if both are in flight together. Implemented a hand-built HSV picker (`src/features/profile/components/color-spectrum-picker.tsx`) using `react-native-svg` (MIT, Expo-supported, renders real `<svg>` on web) for the gradient square/hue bar, and RN's raw Responder System (`onResponderGrant`/`onResponderMove` directly on the `View`, not `PanResponder`) for drag handling, since `PanResponder`'s internal gesture-state math requires a full `touchHistory` (`pageX`/`pageY` touch bank) that plain synthetic `nativeEvent.locationX/Y` objects can't satisfy in `react-test-renderer` — a deviation from the plan's PanResponder approach, functionally equivalent but simpler to test. New `src/shared/color/hsv.ts` (HSV↔hex conversion, unit-tested) backs it. Wired into `ColorField` via `onChange={setHexText}`, reusing the existing hex-`TextInput`/Save/`onSave` path unchanged. Component and integration tests cover corner-case drags on both the SV square and hue bar; existing manual-hex-entry tests pass unmodified. In-browser check on `yarn expo start --web`: dragging the SV square and hue bar live-updates the swatch/hex text/contrast hint, Save persists, and after reload the picker's puck/gradient resync to the saved color; manual hex entry still works and the picker resyncs to it after Save (by design, not on every keystroke, to avoid disrupting an in-progress drag). Full web-only verification passes; native validation remains deferred under the active platform scope.
+
 ### [T079] Keep custom-trick save actionable with inline validation
 
 - **Area:** Tricks / custom-trick forms
@@ -1016,3 +1288,43 @@ Entries keep their content as it was at completion. Don't retroactively edit a d
 - **Description:** Keep “Save custom trick” enabled even when the draft is invalid; pressing it should leave the form open and populate each invalid associated field with a concise, actionable error message explaining what is missing or incorrect.
 - **Exit criteria:** Form tests verify the save action is enabled for invalid standalone and sequence drafts, pressing it does not persist or navigate away, and the relevant name, sequence-step, and rank validation messages appear beside their fields; valid drafts still save exactly once and preserve existing edit behavior.
 - **Notes:** Added submitted-state error presentation while retaining `validateCustomTrickDraft` as the sole validation source of truth. Invalid saves leave the form mounted without provider persistence or `onSaved`; focused tests cover standalone, sequence, invalid rank, creation, and stable-ID edit behavior. Full web-only verification passes; native validation remains deferred under the active platform scope.
+
+### [T096] Theme Button's background color
+
+- **Area:** UI components / Theming
+- **Priority:** Medium
+- **Status:** Done
+- **Planning:** Implementer
+- **Description:** `Button`'s `ButtonRoot` (`src/components/ui/button.tsx:35-49`) hardcodes its background from `AppColors.ink`/`AppColors.paperStrong` (line 45) regardless of theme, while `ButtonLabel` already reads `theme.accent`/`theme.text`. Wire `ButtonRoot`'s background to `theme.buttonBackground` (primary) / `theme.buttonBackgroundSecondary` (secondary), the tokens T089 adds.
+- **Exit criteria:** New component tests (no `button.test.tsx` exists yet — follow `theme-color-picker.test.tsx`'s render-through-a-real-provider pattern) render `Button` under a custom `AppThemeProvider` theme for both variants and assert `ButtonRoot`'s resolved background matches `theme.buttonBackground`/`theme.buttonBackgroundSecondary` rather than the fixed `AppColors` constants.
+- **Notes:** Depended on T089 (`buttonBackground`/`buttonBackgroundSecondary` tokens), already merged. `ButtonRoot`'s background-color now reads `theme.buttonBackground`/`theme.buttonBackgroundSecondary` by variant instead of the fixed `AppColors.ink`/`AppColors.paperStrong`; the border stays the fixed `AppColors.ink` (unchanged scope). New `src/components/ui/button.test.tsx` mounts `Button` under a custom `styled-components/native` `ThemeProvider` (not `AppThemeProvider`/`UserProfileProvider`, since the theme tokens under test don't depend on profile-hydration behavior) and asserts the resolved host-node `style.backgroundColor` for both variants against the custom theme's tokens, distinct from the fixed `AppColors` values. Full web-only verification passes; native validation remains deferred under the active platform scope.
+
+### [T097] Theme Sesh's countdown and laced-button colors
+
+- **Area:** Sesh
+- **Priority:** Medium
+- **Status:** Done
+- **Planning:** Implementer
+- **Description:** `sesh.tsx` hardcodes the countdown number color (`#d84929`, line 1182) and the laced button's background/text/count colors (`#d84929`/`#fff8e5`/`#f4c94d`, lines 1191-1193). Wire the countdown color to `theme.accent`, the laced button's background to `theme.buttonBackground` (T089), and its label/count text to `theme.text`, replacing the four hardcoded literals.
+- **Exit criteria:** Component tests in `sesh.test.tsx` (following its existing pattern of rendering `ActiveSesh`/`Countdown` directly) render under a custom `AppThemeProvider` theme and assert the countdown number and laced button's background/text/count resolve to `theme.accent`/`theme.buttonBackground`/`theme.text` rather than the fixed hex literals; existing laced-button interaction tests (`onLaced` callback, ~30 cases) continue to pass unmodified.
+- **Notes:** Depended on T089 (`buttonBackground`/`theme.accent` tokens), already merged. `CountdownNumber` now reads `theme.accent`, and `LacedButton`'s background reads `theme.buttonBackground`, replacing the four hardcoded hex literals. Deviated from the literal exit-criteria wording for the laced button's label/count color: wiring it to `theme.text` (as originally specified) turns out to be genuinely illegible in the current default theme, because `deriveAutomaticButtonBackgrounds` and `deriveAutomaticTextColor` both independently maximize contrast against the same page background and land on the same fixed neutral (`AppColors.ink`) -- dark text on an identically dark button. Used the escape hatch the ticket's own notes granted: reused the existing `theme.accent` token (already proven legible against a dark `buttonBackground` by `Button`'s own primary-variant label in T096) rather than adding a new "on-button text" token, per the ticket's own preference not to over-engineer when an existing token resolves fine. `sesh.test.tsx` gained a `Sesh theming (T097)` describe block that mounts `Countdown`/`ActiveSesh` under a custom `styled-components/native` `ThemeProvider` (following `button.test.tsx`'s pattern, not `AppThemeProvider`/`UserProfileProvider`, since the tokens under test don't depend on profile-hydration behavior) and asserts the resolved host-node colors against the custom theme's `accent`/`buttonBackground`/`accent` tokens. All 57 existing `sesh.test.tsx` tests, including the ~30 laced-button interaction cases, continue to pass unmodified. Full web-only verification passes; native validation remains deferred under the active platform scope.
+
+### [T101] Seed the color picker's puck from the same color as the swatch/hex text
+
+- **Area:** Profile / Theming
+- **Priority:** High
+- **Status:** Done
+- **Planning:** Implementer
+- **Description:** `ColorSpectrumPicker` seeds its puck from `persistedHex` (`theme-color-picker.tsx:117`), which is `undefined` when no custom color is saved, falling back to a hardcoded `#4477aa` (`color-spectrum-picker.tsx:44-48`) instead of the resolved theme color T095 already threads into `ColorField` as `fallbackColor`. Pass the same `persistedValue ?? fallbackColor` value `ColorField` uses for its swatch/hex text into `ColorSpectrumPicker`'s puck-seed color.
+- **Exit criteria:** Component test mounts `ThemeColorPicker` with no saved theme preference and asserts the puck's initial derived HSV/position corresponds to the resolved default theme color (matching the swatch/hex), not the hardcoded `#4477aa` seed. Existing drag-then-save and manual-hex-then-save tests in `theme-color-picker.test.tsx` continue to pass unmodified.
+- **Notes:** Story S017. Touches the same two files as T102 (`theme-color-picker.tsx`, `color-spectrum-picker.tsx`) but a distinct code path (initial puck seed vs. swatch/hex resync) — kept as separate tickets per one-exit-criterion scoping, but reasonable to pick up back-to-back.
+
+### [T102] Resync the color picker's swatch/hex text when a preset changes the saved color
+
+- **Area:** Profile / Theming
+- **Priority:** Medium
+- **Status:** Done
+- **Planning:** Implementer
+- **Description:** `ColorField`'s `hexText` (`theme-color-picker.tsx:93`) is seeded via `useState` on mount only and never resyncs when `persistedValue`/`fallbackColor` change later — e.g. after selecting a preset via `setThemeColors`, which updates profile state but leaves the picker's swatch/hex text showing the stale prior color. Add a resync effect, mirroring the pattern `ColorSpectrumPicker` already uses for its own resync (`color-spectrum-picker.tsx:58-67`), so `hexText` updates when `persistedValue` changes to a new defined value, without clobbering an in-progress manual edit.
+- **Exit criteria:** Component test: mount `ThemeColorPicker`, simulate applying a preset (parent re-renders with new `persistedValue` props matching what `setThemeColors` produces), and assert each `ColorField`'s swatch/hex text update to the preset's values without remounting. Existing hex-input-then-save and drag-then-save tests continue to pass unmodified.
+- **Notes:** Story S018. See T101's note on file overlap. Implemented the resync using the same guarded-setState-during-render pattern `ColorSpectrumPicker`'s own `persistedHex` resync uses (not a `useEffect`), so it resyncs `hexText` within the same commit as an external `setThemeColors` call rather than in a follow-up render, avoiding a visible flash of the stale value. Added a new test that applies a preset via `setThemeColors` from *outside* the `ColorField` (through a probe component calling `useUserProfileActions`), distinct from the field's own hex-input-then-save flow, and asserts both fields' hex text/swatch update without remounting.

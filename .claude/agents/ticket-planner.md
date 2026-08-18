@@ -23,6 +23,14 @@ git fetch origin <branch> && git checkout -B <branch> FETCH_HEAD && mkdir -p .cl
 
 Explore and plan against that branch's actual state, not whatever this worktree started on.
 
+**Guardrail: stay in your worktree.** Capture your worktree root now and never leave it:
+
+```sh
+WORKTREE_ROOT="$(git rev-parse --show-toplevel)"; echo "$WORKTREE_ROOT"
+```
+
+Every subsequent Bash call must run inside `$WORKTREE_ROOT`. Never `cd` to the shared main checkout (the repo path outside `.claude/worktrees/`) or any other absolute path — you'd be reading or reasoning about another session's working copy instead of this branch's. If a command needs a `pwd` sanity check (before the final commit/push in step 3), fold it in rather than assuming.
+
 ## 2. Plan
 
 1. Read `AGENTS.md` for the architecture and conventions (state/persistence domain boundaries, the per-concern domain pattern, the verification sequence). Read any feature-specific handoff it points to if the task touches that area.

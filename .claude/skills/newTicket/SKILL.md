@@ -24,6 +24,8 @@ claim/cleanup scripts, and removes unrelated built-in tools with
 
 **This session's working directory must already be the repo root** — worktree isolation resolves the repo from cwd, so running this skill from elsewhere breaks every subagent's fetch/checkout and the scripts' relative paths.
 
+Subagents run in isolated worktrees but share this machine's filesystem with the main checkout at that same repo root. Both `ticket-planner` and `ticket-implementer` are instructed to pin themselves to their own worktree root and never `cd` into the main checkout, but if a subagent's report ever mentions edits or test runs having landed in the wrong location, treat it as a real incident: run `git status` in the main checkout yourself before trusting that a stated revert actually happened, and don't wave it off as routine.
+
 ## Invocation
 
 Read what the user actually said; there's no argument syntax to parse.

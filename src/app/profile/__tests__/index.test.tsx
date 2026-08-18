@@ -54,6 +54,28 @@ async function mountProfileScreen() {
   return root;
 }
 
+function collectTextInOrder(root: ReactTestRenderer): string[] {
+  const texts: string[] = [];
+  const json = root.toJSON();
+
+  function walk(node: unknown): void {
+    if (node == null) return;
+    if (typeof node === 'string') {
+      texts.push(node);
+      return;
+    }
+    if (Array.isArray(node)) {
+      node.forEach(walk);
+      return;
+    }
+    const element = node as { children?: unknown };
+    if (element.children) walk(element.children);
+  }
+
+  walk(json);
+  return texts;
+}
+
 describe('ProfileScreen Kentei assessment copy', () => {
   beforeEach(async () => {
     await AsyncStorage.clear();
@@ -76,6 +98,53 @@ describe('ProfileScreen Kentei assessment copy', () => {
 
     expect(findByText(root, 'Retake assessment')).toHaveLength(0);
     expect(findByText(root, /updates your rank/i)).toHaveLength(0);
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  it('renders the theme color picker so it is reachable from Profile', async () => {
+    const root = await mountProfileScreen();
+
+    expect(findByText(root, 'App theme').length).toBeGreaterThan(0);
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+});
+
+describe('ProfileScreen theme section order and copy', () => {
+  beforeEach(async () => {
+    await AsyncStorage.clear();
+  });
+
+  it('renders the refreshed preset and theme-picker headings', async () => {
+    const root = await mountProfileScreen();
+
+    expect(findByText(root, 'Select a preset').length).toBeGreaterThan(0);
+    expect(findByText(root, 'Or, make it yours').length).toBeGreaterThan(0);
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  it('renders the streak section after both theme sections', async () => {
+    const root = await mountProfileScreen();
+
+    const texts = collectTextInOrder(root);
+    const presetIndex = texts.indexOf('Quick presets');
+    const themePickerIndex = texts.indexOf('App theme');
+    const streakIndex = texts.indexOf('Daily streak');
+
+    expect(presetIndex).toBeGreaterThan(-1);
+    expect(themePickerIndex).toBeGreaterThan(-1);
+    expect(streakIndex).toBeGreaterThan(-1);
+    expect(streakIndex).toBeGreaterThan(presetIndex);
+    expect(streakIndex).toBeGreaterThan(themePickerIndex);
 
     act(() => {
       root.unmount();

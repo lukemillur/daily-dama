@@ -12,11 +12,12 @@ import { OnboardingIntroStep } from '@/features/onboarding/components/onboarding
 import { OnboardingLevelStep } from '@/features/onboarding/components/onboarding-level-step';
 import { OnboardingRankRevealStep } from '@/features/onboarding/components/onboarding-rank-reveal-step';
 import { OnboardingSelectionStep } from '@/features/onboarding/components/onboarding-selection-step';
+import { OnboardingThemeStep } from '@/features/onboarding/components/onboarding-theme-step';
 
 export function KenteiOnboarding() {
   const router = useRouter();
   const [state, dispatch] = useReducer(kenteiAssessmentReducer, INITIAL_KENTEI_ASSESSMENT);
-  const { completeOnboarding } = useUserProfileActions();
+  const { completeOnboarding, setThemeColors } = useUserProfileActions();
 
   switch (state.status) {
     case 'intro':
@@ -49,11 +50,25 @@ export function KenteiOnboarding() {
           onToggleTrick={(trickId) => dispatch({ type: 'practiceTrickToggled', trickId })}
           onFinish={() => {
             if (state.selectedTrickIds.length === 0) return;
-            const lacedTrickIds = getSeedLacedTrickIds(state.rank, state.landedTrickIds);
-            completeOnboarding(state.rank, state.selectedTrickIds, lacedTrickIds);
-            router.replace('/sesh');
+            dispatch({ type: 'themeStepEntered' });
           }}
         />
       );
+    case 'themeSelect': {
+      const finishOnboarding = () => {
+        const lacedTrickIds = getSeedLacedTrickIds(state.rank, state.landedTrickIds);
+        completeOnboarding(state.rank, state.selectedTrickIds, lacedTrickIds);
+        router.replace('/sesh');
+      };
+      return (
+        <OnboardingThemeStep
+          onSelectPreset={(preset) => {
+            setThemeColors(preset.backgroundColor, preset.accentColor);
+            finishOnboarding();
+          }}
+          onSkip={finishOnboarding}
+        />
+      );
+    }
   }
 }

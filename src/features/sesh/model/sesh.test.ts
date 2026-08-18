@@ -235,6 +235,62 @@ describe('sesh reducer', () => {
     expect(formatRemainingDuration(1)).toBe('00:01');
     expect(formatRemainingDuration(0)).toBe('00:00');
   });
+
+  it('clears directPracticeTrickId when seshReset is dispatched (T081)', () => {
+    const directPracticeChoosing: SeshState = {
+      status: 'choosing',
+      directPracticeTrickId: 'big-cup',
+    };
+    expect(seshReducer(directPracticeChoosing, { type: 'seshReset' })).toEqual(
+      INITIAL_SESH_STATE,
+    );
+  });
+
+  it('still transitions to countdown from a direct-practice choosing state (T081)', () => {
+    const directPracticeChoosing: SeshState = {
+      status: 'choosing',
+      directPracticeTrickId: 'big-cup',
+    };
+    const plan = OPEN_ENDED_SESH_PLAN;
+    expect(
+      seshReducer(directPracticeChoosing, { type: 'trickSelected', trick: BIG_CUP, plan }),
+    ).toMatchObject({
+      status: 'countdown',
+      trick: BIG_CUP,
+      plan,
+    });
+  });
+
+  it('enters direct-practice choosing for a newly requested trick while already choosing', () => {
+    expect(
+      seshReducer(INITIAL_SESH_STATE, { type: 'directPracticeRequested', trickId: 'big-cup' }),
+    ).toEqual({ status: 'choosing', directPracticeTrickId: 'big-cup' });
+
+    const alreadyDirectPractice: SeshState = {
+      status: 'choosing',
+      directPracticeTrickId: 'big-cup',
+    };
+    expect(
+      seshReducer(alreadyDirectPractice, {
+        type: 'directPracticeRequested',
+        trickId: 'lighthouse-flip',
+      }),
+    ).toEqual({ status: 'choosing', directPracticeTrickId: 'lighthouse-flip' });
+  });
+
+  it('ignores a direct-practice request while a sesh is already in progress', () => {
+    const active: SeshState = {
+      status: 'active',
+      trick: BIG_CUP,
+      plan: OPEN_ENDED_SESH_PLAN,
+      startedAt: 0,
+      landings: [],
+      pausedDurationMs: 0,
+    };
+    expect(
+      seshReducer(active, { type: 'directPracticeRequested', trickId: 'lighthouse-flip' }),
+    ).toBe(active);
+  });
 });
 
 describe('preferred Sesh trick', () => {
