@@ -144,6 +144,7 @@ export function userProfileReducer(
         ...state,
         themeBackgroundColor: action.themeBackgroundColor,
         themeAccentColor: action.themeAccentColor,
+        themeTextColor: undefined,
       };
     case 'themeTextColorUpdated':
       return { ...state, themeTextColor: action.themeTextColor };

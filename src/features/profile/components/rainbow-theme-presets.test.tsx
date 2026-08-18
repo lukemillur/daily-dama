@@ -7,6 +7,7 @@ import { RainbowThemePresets } from "@/features/profile/components/rainbow-theme
 import { RAINBOW_THEME_PRESETS } from "@/features/profile/model/theme-presets";
 import {
   useUserProfile,
+  useUserProfileActions,
   UserProfileProvider,
 } from "@/features/profile/state/user-profile-provider";
 
@@ -22,12 +23,24 @@ function findByLabel(renderer: ReactTestRenderer, label: string) {
 }
 
 function ProfileProbe() {
-  const { themeBackgroundColor, themeAccentColor } = useUserProfile();
+  const { themeBackgroundColor, themeAccentColor, themeTextColor } = useUserProfile();
   return (
     <>
       <Text accessibilityLabel="probe-background">{themeBackgroundColor ?? "unset"}</Text>
       <Text accessibilityLabel="probe-accent">{themeAccentColor ?? "unset"}</Text>
+      <Text accessibilityLabel="probe-text">{themeTextColor ?? "unset"}</Text>
     </>
+  );
+}
+
+// Sets a custom text color directly, since RainbowThemePresets has no UI of its own for it -
+// mirrors the seeded-state setup pattern used elsewhere for this reducer field.
+function TextColorSetter() {
+  const { setThemeTextColor } = useUserProfileActions();
+  return (
+    <Text accessibilityLabel="set-text-color" onPress={() => setThemeTextColor("#abcdef")}>
+      Set text color
+    </Text>
   );
 }
 
@@ -38,6 +51,7 @@ async function mountPresets() {
       <UserProfileProvider>
         <RainbowThemePresets />
         <ProfileProbe />
+        <TextColorSetter />
       </UserProfileProvider>,
     );
   });
@@ -81,6 +95,28 @@ describe("RainbowThemePresets", () => {
     expect(probeValue(reopened, "probe-background")).toBe(preset.backgroundColor);
     expect(probeValue(reopened, "probe-accent")).toBe(preset.accentColor);
 
+    act(() => reopened.unmount());
+  });
+
+  it("clears a previously saved custom text color when a preset is selected", async () => {
+    const preset = RAINBOW_THEME_PRESETS[0];
+    const root = await mountPresets();
+
+    act(() => findByLabel(root, "set-text-color").props.onPress());
+    expect(probeValue(root, "probe-text")).toBe("#abcdef");
+
+    act(() => findByLabel(root, preset.label + " theme preset").props.onPress());
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(probeValue(root, "probe-text")).toBe("unset");
+    expect(probeValue(root, "probe-background")).toBe(preset.backgroundColor);
+
+    act(() => root.unmount());
+
+    const reopened = await mountPresets();
+    expect(probeValue(reopened, "probe-text")).toBe("unset");
     act(() => reopened.unmount());
   });
 

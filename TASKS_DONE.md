@@ -4,6 +4,16 @@ Completed entries move here from `TASKS.md`'s `Backlog`, in the same commit that
 
 Entries keep their content as it was at completion. Don't retroactively edit a description or exit criteria after the fact; if something about a completed task turns out to be wrong or misleading, note that in a new entry or in code, not by rewriting history here.
 
+### [T104] Clear a custom text color when a preset theme is selected
+
+- **Area:** Profile / Theming
+- **Priority:** High
+- **Status:** Done
+- **Planning:** Required
+- **Description:** The `themeColorsUpdated` reducer case (`user-profile.ts:142-147`), fired by preset selection (`rainbow-theme-presets.tsx:30`), fully replaces `themeBackgroundColor`/`themeAccentColor` but never touches `themeTextColor` — so a previously saved custom text color survives a later preset selection instead of being replaced by the preset's look. Have preset selection also clear the custom text color, either by extending `setThemeColors`/`themeColorsUpdated` to reset `themeTextColor` to `undefined`, or by having the preset-tap handler additionally call the existing `setThemeTextColor(undefined)` action.
+- **Exit criteria:** Reducer test: dispatch a custom `themeTextColor` being set, then apply `themeColorsUpdated` (a preset), and assert `themeTextColor` is `undefined` afterward. Component test: select a preset in `RainbowThemePresets` after a custom text color was saved, and assert the persisted profile no longer carries a custom text color. Existing tests for a direct, manual `ThemeColorPicker` text-color save (an unaffected path) continue to pass unmodified.
+- **Notes:** Story S020. Marked `Required` because it changes reducer behavior for a persisted field, per this project's escalation rule for state-machine/reducer changes. Resolved by extending the `themeColorsUpdated` reducer case in `user-profile.ts` to always reset `themeTextColor` to `undefined`, since the exit criteria's reducer test dispatches that action alone. Flagged side effect: `ThemeColorPicker`'s manual background/accent saves also call `setThemeColors`, so they now clear a previously saved custom text color too — no existing test asserted that field survived those saves, so nothing broke, and this is arguably more correct (a background change can invalidate a tuned text-color contrast).
+
 ### [T103] Left-align the Sesh home screen's intro text block
 
 - **Area:** Sesh
