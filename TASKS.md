@@ -151,6 +151,58 @@ _T098 comes from story S010 in [BACKLOG_STORIES.md](BACKLOG_STORIES.md), rewritt
 
 _The following batch (T099–T105) comes from stories S015–S021 in [BACKLOG_STORIES.md](BACKLOG_STORIES.md), a QA pass over the T089–T098 theming batch refined into stories by `product-manager` and scoped in this pass. New entries are placed before the older queue (there is none currently) so they're picked up first._
 
+_T106–T110 come from stories S022–S026 in [BACKLOG_STORIES.md](BACKLOG_STORIES.md), refined by `product-manager` from `NAKO_LAUNCH_PLAN.md` ahead of the Friday NAKO social post and scoped in this pass. New entries are placed before the older queue so they're picked up first. T107 (share-card image) is sequenced before T108 (head tags) because T108 needs a real asset path to reference. T106 and T108 are scoped `Blocked` — both depend on literal approved copy text that `NAKO_LAUNCH_PLAN.md` names as drafted/approved but doesn't quote in full; see each entry's Status line for the specific gap._
+
+### [T106] Add approved hero copy to the onboarding intro screen
+
+- **Area:** Onboarding
+- **Priority:** High
+- **Status:** Blocked — needs the literal approved hero copy (eyebrow, headline, body). `NAKO_LAUNCH_PLAN.md` only names the direction ("Direction B — founder voice") and quotes one line ("It took me six weeks to land my first Lunar"), not the full copy to drop into the component.
+- **Planning:** Implementer
+- **Description:** Replace `OnboardingIntroStep`'s current placeholder copy ("Let's find your rank" / rank-check body) with the approved Direction B hero copy, keeping the existing "Get started" CTA, layout, and styled components unchanged.
+- **Exit criteria:** The intro screen (`src/features/onboarding/components/onboarding-intro-step.tsx`) renders the exact approved eyebrow, headline, and body text; `kentei-onboarding.test.tsx`'s existing assertions (which only check the "Get started" button, not copy text) continue to pass.
+- **Notes:** Once Luke supplies the literal copy, flip Status to `Not started` and paste the exact text into this entry's Description before implementation — the implementer should not originate marketing copy.
+
+### [T107] Compose the 1200×630 social share-card image
+
+- **Area:** Web launch surface (cross-cutting)
+- **Priority:** High
+- **Status:** Not started
+- **Planning:** Implementer
+- **Description:** Create a 1200×630 PNG share-card image built from the app's existing design system (`AppColors`, typography components) reflecting Daily Dama's visual identity — the existing `logo-glow.png` / `icon.png` assets are square and the wrong shape for a link-preview card. Save it under `assets/images/` for T108's head tags to reference.
+- **Exit criteria:** A committed PNG at a defined path (e.g. `assets/images/share-card.png`) is exactly 1200×630 pixels, verified via image metadata inspection (e.g. `sips -g pixelWidth -g pixelHeight`); the composition uses the project's existing color/typography tokens rather than ad hoc values.
+- **Notes:** No screenshot/image-generation dependency exists in the repo yet. Suggested approach: build a throwaway HTML card from the existing design tokens and capture it at exact dimensions with the browser preview tool, rather than adding a new dependency (e.g. sharp/puppeteer) for a one-time asset.
+
+### [T108] Add document title, meta description, and OG/Twitter tags
+
+- **Area:** Web launch surface (cross-cutting)
+- **Priority:** High
+- **Status:** Blocked — needs the literal approved meta description text. `NAKO_LAUNCH_PLAN.md` states one exists (147 characters, drafted and approved, doubling as the OG/Twitter description) but doesn't quote it.
+- **Planning:** Implementer
+- **Description:** Add `<title>`, a meta description, and Open Graph / Twitter Card tags to `src/app/+html.tsx` (currently has none of these), including an image tag pointing at the share-card asset from T107.
+- **Exit criteria:** Running `yarn expo export --platform web --output-dir <dir>` and inspecting the generated `index.html` shows the correct `<title>`, the approved meta description, and `og:title` / `og:description` / `og:image` / `twitter:card` / `twitter:image` tags with values matching the approved copy and the T107 asset path.
+- **Notes:** Depends on T107 landing first for a real image path. Once Luke supplies the literal meta description, flip Status to `Not started` and paste the exact text into this entry's Description.
+
+### [T109] Mobile-web cold-start correctness pass
+
+- **Area:** Web launch surface (cross-cutting)
+- **Priority:** High
+- **Status:** Not started
+- **Planning:** Implementer
+- **Description:** Drive the cold-start flow (onboarding intro → Kentei assessment → Tricks/Sesh) in the browser preview tool at representative mobile-web viewport widths (375px and 320px) and fix any console errors, broken states, or layout breaks found.
+- **Exit criteria:** With the dev server running, navigating the full cold-start flow at 375px and 320px shows zero console errors or warnings beyond the two known-benign ones documented in AGENTS.md, no visually broken or clipped layout, and no dead-end states; any defect found is fixed in this commit if it's self-contained to one area, otherwise filed as a new `Needs scoping` entry rather than expanding this ticket's scope.
+- **Notes:** This is the objective/technical half of the pre-launch check; Luke's separate subjective UX review of the same flow is manual and tracked in `NAKO_LAUNCH_PLAN.md`, not here. Web-only — no simulator/native tooling.
+
+### [T110] Track onboarding completion as an analytics event
+
+- **Area:** Analytics
+- **Priority:** Low
+- **Status:** Not started
+- **Planning:** Implementer
+- **Description:** Fire a `track('onboarding_completed')` call via the already-installed `@vercel/analytics` when the `onboardingCompleted` action dispatches (`src/features/profile/state/user-profile-provider.tsx:138`), web-only — matching the existing `Platform.OS === 'web'` gating already used for `<Analytics />` in `src/app/_layout.tsx`.
+- **Exit criteria:** Completing onboarding in the browser triggers a `track('onboarding_completed')` call, verified via a mocked `@vercel/analytics` import in a test; the onboarding reducer, persistence, and flow are otherwise unchanged.
+- **Notes:** Lowest priority in this batch — explicitly first to cut if time is tight Thursday, per `NAKO_LAUNCH_PLAN.md`'s cut line. Analytics only reports data once Luke enables Vercel Analytics in the dashboard (a separate manual step tracked in the plan document, not this ticket).
+
 ## Done
 
 Completed entries live in [TASKS_DONE.md](TASKS_DONE.md) — not part of the top-to-bottom read above; see step 5 under _Completing a task_.
