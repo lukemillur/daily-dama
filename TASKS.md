@@ -163,16 +163,6 @@ _T106–T110 come from stories S022–S026 in [BACKLOG_STORIES.md](BACKLOG_STORI
 - **Exit criteria:** The intro screen (`src/features/onboarding/components/onboarding-intro-step.tsx`) renders the exact approved eyebrow, headline, and body text; `kentei-onboarding.test.tsx`'s existing assertions (which only check the "Get started" button, not copy text) continue to pass.
 - **Notes:** Once Luke supplies the literal copy, flip Status to `Not started` and paste the exact text into this entry's Description before implementation — the implementer should not originate marketing copy.
 
-### [T107] Compose the 1200×630 social share-card image
-
-- **Area:** Web launch surface (cross-cutting)
-- **Priority:** High
-- **Status:** In progress
-- **Planning:** Implementer
-- **Description:** Create a 1200×630 PNG share-card image built from the app's existing design system (`AppColors`, typography components) reflecting Daily Dama's visual identity — the existing `logo-glow.png` / `icon.png` assets are square and the wrong shape for a link-preview card. Save it under `assets/images/` for T108's head tags to reference.
-- **Exit criteria:** A committed PNG at a defined path (e.g. `assets/images/share-card.png`) is exactly 1200×630 pixels, verified via image metadata inspection (e.g. `sips -g pixelWidth -g pixelHeight`); the composition uses the project's existing color/typography tokens rather than ad hoc values.
-- **Notes:** No screenshot/image-generation dependency exists in the repo yet. Suggested approach: build a throwaway HTML card from the existing design tokens and capture it at exact dimensions with the browser preview tool, rather than adding a new dependency (e.g. sharp/puppeteer) for a one-time asset.
-
 ### [T108] Add document title, meta description, and OG/Twitter tags
 
 - **Area:** Web launch surface (cross-cutting)

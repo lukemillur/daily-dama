@@ -1328,3 +1328,14 @@ Entries keep their content as it was at completion. Don't retroactively edit a d
 - **Description:** `ColorField`'s `hexText` (`theme-color-picker.tsx:93`) is seeded via `useState` on mount only and never resyncs when `persistedValue`/`fallbackColor` change later — e.g. after selecting a preset via `setThemeColors`, which updates profile state but leaves the picker's swatch/hex text showing the stale prior color. Add a resync effect, mirroring the pattern `ColorSpectrumPicker` already uses for its own resync (`color-spectrum-picker.tsx:58-67`), so `hexText` updates when `persistedValue` changes to a new defined value, without clobbering an in-progress manual edit.
 - **Exit criteria:** Component test: mount `ThemeColorPicker`, simulate applying a preset (parent re-renders with new `persistedValue` props matching what `setThemeColors` produces), and assert each `ColorField`'s swatch/hex text update to the preset's values without remounting. Existing hex-input-then-save and drag-then-save tests continue to pass unmodified.
 - **Notes:** Story S018. See T101's note on file overlap. Implemented the resync using the same guarded-setState-during-render pattern `ColorSpectrumPicker`'s own `persistedHex` resync uses (not a `useEffect`), so it resyncs `hexText` within the same commit as an external `setThemeColors` call rather than in a follow-up render, avoiding a visible flash of the stale value. Added a new test that applies a preset via `setThemeColors` from *outside* the `ColorField` (through a probe component calling `useUserProfileActions`), distinct from the field's own hex-input-then-save flow, and asserts both fields' hex text/swatch update without remounting.
+
+### [T107] Compose the 1200×630 social share-card image
+
+- **Area:** Web launch surface (cross-cutting)
+- **Priority:** High
+- **Status:** Done
+- **Planning:** Implementer
+- **Description:** Create a 1200×630 PNG share-card image built from the app's existing design system (`AppColors`, typography components) reflecting Daily Dama's visual identity — the existing `logo-glow.png` / `icon.png` assets are square and the wrong shape for a link-preview card. Save it under `assets/images/` for T108's head tags to reference.
+- **Exit criteria:** A committed PNG at a defined path (e.g. `assets/images/share-card.png`) is exactly 1200×630 pixels, verified via image metadata inspection (e.g. `sips -g pixelWidth -g pixelHeight`); the composition uses the project's existing color/typography tokens rather than ad hoc values.
+- **Notes:** No screenshot/image-generation dependency exists in the repo yet. Suggested approach: build a throwaway HTML card from the existing design tokens and capture it at exact dimensions with the browser preview tool, rather than adding a new dependency (e.g. sharp/puppeteer) for a one-time asset.
+
