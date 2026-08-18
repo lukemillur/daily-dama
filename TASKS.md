@@ -173,16 +173,6 @@ _T106–T110 come from stories S022–S026 in [BACKLOG_STORIES.md](BACKLOG_STORI
 - **Exit criteria:** Running `yarn expo export --platform web --output-dir <dir>` and inspecting the generated `index.html` shows the correct `<title>`, the approved meta description, and `og:title` / `og:description` / `og:image` / `twitter:card` / `twitter:image` tags with values matching the approved copy and the T107 asset path.
 - **Notes:** Depends on T107 landing first for a real image path. Once Luke supplies the literal meta description, flip Status to `Not started` and paste the exact text into this entry's Description.
 
-### [T109] Mobile-web cold-start correctness pass
-
-- **Area:** Web launch surface (cross-cutting)
-- **Priority:** High
-- **Status:** In progress
-- **Planning:** Implementer
-- **Description:** Drive the cold-start flow (onboarding intro → Kentei assessment → Tricks/Sesh) in the browser preview tool at representative mobile-web viewport widths (375px and 320px) and fix any console errors, broken states, or layout breaks found.
-- **Exit criteria:** With the dev server running, navigating the full cold-start flow at 375px and 320px shows zero console errors or warnings beyond the two known-benign ones documented in AGENTS.md, no visually broken or clipped layout, and no dead-end states; any defect found is fixed in this commit if it's self-contained to one area, otherwise filed as a new `Needs scoping` entry rather than expanding this ticket's scope.
-- **Notes:** This is the objective/technical half of the pre-launch check; Luke's separate subjective UX review of the same flow is manual and tracked in `NAKO_LAUNCH_PLAN.md`, not here. Web-only — no simulator/native tooling.
-
 ### [T110] Track onboarding completion as an analytics event
 
 - **Area:** Analytics

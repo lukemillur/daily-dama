@@ -1,16 +1,11 @@
-import { createContext, type PropsWithChildren, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { type PropsWithChildren, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { AccessGateScreen } from '@/features/access-gate/components/access-gate-screen';
 import { getConfiguredAccessPassword, isCorrectAccessPassword } from '@/features/access-gate/model/access-gate';
 import { loadAccessGateUnlocked, saveAccessGateUnlocked } from '@/features/access-gate/persistence/access-gate-persistence';
+import { AccessGateActionsContext } from '@/features/access-gate/state/access-gate-context';
 import { createWriteQueue } from '@/shared/persistence/storage';
-
-interface AccessGateActions {
-  readonly attemptUnlock: (passwordAttempt: string) => boolean;
-}
-
-const AccessGateActionsContext = createContext<AccessGateActions | undefined>(undefined);
 
 export function AccessGateProvider({ children }: PropsWithChildren) {
   const configuredPassword = getConfiguredAccessPassword();
@@ -89,12 +84,3 @@ export function AccessGateProvider({ children }: PropsWithChildren) {
   );
 }
 
-export function useAccessGateActions() {
-  const actions = useContext(AccessGateActionsContext);
-
-  if (!actions) {
-    throw new Error('useAccessGateActions must be used within AccessGateProvider.');
-  }
-
-  return actions;
-}
