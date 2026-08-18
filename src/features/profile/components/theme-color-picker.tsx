@@ -114,7 +114,7 @@ function ColorField({
       <ColorSpectrumPicker
         accessibilityLabelPrefix={label}
         liveHex={isValidHex ? hexText : undefined}
-        persistedHex={persistedValue}
+        persistedHex={persistedValue ?? fallbackColor}
         onChange={setHexText}
       />
       <FieldRow>
