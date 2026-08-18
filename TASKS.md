@@ -151,16 +151,6 @@ _T098 comes from story S010 in [BACKLOG_STORIES.md](BACKLOG_STORIES.md), rewritt
 
 _The following batch (T099–T105) comes from stories S015–S021 in [BACKLOG_STORIES.md](BACKLOG_STORIES.md), a QA pass over the T089–T098 theming batch refined into stories by `product-manager` and scoped in this pass. New entries are placed before the older queue (there is none currently) so they're picked up first._
 
-### [T102] Resync the color picker's swatch/hex text when a preset changes the saved color
-
-- **Area:** Profile / Theming
-- **Priority:** Medium
-- **Status:** Not started
-- **Planning:** Implementer
-- **Description:** `ColorField`'s `hexText` (`theme-color-picker.tsx:93`) is seeded via `useState` on mount only and never resyncs when `persistedValue`/`fallbackColor` change later — e.g. after selecting a preset via `setThemeColors`, which updates profile state but leaves the picker's swatch/hex text showing the stale prior color. Add a resync effect, mirroring the pattern `ColorSpectrumPicker` already uses for its own resync (`color-spectrum-picker.tsx:58-67`), so `hexText` updates when `persistedValue` changes to a new defined value, without clobbering an in-progress manual edit.
-- **Exit criteria:** Component test: mount `ThemeColorPicker`, simulate applying a preset (parent re-renders with new `persistedValue` props matching what `setThemeColors` produces), and assert each `ColorField`'s swatch/hex text update to the preset's values without remounting. Existing hex-input-then-save and drag-then-save tests continue to pass unmodified.
-- **Notes:** Story S018. See T101's note on file overlap.
-
 ### [T103] Left-align the Sesh home screen's intro text block
 
 - **Area:** Sesh
