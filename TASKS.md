@@ -151,16 +151,6 @@ _T098 comes from story S010 in [BACKLOG_STORIES.md](BACKLOG_STORIES.md), rewritt
 
 _The following batch (T099–T105) comes from stories S015–S021 in [BACKLOG_STORIES.md](BACKLOG_STORIES.md), a QA pass over the T089–T098 theming batch refined into stories by `product-manager` and scoped in this pass. New entries are placed before the older queue (there is none currently) so they're picked up first._
 
-### [T101] Seed the color picker's puck from the same color as the swatch/hex text
-
-- **Area:** Profile / Theming
-- **Priority:** High
-- **Status:** Not started
-- **Planning:** Implementer
-- **Description:** `ColorSpectrumPicker` seeds its puck from `persistedHex` (`theme-color-picker.tsx:117`), which is `undefined` when no custom color is saved, falling back to a hardcoded `#4477aa` (`color-spectrum-picker.tsx:44-48`) instead of the resolved theme color T095 already threads into `ColorField` as `fallbackColor`. Pass the same `persistedValue ?? fallbackColor` value `ColorField` uses for its swatch/hex text into `ColorSpectrumPicker`'s puck-seed color.
-- **Exit criteria:** Component test mounts `ThemeColorPicker` with no saved theme preference and asserts the puck's initial derived HSV/position corresponds to the resolved default theme color (matching the swatch/hex), not the hardcoded `#4477aa` seed. Existing drag-then-save and manual-hex-then-save tests in `theme-color-picker.test.tsx` continue to pass unmodified.
-- **Notes:** Story S017. Touches the same two files as T102 (`theme-color-picker.tsx`, `color-spectrum-picker.tsx`) but a distinct code path (initial puck seed vs. swatch/hex resync) — kept as separate tickets per one-exit-criterion scoping, but reasonable to pick up back-to-back.
-
 ### [T102] Resync the color picker's swatch/hex text when a preset changes the saved color
 
 - **Area:** Profile / Theming

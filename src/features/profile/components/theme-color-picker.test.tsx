@@ -10,7 +10,7 @@ import {
   UserProfileProvider,
 } from "@/features/profile/state/user-profile-provider";
 import { resolveTheme } from "@/features/profile/state/use-resolved-theme";
-import { hsvToHex } from "@/shared/color/hsv";
+import { hexToHsv, hsvToHex } from "@/shared/color/hsv";
 
 // ThemeColorPicker (transitively, via user-profile-provider) pulls in AsyncStorage - mocked the
 // same way other provider-backed tests in this repo do.
@@ -297,6 +297,23 @@ describe("ThemeColorPicker", () => {
     expect(accentSwatch.length).toBeGreaterThan(0);
     const textSwatch = root.root.findAll((node) => node.props.$hex === defaults.text);
     expect(textSwatch.length).toBeGreaterThan(0);
+
+    act(() => root.unmount());
+  });
+
+  it("seeds the puck from the resolved default theme color, not the hardcoded picker fallback", async () => {
+    const root = await mountPicker();
+    const defaults = resolveTheme({});
+    const expectedHsv = hexToHsv(defaults.background)!;
+
+    const SV_SIZE = 200;
+    const PUCK_SIZE = 14;
+    const expectedLeft = expectedHsv.s * SV_SIZE - PUCK_SIZE / 2;
+    const expectedTop = (1 - expectedHsv.v) * SV_SIZE - PUCK_SIZE / 2;
+
+    const puckStyle = findSvPuckStyle(root, "Background color saturation and lightness");
+    expect(puckStyle.left).toBeCloseTo(expectedLeft);
+    expect(puckStyle.top).toBeCloseTo(expectedTop);
 
     act(() => root.unmount());
   });
