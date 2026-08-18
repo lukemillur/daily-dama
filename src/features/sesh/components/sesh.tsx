@@ -359,14 +359,6 @@ function TrickPicker({
             <Eyebrow>Start a sesh</Eyebrow>
             <DisplayTitle>What are we{`\n`}working on?</DisplayTitle>
             <BodyCopy>Choose how long you want to focus, then pick one of the tricks from your practice list.</BodyCopy>
-            <Link href="/sesh/multi-trick" asChild>
-              <MultiTrickAction
-                accessibilityLabel="Practice several tricks"
-                accessibilityRole="link">
-                <MultiTrickActionTitle>Practice several tricks</MultiTrickActionTitle>
-                <MultiTrickActionCopy>Build a line and work through it one trick at a time.</MultiTrickActionCopy>
-              </MultiTrickAction>
-            </Link>
           </>
         )}
         <PlanLabel>Practice format</PlanLabel>
@@ -448,6 +440,16 @@ function TrickPicker({
             </ChallengeChoices>
           </ChallengeField>
         ) : null}
+        {isDirectPractice ? null : (
+          <Link href="/sesh/multi-trick" asChild>
+            <MultiTrickAction
+              accessibilityLabel="Practice several tricks"
+              accessibilityRole="link">
+              <MultiTrickActionTitle>Practice several tricks</MultiTrickActionTitle>
+              <MultiTrickActionCopy>Build a line and work through it one trick at a time.</MultiTrickActionCopy>
+            </MultiTrickAction>
+          </Link>
+        )}
         <TrickChoices>
           {tricks.map((trick) => {
             const isPreferred = trick.id === preferredTrickId;
