@@ -156,7 +156,7 @@ _The following batch (T099–T105) comes from stories S015–S021 in [BACKLOG_ST
 
 - **Area:** Tricks
 - **Priority:** Medium
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Implementer
 - **Description:** The Tricks tab (`src/app/tricks/index.tsx:66-114`) wraps `TrickDirectory` in a `DirectoryContent` styled wrapper (`width:100%; max-width:760px;`, line 515) inside a centered `Screen`. The Trick Goals route (`src/app/tricks/goals.tsx:19`) and `GoalTrickPicker` (`src/features/goals/components/all-trick-goals-screen.tsx:120-146`) render `TrickDirectory` with no equivalent width-constraining wrapper, so the picker stretches to the full screen width instead of matching the Tricks tab's column. Add an equivalent max-width wrapper around the Goals route's `TrickDirectory` usage without touching `src/app/tricks/index.tsx` or `DirectoryContent` itself.
 - **Exit criteria:** In-browser check at 375px, 760px+, and 1200px+ web viewports: the Trick Goals picker's content column renders at the same width (760px cap, centered) as the Tricks tab's `DirectoryContent`. `git diff` confirms `src/app/tricks/index.tsx` is unchanged.
