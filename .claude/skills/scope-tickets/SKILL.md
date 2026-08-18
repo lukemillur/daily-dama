@@ -12,7 +12,8 @@ If a story looks like weak product reasoning, over-scoped, or duplicative, say s
 ## Input
 
 - A named story ID (e.g. `S014`) or "the ready ones" — resolve to entries in `BACKLOG_STORIES.md` with `Status: Ready for scoping`.
-- If no story is named and more than one is ready, list them and ask which to scope, unless the user said "all of them."
+- If no argument is given at all (bare `/scope-tickets` invocation), default to scoping every `Ready for scoping` story, in the order they appear in `BACKLOG_STORIES.md`, without asking — the same result as if the user had said "all of them." If there are zero ready stories, say so and stop instead of scoping anything.
+- If the user names a specific subset, or otherwise makes clear they want to choose rather than default to all, list the ready stories and ask which to scope.
 - If a named story isn't `Ready for scoping`, stop and say so — don't scope a `Proposed` or `Rejected` story just because it was named.
 
 ## Codebase context gathering

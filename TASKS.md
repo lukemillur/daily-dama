@@ -150,6 +150,78 @@ _T090–T097 come from stories S005–S009 and S011–S013 in [BACKLOG_STORIES.m
 
 _T098 comes from story S010 in [BACKLOG_STORIES.md](BACKLOG_STORIES.md), rewritten by `product-manager` after the original preset-scoped framing turned out to rest on a false premise, then scoped in this pass._
 
+_The following batch (T099–T105) comes from stories S015–S021 in [BACKLOG_STORIES.md](BACKLOG_STORIES.md), a QA pass over the T089–T098 theming batch refined into stories by `product-manager` and scoped in this pass. New entries are placed before the older queue (there is none currently) so they're picked up first._
+
+### [T099] Match the Trick Goals picker's container width to the Tricks tab
+
+- **Area:** Tricks
+- **Priority:** Medium
+- **Status:** Not started
+- **Planning:** Implementer
+- **Description:** The Tricks tab (`src/app/tricks/index.tsx:66-114`) wraps `TrickDirectory` in a `DirectoryContent` styled wrapper (`width:100%; max-width:760px;`, line 515) inside a centered `Screen`. The Trick Goals route (`src/app/tricks/goals.tsx:19`) and `GoalTrickPicker` (`src/features/goals/components/all-trick-goals-screen.tsx:120-146`) render `TrickDirectory` with no equivalent width-constraining wrapper, so the picker stretches to the full screen width instead of matching the Tricks tab's column. Add an equivalent max-width wrapper around the Goals route's `TrickDirectory` usage without touching `src/app/tricks/index.tsx` or `DirectoryContent` itself.
+- **Exit criteria:** In-browser check at 375px, 760px+, and 1200px+ web viewports: the Trick Goals picker's content column renders at the same width (760px cap, centered) as the Tricks tab's `DirectoryContent`. `git diff` confirms `src/app/tricks/index.tsx` is unchanged.
+- **Notes:** Story S015. Consider factoring the 760px-cap wrapper into a small shared component reused by both routes, rather than duplicating the literal, if that doesn't require touching the Tricks tab's existing JSX structure.
+
+### [T100] Fix the web splash overlay not showing a saved custom background color
+
+- **Area:** App shell / Theming
+- **Priority:** High
+- **Status:** Not started
+- **Planning:** Required
+- **Description:** QA re-check on T094 found the splash overlay still doesn't show a saved custom background color on reload. `read-cached-theme-background.ts` and the profile persistence key/document shape (`user-profile-persistence.ts`) are unchanged since T094 shipped and look intact. The likely culprit is `animated-icon.web.tsx:19-24`'s reliance on a `useSyncExternalStore`-based hydration-mismatch trick to force a second render after mount — this depends on the web build actually performing a real `hydrateRoot` over pre-rendered HTML, which is unverified against the app's current build/serving setup (e.g. `yarn expo export --platform web` output as actually deployed). Confirm the real client bootstrap mechanism and replace the hydration-mismatch reliance with something that reliably re-renders with the cached color if needed.
+- **Exit criteria:** In-browser verification (following T094's original method): save a custom background color, reload, and confirm the overlay's computed `background-color` matches the saved color before the main UI mounts. This must be reproduced as currently broken, then confirmed fixed — not just re-run against existing passing tests. New or updated test coverage locks in whatever mechanism replaces or repairs the hydration path.
+- **Notes:** Story S016. Marked `Required` because the root cause sits in web bootstrap/hydration behavior that the initial investigation could not fully confirm from source alone — treat this as read-then-decide, not a known one-line fix.
+
+### [T101] Seed the color picker's puck from the same color as the swatch/hex text
+
+- **Area:** Profile / Theming
+- **Priority:** High
+- **Status:** Not started
+- **Planning:** Implementer
+- **Description:** `ColorSpectrumPicker` seeds its puck from `persistedHex` (`theme-color-picker.tsx:117`), which is `undefined` when no custom color is saved, falling back to a hardcoded `#4477aa` (`color-spectrum-picker.tsx:44-48`) instead of the resolved theme color T095 already threads into `ColorField` as `fallbackColor`. Pass the same `persistedValue ?? fallbackColor` value `ColorField` uses for its swatch/hex text into `ColorSpectrumPicker`'s puck-seed color.
+- **Exit criteria:** Component test mounts `ThemeColorPicker` with no saved theme preference and asserts the puck's initial derived HSV/position corresponds to the resolved default theme color (matching the swatch/hex), not the hardcoded `#4477aa` seed. Existing drag-then-save and manual-hex-then-save tests in `theme-color-picker.test.tsx` continue to pass unmodified.
+- **Notes:** Story S017. Touches the same two files as T102 (`theme-color-picker.tsx`, `color-spectrum-picker.tsx`) but a distinct code path (initial puck seed vs. swatch/hex resync) — kept as separate tickets per one-exit-criterion scoping, but reasonable to pick up back-to-back.
+
+### [T102] Resync the color picker's swatch/hex text when a preset changes the saved color
+
+- **Area:** Profile / Theming
+- **Priority:** Medium
+- **Status:** Not started
+- **Planning:** Implementer
+- **Description:** `ColorField`'s `hexText` (`theme-color-picker.tsx:93`) is seeded via `useState` on mount only and never resyncs when `persistedValue`/`fallbackColor` change later — e.g. after selecting a preset via `setThemeColors`, which updates profile state but leaves the picker's swatch/hex text showing the stale prior color. Add a resync effect, mirroring the pattern `ColorSpectrumPicker` already uses for its own resync (`color-spectrum-picker.tsx:58-67`), so `hexText` updates when `persistedValue` changes to a new defined value, without clobbering an in-progress manual edit.
+- **Exit criteria:** Component test: mount `ThemeColorPicker`, simulate applying a preset (parent re-renders with new `persistedValue` props matching what `setThemeColors` produces), and assert each `ColorField`'s swatch/hex text update to the preset's values without remounting. Existing hex-input-then-save and drag-then-save tests continue to pass unmodified.
+- **Notes:** Story S018. See T101's note on file overlap.
+
+### [T103] Left-align the Sesh home screen's intro text block
+
+- **Area:** Sesh
+- **Priority:** Medium
+- **Status:** Not started
+- **Planning:** Implementer
+- **Description:** On the Sesh home (idle) screen, `Eyebrow` ("Start a sesh") renders left-aligned by default while the local `DisplayTitle` ("What are we working on?") and `BodyCopy` ("Choose how long you want...") overrides explicitly set `text-align: center` (`sesh.tsx:1149-1151`), producing a visually inconsistent intro block. Remove the centered `text-align` overrides so all three render left-aligned and share a common left edge.
+- **Exit criteria:** In-browser check on the Sesh home screen: the three intro lines share the same left edge; computed-style check confirms none of them resolve `text-align: center`. Existing `sesh.test.tsx` tests continue to pass unmodified.
+- **Notes:** Story S019. Purely a styled-components change inside `sesh.tsx`; no state or behavior change.
+
+### [T104] Clear a custom text color when a preset theme is selected
+
+- **Area:** Profile / Theming
+- **Priority:** High
+- **Status:** Not started
+- **Planning:** Required
+- **Description:** The `themeColorsUpdated` reducer case (`user-profile.ts:142-147`), fired by preset selection (`rainbow-theme-presets.tsx:30`), fully replaces `themeBackgroundColor`/`themeAccentColor` but never touches `themeTextColor` — so a previously saved custom text color survives a later preset selection instead of being replaced by the preset's look. Have preset selection also clear the custom text color, either by extending `setThemeColors`/`themeColorsUpdated` to reset `themeTextColor` to `undefined`, or by having the preset-tap handler additionally call the existing `setThemeTextColor(undefined)` action.
+- **Exit criteria:** Reducer test: dispatch a custom `themeTextColor` being set, then apply `themeColorsUpdated` (a preset), and assert `themeTextColor` is `undefined` afterward. Component test: select a preset in `RainbowThemePresets` after a custom text color was saved, and assert the persisted profile no longer carries a custom text color. Existing tests for a direct, manual `ThemeColorPicker` text-color save (an unaffected path) continue to pass unmodified.
+- **Notes:** Story S020. Marked `Required` because it changes reducer behavior for a persisted field, per this project's escalation rule for state-machine/reducer changes.
+
+### [T105] Move "Practice several tricks" below the format/time controls
+
+- **Area:** Sesh
+- **Priority:** Medium
+- **Status:** Not started
+- **Planning:** Implementer
+- **Description:** In the Sesh home screen's non-direct-practice branch, the `MultiTrickAction` ("Practice several tricks") block currently renders immediately after the intro text and before the practice-format/duration controls (`sesh.tsx:362-369`, ahead of `PlanChoices`/`DurationField`/`ChallengeField` at `sesh.tsx:372-450`). Move it to render after those controls and before the focused-tricks list (`TrickChoices`, `sesh.tsx:451+`), so the format/time controls read as the screen's primary action and "Practice several tricks" reads as a secondary option.
+- **Exit criteria:** In-browser/component check: on the Sesh home screen, render order is intro text → format/duration controls → "Practice several tricks" → focused-tricks list. Existing `sesh.test.tsx` interaction tests for both single-trick and multi-trick flows continue to pass unmodified (tapping "Practice several tricks" still opens the same picker).
+- **Notes:** Story S021. Pure JSX-ordering change; no state or logic change.
+
 ## Done
 
 Completed entries live in [TASKS_DONE.md](TASKS_DONE.md) — not part of the top-to-bottom read above; see step 5 under _Completing a task_.
