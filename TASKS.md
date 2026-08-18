@@ -155,7 +155,7 @@ _The following batch (T099–T105) comes from stories S015–S021 in [BACKLOG_ST
 
 - **Area:** Sesh
 - **Priority:** Medium
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Implementer
 - **Description:** On the Sesh home (idle) screen, `Eyebrow` ("Start a sesh") renders left-aligned by default while the local `DisplayTitle` ("What are we working on?") and `BodyCopy` ("Choose how long you want...") overrides explicitly set `text-align: center` (`sesh.tsx:1149-1151`), producing a visually inconsistent intro block. Remove the centered `text-align` overrides so all three render left-aligned and share a common left edge.
 - **Exit criteria:** In-browser check on the Sesh home screen: the three intro lines share the same left edge; computed-style check confirms none of them resolve `text-align: center`. Existing `sesh.test.tsx` tests continue to pass unmodified.
