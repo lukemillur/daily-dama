@@ -9,8 +9,9 @@ import {
   useRef,
   useState,
 } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Platform, StyleSheet, Text, View } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { track } from '@vercel/analytics';
 
 import { AppColors } from '@/constants/theme';
 import {
@@ -136,6 +137,9 @@ export function UserProfileProvider({ children }: PropsWithChildren) {
   const completeOnboarding = useCallback(
     (kenteiRank: number, selectedTrickIds: readonly string[], lacedTrickIds: readonly string[]) => {
       dispatch({ type: 'onboardingCompleted', kenteiRank, selectedTrickIds, lacedTrickIds });
+      if (Platform.OS === 'web') {
+        track('onboarding_completed');
+      }
     },
     [],
   );
