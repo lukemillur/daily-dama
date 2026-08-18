@@ -1,6 +1,6 @@
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import { ScrollView, TextInput } from "react-native";
+import { Linking, ScrollView, TextInput } from "react-native";
 import { styled } from "styled-components/native";
 
 import { Button } from "@/components/ui/button";
@@ -51,8 +51,8 @@ export default function ProfileScreen() {
           <Title>Put it to{`\n`}the test.</Title>
           <Copy>
             Run a real, timed assessment through your tricks. Every landing
-            counts as practice history, so a full pass through a rank
-            promotes you automatically.
+            counts as practice history, so a full pass through a rank promotes
+            you automatically.
           </Copy>
           <RetakeButton
             onPress={() => router.push("/profile/kentei-assessment")}
@@ -68,6 +68,22 @@ export default function ProfileScreen() {
             streakThresholdMs={streakThresholdMs}
             onSave={setStreakThresholdMs}
           />
+          <Divider />
+          <SectionLabel>Feedback</SectionLabel>
+          <Title>Something{`\n`}feel off?</Title>
+          <Copy>
+            Daily Dama is a work in progress. Bug reports, trick corrections,
+            and feature requests all help.
+          </Copy>
+          <RetakeButton
+            onPress={() =>
+              Linking.openURL(
+                "mailto:test@gmail.com?subject=Daily%20Dama%20feedback",
+              )
+            }
+          >
+            Send feedback
+          </RetakeButton>
         </Content>
       </ProfileScroll>
     </Screen>
