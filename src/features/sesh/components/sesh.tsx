@@ -1147,8 +1147,8 @@ const CenteredPanel = styled.View`flex: 1; width: 100%; max-width: 680px; align-
 const PickerContent = styled.View`width: 100%; max-width: 680px; align-self: center;`;
 const ActiveContent = styled.View`width: 100%; max-width: 680px; align-self: center; align-items: center;`;
 const Eyebrow = styled(BaseEyebrow)`margin-bottom: 14px;`;
-const DisplayTitle = styled(BaseDisplayTitle)`text-align: center;`;
-const BodyCopy = styled(BodyText)`max-width: 470px; text-align: center; margin-top: 18px;`;
+const DisplayTitle = styled(BaseDisplayTitle)``;
+const BodyCopy = styled(BodyText)`max-width: 470px; margin-top: 18px;`;
 const PrimaryButton = styled(Button).attrs({ size: 'medium' })`
   margin-top: 28px;
   border-radius: 5px;

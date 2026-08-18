@@ -4,6 +4,16 @@ Completed entries move here from `TASKS.md`'s `Backlog`, in the same commit that
 
 Entries keep their content as it was at completion. Don't retroactively edit a description or exit criteria after the fact; if something about a completed task turns out to be wrong or misleading, note that in a new entry or in code, not by rewriting history here.
 
+### [T103] Left-align the Sesh home screen's intro text block
+
+- **Area:** Sesh
+- **Priority:** Medium
+- **Status:** Done
+- **Planning:** Implementer
+- **Description:** On the Sesh home (idle) screen, `Eyebrow` ("Start a sesh") renders left-aligned by default while the local `DisplayTitle` ("What are we working on?") and `BodyCopy` ("Choose how long you want...") overrides explicitly set `text-align: center` (`sesh.tsx:1149-1151`), producing a visually inconsistent intro block. Remove the centered `text-align` overrides so all three render left-aligned and share a common left edge.
+- **Exit criteria:** In-browser check on the Sesh home screen: the three intro lines share the same left edge; computed-style check confirms none of them resolve `text-align: center`. Existing `sesh.test.tsx` tests continue to pass unmodified.
+- **Notes:** Story S019. Purely a styled-components change inside `sesh.tsx`; no state or behavior change. Removed the `text-align: center` overrides from `DisplayTitle`/`BodyCopy` in `src/features/sesh/components/sesh.tsx`, which are shared across the idle picker, empty state, countdown, and completion screens. Verified in-browser with a scripted Puppeteer check (seeded a completed-onboarding profile into `localStorage`, navigated to `/sesh`): all three intro lines resolve `text-align: start` and share the same left offset (172px). `sesh.test.tsx` (57 tests) passes unmodified. Full verification sequence passes.
+
 ### [T099] Match the Trick Goals picker's container width to the Tricks tab
 
 - **Area:** Tricks
