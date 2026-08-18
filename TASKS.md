@@ -173,15 +173,6 @@ _T106–T110 come from stories S022–S026 in [BACKLOG_STORIES.md](BACKLOG_STORI
 - **Exit criteria:** Running `yarn expo export --platform web --output-dir <dir>` and inspecting the generated `index.html` shows the correct `<title>`, the approved meta description, and `og:title` / `og:description` / `og:image` / `twitter:card` / `twitter:image` tags with values matching the approved copy and the T107 asset path.
 - **Notes:** Depends on T107 landing first for a real image path. Once Luke supplies the literal meta description, flip Status to `Not started` and paste the exact text into this entry's Description.
 
-### [T110] Track onboarding completion as an analytics event
-
-- **Area:** Analytics
-- **Priority:** Low
-- **Status:** Not started
-- **Planning:** Implementer
-- **Description:** Fire a `track('onboarding_completed')` call via the already-installed `@vercel/analytics` when the `onboardingCompleted` action dispatches (`src/features/profile/state/user-profile-provider.tsx:138`), web-only — matching the existing `Platform.OS === 'web'` gating already used for `<Analytics />` in `src/app/_layout.tsx`.
-- **Exit criteria:** Completing onboarding in the browser triggers a `track('onboarding_completed')` call, verified via a mocked `@vercel/analytics` import in a test; the onboarding reducer, persistence, and flow are otherwise unchanged.
-- **Notes:** Lowest priority in this batch — explicitly first to cut if time is tight Thursday, per `NAKO_LAUNCH_PLAN.md`'s cut line. Analytics only reports data once Luke enables Vercel Analytics in the dashboard (a separate manual step tracked in the plan document, not this ticket).
 
 ## Done
 
