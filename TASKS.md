@@ -145,22 +145,11 @@ _The following batch (T085–T088) comes from user stories S001–S004 in [BACKL
 
 _T089 comes from story S014 in [BACKLOG_STORIES.md](BACKLOG_STORIES.md), scoped via `scope-tickets` after a QA pass on T085–T088 surfaced a pattern of theming being bolted onto surfaces one hardcoded literal at a time. It is deliberately scoped as schema-only groundwork, sequenced ahead of the not-yet-scoped S009/S012/S013 so those consume this token set instead of inventing their own._
 
-
 _T090–T097 come from stories S005–S009 and S011–S013 in [BACKLOG_STORIES.md](BACKLOG_STORIES.md), scoped in the same `scope-tickets` pass. S010 (preset text colors) was not scoped this round — see the note on its `BACKLOG_STORIES.md` entry; investigation found its premise doesn't hold up and it needs re-refinement by `product-manager` before it's scopable. New entries are placed after T089, since T096/T097 depend on it landing first._
 
 _T098 comes from story S010 in [BACKLOG_STORIES.md](BACKLOG_STORIES.md), rewritten by `product-manager` after the original preset-scoped framing turned out to rest on a false premise, then scoped in this pass._
 
 _The following batch (T099–T105) comes from stories S015–S021 in [BACKLOG_STORIES.md](BACKLOG_STORIES.md), a QA pass over the T089–T098 theming batch refined into stories by `product-manager` and scoped in this pass. New entries are placed before the older queue (there is none currently) so they're picked up first._
-
-### [T100] Fix the web splash overlay not showing a saved custom background color
-
-- **Area:** App shell / Theming
-- **Priority:** High
-- **Status:** Not started
-- **Planning:** Required
-- **Description:** QA re-check on T094 found the splash overlay still doesn't show a saved custom background color on reload. `read-cached-theme-background.ts` and the profile persistence key/document shape (`user-profile-persistence.ts`) are unchanged since T094 shipped and look intact. The likely culprit is `animated-icon.web.tsx:19-24`'s reliance on a `useSyncExternalStore`-based hydration-mismatch trick to force a second render after mount — this depends on the web build actually performing a real `hydrateRoot` over pre-rendered HTML, which is unverified against the app's current build/serving setup (e.g. `yarn expo export --platform web` output as actually deployed). Confirm the real client bootstrap mechanism and replace the hydration-mismatch reliance with something that reliably re-renders with the cached color if needed.
-- **Exit criteria:** In-browser verification (following T094's original method): save a custom background color, reload, and confirm the overlay's computed `background-color` matches the saved color before the main UI mounts. This must be reproduced as currently broken, then confirmed fixed — not just re-run against existing passing tests. New or updated test coverage locks in whatever mechanism replaces or repairs the hydration path.
-- **Notes:** Story S016. Marked `Required` because the root cause sits in web bootstrap/hydration behavior that the initial investigation could not fully confirm from source alone — treat this as read-then-decide, not a known one-line fix.
 
 ### [T101] Seed the color picker's puck from the same color as the swatch/hex text
 
