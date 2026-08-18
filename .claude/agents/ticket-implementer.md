@@ -29,6 +29,14 @@ git fetch origin <branch> && git checkout -B <branch> FETCH_HEAD && git status -
 git fetch origin <branch> && git checkout -B <branch> FETCH_HEAD && git status --short && git log --oneline -3
 ```
 
+**Guardrail: stay in your worktree.** After the bootstrap command, capture your worktree root and never leave it:
+
+```sh
+WORKTREE_ROOT="$(git rev-parse --show-toplevel)"; echo "$WORKTREE_ROOT"
+```
+
+Every Bash call for the rest of this run must execute inside `$WORKTREE_ROOT`. Never `cd` to the shared main checkout (the repo path outside `.claude/worktrees/`, e.g. the literal path used in `AGENTS.md` examples) or to any other absolute path — that checkout is other sessions' working copy, and edits or test runs against it corrupt their state instead of yours. Before running tests, `verify.mjs`, or any `git add`/`commit`/`push`, re-confirm with `pwd` (or fold `pwd` into the same command) that you're still at `$WORKTREE_ROOT`. If you ever discover you've drifted, `git checkout`/revert the stray changes in the *other* location first, then resume from `$WORKTREE_ROOT` — do not commit from the wrong directory to "fix" it.
+
 ## 2. Discover (one command)
 
 Front-load the repository lookups the plan implies into a single command instead of one call each, e.g.:
