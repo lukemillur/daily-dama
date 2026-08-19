@@ -133,16 +133,6 @@ _T112–T112.6 come from stories S027–S031 in [BACKLOG_STORIES.md](BACKLOG_STO
 
 _T113–T120 come from stories S001–S008 in [BACKLOG_STORIES.md](BACKLOG_STORIES.md) (the user's 2026-08-19 QA pass on T112.4/T112.6 plus general landing-page feedback), refined by `product-manager` and scoped in this pass. T117 is a two-child umbrella: T117.1 captures new web-layout screenshots (mirroring T112.3's dedicated capture task) and T117.2 wires the platform-based swap, split because the capture step is genuinely separable in risk and effort from the display-logic change. Two open product questions surfaced during scoping and were resolved here rather than left `Blocked`: T114 moves the CTA to the top rather than duplicating it, and T120 clears background/accent only (not text color), matching the existing "Reset background & accent" button's scope. All other entries are independent S-sized tickets — no required ordering between them beyond what each entry's own Notes call out.
 
-### [T113] Give the landing CTA a more distinctive, playful visual treatment
-
-- **Area:** Landing
-- **Priority:** High
-- **Status:** Not started
-- **Planning:** Required
-- **Description:** Redesign `src/features/landing/components/landing-cta.tsx`'s visual treatment for both the first-time and returning-visitor variants. The current panel (flat `AppColors.yellow`/`AppColors.sage` fill, bordered rectangle, tag/headline/body/button stack) already reads as structurally distinct from onboarding's button per T112.4's original exit criteria, but the user rejected it on QA as "still quite plain" and asked for a genuinely unique, fun treatment — this is a design pass on the same component, not new functionality.
-- **Exit criteria:** A browser check at both a mobile (≤480px) and a desktop width shows the CTA panel using a visual treatment beyond a flat single-color fill (e.g. illustration, texture, gradient, layered shapes, or motion) for both variants. An automated test asserts the new treatment's key visual element(s) are present in the rendered output, and that navigation/copy behavior already covered by `landing-cta.test.tsx` (press → `router.push('/app/home')`, returning-visitor copy swap) still passes unchanged. Full verification sequence passes.
-- **Notes:** Purely a visual-treatment change — `useUserProfile()`/`useRouter()` wiring and the returning-visitor copy logic are already correct (T112.4) and must not change beyond what the new treatment requires. Promoted to `Planning: Required` because a plain `Implementer`-level pass already produced the "plain" result being rejected here. If any image/illustration asset is sourced externally, apply the same licensing caution as T119 (clear, checkable usage license only). Closely related to T114 (CTA moves to the top of the page) — same component area, safe to implement in either order.
-
 ### [T114] Move the landing CTA to the top of the page
 
 - **Area:** Landing
