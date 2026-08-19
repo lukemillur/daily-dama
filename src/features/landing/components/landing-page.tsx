@@ -5,6 +5,7 @@ import { styled } from 'styled-components/native';
 import { Screen } from '@/components/ui/screen';
 import { BodyText, DisplayTitle, Eyebrow } from '@/components/ui/typography';
 import { AppColors, Radii } from '@/constants/theme';
+import { LandingHero } from '@/features/landing/components/landing-hero';
 import { LandingCta } from '@/features/landing/components/landing-cta';
 
 interface Feature {
@@ -124,6 +125,7 @@ export function LandingPage() {
     <Screen background={AppColors.paper}>
       <LandingScroll contentContainerStyle={{ paddingBottom: 80 }}>
         <Content>
+          <LandingHero />
           <Eyebrow>Why Daily Dama</Eyebrow>
           <Headline>Play with{`\n`}intention.</Headline>
           <Lede>

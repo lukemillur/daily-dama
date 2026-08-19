@@ -101,6 +101,12 @@ describe('LandingPage', () => {
     expect(featureHeadingIndex).toBeGreaterThanOrEqual(0);
     expect(ctaIndex).toBeLessThan(featureHeadingIndex);
   });
+
+  it('renders the hero banner', async () => {
+    const root = await mount();
+
+    expect(root.root.findAllByProps({ testID: 'landing-hero' }).length).toBeGreaterThan(0);
+  });
 });
 
 describe('LandingPage screenshot showcase', () => {

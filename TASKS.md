@@ -133,16 +133,6 @@ _T112–T112.6 come from stories S027–S031 in [BACKLOG_STORIES.md](BACKLOG_STO
 
 _T113–T120 come from stories S001–S008 in [BACKLOG_STORIES.md](BACKLOG_STORIES.md) (the user's 2026-08-19 QA pass on T112.4/T112.6 plus general landing-page feedback), refined by `product-manager` and scoped in this pass. T117 is a two-child umbrella: T117.1 captures new web-layout screenshots (mirroring T112.3's dedicated capture task) and T117.2 wires the platform-based swap, split because the capture step is genuinely separable in risk and effort from the display-logic change. Two open product questions surfaced during scoping and were resolved here rather than left `Blocked`: T114 moves the CTA to the top rather than duplicating it, and T120 clears background/accent only (not text color), matching the existing "Reset background & accent" button's scope. All other entries are independent S-sized tickets — no required ordering between them beyond what each entry's own Notes call out.
 
-### [T118] Add a kendama-themed hero banner to the top of the landing page
-
-- **Area:** Landing
-- **Priority:** Medium
-- **Status:** Not started
-- **Planning:** Required
-- **Description:** Add a hero banner containing kendama-specific visual elements (e.g. the toy itself, string/tama motifs, or similar) to the top of `src/features/landing/components/landing-page.tsx`, above the existing `Eyebrow`/`Headline`/`Lede` text stack, visible on both mobile and web viewport widths.
-- **Exit criteria:** A browser check at both a mobile and a desktop viewport width shows a hero banner with kendama-specific visual content rendered above the existing headline text, before any scrolling on a typical viewport. An automated test asserts the hero banner element is present in `LandingPage`'s rendered output. Full verification sequence passes.
-- **Notes:** Promoted to `Planning: Required` matching the pattern for other first-impression landing-page design work (T112.2, T112.3, T113) — a high-visibility design element, not a mechanical change. If sourcing imagery externally rather than building an illustration/graphic in-house, apply the same licensing caution as T119 (clear, checkable usage license only). Interacts with T114 (CTA moved to top) for page ordering — T114's own exit criteria only requires the CTA to precede the pitch content, so implement this task's final hero/CTA order as a deliberate choice.
-
 ### [T119] Add additional kendama imagery to the landing page
 
 - **Area:** Landing
