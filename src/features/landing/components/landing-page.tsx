@@ -1,12 +1,11 @@
 import { Image } from 'expo-image';
-import { Link } from 'expo-router';
 import { ScrollView } from 'react-native';
 import { styled } from 'styled-components/native';
 
-import { Button } from '@/components/ui/button';
 import { Screen } from '@/components/ui/screen';
 import { BodyText, DisplayTitle, Eyebrow } from '@/components/ui/typography';
 import { AppColors } from '@/constants/theme';
+import { LandingCta } from '@/features/landing/components/landing-cta';
 
 interface Feature {
   readonly heading: string;
@@ -102,9 +101,7 @@ export function LandingPage() {
             get better, not the ones where you just want to play.
           </Closing>
 
-          <Link href="/app/home" asChild>
-            <CtaButton accessibilityRole="link">Start your first Sesh</CtaButton>
-          </Link>
+          <LandingCta />
         </Content>
       </LandingScroll>
     </Screen>
@@ -182,7 +179,3 @@ const Closing = styled(BodyText)`
   color: ${AppColors.textSubtle};
 `;
 
-const CtaButton = styled(Button)`
-  align-self: flex-start;
-  margin-top: 30px;
-`;

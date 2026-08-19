@@ -1,6 +1,5 @@
 import { describe, expect, it, jest } from '@jest/globals';
 import { Image } from 'expo-image';
-import type { ReactElement } from 'react';
 import { act, create } from 'react-test-renderer';
 
 import RootRoute from '@/app/index';
@@ -20,8 +19,11 @@ jest.mock('expo-image', () => {
 });
 
 jest.mock('expo-router', () => ({
-  Link: ({ children }: { children: ReactElement }) => children,
   useRouter: () => ({ replace: jest.fn(), push: jest.fn() }),
+}));
+
+jest.mock('@/features/profile/state/user-profile-provider', () => ({
+  useUserProfile: () => ({ selectedTrickIds: [], hasCompletedOnboarding: false }),
 }));
 
 describe('RootRoute (landing page)', () => {
@@ -48,10 +50,10 @@ describe('RootRoute (landing page)', () => {
     );
     expect(featureHeading.length).toBeGreaterThan(0);
 
-    const cta = root.root.findAll(
-      (node) => node.props.accessibilityRole === 'link',
+    const ctaHeadline = root.root.findAll(
+      (node) => node.props.children === 'Start your first sesh.',
     );
-    expect(cta.length).toBeGreaterThan(0);
+    expect(ctaHeadline.length).toBeGreaterThan(0);
 
     const ctaLabel = root.root.findAll(
       (node) => node.props.children === 'Start your first Sesh',

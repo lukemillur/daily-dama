@@ -140,16 +140,6 @@ _T112–T112.6 come from stories S027–S031 in [BACKLOG_STORIES.md](BACKLOG_STO
 - **Description:** Umbrella only — complete T112.1 through T112.6. Introduces a standalone marketing landing page at `dailydama.com/`, nests the existing application under `/app` (with the current home screen relocated to `/app/home`), gates it behind whether the visitor has completed onboarding, and adds a way back out to the landing page from inside the app. See [LANDING_PAGE_BRAINDUMP.md](LANDING_PAGE_BRAINDUMP.md) for the founder's-voice source material the landing copy should draw from.
 - **Notes:** Depends on T111 being done first in practice (see the batch note above), though not a hard `Depends on` — nothing in T112.1 technically requires the gate to already be gone.
 
-### [T112.4] Add a call-to-action from the landing page into the app
-
-- **Area:** Landing
-- **Priority:** High
-- **Status:** Not started
-- **Planning:** Required
-- **Description:** Add a single, clear call-to-action on the landing page (T112.2) that takes the visitor into the app. Explicitly **do not** reuse the existing "Get started" pattern from `onboarding-intro-step.tsx` — the user wants a distinct, considered piece of UI here, not the onboarding flow's button restyled; take real design time on this rather than defaulting to the nearest existing pattern. The CTA has two states: a **first-time-visitor** variant (default) that navigates to `/app/home`; and a **returning-visitor** variant, shown when `profile.hasCompletedOnboarding` is true, with copy that acknowledges they're returning to an app they already use rather than repeating first-time "get started" framing — this state is reachable because T112.6's in-app exit link deliberately lands an onboarded visitor back on `/` instead of being redirected away (see T112.5's updated description for the mechanism that makes that possible).
-- **Exit criteria:** An automated test simulates pressing the CTA as a first-time visitor and asserts navigation to `/app/home`. A second test renders the landing page with a completed-onboarding profile fixture (simulating arrival via T112.6's signal) and asserts the CTA shows distinct returning-visitor copy, and that activating it also navigates to `/app/home`. Full verification sequence passes.
-- **Notes:** Depends on T112.1 (target route must exist), T112.2 (needs a landing page to put the CTA on), and the `/`-arrival signal defined in T112.5 (needed to know which CTA copy to show). Promoted to `Planning: Required` on 2026-08-19 (was `Implementer`) at the user's explicit request — both because of the "avoid the obvious pattern, plan the creative treatment" instruction and because this task now depends on a cross-ticket contract (T112.5/T112.6) rather than being fully self-contained.
-
 ### [T112.5] Onboarded visitors skip the landing page
 
 - **Area:** Navigation
