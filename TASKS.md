@@ -135,7 +135,7 @@ _T112–T112.6 come from stories S027–S031 in [BACKLOG_STORIES.md](BACKLOG_STO
 
 - **Area:** Access gate
 - **Priority:** High
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** `AccessGateProvider` (`src/app/_layout.tsx:28`) currently wraps the entire app behind a password screen gated on `EXPO_PUBLIC_ACCESS_PASSWORD` (see `DEPLOYMENT_HANDOFF.md` §3). Delete the feature entirely: remove `AccessGateProvider` from the root layout, delete `src/features/access-gate/` and its tests, and remove any other reference to it (e.g. `AccessGateActionsContext` usage elsewhere, if any). The app becomes reachable without a password on every route.
 - **Exit criteria:** `src/features/access-gate/` no longer exists; `src/app/_layout.tsx` no longer imports or renders `AccessGateProvider`; a fresh browser session (cleared storage) reaches app content directly with no password prompt at any route; full verification sequence (`yarn test --runInBand`, `yarn lint`, `yarn tsc --noEmit`, `yarn expo export --platform web`) passes with no remaining references to the deleted feature.
