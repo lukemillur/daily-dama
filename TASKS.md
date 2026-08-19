@@ -144,7 +144,7 @@ _T112–T112.6 come from stories S027–S031 in [BACKLOG_STORIES.md](BACKLOG_STO
 
 - **Area:** Landing
 - **Priority:** High
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** At the new `/` route (freed up by T112.1), build a landing screen that explains what Daily Dama is and why it exists, distinct from both the onboarding flow and the app's home screen. Draft placeholder copy in the app's playful, kendama-flavored voice, drawing on [LANDING_PAGE_BRAINDUMP.md](LANDING_PAGE_BRAINDUMP.md) — final approved wording arrives later and will replace this draft in a follow-up pass, so don't treat the copy itself as load-bearing for this task's completion. This is the visitor's first impression of the product — treat it as a genuine design pass, not a placeholder scaffold: it should read as cohesive and representative of what the app actually is, not a generic marketing-page template with Daily Dama's name swapped in.
 - **Exit criteria:** Visiting `/` with no completed onboarding renders the new landing screen (not `KenteiOnboarding`, not `DailyHome`). A component/route test asserts the landing screen renders distinct headline/body copy elements using the existing typography components (`Eyebrow`/`DisplayTitle`/`BodyText`, matching the pattern in `onboarding-intro-step.tsx`). Full verification sequence passes.
