@@ -137,7 +137,7 @@ _T113–T120 come from stories S001–S008 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 - **Area:** Landing
 - **Priority:** Medium
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** Umbrella only — complete T117.1 and T117.2. The landing page currently shows the same four mobile-portrait screenshots (`assets/images/landing/*.png`, captured for T112.3) to every visitor regardless of viewport; this pair of tasks captures a matching web-layout set and wires the page to show mobile screenshots to mobile-width visitors and web screenshots to web/desktop-width visitors.
 - **Exit criteria:** N/A — umbrella; done when T117.1 and T117.2 are both `Done`.
