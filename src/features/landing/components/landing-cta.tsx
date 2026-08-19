@@ -1,4 +1,5 @@
 import { useRouter } from 'expo-router';
+import Animated, { FadeInUp } from 'react-native-reanimated';
 import { styled } from 'styled-components/native';
 
 import { Button } from '@/components/ui/button';
@@ -34,8 +35,15 @@ export function LandingCta() {
   const copy = isReturning ? RETURNING_COPY : FIRST_TIME_COPY;
 
   return (
-    <CtaPanel $variant={isReturning ? 'returning' : 'firstTime'}>
-      <CtaTag>{copy.tag}</CtaTag>
+    <CtaPanel
+      $variant={isReturning ? 'returning' : 'firstTime'}
+      entering={FadeInUp.duration(450).springify()}
+      style={{ boxShadow: `8px 8px 0 ${AppColors.ink}` }}
+    >
+      <CtaMotif aria-hidden>●</CtaMotif>
+      <CtaBadge>
+        <CtaTag>{copy.tag}</CtaTag>
+      </CtaBadge>
       <CtaHeadline>{copy.headline}</CtaHeadline>
       <CtaBody>{copy.body}</CtaBody>
       <CtaButton onPress={() => router.push('/app/home')}>{copy.action}</CtaButton>
@@ -43,18 +51,43 @@ export function LandingCta() {
   );
 }
 
-const CtaPanel = styled.View<{ readonly $variant: 'firstTime' | 'returning' }>`
+// `boxShadow` is passed as an explicit `style` prop at the JSX call site (not baked into
+// `.attrs`), because styled-components/native's `.attrs({ style: {...} })` config is only
+// used while resolving the CSS template literal's interpolations -- it is not concatenated
+// into the component's final rendered style unless the caller also passes its own `style`
+// prop, which is what happens here. Using the CSS `box-shadow` shorthand instead would get
+// lowered by the css-to-react-native parser to the legacy `shadow*` RN style props, which
+// react-native-web warns are deprecated in favor of `boxShadow`. See trick-card.tsx for the
+// (currently inert) `.attrs`-based precedent this intentionally departs from.
+const CtaPanel = styled(Animated.View)<{ readonly $variant: 'firstTime' | 'returning' }>`
   margin-top: 36px;
   padding: 26px 22px;
   gap: 10px;
   align-items: flex-start;
+  overflow: hidden;
   border: 2px solid ${AppColors.ink};
   border-radius: ${Radii.panel}px;
   background-color: ${({ $variant }) => ($variant === 'returning' ? AppColors.sage : AppColors.yellow)};
 `;
 
+const CtaMotif = styled.Text`
+  position: absolute;
+  right: -30px;
+  top: -60px;
+  color: ${AppColors.ink}1f;
+  font-size: 220px;
+  font-weight: 900;
+`;
+
+const CtaBadge = styled.View`
+  padding: 6px 14px;
+  background-color: ${AppColors.red};
+  border-radius: 999px;
+  transform: rotate(-3deg);
+`;
+
 const CtaTag = styled.Text`
-  color: ${AppColors.inkSoft};
+  color: ${AppColors.cream};
   font-size: 13px;
   font-weight: 900;
   letter-spacing: 1.6px;

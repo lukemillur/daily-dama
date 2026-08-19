@@ -29,6 +29,21 @@ function findByVisibleText(root: ReactTestRenderer, text: string) {
   return root.root.findAll((node) => node.props.children === text);
 }
 
+function findAncestorWithStyleIncluding(root: ReactTestRenderer, text: string, needle: string) {
+  const [textNode] = root.root.findAll((node) => node.props.children === text);
+  if (!textNode) throw new Error('No node found with text: ' + text);
+  let current: typeof textNode | null = textNode;
+  while (current) {
+    if (JSON.stringify(current.props.style ?? {}).includes(needle)) return current;
+    current = current.parent;
+  }
+  return null;
+}
+
+function findNodeWithStyleIncluding(root: ReactTestRenderer, needle: string) {
+  return root.root.findAll((node) => JSON.stringify(node.props.style ?? {}).includes(needle));
+}
+
 async function mount() {
   let root!: ReactTestRenderer;
   await act(async () => {
@@ -71,5 +86,27 @@ describe('LandingCta', () => {
     act(() => pressByVisibleText(root, 'Back to practice'));
 
     expect(mockRouter.push).toHaveBeenCalledWith('/app/home');
+  });
+
+  it('renders the sticker-card treatment for both variants', async () => {
+    mockUseUserProfile.mockReturnValue({
+      selectedTrickIds: [],
+      hasCompletedOnboarding: false,
+    });
+    const firstTimeRoot = await mount();
+
+    expect(findByVisibleText(firstTimeRoot, '●').length).toBeGreaterThan(0);
+    expect(findAncestorWithStyleIncluding(firstTimeRoot, 'Ready when you are', 'rotate')).not.toBeNull();
+    expect(findNodeWithStyleIncluding(firstTimeRoot, 'boxShadow').length).toBeGreaterThan(0);
+
+    mockUseUserProfile.mockReturnValue({
+      selectedTrickIds: [],
+      hasCompletedOnboarding: true,
+    });
+    const returningRoot = await mount();
+
+    expect(findByVisibleText(returningRoot, '●').length).toBeGreaterThan(0);
+    expect(findAncestorWithStyleIncluding(returningRoot, 'Welcome back', 'rotate')).not.toBeNull();
+    expect(findNodeWithStyleIncluding(returningRoot, 'boxShadow').length).toBeGreaterThan(0);
   });
 });
