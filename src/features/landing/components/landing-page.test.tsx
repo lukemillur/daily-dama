@@ -1,13 +1,34 @@
-import { beforeEach, describe, expect, it, jest } from '@jest/globals';
+import { beforeEach, afterAll, describe, expect, it, jest } from '@jest/globals';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
+// A CommonJS require (rather than `import * as ReactNative`) resolves to the exact same
+// module.exports object react-native's own named imports use elsewhere in this file's module
+// graph -- Babel's ES-module namespace-import interop otherwise wraps it in a fresh object,
+// so mutating Platform.OS or spying on useWindowDimensions here wouldn't be visible to
+// LandingPage's own `import { Platform, useWindowDimensions } from 'react-native'`.
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const ReactNative = require('react-native') as typeof import('react-native');
 
-import { LandingPage } from '@/features/landing/components/landing-page';
+import { LandingPage, MOBILE_SCREENSHOTS, WEB_SCREENSHOTS } from '@/features/landing/components/landing-page';
 import type { UserProfile } from '@/features/profile/model/user-profile';
 
 const mockRouter = { push: jest.fn() };
 jest.mock('expo-router', () => ({
   useRouter: () => mockRouter,
 }));
+
+// jest-expo defaults Platform.OS to 'ios' in tests, so the Platform.OS === 'web' branch in
+// LandingPage is unreachable without forcing Platform.OS to 'web'. Fixed for the whole file --
+// both width branches are still exercised because the component ANDs it with width, and native
+// Platform.OS behavior isn't under test here. Mutating Platform.OS directly (rather than
+// jest.mock('react-native', ...)) avoids eagerly evaluating react-native's lazy native-module
+// exports, which throws under jest-expo when the whole module is spread.
+const originalPlatformOS = ReactNative.Platform.OS;
+ReactNative.Platform.OS = 'web';
+afterAll(() => {
+  ReactNative.Platform.OS = originalPlatformOS;
+});
+
+const mockUseWindowDimensions = jest.spyOn(ReactNative, 'useWindowDimensions');
 
 // expo-image's native oversized-image observer wiring (initObserveIntegrationIfNeeded) throws
 // under jest-expo's native-module mock ('observe.getIntegrations is not a function') -- it isn't
@@ -62,6 +83,8 @@ beforeEach(() => {
     selectedTrickIds: [],
     hasCompletedOnboarding: false,
   });
+  mockUseWindowDimensions.mockReset();
+  mockUseWindowDimensions.mockReturnValue({ width: 375, height: 812, scale: 2, fontScale: 1 });
 });
 
 describe('LandingPage', () => {
@@ -94,4 +117,33 @@ describe('LandingPage screenshot showcase', () => {
       expect(titleNodes[0]).not.toBe(captionNodes[0]);
     },
   );
+});
+
+describe('LandingPage platform-based screenshot set', () => {
+  it('defines both a mobile and a web screenshot set', () => {
+    expect(MOBILE_SCREENSHOTS.length).toBe(4);
+    expect(WEB_SCREENSHOTS.length).toBe(4);
+  });
+
+  it('renders the mobile screenshot set at a mobile-width viewport', async () => {
+    mockUseWindowDimensions.mockReturnValue({ width: 375, height: 812, scale: 2, fontScale: 1 });
+    const root = await mount();
+
+    const images = root.root.findAll((node) => node.props.alt === MOBILE_SCREENSHOTS[0]!.alt);
+    const webImages = root.root.findAll((node) => node.props.alt === WEB_SCREENSHOTS[0]!.alt);
+
+    expect(images.length).toBeGreaterThan(0);
+    expect(webImages.length).toBe(0);
+  });
+
+  it('renders the web screenshot set at a desktop-width viewport', async () => {
+    mockUseWindowDimensions.mockReturnValue({ width: 1280, height: 900, scale: 1, fontScale: 1 });
+    const root = await mount();
+
+    const images = root.root.findAll((node) => node.props.alt === WEB_SCREENSHOTS[0]!.alt);
+    const mobileImages = root.root.findAll((node) => node.props.alt === MOBILE_SCREENSHOTS[0]!.alt);
+
+    expect(images.length).toBeGreaterThan(0);
+    expect(mobileImages.length).toBe(0);
+  });
 });

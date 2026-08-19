@@ -1,5 +1,5 @@
 import { Image } from 'expo-image';
-import { ScrollView } from 'react-native';
+import { Platform, ScrollView, useWindowDimensions } from 'react-native';
 import { styled } from 'styled-components/native';
 
 import { Screen } from '@/components/ui/screen';
@@ -27,41 +27,99 @@ const FEATURES: readonly Feature[] = [
   },
 ];
 
-interface Screenshot {
-  readonly source: number;
-  readonly alt: string;
+interface ScreenshotContent {
   readonly title: string;
   readonly caption: string;
 }
 
-const SCREENSHOTS: readonly Screenshot[] = [
+interface PlatformScreenshotAsset {
+  readonly source: number;
+  readonly alt: string;
+  readonly aspectRatio: number;
+}
+
+type Screenshot = ScreenshotContent & PlatformScreenshotAsset;
+
+const SCREENSHOT_CONTENT: readonly ScreenshotContent[] = [
   {
-    source: require('@/assets/images/landing/home-screen.png'),
-    alt: 'Daily Dama home screen showing a practice streak, the last sesh, and the current practice queue',
     title: 'Your practice loop, at a glance',
     caption: 'Open the app and the loop is right there: what you last practiced, what’s next, and how the streak is going.',
   },
   {
-    source: require('@/assets/images/landing/sesh-first-lace.png'),
-    alt: 'Sesh screen celebrating the first-ever lace on a trick mid-session',
     title: 'First lace, first cheer',
     caption: 'The moment a trick actually lands for the first time, Daily Dama says so.',
   },
   {
-    source: require('@/assets/images/landing/custom-trick-form.png'),
-    alt: 'Custom trick form with a trick name and Kentei rank filled in',
     title: 'Your move, your rank',
     caption: 'Got a move that’s not in the standard Kentei set? Name it, rank it, and it joins your rotation.',
   },
   {
-    source: require('@/assets/images/landing/trick-goals.png'),
-    alt: 'Trick goals screen showing progress bars for multiple in-progress goals',
     title: 'Progress you can point to',
     caption: 'Climb the ladder on purpose — set a target per trick and watch the progress add up.',
   },
 ];
 
+const MOBILE_SCREENSHOT_ASSETS: readonly PlatformScreenshotAsset[] = [
+  {
+    source: require('@/assets/images/landing/home-screen.png'),
+    alt: 'Daily Dama home screen showing a practice streak, the last sesh, and the current practice queue',
+    aspectRatio: 375 / 812,
+  },
+  {
+    source: require('@/assets/images/landing/sesh-first-lace.png'),
+    alt: 'Sesh screen celebrating the first-ever lace on a trick mid-session',
+    aspectRatio: 375 / 812,
+  },
+  {
+    source: require('@/assets/images/landing/custom-trick-form.png'),
+    alt: 'Custom trick form with a trick name and Kentei rank filled in',
+    aspectRatio: 375 / 812,
+  },
+  {
+    source: require('@/assets/images/landing/trick-goals.png'),
+    alt: 'Trick goals screen showing progress bars for multiple in-progress goals',
+    aspectRatio: 375 / 812,
+  },
+];
+
+const WEB_SCREENSHOT_ASSETS: readonly PlatformScreenshotAsset[] = [
+  {
+    source: require('@/assets/images/landing/home-screen-web.png'),
+    alt: 'Daily Dama home screen in the desktop web layout, showing a practice streak, the last sesh, and the current practice queue',
+    aspectRatio: 1280 / 900,
+  },
+  {
+    source: require('@/assets/images/landing/sesh-first-lace-web.png'),
+    alt: 'Sesh screen in the desktop web layout celebrating the first-ever lace on a trick mid-session',
+    aspectRatio: 1280 / 900,
+  },
+  {
+    source: require('@/assets/images/landing/custom-trick-form-web.png'),
+    alt: 'Custom trick form in the desktop web layout with a trick name and Kentei rank filled in',
+    aspectRatio: 1280 / 900,
+  },
+  {
+    source: require('@/assets/images/landing/trick-goals-web.png'),
+    alt: 'Trick goals screen in the desktop web layout showing progress bars for multiple in-progress goals',
+    aspectRatio: 1280 / 900,
+  },
+];
+
+export const MOBILE_SCREENSHOTS: readonly Screenshot[] = SCREENSHOT_CONTENT.map((content, index) => ({
+  ...content,
+  ...MOBILE_SCREENSHOT_ASSETS[index],
+}));
+
+export const WEB_SCREENSHOTS: readonly Screenshot[] = SCREENSHOT_CONTENT.map((content, index) => ({
+  ...content,
+  ...WEB_SCREENSHOT_ASSETS[index],
+}));
+
 export function LandingPage() {
+  const { width } = useWindowDimensions();
+  const isWebLayout = Platform.OS === 'web' && width >= 768;
+  const screenshots = isWebLayout ? WEB_SCREENSHOTS : MOBILE_SCREENSHOTS;
+
   return (
     <Screen background={AppColors.paper}>
       <LandingScroll contentContainerStyle={{ paddingBottom: 80 }}>
@@ -88,14 +146,14 @@ export function LandingPage() {
 
           <ScreenshotSection>
             <ScreenshotHeading>What you’re signing up for</ScreenshotHeading>
-            {SCREENSHOTS.map((screenshot) => (
+            {screenshots.map((screenshot) => (
               <ScreenshotItem key={screenshot.alt}>
                 <Image
                   source={screenshot.source}
                   accessibilityLabel={screenshot.alt}
                   alt={screenshot.alt}
                   contentFit="contain"
-                  style={{ width: '100%', aspectRatio: 375 / 812 }}
+                  style={{ width: '100%', aspectRatio: screenshot.aspectRatio }}
                 />
                 <ScreenshotTitle>{screenshot.title}</ScreenshotTitle>
                 <ScreenshotCaption>{screenshot.caption}</ScreenshotCaption>
