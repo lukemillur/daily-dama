@@ -137,7 +137,7 @@ _T113–T120 come from stories S001–S008 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 - **Area:** Profile / Theming
 - **Priority:** Low
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Implementer
 - **Description:** Add a "Default" swatch to the quick-preset grid in `src/features/profile/components/rainbow-theme-presets.tsx`, styled with the app's default background/accent colors (`AppColors.sage`/`AppColors.yellow`, matching `resolveTheme`'s fallback in `use-resolved-theme.ts`). Selecting it clears the user's custom background/accent colors the same way the existing "Reset background & accent" button in `theme-color-picker.tsx` already does (`setThemeColors(undefined, undefined)`).
 - **Exit criteria:** An automated test asserts a "Default" preset renders in the quick-preset grid, that selecting it calls `setThemeColors(undefined, undefined)`, and that it shows as selected whenever `themeBackgroundColor`/`themeAccentColor` are both unset — including on first load, before any preset has ever been chosen. Full verification sequence passes.
