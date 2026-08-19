@@ -131,6 +131,108 @@ _This round came out of a review pass over the first batch of completed work (T0
 
 _T112–T112.6 come from stories S027–S031 in [BACKLOG_STORIES.md](BACKLOG_STORIES.md) (a dedicated pre-app landing page), refined by `product-manager` from a direct user request and scoped in this pass. T111 (drop the access-gate password screen) isn't from a story — it's a decision made during this scoping conversation, in answer to a question the landing-page work raised directly: the app is currently gated behind a password on every route, which defeats the purpose of a publicly shareable landing page, and the user chose to remove the gate outright rather than scope it to just `/app`. T111 is listed first because T112.1 assumes it's already gone, though nothing technically blocks doing them in the other order. T112.1 is the foundation the rest of T112's children build on — it does the actual `/app` route nesting — so it's sequenced first within the umbrella._
 
+_T113–T120 come from stories S001–S008 in [BACKLOG_STORIES.md](BACKLOG_STORIES.md) (the user's 2026-08-19 QA pass on T112.4/T112.6 plus general landing-page feedback), refined by `product-manager` and scoped in this pass. T117 is a two-child umbrella: T117.1 captures new web-layout screenshots (mirroring T112.3's dedicated capture task) and T117.2 wires the platform-based swap, split because the capture step is genuinely separable in risk and effort from the display-logic change. Two open product questions surfaced during scoping and were resolved here rather than left `Blocked`: T114 moves the CTA to the top rather than duplicating it, and T120 clears background/accent only (not text color), matching the existing "Reset background & accent" button's scope. All other entries are independent S-sized tickets — no required ordering between them beyond what each entry's own Notes call out.
+
+### [T113] Give the landing CTA a more distinctive, playful visual treatment
+
+- **Area:** Landing
+- **Priority:** High
+- **Status:** Not started
+- **Planning:** Required
+- **Description:** Redesign `src/features/landing/components/landing-cta.tsx`'s visual treatment for both the first-time and returning-visitor variants. The current panel (flat `AppColors.yellow`/`AppColors.sage` fill, bordered rectangle, tag/headline/body/button stack) already reads as structurally distinct from onboarding's button per T112.4's original exit criteria, but the user rejected it on QA as "still quite plain" and asked for a genuinely unique, fun treatment — this is a design pass on the same component, not new functionality.
+- **Exit criteria:** A browser check at both a mobile (≤480px) and a desktop width shows the CTA panel using a visual treatment beyond a flat single-color fill (e.g. illustration, texture, gradient, layered shapes, or motion) for both variants. An automated test asserts the new treatment's key visual element(s) are present in the rendered output, and that navigation/copy behavior already covered by `landing-cta.test.tsx` (press → `router.push('/app/home')`, returning-visitor copy swap) still passes unchanged. Full verification sequence passes.
+- **Notes:** Purely a visual-treatment change — `useUserProfile()`/`useRouter()` wiring and the returning-visitor copy logic are already correct (T112.4) and must not change beyond what the new treatment requires. Promoted to `Planning: Required` because a plain `Implementer`-level pass already produced the "plain" result being rejected here. If any image/illustration asset is sourced externally, apply the same licensing caution as T119 (clear, checkable usage license only). Closely related to T114 (CTA moves to the top of the page) — same component area, safe to implement in either order.
+
+### [T114] Move the landing CTA to the top of the page
+
+- **Area:** Landing
+- **Priority:** Medium
+- **Status:** Not started
+- **Planning:** Implementer
+- **Description:** Reorder `src/features/landing/components/landing-page.tsx` so `<LandingCta />` renders near the top of the page, above the `FeatureList`/`ScreenshotSection` pitch content, instead of its current position after `Closing`. A single existing component moved earlier in the JSX tree — no new component or behavior.
+- **Exit criteria:** An automated test on `LandingPage` asserts the CTA's rendered output (or a stable marker within it) appears before the feature-list heading text in document order. A browser check confirms the CTA is visible without scrolling (or near-immediately) on both a mobile and a desktop viewport width. Full verification sequence passes.
+- **Notes:** Decision made during scoping: move the CTA rather than duplicate it — the user asked for it "at the top," not for a second copy, so the existing single `<LandingCta />` instance is relocated, not repeated at both top and bottom. Overlaps with T118 (hero banner) for top-of-page space; this task's own definition of done only requires the CTA to precede the pitch content, not a specific position relative to a hero banner that may not exist yet. Related to T113 — same component area, safe to do independently.
+
+### [T115] Move "Leave app" into a themed footer bar
+
+- **Area:** Navigation
+- **Priority:** High
+- **Status:** Not started
+- **Planning:** Implementer
+- **Description:** Replace the current `LeaveAppLink` presentation in `src/components/app-tabs.web.tsx` (a small, centered `Pressable`/`ThemedText` stacked below the tab pill, using fixed `textSecondary` theming) with a footer bar spanning the app shell, containing the same "Leave app" link left-aligned within it. Style the footer bar's background and the link's text using `useResolvedTheme()` (`src/features/profile/state/use-resolved-theme.ts`) so both follow the visitor's saved theme, falling back to the default resolved theme when no custom colors are set.
+- **Exit criteria:** An automated test (extending `src/components/app-tabs.web.test.tsx`) asserts a footer-bar container renders "Leave app" as a left-aligned element, that pressing it still calls `router.push({ pathname: '/', params: { from: 'app' } })` exactly as today, and that the footer's background/text computed styles change between a default profile fixture and a fixture with custom `themeBackgroundColor`/`themeAccentColor` set. A browser check at 320px width confirms the existing five-link nav bar still fits with no overflow alongside the new footer bar. Full verification sequence passes.
+- **Notes:** Pure presentation change — the existing in-app-arrival signal (`LANDING_ARRIVAL_PARAM`/`LANDING_ARRIVAL_FROM_APP`, verified by T112.6) and its navigation behavior must not change. "Populated with additional out-of-app content in the future" (from the originating story) is explicitly out of scope here — this task only builds the footer bar container and relocates the existing single link into it. Native `app-tabs.tsx` is intentionally left unchanged, matching T112.6's own scope decision and this repo's web-only active platform scope.
+
+### [T116] Give the landing screenshot showcase titles and a designed container
+
+- **Area:** Landing
+- **Priority:** Medium
+- **Status:** Not started
+- **Planning:** Required
+- **Description:** In `src/features/landing/components/landing-page.tsx`, add a short title to each of the four `SCREENSHOTS` entries, rendered above the existing caption in typography visually distinct from the page's `BodyText` style, and give `ScreenshotItem` a container with its own background color and border (distinct from the page's plain `AppColors.paper` background).
+- **Exit criteria:** An automated test asserts each of the four screenshots renders both a title and its existing caption as distinct text nodes. A browser check confirms each screenshot sits inside a container with a visible background/border treatment distinct from the surrounding page background. Full verification sequence passes.
+- **Notes:** Four titles are new copy to draft in this task (e.g. "Your practice loop," "First lace," "Custom tricks," "Trick goals" — exact wording is the implementer's call, matching the page's existing voice). No change to which screenshots are shown or their source data — that's T117's concern. Promoted to `Planning: Required` at the user's explicit request via the scoping-review artifact (was `Implementer`).
+
+### [T117] Show platform-appropriate screenshots on the landing page
+
+- **Area:** Landing
+- **Priority:** Medium
+- **Status:** Not started
+- **Planning:** Required
+- **Description:** Umbrella only — complete T117.1 and T117.2. The landing page currently shows the same four mobile-portrait screenshots (`assets/images/landing/*.png`, captured for T112.3) to every visitor regardless of viewport; this pair of tasks captures a matching web-layout set and wires the page to show mobile screenshots to mobile-width visitors and web screenshots to web/desktop-width visitors.
+- **Exit criteria:** N/A — umbrella; done when T117.1 and T117.2 are both `Done`.
+- **Notes:** Split into two children because the capture step is genuinely separable in risk and effort from the display-logic change, mirroring how T112.3 (screenshot capture) was scoped as its own dedicated `Planning: Required` task separate from the rest of T112.
+
+### [T117.1] Capture web-layout screenshots for the landing page
+
+- **Area:** Landing
+- **Priority:** Medium
+- **Status:** Not started
+- **Planning:** Required
+- **Description:** Capture four new web-layout screenshots — the same four moments as the existing mobile set (home screen practice loop, Sesh first-lace celebration, custom trick form, trick goals) — from the web layout of the running app, under realistic populated data (multiple laced tricks, a multi-entry goal list, real session history), matching T112.3's standard. Add them alongside the existing mobile assets in `assets/images/landing/` (e.g. a `-web` suffix or parallel subfolder — implementer's call).
+- **Exit criteria:** Four new image files exist under `assets/images/landing/` showing the web layout of the four target screens under populated (non-empty, multi-item) fixture data. `node .claude/scripts/verify.mjs --skip-export` passes (asset addition alone doesn't require re-verifying the full suite, but run the full sequence once T117.2 wires them in).
+- **Notes:** Reuse T112.3's capture approach and fixture-seeding notes (`TASKS_DONE.md` T112.3) rather than re-deriving it — in particular, triggering and freezing the Sesh first-lace celebration state will need the same kind of seeded-fixture approach T112.3 used. Do not delete or modify the existing mobile assets.
+
+### [T117.2] Render the visitor's platform-matched screenshot set
+
+- **Area:** Landing
+- **Priority:** Medium
+- **Status:** Not started
+- **Planning:** Implementer
+- **Description:** In `src/features/landing/components/landing-page.tsx`, swap between the mobile screenshot set and the web screenshot set (added in T117.1) based on the visitor's viewport width, using this repo's existing responsive patterns (e.g. `styled-components/native`'s `@media` usage in sibling components such as `app-tabs.web.tsx`'s `ResponsiveBrandText`).
+- **Exit criteria:** A browser check at a mobile-width viewport shows the mobile screenshot set; the same check at a desktop-width viewport shows the web screenshot set. An automated test confirms both the mobile and web `SCREENSHOTS` arrays are defined and wired to a width-based condition. Full verification sequence passes.
+- **Notes:** Depends on T117.1 (needs the web assets to exist first). Keep the existing four captions/T116 titles paired with whichever image set is showing — don't fork captions per platform unless the screens' content actually differs.
+
+### [T118] Add a kendama-themed hero banner to the top of the landing page
+
+- **Area:** Landing
+- **Priority:** Medium
+- **Status:** Not started
+- **Planning:** Required
+- **Description:** Add a hero banner containing kendama-specific visual elements (e.g. the toy itself, string/tama motifs, or similar) to the top of `src/features/landing/components/landing-page.tsx`, above the existing `Eyebrow`/`Headline`/`Lede` text stack, visible on both mobile and web viewport widths.
+- **Exit criteria:** A browser check at both a mobile and a desktop viewport width shows a hero banner with kendama-specific visual content rendered above the existing headline text, before any scrolling on a typical viewport. An automated test asserts the hero banner element is present in `LandingPage`'s rendered output. Full verification sequence passes.
+- **Notes:** Promoted to `Planning: Required` matching the pattern for other first-impression landing-page design work (T112.2, T112.3, T113) — a high-visibility design element, not a mechanical change. If sourcing imagery externally rather than building an illustration/graphic in-house, apply the same licensing caution as T119 (clear, checkable usage license only). Interacts with T114 (CTA moved to top) for page ordering — T114's own exit criteria only requires the CTA to precede the pitch content, so implement this task's final hero/CTA order as a deliberate choice.
+
+### [T119] Add additional kendama imagery to the landing page
+
+- **Area:** Landing
+- **Priority:** Low
+- **Status:** Not started
+- **Planning:** Required
+- **Description:** Add at least one kendama-themed image to `src/features/landing/components/landing-page.tsx`, distinct from the app screenshots (T116/T117) and the hero banner (T118), in a placement that reads as intentional rather than decorative filler.
+- **Exit criteria:** A browser check confirms at least one additional kendama-themed image renders on the landing page outside the screenshot showcase and hero banner sections. Full verification sequence passes.
+- **Notes:** Decision made during scoping to resolve the originating story's open licensing question: source imagery from a permissive, no-attribution-required commercial-use license (e.g. Unsplash's license) rather than an arbitrary web scrape — verify the specific image's license terms before committing it, and record the source URL/license in the commit message. No functional dependency on T118 — both add imagery to the same file, but are safe to build independently. Promoted to `Planning: Required` at the user's explicit request via the scoping-review artifact (was `Implementer`).
+
+### [T120] Add a "Default" preset that resets the app theme
+
+- **Area:** Profile / Theming
+- **Priority:** Low
+- **Status:** Not started
+- **Planning:** Implementer
+- **Description:** Add a "Default" swatch to the quick-preset grid in `src/features/profile/components/rainbow-theme-presets.tsx`, styled with the app's default background/accent colors (`AppColors.sage`/`AppColors.yellow`, matching `resolveTheme`'s fallback in `use-resolved-theme.ts`). Selecting it clears the user's custom background/accent colors the same way the existing "Reset background & accent" button in `theme-color-picker.tsx` already does (`setThemeColors(undefined, undefined)`).
+- **Exit criteria:** An automated test asserts a "Default" preset renders in the quick-preset grid, that selecting it calls `setThemeColors(undefined, undefined)`, and that it shows as selected whenever `themeBackgroundColor`/`themeAccentColor` are both unset — including on first load, before any preset has ever been chosen. Full verification sequence passes.
+- **Notes:** Decision made during scoping to resolve the originating story's open text-color question: this task clears background/accent only, matching the existing "Reset background & accent" button's scope — it deliberately does not touch `themeTextColor`, which already has its own separate reset control. `ThemePresetGrid`'s `onSelectPreset`/`isPresetSelected` callbacks assume every preset has real `backgroundColor`/`accentColor` hex values; the Default preset's selection handler needs special-casing to call `setThemeColors(undefined, undefined)` rather than reusing the generic preset-select path verbatim, since clearing the stored preference is not the same as setting it to today's default hex literally (which would stop tracking the app default if `AppColors.sage`/`AppColors.yellow` ever change).
+
 ## Done
 
 Completed entries live in [TASKS_DONE.md](TASKS_DONE.md) — not part of the top-to-bottom read above; see step 5 under _Completing a task_.
