@@ -140,16 +140,6 @@ _T112–T112.6 come from stories S027–S031 in [BACKLOG_STORIES.md](BACKLOG_STO
 - **Description:** Umbrella only — complete T112.1 through T112.6. Introduces a standalone marketing landing page at `dailydama.com/`, nests the existing application under `/app` (with the current home screen relocated to `/app/home`), gates it behind whether the visitor has completed onboarding, and adds a way back out to the landing page from inside the app. See [LANDING_PAGE_BRAINDUMP.md](LANDING_PAGE_BRAINDUMP.md) for the founder's-voice source material the landing copy should draw from.
 - **Notes:** Depends on T111 being done first in practice (see the batch note above), though not a hard `Depends on` — nothing in T112.1 technically requires the gate to already be gone.
 
-### [T112.2] Build the landing page's purpose-and-overview content
-
-- **Area:** Landing
-- **Priority:** High
-- **Status:** Not started
-- **Planning:** Required
-- **Description:** At the new `/` route (freed up by T112.1), build a landing screen that explains what Daily Dama is and why it exists, distinct from both the onboarding flow and the app's home screen. Draft placeholder copy in the app's playful, kendama-flavored voice, drawing on [LANDING_PAGE_BRAINDUMP.md](LANDING_PAGE_BRAINDUMP.md) — final approved wording arrives later and will replace this draft in a follow-up pass, so don't treat the copy itself as load-bearing for this task's completion. This is the visitor's first impression of the product — treat it as a genuine design pass, not a placeholder scaffold: it should read as cohesive and representative of what the app actually is, not a generic marketing-page template with Daily Dama's name swapped in.
-- **Exit criteria:** Visiting `/` with no completed onboarding renders the new landing screen (not `KenteiOnboarding`, not `DailyHome`). A component/route test asserts the landing screen renders distinct headline/body copy elements using the existing typography components (`Eyebrow`/`DisplayTitle`/`BodyText`, matching the pattern in `onboarding-intro-step.tsx`). Full verification sequence passes.
-- **Notes:** Depends on T112.1 (needs `/` to be free). Copy is explicitly a placeholder — don't block this task on final approved wording. Promoted to `Planning: Required` on 2026-08-19 (was `Implementer`) at the user's explicit request via the scoping-review artifact — the ask is for real design-pass rigor here, not just a mechanically correct component, so it gets the dedicated planning pass before implementation starts.
-
 ### [T112.3] Show real app screenshots on the landing page
 
 - **Area:** Landing

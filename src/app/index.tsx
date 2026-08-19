@@ -1,5 +1,5 @@
-import { Redirect } from 'expo-router';
+import { LandingPage } from '@/features/landing/components/landing-page';
 
-export default function RootRedirect() {
-  return <Redirect href="/app/home" />;
+export default function RootRoute() {
+  return <LandingPage />;
 }
