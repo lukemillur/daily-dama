@@ -129,50 +129,86 @@ _Raw ideas land here — a name and a one-line description, nothing more. Discus
 
 _This round came out of a review pass over the first batch of completed work (T001–T014). Entries below are either defects in what shipped or follow-on functionality that first pass surfaced. Where an entry corrects a completed task, it names that task — but the archived entry in [TASKS_DONE.md](TASKS_DONE.md) stays as-written; history isn't rewritten._
 
-### Terminology note
+_T112–T112.6 come from stories S027–S031 in [BACKLOG_STORIES.md](BACKLOG_STORIES.md) (a dedicated pre-app landing page), refined by `product-manager` from a direct user request and scoped in this pass. T111 (drop the access-gate password screen) isn't from a story — it's a decision made during this scoping conversation, in answer to a question the landing-page work raised directly: the app is currently gated behind a password on every route, which defeats the purpose of a publicly shareable landing page, and the user chose to remove the gate outright rather than scope it to just `/app`. T111 is listed first because T112.1 assumes it's already gone, though nothing technically blocks doing them in the other order. T112.1 is the foundation the rest of T112's children build on — it does the actual `/app` route nesting — so it's sequenced first within the umbrella._
 
-The first pass used **locked/unlocked** for "the user can land this trick." User-facing copy in this round switches to **laced/unlaced**, which is what the domain actually calls it. The persisted profile field is still named `manuallyUnlockedTrickIds` and stays that way — renaming a persisted key means either a migration or throwing away real user data, and neither is worth it for a vocabulary change. Rename the copy, not the storage contract.
+### [T111] Remove the access-gate password screen
 
-_This next batch (T045–T069) comes from a QA pass over PR 55's suggested checklist (the `development` → `main` release covering T002–T041), worked top to bottom. Where an entry names the task that shipped the behavior it's correcting, the archived entry in [TASKS_DONE.md](TASKS_DONE.md) stays as-written — history isn't rewritten, same as above._
-
-_The following batch (T070–T079) comes from the QA checklist completed against PR 83, worked top to bottom. New entries are intentionally placed before the older queue so the next actionable QA finding is selected first. Existing task history is not rewritten._
-
-_The following batch (T080–T082) comes from the QA checklist completed against PR 99, worked top to bottom. New entries are intentionally placed before the older queue so the next actionable QA finding is selected first. Existing task history is not rewritten._
-
-_The following batch (T083–T084) comes from a product-manager audit scoping two new product surfaces: custom app theming and rank-progression suggestions. Promoted from `Needs scoping` after resolving their open product/technical questions with the user._
-
-_The following batch (T085–T088) comes from user stories S001–S004 in [BACKLOG_STORIES.md](BACKLOG_STORIES.md), scoped via the `scope-tickets` skill after `product-manager` refined a round of theming UX feedback into stories. New entries are intentionally placed before the older queue (there is none currently) so they're picked up first._
-
-_T089 comes from story S014 in [BACKLOG_STORIES.md](BACKLOG_STORIES.md), scoped via `scope-tickets` after a QA pass on T085–T088 surfaced a pattern of theming being bolted onto surfaces one hardcoded literal at a time. It is deliberately scoped as schema-only groundwork, sequenced ahead of the not-yet-scoped S009/S012/S013 so those consume this token set instead of inventing their own._
-
-_T090–T097 come from stories S005–S009 and S011–S013 in [BACKLOG_STORIES.md](BACKLOG_STORIES.md), scoped in the same `scope-tickets` pass. S010 (preset text colors) was not scoped this round — see the note on its `BACKLOG_STORIES.md` entry; investigation found its premise doesn't hold up and it needs re-refinement by `product-manager` before it's scopable. New entries are placed after T089, since T096/T097 depend on it landing first._
-
-_T098 comes from story S010 in [BACKLOG_STORIES.md](BACKLOG_STORIES.md), rewritten by `product-manager` after the original preset-scoped framing turned out to rest on a false premise, then scoped in this pass._
-
-_The following batch (T099–T105) comes from stories S015–S021 in [BACKLOG_STORIES.md](BACKLOG_STORIES.md), a QA pass over the T089–T098 theming batch refined into stories by `product-manager` and scoped in this pass. New entries are placed before the older queue (there is none currently) so they're picked up first._
-
-_T106–T110 come from stories S022–S026 in [BACKLOG_STORIES.md](BACKLOG_STORIES.md), refined by `product-manager` from `NAKO_LAUNCH_PLAN.md` ahead of the Friday NAKO social post and scoped in this pass. New entries are placed before the older queue so they're picked up first. T107 (share-card image) is sequenced before T108 (head tags) because T108 needs a real asset path to reference. T106 and T108 are scoped `Blocked` — both depend on literal approved copy text that `NAKO_LAUNCH_PLAN.md` names as drafted/approved but doesn't quote in full; see each entry's Status line for the specific gap._
-
-### [T106] Add approved hero copy to the onboarding intro screen
-
-- **Area:** Onboarding
+- **Area:** Access gate
 - **Priority:** High
-- **Status:** Blocked — needs the literal approved hero copy (eyebrow, headline, body). `NAKO_LAUNCH_PLAN.md` only names the direction ("Direction B — founder voice") and quotes one line ("It took me six weeks to land my first Lunar"), not the full copy to drop into the component.
-- **Planning:** Implementer
-- **Description:** Replace `OnboardingIntroStep`'s current placeholder copy ("Let's find your rank" / rank-check body) with the approved Direction B hero copy, keeping the existing "Get started" CTA, layout, and styled components unchanged.
-- **Exit criteria:** The intro screen (`src/features/onboarding/components/onboarding-intro-step.tsx`) renders the exact approved eyebrow, headline, and body text; `kentei-onboarding.test.tsx`'s existing assertions (which only check the "Get started" button, not copy text) continue to pass.
-- **Notes:** Once Luke supplies the literal copy, flip Status to `Not started` and paste the exact text into this entry's Description before implementation — the implementer should not originate marketing copy.
+- **Status:** Not started
+- **Planning:** Required
+- **Description:** `AccessGateProvider` (`src/app/_layout.tsx:28`) currently wraps the entire app behind a password screen gated on `EXPO_PUBLIC_ACCESS_PASSWORD` (see `DEPLOYMENT_HANDOFF.md` §3). Delete the feature entirely: remove `AccessGateProvider` from the root layout, delete `src/features/access-gate/` and its tests, and remove any other reference to it (e.g. `AccessGateActionsContext` usage elsewhere, if any). The app becomes reachable without a password on every route.
+- **Exit criteria:** `src/features/access-gate/` no longer exists; `src/app/_layout.tsx` no longer imports or renders `AccessGateProvider`; a fresh browser session (cleared storage) reaches app content directly with no password prompt at any route; full verification sequence (`yarn test --runInBand`, `yarn lint`, `yarn tsc --noEmit`, `yarn expo export --platform web`) passes with no remaining references to the deleted feature.
+- **Notes:** Update `DEPLOYMENT_HANDOFF.md` §3 ("The access gate — read before deploying") to reflect removal rather than leaving it describing a feature that no longer exists. `EXPO_PUBLIC_ACCESS_PASSWORD` becomes an unused env var on Vercel — flagging so a human remembers to clean it up there, but that's account-dashboard state outside this repo and outside this task's exit criteria.
 
-### [T108] Add document title, meta description, and OG/Twitter tags
+### [T112] Add a dedicated pre-app landing page
 
-- **Area:** Web launch surface (cross-cutting)
+- **Area:** Navigation / Landing
 - **Priority:** High
-- **Status:** Blocked — needs the literal approved meta description text. `NAKO_LAUNCH_PLAN.md` states one exists (147 characters, drafted and approved, doubling as the OG/Twitter description) but doesn't quote it.
-- **Planning:** Implementer
-- **Description:** Add `<title>`, a meta description, and Open Graph / Twitter Card tags to `src/app/+html.tsx` (currently has none of these), including an image tag pointing at the share-card asset from T107.
-- **Exit criteria:** Running `yarn expo export --platform web --output-dir <dir>` and inspecting the generated `index.html` shows the correct `<title>`, the approved meta description, and `og:title` / `og:description` / `og:image` / `twitter:card` / `twitter:image` tags with values matching the approved copy and the T107 asset path.
-- **Notes:** Depends on T107 landing first for a real image path. Once Luke supplies the literal meta description, flip Status to `Not started` and paste the exact text into this entry's Description.
+- **Status:** Not started
+- **Planning:** Required
+- **Description:** Umbrella only — complete T112.1 through T112.6. Introduces a standalone marketing landing page at `dailydama.com/`, nests the existing application under `/app` (with the current home screen relocated to `/app/home`), gates it behind whether the visitor has completed onboarding, and adds a way back out to the landing page from inside the app. See [LANDING_PAGE_BRAINDUMP.md](LANDING_PAGE_BRAINDUMP.md) for the founder's-voice source material the landing copy should draw from.
+- **Notes:** Depends on T111 being done first in practice (see the batch note above), though not a hard `Depends on` — nothing in T112.1 technically requires the gate to already be gone.
 
+### [T112.1] Nest the app under `/app` and move the home screen to `/app/home`
+
+- **Area:** Navigation
+- **Priority:** High
+- **Status:** Not started
+- **Planning:** Required
+- **Description:** Move every current top-level route (`src/app/index.tsx`, `sesh/`, `tricks/`, `stats/`, `profile/`) under a new `src/app/app/` route group, with the existing `index.tsx` (today's onboarding-or-home screen) becoming `src/app/app/home.tsx` (or `src/app/app/home/index.tsx`, whichever keeps its current internal logic intact — it should not change behavior, only location). `src/app/index.tsx` is freed up for the new landing page (T112.2). Update every hardcoded internal route reference (`app-tabs.web.tsx`'s five `href`s, `require-onboarding.ts`'s `router.replace('/')`, and the ~20 other `router.push`/`router.replace`/`href` call sites across `sesh`, `tricks`, `profile`, `stats`, `daily-home.tsx`, `kentei-onboarding.tsx`, `multi-trick-sesh-entry.tsx`) to the new `/app/...` prefix. Update `vercel.json`'s `/stats/:trickId` rewrite to match the new nested static-export path.
+- **Exit criteria:** Full verification sequence passes, including a successful `yarn expo export --platform web`. A manual/browser check confirms: every existing route (`/app/home`, `/app/sesh`, `/app/tricks`, `/app/stats`, `/app/profile`, `/app/stats/<trickId>`, and their sub-routes) is reachable and behaves exactly as it did before the move, including on a hard refresh (not just client-side nav); the five-link web nav bar still fits at 320px width (per `AGENTS.md`'s existing measured constraint) with its `href`s now pointing at `/app/...` paths; no console errors from a broken relative link. Existing automated tests that assert on route paths are updated and passing.
+- **Notes:** This is the highest-risk piece of the whole initiative — it's a mechanical but wide-reaching rename touching roughly 20 call sites plus the Vercel rewrite config for a route that's live in production. Get this landed and verified before starting T112.2–T112.6. Two defensible variants exist for exactly where `home` lives (`/app/home.tsx` vs `/app/home/index.tsx`) — either is fine; pick whichever fits Expo Router's file-based conventions more naturally once in the code.
+
+### [T112.2] Build the landing page's purpose-and-overview content
+
+- **Area:** Landing
+- **Priority:** High
+- **Status:** Not started
+- **Planning:** Required
+- **Description:** At the new `/` route (freed up by T112.1), build a landing screen that explains what Daily Dama is and why it exists, distinct from both the onboarding flow and the app's home screen. Draft placeholder copy in the app's playful, kendama-flavored voice, drawing on [LANDING_PAGE_BRAINDUMP.md](LANDING_PAGE_BRAINDUMP.md) — final approved wording arrives later and will replace this draft in a follow-up pass, so don't treat the copy itself as load-bearing for this task's completion. This is the visitor's first impression of the product — treat it as a genuine design pass, not a placeholder scaffold: it should read as cohesive and representative of what the app actually is, not a generic marketing-page template with Daily Dama's name swapped in.
+- **Exit criteria:** Visiting `/` with no completed onboarding renders the new landing screen (not `KenteiOnboarding`, not `DailyHome`). A component/route test asserts the landing screen renders distinct headline/body copy elements using the existing typography components (`Eyebrow`/`DisplayTitle`/`BodyText`, matching the pattern in `onboarding-intro-step.tsx`). Full verification sequence passes.
+- **Notes:** Depends on T112.1 (needs `/` to be free). Copy is explicitly a placeholder — don't block this task on final approved wording. Promoted to `Planning: Required` on 2026-08-19 (was `Implementer`) at the user's explicit request via the scoping-review artifact — the ask is for real design-pass rigor here, not just a mechanically correct component, so it gets the dedicated planning pass before implementation starts.
+
+### [T112.3] Show real app screenshots on the landing page
+
+- **Area:** Landing
+- **Priority:** Medium
+- **Status:** Not started
+- **Planning:** Required
+- **Description:** Add static screenshots of real Daily Dama screens to the landing page built in T112.2. Static images only — no interactive/live preview. The four screens to capture, per the user's explicit direction: the **home screen**, emphasizing the core practice loop; the **Sesh screen** showing the "you just landed `<trick>` for the first time" first-lace celebration notification; the **custom trick definition** screen; and the **trick goals** screen. Every screenshot must be captured against realistic, populated data — multiple tricks laced, a goal list with more than one entry, real session history — not an empty or single-item state; a screenshot of a near-blank screen defeats the point of showing "what you're signing up for."
+- **Exit criteria:** The landing page at `/` renders all four screenshots listed above. A browser check at mobile width (320–375px, matching `AGENTS.md`'s existing viewport convention) confirms no layout overflow or broken image. A visual check confirms none of the four screenshots shows an empty/near-empty state (e.g. the goals screenshot has more than one goal, the Sesh screenshot shows the first-lace notification actually present, not a generic idle screen). Full verification sequence passes.
+- **Notes:** Depends on T112.2 existing to have somewhere to place the images. Promoted to `Planning: Required` on 2026-08-19 (was `Implementer`) at the user's explicit request. Capturing the Sesh first-lace notification screenshot will likely require seeding fixture data that puts the app in that specific transient state — plan how to trigger and freeze it before implementing, rather than trying to catch it live.
+
+### [T112.4] Add a call-to-action from the landing page into the app
+
+- **Area:** Landing
+- **Priority:** High
+- **Status:** Not started
+- **Planning:** Required
+- **Description:** Add a single, clear call-to-action on the landing page (T112.2) that takes the visitor into the app. Explicitly **do not** reuse the existing "Get started" pattern from `onboarding-intro-step.tsx` — the user wants a distinct, considered piece of UI here, not the onboarding flow's button restyled; take real design time on this rather than defaulting to the nearest existing pattern. The CTA has two states: a **first-time-visitor** variant (default) that navigates to `/app/home`; and a **returning-visitor** variant, shown when `profile.hasCompletedOnboarding` is true, with copy that acknowledges they're returning to an app they already use rather than repeating first-time "get started" framing — this state is reachable because T112.6's in-app exit link deliberately lands an onboarded visitor back on `/` instead of being redirected away (see T112.5's updated description for the mechanism that makes that possible).
+- **Exit criteria:** An automated test simulates pressing the CTA as a first-time visitor and asserts navigation to `/app/home`. A second test renders the landing page with a completed-onboarding profile fixture (simulating arrival via T112.6's signal) and asserts the CTA shows distinct returning-visitor copy, and that activating it also navigates to `/app/home`. Full verification sequence passes.
+- **Notes:** Depends on T112.1 (target route must exist), T112.2 (needs a landing page to put the CTA on), and the `/`-arrival signal defined in T112.5 (needed to know which CTA copy to show). Promoted to `Planning: Required` on 2026-08-19 (was `Implementer`) at the user's explicit request — both because of the "avoid the obvious pattern, plan the creative treatment" instruction and because this task now depends on a cross-ticket contract (T112.5/T112.6) rather than being fully self-contained.
+
+### [T112.5] Onboarded visitors skip the landing page
+
+- **Area:** Navigation
+- **Priority:** High
+- **Status:** Not started
+- **Planning:** Required
+- **Description:** A **fresh** arrival at `/` (direct URL visit, bookmark, external/social link, new tab) when `profile.hasCompletedOnboarding && profile.kenteiRank !== undefined` should redirect straight to `/app/home` instead of rendering the landing page — mirroring the existing `useRequireOnboarding` redirect pattern (`src/features/onboarding/state/require-onboarding.ts`), just in the opposite direction. This redirect must **not** fire when `/` is reached via T112.6's in-app "exit to landing" link — that link exists specifically to let an already-onboarded visitor see the landing page again, and an unconditional redirect would make T112.6 a dead end. Define a concrete signal T112.6's navigation sets (e.g. a `from=app` query param, or an Expo Router param on the `/` route) that this redirect checks for and skips; T112.6 and T112.4 both depend on this same signal (T112.6 to set it, T112.4 to know which CTA copy to render), so its exact shape is this task's decision to make and document for the other two.
+- **Exit criteria:** An automated test mounts the root route with a completed-onboarding profile fixture and a fresh/no-signal arrival, and asserts the app home content renders (or a redirect to `/app/home` fires) without the landing page ever appearing. A second test with the same profile fixture but the in-app-arrival signal present asserts the landing page renders instead, with no redirect. A third test with incomplete onboarding still renders the landing page regardless of the signal. Full verification sequence passes.
+- **Notes:** Depends on T112.1 and T112.2 both existing. Promoted to `Planning: Required` on 2026-08-19 (was `Implementer`) — not from the user's own scoping-review comments, but a call made while resolving those comments: T112.4's returning-visitor CTA only works if this task defines a real signal contract shared with T112.6, which is more coordination than the original "mirror `useRequireOnboarding`" framing implied. Flagging this promotion explicitly since the user didn't request it directly.
+
+### [T112.6] Add a way to leave the app and return to the landing page
+
+- **Area:** Navigation
+- **Priority:** Low
+- **Status:** Not started
+- **Planning:** Implementer
+- **Description:** From anywhere inside `/app`, add a persistent, visible affordance (e.g. in `app-tabs.web.tsx`'s `CustomTabList`, as a small footer-style link) that navigates to `/`, setting the in-app-arrival signal T112.5 defines so the visitor actually lands on the landing page instead of being immediately redirected back. Pure navigation only — must not sign the user out, reset onboarding, or touch any persisted data.
+- **Exit criteria:** An automated test confirms the affordance is present in the app shell, and that activating it (with a completed-onboarding profile fixture) renders the landing page — not a redirect straight back to `/app/home` — confirming the signal from T112.5 is actually being set and honored. A browser check at 320px width confirms it doesn't break the existing five-link nav bar's fit (`AGENTS.md`'s measured constraint). Full verification sequence passes.
+- **Notes:** Depends on T112.1 and on T112.5 having defined its arrival-signal contract first — build this after T112.5, not in parallel, since it needs to match whatever shape T112.5 settles on. For a fresh/direct visit to `/`, an onboarded visitor still gets redirected past the landing page per T112.5 — this affordance is the one deliberate path that reaches it instead, which is exactly why T112.4 gives it a distinct "returning visitor" CTA rather than repeating the first-time one.
 
 ## Done
 
