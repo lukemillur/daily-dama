@@ -6,6 +6,7 @@ import { Screen } from '@/components/ui/screen';
 import { BodyText, DisplayTitle, Eyebrow } from '@/components/ui/typography';
 import { AppColors, Radii } from '@/constants/theme';
 import { LandingHero } from '@/features/landing/components/landing-hero';
+import { LandingPhoto } from '@/features/landing/components/landing-photo';
 import { LandingCta } from '@/features/landing/components/landing-cta';
 
 interface Feature {
@@ -162,6 +163,8 @@ export function LandingPage() {
               </ScreenshotItem>
             ))}
           </ScreenshotSection>
+
+          <LandingPhoto />
 
           <Closing>
             Kendama is also one of the best excuses to put your phone down. Daily Dama isn’t

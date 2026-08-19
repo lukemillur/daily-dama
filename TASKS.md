@@ -133,16 +133,6 @@ _T112–T112.6 come from stories S027–S031 in [BACKLOG_STORIES.md](BACKLOG_STO
 
 _T113–T120 come from stories S001–S008 in [BACKLOG_STORIES.md](BACKLOG_STORIES.md) (the user's 2026-08-19 QA pass on T112.4/T112.6 plus general landing-page feedback), refined by `product-manager` and scoped in this pass. T117 is a two-child umbrella: T117.1 captures new web-layout screenshots (mirroring T112.3's dedicated capture task) and T117.2 wires the platform-based swap, split because the capture step is genuinely separable in risk and effort from the display-logic change. Two open product questions surfaced during scoping and were resolved here rather than left `Blocked`: T114 moves the CTA to the top rather than duplicating it, and T120 clears background/accent only (not text color), matching the existing "Reset background & accent" button's scope. All other entries are independent S-sized tickets — no required ordering between them beyond what each entry's own Notes call out.
 
-### [T119] Add additional kendama imagery to the landing page
-
-- **Area:** Landing
-- **Priority:** Low
-- **Status:** Not started
-- **Planning:** Required
-- **Description:** Add at least one kendama-themed image to `src/features/landing/components/landing-page.tsx`, distinct from the app screenshots (T116/T117) and the hero banner (T118), in a placement that reads as intentional rather than decorative filler.
-- **Exit criteria:** A browser check confirms at least one additional kendama-themed image renders on the landing page outside the screenshot showcase and hero banner sections. Full verification sequence passes.
-- **Notes:** Decision made during scoping to resolve the originating story's open licensing question: source imagery from a permissive, no-attribution-required commercial-use license (e.g. Unsplash's license) rather than an arbitrary web scrape — verify the specific image's license terms before committing it, and record the source URL/license in the commit message. No functional dependency on T118 — both add imagery to the same file, but are safe to build independently. Promoted to `Planning: Required` at the user's explicit request via the scoping-review artifact (was `Implementer`).
-
 ### [T120] Add a "Default" preset that resets the app theme
 
 - **Area:** Profile / Theming

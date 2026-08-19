@@ -84,7 +84,6 @@ describe('RootRoute (landing page)', () => {
     });
 
     const images = root.root.findAll((node) => node.type === Image);
-    expect(images.length).toBe(4);
 
     const expectedAltFragments = [
       'home screen',
@@ -92,6 +91,16 @@ describe('RootRoute (landing page)', () => {
       'Custom trick form',
       'Trick goals screen',
     ];
+    // The landing page also renders a kendama photo (see landing-photo.tsx) via the same
+    // expo-image component, so scope this count to the screenshot images specifically rather
+    // than asserting on the raw total.
+    const screenshotImages = images.filter(
+      (node) =>
+        typeof node.props.accessibilityLabel === 'string' &&
+        expectedAltFragments.some((fragment) => node.props.accessibilityLabel.includes(fragment)),
+    );
+    expect(screenshotImages.length).toBe(4);
+
     expectedAltFragments.forEach((fragment) => {
       const matches = images.filter(
         (node) =>
