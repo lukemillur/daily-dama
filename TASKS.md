@@ -137,7 +137,7 @@ _T113–T120 come from stories S001–S008 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 - **Area:** Navigation
 - **Priority:** High
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Implementer
 - **Description:** Replace the current `LeaveAppLink` presentation in `src/components/app-tabs.web.tsx` (a small, centered `Pressable`/`ThemedText` stacked below the tab pill, using fixed `textSecondary` theming) with a footer bar spanning the app shell, containing the same "Leave app" link left-aligned within it. Style the footer bar's background and the link's text using `useResolvedTheme()` (`src/features/profile/state/use-resolved-theme.ts`) so both follow the visitor's saved theme, falling back to the default resolved theme when no custom colors are set.
 - **Exit criteria:** An automated test (extending `src/components/app-tabs.web.test.tsx`) asserts a footer-bar container renders "Leave app" as a left-aligned element, that pressing it still calls `router.push({ pathname: '/', params: { from: 'app' } })` exactly as today, and that the footer's background/text computed styles change between a default profile fixture and a fixture with custom `themeBackgroundColor`/`themeAccentColor` set. A browser check at 320px width confirms the existing five-link nav bar still fits with no overflow alongside the new footer bar. Full verification sequence passes.
