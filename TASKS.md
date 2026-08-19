@@ -144,7 +144,7 @@ _T112–T112.6 come from stories S027–S031 in [BACKLOG_STORIES.md](BACKLOG_STO
 
 - **Area:** Landing
 - **Priority:** High
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** Add a single, clear call-to-action on the landing page (T112.2) that takes the visitor into the app. Explicitly **do not** reuse the existing "Get started" pattern from `onboarding-intro-step.tsx` — the user wants a distinct, considered piece of UI here, not the onboarding flow's button restyled; take real design time on this rather than defaulting to the nearest existing pattern. The CTA has two states: a **first-time-visitor** variant (default) that navigates to `/app/home`; and a **returning-visitor** variant, shown when `profile.hasCompletedOnboarding` is true, with copy that acknowledges they're returning to an app they already use rather than repeating first-time "get started" framing — this state is reachable because T112.6's in-app exit link deliberately lands an onboarded visitor back on `/` instead of being redirected away (see T112.5's updated description for the mechanism that makes that possible).
 - **Exit criteria:** An automated test simulates pressing the CTA as a first-time visitor and asserts navigation to `/app/home`. A second test renders the landing page with a completed-onboarding profile fixture (simulating arrival via T112.6's signal) and asserts the CTA shows distinct returning-visitor copy, and that activating it also navigates to `/app/home`. Full verification sequence passes.
