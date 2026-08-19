@@ -4,7 +4,7 @@ import { styled } from 'styled-components/native';
 
 import { Screen } from '@/components/ui/screen';
 import { BodyText, DisplayTitle, Eyebrow } from '@/components/ui/typography';
-import { AppColors } from '@/constants/theme';
+import { AppColors, Radii } from '@/constants/theme';
 import { LandingCta } from '@/features/landing/components/landing-cta';
 
 interface Feature {
@@ -30,6 +30,7 @@ const FEATURES: readonly Feature[] = [
 interface Screenshot {
   readonly source: number;
   readonly alt: string;
+  readonly title: string;
   readonly caption: string;
 }
 
@@ -37,21 +38,25 @@ const SCREENSHOTS: readonly Screenshot[] = [
   {
     source: require('@/assets/images/landing/home-screen.png'),
     alt: 'Daily Dama home screen showing a practice streak, the last sesh, and the current practice queue',
+    title: 'Your practice loop, at a glance',
     caption: 'Open the app and the loop is right there: what you last practiced, what’s next, and how the streak is going.',
   },
   {
     source: require('@/assets/images/landing/sesh-first-lace.png'),
     alt: 'Sesh screen celebrating the first-ever lace on a trick mid-session',
+    title: 'First lace, first cheer',
     caption: 'The moment a trick actually lands for the first time, Daily Dama says so.',
   },
   {
     source: require('@/assets/images/landing/custom-trick-form.png'),
     alt: 'Custom trick form with a trick name and Kentei rank filled in',
+    title: 'Your move, your rank',
     caption: 'Got a move that’s not in the standard Kentei set? Name it, rank it, and it joins your rotation.',
   },
   {
     source: require('@/assets/images/landing/trick-goals.png'),
     alt: 'Trick goals screen showing progress bars for multiple in-progress goals',
+    title: 'Progress you can point to',
     caption: 'Climb the ladder on purpose — set a target per trick and watch the progress add up.',
   },
 ];
@@ -92,6 +97,7 @@ export function LandingPage() {
                   contentFit="contain"
                   style={{ width: '100%', aspectRatio: 375 / 812 }}
                 />
+                <ScreenshotTitle>{screenshot.title}</ScreenshotTitle>
                 <ScreenshotCaption>{screenshot.caption}</ScreenshotCaption>
               </ScreenshotItem>
             ))}
@@ -160,11 +166,23 @@ const ScreenshotHeading = styled.Text`
   font-weight: 900;
 `;
 
-const ScreenshotItem = styled.View`
+const ScreenshotItem = styled.View.attrs({ style: { boxShadow: '6px 6px 0 #18382e' } })`
   gap: 10px;
   align-items: center;
   width: 100%;
   max-width: 360px;
+  padding: 18px 16px 22px;
+  background-color: ${AppColors.paperStrong};
+  border: 2px solid ${AppColors.ink};
+  border-radius: ${Radii.panel}px;
+`;
+
+const ScreenshotTitle = styled.Text`
+  color: ${AppColors.ink};
+  font-size: 19px;
+  font-weight: 900;
+  letter-spacing: -0.3px;
+  text-align: center;
 `;
 
 const ScreenshotCaption = styled(BodyText)`

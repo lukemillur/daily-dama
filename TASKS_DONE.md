@@ -4,6 +4,16 @@ Completed entries move here from `TASKS.md`'s `Backlog`, in the same commit that
 
 Entries keep their content as it was at completion. Don't retroactively edit a description or exit criteria after the fact; if something about a completed task turns out to be wrong or misleading, note that in a new entry or in code, not by rewriting history here.
 
+### [T116] Give the landing screenshot showcase titles and a designed container
+
+- **Area:** Landing
+- **Priority:** Medium
+- **Status:** Done
+- **Planning:** Required
+- **Description:** In `src/features/landing/components/landing-page.tsx`, add a short title to each of the four `SCREENSHOTS` entries, rendered above the existing caption in typography visually distinct from the page's `BodyText` style, and give `ScreenshotItem` a container with its own background color and border (distinct from the page's plain `AppColors.paper` background).
+- **Exit criteria:** An automated test asserts each of the four screenshots renders both a title and its existing caption as distinct text nodes. A browser check confirms each screenshot sits inside a container with a visible background/border treatment distinct from the surrounding page background. Full verification sequence passes. Confirmed: added a `title` field to each `SCREENSHOTS` entry ("Your practice loop, at a glance," "First lace, first cheer," "Your move, your rank," "Progress you can point to") rendered via a new `ScreenshotTitle` styled.Text (19px/900) above the existing `ScreenshotCaption`. `ScreenshotItem` now carries a `paperStrong` background, a 2px `ink` border, `Radii.panel` radius, and a 6px hard-offset boxShadow (matching the `trick-card.tsx`/`CtaPanel` idiom), distinct from the page's `AppColors.paper` background. New `landing-page.test.tsx` asserts all four title/caption pairs render as distinct text nodes. A headless-Chrome render of the dev server confirmed the card background (`#f6efd9`) and `#18382e` ink border bands are visually distinct from the surrounding page background (`#f8f1dd`) at the screenshot-card locations. `node .claude/scripts/verify.mjs` passed all four steps (test, lint, typecheck, web export).
+- **Notes:** Four titles are new copy to draft in this task (e.g. "Your practice loop," "First lace," "Custom tricks," "Trick goals" — exact wording is the implementer's call, matching the page's existing voice). No change to which screenshots are shown or their source data — that's T117's concern. Promoted to `Planning: Required` at the user's explicit request via the scoping-review artifact (was `Implementer`).
+
 ### [T105] Move "Practice several tricks" below the format/time controls
 
 - **Area:** Sesh

@@ -133,16 +133,6 @@ _T112–T112.6 come from stories S027–S031 in [BACKLOG_STORIES.md](BACKLOG_STO
 
 _T113–T120 come from stories S001–S008 in [BACKLOG_STORIES.md](BACKLOG_STORIES.md) (the user's 2026-08-19 QA pass on T112.4/T112.6 plus general landing-page feedback), refined by `product-manager` and scoped in this pass. T117 is a two-child umbrella: T117.1 captures new web-layout screenshots (mirroring T112.3's dedicated capture task) and T117.2 wires the platform-based swap, split because the capture step is genuinely separable in risk and effort from the display-logic change. Two open product questions surfaced during scoping and were resolved here rather than left `Blocked`: T114 moves the CTA to the top rather than duplicating it, and T120 clears background/accent only (not text color), matching the existing "Reset background & accent" button's scope. All other entries are independent S-sized tickets — no required ordering between them beyond what each entry's own Notes call out.
 
-### [T116] Give the landing screenshot showcase titles and a designed container
-
-- **Area:** Landing
-- **Priority:** Medium
-- **Status:** In progress
-- **Planning:** Required
-- **Description:** In `src/features/landing/components/landing-page.tsx`, add a short title to each of the four `SCREENSHOTS` entries, rendered above the existing caption in typography visually distinct from the page's `BodyText` style, and give `ScreenshotItem` a container with its own background color and border (distinct from the page's plain `AppColors.paper` background).
-- **Exit criteria:** An automated test asserts each of the four screenshots renders both a title and its existing caption as distinct text nodes. A browser check confirms each screenshot sits inside a container with a visible background/border treatment distinct from the surrounding page background. Full verification sequence passes.
-- **Notes:** Four titles are new copy to draft in this task (e.g. "Your practice loop," "First lace," "Custom tricks," "Trick goals" — exact wording is the implementer's call, matching the page's existing voice). No change to which screenshots are shown or their source data — that's T117's concern. Promoted to `Planning: Required` at the user's explicit request via the scoping-review artifact (was `Implementer`).
-
 ### [T117] Show platform-appropriate screenshots on the landing page
 
 - **Area:** Landing
