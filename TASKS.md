@@ -137,7 +137,7 @@ _T113–T120 come from stories S001–S008 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 - **Area:** Landing
 - **Priority:** High
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** Redesign `src/features/landing/components/landing-cta.tsx`'s visual treatment for both the first-time and returning-visitor variants. The current panel (flat `AppColors.yellow`/`AppColors.sage` fill, bordered rectangle, tag/headline/body/button stack) already reads as structurally distinct from onboarding's button per T112.4's original exit criteria, but the user rejected it on QA as "still quite plain" and asked for a genuinely unique, fun treatment — this is a design pass on the same component, not new functionality.
 - **Exit criteria:** A browser check at both a mobile (≤480px) and a desktop width shows the CTA panel using a visual treatment beyond a flat single-color fill (e.g. illustration, texture, gradient, layered shapes, or motion) for both variants. An automated test asserts the new treatment's key visual element(s) are present in the rendered output, and that navigation/copy behavior already covered by `landing-cta.test.tsx` (press → `router.push('/app/home')`, returning-visitor copy swap) still passes unchanged. Full verification sequence passes.
