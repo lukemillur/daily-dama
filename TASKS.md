@@ -133,16 +133,6 @@ _T112–T112.6 come from stories S027–S031 in [BACKLOG_STORIES.md](BACKLOG_STO
 
 _T113–T120 come from stories S001–S008 in [BACKLOG_STORIES.md](BACKLOG_STORIES.md) (the user's 2026-08-19 QA pass on T112.4/T112.6 plus general landing-page feedback), refined by `product-manager` and scoped in this pass. T117 is a two-child umbrella: T117.1 captures new web-layout screenshots (mirroring T112.3's dedicated capture task) and T117.2 wires the platform-based swap, split because the capture step is genuinely separable in risk and effort from the display-logic change. Two open product questions surfaced during scoping and were resolved here rather than left `Blocked`: T114 moves the CTA to the top rather than duplicating it, and T120 clears background/accent only (not text color), matching the existing "Reset background & accent" button's scope. All other entries are independent S-sized tickets — no required ordering between them beyond what each entry's own Notes call out.
 
-### [T115] Move "Leave app" into a themed footer bar
-
-- **Area:** Navigation
-- **Priority:** High
-- **Status:** Not started
-- **Planning:** Implementer
-- **Description:** Replace the current `LeaveAppLink` presentation in `src/components/app-tabs.web.tsx` (a small, centered `Pressable`/`ThemedText` stacked below the tab pill, using fixed `textSecondary` theming) with a footer bar spanning the app shell, containing the same "Leave app" link left-aligned within it. Style the footer bar's background and the link's text using `useResolvedTheme()` (`src/features/profile/state/use-resolved-theme.ts`) so both follow the visitor's saved theme, falling back to the default resolved theme when no custom colors are set.
-- **Exit criteria:** An automated test (extending `src/components/app-tabs.web.test.tsx`) asserts a footer-bar container renders "Leave app" as a left-aligned element, that pressing it still calls `router.push({ pathname: '/', params: { from: 'app' } })` exactly as today, and that the footer's background/text computed styles change between a default profile fixture and a fixture with custom `themeBackgroundColor`/`themeAccentColor` set. A browser check at 320px width confirms the existing five-link nav bar still fits with no overflow alongside the new footer bar. Full verification sequence passes.
-- **Notes:** Pure presentation change — the existing in-app-arrival signal (`LANDING_ARRIVAL_PARAM`/`LANDING_ARRIVAL_FROM_APP`, verified by T112.6) and its navigation behavior must not change. "Populated with additional out-of-app content in the future" (from the originating story) is explicitly out of scope here — this task only builds the footer bar container and relocates the existing single link into it. Native `app-tabs.tsx` is intentionally left unchanged, matching T112.6's own scope decision and this repo's web-only active platform scope.
-
 ### [T116] Give the landing screenshot showcase titles and a designed container
 
 - **Area:** Landing

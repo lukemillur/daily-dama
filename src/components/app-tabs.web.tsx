@@ -15,6 +15,7 @@ import { ThemedView } from './themed-view';
 
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { LANDING_ARRIVAL_FROM_APP, LANDING_ARRIVAL_PARAM } from '@/features/landing/state/landing-navigation';
+import { useResolvedTheme } from '@/features/profile/state/use-resolved-theme';
 import { useUserProfile } from '@/features/profile/state/user-profile-provider';
 
 export default function AppTabs() {
@@ -76,22 +77,28 @@ export function CustomTabList({ hidden, ...props }: TabListProps & { readonly hi
         {props.children}
       </ResponsiveTabListInner>
 
-      <LeaveAppLink />
+      <AppFooterBar />
     </View>
   );
 }
 
 /**
- * Persistent footer-style affordance for leaving the app shell and returning
- * to the marketing landing page at `/`. Pure client-side navigation: it must
- * not sign the user out, reset onboarding, or touch any persisted data.
+ * Footer bar spanning the app shell, holding the persistent affordance for
+ * leaving the app and returning to the marketing landing page at `/`. Pure
+ * client-side navigation: it must not sign the user out, reset onboarding, or
+ * touch any persisted data.
+ *
+ * Background and link text follow the visitor's saved theme (via
+ * `useResolvedTheme`), falling back to the default resolved theme when no
+ * custom colors are set.
  *
  * Carries the T112.5 in-app-arrival signal so `useRedirectOnboardedVisitorHome`
  * skips its redirect-to-`/app/home` behavior and the landing page actually
  * renders, instead of bouncing the visitor straight back into the app.
  */
-function LeaveAppLink() {
+function AppFooterBar() {
   const router = useRouter();
+  const theme = useResolvedTheme();
 
   const handlePress = () => {
     router.push({
@@ -101,14 +108,16 @@ function LeaveAppLink() {
   };
 
   return (
-    <Pressable
-      accessibilityRole="link"
-      onPress={handlePress}
-      style={({ pressed }) => [styles.leaveAppLink, pressed && styles.pressed]}>
-      <ThemedText type="small" themeColor="textSecondary">
-        Leave app
-      </ThemedText>
-    </Pressable>
+    <View testID="app-footer-bar" style={[styles.footerBar, { backgroundColor: theme.background }]}>
+      <Pressable
+        accessibilityRole="link"
+        onPress={handlePress}
+        style={({ pressed }) => [styles.leaveAppLink, pressed && styles.pressed]}>
+        <ThemedText type="small" style={{ color: theme.text }}>
+          Leave app
+        </ThemedText>
+      </Pressable>
+    </View>
   );
 }
 
@@ -162,6 +171,15 @@ const styles = StyleSheet.create({
   },
   tabListHidden: {
     display: 'none',
+  },
+  footerBar: {
+    width: '100%',
+    flexDirection: 'row',
+    justifyContent: 'flex-start',
+    alignItems: 'center',
+    paddingVertical: Spacing.one,
+    paddingHorizontal: Spacing.three,
+    borderRadius: Spacing.three,
   },
   leaveAppLink: {
     padding: Spacing.one,
