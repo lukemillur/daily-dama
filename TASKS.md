@@ -131,25 +131,6 @@ _This round came out of a review pass over the first batch of completed work (T0
 
 _T112–T112.6 come from stories S027–S031 in [BACKLOG_STORIES.md](BACKLOG_STORIES.md) (a dedicated pre-app landing page), refined by `product-manager` from a direct user request and scoped in this pass. T111 (drop the access-gate password screen) isn't from a story — it's a decision made during this scoping conversation, in answer to a question the landing-page work raised directly: the app is currently gated behind a password on every route, which defeats the purpose of a publicly shareable landing page, and the user chose to remove the gate outright rather than scope it to just `/app`. T111 is listed first because T112.1 assumes it's already gone, though nothing technically blocks doing them in the other order. T112.1 is the foundation the rest of T112's children build on — it does the actual `/app` route nesting — so it's sequenced first within the umbrella._
 
-### [T112] Add a dedicated pre-app landing page
-
-- **Area:** Navigation / Landing
-- **Priority:** High
-- **Status:** Not started
-- **Planning:** Required
-- **Description:** Umbrella only — complete T112.1 through T112.6. Introduces a standalone marketing landing page at `dailydama.com/`, nests the existing application under `/app` (with the current home screen relocated to `/app/home`), gates it behind whether the visitor has completed onboarding, and adds a way back out to the landing page from inside the app. See [LANDING_PAGE_BRAINDUMP.md](LANDING_PAGE_BRAINDUMP.md) for the founder's-voice source material the landing copy should draw from.
-- **Notes:** Depends on T111 being done first in practice (see the batch note above), though not a hard `Depends on` — nothing in T112.1 technically requires the gate to already be gone.
-
-### [T112.6] Add a way to leave the app and return to the landing page
-
-- **Area:** Navigation
-- **Priority:** Low
-- **Status:** Not started
-- **Planning:** Implementer
-- **Description:** From anywhere inside `/app`, add a persistent, visible affordance (e.g. in `app-tabs.web.tsx`'s `CustomTabList`, as a small footer-style link) that navigates to `/`, setting the in-app-arrival signal T112.5 defines so the visitor actually lands on the landing page instead of being immediately redirected back. Pure navigation only — must not sign the user out, reset onboarding, or touch any persisted data.
-- **Exit criteria:** An automated test confirms the affordance is present in the app shell, and that activating it (with a completed-onboarding profile fixture) renders the landing page — not a redirect straight back to `/app/home` — confirming the signal from T112.5 is actually being set and honored. A browser check at 320px width confirms it doesn't break the existing five-link nav bar's fit (`AGENTS.md`'s measured constraint). Full verification sequence passes.
-- **Notes:** Depends on T112.1 and on T112.5 having defined its arrival-signal contract first — build this after T112.5, not in parallel, since it needs to match whatever shape T112.5 settles on. For a fresh/direct visit to `/`, an onboarded visitor still gets redirected past the landing page per T112.5 — this affordance is the one deliberate path that reaches it instead, which is exactly why T112.4 gives it a distinct "returning visitor" CTA rather than repeating the first-time one.
-
 ## Done
 
 Completed entries live in [TASKS_DONE.md](TASKS_DONE.md) — not part of the top-to-bottom read above; see step 5 under _Completing a task_.

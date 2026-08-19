@@ -1,3 +1,4 @@
+import { useRouter } from 'expo-router';
 import {
   Tabs,
   TabList,
@@ -13,6 +14,7 @@ import { ThemedText } from './themed-text';
 import { ThemedView } from './themed-view';
 
 import { MaxContentWidth, Spacing } from '@/constants/theme';
+import { LANDING_ARRIVAL_FROM_APP, LANDING_ARRIVAL_PARAM } from '@/features/landing/state/landing-navigation';
 import { useUserProfile } from '@/features/profile/state/user-profile-provider';
 
 export default function AppTabs() {
@@ -73,7 +75,40 @@ export function CustomTabList({ hidden, ...props }: TabListProps & { readonly hi
 
         {props.children}
       </ResponsiveTabListInner>
+
+      <LeaveAppLink />
     </View>
+  );
+}
+
+/**
+ * Persistent footer-style affordance for leaving the app shell and returning
+ * to the marketing landing page at `/`. Pure client-side navigation: it must
+ * not sign the user out, reset onboarding, or touch any persisted data.
+ *
+ * Carries the T112.5 in-app-arrival signal so `useRedirectOnboardedVisitorHome`
+ * skips its redirect-to-`/app/home` behavior and the landing page actually
+ * renders, instead of bouncing the visitor straight back into the app.
+ */
+function LeaveAppLink() {
+  const router = useRouter();
+
+  const handlePress = () => {
+    router.push({
+      pathname: '/',
+      params: { [LANDING_ARRIVAL_PARAM]: LANDING_ARRIVAL_FROM_APP },
+    });
+  };
+
+  return (
+    <Pressable
+      accessibilityRole="link"
+      onPress={handlePress}
+      style={({ pressed }) => [styles.leaveAppLink, pressed && styles.pressed]}>
+      <ThemedText type="small" themeColor="textSecondary">
+        Leave app
+      </ThemedText>
+    </Pressable>
   );
 }
 
@@ -122,10 +157,14 @@ const styles = StyleSheet.create({
     padding: Spacing.three,
     justifyContent: 'center',
     alignItems: 'center',
-    flexDirection: 'row',
+    flexDirection: 'column',
+    gap: Spacing.one,
   },
   tabListHidden: {
     display: 'none',
+  },
+  leaveAppLink: {
+    padding: Spacing.one,
   },
   pressed: {
     opacity: 0.7,
