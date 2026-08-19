@@ -70,6 +70,8 @@ export function LandingPage() {
             trick, hold your focus on it, and see the work add up.
           </Lede>
 
+          <LandingCta />
+
           <FeatureList>
             {FEATURES.map((feature) => (
               <FeatureItem key={feature.heading}>
@@ -100,8 +102,6 @@ export function LandingPage() {
             trying to take that away — it’s here for the seshes where you already decided to
             get better, not the ones where you just want to play.
           </Closing>
-
-          <LandingCta />
         </Content>
       </LandingScroll>
     </Screen>

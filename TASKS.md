@@ -133,16 +133,6 @@ _T112–T112.6 come from stories S027–S031 in [BACKLOG_STORIES.md](BACKLOG_STO
 
 _T113–T120 come from stories S001–S008 in [BACKLOG_STORIES.md](BACKLOG_STORIES.md) (the user's 2026-08-19 QA pass on T112.4/T112.6 plus general landing-page feedback), refined by `product-manager` and scoped in this pass. T117 is a two-child umbrella: T117.1 captures new web-layout screenshots (mirroring T112.3's dedicated capture task) and T117.2 wires the platform-based swap, split because the capture step is genuinely separable in risk and effort from the display-logic change. Two open product questions surfaced during scoping and were resolved here rather than left `Blocked`: T114 moves the CTA to the top rather than duplicating it, and T120 clears background/accent only (not text color), matching the existing "Reset background & accent" button's scope. All other entries are independent S-sized tickets — no required ordering between them beyond what each entry's own Notes call out.
 
-### [T114] Move the landing CTA to the top of the page
-
-- **Area:** Landing
-- **Priority:** Medium
-- **Status:** In progress
-- **Planning:** Implementer
-- **Description:** Reorder `src/features/landing/components/landing-page.tsx` so `<LandingCta />` renders near the top of the page, above the `FeatureList`/`ScreenshotSection` pitch content, instead of its current position after `Closing`. A single existing component moved earlier in the JSX tree — no new component or behavior.
-- **Exit criteria:** An automated test on `LandingPage` asserts the CTA's rendered output (or a stable marker within it) appears before the feature-list heading text in document order. A browser check confirms the CTA is visible without scrolling (or near-immediately) on both a mobile and a desktop viewport width. Full verification sequence passes.
-- **Notes:** Decision made during scoping: move the CTA rather than duplicate it — the user asked for it "at the top," not for a second copy, so the existing single `<LandingCta />` instance is relocated, not repeated at both top and bottom. Overlaps with T118 (hero banner) for top-of-page space; this task's own definition of done only requires the CTA to precede the pitch content, not a specific position relative to a hero banner that may not exist yet. Related to T113 — same component area, safe to do independently.
-
 ### [T115] Move "Leave app" into a themed footer bar
 
 - **Area:** Navigation
