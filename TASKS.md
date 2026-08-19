@@ -133,36 +133,6 @@ _T112–T112.6 come from stories S027–S031 in [BACKLOG_STORIES.md](BACKLOG_STO
 
 _T113–T120 come from stories S001–S008 in [BACKLOG_STORIES.md](BACKLOG_STORIES.md) (the user's 2026-08-19 QA pass on T112.4/T112.6 plus general landing-page feedback), refined by `product-manager` and scoped in this pass. T117 is a two-child umbrella: T117.1 captures new web-layout screenshots (mirroring T112.3's dedicated capture task) and T117.2 wires the platform-based swap, split because the capture step is genuinely separable in risk and effort from the display-logic change. Two open product questions surfaced during scoping and were resolved here rather than left `Blocked`: T114 moves the CTA to the top rather than duplicating it, and T120 clears background/accent only (not text color), matching the existing "Reset background & accent" button's scope. All other entries are independent S-sized tickets — no required ordering between them beyond what each entry's own Notes call out.
 
-### [T117] Show platform-appropriate screenshots on the landing page
-
-- **Area:** Landing
-- **Priority:** Medium
-- **Status:** In progress
-- **Planning:** Required
-- **Description:** Umbrella only — complete T117.1 and T117.2. The landing page currently shows the same four mobile-portrait screenshots (`assets/images/landing/*.png`, captured for T112.3) to every visitor regardless of viewport; this pair of tasks captures a matching web-layout set and wires the page to show mobile screenshots to mobile-width visitors and web screenshots to web/desktop-width visitors.
-- **Exit criteria:** N/A — umbrella; done when T117.1 and T117.2 are both `Done`.
-- **Notes:** Split into two children because the capture step is genuinely separable in risk and effort from the display-logic change, mirroring how T112.3 (screenshot capture) was scoped as its own dedicated `Planning: Required` task separate from the rest of T112.
-
-### [T117.1] Capture web-layout screenshots for the landing page
-
-- **Area:** Landing
-- **Priority:** Medium
-- **Status:** Not started
-- **Planning:** Required
-- **Description:** Capture four new web-layout screenshots — the same four moments as the existing mobile set (home screen practice loop, Sesh first-lace celebration, custom trick form, trick goals) — from the web layout of the running app, under realistic populated data (multiple laced tricks, a multi-entry goal list, real session history), matching T112.3's standard. Add them alongside the existing mobile assets in `assets/images/landing/` (e.g. a `-web` suffix or parallel subfolder — implementer's call).
-- **Exit criteria:** Four new image files exist under `assets/images/landing/` showing the web layout of the four target screens under populated (non-empty, multi-item) fixture data. `node .claude/scripts/verify.mjs --skip-export` passes (asset addition alone doesn't require re-verifying the full suite, but run the full sequence once T117.2 wires them in).
-- **Notes:** Reuse T112.3's capture approach and fixture-seeding notes (`TASKS_DONE.md` T112.3) rather than re-deriving it — in particular, triggering and freezing the Sesh first-lace celebration state will need the same kind of seeded-fixture approach T112.3 used. Do not delete or modify the existing mobile assets.
-
-### [T117.2] Render the visitor's platform-matched screenshot set
-
-- **Area:** Landing
-- **Priority:** Medium
-- **Status:** Not started
-- **Planning:** Implementer
-- **Description:** In `src/features/landing/components/landing-page.tsx`, swap between the mobile screenshot set and the web screenshot set (added in T117.1) based on the visitor's viewport width, using this repo's existing responsive patterns (e.g. `styled-components/native`'s `@media` usage in sibling components such as `app-tabs.web.tsx`'s `ResponsiveBrandText`).
-- **Exit criteria:** A browser check at a mobile-width viewport shows the mobile screenshot set; the same check at a desktop-width viewport shows the web screenshot set. An automated test confirms both the mobile and web `SCREENSHOTS` arrays are defined and wired to a width-based condition. Full verification sequence passes.
-- **Notes:** Depends on T117.1 (needs the web assets to exist first). Keep the existing four captions/T116 titles paired with whichever image set is showing — don't fork captions per platform unless the screens' content actually differs.
-
 ### [T118] Add a kendama-themed hero banner to the top of the landing page
 
 - **Area:** Landing
