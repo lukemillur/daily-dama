@@ -137,7 +137,7 @@ _T113–T120 come from stories S001–S008 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 - **Area:** Landing
 - **Priority:** Medium
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** In `src/features/landing/components/landing-page.tsx`, add a short title to each of the four `SCREENSHOTS` entries, rendered above the existing caption in typography visually distinct from the page's `BodyText` style, and give `ScreenshotItem` a container with its own background color and border (distinct from the page's plain `AppColors.paper` background).
 - **Exit criteria:** An automated test asserts each of the four screenshots renders both a title and its existing caption as distinct text nodes. A browser check confirms each screenshot sits inside a container with a visible background/border treatment distinct from the surrounding page background. Full verification sequence passes.
