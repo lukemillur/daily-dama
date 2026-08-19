@@ -144,7 +144,7 @@ _T112–T112.6 come from stories S027–S031 in [BACKLOG_STORIES.md](BACKLOG_STO
 
 - **Area:** Landing
 - **Priority:** Medium
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** Add static screenshots of real Daily Dama screens to the landing page built in T112.2. Static images only — no interactive/live preview. The four screens to capture, per the user's explicit direction: the **home screen**, emphasizing the core practice loop; the **Sesh screen** showing the "you just landed `<trick>` for the first time" first-lace celebration notification; the **custom trick definition** screen; and the **trick goals** screen. Every screenshot must be captured against realistic, populated data — multiple tricks laced, a goal list with more than one entry, real session history — not an empty or single-item state; a screenshot of a near-blank screen defeats the point of showing "what you're signing up for."
 - **Exit criteria:** The landing page at `/` renders all four screenshots listed above. A browser check at mobile width (320–375px, matching `AGENTS.md`'s existing viewport convention) confirms no layout overflow or broken image. A visual check confirms none of the four screenshots shows an empty/near-empty state (e.g. the goals screenshot has more than one goal, the Sesh screenshot shows the first-lace notification actually present, not a generic idle screen). Full verification sequence passes.
