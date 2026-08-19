@@ -137,7 +137,7 @@ _T113–T120 come from stories S001–S008 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 - **Area:** Landing
 - **Priority:** Medium
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Implementer
 - **Description:** Reorder `src/features/landing/components/landing-page.tsx` so `<LandingCta />` renders near the top of the page, above the `FeatureList`/`ScreenshotSection` pitch content, instead of its current position after `Closing`. A single existing component moved earlier in the JSX tree — no new component or behavior.
 - **Exit criteria:** An automated test on `LandingPage` asserts the CTA's rendered output (or a stable marker within it) appears before the feature-list heading text in document order. A browser check confirms the CTA is visible without scrolling (or near-immediately) on both a mobile and a desktop viewport width. Full verification sequence passes.
