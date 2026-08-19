@@ -220,9 +220,8 @@ The string always runs ken-hole ↔ tama-hole, so `String.tsx` needs no per-tric
 8. **Lint rules `react-hooks/refs` and `react-hooks/immutability` are strict.** No reading or writing refs during render. Do reset logic inside `useFrame`.
 9. **Slack rope collapses points** → zero tangent → `CatmullRomCurve3` NaNs → crash every frame. `toCurvePoints` drops coincident neighbours and guards non-finite particles. Keep it.
 10. **Sandbox access is gated.** Set `localStorage['daily-dama:user-profile']` to `{"version":1,"profile":{"hasCompletedOnboarding":true,"kenteiRank":1,"selectedTrickIds":[]}}` — the versioned wrapper is required and `kenteiRank` is a **number** 1–12. The route is nested under `/stats/` because the web tab router silently redirects unregistered top-level routes to Home.
-11. **`AccessGateProvider` skips the password gate whenever `__DEV__`** — interim, production unaffected.
-12. **`eslint.config.js` has a scoped `react/no-unknown-property` override** for `src/features/trick-viz/**/*.tsx`, needed because eslint-plugin-react does not know r3f's JSX intrinsics.
-13. **The colliders are coarser than the mesh.** `saradoBarRadius` is 0.08 while the lathed hub swells to ~0.10, so the string can graze the hub's widest point. Harmless at string thickness; widen the collider if a trick ever routes the string tightly across the sarado.
+11. **`eslint.config.js` has a scoped `react/no-unknown-property` override** for `src/features/trick-viz/**/*.tsx`, needed because eslint-plugin-react does not know r3f's JSX intrinsics.
+12. **The colliders are coarser than the mesh.** `saradoBarRadius` is 0.08 while the lathed hub swells to ~0.10, so the string can graze the hub's widest point. Harmless at string thickness; widen the collider if a trick ever routes the string tightly across the sarado.
 
 ## 13. Adding a trick
 

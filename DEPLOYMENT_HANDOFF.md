@@ -52,24 +52,20 @@ dist/
 
 `vercel.json` now exists in the repo with exactly this rewrite (`/stats/:trickId` → `/stats/[trickId].html`), plus the build command and output directory. Still worth verifying post-deploy (see checklist below) rather than trusting the config alone.
 
-## 3. The access gate — read before deploying
+## 3. (Removed) The access gate
 
-`src/features/access-gate/` gates the whole app behind a password screen, controlled by `EXPO_PUBLIC_ACCESS_PASSWORD` in `.env` (gitignored, not committed — currently set locally). Two things matter for deployment:
-
-1. **This is not real security.** `EXPO_PUBLIC_*` vars are inlined into the JS bundle at build time (`src/features/access-gate/model/access-gate.ts:2`), so the password is readable in plaintext by anyone who opens dev tools on the deployed site. It's a soft "keep casual visitors out" gate, not an auth system. Fine for a prototype behind an obscure domain; worth knowing before treating it as a real barrier.
-2. **If the env var isn't set at build time on the hosting platform, the gate silently doesn't exist.** `AccessGateProvider` checks `getConfiguredAccessPassword()`; if it's `undefined`, `isUnlocked` defaults to `true` and the app is wide open (`src/features/access-gate/state/access-gate-provider.tsx:16-17`). Whatever host you pick needs `EXPO_PUBLIC_ACCESS_PASSWORD` set as a **build-time** environment variable (not just available at runtime — it has to be present when `expo export` runs), using the same value that's in the local `.env` file, or the gate will just be absent in production.
+The password-gate feature this section used to describe (`src/features/access-gate/`, gated on `EXPO_PUBLIC_ACCESS_PASSWORD`) was removed entirely in T111. The app is now reachable without a password prompt on every route, in every environment. `EXPO_PUBLIC_ACCESS_PASSWORD` is no longer read anywhere in the codebase — it's an unused, safe-to-delete env var on Vercel.
 
 ## 4. What's genuinely undecided (needs your input, not mine)
 
 - **Hosting provider — decided.** Vercel, connected via its GitHub App, with `vercel.json` in the repo. See *Current deploy model* above.
 - **DNS for dailydama.com.** Still not independently verified from this side — I haven't confirmed the custom domain is actually pointed at Vercel and resolving, as opposed to a deployment simply existing at Vercel's own `*.vercel.app` URL. Check before assuming `dailydama.com` itself is live.
-- **Whether the access-gate password should rotate for a public domain.** Still open, as far as I know — currently `sillyGoose!2026`, unchanged from prototype setup. Worth deciding now that production deploys are real, not hypothetical.
 
 ## 5. Suggested next steps
 
 1. ~~Pick a host~~ — done, Vercel.
 2. ~~Connect the GitHub repo, set build command and output directory~~ — done, see `vercel.json`.
-3. Confirm `EXPO_PUBLIC_ACCESS_PASSWORD` is actually set as a **build-time** env var on Vercel, matching local `.env` — not independently verified from this side; §3 explains why this one is easy to get silently wrong.
+3. ~~Confirm `EXPO_PUBLIC_ACCESS_PASSWORD` is set on Vercel~~ — moot, the access gate was removed in T111 (see §3). Worth removing the now-unused env var from Vercel's dashboard.
 4. ~~Add the `/stats/*` rewrite rule~~ — done, in `vercel.json`.
 5. Confirm `dailydama.com` DNS actually points at Vercel and HTTPS is provisioned — not independently verified, see §4.
 6. Run the verification checklist below against the live domain — not yet done from this side.
@@ -79,7 +75,7 @@ dist/
 Beyond the project's standard local verification sequence (in AGENTS.md — `yarn test --runInBand`, `yarn lint`, `yarn tsc --noEmit`, all passing as of the last commit), check on the **live domain**, not just via client-side nav:
 
 - [ ] Hard-refresh (not client nav) on each route: `/`, `/tricks`, `/sesh`, `/stats`, `/profile`, and a real `/stats/<trickId>` URL — the last one is the one most likely to break (see §2).
-- [ ] Access gate actually appears on first visit (incognito/private window) and the configured password unlocks it.
+- [ ] No password prompt appears on first visit (incognito/private window) — the access gate was removed in T111.
 - [ ] The 320px-viewport nav bar still fits (AGENTS.md notes this was measured and should be rechecked if anything upstream of it changes — deploy config shouldn't affect it, but worth a glance).
 - [ ] `localStorage` persistence survives a reload (add a custom trick or complete a sesh, refresh, confirm it's still there) — confirms AsyncStorage's web backend is working under the production build, not just dev.
 - [ ] HTTPS is valid on `dailydama.com` (no cert warnings).
@@ -87,6 +83,6 @@ Beyond the project's standard local verification sequence (in AGENTS.md — `yar
 ## 7. What I did *not* do
 
 - The hosting account, `vercel.json`, the `production` branch, and the Vercel Production Branch setting were all set up directly by the project owner, not by an agent — none of it came from work in this repo.
-- Did not change the access-gate password.
+- The access gate itself was later removed entirely (T111, see §3) rather than having its password changed.
 - Did not add `generateStaticParams` for `/stats/[trickId]` — the rewrite rule in `vercel.json` covers the direct-hit 404 case (§2), but per-trick static generation for that route still isn't implemented.
 - Have not independently verified DNS or the build-time env var are actually correct in Vercel (see §4) — flagging rather than assuming.

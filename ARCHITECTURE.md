@@ -6,7 +6,7 @@
 
 ## Scope
 
-This guide covers the Daily Dama product application: onboarding, Home, Sesh, Tricks, Stats, Profile, notes, goals, the access gate, navigation, state, persistence, and verification.
+This guide covers the Daily Dama product application: onboarding, Home, Sesh, Tricks, Stats, Profile, notes, goals, navigation, state, persistence, and verification.
 
 The procedural trick-visualization experiment, its sandbox routes, and its supporting documentation are deliberately excluded. They should be evaluated as a separate subsystem if that work resumes.
 
@@ -59,8 +59,7 @@ The current prototype has:
 - no user accounts or authenticated identity;
 - no cross-device synchronization;
 - no persisted in-progress Sesh recovery;
-- no migration framework beyond rejecting unsupported versioned documents and recovering to defaults;
-- no claim that the access gate provides real security.
+- no migration framework beyond rejecting unsupported versioned documents and recovering to defaults.
 
 These omissions are coherent with rapid local-first product exploration. They also define the boundary at which a future architecture would need to change.
 
@@ -89,7 +88,6 @@ src/
   components/             Shared navigation and UI primitives
   constants/              Visual tokens and shared layout constants
   features/
-    access-gate/
     custom-tricks/
     goals/
     home/
@@ -128,8 +126,7 @@ The root layout composes navigation inside a sequence of providers:
 ```mermaid
 flowchart TD
     Theme["Expo navigation ThemeProvider"] --> Splash["Animated splash overlay"]
-    Splash --> Access["AccessGateProvider"]
-    Access --> Custom["CustomTrickProvider"]
+    Splash --> Custom["CustomTrickProvider"]
     Custom --> Profile["UserProfileProvider"]
     Profile --> History["PracticeHistoryProvider"]
     History --> Notes["NoteProvider"]
@@ -239,7 +236,7 @@ This separation is the main reason a general global store has not been introduce
 
 ## Persistent domains
 
-The implementation currently has **six persisted concerns**. Older repository prose that says “three persistent domains” predates notes, goals, and the access gate.
+The implementation currently has **five persisted concerns**. Older repository prose that says “three persistent domains” predates notes and goals.
 
 | Domain | Storage key | Shape/version | Owns | Deliberately does not own |
 | --- | --- | --- | --- | --- |
@@ -248,7 +245,6 @@ The implementation currently has **six persisted concerns**. Older repository pr
 | Practice history | `daily-dama:practice-history` | Versioned document, v1 | Immutable completed-Sesh snapshots | Mutable totals, current Sesh state |
 | Notes | `daily-dama:notes` | Versioned document, v1 | Trick-linked text notes and optional Sesh link snapshots | Trick lifecycle or practice records |
 | Goals | `daily-dama:goals` | Versioned document, v1 | Count/time targets attached to trick snapshots | Stored progress counters |
-| Access gate | `daily-dama:access-gate-unlocked` | Plain boolean string | Whether this browser/device previously passed the soft gate | Authentication, authorization, identity |
 
 ### Shared persistence protocol
 
@@ -497,12 +493,6 @@ A rank is complete only when every standard trick in it is effectively laced. Pr
 
 Keeping this bridge visible in the root composition preserves independent persistence ownership while acknowledging that product behavior sometimes crosses domains.
 
-### Access gate
-
-The access gate is a deployment convenience, not authentication. It is active only in non-development builds when `EXPO_PUBLIC_ACCESS_PASSWORD` is configured. A successful local unlock is persisted for that browser/device.
-
-Because `EXPO_PUBLIC_*` values are bundled into client JavaScript, a determined visitor can inspect the password. The gate can deter casual access to a prototype but cannot protect sensitive data or authorize users. Real security would require server-side identity and enforcement, a foundational architecture change.
-
 ## Important end-to-end flows
 
 ### Completing a single-trick Sesh
@@ -635,7 +625,7 @@ These are not all defects. They are the places where the current architecture wi
 
 ### 1. Repository prose has drifted from implementation
 
-`README.md` and the working agreement still describe three persistent domains. Notes, goals, and the access gate now make six persisted concerns. The older statement should not be used as an architecture inventory. This document records the current code.
+`README.md` and the working agreement still describe three persistent domains. Notes and goals now make five persisted concerns. The older statement should not be used as an architecture inventory. This document records the current code.
 
 ### 2. Hydration is safe but serial
 
@@ -665,11 +655,7 @@ The versioned domains repeat hydration, fallback, skip-first-write, queue, and w
 
 The reducer is cleanly isolated, but `sesh.tsx` owns a large amount of presentation and effect orchestration. This is a maintainability pressure point, especially as celebrations, goals, notes, and variants accumulate. Any split should preserve one reducer authority and separate by responsibility rather than fragmenting transition rules.
 
-### 9. The access gate must not be mistaken for security
-
-Its secret is client-visible and its unlocked state is local. It is suitable only for discouraging casual prototype access.
-
-### 10. Current platform confidence is asymmetric
+### 9. Current platform confidence is asymmetric
 
 React Native primitives and platform-specific navigation preserve an eventual cross-platform path, but web is the only deliberately verified target. Native tab behavior, keyboard handling, background Sesh behavior, and layout remain explicit hardening work rather than proven architecture guarantees.
 

@@ -34,9 +34,7 @@ You can also run `yarn start` and choose a target from the Expo CLI output (deve
 
 ## Environment variables
 
-See `.env.example` for the full list. Currently:
-
-- `EXPO_PUBLIC_ACCESS_PASSWORD` — optional. If set, gates the whole app behind a simple password screen (`src/features/access-gate/`). If unset, the gate is skipped entirely and the app is open. This is a soft "keep casual visitors out" measure, not real security — `EXPO_PUBLIC_*` variables are inlined into the JS bundle at build time and are readable by anyone who opens dev tools. See `DEPLOYMENT_HANDOFF.md` for how this is configured for the production deploy.
+See `.env.example` for the full list.
 
 ## Source layout
 
@@ -45,7 +43,7 @@ src/
   app/                  Expo Router routes (file-based routing)
   features/             One directory per product area (home, sesh, tricks,
                          stats, profile, onboarding, custom-tricks, goals,
-                         notes, access-gate, trick-viz), each typically split
+                         notes, trick-viz), each typically split
                          into components/model/persistence/state
   components/           Shared UI components
   shared/persistence/    Shared AsyncStorage write-queue and helpers
@@ -83,4 +81,4 @@ The workflow tooling under `.claude/scripts/` has its own separate, dependency-f
 - [`TASKS.md`](TASKS.md) — active backlog and the checkpoint mechanism across sessions/agents.
 - [`.claude/scripts/README.md`](.claude/scripts/README.md) — the `newTicket` workflow tooling (claim/resume, verification wrapper, worktree cleanup).
 - [`TRICK_VIZ_HANDOFF.md`](TRICK_VIZ_HANDOFF.md) — procedural 3D trick visualization.
-- [`DEPLOYMENT_HANDOFF.md`](DEPLOYMENT_HANDOFF.md) — web deploy to dailydama.com, including access-gate configuration for production.
+- [`DEPLOYMENT_HANDOFF.md`](DEPLOYMENT_HANDOFF.md) — web deploy to dailydama.com.
