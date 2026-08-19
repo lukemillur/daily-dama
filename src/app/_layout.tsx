@@ -1,12 +1,11 @@
 import '@/global.css';
 
 import { Analytics } from '@vercel/analytics/react';
-import { DarkTheme, DefaultTheme, ThemeProvider } from 'expo-router';
+import { DarkTheme, DefaultTheme, Slot, ThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { Platform } from 'react-native';
 
 import { AnimatedSplashOverlay } from '@/components/animated-icon';
-import AppTabs from '@/components/app-tabs';
 import { CustomTrickProvider } from '@/features/custom-tricks/state/custom-trick-provider';
 import { GoalProvider } from '@/features/goals/state/goal-provider';
 import { NoteProvider } from '@/features/notes/state/note-provider';
@@ -31,7 +30,7 @@ export default function TabLayout() {
               <GoalProvider>
                 <AppThemeProvider>
                   <KenteiRankAutoPromotion />
-                  <AppTabs />
+                  <Slot />
                 </AppThemeProvider>
               </GoalProvider>
             </NoteProvider>

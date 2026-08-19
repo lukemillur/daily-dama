@@ -198,7 +198,7 @@ describe('AssessmentEntry result copy', () => {
     });
 
     expect(mockNavigate).toHaveBeenCalledTimes(1);
-    expect(mockNavigate).toHaveBeenCalledWith('/');
+    expect(mockNavigate).toHaveBeenCalledWith('/app/home');
 
     act(() => {
       root.unmount();

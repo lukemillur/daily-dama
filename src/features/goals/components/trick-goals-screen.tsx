@@ -138,7 +138,7 @@ export function GoalRow({
       <GoalBody>{formatGoalTarget(goal)}</GoalBody>
       <ProgressText>{formatGoalProgress(progress)}</ProgressText>
       <GoalActionsRow>
-        <Link asChild href={{ pathname: '/sesh', params: { trickId: goal.trickId, mode: 'practice' } }}>
+        <Link asChild href={{ pathname: '/app/sesh', params: { trickId: goal.trickId, mode: 'practice' } }}>
           <GoalAction accessibilityLabel={`Practice ${goal.trickName}`} accessibilityRole="link">
             <GoalActionText>Practice toward this goal</GoalActionText>
           </GoalAction>

@@ -313,7 +313,7 @@ function TrickRow({
           </RowAction>
         ) : null}
         {showPracticeAction ? (
-          <Link asChild href={{ pathname: '/sesh', params: { trickId: trick.id, mode: 'practice' } }}>
+          <Link asChild href={{ pathname: '/app/sesh', params: { trickId: trick.id, mode: 'practice' } }}>
             <RowAction accessibilityLabel={`Practice ${trick.name}`} accessibilityRole="button">
               <PracticeActionText>Practice</PracticeActionText>
             </RowAction>

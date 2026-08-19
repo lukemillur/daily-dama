@@ -58,7 +58,7 @@ export function KenteiOnboarding() {
       const finishOnboarding = () => {
         const lacedTrickIds = getSeedLacedTrickIds(state.rank, state.landedTrickIds);
         completeOnboarding(state.rank, state.selectedTrickIds, lacedTrickIds);
-        router.replace('/sesh');
+        router.replace('/app/sesh');
       };
       return (
         <OnboardingThemeStep

@@ -2364,7 +2364,7 @@ describe('Sesh multi-trick entry (T071)', () => {
         node.props.accessibilityLabel === 'Practice several tricks',
     );
     expect(multiTrickAction).toBeDefined();
-    expect(multiTrickAction.props.href).toBe('/sesh/multi-trick');
+    expect(multiTrickAction.props.href).toBe('/app/sesh/multi-trick');
     expect(JSON.stringify(root.toJSON())).toContain('Build a line and work through it one trick at a time.');
 
     const text = JSON.stringify(root.toJSON());

@@ -76,7 +76,7 @@ describe('DailyHome next Kentei trick card', () => {
     expect(text).toContain('Trapeze');
     expect(text).toMatch(/Rank\s*3/);
 
-    const link = root.root.findByProps({ href: '/sesh?trickId=trapeze&mode=practice' });
+    const link = root.root.findByProps({ href: '/app/sesh?trickId=trapeze&mode=practice' });
     expect(link).toBeDefined();
   });
 
