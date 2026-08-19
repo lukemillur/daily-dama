@@ -137,7 +137,7 @@ _T113–T120 come from stories S001–S008 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 - **Area:** Landing
 - **Priority:** Low
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** Add at least one kendama-themed image to `src/features/landing/components/landing-page.tsx`, distinct from the app screenshots (T116/T117) and the hero banner (T118), in a placement that reads as intentional rather than decorative filler.
 - **Exit criteria:** A browser check confirms at least one additional kendama-themed image renders on the landing page outside the screenshot showcase and hero banner sections. Full verification sequence passes.
