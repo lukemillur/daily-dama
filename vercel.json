@@ -2,6 +2,6 @@
   "buildCommand": "yarn expo export --platform web --output-dir dist",
   "outputDirectory": "dist",
   "rewrites": [
-    { "source": "/stats/:trickId", "destination": "/stats/[trickId].html" }
+    { "source": "/app/stats/:trickId", "destination": "/app/stats/[trickId].html" }
   ]
 }

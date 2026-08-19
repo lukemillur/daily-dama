@@ -62,7 +62,7 @@ export function AssessmentEntry() {
         plan={OPEN_ENDED_SESH_PLAN}
         origin="assessment"
         suppressTransientCompletionFallback
-        onFinished={() => router.navigate('/')}
+        onFinished={() => router.navigate('/app/home')}
         finishButtonLabel="Go to Home"
         onCancelRun={() => setStep({ kind: 'choosingFlow' })}
         showAttemptsReminder

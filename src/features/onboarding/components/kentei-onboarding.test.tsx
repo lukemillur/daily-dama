@@ -109,7 +109,7 @@ describe('KenteiOnboarding', () => {
       await Promise.resolve();
     });
 
-    expect(mockRouter.replace).toHaveBeenCalledWith('/sesh');
+    expect(mockRouter.replace).toHaveBeenCalledWith('/app/sesh');
 
     const profile = await readPersistedProfile();
     expect(profile?.themeBackgroundColor).toBe(preset.backgroundColor);
@@ -128,7 +128,7 @@ describe('KenteiOnboarding', () => {
       await Promise.resolve();
     });
 
-    expect(mockRouter.replace).toHaveBeenCalledWith('/sesh');
+    expect(mockRouter.replace).toHaveBeenCalledWith('/app/sesh');
 
     const profile = await readPersistedProfile();
     expect(profile?.themeBackgroundColor).toBeUndefined();

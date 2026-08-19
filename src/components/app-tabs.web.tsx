@@ -24,26 +24,26 @@ export default function AppTabs() {
       <TabSlot style={styles.tabSlot} />
       <TabList asChild>
         <CustomTabList hidden={!hasCompletedOnboarding}>
-          <TabTrigger name="home" href="/" asChild>
+          <TabTrigger name="home" href="/app/home" asChild>
             <TabButton>Home</TabButton>
           </TabTrigger>
           {hasCompletedOnboarding && (
-            <TabTrigger name="sesh" href="/sesh" asChild>
+            <TabTrigger name="sesh" href="/app/sesh" asChild>
               <TabButton>Sesh</TabButton>
             </TabTrigger>
           )}
           {hasCompletedOnboarding && (
-            <TabTrigger name="tricks" href="/tricks" asChild>
+            <TabTrigger name="tricks" href="/app/tricks" asChild>
               <TabButton>Tricks</TabButton>
             </TabTrigger>
           )}
           {hasCompletedOnboarding && (
-            <TabTrigger name="stats" href="/stats" asChild>
+            <TabTrigger name="stats" href="/app/stats" asChild>
               <TabButton>Stats</TabButton>
             </TabTrigger>
           )}
           {hasCompletedOnboarding && (
-            <TabTrigger name="profile" href="/profile" asChild>
+            <TabTrigger name="profile" href="/app/profile" asChild>
               <TabButton>Profile</TabButton>
             </TabTrigger>
           )}

@@ -144,7 +144,7 @@ describe('AllTrickGoalsScreen', () => {
     press(root, 'add-goal-a');
 
     const link = root.root.findByProps({ accessibilityLabel: 'Practice Big Cup' });
-    expect(link.props.href).toBe('/sesh?trickId=big-cup&mode=practice');
+    expect(link.props.href).toBe('/app/sesh?trickId=big-cup&mode=practice');
   });
 
   it('removes a goal from the list once deleted', async () => {

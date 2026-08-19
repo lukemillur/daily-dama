@@ -140,16 +140,6 @@ _T112–T112.6 come from stories S027–S031 in [BACKLOG_STORIES.md](BACKLOG_STO
 - **Description:** Umbrella only — complete T112.1 through T112.6. Introduces a standalone marketing landing page at `dailydama.com/`, nests the existing application under `/app` (with the current home screen relocated to `/app/home`), gates it behind whether the visitor has completed onboarding, and adds a way back out to the landing page from inside the app. See [LANDING_PAGE_BRAINDUMP.md](LANDING_PAGE_BRAINDUMP.md) for the founder's-voice source material the landing copy should draw from.
 - **Notes:** Depends on T111 being done first in practice (see the batch note above), though not a hard `Depends on` — nothing in T112.1 technically requires the gate to already be gone.
 
-### [T112.1] Nest the app under `/app` and move the home screen to `/app/home`
-
-- **Area:** Navigation
-- **Priority:** High
-- **Status:** In progress
-- **Planning:** Required
-- **Description:** Move every current top-level route (`src/app/index.tsx`, `sesh/`, `tricks/`, `stats/`, `profile/`) under a new `src/app/app/` route group, with the existing `index.tsx` (today's onboarding-or-home screen) becoming `src/app/app/home.tsx` (or `src/app/app/home/index.tsx`, whichever keeps its current internal logic intact — it should not change behavior, only location). `src/app/index.tsx` is freed up for the new landing page (T112.2). Update every hardcoded internal route reference (`app-tabs.web.tsx`'s five `href`s, `require-onboarding.ts`'s `router.replace('/')`, and the ~20 other `router.push`/`router.replace`/`href` call sites across `sesh`, `tricks`, `profile`, `stats`, `daily-home.tsx`, `kentei-onboarding.tsx`, `multi-trick-sesh-entry.tsx`) to the new `/app/...` prefix. Update `vercel.json`'s `/stats/:trickId` rewrite to match the new nested static-export path.
-- **Exit criteria:** Full verification sequence passes, including a successful `yarn expo export --platform web`. A manual/browser check confirms: every existing route (`/app/home`, `/app/sesh`, `/app/tricks`, `/app/stats`, `/app/profile`, `/app/stats/<trickId>`, and their sub-routes) is reachable and behaves exactly as it did before the move, including on a hard refresh (not just client-side nav); the five-link web nav bar still fits at 320px width (per `AGENTS.md`'s existing measured constraint) with its `href`s now pointing at `/app/...` paths; no console errors from a broken relative link. Existing automated tests that assert on route paths are updated and passing.
-- **Notes:** This is the highest-risk piece of the whole initiative — it's a mechanical but wide-reaching rename touching roughly 20 call sites plus the Vercel rewrite config for a route that's live in production. Get this landed and verified before starting T112.2–T112.6. Two defensible variants exist for exactly where `home` lives (`/app/home.tsx` vs `/app/home/index.tsx`) — either is fine; pick whichever fits Expo Router's file-based conventions more naturally once in the code.
-
 ### [T112.2] Build the landing page's purpose-and-overview content
 
 - **Area:** Landing

@@ -280,7 +280,7 @@ function EmptyState() {
       <Eyebrow>Nothing queued</Eyebrow>
       <DisplayTitle>Build your{`\n`}practice list.</DisplayTitle>
       <BodyCopy>Select at least one trick in Tricks before starting a focused sesh.</BodyCopy>
-      <Link href="/tricks" asChild>
+      <Link href="/app/tricks" asChild>
         <PrimaryButton accessibilityRole="link">
           Choose tricks
         </PrimaryButton>
@@ -441,7 +441,7 @@ function TrickPicker({
           </ChallengeField>
         ) : null}
         {isDirectPractice ? null : (
-          <Link href="/sesh/multi-trick" asChild>
+          <Link href="/app/sesh/multi-trick" asChild>
             <MultiTrickAction
               accessibilityLabel="Practice several tricks"
               accessibilityRole="link">

@@ -90,7 +90,7 @@ describe('NeglectedTricksSection', () => {
     });
 
     const link = root.root.findByProps({ accessibilityLabel: 'Practice Trick big-cup' });
-    expect(link.props.href).toBe('/sesh?trickId=big-cup&mode=practice');
+    expect(link.props.href).toBe('/app/sesh?trickId=big-cup&mode=practice');
   });
 
   it('distinguishes never-practiced tricks from previously practiced ones', () => {

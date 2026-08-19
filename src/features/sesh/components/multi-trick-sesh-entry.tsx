@@ -79,7 +79,7 @@ export function MultiTrickSeshEntry() {
   };
 
   const handleFinished = () => {
-    router.replace('/sesh');
+    router.replace('/app/sesh');
   };
 
   if (step.kind === 'running') {
@@ -168,7 +168,7 @@ export function MultiTrickSeshEntry() {
           <CompactBackLink
             accessibilityLabel="Back to Sesh"
             accessibilityRole="link"
-            onPress={() => router.replace('/sesh')}>
+            onPress={() => router.replace('/app/sesh')}>
             ← Back to Sesh
           </CompactBackLink>
         }
