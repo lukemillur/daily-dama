@@ -22,6 +22,13 @@ function findByLabel(renderer: ReactTestRenderer, label: string) {
   return interactive ?? matches[0];
 }
 
+function findSwatch(renderer: ReactTestRenderer, label: string) {
+  return renderer.root.findAll(
+    (node) =>
+      node.props.accessibilityLabel === label && node.props.accessibilityState !== undefined,
+  )[0];
+}
+
 function ProfileProbe() {
   const { themeBackgroundColor, themeAccentColor, themeTextColor } = useUserProfile();
   return (
@@ -33,8 +40,6 @@ function ProfileProbe() {
   );
 }
 
-// Sets a custom text color directly, since RainbowThemePresets has no UI of its own for it -
-// mirrors the seeded-state setup pattern used elsewhere for this reducer field.
 function TextColorSetter() {
   const { setThemeTextColor } = useUserProfileActions();
   return (
@@ -61,7 +66,6 @@ async function mountPresets() {
 function probeValue(renderer: ReactTestRenderer, label: string) {
   return findByLabel(renderer, label).props.children;
 }
-
 describe("RainbowThemePresets", () => {
   beforeEach(async () => {
     await AsyncStorage.clear();
@@ -123,11 +127,48 @@ describe("RainbowThemePresets", () => {
   it("renders as a component distinct from ThemeColorPicker (no shared mode-toggle affordance)", async () => {
     const root = await mountPresets();
 
-    // No hex-entry affordances from ThemeColorPicker should appear in this component's tree.
     const hexInputs = root.root.findAll(
       (node) => node.props.accessibilityLabel === "Background color hex",
     );
     expect(hexInputs.length).toBe(0);
+
+    act(() => root.unmount());
+  });
+
+  it("renders a Default preset in the quick-preset grid", async () => {
+    const root = await mountPresets();
+    expect(findByLabel(root, "Default theme preset")).toBeDefined();
+    act(() => root.unmount());
+  });
+
+  it("shows the Default preset as selected on first load, before any preset has ever been chosen", async () => {
+    const root = await mountPresets();
+    const defaultSwatch = findSwatch(root, "Default theme preset");
+    expect(defaultSwatch.props.accessibilityState).toEqual({ selected: true });
+    act(() => root.unmount());
+  });
+
+  it("selecting the Default preset calls setThemeColors(undefined, undefined), clearing custom background/accent", async () => {
+    const preset = RAINBOW_THEME_PRESETS[0];
+    const root = await mountPresets();
+
+    act(() => findByLabel(root, preset.label + " theme preset").props.onPress());
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(probeValue(root, "probe-background")).toBe(preset.backgroundColor);
+    expect(probeValue(root, "probe-accent")).toBe(preset.accentColor);
+
+    act(() => findByLabel(root, "Default theme preset").props.onPress());
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(probeValue(root, "probe-background")).toBe("unset");
+    expect(probeValue(root, "probe-accent")).toBe("unset");
+
+    const defaultSwatch = findSwatch(root, "Default theme preset");
+    expect(defaultSwatch.props.accessibilityState).toEqual({ selected: true });
 
     act(() => root.unmount());
   });

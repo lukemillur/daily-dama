@@ -133,16 +133,6 @@ _T112–T112.6 come from stories S027–S031 in [BACKLOG_STORIES.md](BACKLOG_STO
 
 _T113–T120 come from stories S001–S008 in [BACKLOG_STORIES.md](BACKLOG_STORIES.md) (the user's 2026-08-19 QA pass on T112.4/T112.6 plus general landing-page feedback), refined by `product-manager` and scoped in this pass. T117 is a two-child umbrella: T117.1 captures new web-layout screenshots (mirroring T112.3's dedicated capture task) and T117.2 wires the platform-based swap, split because the capture step is genuinely separable in risk and effort from the display-logic change. Two open product questions surfaced during scoping and were resolved here rather than left `Blocked`: T114 moves the CTA to the top rather than duplicating it, and T120 clears background/accent only (not text color), matching the existing "Reset background & accent" button's scope. All other entries are independent S-sized tickets — no required ordering between them beyond what each entry's own Notes call out.
 
-### [T120] Add a "Default" preset that resets the app theme
-
-- **Area:** Profile / Theming
-- **Priority:** Low
-- **Status:** In progress
-- **Planning:** Implementer
-- **Description:** Add a "Default" swatch to the quick-preset grid in `src/features/profile/components/rainbow-theme-presets.tsx`, styled with the app's default background/accent colors (`AppColors.sage`/`AppColors.yellow`, matching `resolveTheme`'s fallback in `use-resolved-theme.ts`). Selecting it clears the user's custom background/accent colors the same way the existing "Reset background & accent" button in `theme-color-picker.tsx` already does (`setThemeColors(undefined, undefined)`).
-- **Exit criteria:** An automated test asserts a "Default" preset renders in the quick-preset grid, that selecting it calls `setThemeColors(undefined, undefined)`, and that it shows as selected whenever `themeBackgroundColor`/`themeAccentColor` are both unset — including on first load, before any preset has ever been chosen. Full verification sequence passes.
-- **Notes:** Decision made during scoping to resolve the originating story's open text-color question: this task clears background/accent only, matching the existing "Reset background & accent" button's scope — it deliberately does not touch `themeTextColor`, which already has its own separate reset control. `ThemePresetGrid`'s `onSelectPreset`/`isPresetSelected` callbacks assume every preset has real `backgroundColor`/`accentColor` hex values; the Default preset's selection handler needs special-casing to call `setThemeColors(undefined, undefined)` rather than reusing the generic preset-select path verbatim, since clearing the stored preference is not the same as setting it to today's default hex literally (which would stop tracking the app default if `AppColors.sage`/`AppColors.yellow` ever change).
-
 ## Done
 
 Completed entries live in [TASKS_DONE.md](TASKS_DONE.md) — not part of the top-to-bottom read above; see step 5 under _Completing a task_.
