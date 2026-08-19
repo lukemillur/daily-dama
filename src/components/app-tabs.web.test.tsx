@@ -25,6 +25,20 @@ jest.mock('@/features/landing/components/landing-page', () => ({
   },
 }));
 
+const defaultProfile: UserProfile = {
+  selectedTrickIds: [],
+  hasCompletedOnboarding: false,
+  kenteiRank: undefined,
+};
+
+const customThemeProfile: UserProfile = {
+  ...defaultProfile,
+  hasCompletedOnboarding: true,
+  kenteiRank: 5,
+  themeBackgroundColor: '#123456',
+  themeAccentColor: '#654321',
+};
+
 function pressByVisibleText(root: ReactTestRenderer, text: string) {
   const [textNode] = root.root.findAll((node) => node.props.children === text);
   if (!textNode) throw new Error('No node found with text: ' + text);
@@ -38,6 +52,10 @@ function pressByVisibleText(root: ReactTestRenderer, text: string) {
 
 function findByVisibleText(root: ReactTestRenderer, text: string) {
   return root.root.findAll((node) => node.props.children === text);
+}
+
+function findFooterBar(root: ReactTestRenderer) {
+  return root.root.findByProps({ testID: 'app-footer-bar' });
 }
 
 async function mountTabList() {
@@ -64,14 +82,23 @@ beforeEach(() => {
   mockRouter.push.mockClear();
   mockRouter.replace.mockClear();
   mockUseUserProfile.mockReset();
+  mockUseUserProfile.mockReturnValue(defaultProfile);
   mockSearchParams = {};
 });
 
-describe('CustomTabList leave-app link', () => {
-  it('is present as a persistent footer-style affordance in the app shell', async () => {
+describe('CustomTabList leave-app footer bar', () => {
+  it('renders a footer-bar container holding "Leave app" as a left-aligned element', async () => {
     const root = await mountTabList();
 
-    expect(findByVisibleText(root, 'Leave app').length).toBeGreaterThan(0);
+    const footerBar = findFooterBar(root);
+    const flattenedStyle = [footerBar.props.style].flat();
+    expect(flattenedStyle).toEqual(
+      expect.arrayContaining([expect.objectContaining({ justifyContent: 'flex-start' })])
+    );
+
+    const leaveAppNodes = findByVisibleText(root, 'Leave app');
+    expect(leaveAppNodes.length).toBeGreaterThan(0);
+    expect(footerBar.findAllByProps({ children: 'Leave app' }).length).toBeGreaterThan(0);
   });
 
   it('navigates to / carrying the T112.5 in-app-arrival signal when pressed', async () => {
@@ -86,11 +113,7 @@ describe('CustomTabList leave-app link', () => {
   });
 
   it('activating the link lands on the landing page instead of redirecting back to /app/home', async () => {
-    mockUseUserProfile.mockReturnValue({
-      selectedTrickIds: [],
-      hasCompletedOnboarding: true,
-      kenteiRank: 5,
-    });
+    mockUseUserProfile.mockReturnValue(customThemeProfile);
 
     const tabListRoot = await mountTabList();
     act(() => pressByVisibleText(tabListRoot, 'Leave app'));
@@ -102,5 +125,23 @@ describe('CustomTabList leave-app link', () => {
 
     expect(findByVisibleText(rootRoot, 'Landing Page').length).toBeGreaterThan(0);
     expect(mockRouter.replace).not.toHaveBeenCalled();
+  });
+
+  it('changes the footer background and link text color when a custom theme is set', async () => {
+    const defaultRoot = await mountTabList();
+    const defaultFooter = findFooterBar(defaultRoot);
+    const defaultFooterStyle = Object.assign({}, ...[defaultFooter.props.style].flat());
+    const defaultLinkText = defaultFooter.findAllByProps({ children: 'Leave app' })[0];
+    const defaultLinkStyle = Object.assign({}, ...[defaultLinkText.props.style].flat());
+
+    mockUseUserProfile.mockReturnValue(customThemeProfile);
+    const customRoot = await mountTabList();
+    const customFooter = findFooterBar(customRoot);
+    const customFooterStyle = Object.assign({}, ...[customFooter.props.style].flat());
+    const customLinkText = customFooter.findAllByProps({ children: 'Leave app' })[0];
+    const customLinkStyle = Object.assign({}, ...[customLinkText.props.style].flat());
+
+    expect(customFooterStyle.backgroundColor).not.toBe(defaultFooterStyle.backgroundColor);
+    expect(customLinkStyle.color).not.toBe(defaultLinkStyle.color);
   });
 });
