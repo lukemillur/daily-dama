@@ -1,4 +1,5 @@
 import { describe, expect, it, jest } from '@jest/globals';
+import { Image } from 'expo-image';
 import type { ReactElement } from 'react';
 import { act, create } from 'react-test-renderer';
 
@@ -7,6 +8,16 @@ import RootRoute from '@/app/index';
 jest.mock('react-native-reanimated', () =>
   require('react-native-reanimated/mock'),
 );
+
+// expo-image's native oversized-image observer wiring (initObserveIntegrationIfNeeded) throws
+// under jest-expo's native-module mock ('observe.getIntegrations is not a function') -- it isn't
+// exercised in this test, so mock the component with a lightweight stand-in that preserves the
+// props this suite asserts on (source, accessibilityLabel, alt).
+jest.mock('expo-image', () => {
+  const React = require('react');
+  const { View } = require('react-native');
+  return { Image: (props: Record<string, unknown>) => React.createElement(View, props) };
+});
 
 jest.mock('expo-router', () => ({
   Link: ({ children }: { children: ReactElement }) => children,
@@ -46,5 +57,30 @@ describe('RootRoute (landing page)', () => {
       (node) => node.props.children === 'Start your first Sesh',
     );
     expect(ctaLabel.length).toBeGreaterThan(0);
+  });
+
+  it('renders the four screenshot images with descriptive alt text', async () => {
+    let root!: ReturnType<typeof create>;
+    await act(async () => {
+      root = create(<RootRoute />);
+    });
+
+    const images = root.root.findAll((node) => node.type === Image);
+    expect(images.length).toBe(4);
+
+    const expectedAltFragments = [
+      'home screen',
+      'first-ever lace',
+      'Custom trick form',
+      'Trick goals screen',
+    ];
+    expectedAltFragments.forEach((fragment) => {
+      const matches = images.filter(
+        (node) =>
+          typeof node.props.accessibilityLabel === 'string' &&
+          node.props.accessibilityLabel.includes(fragment),
+      );
+      expect(matches.length).toBeGreaterThan(0);
+    });
   });
 });

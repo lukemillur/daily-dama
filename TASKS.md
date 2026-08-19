@@ -140,16 +140,6 @@ _T112–T112.6 come from stories S027–S031 in [BACKLOG_STORIES.md](BACKLOG_STO
 - **Description:** Umbrella only — complete T112.1 through T112.6. Introduces a standalone marketing landing page at `dailydama.com/`, nests the existing application under `/app` (with the current home screen relocated to `/app/home`), gates it behind whether the visitor has completed onboarding, and adds a way back out to the landing page from inside the app. See [LANDING_PAGE_BRAINDUMP.md](LANDING_PAGE_BRAINDUMP.md) for the founder's-voice source material the landing copy should draw from.
 - **Notes:** Depends on T111 being done first in practice (see the batch note above), though not a hard `Depends on` — nothing in T112.1 technically requires the gate to already be gone.
 
-### [T112.3] Show real app screenshots on the landing page
-
-- **Area:** Landing
-- **Priority:** Medium
-- **Status:** Not started
-- **Planning:** Required
-- **Description:** Add static screenshots of real Daily Dama screens to the landing page built in T112.2. Static images only — no interactive/live preview. The four screens to capture, per the user's explicit direction: the **home screen**, emphasizing the core practice loop; the **Sesh screen** showing the "you just landed `<trick>` for the first time" first-lace celebration notification; the **custom trick definition** screen; and the **trick goals** screen. Every screenshot must be captured against realistic, populated data — multiple tricks laced, a goal list with more than one entry, real session history — not an empty or single-item state; a screenshot of a near-blank screen defeats the point of showing "what you're signing up for."
-- **Exit criteria:** The landing page at `/` renders all four screenshots listed above. A browser check at mobile width (320–375px, matching `AGENTS.md`'s existing viewport convention) confirms no layout overflow or broken image. A visual check confirms none of the four screenshots shows an empty/near-empty state (e.g. the goals screenshot has more than one goal, the Sesh screenshot shows the first-lace notification actually present, not a generic idle screen). Full verification sequence passes.
-- **Notes:** Depends on T112.2 existing to have somewhere to place the images. Promoted to `Planning: Required` on 2026-08-19 (was `Implementer`) at the user's explicit request. Capturing the Sesh first-lace notification screenshot will likely require seeding fixture data that puts the app in that specific transient state — plan how to trigger and freeze it before implementing, rather than trying to catch it live.
-
 ### [T112.4] Add a call-to-action from the landing page into the app
 
 - **Area:** Landing
