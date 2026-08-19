@@ -1,3 +1,4 @@
+import { Image } from 'expo-image';
 import { Link } from 'expo-router';
 import { ScrollView } from 'react-native';
 import { styled } from 'styled-components/native';
@@ -27,6 +28,35 @@ const FEATURES: readonly Feature[] = [
   },
 ];
 
+interface Screenshot {
+  readonly source: number;
+  readonly alt: string;
+  readonly caption: string;
+}
+
+const SCREENSHOTS: readonly Screenshot[] = [
+  {
+    source: require('@/assets/images/landing/home-screen.png'),
+    alt: 'Daily Dama home screen showing a practice streak, the last sesh, and the current practice queue',
+    caption: 'Open the app and the loop is right there: what you last practiced, what’s next, and how the streak is going.',
+  },
+  {
+    source: require('@/assets/images/landing/sesh-first-lace.png'),
+    alt: 'Sesh screen celebrating the first-ever lace on a trick mid-session',
+    caption: 'The moment a trick actually lands for the first time, Daily Dama says so.',
+  },
+  {
+    source: require('@/assets/images/landing/custom-trick-form.png'),
+    alt: 'Custom trick form with a trick name and Kentei rank filled in',
+    caption: 'Got a move that’s not in the standard Kentei set? Name it, rank it, and it joins your rotation.',
+  },
+  {
+    source: require('@/assets/images/landing/trick-goals.png'),
+    alt: 'Trick goals screen showing progress bars for multiple in-progress goals',
+    caption: 'Climb the ladder on purpose — set a target per trick and watch the progress add up.',
+  },
+];
+
 export function LandingPage() {
   return (
     <Screen background={AppColors.paper}>
@@ -49,6 +79,22 @@ export function LandingPage() {
               </FeatureItem>
             ))}
           </FeatureList>
+
+          <ScreenshotSection>
+            <ScreenshotHeading>What you’re signing up for</ScreenshotHeading>
+            {SCREENSHOTS.map((screenshot) => (
+              <ScreenshotItem key={screenshot.alt}>
+                <Image
+                  source={screenshot.source}
+                  accessibilityLabel={screenshot.alt}
+                  alt={screenshot.alt}
+                  contentFit="contain"
+                  style={{ width: '100%', aspectRatio: 375 / 812 }}
+                />
+                <ScreenshotCaption>{screenshot.caption}</ScreenshotCaption>
+              </ScreenshotItem>
+            ))}
+          </ScreenshotSection>
 
           <Closing>
             Kendama is also one of the best excuses to put your phone down. Daily Dama isn’t
@@ -103,6 +149,30 @@ const FeatureHeading = styled.Text`
 `;
 
 const FeatureBody = styled(BodyText)`
+  color: ${AppColors.textMuted};
+`;
+
+const ScreenshotSection = styled.View`
+  margin-top: 40px;
+  gap: 28px;
+`;
+
+const ScreenshotHeading = styled.Text`
+  color: ${AppColors.ink};
+  font-size: 17px;
+  font-weight: 900;
+`;
+
+const ScreenshotItem = styled.View`
+  gap: 10px;
+  align-items: center;
+  width: 100%;
+  max-width: 360px;
+`;
+
+const ScreenshotCaption = styled(BodyText)`
+  max-width: 340px;
+  text-align: center;
   color: ${AppColors.textMuted};
 `;
 
