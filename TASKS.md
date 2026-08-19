@@ -144,7 +144,7 @@ _T112–T112.6 come from stories S027–S031 in [BACKLOG_STORIES.md](BACKLOG_STO
 
 - **Area:** Navigation
 - **Priority:** Low
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Implementer
 - **Description:** From anywhere inside `/app`, add a persistent, visible affordance (e.g. in `app-tabs.web.tsx`'s `CustomTabList`, as a small footer-style link) that navigates to `/`, setting the in-app-arrival signal T112.5 defines so the visitor actually lands on the landing page instead of being immediately redirected back. Pure navigation only — must not sign the user out, reset onboarding, or touch any persisted data.
 - **Exit criteria:** An automated test confirms the affordance is present in the app shell, and that activating it (with a completed-onboarding profile fixture) renders the landing page — not a redirect straight back to `/app/home` — confirming the signal from T112.5 is actually being set and honored. A browser check at 320px width confirms it doesn't break the existing five-link nav bar's fit (`AGENTS.md`'s measured constraint). Full verification sequence passes.
