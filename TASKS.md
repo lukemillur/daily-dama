@@ -131,16 +131,6 @@ _This round came out of a review pass over the first batch of completed work (T0
 
 _T112–T112.6 come from stories S027–S031 in [BACKLOG_STORIES.md](BACKLOG_STORIES.md) (a dedicated pre-app landing page), refined by `product-manager` from a direct user request and scoped in this pass. T111 (drop the access-gate password screen) isn't from a story — it's a decision made during this scoping conversation, in answer to a question the landing-page work raised directly: the app is currently gated behind a password on every route, which defeats the purpose of a publicly shareable landing page, and the user chose to remove the gate outright rather than scope it to just `/app`. T111 is listed first because T112.1 assumes it's already gone, though nothing technically blocks doing them in the other order. T112.1 is the foundation the rest of T112's children build on — it does the actual `/app` route nesting — so it's sequenced first within the umbrella._
 
-### [T111] Remove the access-gate password screen
-
-- **Area:** Access gate
-- **Priority:** High
-- **Status:** In progress
-- **Planning:** Required
-- **Description:** `AccessGateProvider` (`src/app/_layout.tsx:28`) currently wraps the entire app behind a password screen gated on `EXPO_PUBLIC_ACCESS_PASSWORD` (see `DEPLOYMENT_HANDOFF.md` §3). Delete the feature entirely: remove `AccessGateProvider` from the root layout, delete `src/features/access-gate/` and its tests, and remove any other reference to it (e.g. `AccessGateActionsContext` usage elsewhere, if any). The app becomes reachable without a password on every route.
-- **Exit criteria:** `src/features/access-gate/` no longer exists; `src/app/_layout.tsx` no longer imports or renders `AccessGateProvider`; a fresh browser session (cleared storage) reaches app content directly with no password prompt at any route; full verification sequence (`yarn test --runInBand`, `yarn lint`, `yarn tsc --noEmit`, `yarn expo export --platform web`) passes with no remaining references to the deleted feature.
-- **Notes:** Update `DEPLOYMENT_HANDOFF.md` §3 ("The access gate — read before deploying") to reflect removal rather than leaving it describing a feature that no longer exists. `EXPO_PUBLIC_ACCESS_PASSWORD` becomes an unused env var on Vercel — flagging so a human remembers to clean it up there, but that's account-dashboard state outside this repo and outside this task's exit criteria.
-
 ### [T112] Add a dedicated pre-app landing page
 
 - **Area:** Navigation / Landing
