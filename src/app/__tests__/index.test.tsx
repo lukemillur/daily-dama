@@ -1,8 +1,9 @@
-import { describe, expect, it, jest } from '@jest/globals';
+import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { Image } from 'expo-image';
 import { act, create } from 'react-test-renderer';
 
 import RootRoute from '@/app/index';
+import type { UserProfile } from '@/features/profile/model/user-profile';
 
 jest.mock('react-native-reanimated', () =>
   require('react-native-reanimated/mock'),
@@ -18,15 +19,30 @@ jest.mock('expo-image', () => {
   return { Image: (props: Record<string, unknown>) => React.createElement(View, props) };
 });
 
+const mockRouter = { replace: jest.fn(), push: jest.fn() };
+let mockSearchParams: Record<string, string> = {};
 jest.mock('expo-router', () => ({
-  useRouter: () => ({ replace: jest.fn(), push: jest.fn() }),
+  useLocalSearchParams: () => mockSearchParams,
+  useRouter: () => mockRouter,
 }));
 
+const mockUseUserProfile = jest.fn<() => UserProfile>();
 jest.mock('@/features/profile/state/user-profile-provider', () => ({
-  useUserProfile: () => ({ selectedTrickIds: [], hasCompletedOnboarding: false }),
+  useUserProfile: () => mockUseUserProfile(),
 }));
 
 describe('RootRoute (landing page)', () => {
+  beforeEach(() => {
+    mockRouter.replace.mockClear();
+    mockRouter.push.mockClear();
+    mockSearchParams = {};
+    mockUseUserProfile.mockReset();
+    mockUseUserProfile.mockReturnValue({
+      selectedTrickIds: [],
+      hasCompletedOnboarding: false,
+    });
+  });
+
   it('renders distinct headline, lede, and feature copy using the typography components', async () => {
     let root!: ReturnType<typeof create>;
     await act(async () => {
@@ -84,5 +100,63 @@ describe('RootRoute (landing page)', () => {
       );
       expect(matches.length).toBeGreaterThan(0);
     });
+  });
+
+  it('redirects a fresh, fully-onboarded arrival straight to /app/home without rendering the landing page', async () => {
+    mockUseUserProfile.mockReturnValue({
+      selectedTrickIds: [],
+      hasCompletedOnboarding: true,
+      kenteiRank: 5,
+    });
+
+    let root!: ReturnType<typeof create>;
+    await act(async () => {
+      root = create(<RootRoute />);
+    });
+
+    expect(mockRouter.replace).toHaveBeenCalledWith('/app/home');
+    const headline = root.root.findAll(
+      (node) => node.props.children === 'Why Daily Dama',
+    );
+    expect(headline.length).toBe(0);
+  });
+
+  it('renders the landing page with no redirect when the in-app arrival signal is present', async () => {
+    mockUseUserProfile.mockReturnValue({
+      selectedTrickIds: [],
+      hasCompletedOnboarding: true,
+      kenteiRank: 5,
+    });
+    mockSearchParams = { from: 'app' };
+
+    let root!: ReturnType<typeof create>;
+    await act(async () => {
+      root = create(<RootRoute />);
+    });
+
+    expect(mockRouter.replace).not.toHaveBeenCalled();
+    const headline = root.root.findAll(
+      (node) => node.props.children === 'Why Daily Dama',
+    );
+    expect(headline.length).toBeGreaterThan(0);
+  });
+
+  it('renders the landing page for an incomplete onboarding profile even when the signal is present', async () => {
+    mockUseUserProfile.mockReturnValue({
+      selectedTrickIds: [],
+      hasCompletedOnboarding: false,
+    });
+    mockSearchParams = { from: 'app' };
+
+    let root!: ReturnType<typeof create>;
+    await act(async () => {
+      root = create(<RootRoute />);
+    });
+
+    expect(mockRouter.replace).not.toHaveBeenCalled();
+    const headline = root.root.findAll(
+      (node) => node.props.children === 'Why Daily Dama',
+    );
+    expect(headline.length).toBeGreaterThan(0);
   });
 });

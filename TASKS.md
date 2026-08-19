@@ -140,16 +140,6 @@ _T112–T112.6 come from stories S027–S031 in [BACKLOG_STORIES.md](BACKLOG_STO
 - **Description:** Umbrella only — complete T112.1 through T112.6. Introduces a standalone marketing landing page at `dailydama.com/`, nests the existing application under `/app` (with the current home screen relocated to `/app/home`), gates it behind whether the visitor has completed onboarding, and adds a way back out to the landing page from inside the app. See [LANDING_PAGE_BRAINDUMP.md](LANDING_PAGE_BRAINDUMP.md) for the founder's-voice source material the landing copy should draw from.
 - **Notes:** Depends on T111 being done first in practice (see the batch note above), though not a hard `Depends on` — nothing in T112.1 technically requires the gate to already be gone.
 
-### [T112.5] Onboarded visitors skip the landing page
-
-- **Area:** Navigation
-- **Priority:** High
-- **Status:** In progress
-- **Planning:** Required
-- **Description:** A **fresh** arrival at `/` (direct URL visit, bookmark, external/social link, new tab) when `profile.hasCompletedOnboarding && profile.kenteiRank !== undefined` should redirect straight to `/app/home` instead of rendering the landing page — mirroring the existing `useRequireOnboarding` redirect pattern (`src/features/onboarding/state/require-onboarding.ts`), just in the opposite direction. This redirect must **not** fire when `/` is reached via T112.6's in-app "exit to landing" link — that link exists specifically to let an already-onboarded visitor see the landing page again, and an unconditional redirect would make T112.6 a dead end. Define a concrete signal T112.6's navigation sets (e.g. a `from=app` query param, or an Expo Router param on the `/` route) that this redirect checks for and skips; T112.6 and T112.4 both depend on this same signal (T112.6 to set it, T112.4 to know which CTA copy to render), so its exact shape is this task's decision to make and document for the other two.
-- **Exit criteria:** An automated test mounts the root route with a completed-onboarding profile fixture and a fresh/no-signal arrival, and asserts the app home content renders (or a redirect to `/app/home` fires) without the landing page ever appearing. A second test with the same profile fixture but the in-app-arrival signal present asserts the landing page renders instead, with no redirect. A third test with incomplete onboarding still renders the landing page regardless of the signal. Full verification sequence passes.
-- **Notes:** Depends on T112.1 and T112.2 both existing. Promoted to `Planning: Required` on 2026-08-19 (was `Implementer`) — not from the user's own scoping-review comments, but a call made while resolving those comments: T112.4's returning-visitor CTA only works if this task defines a real signal contract shared with T112.6, which is more coordination than the original "mirror `useRequireOnboarding`" framing implied. Flagging this promotion explicitly since the user didn't request it directly.
-
 ### [T112.6] Add a way to leave the app and return to the landing page
 
 - **Area:** Navigation
