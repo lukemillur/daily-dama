@@ -241,12 +241,28 @@ test('selection: skips entries that are not Not started', () => {
   assert.deepEqual(result.skipped.map((entry) => entry.reason), ['status']);
 });
 
-test('selection: a claimed next task stops the scan instead of being skipped', () => {
+test('selection: a claimed next task is skipped, not stopped, so scanning reaches the next actionable one', () => {
   const claimed = new Map([['T100', ['task/T100-rename-a-label-on-the-summary-card']]]);
   const result = selectTask({ tasks, doneIds, claimedBranches: claimed });
-  assert.equal(result.status, 'blocked');
-  assert.equal(result.blocker.reason, 'claimed');
-  assert.equal(result.blocker.taskId, 'T100');
+  assert.equal(result.status, 'selected');
+  assert.equal(result.task.id, 'T101');
+  assert.deepEqual(result.skipped, [
+    { id: 'T100', reason: 'claimed', detail: 'already claimed by task/T100-rename-a-label-on-the-summary-card' },
+  ]);
+});
+
+test('selection: every claimed task is skipped, not just the first, until an unclaimed one is found', () => {
+  const claimed = new Map([
+    ['T100', ['task/T100-a']],
+    ['T101', ['task/T101-b']],
+  ]);
+  const result = selectTask({ tasks, doneIds, claimedBranches: claimed });
+  assert.equal(result.status, 'selected');
+  assert.equal(result.task.id, 'T102');
+  assert.deepEqual(
+    result.skipped.map((entry) => entry.id),
+    ['T100', 'T101'],
+  );
 });
 
 test('selection: an exhausted backlog is not a blocker', () => {

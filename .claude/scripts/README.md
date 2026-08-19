@@ -40,7 +40,7 @@ Prints one JSON object on stdout and a one-line summary on stderr; exits 1 when 
 }
 ```
 
-Selection, in order: umbrella parents are passed over (their children are separate entries); non-`Not started` entries are skipped; an entry whose stated `Depends on T0NN` isn't archived in `TASKS_DONE.md` is skipped; and the first candidate that already has a remote `task/<ID>-*` branch **stops the run** with `blocked` + a `resumeCommand`, rather than being skipped.
+Selection, in order: umbrella parents are passed over (their children are separate entries); non-`Not started` entries are skipped; an entry whose stated `Depends on T0NN` isn't archived in `TASKS_DONE.md` is skipped. In **continuous** mode (no requested ID), a candidate that already has a remote `task/<ID>-*` branch is likewise skipped — recorded in `skipped` with reason `claimed` — and the scan continues to the next actionable task, so one blocked/claimed task never stalls unrelated work; anything that actually depends on it stays correctly skipped by the dependency check above, since a claimed-but-unmerged task never lands in `TASKS_DONE.md`. In **named** mode (an explicit task ID) or `resume`, the same situation instead **stops the run** with `blocked` + a `resumeCommand`, since the caller asked for that specific task.
 
 What it will not do: switch branches or write files in the checkout it's invoked from; force-push; delete a branch it doesn't own; adopt an existing claim branch outside explicit resume mode; or treat branch age as evidence a claim is stale. The claim commit and push happen inside a temporary worktree under `.claude/worktrees/newticket-claim-*` that the script removes on success and on failure.
 

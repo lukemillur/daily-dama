@@ -191,12 +191,14 @@ test('a named task already claimed by another worker is a blocker with a resume 
   assert.equal(run.calls.some((argv) => argv.join(' ').includes('worktree add')), false);
 });
 
-test('continuous mode stops on a claimed first task instead of skipping to the next', () => {
+test('continuous mode skips a claimed first task and claims the next actionable one', () => {
   const run = createFakeRunner(baseResponses({ branches: ['task/T100-rename-a-label-on-the-summary-card'] }));
   const result = claim({ run, repoRoot: REPO, options: options(), fileSystem: fakeFileSystem() });
-  assert.equal(result.status, 'blocked');
-  assert.equal(result.taskId, 'T100');
-  assert.equal(result.blocker.resumeCommand, '/newTicket resume T100');
+  assert.equal(result.status, 'claimed');
+  assert.equal(result.taskId, 'T101');
+  assert.deepEqual(result.skipped, [
+    { id: 'T100', reason: 'claimed', detail: 'already claimed by task/T100-rename-a-label-on-the-summary-card' },
+  ]);
 });
 
 test('a lost push race is reported as claimed, leaving the winner’s branch alone', () => {

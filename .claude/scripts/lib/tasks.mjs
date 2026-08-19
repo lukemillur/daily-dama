@@ -394,17 +394,18 @@ export function selectTask({ tasks, doneIds, claimedBranches, requestedId = null
     }
     const claimed = claimedFor(candidate.id);
     if (claimed.length > 0) {
-      // Do not silently move past a claimed task: stop and let the caller decide
-      // whether to resume it. Skipping ahead is how work gets forgotten.
-      return {
-        status: 'blocked',
-        skipped,
-        blocker: {
-          reason: 'claimed',
-          taskId: candidate.id,
-          detail: `${candidate.id} is the next actionable task but is already claimed by ${claimed.join(', ')}`,
-        },
-      };
+      // A claimed task is never silently dropped — it's still visible in
+      // `skipped` — but it no longer stops the scan. An independent task later
+      // in the backlog should still be picked up in the same continuous run.
+      // Anything that actually depends on this one stays correctly blocked by
+      // the dependency check above, since a claimed-but-unmerged task is never
+      // in doneIds, so a chained task is never attempted early.
+      skipped.push({
+        id: candidate.id,
+        reason: 'claimed',
+        detail: `already claimed by ${claimed.join(', ')}`,
+      });
+      continue;
     }
     return { status: 'selected', task: candidate, resolvedFromParent: false, skipped };
   }
