@@ -18,3 +18,14 @@ export const RAINBOW_THEME_PRESETS: readonly ThemePreset[] = [
   { id: "indigo", label: "Indigo", backgroundColor: "#e0dcf5", accentColor: "#4b3f9e" },
   { id: "violet", label: "Violet", backgroundColor: "#f3d9f0", accentColor: "#8e2f8e" },
 ];
+
+/**
+ * Sentinel preset representing "no custom theme colors" -- selecting it clears the user's
+ * background/accent preference rather than setting it to today's default hex literally, so it
+ * keeps tracking the app default if `AppColors.sage`/`AppColors.yellow` ever change. Kept
+ * separate from `RAINBOW_THEME_PRESETS` (rather than appended to that array) because its
+ * `backgroundColor`/`accentColor` here are only for rendering the swatch -- selection semantics
+ * are special-cased in `RainbowThemePresets`, not the generic `setThemeColors(preset.background,
+ * preset.accent)` path every other preset uses.
+ */
+export const DEFAULT_THEME_PRESET_ID = "default";
