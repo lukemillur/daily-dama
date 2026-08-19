@@ -137,7 +137,7 @@ _T113–T120 come from stories S001–S008 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 - **Area:** Landing
 - **Priority:** Medium
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** Add a hero banner containing kendama-specific visual elements (e.g. the toy itself, string/tama motifs, or similar) to the top of `src/features/landing/components/landing-page.tsx`, above the existing `Eyebrow`/`Headline`/`Lede` text stack, visible on both mobile and web viewport widths.
 - **Exit criteria:** A browser check at both a mobile and a desktop viewport width shows a hero banner with kendama-specific visual content rendered above the existing headline text, before any scrolling on a typical viewport. An automated test asserts the hero banner element is present in `LandingPage`'s rendered output. Full verification sequence passes.
