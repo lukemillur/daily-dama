@@ -139,7 +139,7 @@ _T121–T131 come from stories S001–S011 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 - **Area:** Landing page
 - **Priority:** Medium
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** `ScreenshotItem` (`landing-page.tsx:232-241`) uses `background-color: ${AppColors.paperStrong}` against a page background of `AppColors.paper`, with a `6px 6px 0` shadow-style border — QA finds the background doesn't read as distinct. Increase the background/page contrast and align the border treatment with `CtaPanel`'s existing `8px 8px 0` hard-offset shadow (`landing-cta.tsx`).
 - **Exit criteria:** Loading `/` shows each screenshot container with a background color visibly distinct from the surrounding page background, and a bold offset border/shadow consistent with the CTA panel's treatment.
