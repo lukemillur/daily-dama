@@ -30,6 +30,7 @@ export function LandingPhoto() {
 
 const PhotoPanel = styled.View`
   margin-top: 40px;
+  width: 100%;
   max-width: 260px;
   align-self: center;
   padding: 10px;
