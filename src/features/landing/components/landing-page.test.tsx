@@ -141,6 +141,63 @@ describe('LandingPage screenshot showcase', () => {
   );
 });
 
+function resolvedStyleFor(
+  root: ReactTestRenderer,
+  matches: ReturnType<ReactTestRenderer['root']['findAll']>,
+) {
+  const withPlainStyle = matches.find(
+    (node) =>
+      typeof node.props.style === 'object' &&
+      node.props.style !== null &&
+      !Array.isArray(node.props.style),
+  );
+  return withPlainStyle?.props.style as
+    | { maxWidth?: number; fontSize?: number; padding?: unknown }
+    | undefined;
+}
+
+describe('LandingPage screenshot showcase sizing', () => {
+  it('renders mobile-width screenshot item, title, and caption sizing at a mobile viewport', async () => {
+    mockUseWindowDimensions.mockReturnValue({ width: 375, height: 812, scale: 2, fontScale: 1 });
+    const root = await mount();
+
+    const itemNodes = root.root.findAllByProps({ testID: 'screenshot-item' });
+    const itemStyle = resolvedStyleFor(root, itemNodes);
+    expect(itemStyle?.maxWidth).toBe(360);
+
+    const titleNodes = findByVisibleText(root, SCREENSHOT_TITLES_AND_CAPTIONS[0]!.title);
+    const titleStyle = resolvedStyleFor(root, titleNodes);
+    expect(titleStyle?.fontSize).toBe(19);
+
+    const captionNodes = findByVisibleText(root, SCREENSHOT_TITLES_AND_CAPTIONS[0]!.caption);
+    const captionStyle = resolvedStyleFor(root, captionNodes);
+    expect(captionStyle?.fontSize).toBe(16);
+  });
+
+  it('renders larger screenshot item, title, and caption sizing at a desktop viewport', async () => {
+    mockUseWindowDimensions.mockReturnValue({ width: 1280, height: 900, scale: 1, fontScale: 1 });
+    const root = await mount();
+
+    const webTitle = WEB_SCREENSHOTS[0]!.title;
+    const webCaption = WEB_SCREENSHOTS[0]!.caption;
+
+    const itemNodes = root.root.findAllByProps({ testID: 'screenshot-item' });
+    const itemStyle = resolvedStyleFor(root, itemNodes);
+    expect(itemStyle?.maxWidth).toBe(560);
+    expect(itemStyle?.maxWidth).toBeGreaterThan(360);
+
+    const titleNodes = findByVisibleText(root, webTitle);
+    const titleStyle = resolvedStyleFor(root, titleNodes);
+    expect(titleStyle?.fontSize).toBe(24);
+    expect(titleStyle?.fontSize).toBeGreaterThan(19);
+
+    const captionNodes = findByVisibleText(root, webCaption);
+    const captionStyle = resolvedStyleFor(root, captionNodes);
+    expect(captionStyle?.fontSize).toBe(18);
+    expect(captionStyle?.fontSize).toBeGreaterThan(16);
+  });
+});
+
 describe('LandingPage platform-based screenshot set', () => {
   it('defines both a mobile and a web screenshot set', () => {
     expect(MOBILE_SCREENSHOTS.length).toBe(4);
