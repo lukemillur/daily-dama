@@ -139,7 +139,7 @@ _T121–T131 come from stories S001–S011 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 - **Area:** Landing page
 - **Priority:** High
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Implementer
 - **Description:** `LandingPhoto` (`src/features/landing/components/landing-photo.tsx`) requires a valid on-disk JPEG (`assets/images/landing/kendama-photo.jpg`) but QA finds it renders as a broken-image icon on both mobile and desktop web. Diagnose and fix whatever is preventing this asset from decoding/rendering through `expo-image` on web — root cause is unconfirmed (asset resolution, `expo-image` web config, or a format quirk specific to this file), not a missing file.
 - **Exit criteria:** At the dev server, loading `/` at a mobile-width viewport (e.g. 390px) and a desktop-width viewport (e.g. 1280px) both show the actual photo — confirmed via network inspection that the image request succeeds with real image content, and the rendered element has non-zero natural dimensions rather than a broken-image placeholder.
