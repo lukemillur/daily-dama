@@ -150,7 +150,7 @@ export function LandingPage() {
           <ScreenshotSection>
             <ScreenshotHeading>What you’re signing up for</ScreenshotHeading>
             {screenshots.map((screenshot) => (
-              <ScreenshotItem key={screenshot.alt}>
+              <ScreenshotItem key={screenshot.alt} testID="screenshot-item" $isWebLayout={isWebLayout}>
                 <Image
                   source={screenshot.source}
                   accessibilityLabel={screenshot.alt}
@@ -158,8 +158,8 @@ export function LandingPage() {
                   contentFit="contain"
                   style={{ width: '100%', aspectRatio: screenshot.aspectRatio }}
                 />
-                <ScreenshotTitle>{screenshot.title}</ScreenshotTitle>
-                <ScreenshotCaption>{screenshot.caption}</ScreenshotCaption>
+                <ScreenshotTitle $isWebLayout={isWebLayout}>{screenshot.title}</ScreenshotTitle>
+                <ScreenshotCaption $isWebLayout={isWebLayout}>{screenshot.caption}</ScreenshotCaption>
               </ScreenshotItem>
             ))}
           </ScreenshotSection>
@@ -229,27 +229,31 @@ const ScreenshotHeading = styled.Text`
   font-weight: 900;
 `;
 
-const ScreenshotItem = styled.View.attrs({ style: { boxShadow: '6px 6px 0 #18382e' } })`
+const ScreenshotItem = styled.View.attrs({
+  style: { boxShadow: '6px 6px 0 #18382e' },
+})<{ readonly $isWebLayout: boolean }>`
   gap: 10px;
   align-items: center;
   width: 100%;
-  max-width: 360px;
-  padding: 18px 16px 22px;
+  max-width: ${({ $isWebLayout }) => ($isWebLayout ? 560 : 360)}px;
+  padding: ${({ $isWebLayout }) => ($isWebLayout ? '26px 26px 30px' : '18px 16px 22px')};
   background-color: ${AppColors.paperStrong};
   border: 2px solid ${AppColors.ink};
   border-radius: ${Radii.panel}px;
 `;
 
-const ScreenshotTitle = styled.Text`
+const ScreenshotTitle = styled.Text<{ readonly $isWebLayout: boolean }>`
   color: ${AppColors.ink};
-  font-size: 19px;
+  font-size: ${({ $isWebLayout }) => ($isWebLayout ? 24 : 19)}px;
   font-weight: 900;
   letter-spacing: -0.3px;
   text-align: center;
 `;
 
-const ScreenshotCaption = styled(BodyText)`
-  max-width: 340px;
+const ScreenshotCaption = styled(BodyText)<{ readonly $isWebLayout: boolean }>`
+  max-width: ${({ $isWebLayout }) => ($isWebLayout ? 480 : 340)}px;
+  font-size: ${({ $isWebLayout }) => ($isWebLayout ? 18 : 16)}px;
+  line-height: ${({ $isWebLayout }) => ($isWebLayout ? 26 : 24)}px;
   text-align: center;
   color: ${AppColors.textMuted};
 `;
