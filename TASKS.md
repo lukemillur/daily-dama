@@ -139,7 +139,7 @@ _T121–T131 come from stories S001–S011 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 - **Area:** Profile / theming
 - **Priority:** Medium
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Implementer
 - **Description:** `RainbowThemePresets` (`src/features/profile/components/rainbow-theme-presets.tsx`) sets background/accent via `setThemeColors` on selection but never touches `themeTextColor`, so a previously-set custom text color survives every preset switch, including Default. Update the preset-selection handler(s) so selecting Default or any of the seven rainbow swatches also clears `themeTextColor` via `setThemeTextColor(undefined)`.
 - **Exit criteria:** With a custom text color set via `ThemeColorPicker`, selecting the Default preset resets `themeBackgroundColor`, `themeAccentColor`, and `themeTextColor` to `undefined`; selecting any one rainbow preset (e.g. Red) sets background/accent to that preset's values and also resets `themeTextColor` to `undefined`. Add or extend a test in `rainbow-theme-presets.test.tsx` (or equivalent) asserting `setThemeTextColor(undefined)` fires alongside `setThemeColors` for both a Default selection and a rainbow-swatch selection.
