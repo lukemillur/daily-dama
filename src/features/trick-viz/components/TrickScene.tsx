@@ -44,9 +44,28 @@ type TrickSceneProps = {
    * fight the rig for the camera every frame.
    */
   followAction?: boolean;
+  /**
+   * Loops the trick automatically instead of holding at its final pose.
+   * Decorative playback only -- there is no scrubber/OrbitControls use
+   * case for this, so it defaults off and every existing call site is
+   * unaffected.
+   */
+  loop?: boolean;
 };
 
 const CAMERA_FOV = 45;
+
+/**
+ * Seconds to hold the final pose before a looping trick restarts.
+ *
+ * Big Cup's authored end (caught in the cup) and start (hanging free)
+ * aren't the same pose, so the restart is a hard cut rather than an
+ * eased rewind -- deliberately, per the task notes, since it reuses the
+ * same `replay()` machinery already proven by the manual Replay button.
+ * A brief hold at the catch first keeps that cut from reading as a
+ * glitch or a dropped frame.
+ */
+const LOOP_HOLD_SECONDS = 0.5;
 
 /**
  * Seconds for the camera to close most of the way to its desired framing.
@@ -75,6 +94,8 @@ type ClockProps = {
   kenRef: React.RefObject<Group | null>;
   tamaRef: React.RefObject<Group | null>;
   timeRef: React.RefObject<number>;
+  loop?: boolean;
+  onLoopComplete?: () => void;
 };
 
 /**
@@ -95,9 +116,16 @@ function TrickBodies({
   kenRef,
   tamaRef,
   timeRef,
+  loop = false,
+  onLoopComplete,
 }: ClockProps) {
   const elapsed = useRef(0);
   const lastRunToken = useRef(runToken);
+  // Counts the hold at the final pose once a looping trick reaches its end,
+  // and guards `onLoopComplete` to fire once per hold rather than every
+  // frame past the threshold.
+  const loopHoldElapsed = useRef(0);
+  const loopFired = useRef(false);
 
   useFrame((_, delta) => {
     const ken = kenRef.current;
@@ -109,10 +137,21 @@ function TrickBodies({
     if (lastRunToken.current !== runToken) {
       lastRunToken.current = runToken;
       elapsed.current = 0;
+      loopHoldElapsed.current = 0;
+      loopFired.current = false;
     }
 
     if (scrub === null && isPlaying) {
-      elapsed.current = Math.min(elapsed.current + delta * speed, trick.durationSeconds);
+      const atEnd = elapsed.current >= trick.durationSeconds;
+      if (loop && atEnd) {
+        loopHoldElapsed.current += delta;
+        if (!loopFired.current && loopHoldElapsed.current >= LOOP_HOLD_SECONDS) {
+          loopFired.current = true;
+          onLoopComplete?.();
+        }
+      } else {
+        elapsed.current = Math.min(elapsed.current + delta * speed, trick.durationSeconds);
+      }
     }
 
     const t = scrub === null ? elapsed.current : scrub * trick.durationSeconds;
@@ -206,6 +245,7 @@ export function TrickScene({
   children,
   canvasExtras,
   followAction = true,
+  loop = false,
 }: TrickSceneProps) {
   const kenRef = useRef<Group>(null);
   const tamaRef = useRef<Group>(null);
@@ -242,6 +282,14 @@ export function TrickScene({
     setIsPlaying(true);
   };
 
+  // Same reset the manual Replay button already drives (bump `playToken`,
+  // which changes `runToken`) -- looping just calls it automatically once
+  // `TrickBodies` reports the end-of-trick hold has elapsed, instead of
+  // waiting for a press.
+  const handleLoopComplete = () => {
+    setPlayToken((token) => token + 1);
+  };
+
   return (
     <>
       <Canvas camera={{ position: [...framing.position], fov: CAMERA_FOV }}>
@@ -254,6 +302,8 @@ export function TrickScene({
           kenRef={kenRef}
           tamaRef={tamaRef}
           timeRef={timeRef}
+          loop={loop}
+          onLoopComplete={loop ? handleLoopComplete : undefined}
         />
         {followAction ? (
           <CameraRig

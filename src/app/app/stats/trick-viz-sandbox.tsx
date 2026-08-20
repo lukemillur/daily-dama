@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Button } from '@/components/ui/button';
+import { LoopingHeroScene } from '@/features/trick-viz/components/LoopingHeroScene';
 import { TrickScene } from '@/features/trick-viz/components/TrickScene';
 import { TRICK_VISUALIZATIONS } from '@/features/trick-viz/model/tricks';
 
@@ -26,12 +27,34 @@ export default function TrickVizSandbox() {
   // Freezing at a moment beats stretching the whole trick to twenty seconds
   // and remembering to put it back, which is how phases used to be checked.
   const [scrub, setScrub] = useState<number | null>(null);
+  // Swaps the whole scrubber/free-look view for the decorative looping
+  // hero, so it can be watched cycling continuously in isolation before
+  // any landing-page wiring (T123.1).
+  const [heroLoop, setHeroLoop] = useState(false);
 
   if (!__DEV__) {
     return <Redirect href="/app/home" />;
   }
 
   const trick = TRICK_VISUALIZATIONS[trickIndex];
+
+  if (heroLoop) {
+    return (
+      <View style={styles.root}>
+        <LoopingHeroScene />
+        <View style={styles.hud}>
+          <View style={styles.row}>
+            <Pressable
+              onPress={() => setHeroLoop(false)}
+              style={[styles.chip, styles.chipActive]}
+            >
+              <Text style={styles.chipLabel}>Hero loop</Text>
+            </Pressable>
+          </View>
+        </View>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.root}>
@@ -90,6 +113,9 @@ export default function TrickVizSandbox() {
               <Button size="medium" onPress={() => setFreeLook((on) => !on)}>
                 {freeLook ? 'Follow cam' : 'Free look'}
               </Button>
+              <Pressable onPress={() => setHeroLoop(true)} style={styles.chip}>
+                <Text style={styles.chipLabel}>Hero loop</Text>
+              </Pressable>
             </View>
 
             <Text style={styles.readout}>

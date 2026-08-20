@@ -39,6 +39,16 @@ jest.mock('expo-image', () => {
   return { Image: (props: Record<string, unknown>) => React.createElement(View, props) };
 });
 
+// LoopingHeroScene mounts a real react-three-fiber <Canvas>, which needs a real
+// document/WebGL context that jest-expo's RN test environment doesn't have. Not
+// exercised here -- landing-hero.test.tsx covers the WebGL-available/unavailable
+// branching directly by mocking this same module.
+jest.mock('@/features/trick-viz/components/LoopingHeroScene', () => {
+  const React = require('react');
+  const { View } = require('react-native');
+  return { LoopingHeroScene: () => React.createElement(View, { testID: 'looping-hero-scene-stub' }) };
+});
+
 const mockUseUserProfile = jest.fn<() => UserProfile>();
 jest.mock('@/features/profile/state/user-profile-provider', () => ({
   useUserProfile: () => mockUseUserProfile(),
