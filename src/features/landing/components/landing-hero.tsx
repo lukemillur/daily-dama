@@ -1,39 +1,55 @@
-import { Circle, Line, Path, Rect, Svg } from 'react-native-svg';
+import { Image } from 'expo-image';
+import { useSyncExternalStore } from 'react';
 import { styled } from 'styled-components/native';
 
 import { AppColors, Radii } from '@/constants/theme';
+import { LoopingHeroScene } from '@/features/trick-viz/components/LoopingHeroScene';
+
+import { isWebGLAvailable } from '../utils/webgl-availability';
+
+const HERO_ASPECT_RATIO = 4 / 3;
+
+// WebGL availability never changes once the page has loaded, so this store
+// has nothing to subscribe to -- 'useSyncExternalStore' is used purely for
+// its snapshot/server-snapshot split, which is exactly the primitive React
+// ships for reading a client-only value without a hydration mismatch: the
+// static web export's Node prerender pass and the very first client render
+// both use 'getServerSnapshot' (false, the fallback-image branch), and only
+// the next client render reads the real 'isWebGLAvailable()' result.
+function subscribe() {
+  return () => {};
+}
+
+// Exported so its 'always false' contract -- the invariant that keeps the
+// static export's Node prerender pass and the first client render in sync --
+// can be asserted directly rather than only indirectly through a component render.
+export function getServerSnapshot() {
+  return false;
+}
 
 /**
- * A hand-drawn, sticker-style kendama silhouette rendered as a fixed-viewBox SVG that scales
- * responsively via the wrapper's `style={{ width: '100%', aspectRatio }}`, matching how the
- * screenshot images already scale in `landing-page.tsx`. Built from primitives (circles,
- * rects, a curved path) rather than freehand path coordinates, per the plan.
+ * Decorative, continuously-looping render of the trick-viz Big Cup scene,
+ * with 'Daily Dama' rendered as 3D text inside it -- replaces the previous
+ * hand-drawn SVG hero.
  */
 export function LandingHero() {
+  const webglOk = useSyncExternalStore(subscribe, isWebGLAvailable, getServerSnapshot);
+
   return (
     <HeroPanel testID="landing-hero" style={{ boxShadow: `8px 8px 0 ${AppColors.ink}` }}>
-      <Svg
-        viewBox="0 0 240 200"
-        style={{ width: '100%', aspectRatio: 240 / 200 }}
-        accessibilityRole="image"
-        accessibilityLabel="Illustration of a kendama, showing the ball, string, and handle"
-      >
-        <Path
-          d="M 120 92 C 100 115, 100 140, 118 158"
-          stroke={AppColors.ink}
-          strokeWidth={4}
-          strokeLinecap="round"
-          fill="none"
+      {webglOk ? (
+        <SceneFrame>
+          <LoopingHeroScene />
+        </SceneFrame>
+      ) : (
+        <Image
+          source={require('@/assets/images/landing/landing-hero-fallback.png')}
+          accessibilityLabel="A kendama mid-catch in its cup, with the Daily Dama wordmark"
+          alt="A kendama mid-catch in its cup, with the Daily Dama wordmark"
+          contentFit="cover"
+          style={{ width: '100%', aspectRatio: HERO_ASPECT_RATIO, borderRadius: Radii.panel }}
         />
-        <Rect x={58} y={148} width={64} height={30} rx={12} fill={AppColors.red} stroke={AppColors.ink} strokeWidth={6} />
-        <Circle cx={90} cy={155} r={9} fill={AppColors.paperStrong} stroke={AppColors.ink} strokeWidth={4} />
-        <Rect x={80} y={178} width={20} height={20} rx={6} fill={AppColors.sage} stroke={AppColors.ink} strokeWidth={5} />
-        <Rect x={44} y={140} width={92} height={14} rx={7} fill={AppColors.sage} stroke={AppColors.ink} strokeWidth={5} />
-        <Line x1={118} y1={140} x2={118} y2={158} stroke={AppColors.ink} strokeWidth={6} strokeLinecap="round" />
-        <Circle cx={130} cy={64} r={52} fill={AppColors.yellow} stroke={AppColors.ink} strokeWidth={6} />
-        <Circle cx={120} cy={92} r={10} fill={AppColors.paperStrong} stroke={AppColors.ink} strokeWidth={4} />
-        <Circle cx={110} cy={46} r={12} fill={AppColors.cream} opacity={0.55} />
-      </Svg>
+      )}
     </HeroPanel>
   );
 }
@@ -43,9 +59,17 @@ const HeroPanel = styled.View`
   padding: 18px;
   align-items: center;
   justify-content: center;
-  max-width: 280px;
+  width: 100%;
+  max-width: 320px;
   align-self: center;
   background-color: ${AppColors.paperStrong};
   border: 2px solid ${AppColors.ink};
   border-radius: ${Radii.panel}px;
+`;
+
+const SceneFrame = styled.View`
+  width: 100%;
+  aspect-ratio: ${HERO_ASPECT_RATIO};
+  border-radius: ${Radii.panel}px;
+  overflow: hidden;
 `;

@@ -135,36 +135,6 @@ _T113–T120 come from stories S001–S008 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 _T121–T131 come from stories S001–S011 in [BACKLOG_STORIES.md](BACKLOG_STORIES.md) (the user's 2026-08-20 QA pass on T115–T120 plus general landing-page feedback), refined by `product-manager` and scoped in this pass. T123 is a two-child umbrella: T123.1 builds and validates the looping, text-bearing Big Cup scene in the trick-viz sandbox in isolation, and T123.2 wires it into the production landing page with a WebGL fallback — split because validating a wholly new capability (3D text, autoplay looping) in isolation is a different risk profile from integrating it into a page every visitor loads, mirroring how T117 split screenshot capture from display-logic wiring. Three product questions surfaced during S003's refinement were resolved before scoping rather than left `Blocked`: the hero is decorative-only (no drag/orbit/tap interaction), needs a static-image fallback for visitors whose browser can't run WebGL, and does not need to respect `prefers-reduced-motion` this iteration. All other entries are independent S-sized tickets — no required ordering between them beyond what each entry's own Notes call out (T124 and T128 both touch landing-page desktop sizing but are independent of each other; T131 references T130's corrected animation duration but has no hard git-level dependency on it)._
 
-### [T123] Replace the landing hero with a looping Big Cup trick-viz scene
-
-- **Area:** Landing page
-- **Priority:** High
-- **Status:** Not started
-- **Planning:** Required
-- **Description:** Umbrella only — complete T123.1 and T123.2. Replaces the current hand-drawn SVG hero (`landing-hero.tsx`) with a decorative, continuously-looping render of the trick-viz Big Cup trick, with "Daily Dama" as 3D text in the scene.
-- **Exit criteria:** N/A — umbrella; done when T123.1 and T123.2 are both `Done`.
-- **Notes:** This pulls `src/features/trick-viz/` into a production surface for the first time. Per `TRICK_VIZ_HANDOFF.md` §15, "Integration into the real Tricks/Sesh UI" is listed there as not started — this task is landing-page integration specifically, requested directly through product feedback and scoped from `BACKLOG_STORIES.md`'s S003, not a resumption of that doc's own backlog thread, so it doesn't fall under this file's note to leave trick-viz backlog items out. Product decisions already resolved during refinement: the hero is decorative only (no drag/orbit/tap interaction), a static-image fallback is required if WebGL fails, and `prefers-reduced-motion` support is explicitly out of scope for this iteration.
-
-### [T123.1] Build a decorative, looping hero variant of the Big Cup scene with "Daily Dama" 3D text
-
-- **Area:** Trick visualization (consumed by Landing page)
-- **Priority:** High
-- **Status:** Not started
-- **Planning:** Required
-- **Description:** In the trick-viz sandbox, build a non-interactive playback mode for the Big Cup trick that restarts automatically on completion (no scrubber, no OrbitControls) and add "Daily Dama" rendered as 3D text inside the scene. Validate this in isolation in `src/app/stats/trick-viz-sandbox.tsx` (or a new sandbox route) before any landing-page wiring, following the project's existing sandbox-first pattern for trick-viz changes.
-- **Exit criteria:** In the dev-only sandbox, the Big Cup trick plays automatically, loops continuously with no crash, freeze, or `THREE.WebGLRenderer: Context Lost` error in the console, and "Daily Dama" is visible as text rendered within the 3D scene itself (not an HTML/CSS overlay). `yarn test --runInBand`, `yarn lint`, and `yarn tsc --noEmit` all pass.
-- **Notes:** How the loop restarts (hard cut vs. an eased rewind) is an implementation call — Big Cup's authored start (hanging) and end (caught) states aren't identical, so some transition is unavoidable; the only requirement is that it isn't jarring or broken. Text-rendering approach (procedural/extruded geometry vs. a text-rendering library) is also an implementation call; if a library needs a bundled font asset, that's a new kind of dependency for this feature area — note the choice and its bundle-size cost in the commit. **Reviewer note (2026-08-20):** sandbox validation here is a prerequisite step, not the shipped feature — this must not end up stuck dev-sandbox-only. T123.2's production wiring is mandatory, not optional scope. The sandbox's existing access gate (`TRICK_VIZ_HANDOFF.md` §12 item 10 — a `localStorage` onboarding flag required to view `/stats/trick-viz-sandbox`) is scoped to that internal dev route only; it must not carry over to or block the production landing-page hero built in T123.2, which is publicly reachable with no gate.
-
-### [T123.2] Wire the looping hero into the landing page with a WebGL fallback
-
-- **Area:** Landing page
-- **Priority:** High
-- **Status:** Not started
-- **Planning:** Required
-- **Description:** Replace `LandingHero`'s SVG illustration with the scene built in T123.1, rendered at the top of the landing page in place of the current hero. Detect WebGL availability and show a static fallback image when the scene can't run, and confirm the new hero doesn't overlap the "Why Daily Dama" heading (or any other page text) at mobile widths, unlike the SVG hero it replaces.
-- **Exit criteria:** Loading `/` at a mobile viewport (≤480px) shows the looping hero above the headline with no visual overlap onto "Why Daily Dama" or any other text (verified in-browser). Loading `/` at a desktop viewport also shows the looping hero correctly framed. Forcing a WebGL-unavailable state (e.g. disabling WebGL in devtools, or a feature-detection unit test) shows the static fallback image instead of a blank or broken hero.
-- **Notes:** Depends on T123.1. Worth a bundle-size/perf sanity check during implementation (`yarn expo export --platform web`) since this is the first time the WebGL/`react-three-fiber` stack loads unconditionally for every landing-page visitor.
-
 ### [T124] Enlarge the screenshot showcase on desktop/web viewports
 
 - **Area:** Landing page
