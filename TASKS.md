@@ -135,16 +135,6 @@ _T113–T120 come from stories S001–S008 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 _T121–T131 come from stories S001–S011 in [BACKLOG_STORIES.md](BACKLOG_STORIES.md) (the user's 2026-08-20 QA pass on T115–T120 plus general landing-page feedback), refined by `product-manager` and scoped in this pass. T123 is a two-child umbrella: T123.1 builds and validates the looping, text-bearing Big Cup scene in the trick-viz sandbox in isolation, and T123.2 wires it into the production landing page with a WebGL fallback — split because validating a wholly new capability (3D text, autoplay looping) in isolation is a different risk profile from integrating it into a page every visitor loads, mirroring how T117 split screenshot capture from display-logic wiring. Three product questions surfaced during S003's refinement were resolved before scoping rather than left `Blocked`: the hero is decorative-only (no drag/orbit/tap interaction), needs a static-image fallback for visitors whose browser can't run WebGL, and does not need to respect `prefers-reduced-motion` this iteration. All other entries are independent S-sized tickets — no required ordering between them beyond what each entry's own Notes call out (T124 and T128 both touch landing-page desktop sizing but are independent of each other; T131 references T130's corrected animation duration but has no hard git-level dependency on it)._
 
-### [T122] Fix the broken kendama photo on the landing page
-
-- **Area:** Landing page
-- **Priority:** High
-- **Status:** Not started
-- **Planning:** Implementer
-- **Description:** `LandingPhoto` (`src/features/landing/components/landing-photo.tsx`) requires a valid on-disk JPEG (`assets/images/landing/kendama-photo.jpg`) but QA finds it renders as a broken-image icon on both mobile and desktop web. Diagnose and fix whatever is preventing this asset from decoding/rendering through `expo-image` on web — root cause is unconfirmed (asset resolution, `expo-image` web config, or a format quirk specific to this file), not a missing file.
-- **Exit criteria:** At the dev server, loading `/` at a mobile-width viewport (e.g. 390px) and a desktop-width viewport (e.g. 1280px) both show the actual photo — confirmed via network inspection that the image request succeeds with real image content, and the rendered element has non-zero natural dimensions rather than a broken-image placeholder.
-- **Notes:** If the fix requires re-encoding or replacing the source JPEG, keep the existing Wikimedia Commons public-domain attribution (see T119 in TASKS_DONE.md) — don't source a new image without re-verifying its license.
-
 ### [T123] Replace the landing hero with a looping Big Cup trick-viz scene
 
 - **Area:** Landing page
