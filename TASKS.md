@@ -139,7 +139,7 @@ _T121–T131 come from stories S001–S011 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 - **Area:** Landing page
 - **Priority:** Medium
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** `ScreenshotItem` and its title/caption (`landing-page.tsx:232-255`) have a hardcoded `max-width: 360px` with no web/desktop breakpoint, so the correct web screenshot assets (from T117.1) still render inside a mobile-sized frame at any viewport. Add a desktop/web breakpoint that noticeably enlarges the screenshot image, title, subtitle, and container together.
 - **Exit criteria:** At a desktop-width viewport (e.g. 1280px), the screenshot item's rendered width, title font size, and caption size are all visibly larger than the existing mobile-width rendering; at mobile widths, current sizing is unchanged.
