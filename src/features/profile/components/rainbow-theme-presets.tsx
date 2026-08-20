@@ -32,7 +32,7 @@ const PRESETS_WITH_DEFAULT: readonly ThemePreset[] = [DEFAULT_THEME_PRESET, ...R
  */
 export function RainbowThemePresets() {
   const { themeBackgroundColor, themeAccentColor } = useUserProfile();
-  const { setThemeColors } = useUserProfileActions();
+  const { setThemeColors, setThemeTextColor } = useUserProfileActions();
 
   return (
     <>
@@ -47,11 +47,14 @@ export function RainbowThemePresets() {
             : themeBackgroundColor === preset.backgroundColor &&
               themeAccentColor === preset.accentColor
         }
-        onSelectPreset={(preset) =>
-          preset.id === DEFAULT_THEME_PRESET_ID
-            ? setThemeColors(undefined, undefined)
-            : setThemeColors(preset.backgroundColor, preset.accentColor)
-        }
+        onSelectPreset={(preset) => {
+          setThemeTextColor(undefined);
+          if (preset.id === DEFAULT_THEME_PRESET_ID) {
+            setThemeColors(undefined, undefined);
+          } else {
+            setThemeColors(preset.backgroundColor, preset.accentColor);
+          }
+        }}
       />
     </>
   );
