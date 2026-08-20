@@ -135,16 +135,6 @@ _T113–T120 come from stories S001–S008 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 _T121–T131 come from stories S001–S011 in [BACKLOG_STORIES.md](BACKLOG_STORIES.md) (the user's 2026-08-20 QA pass on T115–T120 plus general landing-page feedback), refined by `product-manager` and scoped in this pass. T123 is a two-child umbrella: T123.1 builds and validates the looping, text-bearing Big Cup scene in the trick-viz sandbox in isolation, and T123.2 wires it into the production landing page with a WebGL fallback — split because validating a wholly new capability (3D text, autoplay looping) in isolation is a different risk profile from integrating it into a page every visitor loads, mirroring how T117 split screenshot capture from display-logic wiring. Three product questions surfaced during S003's refinement were resolved before scoping rather than left `Blocked`: the hero is decorative-only (no drag/orbit/tap interaction), needs a static-image fallback for visitors whose browser can't run WebGL, and does not need to respect `prefers-reduced-motion` this iteration. All other entries are independent S-sized tickets — no required ordering between them beyond what each entry's own Notes call out (T124 and T128 both touch landing-page desktop sizing but are independent of each other; T131 references T130's corrected animation duration but has no hard git-level dependency on it)._
 
-### [T121] Clear custom text color when a rainbow theme preset is selected
-
-- **Area:** Profile / theming
-- **Priority:** Medium
-- **Status:** In progress
-- **Planning:** Implementer
-- **Description:** `RainbowThemePresets` (`src/features/profile/components/rainbow-theme-presets.tsx`) sets background/accent via `setThemeColors` on selection but never touches `themeTextColor`, so a previously-set custom text color survives every preset switch, including Default. Update the preset-selection handler(s) so selecting Default or any of the seven rainbow swatches also clears `themeTextColor` via `setThemeTextColor(undefined)`.
-- **Exit criteria:** With a custom text color set via `ThemeColorPicker`, selecting the Default preset resets `themeBackgroundColor`, `themeAccentColor`, and `themeTextColor` to `undefined`; selecting any one rainbow preset (e.g. Red) sets background/accent to that preset's values and also resets `themeTextColor` to `undefined`. Add or extend a test in `rainbow-theme-presets.test.tsx` (or equivalent) asserting `setThemeTextColor(undefined)` fires alongside `setThemeColors` for both a Default selection and a rainbow-swatch selection.
-- **Notes:** Scoped to `RainbowThemePresets` only — `ThemeColorPicker`'s own individual background/accent editors (`theme-color-picker.tsx:37,45`) must keep calling `setThemeColors` without touching text color, since editing background/accent one at a time there isn't resetting to a preset. Don't change the generic `setThemeColors` action/reducer itself — clear text color at the preset-selection call sites, not globally.
-
 ### [T122] Fix the broken kendama photo on the landing page
 
 - **Area:** Landing page
