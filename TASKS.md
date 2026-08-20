@@ -139,7 +139,7 @@ _T121–T131 come from stories S001–S011 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 - **Area:** Navigation / app shell
 - **Priority:** High
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Implementer
 - **Description:** `CustomTabList` (`src/components/app-tabs.web.tsx`) wraps the top nav pill and `AppFooterBar` in one container styled `position: 'absolute'` with no `top`/`bottom` offset, so the "footer" renders stacked near the top nav instead of pinned to the bottom of the screen; QA found no footer bar at all. Give the footer bar its own fixed-to-bottom positioning, a background visibly distinct from the page content behind it, and enough bottom padding/inset on scrollable content so it never overlaps what the user is viewing.
 - **Exit criteria:** On any in-app route (e.g. `/app/home`) at both mobile and desktop widths, the footer bar renders pinned to the bottom of the viewport (not scrolling away, not stacked under the top nav), shows "Leave app" left-aligned, has a background color visibly distinct from the content behind it, and scrolling a long page (e.g. Stats) to its end shows the last content item fully visible above the footer, not hidden behind it.
