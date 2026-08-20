@@ -139,7 +139,7 @@ _T121–T131 come from stories S001–S011 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 - **Area:** Landing page
 - **Priority:** High
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** Umbrella only — complete T123.1 and T123.2. Replaces the current hand-drawn SVG hero (`landing-hero.tsx`) with a decorative, continuously-looping render of the trick-viz Big Cup trick, with "Daily Dama" as 3D text in the scene.
 - **Exit criteria:** N/A — umbrella; done when T123.1 and T123.2 are both `Done`.
