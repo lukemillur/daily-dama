@@ -133,6 +133,138 @@ _T112–T112.6 come from stories S027–S031 in [BACKLOG_STORIES.md](BACKLOG_STO
 
 _T113–T120 come from stories S001–S008 in [BACKLOG_STORIES.md](BACKLOG_STORIES.md) (the user's 2026-08-19 QA pass on T112.4/T112.6 plus general landing-page feedback), refined by `product-manager` and scoped in this pass. T117 is a two-child umbrella: T117.1 captures new web-layout screenshots (mirroring T112.3's dedicated capture task) and T117.2 wires the platform-based swap, split because the capture step is genuinely separable in risk and effort from the display-logic change. Two open product questions surfaced during scoping and were resolved here rather than left `Blocked`: T114 moves the CTA to the top rather than duplicating it, and T120 clears background/accent only (not text color), matching the existing "Reset background & accent" button's scope. All other entries are independent S-sized tickets — no required ordering between them beyond what each entry's own Notes call out.
 
+_T121–T131 come from stories S001–S011 in [BACKLOG_STORIES.md](BACKLOG_STORIES.md) (the user's 2026-08-20 QA pass on T115–T120 plus general landing-page feedback), refined by `product-manager` and scoped in this pass. T123 is a two-child umbrella: T123.1 builds and validates the looping, text-bearing Big Cup scene in the trick-viz sandbox in isolation, and T123.2 wires it into the production landing page with a WebGL fallback — split because validating a wholly new capability (3D text, autoplay looping) in isolation is a different risk profile from integrating it into a page every visitor loads, mirroring how T117 split screenshot capture from display-logic wiring. Three product questions surfaced during S003's refinement were resolved before scoping rather than left `Blocked`: the hero is decorative-only (no drag/orbit/tap interaction), needs a static-image fallback for visitors whose browser can't run WebGL, and does not need to respect `prefers-reduced-motion` this iteration. All other entries are independent S-sized tickets — no required ordering between them beyond what each entry's own Notes call out (T124 and T128 both touch landing-page desktop sizing but are independent of each other; T131 references T130's corrected animation duration but has no hard git-level dependency on it)._
+
+### [T121] Clear custom text color when a rainbow theme preset is selected
+
+- **Area:** Profile / theming
+- **Priority:** Medium
+- **Status:** Not started
+- **Planning:** Implementer
+- **Description:** `RainbowThemePresets` (`src/features/profile/components/rainbow-theme-presets.tsx`) sets background/accent via `setThemeColors` on selection but never touches `themeTextColor`, so a previously-set custom text color survives every preset switch, including Default. Update the preset-selection handler(s) so selecting Default or any of the seven rainbow swatches also clears `themeTextColor` via `setThemeTextColor(undefined)`.
+- **Exit criteria:** With a custom text color set via `ThemeColorPicker`, selecting the Default preset resets `themeBackgroundColor`, `themeAccentColor`, and `themeTextColor` to `undefined`; selecting any one rainbow preset (e.g. Red) sets background/accent to that preset's values and also resets `themeTextColor` to `undefined`. Add or extend a test in `rainbow-theme-presets.test.tsx` (or equivalent) asserting `setThemeTextColor(undefined)` fires alongside `setThemeColors` for both a Default selection and a rainbow-swatch selection.
+- **Notes:** Scoped to `RainbowThemePresets` only — `ThemeColorPicker`'s own individual background/accent editors (`theme-color-picker.tsx:37,45`) must keep calling `setThemeColors` without touching text color, since editing background/accent one at a time there isn't resetting to a preset. Don't change the generic `setThemeColors` action/reducer itself — clear text color at the preset-selection call sites, not globally.
+
+### [T122] Fix the broken kendama photo on the landing page
+
+- **Area:** Landing page
+- **Priority:** High
+- **Status:** Not started
+- **Planning:** Implementer
+- **Description:** `LandingPhoto` (`src/features/landing/components/landing-photo.tsx`) requires a valid on-disk JPEG (`assets/images/landing/kendama-photo.jpg`) but QA finds it renders as a broken-image icon on both mobile and desktop web. Diagnose and fix whatever is preventing this asset from decoding/rendering through `expo-image` on web — root cause is unconfirmed (asset resolution, `expo-image` web config, or a format quirk specific to this file), not a missing file.
+- **Exit criteria:** At the dev server, loading `/` at a mobile-width viewport (e.g. 390px) and a desktop-width viewport (e.g. 1280px) both show the actual photo — confirmed via network inspection that the image request succeeds with real image content, and the rendered element has non-zero natural dimensions rather than a broken-image placeholder.
+- **Notes:** If the fix requires re-encoding or replacing the source JPEG, keep the existing Wikimedia Commons public-domain attribution (see T119 in TASKS_DONE.md) — don't source a new image without re-verifying its license.
+
+### [T123] Replace the landing hero with a looping Big Cup trick-viz scene
+
+- **Area:** Landing page
+- **Priority:** High
+- **Status:** Not started
+- **Planning:** Required
+- **Description:** Umbrella only — complete T123.1 and T123.2. Replaces the current hand-drawn SVG hero (`landing-hero.tsx`) with a decorative, continuously-looping render of the trick-viz Big Cup trick, with "Daily Dama" as 3D text in the scene.
+- **Exit criteria:** N/A — umbrella; done when T123.1 and T123.2 are both `Done`.
+- **Notes:** This pulls `src/features/trick-viz/` into a production surface for the first time. Per `TRICK_VIZ_HANDOFF.md` §15, "Integration into the real Tricks/Sesh UI" is listed there as not started — this task is landing-page integration specifically, requested directly through product feedback and scoped from `BACKLOG_STORIES.md`'s S003, not a resumption of that doc's own backlog thread, so it doesn't fall under this file's note to leave trick-viz backlog items out. Product decisions already resolved during refinement: the hero is decorative only (no drag/orbit/tap interaction), a static-image fallback is required if WebGL fails, and `prefers-reduced-motion` support is explicitly out of scope for this iteration.
+
+### [T123.1] Build a decorative, looping hero variant of the Big Cup scene with "Daily Dama" 3D text
+
+- **Area:** Trick visualization (consumed by Landing page)
+- **Priority:** High
+- **Status:** Not started
+- **Planning:** Required
+- **Description:** In the trick-viz sandbox, build a non-interactive playback mode for the Big Cup trick that restarts automatically on completion (no scrubber, no OrbitControls) and add "Daily Dama" rendered as 3D text inside the scene. Validate this in isolation in `src/app/stats/trick-viz-sandbox.tsx` (or a new sandbox route) before any landing-page wiring, following the project's existing sandbox-first pattern for trick-viz changes.
+- **Exit criteria:** In the dev-only sandbox, the Big Cup trick plays automatically, loops continuously with no crash, freeze, or `THREE.WebGLRenderer: Context Lost` error in the console, and "Daily Dama" is visible as text rendered within the 3D scene itself (not an HTML/CSS overlay). `yarn test --runInBand`, `yarn lint`, and `yarn tsc --noEmit` all pass.
+- **Notes:** How the loop restarts (hard cut vs. an eased rewind) is an implementation call — Big Cup's authored start (hanging) and end (caught) states aren't identical, so some transition is unavoidable; the only requirement is that it isn't jarring or broken. Text-rendering approach (procedural/extruded geometry vs. a text-rendering library) is also an implementation call; if a library needs a bundled font asset, that's a new kind of dependency for this feature area — note the choice and its bundle-size cost in the commit. **Reviewer note (2026-08-20):** sandbox validation here is a prerequisite step, not the shipped feature — this must not end up stuck dev-sandbox-only. T123.2's production wiring is mandatory, not optional scope. The sandbox's existing access gate (`TRICK_VIZ_HANDOFF.md` §12 item 10 — a `localStorage` onboarding flag required to view `/stats/trick-viz-sandbox`) is scoped to that internal dev route only; it must not carry over to or block the production landing-page hero built in T123.2, which is publicly reachable with no gate.
+
+### [T123.2] Wire the looping hero into the landing page with a WebGL fallback
+
+- **Area:** Landing page
+- **Priority:** High
+- **Status:** Not started
+- **Planning:** Required
+- **Description:** Replace `LandingHero`'s SVG illustration with the scene built in T123.1, rendered at the top of the landing page in place of the current hero. Detect WebGL availability and show a static fallback image when the scene can't run, and confirm the new hero doesn't overlap the "Why Daily Dama" heading (or any other page text) at mobile widths, unlike the SVG hero it replaces.
+- **Exit criteria:** Loading `/` at a mobile viewport (≤480px) shows the looping hero above the headline with no visual overlap onto "Why Daily Dama" or any other text (verified in-browser). Loading `/` at a desktop viewport also shows the looping hero correctly framed. Forcing a WebGL-unavailable state (e.g. disabling WebGL in devtools, or a feature-detection unit test) shows the static fallback image instead of a blank or broken hero.
+- **Notes:** Depends on T123.1. Worth a bundle-size/perf sanity check during implementation (`yarn expo export --platform web`) since this is the first time the WebGL/`react-three-fiber` stack loads unconditionally for every landing-page visitor.
+
+### [T124] Enlarge the screenshot showcase on desktop/web viewports
+
+- **Area:** Landing page
+- **Priority:** Medium
+- **Status:** Not started
+- **Planning:** Required
+- **Description:** `ScreenshotItem` and its title/caption (`landing-page.tsx:232-255`) have a hardcoded `max-width: 360px` with no web/desktop breakpoint, so the correct web screenshot assets (from T117.1) still render inside a mobile-sized frame at any viewport. Add a desktop/web breakpoint that noticeably enlarges the screenshot image, title, subtitle, and container together.
+- **Exit criteria:** At a desktop-width viewport (e.g. 1280px), the screenshot item's rendered width, title font size, and caption size are all visibly larger than the existing mobile-width rendering; at mobile widths, current sizing is unchanged.
+- **Notes:** Independent of T128 (page-wide max-width) — this component has its own hardcoded cap; can be done in either order.
+
+### [T125] Give screenshot containers a background distinct from the page
+
+- **Area:** Landing page
+- **Priority:** Medium
+- **Status:** Not started
+- **Planning:** Required
+- **Description:** `ScreenshotItem` (`landing-page.tsx:232-241`) uses `background-color: ${AppColors.paperStrong}` against a page background of `AppColors.paper`, with a `6px 6px 0` shadow-style border — QA finds the background doesn't read as distinct. Increase the background/page contrast and align the border treatment with `CtaPanel`'s existing `8px 8px 0` hard-offset shadow (`landing-cta.tsx`).
+- **Exit criteria:** Loading `/` shows each screenshot container with a background color visibly distinct from the surrounding page background, and a bold offset border/shadow consistent with the CTA panel's treatment.
+- **Notes:** Visual-only; no change to which screenshots render or their source data.
+
+### [T126] Fix the footer bar: lock it to the bottom and make it visually distinct
+
+- **Area:** Navigation / app shell
+- **Priority:** High
+- **Status:** Not started
+- **Planning:** Implementer
+- **Description:** `CustomTabList` (`src/components/app-tabs.web.tsx`) wraps the top nav pill and `AppFooterBar` in one container styled `position: 'absolute'` with no `top`/`bottom` offset, so the "footer" renders stacked near the top nav instead of pinned to the bottom of the screen; QA found no footer bar at all. Give the footer bar its own fixed-to-bottom positioning, a background visibly distinct from the page content behind it, and enough bottom padding/inset on scrollable content so it never overlaps what the user is viewing.
+- **Exit criteria:** On any in-app route (e.g. `/app/home`) at both mobile and desktop widths, the footer bar renders pinned to the bottom of the viewport (not scrolling away, not stacked under the top nav), shows "Leave app" left-aligned, has a background color visibly distinct from the content behind it, and scrolling a long page (e.g. Stats) to its end shows the last content item fully visible above the footer, not hidden behind it.
+- **Notes:** Re-does T115's original intent (see `TASKS_DONE.md`); the archived T115 entry stays as-written, history isn't rewritten. The theme-responsive requirement carries over — footer background must follow `useResolvedTheme()`, already wired in `AppFooterBar`.
+
+### [T127] Drop "signing up" copy from the screenshot showcase
+
+- **Area:** Landing page
+- **Priority:** Low
+- **Status:** Not started
+- **Planning:** Implementer
+- **Description:** `ScreenshotHeading` at `landing-page.tsx:151` reads "What you're signing up for," but Daily Dama has no account/signup flow. Replace the copy to describe what's available in the app instead.
+- **Exit criteria:** The screenshot showcase heading no longer contains "signing up" or "sign up," and reads as describing what the screenshots show rather than implying a signup step. `yarn test --runInBand` passes, including any snapshot/text-matching test updated for the new copy.
+- **Notes:** Exact wording is an implementer call, matching the page's existing voice.
+
+### [T128] Widen the landing page's use of the screen on web
+
+- **Area:** Landing page
+- **Priority:** Medium
+- **Status:** Not started
+- **Planning:** Implementer
+- **Description:** `Content` (`landing-page.tsx:185-190`) is `max-width: 620px` at every viewport, leaving most of a desktop screen as empty margin. Add a web/desktop breakpoint that widens the content column to occupy the majority of the screen.
+- **Exit criteria:** At a desktop-width viewport (e.g. 1280px+), the landing page's content column occupies the majority of the viewport width (confirmed via computed style, not just visual impression); at mobile widths, today's layout is unchanged.
+- **Notes:** Independent of T124 (screenshot showcase sizing) — different component, can be done in either order; both affect landing-page desktop layout, so worth a final visual pass together once both land.
+
+### [T129] Redesign trick goal cards to match the app's visual identity
+
+- **Area:** Goals
+- **Priority:** Medium
+- **Status:** Not started
+- **Planning:** Required
+- **Description:** `GoalCard` (`src/features/goals/components/trick-goals-screen.tsx:253`) is a single-line styled component (flat background, plain border, padding) with no rounded corners, shadow, or accent treatment, unlike `CtaPanel`/`ScreenshotItem` elsewhere in the app. Restyle it to match the app's established sticker-style visual language (rounded corners, bold border/shadow, and/or color accents) without changing what information it shows.
+- **Exit criteria:** Trick goal cards render with rounded corners and a bold/shadow-style border consistent with `CtaPanel`'s treatment; all existing goal information (trick name, progress) still renders correctly. `yarn test --runInBand` passes.
+- **Notes:** Visual treatment only — no change to goal data, progress calculation, or the goals reducer.
+
+### [T130] Slow down the CTA entrance animation
+
+- **Area:** Landing page
+- **Priority:** Low
+- **Status:** Not started
+- **Planning:** Implementer
+- **Description:** `LandingCta`'s `entering={FadeInUp.duration(450).springify()}` (`landing-cta.tsx:40`) plays too fast to register, per QA. Increase the duration to a noticeably slower, more deliberate pace.
+- **Exit criteria:** The CTA panel's `FadeInUp` duration is increased from 450ms to a value that reads as clearly slower on load (roughly 800-1000ms) — confirmed by inspecting the rendered `entering` prop/animation config, since automated timing assertions on Reanimated's native driver aren't reliable in this codebase's test setup.
+- **Notes:** Exact duration is an implementation call.
+
+### [T131] Apply the CTA's entrance animation to the screenshot showcase
+
+- **Area:** Landing page
+- **Priority:** Low
+- **Status:** Not started
+- **Planning:** Required
+- **Description:** Screenshot items (`ScreenshotItem`, `landing-page.tsx:232`) have no entrance animation, unlike `LandingCta`'s `FadeInUp` treatment. Convert `ScreenshotItem` to an animated component using the same `FadeInUp` pattern, at the corrected (slower) duration from T130.
+- **Exit criteria:** Each screenshot item renders with an `entering={FadeInUp...}` animation matching the CTA panel's corrected duration/easing. `yarn test --runInBand`, `yarn lint`, and `yarn tsc --noEmit` all pass.
+- **Notes:** References T130's corrected duration value — if T130 hasn't merged yet, use the same slower duration decided there rather than today's 450ms. No hard git-level dependency; can technically be done in either order.
+
 ## Done
 
 Completed entries live in [TASKS_DONE.md](TASKS_DONE.md) — not part of the top-to-bottom read above; see step 5 under _Completing a task_.
