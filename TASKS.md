@@ -135,16 +135,6 @@ _T113–T120 come from stories S001–S008 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 _T121–T131 come from stories S001–S011 in [BACKLOG_STORIES.md](BACKLOG_STORIES.md) (the user's 2026-08-20 QA pass on T115–T120 plus general landing-page feedback), refined by `product-manager` and scoped in this pass. T123 is a two-child umbrella: T123.1 builds and validates the looping, text-bearing Big Cup scene in the trick-viz sandbox in isolation, and T123.2 wires it into the production landing page with a WebGL fallback — split because validating a wholly new capability (3D text, autoplay looping) in isolation is a different risk profile from integrating it into a page every visitor loads, mirroring how T117 split screenshot capture from display-logic wiring. Three product questions surfaced during S003's refinement were resolved before scoping rather than left `Blocked`: the hero is decorative-only (no drag/orbit/tap interaction), needs a static-image fallback for visitors whose browser can't run WebGL, and does not need to respect `prefers-reduced-motion` this iteration. All other entries are independent S-sized tickets — no required ordering between them beyond what each entry's own Notes call out (T124 and T128 both touch landing-page desktop sizing but are independent of each other; T131 references T130's corrected animation duration but has no hard git-level dependency on it)._
 
-### [T125] Give screenshot containers a background distinct from the page
-
-- **Area:** Landing page
-- **Priority:** Medium
-- **Status:** In progress
-- **Planning:** Required
-- **Description:** `ScreenshotItem` (`landing-page.tsx:232-241`) uses `background-color: ${AppColors.paperStrong}` against a page background of `AppColors.paper`, with a `6px 6px 0` shadow-style border — QA finds the background doesn't read as distinct. Increase the background/page contrast and align the border treatment with `CtaPanel`'s existing `8px 8px 0` hard-offset shadow (`landing-cta.tsx`).
-- **Exit criteria:** Loading `/` shows each screenshot container with a background color visibly distinct from the surrounding page background, and a bold offset border/shadow consistent with the CTA panel's treatment.
-- **Notes:** Visual-only; no change to which screenshots render or their source data.
-
 ### [T126] Fix the footer bar: lock it to the bottom and make it visually distinct
 
 - **Area:** Navigation / app shell

@@ -150,7 +150,12 @@ export function LandingPage() {
           <ScreenshotSection>
             <ScreenshotHeading>What you’re signing up for</ScreenshotHeading>
             {screenshots.map((screenshot) => (
-              <ScreenshotItem key={screenshot.alt} testID="screenshot-item" $isWebLayout={isWebLayout}>
+              <ScreenshotItem
+                key={screenshot.alt}
+                testID="screenshot-item"
+                $isWebLayout={isWebLayout}
+                style={{ boxShadow: `8px 8px 0 ${AppColors.ink}` }}
+              >
                 <Image
                   source={screenshot.source}
                   accessibilityLabel={screenshot.alt}
@@ -229,15 +234,16 @@ const ScreenshotHeading = styled.Text`
   font-weight: 900;
 `;
 
-const ScreenshotItem = styled.View.attrs({
-  style: { boxShadow: '6px 6px 0 #18382e' },
-})<{ readonly $isWebLayout: boolean }>`
+// `boxShadow` is passed as an explicit `style` prop at the JSX call site (not baked into
+// `.attrs`) -- see landing-cta.tsx's `CtaPanel` for the full explanation of why
+// styled-components/native's `.attrs({ style: {...} })` config alone would be inert here.
+const ScreenshotItem = styled.View<{ readonly $isWebLayout: boolean }>`
   gap: 10px;
   align-items: center;
   width: 100%;
   max-width: ${({ $isWebLayout }) => ($isWebLayout ? 560 : 360)}px;
   padding: ${({ $isWebLayout }) => ($isWebLayout ? '26px 26px 30px' : '18px 16px 22px')};
-  background-color: ${AppColors.paperStrong};
+  background-color: ${AppColors.cream};
   border: 2px solid ${AppColors.ink};
   border-radius: ${Radii.panel}px;
 `;

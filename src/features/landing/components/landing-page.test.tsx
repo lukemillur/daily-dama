@@ -145,13 +145,18 @@ function resolvedStyleFor(
   root: ReactTestRenderer,
   matches: ReturnType<ReactTestRenderer['root']['findAll']>,
 ) {
-  const withPlainStyle = matches.find(
-    (node) =>
-      typeof node.props.style === 'object' &&
-      node.props.style !== null &&
-      !Array.isArray(node.props.style),
+  // Style may arrive as a plain object (styled-components-only, e.g. a text node) or as an
+  // array (once a JSX call site also passes its own `style` prop, e.g. ScreenshotItem's
+  // boxShadow, which styled-components merges with its generated CSS into an array on the
+  // rendered node). Prefer an array-style match -- it holds the fully merged style -- and fall
+  // back to a plain-object match otherwise, then flatten either shape the same way react-native
+  // does at render time.
+  const arrayStyleMatch = matches.find((node) => Array.isArray(node.props.style));
+  const plainStyleMatch = matches.find(
+    (node) => typeof node.props.style === 'object' && node.props.style !== null && !Array.isArray(node.props.style),
   );
-  return withPlainStyle?.props.style as
+  const resolved = arrayStyleMatch ?? plainStyleMatch;
+  return ReactNative.StyleSheet.flatten(resolved?.props.style) as
     | { maxWidth?: number; fontSize?: number; padding?: unknown }
     | undefined;
 }
