@@ -147,16 +147,6 @@ _T132–T152 come from stories S001–S022 in [BACKLOG_STORIES.md](BACKLOG_STORI
 - **Exit criteria:** At a desktop viewport (1280px+), `ScreenshotItem`'s resolved max-width equals `Content`'s resolved max-width — confirmed via a resolved-style unit test at desktop width asserting the two values are equal.
 - **Notes:** From story S003. Depends on T138 (S008) for the final `Content` desktop width — implement T138 first so this doesn't size against a value that's about to change again.
 
-### [T135] Center the screenshot showcase items
-
-- **Area:** Landing page
-- **Priority:** Low
-- **Status:** Not started
-- **Planning:** Implementer
-- **Description:** `Content` is a plain `View` with no `alignItems` set, so `ScreenshotItem`'s `max-width`-capped children default to the flex cross-axis start (left) rather than centering within the column. Center them at both mobile and desktop widths.
-- **Exit criteria:** At both mobile and desktop viewport widths, `ScreenshotItem` renders center-aligned within its containing section — confirmed via a resolved-style unit test asserting a centering style (e.g. `align-items: center`) on the relevant container.
-- **Notes:** From story S004. Independent of T134/T003 — a width-parity fix alone wouldn't center anything, since the underlying cause is missing cross-axis alignment, not sizing.
-
 ### [T136] Show the footer bar only on the Profile route
 
 - **Area:** Navigation / app shell

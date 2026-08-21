@@ -157,9 +157,29 @@ function resolvedStyleFor(
   );
   const resolved = arrayStyleMatch ?? plainStyleMatch;
   return ReactNative.StyleSheet.flatten(resolved?.props.style) as
-    | { maxWidth?: number; fontSize?: number; padding?: unknown }
+    | { maxWidth?: number; fontSize?: number; padding?: unknown; alignItems?: string }
     | undefined;
 }
+
+describe('LandingPage screenshot showcase centering', () => {
+  it('centers the screenshot showcase items at a mobile viewport', async () => {
+    mockUseWindowDimensions.mockReturnValue({ width: 375, height: 812, scale: 2, fontScale: 1 });
+    const root = await mount();
+
+    const sectionNodes = root.root.findAllByProps({ testID: 'screenshot-section' });
+    const sectionStyle = resolvedStyleFor(root, sectionNodes);
+    expect(sectionStyle?.alignItems).toBe('center');
+  });
+
+  it('centers the screenshot showcase items at a desktop viewport', async () => {
+    mockUseWindowDimensions.mockReturnValue({ width: 1280, height: 900, scale: 1, fontScale: 1 });
+    const root = await mount();
+
+    const sectionNodes = root.root.findAllByProps({ testID: 'screenshot-section' });
+    const sectionStyle = resolvedStyleFor(root, sectionNodes);
+    expect(sectionStyle?.alignItems).toBe('center');
+  });
+});
 
 describe('LandingPage screenshot showcase sizing', () => {
   it('renders mobile-width screenshot item, title, and caption sizing at a mobile viewport', async () => {
