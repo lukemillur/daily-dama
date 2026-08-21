@@ -141,7 +141,7 @@ _T132–T152 come from stories S001–S022 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 - **Area:** Landing page
 - **Priority:** High
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Implementer
 - **Description:** `LandingHero`'s `HeroPanel` caps at `max-width: 320px`, reading as small per repeated QA feedback. Increase it noticeably at both mobile and desktop widths.
 - **Exit criteria:** `HeroPanel`'s resolved size is noticeably larger than the current 320px cap at both mobile and desktop viewport widths — confirmed via a resolved-style unit test — while T133 (S002)'s no-overlap check with "Why Daily Dama" still passes.
