@@ -233,8 +233,9 @@ const ScreenshotSection = styled.View`
 
 const ScreenshotHeading = styled.Text`
   color: ${AppColors.ink};
-  font-size: 17px;
+  font-size: 28px;
   font-weight: 900;
+  letter-spacing: -0.6px;
 `;
 
 // `boxShadow` is passed as an explicit `style` prop at the JSX call site (not baked into
