@@ -1,4 +1,4 @@
-import { Link } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { Pressable, ScrollView, TextInput } from 'react-native';
 import { styled } from 'styled-components/native';
@@ -102,7 +102,9 @@ export function GoalRow({
   readonly onDelete: () => void;
 }) {
   const { goal } = progress;
+  const router = useRouter();
   const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [pressed, setPressed] = useState(false);
 
   if (confirmingDelete) {
     return (
@@ -130,7 +132,14 @@ export function GoalRow({
   }
 
   return (
-    <GoalCard style={{ boxShadow: `8px 8px 0 ${AppColors.ink}` }}>
+    <GoalCardPressable
+      $pressed={pressed}
+      accessibilityLabel={`Practice ${goal.trickName}`}
+      accessibilityRole="button"
+      style={{ boxShadow: `8px 8px 0 ${AppColors.ink}` }}
+      onPress={() => router.push({ pathname: '/app/sesh', params: { trickId: goal.trickId, mode: 'practice' } })}
+      onPressIn={() => setPressed(true)}
+      onPressOut={() => setPressed(false)}>
       <GoalMetaRow>
         <GoalMeta>{goal.kind === 'count' ? 'Lace count goal' : 'Practice time goal'}</GoalMeta>
         {progress.achieved ? <AchievedBadge>Achieved</AchievedBadge> : null}
@@ -138,19 +147,18 @@ export function GoalRow({
       <GoalBody>{formatGoalTarget(goal)}</GoalBody>
       <ProgressText>{formatGoalProgress(progress)}</ProgressText>
       <GoalActionsRow>
-        <Link asChild href={{ pathname: '/app/sesh', params: { trickId: goal.trickId, mode: 'practice' } }}>
-          <GoalAction accessibilityLabel={`Practice ${goal.trickName}`} accessibilityRole="link">
-            <GoalActionText>Practice toward this goal</GoalActionText>
-          </GoalAction>
-        </Link>
+        <PracticeHintText>Practice toward this goal</PracticeHintText>
         <GoalAction
           accessibilityLabel="Delete goal"
           accessibilityRole="button"
-          onPress={() => setConfirmingDelete(true)}>
+          onPress={(event) => {
+            event?.stopPropagation?.();
+            setConfirmingDelete(true);
+          }}>
           <DeleteActionText>Delete</DeleteActionText>
         </GoalAction>
       </GoalActionsRow>
-    </GoalCard>
+    </GoalCardPressable>
   );
 }
 
@@ -260,6 +268,13 @@ const GoalCard = styled.View`
   border-radius: ${Radii.panel}px;
   padding: 16px;
 `;
+const GoalCardPressable = styled(Pressable)<{ readonly $pressed: boolean }>`
+  background-color: ${AppColors.paper};
+  border: 2px solid ${AppColors.ink};
+  border-radius: ${Radii.panel}px;
+  padding: 16px;
+  opacity: ${({ $pressed }) => ($pressed ? 0.7 : 1)};
+`;
 const GoalMetaRow = styled.View`flex-direction: row; align-items: center; justify-content: space-between; gap: 10px;`;
 const GoalMeta = styled.Text`color: ${AppColors.red}; font-size: 11px; font-weight: 900; letter-spacing: 0.8px; text-transform: uppercase;`;
 const AchievedBadge = styled.Text`overflow: hidden; padding: 4px 8px; color: ${AppColors.paper}; background-color: ${AppColors.ink}; border-radius: 3px; font-size: 10px; font-weight: 900; letter-spacing: 0.8px; text-transform: uppercase;`;
@@ -269,6 +284,7 @@ const GoalActionsRow = styled.View`flex-direction: row; gap: 14px; margin-top: 1
 const GoalAction = styled(Pressable)`min-height: 36px; justify-content: center;`;
 const GoalActionText = styled.Text`color: ${AppColors.ink}; font-size: 12px; font-weight: 900; text-transform: uppercase;`;
 const DeleteActionText = styled(GoalActionText)`color: ${AppColors.red};`;
+const PracticeHintText = styled.Text`flex: 1; color: ${AppColors.inkSoft}; font-size: 12px; font-weight: 800; text-transform: uppercase; align-self: center;`;
 const Field = styled.View`margin-top: 28px;`;
 const FieldLabel = styled.Text`color: ${AppColors.ink}; font-size: 13px; font-weight: 900; letter-spacing: 1px; text-transform: uppercase;`;
 const FieldInput = styled(TextInput)`min-height: 56px; background-color: ${AppColors.paper}; border: 2px solid ${AppColors.ink}; color: ${AppColors.ink}; font-size: 18px; font-weight: 800; margin-top: 8px; padding: 12px 14px;`;
