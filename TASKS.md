@@ -147,16 +147,6 @@ _T132–T152 come from stories S001–S022 in [BACKLOG_STORIES.md](BACKLOG_STORI
 - **Exit criteria:** At a desktop viewport (1280px+), `ScreenshotItem`'s resolved max-width equals `Content`'s resolved max-width — confirmed via a resolved-style unit test at desktop width asserting the two values are equal.
 - **Notes:** From story S003. Depends on T138 (S008) for the final `Content` desktop width — implement T138 first so this doesn't size against a value that's about to change again.
 
-### [T137] Give the screenshot showcase heading a more prominent visual treatment
-
-- **Area:** Landing page
-- **Priority:** Low
-- **Status:** In progress
-- **Planning:** Implementer
-- **Description:** `ScreenshotHeading` ("See it in action", `landing-page.tsx`) is 17px/900-weight body-adjacent text. Give it a larger, more visually distinct treatment consistent with the page's other section headings.
-- **Exit criteria:** `ScreenshotHeading` renders visibly larger and stylistically distinct (size, color, and/or letter-spacing) from surrounding body copy — confirmed via a resolved-style unit test asserting its font-size increased from the current 17px.
-- **Notes:** From story S007. Exact size/treatment is an implementer call, matching the page's existing voice (e.g. compare to `Headline`/`FeatureHeading`).
-
 ### [T138] Widen the landing page's desktop content column further
 
 - **Area:** Landing page

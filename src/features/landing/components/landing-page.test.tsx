@@ -223,6 +223,17 @@ describe('LandingPage screenshot showcase sizing', () => {
   });
 });
 
+describe('LandingPage screenshot showcase heading', () => {
+  it('renders the screenshot showcase heading larger than the previous 17px body-adjacent size', async () => {
+    mockUseWindowDimensions.mockReturnValue({ width: 375, height: 812, scale: 2, fontScale: 1 });
+    const root = await mount();
+
+    const headingNodes = findByVisibleText(root, 'See it in action');
+    const headingStyle = resolvedStyleFor(root, headingNodes);
+    expect(headingStyle?.fontSize).toBeGreaterThan(17);
+  });
+});
+
 describe('LandingPage content column width', () => {
   it('keeps the mobile content-column max-width unchanged at a mobile viewport', async () => {
     mockUseWindowDimensions.mockReturnValue({ width: 375, height: 812, scale: 2, fontScale: 1 });
