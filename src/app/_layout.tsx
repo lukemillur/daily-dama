@@ -6,13 +6,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { Platform } from 'react-native';
 
 import { AnimatedSplashOverlay } from '@/components/animated-icon';
-import { CustomTrickProvider } from '@/features/custom-tricks/state/custom-trick-provider';
-import { GoalProvider } from '@/features/goals/state/goal-provider';
-import { NoteProvider } from '@/features/notes/state/note-provider';
-import { AppThemeProvider } from '@/features/profile/components/app-theme-provider';
-import { KenteiRankAutoPromotion } from '@/features/profile/state/kentei-rank-auto-promotion';
-import { UserProfileProvider } from '@/features/profile/state/user-profile-provider';
-import { PracticeHistoryProvider } from '@/features/stats/state/practice-history-provider';
+import { DefaultAppThemeProvider } from '@/features/profile/components/app-theme-provider';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 
 SplashScreen.preventAutoHideAsync();
@@ -23,20 +17,9 @@ export default function TabLayout() {
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
       {Platform.OS === 'web' && <Analytics />}
       <AnimatedSplashOverlay />
-      <CustomTrickProvider>
-        <UserProfileProvider>
-          <PracticeHistoryProvider>
-            <NoteProvider>
-              <GoalProvider>
-                <AppThemeProvider>
-                  <KenteiRankAutoPromotion />
-                  <Slot />
-                </AppThemeProvider>
-              </GoalProvider>
-            </NoteProvider>
-          </PracticeHistoryProvider>
-        </UserProfileProvider>
-      </CustomTrickProvider>
+      <DefaultAppThemeProvider>
+        <Slot />
+      </DefaultAppThemeProvider>
     </ThemeProvider>
   );
 }

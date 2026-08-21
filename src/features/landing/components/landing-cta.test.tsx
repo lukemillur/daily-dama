@@ -2,16 +2,16 @@ import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 
 import { LandingCta } from '@/features/landing/components/landing-cta';
-import type { UserProfile } from '@/features/profile/model/user-profile';
+import type { CachedOnboardingStatus } from '@/features/profile/persistence/read-cached-onboarding-status';
 
 const mockRouter = { push: jest.fn() };
 jest.mock('expo-router', () => ({
   useRouter: () => mockRouter,
 }));
 
-const mockUseUserProfile = jest.fn<() => UserProfile>();
-jest.mock('@/features/profile/state/user-profile-provider', () => ({
-  useUserProfile: () => mockUseUserProfile(),
+const mockUseCachedOnboardingStatus = jest.fn<() => CachedOnboardingStatus>();
+jest.mock('@/features/landing/state/use-cached-onboarding-status', () => ({
+  useCachedOnboardingStatus: () => mockUseCachedOnboardingStatus(),
 }));
 
 function pressByVisibleText(root: ReactTestRenderer, text: string) {
@@ -54,14 +54,14 @@ async function mount() {
 
 beforeEach(() => {
   mockRouter.push.mockClear();
-  mockUseUserProfile.mockReset();
+  mockUseCachedOnboardingStatus.mockReset();
 });
 
 describe('LandingCta', () => {
   it('navigates to /app/home when pressed as a first-time visitor', async () => {
-    mockUseUserProfile.mockReturnValue({
-      selectedTrickIds: [],
+    mockUseCachedOnboardingStatus.mockReturnValue({
       hasCompletedOnboarding: false,
+      kenteiRank: undefined,
     });
 
     const root = await mount();
@@ -72,9 +72,9 @@ describe('LandingCta', () => {
   });
 
   it('shows returning-visitor copy and still navigates to /app/home when pressed', async () => {
-    mockUseUserProfile.mockReturnValue({
-      selectedTrickIds: [],
+    mockUseCachedOnboardingStatus.mockReturnValue({
       hasCompletedOnboarding: true,
+      kenteiRank: 5,
     });
 
     const root = await mount();
@@ -89,9 +89,9 @@ describe('LandingCta', () => {
   });
 
   it('renders the sticker-card treatment for both variants', async () => {
-    mockUseUserProfile.mockReturnValue({
-      selectedTrickIds: [],
+    mockUseCachedOnboardingStatus.mockReturnValue({
       hasCompletedOnboarding: false,
+      kenteiRank: undefined,
     });
     const firstTimeRoot = await mount();
 
@@ -99,9 +99,9 @@ describe('LandingCta', () => {
     expect(findAncestorWithStyleIncluding(firstTimeRoot, 'Ready when you are', 'rotate')).not.toBeNull();
     expect(findNodeWithStyleIncluding(firstTimeRoot, 'boxShadow').length).toBeGreaterThan(0);
 
-    mockUseUserProfile.mockReturnValue({
-      selectedTrickIds: [],
+    mockUseCachedOnboardingStatus.mockReturnValue({
       hasCompletedOnboarding: true,
+      kenteiRank: 5,
     });
     const returningRoot = await mount();
 

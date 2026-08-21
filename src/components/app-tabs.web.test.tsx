@@ -2,6 +2,13 @@ import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 import { Text } from 'react-native';
 
+// RootRoute now transitively imports use-cached-onboarding-status.ts (T145), which imports
+// AsyncStorage directly for its native fallback path -- mock it before RootRoute is imported
+// below, same pattern as read-cached-theme-background.test.ts.
+jest.mock('@react-native-async-storage/async-storage', () =>
+  require('@react-native-async-storage/async-storage/jest/async-storage-mock'),
+);
+
 import { CustomTabList } from '@/components/app-tabs.web';
 import RootRoute from '@/app/index';
 import type { UserProfile } from '@/features/profile/model/user-profile';

@@ -3,7 +3,7 @@ import { Image } from 'expo-image';
 import { act, create } from 'react-test-renderer';
 
 import RootRoute from '@/app/index';
-import type { UserProfile } from '@/features/profile/model/user-profile';
+import type { CachedOnboardingStatus } from '@/features/profile/persistence/read-cached-onboarding-status';
 
 jest.mock('react-native-reanimated', () =>
   require('react-native-reanimated/mock'),
@@ -26,9 +26,9 @@ jest.mock('expo-router', () => ({
   useRouter: () => mockRouter,
 }));
 
-const mockUseUserProfile = jest.fn<() => UserProfile>();
-jest.mock('@/features/profile/state/user-profile-provider', () => ({
-  useUserProfile: () => mockUseUserProfile(),
+const mockUseCachedOnboardingStatus = jest.fn<() => CachedOnboardingStatus>();
+jest.mock('@/features/landing/state/use-cached-onboarding-status', () => ({
+  useCachedOnboardingStatus: () => mockUseCachedOnboardingStatus(),
 }));
 
 describe('RootRoute (landing page)', () => {
@@ -36,10 +36,10 @@ describe('RootRoute (landing page)', () => {
     mockRouter.replace.mockClear();
     mockRouter.push.mockClear();
     mockSearchParams = {};
-    mockUseUserProfile.mockReset();
-    mockUseUserProfile.mockReturnValue({
-      selectedTrickIds: [],
+    mockUseCachedOnboardingStatus.mockReset();
+    mockUseCachedOnboardingStatus.mockReturnValue({
       hasCompletedOnboarding: false,
+      kenteiRank: undefined,
     });
   });
 
@@ -111,8 +111,7 @@ describe('RootRoute (landing page)', () => {
   });
 
   it('redirects a fresh, fully-onboarded arrival straight to /app/home without rendering the landing page', async () => {
-    mockUseUserProfile.mockReturnValue({
-      selectedTrickIds: [],
+    mockUseCachedOnboardingStatus.mockReturnValue({
       hasCompletedOnboarding: true,
       kenteiRank: 5,
     });
@@ -130,8 +129,7 @@ describe('RootRoute (landing page)', () => {
   });
 
   it('renders the landing page with no redirect when the in-app arrival signal is present', async () => {
-    mockUseUserProfile.mockReturnValue({
-      selectedTrickIds: [],
+    mockUseCachedOnboardingStatus.mockReturnValue({
       hasCompletedOnboarding: true,
       kenteiRank: 5,
     });
@@ -150,9 +148,9 @@ describe('RootRoute (landing page)', () => {
   });
 
   it('renders the landing page for an incomplete onboarding profile even when the signal is present', async () => {
-    mockUseUserProfile.mockReturnValue({
-      selectedTrickIds: [],
+    mockUseCachedOnboardingStatus.mockReturnValue({
       hasCompletedOnboarding: false,
+      kenteiRank: undefined,
     });
     mockSearchParams = { from: 'app' };
 

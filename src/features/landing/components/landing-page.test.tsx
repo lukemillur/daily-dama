@@ -9,7 +9,7 @@ import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 const ReactNative = require('react-native') as typeof import('react-native');
 
 import { LandingPage, MOBILE_SCREENSHOTS, WEB_SCREENSHOTS } from '@/features/landing/components/landing-page';
-import type { UserProfile } from '@/features/profile/model/user-profile';
+import type { CachedOnboardingStatus } from '@/features/profile/persistence/read-cached-onboarding-status';
 
 const mockRouter = { push: jest.fn() };
 jest.mock('expo-router', () => ({
@@ -49,9 +49,9 @@ jest.mock('@/features/trick-viz/components/LoopingHeroScene', () => {
   return { LoopingHeroScene: () => React.createElement(View, { testID: 'looping-hero-scene-stub' }) };
 });
 
-const mockUseUserProfile = jest.fn<() => UserProfile>();
-jest.mock('@/features/profile/state/user-profile-provider', () => ({
-  useUserProfile: () => mockUseUserProfile(),
+const mockUseCachedOnboardingStatus = jest.fn<() => CachedOnboardingStatus>();
+jest.mock('@/features/landing/state/use-cached-onboarding-status', () => ({
+  useCachedOnboardingStatus: () => mockUseCachedOnboardingStatus(),
 }));
 
 function findByVisibleText(root: ReactTestRenderer, text: string) {
@@ -88,10 +88,10 @@ const SCREENSHOT_TITLES_AND_CAPTIONS: ReadonlyArray<{ title: string; caption: st
 
 beforeEach(() => {
   mockRouter.push.mockClear();
-  mockUseUserProfile.mockReset();
-  mockUseUserProfile.mockReturnValue({
-    selectedTrickIds: [],
+  mockUseCachedOnboardingStatus.mockReset();
+  mockUseCachedOnboardingStatus.mockReturnValue({
     hasCompletedOnboarding: false,
+    kenteiRank: undefined,
   });
   mockUseWindowDimensions.mockReset();
   mockUseWindowDimensions.mockReturnValue({ width: 375, height: 812, scale: 2, fontScale: 1 });
