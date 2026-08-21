@@ -4,6 +4,16 @@ Completed entries move here from `TASKS.md`'s `Backlog`, in the same commit that
 
 Entries keep their content as it was at completion. Don't retroactively edit a description or exit criteria after the fact; if something about a completed task turns out to be wrong or misleading, note that in a new entry or in code, not by rewriting history here.
 
+### [T132] Move the hero's "Daily Dama" caption to the bottom of the scene
+
+- **Area:** Trick visualization (consumed by Landing page)
+- **Priority:** Medium
+- **Status:** Done
+- **Planning:** Implementer
+- **Description:** `HeroCaption` (`src/features/trick-viz/components/HeroCaption.tsx`) positions "Daily Dama" via a fixed camera-relative `CAPTION_OFFSET` Vector3. Adjust its Y component so the text sits near the bottom of the scene with a small gap above the container's bottom edge, instead of its current position.
+- **Exit criteria:** In both the dev-only sandbox's "Hero loop" toggle (`/stats/trick-viz-sandbox`) and the production landing page hero, "Daily Dama" renders near the bottom of the scene's visible area with a small margin between the text and the bottom edge, at both a mobile and a desktop viewport width, with no clipping of the text against the container edges.
+- **Notes:** From story S001. Single-constant change in `HeroCaption.tsx`; `CameraRig`/`frameSubjects` stay untouched per the file's existing invariant.
+
 ### [T117] Show platform-appropriate screenshots on the landing page
 
 - **Area:** Landing
