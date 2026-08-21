@@ -141,7 +141,7 @@ _T132–T152 come from stories S001–S022 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 - **Area:** Tricks
 - **Priority:** Medium
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** `TrickDirectory` (`src/features/tricks/components/trick-directory.tsx`) keeps its focused-tricks section visible regardless of `search.query`, obscuring search results in the trick-goals picker. Hide that section while a search query is present.
 - **Exit criteria:** In the trick goals picker (`GoalTrickPicker`, which renders `TrickDirectory` with `showFocusedSection`), typing any text into the search input hides the focused-tricks section; clearing the search restores it. `yarn test --runInBand` passes, including a test covering both states.
