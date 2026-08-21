@@ -4,6 +4,16 @@ Completed entries move here from `TASKS.md`'s `Backlog`, in the same commit that
 
 Entries keep their content as it was at completion. Don't retroactively edit a description or exit criteria after the fact; if something about a completed task turns out to be wrong or misleading, note that in a new entry or in code, not by rewriting history here.
 
+### [T151] Label the focused tricks list on the Sesh practice screen
+
+- **Area:** Sesh
+- **Priority:** Low
+- **Status:** Done
+- **Planning:** Implementer
+- **Description:** The focused-tricks list on the Sesh practice screen (`sesh.tsx`, directly after "Practice several tricks") renders with no section heading of its own, leaving it ambiguous what the list represents.
+- **Exit criteria:** The Sesh practice screen shows a "Focused tricks" heading directly above the focused-tricks list (`TrickChoices`), positioned below the existing "Practice several tricks" text. `yarn test --runInBand` passes. Confirmed: added a `PlanLabel`-styled "Focused tricks" heading directly above `TrickChoices` in `sesh.tsx`, matching the section-heading style already used elsewhere on this screen (e.g. "Practice format", "When you beat your best"). Added a regression test in `sesh.test.tsx` asserting the heading text appears after "Practice several tricks" and before the first trick name in render order. `yarn test --runInBand` and the full `node .claude/scripts/verify.mjs` sequence (test, lint, typecheck, web export) all passed.
+- **Notes:** From story S021. Confirmed in code (`sesh.tsx:446-453`) this list currently has no heading between it and "Practice several tricks".
+
 ### [T140] Trigger the screenshot showcase's entrance animation on scroll into view
 
 - **Area:** Landing page
