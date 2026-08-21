@@ -18,6 +18,7 @@ export const RAINBOW_THEME_PRESETS: readonly ThemePreset[] = [
   { id: "indigo", label: "Indigo", backgroundColor: "#e0dcf5", accentColor: "#4b3f9e" },
   { id: "violet", label: "Violet", backgroundColor: "#f3d9f0", accentColor: "#8e2f8e" },
   { id: "pink", label: "Pink", backgroundColor: "#fbdcea", accentColor: "#c22a75" },
+  { id: "raw", label: "Raw", backgroundColor: "#e8d9bd", accentColor: "#6b4423" },
 ];
 
 /**
