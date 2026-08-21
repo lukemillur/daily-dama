@@ -163,7 +163,7 @@ _All currently actionable backend-roadmap work is phase-gated and active in depe
 
 - **Area:** Backend development environment
 - **Priority:** High (inherited from parent T153)
-- **Status:** In progress
+- **Status:** Blocked — no Docker-compatible engine is available in this agent's sandbox, so `supabase start`/`db reset` and the live weak-password/unverified-signin/Mailpit exit criteria could not be exercised; all file-based deliverables (config.toml policy, repository-owned confirmation template, README workflow, gitignore coverage) are complete and committed on `task/T153.1-establish-reproducible-local-supabase`. Needs a Docker-capable machine to run `supabase start` and confirm the three live checks before this can move to Done.
 - **Planning:** Required
 - **Description:** Add repository-owned Supabase CLI configuration, local Auth policy and email templates, ignored local environment files, and the smallest documented workflow needed to rebuild and test Auth locally without committing credentials. Configure verified email, a ten-character password minimum, one-hour JWTs, and `http://localhost:8081/auth/callback` as the fixed local callback.
 - **Exit criteria:** From a fresh checkout with the documented CLI and Docker-compatible prerequisites, `supabase start` and a clean local database reset succeed; a nine-character signup is rejected, an unverified user cannot sign in, Mailpit receives the repository-owned confirmation email targeting the exact local callback, and `git check-ignore` confirms every documented local credential file is ignored while the tracked configuration contains only placeholders or environment references.
