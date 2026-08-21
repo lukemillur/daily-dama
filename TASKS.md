@@ -219,7 +219,7 @@ _T132–T152 come from stories S001–S022 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 ---
 
-_T153 comes from S032, refined from [BACKEND_ROADMAP.md](BACKEND_ROADMAP.md) and originally scoped with T154–T162 into [TASKS_BACKLOG.md](TASKS_BACKLOG.md) on 2026-08-21. Its technical-scoping review split Phase 1 Auth into thirteen focused checkpoints and moved the Auth error/redaction boundary from former T154.3 ahead of every route that consumes it. T153 was activated in this automated queue at the user's explicit request on 2026-08-21; Phase 2 umbrella T155 is now active as well, while T154 and T156–T162 remain in the formal backlog. Supabase, unrestricted guest access, web PKCE, exact callbacks, and the roadmap's security requirements are settled decisions. Native callbacks and SecureStore remain deferred._
+_Backend-roadmap activation is phase-gated. Phase 1 umbrella T153, Phase 2 umbrella T155, and Phase 3 workstreams T156–T160 are active in this queue; T154 is grouped with Phase 4 credential maintenance/deletion, and T161–T162 remain in the formal backlog. Supabase, unrestricted guest access, web PKCE, exact callbacks, local-first synchronization, and the roadmap's security requirements are settled decisions. Native callbacks and SecureStore remain deferred._
 
 ### [T153] Establish optional web account access and recovery
 
@@ -500,3 +500,249 @@ _Phase 2 activation: T155 comes from S034 and `BACKEND_ROADMAP.md` Phase 2. Its 
 - **Description:** Implement pure mappings and runtime validation for count/time goals and notes, including tombstones, revisions, optional practice-session association, and authoritative name snapshots.
 - **Exit criteria:** Unit tests round-trip all goal/note variants and tombstones, reject ambiguous variants, stale or malformed revisions, invalid session associations, and foreign-user rows, and prove neither domain state nor mutation payload preparation is mutated.
 - **Notes:** From S034. Depends on T155.9. Provider integration belongs to T157.
+
+---
+
+_Phase 3 activation: T156–T160 come from S035–S038 and `BACKEND_ROADMAP.md` Phase 3. The dependency chain deliberately separates identity-partitioned persistence (T156), durable synchronization mechanics and ordered domain rollout (T157), outbox-aware logout (T158), resumable guest conversion (T159), and visible conflict recovery (T160). Each child owns one persistence, orchestration, domain, or UX boundary; Realtime remains deferred and synchronization may never alter the active Sesh state machine._
+
+### [T156] Partition local persistence by verified identity
+
+- **Area:** Local persistence security
+- **Priority:** High
+- **Status:** Not started
+- **Description:** Prevent guest and authenticated caches from sharing keys or allowing late work from one identity to update another.
+- **Notes:** Umbrella from S038. Complete T156.1–T156.3 before domain synchronization. The existing hydration fallback and skipped-initial-write behavior must survive unchanged.
+
+### [T156.1] Define identity-scoped storage and generation ownership
+
+- **Area:** Shared persistence
+- **Priority:** High
+- **Status:** Not started
+- **Planning:** Required
+- **Description:** Introduce an explicit `guest` / `user:<verified-user-id>` identity model, a scoped `KeyValueStorage` adapter, and generation tokens that let async persistence/sync results prove they still belong to the current identity.
+- **Exit criteria:** Unit tests prove identical logical keys resolve to isolated physical namespaces, unverified or malformed identities are rejected, generation changes invalidate late results, and the adapter never accepts identity from mutation payload data.
+- **Notes:** From S038 and roadmap synchronization security. Depends on T153.4. Do not move native credentials or add outboxes yet.
+
+### [T156.2] Rehydrate every provider from its current identity namespace
+
+- **Area:** Persistent provider composition
+- **Priority:** High
+- **Status:** Not started
+- **Planning:** Required
+- **Description:** Inject identity-scoped storage into the profile, custom-trick, practice-history, goal, and note providers; on identity change, cancel stale hydration, restore the new namespace, and preserve each provider's safe fallback, write queue, and skipped initial write.
+- **Exit criteria:** Provider integration tests switch guest → user A → user B → guest and prove each domain rehydrates only its own data, no empty initial state overwrites restored data, writes remain ordered, and a deliberately delayed user-A load cannot commit after user B becomes current.
+- **Notes:** From S038. Depends on T156.1. This changes provider orchestration but not reducer state shapes.
+
+### [T156.3] Prove cross-account local-data isolation
+
+- **Area:** Persistence security testing
+- **Priority:** High
+- **Status:** Not started
+- **Planning:** Required
+- **Description:** Add an end-to-end provider test matrix that seeds distinct profile, custom-trick, practice-history, goal, note, and pending-metadata fixtures for guest, user A, and user B and exercises repeated identity switches.
+- **Exit criteria:** One automated matrix proves no identity can render, overwrite, or submit another identity's fixtures; a late queued write and a late hydration result are both discarded after switching; and returning to each identity restores exactly its own state.
+- **Notes:** From S038. Depends on T156.2. Outbox-specific assertions are extended when T157.1 lands.
+
+### [T157] Add local-first synchronization across every domain
+
+- **Area:** Synchronization
+- **Priority:** High
+- **Status:** Not started
+- **Description:** Add durable, ordered, identity-owned synchronization while keeping every current workflow usable offline and every reducer independent of Supabase.
+- **Notes:** Umbrella from S035. Complete T157.1–T157.9 in order. Depends on T155 and T156. Realtime subscriptions remain deferred.
+
+### [T157.1] Define durable outbox and mutation-identity contracts
+
+- **Area:** Synchronization persistence
+- **Priority:** High
+- **Status:** Not started
+- **Planning:** Required
+- **Description:** Define serializable mutation operations, stable operation IDs, per-domain cursors, acknowledgements, retry metadata, and atomic versioned envelopes that own local domain state and its outbox together.
+- **Exit criteria:** Unit tests prove a local state change and its operation persist atomically, survive reload, retain stable IDs across retries, preserve FIFO order, reject malformed envelopes, and cannot be loaded or acknowledged under another identity.
+- **Notes:** From S035. Depends on T155.9 and T156.3. Keep runtime handles, promises, Sets, Maps, timers, and Supabase clients out of persisted state.
+
+### [T157.2] Build a single-flight identity-aware sync coordinator
+
+- **Area:** Synchronization orchestration
+- **Priority:** High
+- **Status:** Not started
+- **Planning:** Required
+- **Description:** Implement an explicit coordinator state machine that permits one sync per identity, models cancellation/retry, tags runs with identity generations, and continues safely after contained operation failures.
+- **Exit criteria:** State-machine tests cover overlapping triggers, cancellation, identity change, network failure, retry, partial-domain failure, and stale completion; at most one run owns an identity at a time and no late result can mutate current state after logout or account switching.
+- **Notes:** From S035. Depends on T157.1. Keep scheduling effects and clocks outside the reducer/state machine.
+
+### [T157.3] Implement paginated pulls and idempotent ordered pushes
+
+- **Area:** Synchronization transport
+- **Priority:** High
+- **Status:** Not started
+- **Planning:** Required
+- **Description:** Add repository-agnostic transport orchestration for stable ordered pagination, mutation-ID-based idempotent retries, optimistic revision checks, tombstones, and application of server-returned revisions/timestamps.
+- **Exit criteria:** Transport tests pull more than 1,000 ordered fixtures without gaps/duplicates, retry a successful write after a simulated lost acknowledgement without duplication, reject stale revisions into a typed conflict, apply authoritative server metadata, and continue unrelated operations after one conflict.
+- **Notes:** From S035. Depends on T155.9, T157.1, and T157.2. Use injected clocks/network repositories for deterministic tests.
+
+### [T157.4] Synchronize profile and trick state first
+
+- **Area:** Profile synchronization
+- **Priority:** High
+- **Status:** Not started
+- **Planning:** Required
+- **Description:** Integrate the profile/trick repositories, runtime mappings, scoped persistence envelope, and coordinator with `UserProfileProvider`, preserving current reducer authority, hydration behavior, and local offline writes.
+- **Exit criteria:** Integration tests create and edit all profile/trick-state variants offline, reload with pending work, reconnect and synchronize, rehydrate the result in a second browser identity fixture, resolve accepted server revisions, and prove no sync effect changes active Sesh state.
+- **Notes:** From S035 domain rollout 1. Depends on T155.10 and T157.3.
+
+### [T157.5] Synchronize custom tricks and sequences
+
+- **Area:** Custom-trick synchronization
+- **Priority:** High
+- **Status:** Not started
+- **Planning:** Required
+- **Description:** Integrate custom tricks with the scoped outbox/coordinator while preserving stable IDs, stored step-name snapshots, deletion tombstones, and the no-nested-sequences rule offline and across browsers.
+- **Exit criteria:** Integration tests create, edit, and delete standalone tricks and sequences offline; retry/reconnect without duplicates; rehydrate on a second browser; preserve historical step names after source rename/deletion; and surface same-record stale revisions without blocking unrelated tricks.
+- **Notes:** From S035 domain rollout 2. Depends on T157.4 and T155.11.
+
+### [T157.6] Synchronize immutable practice history
+
+- **Area:** Practice-history synchronization
+- **Priority:** High
+- **Status:** Not started
+- **Planning:** Required
+- **Description:** Integrate completed-Sesh insertion and paginated pulls with the synchronization layer, retaining provider/reducer deduplication, immutable snapshots, client-fact timestamps, and Stats derivation.
+- **Exit criteria:** Integration tests record sessions offline, reload and retry after a lost acknowledgement, synchronize more than 1,000 records, deduplicate by stable record identity, reject attempted remote mutation, and derive identical Stats locally and after second-browser rehydration.
+- **Notes:** From S035 domain rollout 3. Depends on T157.5 and T155.12. Synchronization must never alter an in-progress Sesh reducer.
+
+### [T157.7] Synchronize goals with optimistic revisions and tombstones
+
+- **Area:** Goal synchronization
+- **Priority:** High
+- **Status:** Not started
+- **Planning:** Required
+- **Description:** Integrate goal creation, editing, deletion, tombstones, and stale-revision detection with the scoped outbox and coordinator without coupling GoalProvider to Supabase.
+- **Exit criteria:** Integration tests exercise count/time goals offline through reconnect, lost acknowledgements, edits, deletion, stale-device resurrection attempts, and second-browser hydration; conflicts pause only the affected goal and accepted results update local revision metadata.
+- **Notes:** From S035 domain rollout 4. Depends on T157.6 and the goal portion of T155.13.
+
+### [T157.8] Synchronize notes with optimistic revisions and tombstones
+
+- **Area:** Note synchronization
+- **Priority:** High
+- **Status:** Not started
+- **Planning:** Required
+- **Description:** Integrate notes, optional completed-Sesh references, edits, deletion tombstones, and stale-revision detection with the scoped outbox and coordinator while preserving trick/session snapshots.
+- **Exit criteria:** Integration tests create/edit/delete notes offline, retain optional practice-session associations, retry idempotently, defeat stale-device resurrection, rehydrate on a second browser, and continue unrelated note/goal operations when one note conflicts.
+- **Notes:** From S035 domain rollout 5. Depends on T157.7 and the note portion of T155.13.
+
+### [T157.9] Trigger synchronization without disrupting active practice
+
+- **Area:** Synchronization lifecycle
+- **Priority:** High
+- **Status:** Not started
+- **Planning:** Required
+- **Description:** Wire login, foreground, local mutation, reconnection, and manual-retry triggers into the coordinator with debouncing/coalescing appropriate to each event and an explicit guard against synchronization effects changing Sesh state.
+- **Exit criteria:** Integration tests fire overlapping login/foreground/reconnect/local-mutation/manual events and prove they coalesce into single-flight runs, offline events remain pending, foreground during every active Sesh status leaves the Sesh state machine unchanged, and unmount/logout cancels subscriptions and stale work.
+- **Notes:** From S035. Depends on T157.4–T157.8. Do not add Realtime subscriptions.
+
+### [T158] Protect logout when account changes are unsynchronized
+
+- **Area:** Authentication / synchronization boundary
+- **Priority:** High
+- **Status:** Not started
+- **Planning:** Required
+- **Description:** Upgrade current-device logout to inspect the current identity's durable outboxes and offer Retry, Cancel, or Discard and log out, then clear in-memory account state without exposing or submitting it under the guest namespace.
+- **Exit criteria:** Provider/browser tests cover no-pending logout, successful Retry then logout, failed Retry with the prompt retained, Cancel, explicit Discard, offline behavior, and identity changes during the prompt; other-device sessions remain signed in and subsequent guest/user identities cannot access discarded account cache or operations.
+- **Notes:** From S038. Depends on T154.2, T156.3, and T157.9. Account-deletion cleanup is separate in T161.5.
+
+### [T159] Merge guest data into new or existing accounts
+
+- **Area:** Guest conversion
+- **Priority:** High
+- **Status:** Not started
+- **Description:** Import guest data through explicit, resumable merge rules without clearing any local source record before server acknowledgement.
+- **Notes:** Umbrella from S036. Complete T159.1–T159.5. Depends on T157 and the identity isolation established by T156.
+
+### [T159.1] Model resumable guest import and preview its scope
+
+- **Area:** Guest import orchestration
+- **Priority:** High
+- **Status:** Not started
+- **Planning:** Required
+- **Description:** Add an explicit import state machine and durable progress record that inventories guest/cloud counts by domain before mutation, owns an import identity, and can resume after reload or network loss.
+- **Exit criteria:** State-machine tests cover inventory, awaiting confirmation, uploading, awaiting profile choice, conflicts, interruption, resume, completion, cancellation, and identity change; the UI shows accurate per-domain local/cloud counts before any guest record is uploaded.
+- **Notes:** From S036. Depends on T157.9. Keep effects/clocks/network calls outside the reducer.
+
+### [T159.2] Import all guest data into a new empty account
+
+- **Area:** Guest-to-new-account import
+- **Priority:** High
+- **Status:** Not started
+- **Planning:** Required
+- **Description:** Implement the empty-account path using the standard outboxes/repositories, preserving operation IDs and source guest data until each domain's records are acknowledged.
+- **Exit criteria:** Integration tests import fixtures spanning all five local domains into an empty account, simulate interruption and lost acknowledgements at each domain boundary, resume without duplicates, rehydrate the complete result in another browser, and retain every unacknowledged guest record locally.
+- **Notes:** From S036. Depends on T159.1.
+
+### [T159.3] Merge immutable records and trick state into an existing account
+
+- **Area:** Guest-to-existing-account merge
+- **Priority:** High
+- **Status:** Not started
+- **Planning:** Required
+- **Description:** Implement deterministic union rules for immutable practice records, focused/manually-laced trick state, identical IDs/payloads, and non-conflicting custom tricks, goals, and notes when the target account already contains data.
+- **Exit criteria:** Table-driven tests cover disjoint, identical, and overlapping fixtures for every domain; distinct immutable records and trick states union, identical IDs/payloads deduplicate, no target data is silently overwritten, and same-ID/different-payload records are emitted as conflicts.
+- **Notes:** From S036. Depends on T159.2.
+
+### [T159.4] Let users choose profile preferences and resolve import conflicts
+
+- **Area:** Guest merge decisions
+- **Priority:** High
+- **Status:** Not started
+- **Planning:** Required
+- **Description:** Add the explicit choice between guest and cloud profile/preferences plus per-record handling for same-ID/different-payload import conflicts, with no implicit last-write-wins fallback.
+- **Exit criteria:** Browser/state tests present complete profile/preference comparisons, persist the chosen source, resolve each conflicting record independently, allow unrelated records to continue, and prevent completion while an acknowledged required choice remains unresolved.
+- **Notes:** From S036. Depends on T159.3. Reuse the conflict primitives planned for T160 where practical without coupling the two flows prematurely.
+
+### [T159.5] Finalize guest import only after acknowledgements
+
+- **Area:** Guest import recovery
+- **Priority:** High
+- **Status:** Not started
+- **Planning:** Required
+- **Description:** Complete resumability and cleanup so acknowledged source records are tracked durably, retries cannot duplicate server data, and the guest namespace is cleared only after all accepted records and choices are confirmed.
+- **Exit criteria:** Fault-injection tests interrupt every import phase, restart with the same import identity, and prove accepted records are not duplicated, rejected/unresolved records remain available, guest data is never cleared early, and successful completion switches to the account namespace with a matching second-browser dataset.
+- **Notes:** From S036. Depends on T159.2–T159.4.
+
+### [T160] Expose synchronization health and record-level conflict recovery
+
+- **Area:** Synchronization UX
+- **Priority:** High
+- **Status:** Not started
+- **Description:** Make pending work, failures, offline state, freshness, retry, and conflicts understandable without allowing one bad record to stop unrelated synchronization.
+- **Notes:** Umbrella from S037. Complete T160.1–T160.3. Depends on T157.
+
+### [T160.1] Add a trustworthy synchronization status model and Profile surface
+
+- **Area:** Profile / sync status
+- **Priority:** High
+- **Status:** Not started
+- **Planning:** Required
+- **Description:** Derive a serializable user-facing status from coordinator/outbox facts—last successful sync, pending count, syncing, offline, retryable failure, and conflicts—and render it in Profile with a manual retry action.
+- **Exit criteria:** Selector and component tests cover every mutually exclusive/combined state, pluralization and timestamps, retry dispatch, reload persistence, and identity changes; the UI never reports "synced" while pending or conflicting operations exist.
+- **Notes:** From S037. Depends on T157.9. Keep transient runtime handles outside provider/domain state.
+
+### [T160.2] Add per-record conflict resolution
+
+- **Area:** Synchronization conflicts
+- **Priority:** High
+- **Status:** Not started
+- **Planning:** Required
+- **Description:** Add `/app/profile/sync-conflicts` with typed comparisons and explicit local/server resolution for profile, custom-trick, goal, and note conflicts, while immutable-session duplicates follow their deterministic identity rule.
+- **Exit criteria:** Route/state tests render representative conflicts for every mutable resource, apply either resolution as a new revision-aware operation, persist unresolved conflicts across reload, remove only resolved items, and leave unrelated outbox operations running.
+- **Notes:** From S037. Depends on T160.1 and T157.4–T157.8. No automatic last-write-wins option.
+
+### [T160.3] Prove stale revisions and tombstones cannot block or resurrect unrelated data
+
+- **Area:** Synchronization conflict testing
+- **Priority:** High
+- **Status:** Not started
+- **Planning:** Required
+- **Description:** Add a cross-domain fault-injection suite for concurrent edits, stale revisions, delete-vs-edit tombstones, lost acknowledgements, and conflicts interleaved with valid operations.
+- **Exit criteria:** The suite proves only the conflicting record pauses, accepted operations advance and apply server metadata, stale clients cannot resurrect tombstoned goals/notes/custom tricks, retries remain idempotent, and conflict resolution converges two browser fixtures on identical domain state.
+- **Notes:** From S037. Depends on T160.2 and T155.8.
