@@ -141,7 +141,7 @@ _T132–T152 come from stories S001–S022 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 - **Area:** Landing page
 - **Priority:** Medium
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** `ScreenshotItem`'s `FadeInUp` animation (added in T131) fires on initial page load, off-screen, so QA can't observe it without already knowing to scroll first. Trigger it instead when each item scrolls into the top two-thirds of the viewport.
 - **Exit criteria:** Loading the landing page and scrolling down shows each `ScreenshotItem`'s entrance animation trigger only once it scrolls into the top two-thirds of the viewport (items already in that band on load animate in immediately); scrolling past and back doesn't need to replay it. Confirmed at both mobile and desktop widths via a browser check.
