@@ -95,7 +95,7 @@ describe('KenteiOnboarding', () => {
     mockRouter.replace.mockClear();
   });
 
-  it('applies the selected preset and finishes onboarding, matching a direct Profile selection', async () => {
+  it('previews a preset without finishing onboarding', async () => {
     const root = await mountOnboarding();
     await driveToThemeSelect(root);
 
@@ -105,6 +105,34 @@ describe('KenteiOnboarding', () => {
 
     const preset = RAINBOW_THEME_PRESETS[2];
     act(() => pressByAccessibilityLabel(root, preset.label + ' theme preset'));
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(mockRouter.replace).not.toHaveBeenCalled();
+
+    const [swatch] = findByAccessibilityLabel(root, preset.label + ' theme preset');
+    expect(swatch.props.accessibilityState.selected).toBe(true);
+
+    const profile = await readPersistedProfile();
+    expect(profile?.themeBackgroundColor).toBe(preset.backgroundColor);
+    expect(profile?.themeAccentColor).toBe(preset.accentColor);
+    expect(profile?.hasCompletedOnboarding).toBe(false);
+  });
+
+  it('finishes onboarding after previewing a preset, matching a direct Profile selection', async () => {
+    const root = await mountOnboarding();
+    await driveToThemeSelect(root);
+
+    const preset = RAINBOW_THEME_PRESETS[2];
+    act(() => pressByAccessibilityLabel(root, preset.label + ' theme preset'));
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(mockRouter.replace).not.toHaveBeenCalled();
+
+    act(() => pressByAccessibilityLabel(root, 'Finish onboarding'));
     await act(async () => {
       await Promise.resolve();
     });

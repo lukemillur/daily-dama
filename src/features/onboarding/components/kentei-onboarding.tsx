@@ -6,18 +6,23 @@ import {
   INITIAL_KENTEI_ASSESSMENT,
   kenteiAssessmentReducer,
 } from '@/features/onboarding/model/kentei-assessment';
-import { useUserProfileActions } from '@/features/profile/state/user-profile-provider';
+import {
+  useUserProfile,
+  useUserProfileActions,
+} from '@/features/profile/state/user-profile-provider';
 import { OnboardingAssessmentStep } from '@/features/onboarding/components/onboarding-assessment-step';
 import { OnboardingIntroStep } from '@/features/onboarding/components/onboarding-intro-step';
 import { OnboardingLevelStep } from '@/features/onboarding/components/onboarding-level-step';
 import { OnboardingRankRevealStep } from '@/features/onboarding/components/onboarding-rank-reveal-step';
 import { OnboardingSelectionStep } from '@/features/onboarding/components/onboarding-selection-step';
 import { OnboardingThemeStep } from '@/features/onboarding/components/onboarding-theme-step';
+import { RAINBOW_THEME_PRESETS } from '@/features/profile/model/theme-presets';
 
 export function KenteiOnboarding() {
   const router = useRouter();
   const [state, dispatch] = useReducer(kenteiAssessmentReducer, INITIAL_KENTEI_ASSESSMENT);
   const { completeOnboarding, setThemeColors } = useUserProfileActions();
+  const { themeBackgroundColor, themeAccentColor } = useUserProfile();
 
   switch (state.status) {
     case 'intro':
@@ -60,12 +65,18 @@ export function KenteiOnboarding() {
         completeOnboarding(state.rank, state.selectedTrickIds, lacedTrickIds);
         router.replace('/app/sesh');
       };
+      const selectedPreset = RAINBOW_THEME_PRESETS.find(
+        (preset) =>
+          preset.backgroundColor === themeBackgroundColor &&
+          preset.accentColor === themeAccentColor,
+      );
       return (
         <OnboardingThemeStep
+          selectedPresetId={selectedPreset?.id}
           onSelectPreset={(preset) => {
             setThemeColors(preset.backgroundColor, preset.accentColor);
-            finishOnboarding();
           }}
+          onFinish={finishOnboarding}
           onSkip={finishOnboarding}
         />
       );
