@@ -151,7 +151,7 @@ _T132–T152 come from stories S001–S022 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 - **Area:** Landing page
 - **Priority:** High
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Implementer
 - **Description:** `Content`'s desktop max-width (1100px, set in T128) still reads as too narrow per QA. Increase it to occupy a visibly larger share of the viewport.
 - **Exit criteria:** At a desktop viewport (1280px+), `Content`'s resolved max-width is clearly larger than the current 1100px cap — confirmed via a resolved-style unit test asserting the new value exceeds 1100; mobile width (620px) is unchanged.
