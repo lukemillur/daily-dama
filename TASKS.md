@@ -141,7 +141,7 @@ _T132–T152 come from stories S001–S022 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 - **Area:** Goals / Tricks UI
 - **Priority:** Medium
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** Creating a goal (`useGoalActions().addGoal`) for a trick that isn't currently in the user's focused tricks (`selectedTrickIds`, via `UserProfileProvider`) should add it to that list as part of saving the goal.
 - **Exit criteria:** Creating a goal for a trick not currently in `selectedTrickIds` adds that trick to `selectedTrickIds` as part of the same save action; creating a goal for an already-focused trick is a no-op on the focused list. Confirmed via a unit test asserting the profile's focused-trick list before/after `addGoal` is called in both cases.
