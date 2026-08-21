@@ -142,7 +142,7 @@ _T132–T152 come from stories S001–S022 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 - **Area:** Profile / theming
 - **Priority:** Low
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Implementer
 - **Description:** Add a pink entry to `RAINBOW_THEME_PRESETS` (`src/features/profile/model/theme-presets.ts`), following the existing `{id, label, backgroundColor, accentColor}` shape used by the current seven presets.
 - **Exit criteria:** A pink preset appears in the theme picker alongside the existing presets and can be selected and applied like any other preset. `yarn test --runInBand` passes, including any preset-count or preset-list assertions updated for the new entry.
