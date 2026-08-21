@@ -141,7 +141,7 @@ _T132–T152 come from stories S001–S022 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 - **Area:** Trick visualization (consumed by Landing page)
 - **Priority:** Medium
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Implementer
 - **Description:** `HeroCaption` (`src/features/trick-viz/components/HeroCaption.tsx`) positions "Daily Dama" via a fixed camera-relative `CAPTION_OFFSET` Vector3. Adjust its Y component so the text sits near the bottom of the scene with a small gap above the container's bottom edge, instead of its current position.
 - **Exit criteria:** In both the dev-only sandbox's "Hero loop" toggle (`/stats/trick-viz-sandbox`) and the production landing page hero, "Daily Dama" renders near the bottom of the scene's visible area with a small margin between the text and the bottom edge, at both a mobile and a desktop viewport width, with no clipping of the text against the container edges.
