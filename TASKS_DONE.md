@@ -4,6 +4,16 @@ Completed entries move here from `TASKS.md`'s `Backlog`, in the same commit that
 
 Entries keep their content as it was at completion. Don't retroactively edit a description or exit criteria after the fact; if something about a completed task turns out to be wrong or misleading, note that in a new entry or in code, not by rewriting history here.
 
+### [T140] Trigger the screenshot showcase's entrance animation on scroll into view
+
+- **Area:** Landing page
+- **Priority:** Medium
+- **Status:** Done
+- **Planning:** Required
+- **Description:** `ScreenshotItem`'s `FadeInUp` animation (added in T131) fires on initial page load, off-screen, so QA can't observe it without already knowing to scroll first. Trigger it instead when each item scrolls into the top two-thirds of the viewport.
+- **Exit criteria:** Loading the landing page and scrolling down shows each `ScreenshotItem`'s entrance animation trigger only once it scrolls into the top two-thirds of the viewport (items already in that band on load animate in immediately); scrolling past and back doesn't need to replay it. Confirmed at both mobile and desktop widths via a browser check. Confirmed: added a `ScreenshotEntry` wrapper with a colocated `useHasEnteredViewport` hook (`landing-page.tsx`) that observes each item via `IntersectionObserver` with a `rootMargin` computed from `window.innerHeight` to represent the top two-thirds of the viewport, and swaps the inner `ScreenshotItem`'s `key` from `'pending'` to `'entered'` on first intersection to force the remount `entering` needs. Verified with a scripted Chrome DevTools Protocol browser check (no `preview_start`/GUI browser available in this session) at both 375×812 (mobile) and 1440×900 (desktop): each item's computed `opacity` and `entering`-driven animation only flip from `0`/not-set to `1` once its bounding rect crosses into the top two-thirds band while scrolling, stay at `1` afterward, and don't reset or replay after scrolling past all items and back to the top. No new console warnings beyond the existing benign ones. `node .claude/scripts/verify.mjs` passed all four steps (test, lint, typecheck, web export); `landing-page.test.tsx` passed unmodified, confirming the non-web/no-`IntersectionObserver` fallback (animate immediately, matching pre-T140 behavior) stayed intact.
+- **Notes:** From story S010. Web-only concern (this project's active platform scope) — an `IntersectionObserver`-backed hook gating each item's `entering` prop is a reasonable approach, kept local to `landing-page.tsx`. Animation duration/easing (T139/S009) is unchanged — only the trigger condition changes. Raised from `Implementer` to `Required` during scoping review — `IntersectionObserver` isn't used anywhere else in this codebase, and it needs to interact correctly with Reanimated's `entering` prop (which normally only fires on mount), which is unfamiliar-API territory worth a planning pass first.
+
 ### [T139] Slow the CTA entrance animation further
 
 - **Area:** Landing page
