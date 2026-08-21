@@ -189,16 +189,6 @@ _All currently actionable backend-roadmap work is phase-gated and active in depe
 - **Exit criteria:** A dated, secret-free delivery record proves hosted confirmation and recovery messages arrive through Resend from the Auth subdomain with their callback URLs intact, Resend link tracking is disabled, SPF and DKIM pass, and the subdomain publishes a visible DMARC `p=none` policy; no SMTP credential appears in tracked files or client-exposed environment values.
 - **Notes:** From S032 and roadmap Phase 1 backend item 4 plus the email/redirect security requirements. Depends on T153.1–T153.2. T162 later repeats deliverability checks before external signup and may tighten the DMARC policy using observed delivery evidence.
 
-### [T153.4] Add a static-render-safe web Supabase client and Auth state
-
-- **Area:** Authentication state
-- **Priority:** High (inherited from parent T153)
-- **Status:** In progress
-- **Planning:** Required
-- **Description:** Add `@supabase/supabase-js`, a browser-persistent client configured only from `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, and one authoritative Auth provider modeled as `initializing`, `guest`, or `authenticated`. Configure `flowType: 'pkce'`, leave URL detection disabled so T153.7 owns the single code exchange, and ensure client construction and storage access are safe during Expo Router's Node static-render pass.
-- **Exit criteria:** Provider tests drive missing/malformed configuration, initial session resolution, sign-in, sign-out, token refresh, Auth events, and offline initialization; children and every existing `/app` guest route remain renderable while Auth is `initializing` or unavailable; server rendering touches no browser globals; and `yarn expo export --platform web --output-dir /tmp/daily-dama-web-export` succeeds with only publishable Supabase configuration reachable from application code.
-- **Notes:** From S032. Depends on T145 and T153.1. T145 first moves rehydration-dependent domain providers under `/app`; mount Auth above the root `<Slot>` without adding an Auth hydration gate. The Auth state is the application's session/UI authority, not a substitute for later database RLS authorization. Keep a platform seam for Phase 5, but implement and verify web only.
-
 ### [T153.5] Centralize Auth errors and sensitive-data redaction
 
 - **Area:** Authentication observability
