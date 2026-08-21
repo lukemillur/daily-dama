@@ -217,3 +217,144 @@ _T132–T152 come from stories S001–S022 in [BACKLOG_STORIES.md](BACKLOG_STORI
 - **Exit criteria:** When a timed sesh's countdown reaches zero naturally, an audible cue plays once; ending a timed sesh early (before the deadline) does not play it. Confirmed via a test asserting the audio-trigger side effect fires on the `active`→`completed` transition driven by `timerElapsed` and not on one driven by `seshEnded`, plus a manual browser check that sound is audible at zero for a real timed sesh.
 - **Notes:** From story S022. Use `expo-audio` (this SDK's supported audio API for Expo ~57) rather than the deprecated `expo-av`, which isn't in this project's dependencies — consult the matching versioned Expo docs per `AGENTS.md`'s Expo-documentation rule, since this is a new, unfamiliar API in this codebase. Marked `Required` both for that reason and because the side effect must respect this project's existing rule of keeping timer effects and `Date.now()` calls outside the Sesh reducer (`AGENTS.md`'s Sesh section) — the trigger belongs in a component-level effect watching the transition, not inside `sesh.ts`'s reducer itself.
 
+---
+
+_T153 comes from S032, refined from [BACKEND_ROADMAP.md](BACKEND_ROADMAP.md) and originally scoped with T154–T162 into [TASKS_BACKLOG.md](TASKS_BACKLOG.md) on 2026-08-21. Its technical-scoping review split Phase 1 Auth into thirteen focused checkpoints and moved the Auth error/redaction boundary from former T154.3 ahead of every route that consumes it. T153 was activated in this automated queue at the user's explicit request on 2026-08-21; T154–T162 remain in the formal backlog. Supabase, unrestricted guest access, web PKCE, exact callbacks, and the roadmap's security requirements are settled decisions. Native callbacks and SecureStore remain deferred._
+
+### [T153] Establish optional web account access and recovery
+
+- **Area:** Authentication
+- **Priority:** High
+- **Status:** Not started
+- **Description:** Add the complete Phase 1 web Auth foundation while preserving unrestricted guest access to `/app`.
+- **Notes:** Umbrella from S032. Complete T153.1–T153.13. Native callbacks, SecureStore, and synchronization are excluded.
+
+### [T153.1] Establish reproducible local Supabase Auth development
+
+- **Area:** Backend development environment
+- **Priority:** High (inherited from parent T153)
+- **Status:** Not started
+- **Planning:** Required
+- **Description:** Add repository-owned Supabase CLI configuration, local Auth policy and email templates, ignored local environment files, and the smallest documented workflow needed to rebuild and test Auth locally without committing credentials. Configure verified email, a ten-character password minimum, one-hour JWTs, and `http://localhost:8081/auth/callback` as the fixed local callback.
+- **Exit criteria:** From a fresh checkout with the documented CLI and Docker-compatible prerequisites, `supabase start` and a clean local database reset succeed; a nine-character signup is rejected, an unverified user cannot sign in, Mailpit receives the repository-owned confirmation email targeting the exact local callback, and `git check-ignore` confirms every documented local credential file is ignored while the tracked configuration contains only placeholders or environment references.
+- **Notes:** From S032 and `BACKEND_ROADMAP.md` Phase 1 backend items 1, 3, and 6. This establishes the local backend contract only; application consumption begins in T153.4. When Auth flows are being tested, use the fixed port rather than selecting an arbitrary fallback port because the PKCE verifier and redirect origin must match.
+
+### [T153.2] Configure the hosted development project and Auth policy
+
+- **Area:** Hosted Supabase Auth configuration
+- **Priority:** High (inherited from parent T153)
+- **Status:** Not started
+- **Planning:** Required
+- **Description:** Create the single hosted free development project and mirror T153.1's verified-email password policy, exact web callback allowlist, ten-character password minimum, and one-hour access-token lifetime without creating the reserved production project.
+- **Exit criteria:** A dated, secret-free configuration record shows the hosted development project has verified-email password Auth, exactly the approved `http://localhost:8081/auth/callback` and `https://dailydama.com/auth/callback` redirects, a ten-character minimum, and a 3,600-second JWT lifetime; live probes reject a nine-character signup and deny sign-in before email verification.
+- **Notes:** From S032 and roadmap Phase 1 backend items 2–3. Depends on T153.1. Secure email change belongs to T154.1; Resend and DNS belong to T153.3.
+
+### [T153.3] Configure Resend Auth email delivery and DNS authentication
+
+- **Area:** Auth email delivery
+- **Priority:** High (inherited from parent T153)
+- **Status:** Not started
+- **Planning:** Required
+- **Description:** Configure Supabase custom SMTP through Resend using the dedicated `auth.dailydama.com` sending subdomain, mirror the repository-owned confirmation and recovery templates into the hosted project, and disable link tracking so single-use Auth URLs are not rewritten.
+- **Exit criteria:** A dated, secret-free delivery record proves hosted confirmation and recovery messages arrive through Resend from the Auth subdomain with their callback URLs intact, Resend link tracking is disabled, SPF and DKIM pass, and the subdomain publishes a visible DMARC `p=none` policy; no SMTP credential appears in tracked files or client-exposed environment values.
+- **Notes:** From S032 and roadmap Phase 1 backend item 4 plus the email/redirect security requirements. Depends on T153.1–T153.2. T162 later repeats deliverability checks before external signup and may tighten the DMARC policy using observed delivery evidence.
+
+### [T153.4] Add a static-render-safe web Supabase client and Auth state
+
+- **Area:** Authentication state
+- **Priority:** High (inherited from parent T153)
+- **Status:** Not started
+- **Planning:** Required
+- **Description:** Add `@supabase/supabase-js`, a browser-persistent client configured only from `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, and one authoritative Auth provider modeled as `initializing`, `guest`, or `authenticated`. Configure `flowType: 'pkce'`, leave URL detection disabled so T153.7 owns the single code exchange, and ensure client construction and storage access are safe during Expo Router's Node static-render pass.
+- **Exit criteria:** Provider tests drive missing/malformed configuration, initial session resolution, sign-in, sign-out, token refresh, Auth events, and offline initialization; children and every existing `/app` guest route remain renderable while Auth is `initializing` or unavailable; server rendering touches no browser globals; and `yarn expo export --platform web --output-dir /tmp/daily-dama-web-export` succeeds with only publishable Supabase configuration reachable from application code.
+- **Notes:** From S032. Depends on T145 and T153.1. T145 first moves rehydration-dependent domain providers under `/app`; mount Auth above the root `<Slot>` without adding an Auth hydration gate. The Auth state is the application's session/UI authority, not a substitute for later database RLS authorization. Keep a platform seam for Phase 5, but implement and verify web only.
+
+### [T153.5] Centralize Auth errors and sensitive-data redaction
+
+- **Area:** Authentication observability
+- **Priority:** High (inherited from parent T153)
+- **Status:** Not started
+- **Planning:** Required
+- **Description:** Define structured, actionable Auth error categories and one redacted application logging/analytics boundary before any Auth route is added. Normalize enumeration-sensitive failures and prevent raw Supabase errors, callback URLs, or entered credentials from reaching UI, application-owned console calls, or Vercel Analytics.
+- **Exit criteria:** Unit tests feed representative Supabase errors and URLs containing emails, passwords, JWT-like values, refresh tokens, PKCE codes, and nested identifiers through the boundary and prove UI categories remain actionable while application logs and Analytics events contain none of those values; the root Analytics `beforeSend` handling drops or sanitizes callback query and fragment data.
+- **Notes:** From S032/S033 and roadmap Auth/client security requirements. Depends on T153.4. This relocates former T154.3 so signup, sign-in, recovery, callbacks, credential maintenance, and logout share the boundary from their first implementation.
+
+### [T153.6] Build the recovery-session password reset route
+
+- **Area:** Password reset UI
+- **Priority:** High (inherited from parent T153)
+- **Status:** Not started
+- **Planning:** Required
+- **Description:** Add the public static route `/auth/reset-password`, but permit password submission only while the Auth provider holds a valid password-recovery session. Provide confirmation, mismatch, weak-password, expired-session, offline, loading, and completion states through the structured Auth boundary.
+- **Exit criteria:** Route/provider tests prove a valid injected recovery session can set a compliant new password exactly once, while a direct visit without recovery state, an expired session, mismatched or weak input, offline submission, and repeat submission are handled deterministically without exposing a password, session, or email in the URL, logs, or analytics; the web export emits the reset route.
+- **Notes:** From S032. Depends on T153.4–T153.5. This route precedes T153.7 so Expo Router typed routes can validate the callback's fixed recovery destination in every intermediate commit.
+
+### [T153.7] Build the fixed-destination PKCE callback foundation
+
+- **Area:** Authentication callbacks
+- **Priority:** High (inherited from parent T153)
+- **Status:** Not started
+- **Planning:** Required
+- **Description:** Add `/auth/callback` as the sole owner of manual PKCE code exchange. Exchange each code once, derive the completed Auth flow without accepting an arbitrary destination, route successful signup confirmation only to `/app/home` and password recovery only to `/auth/reset-password`, and clear sensitive callback parameters before subsequent navigation or analytics.
+- **Exit criteria:** Automated route/provider tests prove exactly one exchange for a valid confirmation and recovery code, the two fixed success destinations, safe handling of missing, malformed, expired, reused, offline, and verifier-mismatched codes, and rejection of an attempted `next`/open redirect; a static web export emits the callback route without accessing browser globals, and the final browser URL plus application logs and Analytics contain no code or token.
+- **Notes:** From S032 and roadmap email/redirect security. Depends on T153.4–T153.6. The successful email-change destination is deliberately added later by T154.1. Production and local callback URLs must match T153.1–T153.2 exactly.
+
+### [T153.8] Build signup, check-email, verification, and resend
+
+- **Area:** Account creation UI
+- **Priority:** High (inherited from parent T153)
+- **Status:** Not started
+- **Planning:** Required
+- **Description:** Add `/auth/sign-up` and `/auth/check-email` using the Auth provider and structured error boundary, with ten-character password validation, generic duplicate-account handling, verification guidance, and explicit resend, offline, throttled, expired, and verifier-missing behavior. Do not place the submitted email in route parameters or analytics.
+- **Exit criteria:** Route tests and a local browser walkthrough prove a guest can submit signup, receives the same public result for a new or existing address, reaches check-email guidance, resends within the configured limits, opens the Mailpit confirmation in the same browser profile, completes T153.7's callback, and reaches authenticated `/app/home`; invalid, offline, throttled, expired, and missing-verifier cases remain actionable without exposing whether an account exists.
+- **Notes:** From S032. Depends on T153.1, T153.4–T153.5, and T153.7. Preserve Daily Dama's existing visual system without depending on profile-backed theme hydration or introducing a generic Auth dashboard shell.
+
+### [T153.9] Build sign-in and failure states
+
+- **Area:** Sign-in UI
+- **Priority:** High (inherited from parent T153)
+- **Status:** Not started
+- **Planning:** Required
+- **Description:** Add `/auth/sign-in` using the Auth provider and structured error boundary, with generic credential failure plus explicit loading, validation, unverified-email, offline, throttled, expired-session, and success behavior while leaving all guest routes accessible.
+- **Exit criteria:** Route/provider tests and a browser walkthrough prove a verified user can sign in and reach `/app/home`, unknown-email and wrong-password attempts receive the same public credential response, and unverified, invalid, offline, throttled, and repeat-submit cases remain deterministic without placing credentials or account facts in URLs, logs, or analytics; a guest can always leave the route and continue into `/app`.
+- **Notes:** From S032. Depends on T153.4–T153.5. Sign-in is separate from T153.8 because it is an independently testable route and security surface.
+
+### [T153.10] Build the forgot-password request flow
+
+- **Area:** Password recovery request UI
+- **Priority:** High (inherited from parent T153)
+- **Status:** Not started
+- **Planning:** Required
+- **Description:** Add `/auth/forgot-password` with a generic recovery-request response, exact callback initiation, and explicit loading, validation, offline, throttled, and resend guidance. Complete recovery through the existing T153.7 callback and T153.6 reset route without putting an email or destination URL into route parameters.
+- **Exit criteria:** Route tests prove known and unknown addresses receive the same public response and offline, invalid, throttled, and repeat submissions are deterministic; a local same-browser Mailpit walkthrough requests recovery, exchanges the PKCE code once through `/auth/callback`, reaches `/auth/reset-password`, changes the password, signs in with the new password, and leaves no email, code, password, or token in URLs, application logs, or Analytics.
+- **Notes:** From S032. Depends on T153.4–T153.7. Supabase's same-browser/device PKCE verifier limitation must be explained in the recovery guidance and missing-verifier error.
+
+### [T153.11] Add guest account entry points to Profile
+
+- **Area:** Profile Auth entry
+- **Priority:** High (inherited from parent T153)
+- **Status:** Not started
+- **Planning:** Implementer
+- **Description:** Add optional sign-up and sign-in entry points to Profile for unauthenticated users, using the existing Profile composition and Auth state without gating, clearing, importing, or otherwise changing guest data.
+- **Exit criteria:** Profile component/browser tests prove an unauthenticated, onboarded guest can open `/auth/sign-up` and `/auth/sign-in`, an authenticated user sees neither guest entry, and navigating to or returning from either route leaves the existing profile, trick, Sesh, Stats, goal, and note state unchanged.
+- **Notes:** From S032 and roadmap Phase 1 frontend item 4. Depends on T153.8–T153.9. This is a local Profile navigation change; authenticated account-management surfaces remain in T154 and guest-data import remains T159.
+
+### [T153.12] Invite a guest after their first completed Sesh
+
+- **Area:** Post-Sesh Auth invitation
+- **Priority:** High (inherited from parent T153)
+- **Status:** Not started
+- **Planning:** Required
+- **Description:** Show a dismissible, optional signup invitation on the completion UI for the first completed Sesh in the current guest practice-history namespace. Derive eligibility from authoritative practice history and keep dismissal local to that completion UI rather than adding a profile field, storage key, or persistence domain.
+- **Exit criteria:** Component/provider tests prove the invitation appears for an unauthenticated guest's first successfully recorded Sesh, can be dismissed or can open signup without changing the completed record, does not appear on later completions or after reloading the persisted first record, never appears for an authenticated user, and does not alter completion deduplication or any existing guest flow.
+- **Notes:** From S032 and roadmap Phase 1 frontend item 6. Depends on T153.4 and T153.8. Do not start guest-data import here. Planning is required because this reads across Auth and practice-history providers beside the existing two-layer completed-Sesh deduplication boundary.
+
+### [T153.13] Verify Phase 1 web Auth security end to end
+
+- **Area:** Authentication security testing
+- **Priority:** High (inherited from parent T153)
+- **Status:** Not started
+- **Planning:** Required
+- **Description:** Add a black-box Phase 1 acceptance suite spanning a clean local Supabase reset and the completed web routes. Verify already-implemented behavior only: this checkpoint must not become a second implementation ticket for missing Auth branches or redaction logic.
+- **Exit criteria:** One documented command resets local Supabase and passes an acceptance matrix covering new/existing signup equivalence, unknown/wrong-password sign-in equivalence, known/unknown recovery equivalence, verification and reset, resend limits, expired sessions, missing/reused/malformed/verifier-mismatched callbacks, open-redirect rejection, application-log/Analytics redaction, and guest access to every existing `/app` top-level route while Auth is initializing, offline, or unavailable; the standard Jest, lint, TypeScript, and static web-export sequence also passes with all `/auth/*` routes present.
+- **Notes:** From S032 and roadmap Phase 1 security/verification requirements. Depends on T153.1 and T153.4–T153.12. The redaction boundary covers application-owned console calls and Vercel Analytics events; Supabase service logs and browser network tooling are outside this frontend acceptance boundary. Defects found here return to their owning ticket or a new focused follow-up rather than being silently implemented in this suite.
