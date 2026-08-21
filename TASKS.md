@@ -139,7 +139,7 @@ _T121–T131 come from stories S001–S011 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 - **Area:** Landing page
 - **Priority:** Medium
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Implementer
 - **Description:** `Content` (`landing-page.tsx:185-190`) is `max-width: 620px` at every viewport, leaving most of a desktop screen as empty margin. Add a web/desktop breakpoint that widens the content column to occupy the majority of the screen.
 - **Exit criteria:** At a desktop-width viewport (e.g. 1280px+), the landing page's content column occupies the majority of the viewport width (confirmed via computed style, not just visual impression); at mobile widths, today's layout is unchanged.
