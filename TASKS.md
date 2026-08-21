@@ -141,7 +141,7 @@ _T132–T152 come from stories S001–S022 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 - **Area:** Goals
 - **Priority:** Medium
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** Neither `TrickGoalsScreen` (a single trick's goals) nor `AllTrickGoalsScreen` (all tricks with goals) shows a trick-identifying heading gated on goal count — the latter always shows the trick name as a section title regardless of count, and the former shows no trick name inside the card at all. Make both show a "<Trick name> goals" heading only when that trick has more than one goal.
 - **Exit criteria:** On both `TrickGoalsScreen` and `AllTrickGoalsScreen`, a trick with more than one goal shows a heading reading "<Trick name> goals" (e.g. "Big Cup goals") grouping its cards; a trick with exactly one goal shows no such heading. `yarn test --runInBand` passes, including tests covering both the single-goal (no heading) and multi-goal (heading present, correct trick name) cases on both screens.
