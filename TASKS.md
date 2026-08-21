@@ -193,7 +193,7 @@ _All currently actionable backend-roadmap work is phase-gated and active in depe
 
 - **Area:** Authentication observability
 - **Priority:** High (inherited from parent T153)
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** Define structured, actionable Auth error categories and one redacted application logging/analytics boundary before any Auth route is added. Normalize enumeration-sensitive failures and prevent raw Supabase errors, callback URLs, or entered credentials from reaching UI, application-owned console calls, or Vercel Analytics.
 - **Exit criteria:** Unit tests feed representative Supabase errors and URLs containing emails, passwords, JWT-like values, refresh tokens, PKCE codes, and nested identifiers through the boundary and prove UI categories remain actionable while application logs and Analytics events contain none of those values; the root Analytics `beforeSend` handling drops or sanitizes callback query and fragment data.
