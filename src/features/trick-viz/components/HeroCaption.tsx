@@ -16,7 +16,7 @@ import { Group, Vector3 } from 'three';
  */
 
 /** Camera-local offset: forward (−Z) and down (−Y). */
-const CAPTION_OFFSET = new Vector3(0, -0.62, -2.4);
+const CAPTION_OFFSET = new Vector3(0, -0.72, -2.4);
 const CAPTION_FONT_SIZE = 0.32;
 const CAPTION_FONT_URL = '/fonts/SplineSans-Bold.ttf';
 const CAPTION_TEXT = 'Daily Dama';
