@@ -141,7 +141,7 @@ _T132–T152 come from stories S001–S022 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 - **Area:** Profile / theming
 - **Priority:** Low
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Implementer
 - **Description:** Add a "Raw" entry to `RAINBOW_THEME_PRESETS` using a flat wood-toned `{backgroundColor, accentColor}` pair (e.g. a warm tan background, deep brown accent) — the existing preset model has no texture/gradient/image support, and the product decision (confirmed during refinement) is to stay within that flat-color model rather than add one.
 - **Exit criteria:** A "Raw" preset appears in the theme picker alongside the existing presets and can be selected and applied like any other preset. `yarn test --runInBand` passes, including any preset-count or preset-list assertions updated for the new entry.
