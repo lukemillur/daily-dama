@@ -1637,3 +1637,13 @@ Entries keep their content as it was at completion. Don't retroactively edit a d
 - **Description:** `ScreenshotHeading` at `landing-page.tsx:151` reads "What you're signing up for," but Daily Dama has no account/signup flow. Replace the copy to describe what's available in the app instead.
 - **Exit criteria:** The screenshot showcase heading no longer contains "signing up" or "sign up," and reads as describing what the screenshots show rather than implying a signup step. `yarn test --runInBand` passes, including any snapshot/text-matching test updated for the new copy.
 - **Notes:** Exact wording is an implementer call, matching the page's existing voice. Replaced with "See it in action," which describes the screenshot showcase itself rather than a signup step. No existing test asserted on the old heading text directly, so no test updates were needed beyond the copy change.
+
+### [T128] Widen the landing page's use of the screen on web
+
+- **Area:** Landing page
+- **Priority:** Medium
+- **Status:** Done
+- **Planning:** Implementer
+- **Description:** `Content` (`landing-page.tsx:185-190`) is `max-width: 620px` at every viewport, leaving most of a desktop screen as empty margin. Add a web/desktop breakpoint that widens the content column to occupy the majority of the screen.
+- **Exit criteria:** At a desktop-width viewport (e.g. 1280px+), the landing page's content column occupies the majority of the viewport width (confirmed via computed style, not just visual impression); at mobile widths, today's layout is unchanged.
+- **Notes:** Independent of T124 (screenshot showcase sizing) — different component, can be done in either order; both affect landing-page desktop layout, so worth a final visual pass together once both land. Reused the existing `isWebLayout` (`Platform.OS === 'web' && width >= 768`) breakpoint pattern already used elsewhere in the file (e.g. `ScreenshotItem`); `Content` widens from 620px to 1100px max-width at that breakpoint (85.9% of a 1280px viewport). Verified via a jest/RTL test asserting the rendered `maxWidth` style at mocked mobile (375px, unchanged 620) and desktop (1280px, 1100 > half the viewport) window dimensions, plus a manual dev-server load.

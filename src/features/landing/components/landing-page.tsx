@@ -125,7 +125,7 @@ export function LandingPage() {
   return (
     <Screen background={AppColors.paper}>
       <LandingScroll contentContainerStyle={{ paddingBottom: 80 }}>
-        <Content>
+        <Content testID="landing-content" $isWebLayout={isWebLayout}>
           <LandingHero />
           <Eyebrow>Why Daily Dama</Eyebrow>
           <Headline>Play with{`\n`}intention.</Headline>
@@ -187,11 +187,11 @@ const LandingScroll = styled(ScrollView)`
   width: 100%;
 `;
 
-const Content = styled.View`
+const Content = styled.View<{ readonly $isWebLayout: boolean }>`
   width: 100%;
-  max-width: 620px;
+  max-width: ${({ $isWebLayout }) => ($isWebLayout ? 1100 : 620)}px;
   align-self: center;
-  padding: 40px 22px 80px;
+  padding: ${({ $isWebLayout }) => ($isWebLayout ? '40px 48px 80px' : '40px 22px 80px')};
 `;
 
 const Headline = styled(DisplayTitle)`

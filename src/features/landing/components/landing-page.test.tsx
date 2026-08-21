@@ -203,6 +203,27 @@ describe('LandingPage screenshot showcase sizing', () => {
   });
 });
 
+describe('LandingPage content column width', () => {
+  it('keeps the mobile content-column max-width unchanged at a mobile viewport', async () => {
+    mockUseWindowDimensions.mockReturnValue({ width: 375, height: 812, scale: 2, fontScale: 1 });
+    const root = await mount();
+
+    const contentNodes = root.root.findAllByProps({ testID: 'landing-content' });
+    const contentStyle = resolvedStyleFor(root, contentNodes);
+    expect(contentStyle?.maxWidth).toBe(620);
+  });
+
+  it('widens the content column to occupy the majority of the viewport at a desktop viewport', async () => {
+    mockUseWindowDimensions.mockReturnValue({ width: 1280, height: 900, scale: 1, fontScale: 1 });
+    const root = await mount();
+
+    const contentNodes = root.root.findAllByProps({ testID: 'landing-content' });
+    const contentStyle = resolvedStyleFor(root, contentNodes);
+    expect(contentStyle?.maxWidth).toBeGreaterThan(620);
+    expect(contentStyle?.maxWidth).toBeGreaterThan(1280 / 2);
+  });
+});
+
 describe('LandingPage platform-based screenshot set', () => {
   it('defines both a mobile and a web screenshot set', () => {
     expect(MOBILE_SCREENSHOTS.length).toBe(4);
