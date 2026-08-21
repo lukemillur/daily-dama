@@ -139,7 +139,7 @@ _T121–T131 come from stories S001–S011 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 - **Area:** Landing page
 - **Priority:** Low
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Implementer
 - **Description:** `ScreenshotHeading` at `landing-page.tsx:151` reads "What you're signing up for," but Daily Dama has no account/signup flow. Replace the copy to describe what's available in the app instead.
 - **Exit criteria:** The screenshot showcase heading no longer contains "signing up" or "sign up," and reads as describing what the screenshots show rather than implying a signup step. `yarn test --runInBand` passes, including any snapshot/text-matching test updated for the new copy.
