@@ -28,6 +28,12 @@ function findButton(root: ReactTestRenderer, label: string) {
   return button;
 }
 
+function findText(root: ReactTestRenderer, text: string) {
+  return root.root.findAll(
+    (node) => typeof node.type === 'string' && node.props.children === text,
+  );
+}
+
 describe('TrickGoalsScreen', () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -74,6 +80,31 @@ describe('TrickGoalsScreen', () => {
       targetCount: 3,
     });
     expect(findButton(root, 'Add goal')).toBeDefined();
+  });
+
+  it('shows no trick-goals heading when the trick has exactly one goal', () => {
+    mockGoals = [
+      { id: 'goal-1', trickId: 'big-cup', trickName: 'Big Cup', kind: 'count', targetCount: 10, createdAt: 0 },
+    ];
+    let root!: ReactTestRenderer;
+    act(() => {
+      root = create(<TrickGoalsScreen trickId="big-cup" trickName="Big Cup" onBack={() => {}} />);
+    });
+
+    expect(findText(root, 'Big Cup goals')).toHaveLength(0);
+  });
+
+  it('shows a trick-goals heading when the trick has more than one goal', () => {
+    mockGoals = [
+      { id: 'goal-1', trickId: 'big-cup', trickName: 'Big Cup', kind: 'count', targetCount: 10, createdAt: 0 },
+      { id: 'goal-2', trickId: 'big-cup', trickName: 'Big Cup', kind: 'time', targetMs: 60_000, createdAt: 0 },
+    ];
+    let root!: ReactTestRenderer;
+    act(() => {
+      root = create(<TrickGoalsScreen trickId="big-cup" trickName="Big Cup" onBack={() => {}} />);
+    });
+
+    expect(findText(root, 'Big Cup goals')).toHaveLength(1);
   });
 
   it('navigates to practice when the goal card is pressed anywhere other than Delete', () => {
