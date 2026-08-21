@@ -1667,3 +1667,17 @@ Entries keep their content as it was at completion. Don't retroactively edit a d
 - **Description:** `LandingCta`'s `entering={FadeInUp.duration(450).springify()}` (`landing-cta.tsx:40`) plays too fast to register, per QA. Increase the duration to a noticeably slower, more deliberate pace.
 - **Exit criteria:** The CTA panel's `FadeInUp` duration is increased from 450ms to a value that reads as clearly slower on load (roughly 800-1000ms) — confirmed by inspecting the rendered `entering` prop/animation config, since automated timing assertions on Reanimated's native driver aren't reliable in this codebase's test setup.
 - **Notes:** Exact duration is an implementation call. Increased `FadeInUp.duration(450)` to `FadeInUp.duration(900)` in `src/features/landing/components/landing-cta.tsx:40`, confirmed by reading the source change (no reliable automated timing assertion for Reanimated's native driver in this codebase).
+
+### [T131] Apply the CTA's entrance animation to the screenshot showcase
+
+- **Area:** Landing page
+- **Priority:** Low
+- **Status:** Done
+- **Planning:** Required
+- **Description:** Screenshot items (`ScreenshotItem`, `landing-page.tsx:232`) have no entrance animation, unlike `LandingCta`'s `FadeInUp` treatment. Convert `ScreenshotItem` to an animated component using the same `FadeInUp` pattern, at the corrected (slower) duration from T130.
+- **Exit criteria:** Each screenshot item renders with an `entering={FadeInUp...}` animation matching the CTA panel's corrected duration/easing. `yarn test --runInBand`, `yarn lint`, and `yarn tsc --noEmit` all pass.
+- **Notes:** References T130's corrected duration value — if T130 hasn't merged yet, use the same slower duration decided there rather than today's 450ms. No hard git-level dependency; can technically be done in either order. Converted `ScreenshotItem` to `styled(Animated.View)` and applied `entering={FadeInUp.duration(900).springify().delay(index * 100)}` at the JSX call site in `src/features/landing/components/landing-page.tsx`, matching `CtaPanel`'s corrected 900ms/springify treatment plus a 100ms-increment stagger (same pattern as `onboarding-rank-reveal-step.tsx`) so the four items don't pop in simultaneously.
+
+## Done
+
+Completed entries live in [TASKS_DONE.md](TASKS_DONE.md) — not part of the top-to-bottom read above; see step 5 under _Completing a task_.

@@ -1,5 +1,6 @@
 import { Image } from 'expo-image';
 import { Platform, ScrollView, useWindowDimensions } from 'react-native';
+import Animated, { FadeInUp } from 'react-native-reanimated';
 import { styled } from 'styled-components/native';
 
 import { Screen } from '@/components/ui/screen';
@@ -149,11 +150,12 @@ export function LandingPage() {
 
           <ScreenshotSection>
             <ScreenshotHeading>See it in action</ScreenshotHeading>
-            {screenshots.map((screenshot) => (
+            {screenshots.map((screenshot, index) => (
               <ScreenshotItem
                 key={screenshot.alt}
                 testID="screenshot-item"
                 $isWebLayout={isWebLayout}
+                entering={FadeInUp.duration(900).springify().delay(index * 100)}
                 style={{ boxShadow: `8px 8px 0 ${AppColors.ink}` }}
               >
                 <Image
@@ -237,7 +239,7 @@ const ScreenshotHeading = styled.Text`
 // `boxShadow` is passed as an explicit `style` prop at the JSX call site (not baked into
 // `.attrs`) -- see landing-cta.tsx's `CtaPanel` for the full explanation of why
 // styled-components/native's `.attrs({ style: {...} })` config alone would be inert here.
-const ScreenshotItem = styled.View<{ readonly $isWebLayout: boolean }>`
+const ScreenshotItem = styled(Animated.View)<{ readonly $isWebLayout: boolean }>`
   gap: 10px;
   align-items: center;
   width: 100%;
