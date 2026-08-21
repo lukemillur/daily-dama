@@ -189,16 +189,6 @@ _All currently actionable backend-roadmap work is phase-gated and active in depe
 - **Exit criteria:** A dated, secret-free delivery record proves hosted confirmation and recovery messages arrive through Resend from the Auth subdomain with their callback URLs intact, Resend link tracking is disabled, SPF and DKIM pass, and the subdomain publishes a visible DMARC `p=none` policy; no SMTP credential appears in tracked files or client-exposed environment values.
 - **Notes:** From S032 and roadmap Phase 1 backend item 4 plus the email/redirect security requirements. Depends on T153.1–T153.2. T162 later repeats deliverability checks before external signup and may tighten the DMARC policy using observed delivery evidence.
 
-### [T153.5] Centralize Auth errors and sensitive-data redaction
-
-- **Area:** Authentication observability
-- **Priority:** High (inherited from parent T153)
-- **Status:** In progress
-- **Planning:** Required
-- **Description:** Define structured, actionable Auth error categories and one redacted application logging/analytics boundary before any Auth route is added. Normalize enumeration-sensitive failures and prevent raw Supabase errors, callback URLs, or entered credentials from reaching UI, application-owned console calls, or Vercel Analytics.
-- **Exit criteria:** Unit tests feed representative Supabase errors and URLs containing emails, passwords, JWT-like values, refresh tokens, PKCE codes, and nested identifiers through the boundary and prove UI categories remain actionable while application logs and Analytics events contain none of those values; the root Analytics `beforeSend` handling drops or sanitizes callback query and fragment data.
-- **Notes:** From S032/S033 and roadmap Auth/client security requirements. Depends on T153.4. This relocates former T154.3 so signup, sign-in, recovery, callbacks, credential maintenance, and logout share the boundary from their first implementation.
-
 ### [T153.6] Build the recovery-session password reset route
 
 - **Area:** Password reset UI
