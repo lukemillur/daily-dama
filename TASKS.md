@@ -219,7 +219,7 @@ _T132–T152 come from stories S001–S022 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 ---
 
-_Backend-roadmap activation is phase-gated. Phase 1 umbrella T153, Phase 2 umbrella T155, and Phase 3 workstreams T156–T160 are active in this queue; T154 is grouped with Phase 4 credential maintenance/deletion, and T161–T162 remain in the formal backlog. Supabase, unrestricted guest access, web PKCE, exact callbacks, local-first synchronization, and the roadmap's security requirements are settled decisions. Native callbacks and SecureStore remain deferred._
+_Backend-roadmap activation is phase-gated. Phase 1/Auth work T153–T154, Phase 2 umbrella T155, Phase 3 workstreams T156–T160, and Phase 4 deletion umbrella T161 are active in dependency order; only Phase 6 umbrella T162 remains in the formal backlog. T154 is the shared credential-maintenance prerequisite named by both Phase 1 and Phase 4, and is ordered before T158's guarded-logout integration. Supabase, unrestricted guest access, web PKCE, exact callbacks, local-first synchronization, immediate deletion, and the roadmap's security requirements are settled decisions. Native callbacks and SecureStore remain deferred._
 
 ### [T153] Establish optional web account access and recovery
 
@@ -358,6 +358,36 @@ _Backend-roadmap activation is phase-gated. Phase 1 umbrella T153, Phase 2 umbre
 - **Description:** Add a black-box Phase 1 acceptance suite spanning a clean local Supabase reset and the completed web routes. Verify already-implemented behavior only: this checkpoint must not become a second implementation ticket for missing Auth branches or redaction logic.
 - **Exit criteria:** One documented command resets local Supabase and passes an acceptance matrix covering new/existing signup equivalence, unknown/wrong-password sign-in equivalence, known/unknown recovery equivalence, verification and reset, resend limits, expired sessions, missing/reused/malformed/verifier-mismatched callbacks, open-redirect rejection, application-log/Analytics redaction, and guest access to every existing `/app` top-level route while Auth is initializing, offline, or unavailable; the standard Jest, lint, TypeScript, and static web-export sequence also passes with all `/auth/*` routes present.
 - **Notes:** From S032 and roadmap Phase 1 security/verification requirements. Depends on T153.1 and T153.4–T153.12. The redaction boundary covers application-owned console calls and Vercel Analytics events; Supabase service logs and browser network tooling are outside this frontend acceptance boundary. Defects found here return to their owning ticket or a new focused follow-up rather than being silently implemented in this suite.
+
+_Phase 1/4 shared account-maintenance activation: T154 comes from S033 and the credential-maintenance/logout items repeated across `BACKEND_ROADMAP.md` Phases 1 and 4. It follows the core Auth routes and precedes Phase 3's T158 guarded logout, while account deletion stays separate in T161._
+
+### [T154] Add secure signed-in credential maintenance
+
+- **Area:** Account security
+- **Priority:** Medium
+- **Status:** Not started
+- **Description:** Let authenticated web users maintain credentials and end only the current device session.
+- **Notes:** Umbrella from S033. Complete T154.1–T154.2. Pending-sync logout protection is T158. The shared Auth error/redaction boundary moved to active task T153.5 so it exists before any Auth route.
+
+### [T154.1] Add signed-in password and email change flows
+
+- **Area:** Account security UI
+- **Priority:** Medium
+- **Status:** Not started
+- **Planning:** Required
+- **Description:** Configure Supabase secure email change and add `/app/profile/account/security` with current-password verification for password changes, including reauthentication, expiry, generic errors, and confirmation guidance through T153.5's shared boundary.
+- **Exit criteria:** Route/provider tests and a browser walkthrough confirm a signed-in user can change a password only after supplying the current password, can initiate and complete secure email change, and receives actionable expired/offline states without exposing sensitive values in URLs, logs, or analytics.
+- **Notes:** From S033 and roadmap Phase 1 backend item 5/frontend item 5. Depends on T153.2, T153.3, T153.4, T153.5, and T153.7. T153.7 establishes the callback allowlist; this task adds only the fixed secure-email-change result needed by this route. Do not add MFA or account deletion.
+
+### [T154.2] Add current-device logout and fresh guest return
+
+- **Area:** Authentication session lifecycle
+- **Priority:** Medium
+- **Status:** Not started
+- **Planning:** Required
+- **Description:** Add a Profile logout action using `signOut({ scope: 'local' })`, transition authoritative Auth state back to guest, and leave other device sessions untouched.
+- **Exit criteria:** Provider and browser tests confirm logout invalidates the current browser session, returns to a usable guest workspace, does not request global sign-out, and handles offline or expired-session responses deterministically.
+- **Notes:** From S033. Depends on T153.4 and T154.1. Before outboxes exist, this is the basic logout path; T158 later adds the unsynced-change guard and account-cache handling.
 
 ---
 
@@ -746,3 +776,65 @@ _Phase 3 activation: T156–T160 come from S035–S038 and `BACKEND_ROADMAP.md` 
 - **Description:** Add a cross-domain fault-injection suite for concurrent edits, stale revisions, delete-vs-edit tombstones, lost acknowledgements, and conflicts interleaved with valid operations.
 - **Exit criteria:** The suite proves only the conflicting record pauses, accepted operations advance and apply server metadata, stale clients cannot resurrect tombstoned goals/notes/custom tricks, retries remain idempotent, and conflict resolution converges two browser fixtures on identical domain state.
 - **Notes:** From S037. Depends on T160.2 and T155.8.
+
+---
+
+_Phase 4 activation: T161 comes from S039 and `BACKEND_ROADMAP.md` Phase 4. Its five S-sized children separate the privileged Edge Function boundary, abuse/leakage hardening, destructive-operation security acceptance tests, the confirmation UI, and identity-safe local cleanup/recovery. User-facing export and delayed deletion remain excluded._
+
+### [T161] Add immediate, recoverable account deletion
+
+- **Area:** Account deletion
+- **Priority:** High
+- **Status:** Not started
+- **Description:** Let an authenticated user permanently remove the Auth identity and every application row, then return to a clean guest workspace even when the success response is lost.
+- **Notes:** Umbrella from S039. Complete T161.1–T161.5. User-facing data export is excluded.
+
+### [T161.1] Implement the authenticated delete-account Edge Function
+
+- **Area:** Supabase Edge Function
+- **Priority:** High
+- **Status:** Not started
+- **Planning:** Required
+- **Description:** Add `POST /functions/v1/delete-account` in plain JavaScript with JSDoc and runtime request validation; require a valid JWT, fetch trusted identity server-side, validate `currentPassword` plus exact `DELETE`, and use the service-role client only inside Supabase secrets to remove the Auth user.
+- **Exit criteria:** Local function tests prove valid input returns `204` and cascades all application rows, while missing/invalid JWTs, malformed bodies, wrong confirmation, wrong passwords, and attempts to supply another identity are rejected; the service-role key is absent from app environment values and web bundles.
+- **Notes:** From S039 and the roadmap Edge Function contract. Depends on T155.7 and T153.5.
+
+### [T161.2] Harden deletion against abuse, leakage, and lost responses
+
+- **Area:** Account deletion security
+- **Priority:** High
+- **Status:** Not started
+- **Planning:** Required
+- **Description:** Add per-user/IP rate limiting, current-password verification without retaining the resulting session, `Cache-Control: no-store`, structured redaction, and idempotent handling for a retry whose Auth user is already absent after a lost success response.
+- **Exit criteria:** Function tests enforce the configured attempt limit for user and IP dimensions, expose no password/JWT/email/body in logs, include `no-store` on every response, never return the verification session, and treat a verified retry for an already-deleted identity as completed rather than recreating or leaking state.
+- **Notes:** From S039. Depends on T161.1. Use a trusted server-side identity; never rate-limit or delete based on caller-supplied `user_id`.
+
+### [T161.3] Prove cascade deletion and old-session denial
+
+- **Area:** Account deletion testing
+- **Priority:** High
+- **Status:** Not started
+- **Planning:** Required
+- **Description:** Add backend acceptance tests for complete cascade cleanup and calls from anonymous, expired, wrong-user, stale, and pre-deletion sessions, including attempts to recreate rows with an old JWT.
+- **Exit criteria:** Against a clean local reset, fixtures populate all six resources for two users; deleting user A removes only A, user B remains intact, every old user-A token is denied, foreign keys/policies prevent row recreation, and simulated response loss followed by retry converges on the same empty result.
+- **Notes:** From S039. Depends on T161.2 and T155.8.
+
+### [T161.4] Add the permanent account-deletion route
+
+- **Area:** Account deletion UI
+- **Priority:** High
+- **Status:** Not started
+- **Planning:** Required
+- **Description:** Add `/app/profile/account/delete` with an explicit immediate/permanent warning, current-password field, exact typed `DELETE` confirmation, safe disabled/loading/error states, and invocation of the hardened Edge Function.
+- **Exit criteria:** Route tests and a browser walkthrough confirm the action cannot submit without both confirmations, wrong/offline/rate-limited/expired states are actionable without leaking account facts, success cannot be double-submitted, and no password or token reaches logs, analytics, or the URL.
+- **Notes:** From S039. Depends on T161.2 and T154.1. Do not add export or delayed-deletion semantics.
+
+### [T161.5] Purge account state and reconcile deletion response loss
+
+- **Area:** Account lifecycle / local persistence
+- **Priority:** High
+- **Status:** Not started
+- **Planning:** Required
+- **Description:** On deletion success—or after a lost response when Auth verification proves the user no longer exists—remove credentials, account cache, outboxes, conflicts, import progress, and sync metadata, invalidate the identity generation, and enter a fresh guest namespace.
+- **Exit criteria:** Integration tests cover normal success, response loss with missing user, response loss with user still present, offline retry, and a late in-flight sync result; completed deletion exposes no former account data to the new guest, does not erase unrelated guest/other-user namespaces, and cannot be reversed by stale work.
+- **Notes:** From S039. Depends on T156.3, T158, T159.5, T160.2, and T161.4. AsyncStorage purge is accepted prototype cleanup, not claimed forensic erasure.
