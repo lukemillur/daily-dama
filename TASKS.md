@@ -141,7 +141,7 @@ _T132–T152 come from stories S001–S022 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 - **Area:** Web launch surface (cross-cutting)
 - **Priority:** High
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** The landing route (`src/app/index.tsx`) renders under the same provider tree as the rest of the app (`src/app/_layout.tsx`: custom-tricks, practice-history, goals, theme, and profile providers all mount above it), and its CTA/redirect logic reads `hasCompletedOnboarding` from `useUserProfile()`, which returns placeholder state until `AsyncStorage` hydration finishes. QA reports a jarring sequence of sub-second paints as a result. Scope rehydration-driven UI to the `/app` routes only, and make the landing page's first paint depend on as little async state as possible — ideally just the one flag it needs to pick a CTA variant.
 - **Exit criteria:** Loading `/` shows its final visual state on first paint, with no visible sequence of intermediate/partial states before it settles — confirmed via a frame-by-frame browser recording at both mobile and desktop widths — and the landing route's render path no longer blocks its first paint on any persistence provider's async hydration.
