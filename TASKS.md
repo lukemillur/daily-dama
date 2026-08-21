@@ -219,7 +219,7 @@ _T132–T152 come from stories S001–S022 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 ---
 
-_T153 comes from S032, refined from [BACKEND_ROADMAP.md](BACKEND_ROADMAP.md) and originally scoped with T154–T162 into [TASKS_BACKLOG.md](TASKS_BACKLOG.md) on 2026-08-21. Its technical-scoping review split Phase 1 Auth into thirteen focused checkpoints and moved the Auth error/redaction boundary from former T154.3 ahead of every route that consumes it. T153 was activated in this automated queue at the user's explicit request on 2026-08-21; T154–T162 remain in the formal backlog. Supabase, unrestricted guest access, web PKCE, exact callbacks, and the roadmap's security requirements are settled decisions. Native callbacks and SecureStore remain deferred._
+_T153 comes from S032, refined from [BACKEND_ROADMAP.md](BACKEND_ROADMAP.md) and originally scoped with T154–T162 into [TASKS_BACKLOG.md](TASKS_BACKLOG.md) on 2026-08-21. Its technical-scoping review split Phase 1 Auth into thirteen focused checkpoints and moved the Auth error/redaction boundary from former T154.3 ahead of every route that consumes it. T153 was activated in this automated queue at the user's explicit request on 2026-08-21; Phase 2 umbrella T155 is now active as well, while T154 and T156–T162 remain in the formal backlog. Supabase, unrestricted guest access, web PKCE, exact callbacks, and the roadmap's security requirements are settled decisions. Native callbacks and SecureStore remain deferred._
 
 ### [T153] Establish optional web account access and recovery
 
@@ -358,3 +358,145 @@ _T153 comes from S032, refined from [BACKEND_ROADMAP.md](BACKEND_ROADMAP.md) and
 - **Description:** Add a black-box Phase 1 acceptance suite spanning a clean local Supabase reset and the completed web routes. Verify already-implemented behavior only: this checkpoint must not become a second implementation ticket for missing Auth branches or redaction logic.
 - **Exit criteria:** One documented command resets local Supabase and passes an acceptance matrix covering new/existing signup equivalence, unknown/wrong-password sign-in equivalence, known/unknown recovery equivalence, verification and reset, resend limits, expired sessions, missing/reused/malformed/verifier-mismatched callbacks, open-redirect rejection, application-log/Analytics redaction, and guest access to every existing `/app` top-level route while Auth is initializing, offline, or unavailable; the standard Jest, lint, TypeScript, and static web-export sequence also passes with all `/auth/*` routes present.
 - **Notes:** From S032 and roadmap Phase 1 security/verification requirements. Depends on T153.1 and T153.4–T153.12. The redaction boundary covers application-owned console calls and Vercel Analytics events; Supabase service logs and browser network tooling are outside this frontend acceptance boundary. Defects found here return to their owning ticket or a new focused follow-up rather than being silently implemented in this suite.
+
+---
+
+_Phase 2 activation: T155 comes from S034 and `BACKEND_ROADMAP.md` Phase 2. Its thirteen S-sized children establish the database security boundary, model all six resources, prove grants/RLS and constraints, generate typed repository contracts, and add pure runtime mappings before any provider synchronizes. The sequence is dependency-driven: schema and tests precede generated types and mappings; existing reducer authority, hydration fallback, and skipped-initial-write behavior remain unchanged._
+
+### [T155] Establish the secure cloud data foundation
+
+- **Area:** Supabase database
+- **Priority:** High
+- **Status:** Not started
+- **Description:** Represent all persisted Daily Dama domains in a constrained, typed Postgres/Data API boundary before any provider begins synchronization.
+- **Notes:** Umbrella from S034. Complete T155.1–T155.13. No production migrations or live user data exist yet.
+
+### [T155.1] Create private and exposed schemas with deny-by-default privileges
+
+- **Area:** Database security boundary
+- **Priority:** High
+- **Status:** Not started
+- **Planning:** Required
+- **Description:** Add migrations for the exposed `api` schema and non-exposed `private` schema, revoke default and automatic privileges, configure the Data API exposure deliberately, and grant no application-table access to `anon`.
+- **Exit criteria:** A clean local reset succeeds; catalog assertions prove only `api` is exposed, `private` helpers are unreachable through the Data API, default privileges are revoked, and raw anonymous requests cannot access application resources.
+- **Notes:** From S034 and roadmap Phase 2 item 1. Depends on T153.1.
+
+### [T155.2] Model profiles and per-trick user state
+
+- **Area:** Profile cloud schema
+- **Priority:** High
+- **Status:** Not started
+- **Planning:** Required
+- **Description:** Add `api.profiles` and `api.user_trick_states` with `auth.users(id) ON DELETE CASCADE`, profile/trick-state invariants, appropriate indexes, revisions/tombstones where mutable, and no client-controlled ownership.
+- **Exit criteria:** Migration tests accept every valid current `UserProfile` shape, reject invalid Kentei ranks, theme/streak/last-Sesh variants and duplicate trick states, prove cascade deletion, and show mutation payloads cannot assign another `user_id`.
+- **Notes:** From S034. Depends on T155.1. Current local profile combines these resources; mapping remains a later task.
+
+### [T155.3] Model custom tricks and immutable practice sessions
+
+- **Area:** Custom tricks / practice-history cloud schema
+- **Priority:** High
+- **Status:** Not started
+- **Planning:** Required
+- **Description:** Add `api.custom_tricks` and `api.practice_sessions`, preserving stable trick IDs, authoritative name snapshots, non-nested sequence steps, insert-only historical sessions, client-fact timing, and user-scoped pagination indexes.
+- **Exit criteria:** Database tests accept valid standalone tricks, sequences, and session snapshots; reject nested sequences, malformed discriminated steps, invalid timing/counts, and duplicate IDs; and prove an authenticated client cannot update or delete a practice session after insertion.
+- **Notes:** From S034 and documented custom-trick/Sesh invariants. Depends on T155.1.
+
+### [T155.4] Model mutable goals and notes with tombstones
+
+- **Area:** Goals / notes cloud schema
+- **Priority:** High
+- **Status:** Not started
+- **Planning:** Required
+- **Description:** Add `api.goals` and `api.notes` with their discriminated variants, trick/session name snapshots, revisions, edit timestamps, soft-deletion tombstones, ownership constraints, and user-scoped ordering indexes.
+- **Exit criteria:** Migration tests accept every current goal/note variant, reject malformed variants and invalid session references, increment revisions through valid edits, and prove a tombstoned record cannot be silently recreated by a stale mutation using the same identity/revision.
+- **Notes:** From S034. Depends on T155.1. Historical name snapshots remain authoritative.
+
+### [T155.5] Protect server-owned timestamps, revisions, and ownership
+
+- **Area:** Database mutation controls
+- **Priority:** High
+- **Status:** Not started
+- **Planning:** Required
+- **Description:** Add private trigger functions with explicit safe `search_path` values to own `created_at`, `updated_at`, revisions, receipt timestamps, and immutable ownership fields; restrict update grants so RLS is not the only protection.
+- **Exit criteria:** Raw authenticated requests prove inserts and updates cannot choose or preserve forged server-owned values, valid mutations receive authoritative timestamps/revisions, every `SECURITY DEFINER` function has an audited fixed `search_path`, and the complete migration rebuild remains clean.
+- **Notes:** From S034 and roadmap Phase 2 item 3. Depends on T155.2–T155.4.
+
+### [T155.6] Enforce domain JSON invariants inside Postgres
+
+- **Area:** Database validation
+- **Priority:** High
+- **Status:** Not started
+- **Planning:** Required
+- **Description:** Add database-level validation for profile variants, goals, custom tricks, and sequence-step JSON so callers bypassing frontend runtime validation cannot store impossible domain states.
+- **Exit criteria:** Parameterized raw Data API tests submit valid and malformed examples for every discriminated shape and confirm only valid records persist, including explicit rejection of nested sequences, unknown fields/variants, invalid ranks, and ambiguous goal payloads.
+- **Notes:** From S034 and roadmap database-security requirements. Depends on T155.2–T155.4.
+
+### [T155.7] Add explicit authenticated grants and row-level security
+
+- **Area:** Database authorization
+- **Priority:** High
+- **Status:** Not started
+- **Planning:** Required
+- **Description:** Enable RLS in table-creation migrations and add least-privilege operation grants plus user-scoped `USING` and `WITH CHECK` policies for every exposed resource, with select/insert-only permissions for practice sessions.
+- **Exit criteria:** Raw HTTP tests prove anonymous denial, user A isolation from user B across select/insert/update/delete, rejection of ownership changes, correct allowed operations for each table, and denial of practice-session updates/deletes even by the owner.
+- **Notes:** From S034. Depends on T155.2–T155.6. Test grants and RLS independently so one cannot mask a failure in the other.
+
+### [T155.8] Build a repeatable database security and migration test harness
+
+- **Area:** Backend testing
+- **Priority:** High
+- **Status:** Not started
+- **Planning:** Required
+- **Description:** Consolidate clean-reset, catalog, constraint, grant, RLS, pagination, and raw Data API negative tests into a dependency-free or repository-standard command suitable for local work and CI.
+- **Exit criteria:** One documented command resets the local database and runs all migration/security tests, including anonymous access, cross-user access, protected columns, malformed JSON, practice-session immutability, and a paginated fixture exceeding 1,000 sessions; it exits non-zero when a representative policy is deliberately weakened.
+- **Notes:** From S034 and roadmap Verification. Depends on T155.1–T155.7.
+
+### [T155.9] Generate database types and define cloud repository contracts
+
+- **Area:** Frontend cloud data boundary
+- **Priority:** High
+- **Status:** Not started
+- **Planning:** Required
+- **Description:** Add deterministic Supabase TypeScript type generation and define one cloud repository contract per existing persistent domain, keeping generated row types, network errors, and Supabase clients outside reducers and domain models.
+- **Exit criteria:** A documented generation command produces a stable checked-in type file from a clean local reset; type tests or compilation prove each domain repository exposes typed paginated reads and mutation results without leaking Supabase query builders into providers or reducers.
+- **Notes:** From S034 and roadmap Phase 2 frontend items 1 and 3. Depends on T155.8.
+
+### [T155.10] Map profile and trick-state rows at the runtime boundary
+
+- **Area:** Profile cloud mapping
+- **Priority:** High
+- **Status:** Not started
+- **Planning:** Required
+- **Description:** Implement pure mappings and runtime response validation between `UserProfile` plus focused/manually-laced state and the `profiles`/`user_trick_states` rows, with explicit absence and structured validation errors.
+- **Exit criteria:** Unit tests round-trip every valid profile variant, reject malformed/partial/foreign-user rows, preserve stable trick-state identity, and demonstrate no input object is mutated; TypeScript compilation prevents ambiguous empty-object fallbacks.
+- **Notes:** From S034. Depends on T155.9. Do not integrate the provider or synchronization yet.
+
+### [T155.11] Map custom-trick and sequence rows at the runtime boundary
+
+- **Area:** Custom tricks cloud mapping
+- **Priority:** High
+- **Status:** Not started
+- **Planning:** Required
+- **Description:** Implement pure mappings and runtime validation for standalone custom tricks and sequences while preserving stored step-name snapshots and rejecting nested sequences or source-name re-resolution.
+- **Exit criteria:** Unit tests round-trip every valid custom-trick variant, reject malformed rows and nested sequences, retain stored step names after source trick rename/deletion fixtures, and prove mapping does not mutate domain or row inputs.
+- **Notes:** From S034. Depends on T155.9. The provisional local v1 schema may change in place before external users exist.
+
+### [T155.12] Map immutable practice-session rows at the runtime boundary
+
+- **Area:** Practice-history cloud mapping
+- **Priority:** High
+- **Status:** Not started
+- **Planning:** Required
+- **Description:** Implement pure mappings and runtime validation for immutable completed-Sesh records, preserving historical trick snapshots, client-fact start/end timing, active duration, origin, and deterministic pagination identity.
+- **Exit criteria:** Unit tests round-trip timed/open-ended/assessment records, reject malformed timing and duplicate/foreign-user rows, preserve historical names, and confirm server receipt timestamps never replace client domain timestamps.
+- **Notes:** From S034. Depends on T155.9. Stats must continue deriving totals from immutable domain records.
+
+### [T155.13] Map goal and note rows at the runtime boundary
+
+- **Area:** Goals / notes cloud mapping
+- **Priority:** High
+- **Status:** Not started
+- **Planning:** Required
+- **Description:** Implement pure mappings and runtime validation for count/time goals and notes, including tombstones, revisions, optional practice-session association, and authoritative name snapshots.
+- **Exit criteria:** Unit tests round-trip all goal/note variants and tombstones, reject ambiguous variants, stale or malformed revisions, invalid session associations, and foreign-user rows, and prove neither domain state nor mutation payload preparation is mutated.
+- **Notes:** From S034. Depends on T155.9. Provider integration belongs to T157.
