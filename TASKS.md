@@ -139,7 +139,7 @@ _T121–T131 come from stories S001–S011 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 - **Area:** Landing page
 - **Priority:** Low
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Implementer
 - **Description:** `LandingCta`'s `entering={FadeInUp.duration(450).springify()}` (`landing-cta.tsx:40`) plays too fast to register, per QA. Increase the duration to a noticeably slower, more deliberate pace.
 - **Exit criteria:** The CTA panel's `FadeInUp` duration is increased from 450ms to a value that reads as clearly slower on load (roughly 800-1000ms) — confirmed by inspecting the rendered `entering` prop/animation config, since automated timing assertions on Reanimated's native driver aren't reliable in this codebase's test setup.
