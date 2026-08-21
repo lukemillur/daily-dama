@@ -135,3 +135,215 @@ _T113–T120 come from stories S001–S008 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 _T121–T131 come from stories S001–S011 in [BACKLOG_STORIES.md](BACKLOG_STORIES.md) (the user's 2026-08-20 QA pass on T115–T120 plus general landing-page feedback), refined by `product-manager` and scoped in this pass. T123 is a two-child umbrella: T123.1 builds and validates the looping, text-bearing Big Cup scene in the trick-viz sandbox in isolation, and T123.2 wires it into the production landing page with a WebGL fallback — split because validating a wholly new capability (3D text, autoplay looping) in isolation is a different risk profile from integrating it into a page every visitor loads, mirroring how T117 split screenshot capture from display-logic wiring. Three product questions surfaced during S003's refinement were resolved before scoping rather than left `Blocked`: the hero is decorative-only (no drag/orbit/tap interaction), needs a static-image fallback for visitors whose browser can't run WebGL, and does not need to respect `prefers-reduced-motion` this iteration. All other entries are independent S-sized tickets — no required ordering between them beyond what each entry's own Notes call out (T124 and T128 both touch landing-page desktop sizing but are independent of each other; T131 references T130's corrected animation duration but has no hard git-level dependency on it)._
 
+_T132–T152 come from stories S001–S022 in [BACKLOG_STORIES.md](BACKLOG_STORIES.md) (the user's 2026-08-21 QA pass on T122–T131 plus general feedback across landing, goals, onboarding, theming, tricks, and Sesh), refined by `product-manager` and scoped in this pass. S006 (footer background responding to the rainbow theme preset) was not scoped: tracing `AppFooterBar` → `useResolvedTheme()` → `resolveTheme()` shows the footer's background already derives from the user's saved `themeBackgroundColor`/`themeAccentColor`, which preset selection already sets — the story's premise appears to already hold in the current code, so it's flagged back rather than scoped as a duplicate fix; see its Notes in `BACKLOG_STORIES.md` for the traced call chain. No umbrella tasks were needed — every story reduced to one independent S-sized ticket. T145 (S015, the landing-page load flicker) and T150 (S020, auto-focusing a trick on goal creation) were scoped `Planning: Required` from the start — both cross the persistence/provider boundaries AGENTS.md calls out. T146 (S016, onboarding theme preview) was also `Required` from the start, despite being a small, local change, because it modifies the onboarding flow's own state machine. Three more — T140 (S010, scroll-triggered showcase animation), T144 (S014, trick name/goals heading), and T149 (S019, hiding focused tricks while searching) — were raised from `Implementer` to `Required` during the scoping review pass (see each entry's Notes for why); their exit criteria are unchanged. T133 (S002) and T142 (S012) both touch hero sizing and are worth verifying together — a larger hero (T142) can reintroduce the mobile overlap T133 is fixing. T134 (S003) depends on T138's (S008) final content-column width to size against, so implementing T138 first avoids sizing against a stale value. T152 (S022, the sesh-timer audio cue) uses `expo-audio`, this SDK's supported audio API — `expo-av` is deprecated at the installed Expo SDK version (~57) and isn't present in the project's dependencies._
+
+### [T132] Move the hero's "Daily Dama" caption to the bottom of the scene
+
+- **Area:** Trick visualization (consumed by Landing page)
+- **Priority:** Medium
+- **Status:** Not started
+- **Planning:** Implementer
+- **Description:** `HeroCaption` (`src/features/trick-viz/components/HeroCaption.tsx`) positions "Daily Dama" via a fixed camera-relative `CAPTION_OFFSET` Vector3. Adjust its Y component so the text sits near the bottom of the scene with a small gap above the container's bottom edge, instead of its current position.
+- **Exit criteria:** In both the dev-only sandbox's "Hero loop" toggle (`/stats/trick-viz-sandbox`) and the production landing page hero, "Daily Dama" renders near the bottom of the scene's visible area with a small margin between the text and the bottom edge, at both a mobile and a desktop viewport width, with no clipping of the text against the container edges.
+- **Notes:** From story S001. Single-constant change in `HeroCaption.tsx`; `CameraRig`/`frameSubjects` stay untouched per the file's existing invariant.
+
+### [T133] Fix the looping hero's overlap with page text on mobile
+
+- **Area:** Landing page
+- **Priority:** High
+- **Status:** Not started
+- **Planning:** Implementer
+- **Description:** QA still finds the looping hero (`LandingHero`) overlapping "Why Daily Dama" on mobile despite T123.2's exit criteria claiming clearance at 375×812. Re-verify at more than one mobile width and fix whatever gap the original check missed.
+- **Exit criteria:** At mobile viewport widths of 320px, 375px, and 414px, loading `/` shows `LandingHero`'s bounding box with no overlap onto the "Why Daily Dama" eyebrow or any text below it — confirmed via computed bounding-box comparison in-browser, not visual impression alone.
+- **Notes:** From story S002. Check this after T142 (S012, enlarging the hero) if both are in flight — a larger hero directly affects this overlap and re-checking against the final hero size avoids finding-then-refinding the same regression.
+
+### [T134] Match the screenshot showcase's width to the page's text column
+
+- **Area:** Landing page
+- **Priority:** Medium
+- **Status:** Not started
+- **Planning:** Implementer
+- **Description:** `ScreenshotItem` (`landing-page.tsx`) caps at 560px on desktop (set in T124), narrower than `Content`'s desktop column. Widen it to match `Content`'s current desktop max-width instead of a smaller fixed cap.
+- **Exit criteria:** At a desktop viewport (1280px+), `ScreenshotItem`'s resolved max-width equals `Content`'s resolved max-width — confirmed via a resolved-style unit test at desktop width asserting the two values are equal.
+- **Notes:** From story S003. Depends on T138 (S008) for the final `Content` desktop width — implement T138 first so this doesn't size against a value that's about to change again.
+
+### [T135] Center the screenshot showcase items
+
+- **Area:** Landing page
+- **Priority:** Low
+- **Status:** Not started
+- **Planning:** Implementer
+- **Description:** `Content` is a plain `View` with no `alignItems` set, so `ScreenshotItem`'s `max-width`-capped children default to the flex cross-axis start (left) rather than centering within the column. Center them at both mobile and desktop widths.
+- **Exit criteria:** At both mobile and desktop viewport widths, `ScreenshotItem` renders center-aligned within its containing section — confirmed via a resolved-style unit test asserting a centering style (e.g. `align-items: center`) on the relevant container.
+- **Notes:** From story S004. Independent of T134/T003 — a width-parity fix alone wouldn't center anything, since the underlying cause is missing cross-axis alignment, not sizing.
+
+### [T136] Show the footer bar only on the Profile route
+
+- **Area:** Navigation / app shell
+- **Priority:** Medium
+- **Status:** Not started
+- **Planning:** Implementer
+- **Description:** `AppFooterBar` currently renders inside `CustomTabList` (`src/components/app-tabs.web.tsx`), used app-wide. Render it only when the active route is `/app/profile`, and remove the bottom-padding allowance other routes (Home, Sesh, Tricks, Stats) currently reserve for it.
+- **Exit criteria:** The footer bar with "Leave app" renders on `/app/profile` and does not render on `/app/home`, `/app/sesh`, `/app/tricks`, or `/app/stats`, at both mobile and desktop widths; scrollable content on those other routes no longer reserves space for a footer that isn't there (confirmed via each route's bottom padding/inset).
+- **Notes:** From story S005. Reverses part of T126's own scope; T126's archived entry in `TASKS_DONE.md` stays as-written. Use the active route (e.g. via `expo-router`'s path/segment APIs) to gate rendering within `CustomTabList` rather than duplicating `AppFooterBar` per-route.
+
+### [T137] Give the screenshot showcase heading a more prominent visual treatment
+
+- **Area:** Landing page
+- **Priority:** Low
+- **Status:** Not started
+- **Planning:** Implementer
+- **Description:** `ScreenshotHeading` ("See it in action", `landing-page.tsx`) is 17px/900-weight body-adjacent text. Give it a larger, more visually distinct treatment consistent with the page's other section headings.
+- **Exit criteria:** `ScreenshotHeading` renders visibly larger and stylistically distinct (size, color, and/or letter-spacing) from surrounding body copy — confirmed via a resolved-style unit test asserting its font-size increased from the current 17px.
+- **Notes:** From story S007. Exact size/treatment is an implementer call, matching the page's existing voice (e.g. compare to `Headline`/`FeatureHeading`).
+
+### [T138] Widen the landing page's desktop content column further
+
+- **Area:** Landing page
+- **Priority:** High
+- **Status:** Not started
+- **Planning:** Implementer
+- **Description:** `Content`'s desktop max-width (1100px, set in T128) still reads as too narrow per QA. Increase it to occupy a visibly larger share of the viewport.
+- **Exit criteria:** At a desktop viewport (1280px+), `Content`'s resolved max-width is clearly larger than the current 1100px cap — confirmed via a resolved-style unit test asserting the new value exceeds 1100; mobile width (620px) is unchanged.
+- **Notes:** From story S008. Second round of the same feedback (T128 already widened this once) — make a clear, not incremental, increase. T134 (S003) depends on this landing first.
+
+### [T139] Slow the CTA entrance animation further
+
+- **Area:** Landing page
+- **Priority:** Low
+- **Status:** Not started
+- **Planning:** Implementer
+- **Description:** `LandingCta`'s `FadeInUp.duration(900)` (set in T130) still reads as too fast per QA. Increase it further.
+- **Exit criteria:** `LandingCta`'s `FadeInUp` duration is increased beyond 900ms to a value that reads as clearly slower on load — confirmed by inspecting the rendered `entering` prop/animation config, matching T130's own verification approach (no reliable automated timing assertion for Reanimated's native driver in this codebase).
+- **Notes:** From story S009. Second round of the same feedback; exact duration is an implementer call, but should move meaningfully past 900ms.
+
+### [T140] Trigger the screenshot showcase's entrance animation on scroll into view
+
+- **Area:** Landing page
+- **Priority:** Medium
+- **Status:** Not started
+- **Planning:** Required
+- **Description:** `ScreenshotItem`'s `FadeInUp` animation (added in T131) fires on initial page load, off-screen, so QA can't observe it without already knowing to scroll first. Trigger it instead when each item scrolls into the top two-thirds of the viewport.
+- **Exit criteria:** Loading the landing page and scrolling down shows each `ScreenshotItem`'s entrance animation trigger only once it scrolls into the top two-thirds of the viewport (items already in that band on load animate in immediately); scrolling past and back doesn't need to replay it. Confirmed at both mobile and desktop widths via a browser check.
+- **Notes:** From story S010. Web-only concern (this project's active platform scope) — an `IntersectionObserver`-backed hook gating each item's `entering` prop is a reasonable approach, kept local to `landing-page.tsx`. Animation duration/easing (T139/S009) is unchanged — only the trigger condition changes. Raised from `Implementer` to `Required` during scoping review — `IntersectionObserver` isn't used anywhere else in this codebase, and it needs to interact correctly with Reanimated's `entering` prop (which normally only fires on mount), which is unfamiliar-API territory worth a planning pass first.
+
+### [T141] Remove the landing page photo
+
+- **Area:** Landing page
+- **Priority:** Medium
+- **Status:** Not started
+- **Planning:** Implementer
+- **Description:** Remove `LandingPhoto` (`src/features/landing/components/landing-photo.tsx`) and its container from the landing page entirely, per QA feedback that it feels out of place.
+- **Exit criteria:** The landing page no longer renders `LandingPhoto` or its panel at any viewport width; surrounding layout (spacing between adjacent sections) closes the gap cleanly. `yarn test --runInBand` passes, including removal/update of `landing-photo`-specific tests.
+- **Notes:** From story S011. Retires the component T122 just fixed and T119 originally sourced; the asset and its Wikimedia Commons attribution note in `TASKS_DONE.md` become unused but the archived entries stay as-written.
+
+### [T142] Substantially enlarge the landing hero animation
+
+- **Area:** Landing page
+- **Priority:** High
+- **Status:** Not started
+- **Planning:** Implementer
+- **Description:** `LandingHero`'s `HeroPanel` caps at `max-width: 320px`, reading as small per repeated QA feedback. Increase it noticeably at both mobile and desktop widths.
+- **Exit criteria:** `HeroPanel`'s resolved size is noticeably larger than the current 320px cap at both mobile and desktop viewport widths — confirmed via a resolved-style unit test — while T133 (S002)'s no-overlap check with "Why Daily Dama" still passes.
+- **Notes:** From story S012. Part of a recurring "web view feels underpopulated" theme also raised for the content column (T138/S008); worth a combined visual pass. Re-run T133's overlap check after this lands.
+
+### [T143] Make the entire trick goal card tappable
+
+- **Area:** Goals
+- **Priority:** Medium
+- **Status:** Not started
+- **Planning:** Implementer
+- **Description:** `GoalRow`/`GoalCard` (`src/features/goals/components/trick-goals-screen.tsx`) only makes its "Practice toward this goal" link and "Delete" button individually tappable. Make the whole card one tap target for the primary (practice) action, matching the press feedback already used for tappable rows elsewhere (e.g. `RowAction` in `trick-directory.tsx`), while keeping Delete as its own distinct control.
+- **Exit criteria:** Tapping anywhere on a goal card other than its Delete control triggers the same navigation as today's "Practice toward this goal" link, with visible press feedback; tapping Delete still opens its own confirm step and does not also trigger navigation. `yarn test --runInBand` passes, including a test asserting a card-level press invokes the practice navigation and that pressing Delete does not.
+- **Notes:** From story S013. No literal "Choose" button exists on `GoalCard` today — the app's "Choose"-labeled full-row tap pattern lives in the trick picker (`trick-directory.tsx`) used when adding a new goal, which is what the underlying feedback was referencing for feel, not a component to copy verbatim. Once the whole card is tappable, the now-redundant button-styled "Practice toward this goal" label can be dropped or restyled as plain (non-button) text — exact treatment is an implementer call. Nesting Delete's own `Pressable` inside the card's new outer `Pressable` needs its press event to not also fire the card's primary action (stop propagation on the inner press, or position Delete outside the primary tap target instead).
+
+### [T144] Show which trick each goal belongs to, directly on the goal card
+
+- **Area:** Goals
+- **Priority:** Medium
+- **Status:** Not started
+- **Planning:** Required
+- **Description:** Neither `TrickGoalsScreen` (a single trick's goals) nor `AllTrickGoalsScreen` (all tricks with goals) shows a trick-identifying heading gated on goal count — the latter always shows the trick name as a section title regardless of count, and the former shows no trick name inside the card at all. Make both show a "<Trick name> goals" heading only when that trick has more than one goal.
+- **Exit criteria:** On both `TrickGoalsScreen` and `AllTrickGoalsScreen`, a trick with more than one goal shows a heading reading "<Trick name> goals" (e.g. "Big Cup goals") grouping its cards; a trick with exactly one goal shows no such heading. `yarn test --runInBand` passes, including tests covering both the single-goal (no heading) and multi-goal (heading present, correct trick name) cases on both screens.
+- **Notes:** From story S014. `AllTrickGoalsScreen`'s existing `SectionTitle` (always-shown, per `group.trickName`) needs to become conditional on `group.progress.length > 1` rather than a new mechanism; `TrickGoalsScreen` needs the heading added since it currently has none. Raised from `Implementer` to `Required` during scoping review.
+
+### [T145] Eliminate the visible flash of unstyled content when the landing page loads
+
+- **Area:** Web launch surface (cross-cutting)
+- **Priority:** High
+- **Status:** Not started
+- **Planning:** Required
+- **Description:** The landing route (`src/app/index.tsx`) renders under the same provider tree as the rest of the app (`src/app/_layout.tsx`: custom-tricks, practice-history, goals, theme, and profile providers all mount above it), and its CTA/redirect logic reads `hasCompletedOnboarding` from `useUserProfile()`, which returns placeholder state until `AsyncStorage` hydration finishes. QA reports a jarring sequence of sub-second paints as a result. Scope rehydration-driven UI to the `/app` routes only, and make the landing page's first paint depend on as little async state as possible — ideally just the one flag it needs to pick a CTA variant.
+- **Exit criteria:** Loading `/` shows its final visual state on first paint, with no visible sequence of intermediate/partial states before it settles — confirmed via a frame-by-frame browser recording at both mobile and desktop widths — and the landing route's render path no longer blocks its first paint on any persistence provider's async hydration.
+- **Notes:** From story S015. `UserProfileProvider` already exposes a `hasHydrated` flag (`src/features/profile/state/user-profile-provider.tsx:57`) that isn't currently used to gate anything on the landing route. A precedent for synchronously reading a single persisted value before async hydration completes already exists (`src/features/profile/persistence/read-cached-theme-background.ts`) — worth consulting during planning, though the exact mechanism (sync pre-read vs. restructuring the provider tree vs. something else) is this task's `Required` planning pass to decide, per this project's persistence-boundary rule in `AGENTS.md`.
+
+### [T146] Let users preview a theme during onboarding before committing to it
+
+- **Area:** Onboarding
+- **Priority:** Medium
+- **Status:** Not started
+- **Planning:** Required
+- **Description:** In `kentei-onboarding.tsx`'s `themeSelect` step, `OnboardingThemeStep`'s `onSelectPreset` handler currently both applies the preset and calls `finishOnboarding()` immediately, so tapping any preset instantly exits onboarding. Split preview from commit: selecting a preset should only apply it live; a separate "Finish onboarding" action should be what advances into the app.
+- **Exit criteria:** On the onboarding theme step, tapping a preset previews it (background/accent visibly change) without leaving the step or navigating; a distinct "Finish onboarding" control is what calls `completeOnboarding` and navigates to `/app/sesh`. `yarn test --runInBand` passes, including a test asserting preset selection alone does not trigger `completeOnboarding`.
+- **Notes:** From story S016. Marked `Required` because it changes `kentei-onboarding.tsx`'s own step/reducer flow (adding a distinct confirm action to the `themeSelect` step), which this project's Planning rules call out for a separate planning pass regardless of size. "Skip for now" (`onSkip`) already bypasses theme selection entirely and calls `finishOnboarding` directly — leave that behavior as-is; only the preset-select path changes.
+
+### [T147] Add a pink theme preset
+
+- **Area:** Profile / theming
+- **Priority:** Low
+- **Status:** Not started
+- **Planning:** Implementer
+- **Description:** Add a pink entry to `RAINBOW_THEME_PRESETS` (`src/features/profile/model/theme-presets.ts`), following the existing `{id, label, backgroundColor, accentColor}` shape used by the current seven presets.
+- **Exit criteria:** A pink preset appears in the theme picker alongside the existing presets and can be selected and applied like any other preset. `yarn test --runInBand` passes, including any preset-count or preset-list assertions updated for the new entry.
+- **Notes:** From story S017. Exact hex values are an implementer call — pick colors with the same automatic-contrast behavior (`deriveAutomaticTextColor`/`deriveAutomaticButtonBackgrounds`) already verified for the other presets in `use-resolved-theme.test.ts`.
+
+### [T148] Add a wood-grain "Raw" theme preset
+
+- **Area:** Profile / theming
+- **Priority:** Low
+- **Status:** Not started
+- **Planning:** Implementer
+- **Description:** Add a "Raw" entry to `RAINBOW_THEME_PRESETS` using a flat wood-toned `{backgroundColor, accentColor}` pair (e.g. a warm tan background, deep brown accent) — the existing preset model has no texture/gradient/image support, and the product decision (confirmed during refinement) is to stay within that flat-color model rather than add one.
+- **Exit criteria:** A "Raw" preset appears in the theme picker alongside the existing presets and can be selected and applied like any other preset. `yarn test --runInBand` passes, including any preset-count or preset-list assertions updated for the new entry.
+- **Notes:** From story S018. Same shape and mechanism as T147 (S017) — both touch the same file and could reasonably be done in either order or combined into one commit if picked up together, but are scoped as separate tickets since they're separate stories.
+
+### [T149] Hide focused tricks while searching in trick goals
+
+- **Area:** Tricks
+- **Priority:** Medium
+- **Status:** Not started
+- **Planning:** Required
+- **Description:** `TrickDirectory` (`src/features/tricks/components/trick-directory.tsx`) keeps its focused-tricks section visible regardless of `search.query`, obscuring search results in the trick-goals picker. Hide that section while a search query is present.
+- **Exit criteria:** In the trick goals picker (`GoalTrickPicker`, which renders `TrickDirectory` with `showFocusedSection`), typing any text into the search input hides the focused-tricks section; clearing the search restores it. `yarn test --runInBand` passes, including a test covering both states.
+- **Notes:** From story S019. Confirmed in code that `sectioningTrickIds`/`createTrickSections` apply regardless of `search.query` today. Scope this to wherever `showFocusedSection` is used (currently only `GoalTrickPicker`) rather than every `TrickDirectory` consumer, unless another consumer is found to have the same section during implementation. Raised from `Implementer` to `Required` during scoping review — `TrickDirectory` is a shared component with several consumers across the app (onboarding, the main Tricks route, this picker), so confirming the change stays scoped to `showFocusedSection` callers and doesn't affect other consumers is worth a planning pass first.
+
+### [T150] Automatically focus a trick when a goal is set for it
+
+- **Area:** Goals / Tricks UI
+- **Priority:** Medium
+- **Status:** Not started
+- **Planning:** Required
+- **Description:** Creating a goal (`useGoalActions().addGoal`) for a trick that isn't currently in the user's focused tricks (`selectedTrickIds`, via `UserProfileProvider`) should add it to that list as part of saving the goal.
+- **Exit criteria:** Creating a goal for a trick not currently in `selectedTrickIds` adds that trick to `selectedTrickIds` as part of the same save action; creating a goal for an already-focused trick is a no-op on the focused list. Confirmed via a unit test asserting the profile's focused-trick list before/after `addGoal` is called in both cases.
+- **Notes:** From story S020. Marked `Required` because it has the Goals feature's `GoalProvider` triggering a write into the User Profile persistence domain's `selectedTrickIds` (via the existing `toggleSelectedTrick` action or an equivalent add-only variant) — a cross-domain interaction `AGENTS.md`'s persistence-boundary section calls out for a plan before implementation, including how the two providers' writes should be sequenced/queued relative to each other.
+
+### [T151] Label the focused tricks list on the Sesh practice screen
+
+- **Area:** Sesh
+- **Priority:** Low
+- **Status:** Not started
+- **Planning:** Implementer
+- **Description:** The focused-tricks list on the Sesh practice screen (`sesh.tsx`, directly after "Practice several tricks") renders with no section heading of its own, leaving it ambiguous what the list represents.
+- **Exit criteria:** The Sesh practice screen shows a "Focused tricks" heading directly above the focused-tricks list (`TrickChoices`), positioned below the existing "Practice several tricks" text. `yarn test --runInBand` passes.
+- **Notes:** From story S021. Confirmed in code (`sesh.tsx:446-453`) this list currently has no heading between it and "Practice several tricks".
+
+### [T152] Play an audio cue when a timed sesh's timer reaches zero
+
+- **Area:** Sesh
+- **Priority:** Medium
+- **Status:** Not started
+- **Planning:** Required
+- **Description:** No audio playback exists anywhere in the app today. Add one: when a timed sesh's countdown reaches zero via natural expiration (the `timerElapsed` action), play an audible cue as a component-level side effect of that transition — not an early manual end (`seshEnded`).
+- **Exit criteria:** When a timed sesh's countdown reaches zero naturally, an audible cue plays once; ending a timed sesh early (before the deadline) does not play it. Confirmed via a test asserting the audio-trigger side effect fires on the `active`→`completed` transition driven by `timerElapsed` and not on one driven by `seshEnded`, plus a manual browser check that sound is audible at zero for a real timed sesh.
+- **Notes:** From story S022. Use `expo-audio` (this SDK's supported audio API for Expo ~57) rather than the deprecated `expo-av`, which isn't in this project's dependencies — consult the matching versioned Expo docs per `AGENTS.md`'s Expo-documentation rule, since this is a new, unfamiliar API in this codebase. Marked `Required` both for that reason and because the side effect must respect this project's existing rule of keeping timer effects and `Date.now()` calls outside the Sesh reducer (`AGENTS.md`'s Sesh section) — the trigger belongs in a component-level effect watching the transition, not inside `sesh.ts`'s reducer itself.
+
