@@ -4,7 +4,7 @@ import { styled } from 'styled-components/native';
 
 import { Button } from '@/components/ui/button';
 import { BodyText, DisplayTitle, Eyebrow } from '@/components/ui/typography';
-import { AppColors, BottomTabInset } from '@/constants/theme';
+import { AppColors } from '@/constants/theme';
 import { selectAllNotesSorted, type Note } from '@/features/notes/model/note';
 import { useNoteActions, useNotes } from '@/features/notes/state/note-provider';
 import { formatPracticeDate } from '@/features/stats/model/format-practice-date';
@@ -29,7 +29,7 @@ export function AllNotesScreen({ onBack }: AllNotesScreenProps) {
   }
 
   return (
-    <Scroll contentContainerStyle={{ paddingBottom: 120 + BottomTabInset }}>
+    <Scroll contentContainerStyle={{ paddingBottom: 24 }}>
       <Content>
         <Eyebrow>All notes</Eyebrow>
         <PageTitle>All notes</PageTitle>
@@ -129,7 +129,7 @@ function NoteEditForm({
   };
 
   return (
-    <Scroll keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: 120 + BottomTabInset }}>
+    <Scroll keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: 24 }}>
       <Content>
         <Eyebrow>Edit note</Eyebrow>
         <PageTitle>{note.trickName}</PageTitle>

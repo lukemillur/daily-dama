@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Screen } from '@/components/ui/screen';
 import { BodyText, DisplayTitle, Eyebrow } from '@/components/ui/typography';
 import { formatPracticeDate } from '@/features/stats/model/format-practice-date';
-import { AppColors, BottomTabInset } from '@/constants/theme';
+import { AppColors } from '@/constants/theme';
 import { useRequireOnboarding } from '@/features/onboarding/state/require-onboarding';
 import { formatDuration } from '@/features/sesh/model/sesh';
 import { getPersonalBest, selectRegularSessions } from '@/features/stats/model/practice-history';
@@ -60,7 +60,7 @@ export default function TrickDetailScreen() {
 
   return (
     <Screen edges={['top', 'left', 'right']}>
-      <DetailScroll contentContainerStyle={{ paddingBottom: 120 + BottomTabInset }}>
+      <DetailScroll contentContainerStyle={{ paddingBottom: 24 }}>
         <DetailContent>
           <Link href="/app/stats" asChild>
             <BackLink accessibilityRole="link">← Back to Stats</BackLink>

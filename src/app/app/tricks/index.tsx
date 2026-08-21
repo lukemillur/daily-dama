@@ -6,7 +6,7 @@ import { styled } from 'styled-components/native';
 import { Button } from '@/components/ui/button';
 import { Screen } from '@/components/ui/screen';
 import { BodyText, DisplayTitle, Eyebrow } from '@/components/ui/typography';
-import { AppColors, BottomTabInset } from '@/constants/theme';
+import { AppColors } from '@/constants/theme';
 import {
   type CustomTrick,
   type CustomTrickDraft,
@@ -244,7 +244,7 @@ export function CustomTrickForm({
   };
 
   return (
-    <FormScroll keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: 120 + BottomTabInset }}>
+    <FormScroll keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: 24 }}>
       <FormContent>
         <Eyebrow>{initialTrick ? 'Edit' : 'New'} {kind === 'sequence' ? 'sequence' : 'standalone trick'}</Eyebrow>
         <PageTitle>{initialTrick ? 'Refine the work.' : 'Name the work.'}</PageTitle>

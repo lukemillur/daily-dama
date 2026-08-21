@@ -4,14 +4,14 @@ import { styled } from 'styled-components/native';
 
 import { Button } from '@/components/ui/button';
 import { BodyText, DisplayTitle, Eyebrow } from '@/components/ui/typography';
-import { AppColors, BottomTabInset } from '@/constants/theme';
+import { AppColors } from '@/constants/theme';
 import type { HomePracticeTrick, HomeSummary } from '@/features/home/model/home-summary';
 import { formatDuration } from '@/features/sesh/model/sesh';
 import type { TimeLoggedWindowKey } from '@/features/stats/model/time-logged';
 
 export function DailyHome({ summary }: { readonly summary: HomeSummary }) {
   return (
-    <HomeScroll contentContainerStyle={{ paddingBottom: 110 + BottomTabInset }}>
+    <HomeScroll contentContainerStyle={{ paddingBottom: 24 }}>
       <HomeContent>
         <HomeHeader>
           <BrandBlock>

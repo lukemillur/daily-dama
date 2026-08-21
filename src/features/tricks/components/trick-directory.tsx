@@ -136,7 +136,7 @@ export function TrickDirectory({
       keyExtractor={(trick) => trick.id}
       stickySectionHeadersEnabled
       showsVerticalScrollIndicator={!hideScrollIndicator}
-      contentContainerStyle={{ paddingBottom: fixedFooter ? 0 : 140 }}
+      contentContainerStyle={{ paddingBottom: fixedFooter ? 0 : 24 }}
       ListHeaderComponent={fixedHeader ? undefined : directoryHeader}
       ListFooterComponent={fixedFooter ? undefined : footer}
       renderSectionHeader={({ section }) => <SectionHeader section={section} />}

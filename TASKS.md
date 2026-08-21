@@ -147,16 +147,6 @@ _T132–T152 come from stories S001–S022 in [BACKLOG_STORIES.md](BACKLOG_STORI
 - **Exit criteria:** At a desktop viewport (1280px+), `ScreenshotItem`'s resolved max-width equals `Content`'s resolved max-width — confirmed via a resolved-style unit test at desktop width asserting the two values are equal.
 - **Notes:** From story S003. Depends on T138 (S008) for the final `Content` desktop width — implement T138 first so this doesn't size against a value that's about to change again.
 
-### [T136] Show the footer bar only on the Profile route
-
-- **Area:** Navigation / app shell
-- **Priority:** Medium
-- **Status:** In progress
-- **Planning:** Implementer
-- **Description:** `AppFooterBar` currently renders inside `CustomTabList` (`src/components/app-tabs.web.tsx`), used app-wide. Render it only when the active route is `/app/profile`, and remove the bottom-padding allowance other routes (Home, Sesh, Tricks, Stats) currently reserve for it.
-- **Exit criteria:** The footer bar with "Leave app" renders on `/app/profile` and does not render on `/app/home`, `/app/sesh`, `/app/tricks`, or `/app/stats`, at both mobile and desktop widths; scrollable content on those other routes no longer reserves space for a footer that isn't there (confirmed via each route's bottom padding/inset).
-- **Notes:** From story S005. Reverses part of T126's own scope; T126's archived entry in `TASKS_DONE.md` stays as-written. Use the active route (e.g. via `expo-router`'s path/segment APIs) to gate rendering within `CustomTabList` rather than duplicating `AppFooterBar` per-route.
-
 ### [T137] Give the screenshot showcase heading a more prominent visual treatment
 
 - **Area:** Landing page

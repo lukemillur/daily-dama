@@ -4,7 +4,7 @@ import { styled } from 'styled-components/native';
 
 import { Button } from '@/components/ui/button';
 import { BodyText, DisplayTitle, Eyebrow } from '@/components/ui/typography';
-import { AppColors, BottomTabInset } from '@/constants/theme';
+import { AppColors } from '@/constants/theme';
 import { selectNotesForTrick, type Note } from '@/features/notes/model/note';
 import { useNoteActions, useNotes } from '@/features/notes/state/note-provider';
 import { formatPracticeDate } from '@/features/stats/model/format-practice-date';
@@ -49,7 +49,7 @@ export function TrickNotesScreen({ trickId, trickName, onBack }: TrickNotesScree
   }
 
   return (
-    <Scroll keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: 120 + BottomTabInset }}>
+    <Scroll keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: 24 }}>
       <Content>
         <Eyebrow>Notes</Eyebrow>
         <PageTitle>{trickName}</PageTitle>
@@ -156,7 +156,7 @@ function NoteForm({
   };
 
   return (
-    <Scroll keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: 120 + BottomTabInset }}>
+    <Scroll keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: 24 }}>
       <Content>
         <Eyebrow>{title}</Eyebrow>
         <PageTitle>Write it down.</PageTitle>

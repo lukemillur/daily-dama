@@ -6,7 +6,7 @@ import { styled } from 'styled-components/native';
 import { Button } from '@/components/ui/button';
 import { Screen } from '@/components/ui/screen';
 import { BodyText, DisplayTitle, Eyebrow } from '@/components/ui/typography';
-import { AppColors, BottomTabInset } from '@/constants/theme';
+import { AppColors } from '@/constants/theme';
 import { useCustomTricks } from '@/features/custom-tricks/state/custom-trick-provider';
 import { useRequireOnboarding } from '@/features/onboarding/state/require-onboarding';
 import { useUserProfile } from '@/features/profile/state/user-profile-provider';
@@ -88,7 +88,7 @@ function PopulatedStats({
   const router = useRouter();
 
   return (
-    <StatsScroll contentContainerStyle={{ paddingBottom: 120 + BottomTabInset }}>
+    <StatsScroll contentContainerStyle={{ paddingBottom: 24 }}>
       <StatsContent>
         <StyledEyebrow>Practice history</StyledEyebrow>
         <Title>Your work,{`\n`}adding up.</Title>
