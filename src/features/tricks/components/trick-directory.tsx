@@ -98,7 +98,8 @@ export function TrickDirectory({
       const visibleTricks = normalizedQuery.length === 0
         ? tricks
         : tricks.filter((trick) => trick.name.toLowerCase().includes(normalizedQuery));
-      return createTrickSections(visibleTricks, showFocusedSection ? sectioningTrickIds : undefined);
+      const shouldSectionByFocus = showFocusedSection && normalizedQuery.length === 0;
+      return createTrickSections(visibleTricks, shouldSectionByFocus ? sectioningTrickIds : undefined);
     },
     [tricks, search?.query, showFocusedSection, sectioningTrickIds],
   );
