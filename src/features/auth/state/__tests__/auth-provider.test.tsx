@@ -1,0 +1,248 @@
+import { afterEach, describe, expect, it, jest } from '@jest/globals';
+import type { AuthChangeEvent, Session, SupabaseClient } from '@supabase/supabase-js';
+import { useEffect } from 'react';
+import { Text } from 'react-native';
+import { act, create } from 'react-test-renderer';
+
+import {
+  AuthProvider,
+  useAuthActions,
+  useAuthState,
+} from '@/features/auth/state/auth-provider';
+
+const mockGetSupabaseClient = jest.fn();
+jest.mock('@/features/auth/persistence/supabase-client', () => ({
+  getSupabaseClient: () => mockGetSupabaseClient(),
+}));
+
+type AuthCallback = (event: AuthChangeEvent, session: Session | null) => void;
+
+function createFakeClient(overrides?: { onAuthStateChangeImpl?: (cb: AuthCallback) => unknown }) {
+  const unsubscribe = jest.fn();
+  let capturedCallback: AuthCallback | undefined;
+  const onAuthStateChange = jest.fn((cb: AuthCallback) => {
+    capturedCallback = cb;
+    if (overrides?.onAuthStateChangeImpl) {
+      return overrides.onAuthStateChangeImpl(cb);
+    }
+    return { data: { subscription: { unsubscribe } } };
+  });
+
+  const signInWithPassword = jest.fn(async (): Promise<{ error: unknown }> => ({ error: null }));
+  const signOut = jest.fn(async (): Promise<{ error: unknown }> => ({ error: null }));
+
+  const client = {
+    auth: { onAuthStateChange, signInWithPassword, signOut },
+  } as unknown as SupabaseClient;
+
+  return {
+    client,
+    unsubscribe,
+    signInWithPassword,
+    signOut,
+    emit: (event: AuthChangeEvent, session: Session | null) => capturedCallback?.(event, session),
+  };
+}
+
+const captured: {
+  state?: ReturnType<typeof useAuthState>;
+  actions?: ReturnType<typeof useAuthActions>;
+} = {};
+
+function Harness() {
+  const state = useAuthState();
+  const actions = useAuthActions();
+
+  useEffect(() => {
+    captured.state = state;
+    captured.actions = actions;
+  });
+
+  return <Text>{state.status}</Text>;
+}
+
+async function mount() {
+  let root!: ReturnType<typeof create>;
+  await act(async () => {
+    root = create(
+      <AuthProvider>
+        <Harness />
+      </AuthProvider>,
+    );
+  });
+  return root;
+}
+
+describe('AuthProvider', () => {
+  afterEach(() => {
+    mockGetSupabaseClient.mockReset();
+    captured.state = undefined;
+    captured.actions = undefined;
+  });
+
+  it('renders children immediately while Auth is still initializing, with no hydration-gate fallback', async () => {
+    // A client that never fires an auth event, so state stays 'initializing'
+    // after mount -- proving children render without waiting for it to settle.
+    const fake = createFakeClient();
+    mockGetSupabaseClient.mockReturnValue(fake.client);
+
+    const root = await mount();
+
+    expect(root.toJSON()).not.toBeNull();
+    expect(captured.state).toEqual({ status: 'initializing' });
+    expect(captured.actions).toBeDefined();
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  it('resolves to guest/unconfigured when no client is available', async () => {
+    mockGetSupabaseClient.mockReturnValue(null);
+
+    const root = await mount();
+
+    expect(captured.state).toEqual({ status: 'guest', reason: 'unconfigured' });
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  it('offline init: resolves to guest when INITIAL_SESSION fires with a null session, with no getSession call', async () => {
+    const fake = createFakeClient({
+      onAuthStateChangeImpl: (cb) => {
+        cb('INITIAL_SESSION', null);
+        return { data: { subscription: { unsubscribe: jest.fn() } } };
+      },
+    });
+    mockGetSupabaseClient.mockReturnValue(fake.client);
+
+    const root = await mount();
+
+    expect(captured.state).toEqual({ status: 'guest', reason: 'signedOut' });
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  it('offline init: resolves to authenticated when INITIAL_SESSION fires with a cached session', async () => {
+    const cachedSession = { access_token: 'cached' } as unknown as Session;
+    const fake = createFakeClient({
+      onAuthStateChangeImpl: (cb) => {
+        cb('INITIAL_SESSION', cachedSession);
+        return { data: { subscription: { unsubscribe: jest.fn() } } };
+      },
+    });
+    mockGetSupabaseClient.mockReturnValue(fake.client);
+
+    const root = await mount();
+
+    expect(captured.state).toEqual({
+      status: 'authenticated',
+      session: cachedSession,
+      lastEvent: 'INITIAL_SESSION',
+    });
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  it('updates state on SIGNED_IN, SIGNED_OUT, and TOKEN_REFRESHED events', async () => {
+    const fake = createFakeClient();
+    mockGetSupabaseClient.mockReturnValue(fake.client);
+
+    const root = await mount();
+    expect(captured.state).toEqual({ status: 'initializing' });
+
+    const session = { access_token: 'a' } as unknown as Session;
+    act(() => {
+      fake.emit('SIGNED_IN', session);
+    });
+    expect(captured.state).toEqual({ status: 'authenticated', session, lastEvent: 'SIGNED_IN' });
+
+    const refreshed = { access_token: 'refreshed' } as unknown as Session;
+    act(() => {
+      fake.emit('TOKEN_REFRESHED', refreshed);
+    });
+    expect(captured.state).toEqual({ status: 'authenticated', session: refreshed, lastEvent: 'TOKEN_REFRESHED' });
+
+    act(() => {
+      fake.emit('SIGNED_OUT', null);
+    });
+    expect(captured.state).toEqual({ status: 'guest', reason: 'signedOut' });
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  it('forwards signInWithPassword arguments and surfaces the error, without changing state directly', async () => {
+    const fake = createFakeClient();
+    const signInError = { message: 'invalid credentials' };
+    fake.signInWithPassword.mockResolvedValueOnce({ error: signInError });
+    mockGetSupabaseClient.mockReturnValue(fake.client);
+
+    const root = await mount();
+
+    let result: { error: unknown } | undefined;
+    await act(async () => {
+      result = await captured.actions!.signInWithPassword('a@b.com', 'secret');
+    });
+
+    expect(fake.signInWithPassword).toHaveBeenCalledWith({ email: 'a@b.com', password: 'secret' });
+    expect(result).toEqual({ error: signInError });
+    expect(captured.state).toEqual({ status: 'initializing' });
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  it('forwards signOut with scope local and surfaces the error', async () => {
+    const fake = createFakeClient();
+    const signOutError = { message: 'network down' };
+    fake.signOut.mockResolvedValueOnce({ error: signOutError });
+    mockGetSupabaseClient.mockReturnValue(fake.client);
+
+    const root = await mount();
+
+    let result: { error: unknown } | undefined;
+    await act(async () => {
+      result = await captured.actions!.signOut();
+    });
+
+    expect(fake.signOut).toHaveBeenCalledWith({ scope: 'local' });
+    expect(result).toEqual({ error: signOutError });
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  it('falls back to guest/error when subscribing throws synchronously', async () => {
+    const throwingClient = {
+      auth: {
+        onAuthStateChange: () => {
+          throw new Error('boom');
+        },
+      },
+    } as unknown as SupabaseClient;
+    mockGetSupabaseClient.mockReturnValue(throwingClient);
+
+    const root = await mount();
+
+    expect(captured.state).toEqual({ status: 'guest', reason: 'error' });
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  it('unsubscribes from the auth listener on unmount', async () => {
+    const fake = createFakeClient();
+    mockGetSupabaseClient.mockReturnValue(fake.client);
+
+    const root = await mount();
+    act(() => {
+      root.unmount();
+    });
+
+    expect(fake.unsubscribe).toHaveBeenCalledTimes(1);
+  });
+});

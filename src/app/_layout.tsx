@@ -6,6 +6,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { Platform } from 'react-native';
 
 import { AnimatedSplashOverlay } from '@/components/animated-icon';
+import { AuthProvider } from '@/features/auth/state/auth-provider';
 import { DefaultAppThemeProvider } from '@/features/profile/components/app-theme-provider';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 
@@ -18,7 +19,9 @@ export default function TabLayout() {
       {Platform.OS === 'web' && <Analytics />}
       <AnimatedSplashOverlay />
       <DefaultAppThemeProvider>
-        <Slot />
+        <AuthProvider>
+          <Slot />
+        </AuthProvider>
       </DefaultAppThemeProvider>
     </ThemeProvider>
   );
