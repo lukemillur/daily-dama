@@ -900,13 +900,15 @@ describe('CompletedSesh goals panel ordering (regression)', () => {
     let root!: ReactTestRenderer;
     await act(async () => {
       root = create(
-        <NoteProvider>
-          <GoalProvider>
-            <PracticeHistoryProvider>
-              <Harness />
-            </PracticeHistoryProvider>
-          </GoalProvider>
-        </NoteProvider>,
+        <UserProfileProvider>
+          <NoteProvider>
+            <GoalProvider>
+              <PracticeHistoryProvider>
+                <Harness />
+              </PracticeHistoryProvider>
+            </GoalProvider>
+          </NoteProvider>
+        </UserProfileProvider>,
       );
     });
     return root;
@@ -1560,15 +1562,15 @@ describe('Sesh wiring - goal celebration ordering (regression)', () => {
     let root!: ReactTestRenderer;
     await act(async () => {
       root = create(
-        <NoteProvider>
-          <GoalProvider>
-            <PracticeHistoryProvider>
-              <UserProfileProvider>
+        <UserProfileProvider>
+          <NoteProvider>
+            <GoalProvider>
+              <PracticeHistoryProvider>
                 <Harness />
-              </UserProfileProvider>
-            </PracticeHistoryProvider>
-          </GoalProvider>
-        </NoteProvider>,
+              </PracticeHistoryProvider>
+            </GoalProvider>
+          </NoteProvider>
+        </UserProfileProvider>,
       );
     });
     return root;
@@ -1628,15 +1630,15 @@ describe('Sesh single-trick entry point - "Next trick" absence', () => {
     let root!: ReactTestRenderer;
     await act(async () => {
       root = create(
-        <NoteProvider>
-          <GoalProvider>
-            <PracticeHistoryProvider>
-              <UserProfileProvider>
+        <UserProfileProvider>
+          <NoteProvider>
+            <GoalProvider>
+              <PracticeHistoryProvider>
                 <Sesh availableTricks={[TRICK]} selectedTrickIds={[TRICK.id]} />
-              </UserProfileProvider>
-            </PracticeHistoryProvider>
-          </GoalProvider>
-        </NoteProvider>,
+              </PracticeHistoryProvider>
+            </GoalProvider>
+          </NoteProvider>
+        </UserProfileProvider>,
       );
     });
     return root;
@@ -1697,15 +1699,15 @@ describe('Sesh regular practice origin (T062.1)', () => {
     let root!: ReactTestRenderer;
     await act(async () => {
       root = create(
-        <NoteProvider>
-          <GoalProvider>
-            <PracticeHistoryProvider>
-              <UserProfileProvider>
+        <UserProfileProvider>
+          <NoteProvider>
+            <GoalProvider>
+              <PracticeHistoryProvider>
                 <Harness />
-              </UserProfileProvider>
-            </PracticeHistoryProvider>
-          </GoalProvider>
-        </NoteProvider>,
+              </PracticeHistoryProvider>
+            </GoalProvider>
+          </NoteProvider>
+        </UserProfileProvider>,
       );
     });
     return root;
@@ -1768,15 +1770,15 @@ describe('Sesh wiring - countdown cancel (T047)', () => {
     let root!: ReactTestRenderer;
     await act(async () => {
       root = create(
-        <NoteProvider>
-          <GoalProvider>
-            <PracticeHistoryProvider>
-              <UserProfileProvider>
+        <UserProfileProvider>
+          <NoteProvider>
+            <GoalProvider>
+              <PracticeHistoryProvider>
                 <Harness />
-              </UserProfileProvider>
-            </PracticeHistoryProvider>
-          </GoalProvider>
-        </NoteProvider>,
+              </PracticeHistoryProvider>
+            </GoalProvider>
+          </NoteProvider>
+        </UserProfileProvider>,
       );
     });
     return root;
@@ -1959,19 +1961,19 @@ describe('Sesh direct-practice planning (T077.2)', () => {
     let root!: ReactTestRenderer;
     await act(async () => {
       root = create(
-        <NoteProvider>
-          <GoalProvider>
-            <PracticeHistoryProvider>
-              <UserProfileProvider>
+        <UserProfileProvider>
+          <NoteProvider>
+            <GoalProvider>
+              <PracticeHistoryProvider>
                 <Sesh
                   availableTricks={[TRICK, OTHER_TRICK]}
                   selectedTrickIds={[TRICK.id, OTHER_TRICK.id]}
                   {...props}
                 />
-              </UserProfileProvider>
-            </PracticeHistoryProvider>
-          </GoalProvider>
-        </NoteProvider>,
+              </PracticeHistoryProvider>
+            </GoalProvider>
+          </NoteProvider>
+        </UserProfileProvider>,
       );
     });
     return root;
@@ -2113,19 +2115,19 @@ describe('Sesh direct-practice entry (T081)', () => {
     let root!: ReactTestRenderer;
     await act(async () => {
       root = create(
-        <NoteProvider>
-          <GoalProvider>
-            <PracticeHistoryProvider>
-              <UserProfileProvider>
+        <UserProfileProvider>
+          <NoteProvider>
+            <GoalProvider>
+              <PracticeHistoryProvider>
                 <Sesh
                   availableTricks={[TRICK, OTHER_TRICK]}
                   selectedTrickIds={[TRICK.id, OTHER_TRICK.id]}
                   {...props}
                 />
-              </UserProfileProvider>
-            </PracticeHistoryProvider>
-          </GoalProvider>
-        </NoteProvider>,
+              </PracticeHistoryProvider>
+            </GoalProvider>
+          </NoteProvider>
+        </UserProfileProvider>,
       );
     });
     return root;
@@ -2272,19 +2274,19 @@ describe('Sesh direct-practice entry (T081)', () => {
 
   function seshElement(props: Partial<ComponentProps<typeof Sesh>>) {
     return (
-      <NoteProvider>
-        <GoalProvider>
-          <PracticeHistoryProvider>
-            <UserProfileProvider>
+      <UserProfileProvider>
+        <NoteProvider>
+          <GoalProvider>
+            <PracticeHistoryProvider>
               <Sesh
                 availableTricks={[TRICK, OTHER_TRICK]}
                 selectedTrickIds={[TRICK.id, OTHER_TRICK.id]}
                 {...props}
               />
-            </UserProfileProvider>
-          </PracticeHistoryProvider>
-        </GoalProvider>
-      </NoteProvider>
+            </PracticeHistoryProvider>
+          </GoalProvider>
+        </NoteProvider>
+      </UserProfileProvider>
     );
   }
 
@@ -2338,18 +2340,18 @@ describe('Sesh multi-trick entry (T071)', () => {
     let root!: ReactTestRenderer;
     await act(async () => {
       root = create(
-        <NoteProvider>
-          <GoalProvider>
-            <PracticeHistoryProvider>
-              <UserProfileProvider>
+        <UserProfileProvider>
+          <NoteProvider>
+            <GoalProvider>
+              <PracticeHistoryProvider>
                 <Sesh
                   availableTricks={[TRICK]}
                   selectedTrickIds={[TRICK.id]}
                 />
-              </UserProfileProvider>
-            </PracticeHistoryProvider>
-          </GoalProvider>
-        </NoteProvider>,
+              </PracticeHistoryProvider>
+            </GoalProvider>
+          </NoteProvider>
+        </UserProfileProvider>,
       );
     });
     return root;

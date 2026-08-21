@@ -7,6 +7,7 @@ import { AllTrickGoalsScreen } from '@/features/goals/components/all-trick-goals
 import { GOALS_STORAGE_KEY } from '@/features/goals/persistence/goal-persistence';
 import { GoalProvider, useGoalActions } from '@/features/goals/state/goal-provider';
 import { createTimedSeshPlan, type Landing, type SeshSummary } from '@/features/sesh/model/sesh';
+import { UserProfileProvider } from '@/features/profile/state/user-profile-provider';
 import {
   PracticeHistoryProvider,
   usePracticeHistoryActions,
@@ -88,11 +89,13 @@ async function mountHarness(focusedTrickIds: readonly string[] = []) {
   let root!: ReactTestRenderer;
   await act(async () => {
     root = create(
-      <GoalProvider>
-        <PracticeHistoryProvider>
-          <Harness focusedTrickIds={focusedTrickIds} />
-        </PracticeHistoryProvider>
-      </GoalProvider>,
+      <UserProfileProvider>
+        <GoalProvider>
+          <PracticeHistoryProvider>
+            <Harness focusedTrickIds={focusedTrickIds} />
+          </PracticeHistoryProvider>
+        </GoalProvider>
+      </UserProfileProvider>,
     );
   });
   return root;

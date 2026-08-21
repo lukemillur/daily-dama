@@ -37,6 +37,28 @@ describe('user profile trick selection', () => {
     ).toEqual(['big-cup', 'airplane']);
   });
 
+  it('adds a missing trick id to selectedTrickIds', () => {
+    const state = { ...INITIAL_USER_PROFILE, selectedTrickIds: ['big-cup'] };
+
+    const next = userProfileReducer(state, {
+      type: 'selectedTrickAdded',
+      trickId: 'airplane',
+    });
+
+    expect(next.selectedTrickIds).toEqual(['big-cup', 'airplane']);
+  });
+
+  it('is a no-op when the trick id is already selected', () => {
+    const state = { ...INITIAL_USER_PROFILE, selectedTrickIds: ['big-cup', 'airplane'] };
+
+    const next = userProfileReducer(state, {
+      type: 'selectedTrickAdded',
+      trickId: 'airplane',
+    });
+
+    expect(next).toBe(state);
+  });
+
   it('caches and overwrites the last specified sesh', () => {
     const firstSesh = userProfileReducer(INITIAL_USER_PROFILE, {
       type: 'lastSeshUpdated',
