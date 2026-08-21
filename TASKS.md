@@ -135,16 +135,6 @@ _T113–T120 come from stories S001–S008 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 _T121–T131 come from stories S001–S011 in [BACKLOG_STORIES.md](BACKLOG_STORIES.md) (the user's 2026-08-20 QA pass on T115–T120 plus general landing-page feedback), refined by `product-manager` and scoped in this pass. T123 is a two-child umbrella: T123.1 builds and validates the looping, text-bearing Big Cup scene in the trick-viz sandbox in isolation, and T123.2 wires it into the production landing page with a WebGL fallback — split because validating a wholly new capability (3D text, autoplay looping) in isolation is a different risk profile from integrating it into a page every visitor loads, mirroring how T117 split screenshot capture from display-logic wiring. Three product questions surfaced during S003's refinement were resolved before scoping rather than left `Blocked`: the hero is decorative-only (no drag/orbit/tap interaction), needs a static-image fallback for visitors whose browser can't run WebGL, and does not need to respect `prefers-reduced-motion` this iteration. All other entries are independent S-sized tickets — no required ordering between them beyond what each entry's own Notes call out (T124 and T128 both touch landing-page desktop sizing but are independent of each other; T131 references T130's corrected animation duration but has no hard git-level dependency on it)._
 
-### [T127] Drop "signing up" copy from the screenshot showcase
-
-- **Area:** Landing page
-- **Priority:** Low
-- **Status:** In progress
-- **Planning:** Implementer
-- **Description:** `ScreenshotHeading` at `landing-page.tsx:151` reads "What you're signing up for," but Daily Dama has no account/signup flow. Replace the copy to describe what's available in the app instead.
-- **Exit criteria:** The screenshot showcase heading no longer contains "signing up" or "sign up," and reads as describing what the screenshots show rather than implying a signup step. `yarn test --runInBand` passes, including any snapshot/text-matching test updated for the new copy.
-- **Notes:** Exact wording is an implementer call, matching the page's existing voice.
-
 ### [T128] Widen the landing page's use of the screen on web
 
 - **Area:** Landing page
