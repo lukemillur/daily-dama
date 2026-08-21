@@ -135,16 +135,6 @@ _T113–T120 come from stories S001–S008 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 _T121–T131 come from stories S001–S011 in [BACKLOG_STORIES.md](BACKLOG_STORIES.md) (the user's 2026-08-20 QA pass on T115–T120 plus general landing-page feedback), refined by `product-manager` and scoped in this pass. T123 is a two-child umbrella: T123.1 builds and validates the looping, text-bearing Big Cup scene in the trick-viz sandbox in isolation, and T123.2 wires it into the production landing page with a WebGL fallback — split because validating a wholly new capability (3D text, autoplay looping) in isolation is a different risk profile from integrating it into a page every visitor loads, mirroring how T117 split screenshot capture from display-logic wiring. Three product questions surfaced during S003's refinement were resolved before scoping rather than left `Blocked`: the hero is decorative-only (no drag/orbit/tap interaction), needs a static-image fallback for visitors whose browser can't run WebGL, and does not need to respect `prefers-reduced-motion` this iteration. All other entries are independent S-sized tickets — no required ordering between them beyond what each entry's own Notes call out (T124 and T128 both touch landing-page desktop sizing but are independent of each other; T131 references T130's corrected animation duration but has no hard git-level dependency on it)._
 
-### [T129] Redesign trick goal cards to match the app's visual identity
-
-- **Area:** Goals
-- **Priority:** Medium
-- **Status:** In progress
-- **Planning:** Required
-- **Description:** `GoalCard` (`src/features/goals/components/trick-goals-screen.tsx:253`) is a single-line styled component (flat background, plain border, padding) with no rounded corners, shadow, or accent treatment, unlike `CtaPanel`/`ScreenshotItem` elsewhere in the app. Restyle it to match the app's established sticker-style visual language (rounded corners, bold border/shadow, and/or color accents) without changing what information it shows.
-- **Exit criteria:** Trick goal cards render with rounded corners and a bold/shadow-style border consistent with `CtaPanel`'s treatment; all existing goal information (trick name, progress) still renders correctly. `yarn test --runInBand` passes.
-- **Notes:** Visual treatment only — no change to goal data, progress calculation, or the goals reducer.
-
 ### [T130] Slow down the CTA entrance animation
 
 - **Area:** Landing page
