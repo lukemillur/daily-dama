@@ -155,7 +155,7 @@ export function LandingPage() {
                 key={screenshot.alt}
                 testID="screenshot-item"
                 $isWebLayout={isWebLayout}
-                entering={FadeInUp.duration(900).springify().delay(index * 100)}
+                entering={FadeInUp.duration(1500).springify().delay(index * 100)}
                 style={{ boxShadow: `8px 8px 0 ${AppColors.ink}` }}
               >
                 <Image

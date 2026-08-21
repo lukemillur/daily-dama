@@ -4,6 +4,16 @@ Completed entries move here from `TASKS.md`'s `Backlog`, in the same commit that
 
 Entries keep their content as it was at completion. Don't retroactively edit a description or exit criteria after the fact; if something about a completed task turns out to be wrong or misleading, note that in a new entry or in code, not by rewriting history here.
 
+### [T139] Slow the CTA entrance animation further
+
+- **Area:** Landing page
+- **Priority:** Low
+- **Status:** Done
+- **Planning:** Implementer
+- **Description:** `LandingCta`'s `FadeInUp.duration(900)` (set in T130) still reads as too fast per QA. Increase it further.
+- **Exit criteria:** `LandingCta`'s `FadeInUp` duration is increased beyond 900ms to a value that reads as clearly slower on load — confirmed by inspecting the rendered `entering` prop/animation config, matching T130's own verification approach (no reliable automated timing assertion for Reanimated's native driver in this codebase). Confirmed: `LandingCta`'s `entering` prop (`landing-cta.tsx:40`) is now `FadeInUp.duration(1500).springify()`, a clear jump past 900ms. `node .claude/scripts/verify.mjs` passed all four steps (test, lint, typecheck, web export).
+- **Notes:** From story S009. Second round of the same feedback; exact duration is an implementer call. Also bumped the screenshot showcase's matching `FadeInUp.duration(900)` (`landing-page.tsx:158`, linked to the CTA's duration in T131) to `1500` in lockstep, to preserve the entrance-animation pairing T131 established.
+
 ### [T134] Match the screenshot showcase's width to the page's text column
 
 - **Area:** Landing page
