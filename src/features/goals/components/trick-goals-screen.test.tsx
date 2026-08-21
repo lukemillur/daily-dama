@@ -2,12 +2,19 @@ import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 
 import { TrickGoalsScreen } from '@/features/goals/components/trick-goals-screen';
+import type { Goal } from '@/features/goals/model/goal';
 
 const mockAddGoal = jest.fn();
 const mockDeleteGoal = jest.fn();
+let mockGoals: readonly Goal[] = [];
+
+const mockRouter = { push: jest.fn() };
+jest.mock('expo-router', () => ({
+  useRouter: () => mockRouter,
+}));
 
 jest.mock('@/features/goals/state/goal-provider', () => ({
-  useGoals: () => ({ goals: [] }),
+  useGoals: () => ({ goals: mockGoals }),
   useGoalActions: () => ({ addGoal: mockAddGoal, deleteGoal: mockDeleteGoal }),
 }));
 jest.mock('@/features/stats/state/practice-history-provider', () => ({
@@ -25,6 +32,7 @@ describe('TrickGoalsScreen', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockAddGoal.mockReturnValue({ status: 'saved' });
+    mockGoals = [];
   });
 
   it('uses a Back to Tricks control while retaining local add cancel and save transitions', () => {
@@ -66,5 +74,43 @@ describe('TrickGoalsScreen', () => {
       targetCount: 3,
     });
     expect(findButton(root, 'Add goal')).toBeDefined();
+  });
+
+  it('navigates to practice when the goal card is pressed anywhere other than Delete', () => {
+    mockGoals = [
+      { id: 'goal-1', trickId: 'big-cup', trickName: 'Big Cup', kind: 'count', targetCount: 10, createdAt: 0 },
+    ];
+    let root!: ReactTestRenderer;
+    act(() => {
+      root = create(<TrickGoalsScreen trickId="big-cup" trickName="Big Cup" onBack={() => {}} />);
+    });
+
+    act(() => {
+      root.root.findByProps({ accessibilityLabel: 'Practice Big Cup' }).props.onPress();
+    });
+
+    expect(mockRouter.push).toHaveBeenCalledWith({
+      pathname: '/app/sesh',
+      params: { trickId: 'big-cup', mode: 'practice' },
+    });
+  });
+
+  it('does not navigate when Delete is pressed on a goal card', () => {
+    mockGoals = [
+      { id: 'goal-1', trickId: 'big-cup', trickName: 'Big Cup', kind: 'count', targetCount: 10, createdAt: 0 },
+    ];
+    let root!: ReactTestRenderer;
+    act(() => {
+      root = create(<TrickGoalsScreen trickId="big-cup" trickName="Big Cup" onBack={() => {}} />);
+    });
+
+    act(() => {
+      root.root
+        .findByProps({ accessibilityLabel: 'Delete goal' })
+        .props.onPress({ stopPropagation: () => {} });
+    });
+
+    expect(mockRouter.push).not.toHaveBeenCalled();
+    expect(root.root.findByProps({ accessibilityLabel: 'Confirm delete goal' })).toBeDefined();
   });
 });

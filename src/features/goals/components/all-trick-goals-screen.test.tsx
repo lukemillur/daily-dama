@@ -21,6 +21,11 @@ jest.mock('@react-native-async-storage/async-storage', () =>
   require('@react-native-async-storage/async-storage/jest/async-storage-mock'),
 );
 
+const mockRouterPush = jest.fn();
+jest.mock('expo-router', () => ({
+  useRouter: () => ({ push: mockRouterPush }),
+}));
+
 const TRICK_A: PracticeTrick = { id: 'big-cup', name: 'Big Cup' };
 const TRICK_B: PracticeTrick = { id: 'stall', name: 'Stall' };
 const DIRECTORY_TRICKS: DirectoryTrick[] = [
@@ -103,6 +108,7 @@ function findText(root: ReactTestRenderer, text: string) {
 describe('AllTrickGoalsScreen', () => {
   beforeEach(async () => {
     await AsyncStorage.clear();
+    mockRouterPush.mockClear();
   });
 
   it('lists goals from multiple tricks with per-goal progress, achieved and unachieved rendered distinguishably', async () => {
@@ -138,13 +144,35 @@ describe('AllTrickGoalsScreen', () => {
     expect(findText(root, "No goals yet. Set one from a trick's Goals action, or add one below.")).toHaveLength(1);
   });
 
-  it('links each goal\'s Practice action to /sesh with the correct trickId param', async () => {
+  it('navigates to /sesh with the correct trickId param when a goal card is pressed', async () => {
     const root = await mountHarness();
 
     press(root, 'add-goal-a');
 
-    const link = root.root.findByProps({ accessibilityLabel: 'Practice Big Cup' });
-    expect(link.props.href).toBe('/app/sesh?trickId=big-cup&mode=practice');
+    const card = root.root.findByProps({ accessibilityLabel: 'Practice Big Cup' });
+    act(() => {
+      card.props.onPress();
+    });
+
+    expect(mockRouterPush).toHaveBeenCalledWith({
+      pathname: '/app/sesh',
+      params: { trickId: 'big-cup', mode: 'practice' },
+    });
+  });
+
+  it('does not navigate to /sesh when Delete is pressed on a goal card', async () => {
+    const root = await mountHarness();
+
+    press(root, 'add-goal-a');
+
+    const [deleteAction] = root.root.findAll(
+      (node) => node.props.accessibilityLabel === 'Delete goal',
+    );
+    act(() => {
+      deleteAction.props.onPress();
+    });
+
+    expect(mockRouterPush).not.toHaveBeenCalled();
   });
 
   it('removes a goal from the list once deleted', async () => {
