@@ -141,7 +141,7 @@ _T132–T152 come from stories S001–S022 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 - **Area:** Landing page
 - **Priority:** High
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Implementer
 - **Description:** QA still finds the looping hero (`LandingHero`) overlapping "Why Daily Dama" on mobile despite T123.2's exit criteria claiming clearance at 375×812. Re-verify at more than one mobile width and fix whatever gap the original check missed.
 - **Exit criteria:** At mobile viewport widths of 320px, 375px, and 414px, loading `/` shows `LandingHero`'s bounding box with no overlap onto the "Why Daily Dama" eyebrow or any text below it — confirmed via computed bounding-box comparison in-browser, not visual impression alone.
