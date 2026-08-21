@@ -4,6 +4,18 @@ Completed entries move here from `TASKS.md`'s `Backlog`, in the same commit that
 
 Entries keep their content as it was at completion. Don't retroactively edit a description or exit criteria after the fact; if something about a completed task turns out to be wrong or misleading, note that in a new entry or in code, not by rewriting history here.
 
+### [T133] Fix the looping hero's overlap with page text on mobile
+
+- **Area:** Landing page
+- **Priority:** High
+- **Status:** Done
+- **Planning:** Implementer
+- **Description:** QA still finds the looping hero (`LandingHero`) overlapping "Why Daily Dama" on mobile despite T123.2's exit criteria claiming clearance at 375×812. Re-verify at more than one mobile width and fix whatever gap the original check missed.
+- **Exit criteria:** At mobile viewport widths of 320px, 375px, and 414px, loading `/` shows `LandingHero`'s bounding box with no overlap onto the "Why Daily Dama" eyebrow or any text below it — confirmed via computed bounding-box comparison in-browser, not visual impression alone.
+- **Notes:** From story S002. Check this after T142 (S012, enlarging the hero) if both are in flight — a larger hero directly affects this overlap and re-checking against the final hero size avoids finding-then-refinding the same regression.
+- **Resolution:** The panel's hard-edged `boxShadow` (8px 8px 0, set at the JSX call site in `landing-hero.tsx`) rendered visually below/right of `HeroPanel`'s own box, outside what `getBoundingClientRect` reports. `HeroPanel` had no `margin-bottom`, so at every mobile width the shadow visually overlapped the immediately-adjacent "Why Daily Dama" eyebrow even though the two elements' bounding boxes never intersected -- exactly the kind of regression a pure bounding-box check can miss. Added `margin-bottom: 24px` to `HeroPanel` (`src/features/landing/components/landing-hero.tsx`), clearing the shadow with slack at 320px, 375px, and 414px. Confirmed via Playwright `getBoundingClientRect` at all three widths: hero-bottom-to-eyebrow-top gap is 24px (no overlap) at each, versus 0px before the fix.
+
+
 ### [T132] Move the hero's "Daily Dama" caption to the bottom of the scene
 
 - **Area:** Trick visualization (consumed by Landing page)

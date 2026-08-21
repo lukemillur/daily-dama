@@ -54,8 +54,17 @@ export function LandingHero() {
   );
 }
 
+// `margin-bottom` reserves room for the panel's own hard-edged `boxShadow`
+// (8px 8px 0, set at the JSX call site). `getBoundingClientRect` on the
+// panel itself doesn't include that shadow, so a bounding-box-only overlap
+// check against whatever follows (e.g. the "Why Daily Dama" eyebrow) can
+// pass while the rendered shadow still visually overlaps it -- this is
+// what T133 found after T123.2 only checked one width. The margin must
+// clear the shadow at every mobile width, not just 375px, so it's sized
+// with slack rather than tuned to exactly 8px.
 const HeroPanel = styled.View`
   margin-top: 4px;
+  margin-bottom: 24px;
   padding: 18px;
   align-items: center;
   justify-content: center;
