@@ -69,7 +69,7 @@ const HeroPanel = styled.View`
   align-items: center;
   justify-content: center;
   width: 100%;
-  max-width: 320px;
+  max-width: 440px;
   align-self: center;
   background-color: ${AppColors.paperStrong};
   border: 2px solid ${AppColors.ink};

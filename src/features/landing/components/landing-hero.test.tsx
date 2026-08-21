@@ -1,6 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { act, create, type ReactTestRenderer, type ReactTestRendererJSON } from 'react-test-renderer';
 
+import { StyleSheet } from 'react-native';
+
 import { getServerSnapshot, LandingHero } from '@/features/landing/components/landing-hero';
 
 jest.mock('expo-image', () => {
@@ -92,5 +94,27 @@ describe('LandingHero', () => {
     // returns the fallback branch regardless of the real 'isWebGLAvailable()'
     // result, so the two agree and there is no mismatch to warn about.
     expect(getServerSnapshot()).toBe(false);
+  });
+});
+
+function resolvedMaxWidthFor(root: ReactTestRenderer, testID: string) {
+  const matches = root.root.findAll((node) => node.props.testID === testID);
+  const arrayStyleMatch = matches.find((node) => Array.isArray(node.props.style));
+  const plainStyleMatch = matches.find(
+    (node) => typeof node.props.style === "object" && node.props.style !== null && !Array.isArray(node.props.style),
+  );
+  const resolved = arrayStyleMatch ?? plainStyleMatch;
+  const flattened = StyleSheet.flatten(resolved?.props.style) as { maxWidth?: number } | undefined;
+  return flattened?.maxWidth;
+}
+
+describe("LandingHero panel size", () => {
+  it("resolves a max-width noticeably larger than the old 320px cap", async () => {
+    mockIsWebGLAvailable.mockReturnValue(true);
+    const root = await mount();
+
+    const maxWidth = resolvedMaxWidthFor(root, "landing-hero");
+
+    expect(maxWidth).toBeGreaterThan(320);
   });
 });
