@@ -29,6 +29,7 @@ import { createWriteQueue } from '@/shared/persistence/storage';
 
 interface UserProfileActions {
   readonly toggleSelectedTrick: (trickId: string) => void;
+  readonly addSelectedTrick: (trickId: string) => void;
   readonly removeSelectedTrick: (trickId: string) => void;
   readonly clearSelectedTricks: () => void;
   readonly toggleManualUnlock: (trickId: string) => void;
@@ -99,6 +100,10 @@ export function UserProfileProvider({ children }: PropsWithChildren) {
     dispatch({ type: 'selectedTrickToggled', trickId });
   }, []);
 
+  const addSelectedTrick = useCallback((trickId: string) => {
+    dispatch({ type: 'selectedTrickAdded', trickId });
+  }, []);
+
   const clearSelectedTricks = useCallback(() => {
     dispatch({ type: 'selectedTricksCleared' });
   }, []);
@@ -155,6 +160,7 @@ export function UserProfileProvider({ children }: PropsWithChildren) {
   const actions = useMemo(
     () => ({
       toggleSelectedTrick,
+      addSelectedTrick,
       removeSelectedTrick,
       clearSelectedTricks,
       toggleManualUnlock,
@@ -168,6 +174,7 @@ export function UserProfileProvider({ children }: PropsWithChildren) {
       advanceKenteiRank,
     }),
     [
+      addSelectedTrick,
       advanceKenteiRank,
       clearSelectedTricks,
       completeOnboarding,

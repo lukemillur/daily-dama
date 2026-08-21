@@ -65,6 +65,7 @@ export type UserProfileAction =
   | { readonly type: 'profileRestored'; readonly profile: UserProfile }
   | { readonly type: 'selectedTrickToggled'; readonly trickId: string }
   | { readonly type: 'selectedTrickRemoved'; readonly trickId: string }
+  | { readonly type: 'selectedTrickAdded'; readonly trickId: string }
   | { readonly type: 'selectedTricksCleared' }
   | { readonly type: 'manualUnlockToggled'; readonly trickId: string }
   | { readonly type: 'manualUnlockRemoved'; readonly trickId: string }
@@ -111,6 +112,10 @@ export function userProfileReducer(
             ),
           }
         : state;
+    case 'selectedTrickAdded':
+      return state.selectedTrickIds.includes(action.trickId)
+        ? state
+        : { ...state, selectedTrickIds: [...state.selectedTrickIds, action.trickId] };
     case 'selectedTricksCleared':
       return state.selectedTrickIds.length === 0 ? state : { ...state, selectedTrickIds: [] };
     case 'manualUnlockToggled': {

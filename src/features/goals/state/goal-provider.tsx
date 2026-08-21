@@ -25,6 +25,7 @@ import {
   validateGoalCreation,
 } from '@/features/goals/model/goal';
 import { loadGoals, saveGoals } from '@/features/goals/persistence/goal-persistence';
+import { useUserProfileActions } from '@/features/profile/state/user-profile-provider';
 import { createWriteQueue } from '@/shared/persistence/storage';
 
 type SaveGoalResult =
@@ -41,6 +42,9 @@ const GoalActionsContext = createContext<GoalActions | undefined>(undefined);
 
 export function GoalProvider({ children }: PropsWithChildren) {
   const [collection, dispatch] = useReducer(goalReducer, INITIAL_GOALS);
+  // GoalProvider must be rendered inside UserProfileProvider (see _layout.tsx's provider
+  // nesting order) so addGoal can focus the goal's trick as part of the same save action.
+  const { addSelectedTrick } = useUserProfileActions();
   const [hasHydrated, setHasHydrated] = useState(false);
   const shouldSkipInitialWrite = useRef(true);
   const [enqueueWrite] = useState(() =>
@@ -87,8 +91,9 @@ export function GoalProvider({ children }: PropsWithChildren) {
 
     const goal = createGoal(createGoalId(), validation.value);
     dispatch({ type: 'goalAdded', goal });
+    addSelectedTrick(goal.trickId);
     return { status: 'saved', goal };
-  }, []);
+  }, [addSelectedTrick]);
 
   const deleteGoal = useCallback((goalId: string) => {
     dispatch({ type: 'goalDeleted', goalId });
