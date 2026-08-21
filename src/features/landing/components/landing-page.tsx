@@ -1,4 +1,5 @@
 import { Image } from 'expo-image';
+import { useEffect, useRef, useState, type ComponentRef } from 'react';
 import { Platform, ScrollView, useWindowDimensions } from 'react-native';
 import Animated, { FadeInUp } from 'react-native-reanimated';
 import { styled } from 'styled-components/native';
@@ -151,23 +152,12 @@ export function LandingPage() {
           <ScreenshotSection testID="screenshot-section">
             <ScreenshotHeading>See it in action</ScreenshotHeading>
             {screenshots.map((screenshot, index) => (
-              <ScreenshotItem
+              <ScreenshotEntry
                 key={screenshot.alt}
-                testID="screenshot-item"
-                $isWebLayout={isWebLayout}
-                entering={FadeInUp.duration(1500).springify().delay(index * 100)}
-                style={{ boxShadow: `8px 8px 0 ${AppColors.ink}` }}
-              >
-                <Image
-                  source={screenshot.source}
-                  accessibilityLabel={screenshot.alt}
-                  alt={screenshot.alt}
-                  contentFit="contain"
-                  style={{ width: '100%', aspectRatio: screenshot.aspectRatio }}
-                />
-                <ScreenshotTitle $isWebLayout={isWebLayout}>{screenshot.title}</ScreenshotTitle>
-                <ScreenshotCaption $isWebLayout={isWebLayout}>{screenshot.caption}</ScreenshotCaption>
-              </ScreenshotItem>
+                screenshot={screenshot}
+                index={index}
+                isWebLayout={isWebLayout}
+              />
             ))}
           </ScreenshotSection>
 
@@ -181,6 +171,71 @@ export function LandingPage() {
         </Content>
       </LandingScroll>
     </Screen>
+  );
+}
+
+function useHasEnteredViewport(ref: { current: ComponentRef<typeof Animated.View> | null }) {
+  const [hasEntered, setHasEntered] = useState(
+    () => Platform.OS !== 'web' || typeof IntersectionObserver === 'undefined',
+  );
+
+  useEffect(() => {
+    if (hasEntered) return;
+    const node = ref.current;
+    if (!node) return;
+
+    // Shrinking the bottom edge of the (default, root: null) viewport by one-third makes the
+    // *effective* observed region the top two-thirds of the viewport, so `isIntersecting` only
+    // flips true once the element scrolls into that band. Computed once at observer-creation
+    // time from window.innerHeight (not a CSS percentage rootMargin, which is less consistently
+    // supported against the implicit root) -- this is a one-shot trigger, not a live breakpoint,
+    // so no resize listener keeps it current.
+    const bottomMargin = Math.round(window.innerHeight / 3);
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0];
+        if (entry && entry.isIntersecting) {
+          setHasEntered(true);
+        }
+      },
+      { rootMargin: `0px 0px -${bottomMargin}px 0px`, threshold: 0 },
+    );
+    observer.observe(node as unknown as Element);
+    return () => observer.disconnect();
+  }, [hasEntered, ref]);
+
+  return hasEntered;
+}
+
+interface ScreenshotEntryProps {
+  readonly screenshot: Screenshot;
+  readonly index: number;
+  readonly isWebLayout: boolean;
+}
+
+function ScreenshotEntry({ screenshot, index, isWebLayout }: ScreenshotEntryProps) {
+  const itemRef = useRef<ComponentRef<typeof Animated.View>>(null);
+  const hasEntered = useHasEnteredViewport(itemRef);
+
+  return (
+    <ScreenshotItem
+      key={hasEntered ? 'entered' : 'pending'}
+      ref={itemRef}
+      testID="screenshot-item"
+      $isWebLayout={isWebLayout}
+      entering={hasEntered ? FadeInUp.duration(1500).springify().delay(index * 100) : undefined}
+      style={hasEntered ? { boxShadow: `8px 8px 0 ${AppColors.ink}` } : { boxShadow: `8px 8px 0 ${AppColors.ink}`, opacity: 0 }}
+    >
+      <Image
+        source={screenshot.source}
+        accessibilityLabel={screenshot.alt}
+        alt={screenshot.alt}
+        contentFit="contain"
+        style={{ width: '100%', aspectRatio: screenshot.aspectRatio }}
+      />
+      <ScreenshotTitle $isWebLayout={isWebLayout}>{screenshot.title}</ScreenshotTitle>
+      <ScreenshotCaption $isWebLayout={isWebLayout}>{screenshot.caption}</ScreenshotCaption>
+    </ScreenshotItem>
   );
 }
 
