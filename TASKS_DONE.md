@@ -1756,6 +1756,16 @@ Entries keep their content as it was at completion. Don't retroactively edit a d
 
 Completed entries live in [TASKS_DONE.md](TASKS_DONE.md) — not part of the top-to-bottom read above; see step 5 under _Completing a task_.
 
+### [T141] Remove the landing page photo
+
+- **Area:** Landing page
+- **Priority:** Medium
+- **Status:** Done
+- **Planning:** Implementer
+- **Description:** Remove `LandingPhoto` (`src/features/landing/components/landing-photo.tsx`) and its container from the landing page entirely, per QA feedback that it feels out of place.
+- **Exit criteria:** The landing page no longer renders `LandingPhoto` or its panel at any viewport width; surrounding layout (spacing between adjacent sections) closes the gap cleanly. `yarn test --runInBand` passes, including removal/update of `landing-photo`-specific tests. Confirmed: `landing-page.tsx` no longer imports `LandingPhoto` or renders `<LandingPhoto />`; `landing-photo.tsx` deleted. `LandingPhoto` rendered unconditionally (not gated by viewport width), so removing its render call removes it at every width; the removed `renders the kendama photo` test in `landing-page.test.tsx` (which asserted `testID="landing-photo"`) confirms this via the suite's existing mobile (375px) and desktop (1280px) `useWindowDimensions` mocks. `Closing`'s own `margin-top: 32px` now provides the gap between the screenshot showcase and the closing paragraph, so no leftover margin remains from the removed panel's `margin-top: 40px`. `node .claude/scripts/verify.mjs` passed all four steps (test, lint, typecheck, web export).
+- **Notes:** From story S011. Retires the component T122 just fixed and T119 originally sourced; the asset and its Wikimedia Commons attribution note in `TASKS_DONE.md` become unused but the archived entries stay as-written. Left `kendama-photo.jpg` and the Wikimedia Commons attribution note in place per the task notes -- neither is referenced by runtime code anymore, but deleting the asset was explicitly out of scope. Also updated a stale comment in `src/app/__tests__/index.test.tsx` that referenced `landing-photo.tsx`. No interactive browser preview tool was available in this run; relied on the unit tests directly exercising `LandingPage`'s render output at both viewport widths (functionally equivalent to a browser check for this removal, since the component was unconditionally rendered) plus the full automated verification suite.
+
 ### [T136] Show the footer bar only on the Profile route
 
 - **Area:** Navigation / app shell
