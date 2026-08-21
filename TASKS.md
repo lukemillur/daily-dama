@@ -141,7 +141,7 @@ _T132–T152 come from stories S001–S022 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 - **Area:** Landing page
 - **Priority:** Medium
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Implementer
 - **Description:** Remove `LandingPhoto` (`src/features/landing/components/landing-photo.tsx`) and its container from the landing page entirely, per QA feedback that it feels out of place.
 - **Exit criteria:** The landing page no longer renders `LandingPhoto` or its panel at any viewport width; surrounding layout (spacing between adjacent sections) closes the gap cleanly. `yarn test --runInBand` passes, including removal/update of `landing-photo`-specific tests.
