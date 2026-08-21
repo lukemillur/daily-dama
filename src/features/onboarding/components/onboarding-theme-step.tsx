@@ -7,10 +7,14 @@ import { ThemePresetGrid } from "@/features/profile/components/theme-preset-grid
 import { RAINBOW_THEME_PRESETS, type ThemePreset } from "@/features/profile/model/theme-presets";
 
 export function OnboardingThemeStep({
+  selectedPresetId,
   onSelectPreset,
+  onFinish,
   onSkip,
 }: {
+  readonly selectedPresetId?: string;
   readonly onSelectPreset: (preset: ThemePreset) => void;
+  readonly onFinish: () => void;
   readonly onSkip: () => void;
 }) {
   return (
@@ -18,7 +22,18 @@ export function OnboardingThemeStep({
       <Eyebrow>Last step</Eyebrow>
       <Title>Set your{"\n"}vibe.</Title>
       <Copy>Select a theme that matches your setup.</Copy>
-      <ThemePresetGrid presets={RAINBOW_THEME_PRESETS} onSelectPreset={onSelectPreset} />
+      <ThemePresetGrid
+        presets={RAINBOW_THEME_PRESETS}
+        isPresetSelected={
+          selectedPresetId === undefined
+            ? undefined
+            : (preset) => preset.id === selectedPresetId
+        }
+        onSelectPreset={onSelectPreset}
+      />
+      <FinishButton accessibilityLabel="Finish onboarding" onPress={onFinish}>
+        Finish onboarding
+      </FinishButton>
       <SkipButton
         accessibilityLabel="Skip theme selection"
         variant="secondary"
@@ -45,7 +60,11 @@ const Copy = styled(BodyText)`
   margin-top: 18px;
   color: ${AppColors.textMuted};
 `;
+const FinishButton = styled(Button).attrs({ fill: true })`
+  margin-top: 30px;
+  min-height: 54px;
+`;
 const SkipButton = styled(Button)`
   align-self: flex-start;
-  margin-top: 30px;
+  margin-top: 14px;
 `;
