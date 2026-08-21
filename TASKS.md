@@ -151,7 +151,7 @@ _T132–T152 come from stories S001–S022 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 - **Area:** Landing page
 - **Priority:** Low
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Implementer
 - **Description:** `ScreenshotHeading` ("See it in action", `landing-page.tsx`) is 17px/900-weight body-adjacent text. Give it a larger, more visually distinct treatment consistent with the page's other section headings.
 - **Exit criteria:** `ScreenshotHeading` renders visibly larger and stylistically distinct (size, color, and/or letter-spacing) from surrounding body copy — confirmed via a resolved-style unit test asserting its font-size increased from the current 17px.
