@@ -151,7 +151,7 @@ _T132–T152 come from stories S001–S022 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 - **Area:** Navigation / app shell
 - **Priority:** Medium
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Implementer
 - **Description:** `AppFooterBar` currently renders inside `CustomTabList` (`src/components/app-tabs.web.tsx`), used app-wide. Render it only when the active route is `/app/profile`, and remove the bottom-padding allowance other routes (Home, Sesh, Tricks, Stats) currently reserve for it.
 - **Exit criteria:** The footer bar with "Leave app" renders on `/app/profile` and does not render on `/app/home`, `/app/sesh`, `/app/tricks`, or `/app/stats`, at both mobile and desktop widths; scrollable content on those other routes no longer reserves space for a footer that isn't there (confirmed via each route's bottom padding/inset).
