@@ -78,6 +78,8 @@ Completed entries still move to [TASKS_DONE.md](TASKS_DONE.md), same as `TASKS.m
 
 _T153–T162 come from S032–S039 and S041, refined from [BACKEND_ROADMAP.md](BACKEND_ROADMAP.md) and first scoped into this formal backlog on 2026-08-21. Phase 1/Auth work T153–T154, Phase 2 umbrella T155, Phase 3 workstreams T156–T160, and Phase 4 deletion umbrella T161 have moved to the automated queue in [TASKS.md](TASKS.md); only Phase 6 umbrella T162 remains here. T154 is ordered as the Phase 1/Phase 4 shared prerequisite for T158. Supabase, guest access, PKCE, local-first synchronization, and immediate account deletion are settled product decisions. S040 (native account hardening) remains unscoped in [BACKLOG_STORIES.md](BACKLOG_STORIES.md) because mobile hardening is explicitly deferred._
 
+_Phase 5 consideration: no ticket is added here or to [TASKS.md](TASKS.md). S040 remains `Proposed`, and its native PKCE, SecureStore, and iOS/Android verification scope stays deferred until the user explicitly resumes mobile hardening._
+
 ### [T162] Enforce the first-external-user launch gate
 
 - **Area:** Security / operations
