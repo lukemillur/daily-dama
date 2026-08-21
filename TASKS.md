@@ -135,16 +135,6 @@ _T113–T120 come from stories S001–S008 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 _T121–T131 come from stories S001–S011 in [BACKLOG_STORIES.md](BACKLOG_STORIES.md) (the user's 2026-08-20 QA pass on T115–T120 plus general landing-page feedback), refined by `product-manager` and scoped in this pass. T123 is a two-child umbrella: T123.1 builds and validates the looping, text-bearing Big Cup scene in the trick-viz sandbox in isolation, and T123.2 wires it into the production landing page with a WebGL fallback — split because validating a wholly new capability (3D text, autoplay looping) in isolation is a different risk profile from integrating it into a page every visitor loads, mirroring how T117 split screenshot capture from display-logic wiring. Three product questions surfaced during S003's refinement were resolved before scoping rather than left `Blocked`: the hero is decorative-only (no drag/orbit/tap interaction), needs a static-image fallback for visitors whose browser can't run WebGL, and does not need to respect `prefers-reduced-motion` this iteration. All other entries are independent S-sized tickets — no required ordering between them beyond what each entry's own Notes call out (T124 and T128 both touch landing-page desktop sizing but are independent of each other; T131 references T130's corrected animation duration but has no hard git-level dependency on it)._
 
-### [T128] Widen the landing page's use of the screen on web
-
-- **Area:** Landing page
-- **Priority:** Medium
-- **Status:** In progress
-- **Planning:** Implementer
-- **Description:** `Content` (`landing-page.tsx:185-190`) is `max-width: 620px` at every viewport, leaving most of a desktop screen as empty margin. Add a web/desktop breakpoint that widens the content column to occupy the majority of the screen.
-- **Exit criteria:** At a desktop-width viewport (e.g. 1280px+), the landing page's content column occupies the majority of the viewport width (confirmed via computed style, not just visual impression); at mobile widths, today's layout is unchanged.
-- **Notes:** Independent of T124 (screenshot showcase sizing) — different component, can be done in either order; both affect landing-page desktop layout, so worth a final visual pass together once both land.
-
 ### [T129] Redesign trick goal cards to match the app's visual identity
 
 - **Area:** Goals
