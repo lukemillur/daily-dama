@@ -4,6 +4,16 @@ Completed entries move here from `TASKS.md`'s `Backlog`, in the same commit that
 
 Entries keep their content as it was at completion. Don't retroactively edit a description or exit criteria after the fact; if something about a completed task turns out to be wrong or misleading, note that in a new entry or in code, not by rewriting history here.
 
+### [T138] Widen the landing page's desktop content column further
+
+- **Area:** Landing page
+- **Priority:** High
+- **Status:** Done
+- **Planning:** Implementer
+- **Description:** `Content`'s desktop max-width (1100px, set in T128) still reads as too narrow per QA. Increase it to occupy a visibly larger share of the viewport.
+- **Exit criteria:** At a desktop viewport (1280px+), `Content`'s resolved max-width is clearly larger than the current 1100px cap — confirmed via a resolved-style unit test asserting the new value exceeds 1100; mobile width (620px) is unchanged. Confirmed: `Content`'s desktop `max-width` (`landing-page.tsx`) is now `1320px` (up from 1100px), a clear jump rather than an incremental nudge; mobile `max-width` remains `620px`. A new assertion in `landing-page.test.tsx` (`LandingPage content column width`) mounts the page at a 1280px mocked viewport, resolves `Content`'s style via `resolvedStyleFor`, and asserts its max-width is greater than 1100; the existing mobile-width assertion (`toBe(620)`) is unchanged. `node .claude/scripts/verify.mjs` passed all four steps (test, lint, typecheck, web export).
+- **Notes:** From story S008. Second round of the same feedback (T128 already widened this once) — make a clear, not incremental, increase. T134 (S003) depends on this landing first.
+
 ### [T135] Center the screenshot showcase items
 
 - **Area:** Landing page

@@ -252,6 +252,7 @@ describe('LandingPage content column width', () => {
     const contentStyle = resolvedStyleFor(root, contentNodes);
     expect(contentStyle?.maxWidth).toBeGreaterThan(620);
     expect(contentStyle?.maxWidth).toBeGreaterThan(1280 / 2);
+    expect(contentStyle?.maxWidth).toBeGreaterThan(1100);
   });
 });
 
