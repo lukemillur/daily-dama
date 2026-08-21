@@ -5,7 +5,7 @@ import { styled } from 'styled-components/native';
 import { Button } from '@/components/ui/button';
 import { BodyText } from '@/components/ui/typography';
 import { AppColors, Radii } from '@/constants/theme';
-import { useUserProfile } from '@/features/profile/state/user-profile-provider';
+import { useCachedOnboardingStatus } from '@/features/landing/state/use-cached-onboarding-status';
 
 interface CtaCopy {
   readonly tag: string;
@@ -29,9 +29,9 @@ const RETURNING_COPY: CtaCopy = {
 };
 
 export function LandingCta() {
-  const profile = useUserProfile();
+  const { hasCompletedOnboarding } = useCachedOnboardingStatus();
   const router = useRouter();
-  const isReturning = profile.hasCompletedOnboarding;
+  const isReturning = hasCompletedOnboarding;
   const copy = isReturning ? RETURNING_COPY : FIRST_TIME_COPY;
 
   return (

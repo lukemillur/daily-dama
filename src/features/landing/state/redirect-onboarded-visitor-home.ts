@@ -1,9 +1,8 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect } from 'react';
 
-import { useUserProfile } from '@/features/profile/state/user-profile-provider';
-
 import { LANDING_ARRIVAL_FROM_APP, LANDING_ARRIVAL_PARAM } from './landing-navigation';
+import { useCachedOnboardingStatus } from './use-cached-onboarding-status';
 
 /**
  * Redirects a fresh arrival at `/` straight to `/app/home` when onboarding is
@@ -12,10 +11,10 @@ import { LANDING_ARRIVAL_FROM_APP, LANDING_ARRIVAL_PARAM } from './landing-navig
  * end.
  */
 export function useRedirectOnboardedVisitorHome() {
-  const profile = useUserProfile();
+  const { hasCompletedOnboarding, kenteiRank } = useCachedOnboardingStatus();
   const router = useRouter();
   const params = useLocalSearchParams();
-  const isOnboardingComplete = profile.hasCompletedOnboarding && profile.kenteiRank !== undefined;
+  const isOnboardingComplete = hasCompletedOnboarding && kenteiRank !== undefined;
   const isInAppArrival = params[LANDING_ARRIVAL_PARAM] === LANDING_ARRIVAL_FROM_APP;
   const shouldRedirect = isOnboardingComplete && !isInAppArrival;
 

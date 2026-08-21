@@ -3,7 +3,7 @@ import { act, create } from 'react-test-renderer';
 import { Text } from 'react-native';
 
 import { useRedirectOnboardedVisitorHome } from '@/features/landing/state/redirect-onboarded-visitor-home';
-import type { UserProfile } from '@/features/profile/model/user-profile';
+import type { CachedOnboardingStatus } from '@/features/profile/persistence/read-cached-onboarding-status';
 
 const mockRouter = { replace: jest.fn() };
 let mockSearchParams: Record<string, string> = {};
@@ -12,9 +12,9 @@ jest.mock('expo-router', () => ({
   useRouter: () => mockRouter,
 }));
 
-const mockUseUserProfile = jest.fn<() => UserProfile>();
-jest.mock('@/features/profile/state/user-profile-provider', () => ({
-  useUserProfile: () => mockUseUserProfile(),
+const mockUseCachedOnboardingStatus = jest.fn<() => CachedOnboardingStatus>();
+jest.mock('@/features/landing/state/use-cached-onboarding-status', () => ({
+  useCachedOnboardingStatus: () => mockUseCachedOnboardingStatus(),
 }));
 
 function HookHost({ onResult }: { onResult: (result: boolean) => void }) {
@@ -33,14 +33,13 @@ function mountHook() {
 
 beforeEach(() => {
   mockRouter.replace.mockClear();
-  mockUseUserProfile.mockReset();
+  mockUseCachedOnboardingStatus.mockReset();
   mockSearchParams = {};
 });
 
 describe('useRedirectOnboardedVisitorHome', () => {
   it('redirects a fresh arrival to /app/home when onboarding is complete', () => {
-    mockUseUserProfile.mockReturnValue({
-      selectedTrickIds: [],
+    mockUseCachedOnboardingStatus.mockReturnValue({
       hasCompletedOnboarding: true,
       kenteiRank: 5,
     });
@@ -52,8 +51,7 @@ describe('useRedirectOnboardedVisitorHome', () => {
   });
 
   it('skips the redirect when the in-app arrival signal is present', () => {
-    mockUseUserProfile.mockReturnValue({
-      selectedTrickIds: [],
+    mockUseCachedOnboardingStatus.mockReturnValue({
       hasCompletedOnboarding: true,
       kenteiRank: 5,
     });
@@ -66,8 +64,7 @@ describe('useRedirectOnboardedVisitorHome', () => {
   });
 
   it('never redirects when onboarding is incomplete, regardless of the signal', () => {
-    mockUseUserProfile.mockReturnValue({
-      selectedTrickIds: [],
+    mockUseCachedOnboardingStatus.mockReturnValue({
       hasCompletedOnboarding: false,
       kenteiRank: undefined,
     });
