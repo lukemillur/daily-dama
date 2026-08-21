@@ -139,7 +139,7 @@ _T121–T131 come from stories S001–S011 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 - **Area:** Landing page
 - **Priority:** Low
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** Screenshot items (`ScreenshotItem`, `landing-page.tsx:232`) have no entrance animation, unlike `LandingCta`'s `FadeInUp` treatment. Convert `ScreenshotItem` to an animated component using the same `FadeInUp` pattern, at the corrected (slower) duration from T130.
 - **Exit criteria:** Each screenshot item renders with an `entering={FadeInUp...}` animation matching the CTA panel's corrected duration/easing. `yarn test --runInBand`, `yarn lint`, and `yarn tsc --noEmit` all pass.
