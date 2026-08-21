@@ -141,7 +141,7 @@ _T132–T152 come from stories S001–S022 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 - **Area:** Goals
 - **Priority:** Medium
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Implementer
 - **Description:** `GoalRow`/`GoalCard` (`src/features/goals/components/trick-goals-screen.tsx`) only makes its "Practice toward this goal" link and "Delete" button individually tappable. Make the whole card one tap target for the primary (practice) action, matching the press feedback already used for tappable rows elsewhere (e.g. `RowAction` in `trick-directory.tsx`), while keeping Delete as its own distinct control.
 - **Exit criteria:** Tapping anywhere on a goal card other than its Delete control triggers the same navigation as today's "Practice toward this goal" link, with visible press feedback; tapping Delete still opens its own confirm step and does not also trigger navigation. `yarn test --runInBand` passes, including a test asserting a card-level press invokes the practice navigation and that pressing Delete does not.
