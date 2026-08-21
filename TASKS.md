@@ -193,7 +193,7 @@ _All currently actionable backend-roadmap work is phase-gated and active in depe
 
 - **Area:** Password reset UI
 - **Priority:** High (inherited from parent T153)
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** Add the public static route `/auth/reset-password`, but permit password submission only while the Auth provider holds a valid password-recovery session. Provide confirmation, mismatch, weak-password, expired-session, offline, loading, and completion states through the structured Auth boundary.
 - **Exit criteria:** Route/provider tests prove a valid injected recovery session can set a compliant new password exactly once, while a direct visit without recovery state, an expired session, mismatched or weak input, offline submission, and repeat submission are handled deterministically without exposing a password, session, or email in the URL, logs, or analytics; the web export emits the reset route.
