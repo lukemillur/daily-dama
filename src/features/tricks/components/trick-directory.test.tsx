@@ -1,4 +1,5 @@
 import { describe, expect, it } from '@jest/globals';
+import { useState } from 'react';
 import { act, create } from 'react-test-renderer';
 
 import { TrickDirectory } from '@/features/tricks/components/trick-directory';
@@ -81,6 +82,42 @@ describe('TrickDirectory', () => {
     expect(textAfterToggle.indexOf('Focused tricks')).toBeGreaterThanOrEqual(0);
     expect(textAfterToggle.indexOf('Spike')).toBeGreaterThan(textAfterToggle.indexOf('Focused tricks'));
     expect(textAfterToggle.indexOf('Spike')).toBeLessThan(textAfterToggle.indexOf('Rank 1'));
+  });
+
+  it('hides the focused-tricks section while a search query is present, and restores it when cleared', () => {
+    function Wrapper() {
+      const [query, setQuery] = useState('');
+      return (
+        <TrickDirectory
+          tricks={FIXTURE_TRICKS}
+          showFocusedSection
+          focusedTrickIds={['trick-3']}
+          search={{ query, onChangeText: setQuery }}
+        />
+      );
+    }
+
+    let root!: import('react-test-renderer').ReactTestRenderer;
+    act(() => {
+      root = create(<Wrapper />);
+    });
+
+    expect(allText(root)).toContain('Focused tricks');
+
+    const searchInput = root.root.findByProps({ accessibilityLabel: 'Search tricks' });
+    act(() => {
+      searchInput.props.onChangeText('Big');
+    });
+    expect(allText(root)).not.toContain('Focused tricks');
+
+    act(() => {
+      searchInput.props.onChangeText('');
+    });
+    expect(allText(root)).toContain('Focused tricks');
+
+    act(() => {
+      root.unmount();
+    });
   });
 
   it('renders no Practice action when practiceAction is absent', () => {
