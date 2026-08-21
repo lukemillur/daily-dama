@@ -141,7 +141,7 @@ _T132–T152 come from stories S001–S022 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 - **Area:** Landing page
 - **Priority:** Medium
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Implementer
 - **Description:** `ScreenshotItem` (`landing-page.tsx`) caps at 560px on desktop (set in T124), narrower than `Content`'s desktop column. Widen it to match `Content`'s current desktop max-width instead of a smaller fixed cap.
 - **Exit criteria:** At a desktop viewport (1280px+), `ScreenshotItem`'s resolved max-width equals `Content`'s resolved max-width — confirmed via a resolved-style unit test at desktop width asserting the two values are equal.
