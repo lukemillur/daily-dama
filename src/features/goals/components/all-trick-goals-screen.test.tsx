@@ -70,6 +70,12 @@ function Harness({ focusedTrickIds = [] }: { readonly focusedTrickIds?: readonly
         }
       />
       <Pressable
+        accessibilityLabel="add-goal-a2"
+        onPress={() =>
+          addGoal({ kind: 'time', trickId: TRICK_A.id, trickName: TRICK_A.name, targetMinutes: 10 })
+        }
+      />
+      <Pressable
         accessibilityLabel="record-sesh-a"
         onPress={() => recordCompletedSesh(summaryFor(TRICK_A, 3))}
       />
@@ -121,11 +127,14 @@ describe('AllTrickGoalsScreen', () => {
       const root = await mountHarness();
 
       press(root, 'add-goal-a');
+      press(root, 'add-goal-a2');
       press(root, 'add-goal-b');
       press(root, 'record-sesh-a');
 
-      expect(findText(root, 'Big Cup')).toHaveLength(1);
-      expect(findText(root, 'Stall')).toHaveLength(1);
+      // Trick A has two goals -> heading shown. Trick B has one goal -> no heading.
+      expect(findText(root, 'Big Cup goals')).toHaveLength(1);
+      expect(findText(root, 'Stall')).toHaveLength(0);
+      expect(findText(root, 'Stall goals')).toHaveLength(0);
       expect(findText(root, '3 / 3 laces')).toHaveLength(1);
       expect(findText(root, '0 / 5 laces')).toHaveLength(1);
 
@@ -179,7 +188,7 @@ describe('AllTrickGoalsScreen', () => {
     const root = await mountHarness();
 
     press(root, 'add-goal-a');
-    expect(findText(root, 'Big Cup')).toHaveLength(1);
+    expect(() => root.root.findByProps({ accessibilityLabel: 'Practice Big Cup' })).not.toThrow();
 
     const [deleteAction] = root.root.findAll(
       (node) => node.props.accessibilityLabel === 'Delete goal',
@@ -195,7 +204,7 @@ describe('AllTrickGoalsScreen', () => {
       confirmDelete.props.onPress();
     });
 
-    expect(findText(root, 'Big Cup')).toHaveLength(0);
+    expect(() => root.root.findByProps({ accessibilityLabel: 'Practice Big Cup' })).toThrow();
   });
 
   it('creates a goal for a chosen trick from the all-trick-goals screen and it appears in the list', async () => {
@@ -219,7 +228,7 @@ describe('AllTrickGoalsScreen', () => {
 
     press(root, 'Save goal');
 
-    expect(findText(root, 'Stall')).toHaveLength(1);
+    expect(() => root.root.findByProps({ accessibilityLabel: 'Practice Stall' })).not.toThrow();
     expect(findText(root, '0 / 10 laces')).toHaveLength(1);
   });
 

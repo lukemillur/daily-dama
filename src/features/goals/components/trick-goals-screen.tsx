@@ -66,6 +66,9 @@ export function TrickGoalsScreen({ trickId, trickName, onBack }: TrickGoalsScree
           Add goal
         </AddButton>
 
+        {trickGoals.length > 1 ? (
+          <SectionTitle>{`${trickName} goals`}</SectionTitle>
+        ) : null}
         <GoalList>
           {goalProgressList.map((progress) => (
             <GoalRow key={progress.goal.id} progress={progress} onDelete={() => deleteGoal(progress.goal.id)} />
@@ -257,6 +260,12 @@ const Content = styled.View`width: 100%; max-width: 680px; align-self: center; p
 const PageTitle = styled(DisplayTitle)`margin-top: 12px;`;
 const Introduction = styled(BodyText)`max-width: 580px; margin-top: 16px;`;
 const AddButton = styled(Button)`align-self: flex-start; margin-top: 26px;`;
+const SectionTitle = styled.Text`
+  color: ${AppColors.ink};
+  font-size: 18px;
+  font-weight: 900;
+  margin-top: 28px;
+`;
 const GoalList = styled.View`gap: 12px; margin-top: 28px;`;
 // `boxShadow` is passed as an explicit `style` prop at each JSX call site (not baked into
 // `.attrs`) -- see landing-cta.tsx's CtaPanel comment: styled-components/native's

@@ -92,9 +92,11 @@ export function AllTrickGoalsScreen({
         <Sections>
           {groups.map((group) => (
             <Section key={group.trickId}>
-              <SectionHeader>
-                <SectionTitle>{group.trickName}</SectionTitle>
-              </SectionHeader>
+              {group.progress.length > 1 ? (
+                <SectionHeader>
+                  <SectionTitle>{`${group.trickName} goals`}</SectionTitle>
+                </SectionHeader>
+              ) : null}
               <GoalList>
                 {group.progress.map((progress) => (
                   <GoalRow
