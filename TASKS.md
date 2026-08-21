@@ -141,7 +141,7 @@ _T132–T152 come from stories S001–S022 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 - **Area:** Landing page
 - **Priority:** Low
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Implementer
 - **Description:** `LandingCta`'s `FadeInUp.duration(900)` (set in T130) still reads as too fast per QA. Increase it further.
 - **Exit criteria:** `LandingCta`'s `FadeInUp` duration is increased beyond 900ms to a value that reads as clearly slower on load — confirmed by inspecting the rendered `entering` prop/animation config, matching T130's own verification approach (no reliable automated timing assertion for Reanimated's native driver in this codebase).
