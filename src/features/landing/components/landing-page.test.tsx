@@ -117,12 +117,6 @@ describe('LandingPage', () => {
 
     expect(root.root.findAllByProps({ testID: 'landing-hero' }).length).toBeGreaterThan(0);
   });
-
-  it('renders the kendama photo', async () => {
-    const root = await mount();
-
-    expect(root.root.findAllByProps({ testID: 'landing-photo' }).length).toBeGreaterThan(0);
-  });
 });
 
 describe('LandingPage screenshot showcase', () => {

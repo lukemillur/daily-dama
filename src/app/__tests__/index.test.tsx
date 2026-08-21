@@ -91,9 +91,8 @@ describe('RootRoute (landing page)', () => {
       'Custom trick form',
       'Trick goals screen',
     ];
-    // The landing page also renders a kendama photo (see landing-photo.tsx) via the same
-    // expo-image component, so scope this count to the screenshot images specifically rather
-    // than asserting on the raw total.
+    // Scope this count to the screenshot images specifically rather than asserting on the
+    // raw total, in case other expo-image usages appear elsewhere on the page.
     const screenshotImages = images.filter(
       (node) =>
         typeof node.props.accessibilityLabel === 'string' &&
