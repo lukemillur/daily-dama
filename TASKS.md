@@ -147,16 +147,6 @@ _T132–T152 come from stories S001–S022 in [BACKLOG_STORIES.md](BACKLOG_STORI
 - **Exit criteria:** At a desktop viewport (1280px+), `ScreenshotItem`'s resolved max-width equals `Content`'s resolved max-width — confirmed via a resolved-style unit test at desktop width asserting the two values are equal.
 - **Notes:** From story S003. Depends on T138 (S008) for the final `Content` desktop width — implement T138 first so this doesn't size against a value that's about to change again.
 
-### [T138] Widen the landing page's desktop content column further
-
-- **Area:** Landing page
-- **Priority:** High
-- **Status:** In progress
-- **Planning:** Implementer
-- **Description:** `Content`'s desktop max-width (1100px, set in T128) still reads as too narrow per QA. Increase it to occupy a visibly larger share of the viewport.
-- **Exit criteria:** At a desktop viewport (1280px+), `Content`'s resolved max-width is clearly larger than the current 1100px cap — confirmed via a resolved-style unit test asserting the new value exceeds 1100; mobile width (620px) is unchanged.
-- **Notes:** From story S008. Second round of the same feedback (T128 already widened this once) — make a clear, not incremental, increase. T134 (S003) depends on this landing first.
-
 ### [T139] Slow the CTA entrance animation further
 
 - **Area:** Landing page

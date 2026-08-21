@@ -191,7 +191,7 @@ const LandingScroll = styled(ScrollView)`
 
 const Content = styled.View<{ readonly $isWebLayout: boolean }>`
   width: 100%;
-  max-width: ${({ $isWebLayout }) => ($isWebLayout ? 1100 : 620)}px;
+  max-width: ${({ $isWebLayout }) => ($isWebLayout ? 1320 : 620)}px;
   align-self: center;
   padding: ${({ $isWebLayout }) => ($isWebLayout ? '40px 48px 80px' : '40px 22px 80px')};
 `;
