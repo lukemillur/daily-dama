@@ -5,7 +5,7 @@ import { styled } from 'styled-components/native';
 
 import { Button } from '@/components/ui/button';
 import { BodyText, DisplayTitle, Eyebrow } from '@/components/ui/typography';
-import { AppColors, BottomTabInset } from '@/constants/theme';
+import { AppColors, BottomTabInset, Radii } from '@/constants/theme';
 import {
   selectGoalProgress,
   selectGoalsForTrick,
@@ -106,7 +106,7 @@ export function GoalRow({
 
   if (confirmingDelete) {
     return (
-      <GoalCard>
+      <GoalCard style={{ boxShadow: `8px 8px 0 ${AppColors.ink}` }}>
         <GoalBody>Delete this goal? This cannot be undone.</GoalBody>
         <GoalActionsRow>
           <GoalAction
@@ -130,7 +130,7 @@ export function GoalRow({
   }
 
   return (
-    <GoalCard>
+    <GoalCard style={{ boxShadow: `8px 8px 0 ${AppColors.ink}` }}>
       <GoalMetaRow>
         <GoalMeta>{goal.kind === 'count' ? 'Lace count goal' : 'Practice time goal'}</GoalMeta>
         {progress.achieved ? <AchievedBadge>Achieved</AchievedBadge> : null}
@@ -250,7 +250,16 @@ const PageTitle = styled(DisplayTitle)`margin-top: 12px;`;
 const Introduction = styled(BodyText)`max-width: 580px; margin-top: 16px;`;
 const AddButton = styled(Button)`align-self: flex-start; margin-top: 26px;`;
 const GoalList = styled.View`gap: 12px; margin-top: 28px;`;
-const GoalCard = styled.View`background-color: ${AppColors.paper}; border: 2px solid ${AppColors.ink}; padding: 16px;`;
+// `boxShadow` is passed as an explicit `style` prop at each JSX call site (not baked into
+// `.attrs`) -- see landing-cta.tsx's CtaPanel comment: styled-components/native's
+// `.attrs({ style: {...} })` config is not concatenated into the final rendered style
+// unless the caller also passes its own `style` prop.
+const GoalCard = styled.View`
+  background-color: ${AppColors.paper};
+  border: 2px solid ${AppColors.ink};
+  border-radius: ${Radii.panel}px;
+  padding: 16px;
+`;
 const GoalMetaRow = styled.View`flex-direction: row; align-items: center; justify-content: space-between; gap: 10px;`;
 const GoalMeta = styled.Text`color: ${AppColors.red}; font-size: 11px; font-weight: 900; letter-spacing: 0.8px; text-transform: uppercase;`;
 const AchievedBadge = styled.Text`overflow: hidden; padding: 4px 8px; color: ${AppColors.paper}; background-color: ${AppColors.ink}; border-radius: 3px; font-size: 10px; font-weight: 900; letter-spacing: 0.8px; text-transform: uppercase;`;
