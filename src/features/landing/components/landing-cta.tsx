@@ -37,7 +37,7 @@ export function LandingCta() {
   return (
     <CtaPanel
       $variant={isReturning ? 'returning' : 'firstTime'}
-      entering={FadeInUp.duration(450).springify()}
+      entering={FadeInUp.duration(900).springify()}
       style={{ boxShadow: `8px 8px 0 ${AppColors.ink}` }}
     >
       <CtaMotif aria-hidden>●</CtaMotif>

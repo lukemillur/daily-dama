@@ -1657,3 +1657,13 @@ Entries keep their content as it was at completion. Don't retroactively edit a d
 - **Description:** `GoalCard` (`src/features/goals/components/trick-goals-screen.tsx:253`) is a single-line styled component (flat background, plain border, padding) with no rounded corners, shadow, or accent treatment, unlike `CtaPanel`/`ScreenshotItem` elsewhere in the app. Restyle it to match the app's established sticker-style visual language (rounded corners, bold border/shadow, and/or color accents) without changing what information it shows.
 - **Exit criteria:** Trick goal cards render with rounded corners and a bold/shadow-style border consistent with `CtaPanel`'s treatment; all existing goal information (trick name, progress) still renders correctly. `yarn test --runInBand` passes.
 - **Notes:** Visual treatment only — no change to goal data, progress calculation, or the goals reducer. Deviated from the committed plan's `.attrs({ style: { boxShadow } })` approach: `landing-cta.tsx`'s `CtaPanel` comment documents that pattern (used by `trick-card.tsx`) as inert, since styled-components/native only concatenates `.attrs`-provided `style` into the final render when the JSX call site also passes its own `style` prop. Used the same `CtaPanel`-style inline `style={{ boxShadow: ... }}` at both `GoalCard` call sites instead, and verified via a scratch `react-test-renderer` render that the rendered style array includes both the `border-radius: 6` (Radii.panel) and `boxShadow` entries before deleting the scratch test.
+
+### [T130] Slow down the CTA entrance animation
+
+- **Area:** Landing page
+- **Priority:** Low
+- **Status:** Done
+- **Planning:** Implementer
+- **Description:** `LandingCta`'s `entering={FadeInUp.duration(450).springify()}` (`landing-cta.tsx:40`) plays too fast to register, per QA. Increase the duration to a noticeably slower, more deliberate pace.
+- **Exit criteria:** The CTA panel's `FadeInUp` duration is increased from 450ms to a value that reads as clearly slower on load (roughly 800-1000ms) — confirmed by inspecting the rendered `entering` prop/animation config, since automated timing assertions on Reanimated's native driver aren't reliable in this codebase's test setup.
+- **Notes:** Exact duration is an implementation call. Increased `FadeInUp.duration(450)` to `FadeInUp.duration(900)` in `src/features/landing/components/landing-cta.tsx:40`, confirmed by reading the source change (no reliable automated timing assertion for Reanimated's native driver in this codebase).
