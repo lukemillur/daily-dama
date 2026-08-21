@@ -148,7 +148,7 @@ export function LandingPage() {
           </FeatureList>
 
           <ScreenshotSection>
-            <ScreenshotHeading>What you’re signing up for</ScreenshotHeading>
+            <ScreenshotHeading>See it in action</ScreenshotHeading>
             {screenshots.map((screenshot) => (
               <ScreenshotItem
                 key={screenshot.alt}
