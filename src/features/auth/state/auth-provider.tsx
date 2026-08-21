@@ -11,6 +11,7 @@ import {
 import { AuthError } from '@supabase/supabase-js';
 
 import { deriveAuthState, INITIALIZING_AUTH_STATE, type AuthState } from '@/features/auth/model/auth-state';
+import { logAuthWarning } from '@/features/auth/observability/auth-observability';
 import { getSupabaseClient } from '@/features/auth/persistence/supabase-client';
 
 interface AuthActions {
@@ -48,7 +49,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
         subscription.unsubscribe();
       };
     } catch (error) {
-      console.warn('Unable to subscribe to Supabase auth state.', error);
+      logAuthWarning('Unable to subscribe to Supabase auth state.', error);
       Promise.resolve().then(() => setState({ status: 'guest', reason: 'error' }));
       return undefined;
     }

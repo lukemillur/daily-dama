@@ -2,6 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { Platform } from 'react-native';
 
+import { logAuthWarning } from '@/features/auth/observability/auth-observability';
 import { resolveSupabaseConfig } from '@/features/auth/persistence/supabase-config';
 
 let memoizedClient: SupabaseClient | null | undefined;
@@ -28,7 +29,7 @@ export function getSupabaseClient(): SupabaseClient | null {
 
   if (config.status !== 'ready') {
     if (config.status === 'malformed') {
-      console.warn('Supabase configuration is malformed.', config.reason);
+      logAuthWarning('Supabase configuration is malformed.', config.reason);
     }
     memoizedClient = null;
     return memoizedClient;
