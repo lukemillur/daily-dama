@@ -1,0 +1,4 @@
+interface:
+  display_name: "Daily Dama Ticket Scoping"
+  short_description: "Turn ready planning items into scoped tickets"
+  default_prompt: "Use $scope-tickets to turn ready Daily Dama planning items into mechanically verifiable tickets."

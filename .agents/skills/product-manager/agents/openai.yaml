@@ -1,0 +1,4 @@
+interface:
+  display_name: "Daily Dama Product Manager"
+  short_description: "Shape evidence-based Daily Dama backlog items"
+  default_prompt: "Use $product-manager to refine a product document into prioritized Daily Dama planning items."
