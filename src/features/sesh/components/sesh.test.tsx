@@ -2373,7 +2373,25 @@ describe('Sesh multi-trick entry (T071)', () => {
     expect(text).toContain('Practice format');
     expect(text).toContain('Timed');
     expect(text).toContain('Open-ended');
+    expect(text).toContain('Focused tricks');
     expect(findByAccessibilityLabel(root, 'Sesh duration in minutes').length).toBeGreaterThan(0);
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  it('shows a "Focused tricks" heading directly above the focused-tricks list, below "Practice several tricks" (T151)', async () => {
+    const root = await mountSeshHome();
+
+    const text = JSON.stringify(root.toJSON());
+    const multiTrickIndex = text.indexOf('Practice several tricks');
+    const headingIndex = text.indexOf('Focused tricks');
+    const trickNameIndex = text.indexOf(TRICK.name);
+
+    expect(multiTrickIndex).toBeGreaterThan(-1);
+    expect(headingIndex).toBeGreaterThan(multiTrickIndex);
+    expect(trickNameIndex).toBeGreaterThan(headingIndex);
 
     act(() => {
       root.unmount();

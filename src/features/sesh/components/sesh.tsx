@@ -450,6 +450,7 @@ function TrickPicker({
             </MultiTrickAction>
           </Link>
         )}
+        <PlanLabel>Focused tricks</PlanLabel>
         <TrickChoices>
           {tricks.map((trick) => {
             const isPreferred = trick.id === preferredTrickId;
