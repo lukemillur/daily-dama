@@ -139,7 +139,7 @@ _T121–T131 come from stories S001–S011 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 - **Area:** Goals
 - **Priority:** Medium
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** `GoalCard` (`src/features/goals/components/trick-goals-screen.tsx:253`) is a single-line styled component (flat background, plain border, padding) with no rounded corners, shadow, or accent treatment, unlike `CtaPanel`/`ScreenshotItem` elsewhere in the app. Restyle it to match the app's established sticker-style visual language (rounded corners, bold border/shadow, and/or color accents) without changing what information it shows.
 - **Exit criteria:** Trick goal cards render with rounded corners and a bold/shadow-style border consistent with `CtaPanel`'s treatment; all existing goal information (trick name, progress) still renders correctly. `yarn test --runInBand` passes.
