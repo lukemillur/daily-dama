@@ -346,7 +346,7 @@ function TrickPicker({
   const hasAnyPersonalBest = personalBestsByTrickId.size > 0;
 
   return (
-    <ScrollArea contentContainerStyle={{ padding: 24, paddingBottom: 140 }}>
+    <ScrollArea contentContainerStyle={{ padding: 24 }}>
       <PickerContent>
         {isDirectPractice ? (
           <>
@@ -657,7 +657,7 @@ export function ActiveSesh({
   }, [elapsedMs, isPaused, onTimerElapsed, plan]);
 
   return (
-    <ScrollArea contentContainerStyle={{ padding: 24, paddingBottom: 140 }}>
+    <ScrollArea contentContainerStyle={{ padding: 24 }}>
       <ActiveContent>
         {countGoalCelebrations.map((baseline) => (
           <GoalCelebrationBanner key={baseline.goal.id} goal={baseline.goal} tense="inSesh" />
@@ -979,7 +979,7 @@ export function CompletedSesh({
           : { $beaten: false as const, text: `${personalBest - laceCount} short of your best of ${personalBest}.` };
 
   return (
-    <ScrollArea contentContainerStyle={{ padding: 24, paddingBottom: 140 }}>
+    <ScrollArea contentContainerStyle={{ padding: 24 }}>
       <ActiveContent>
         {isFirstLace ? <FirstLaceBanner trickName={summary.trick.name} tense="wrapUp" /> : null}
         {justAchievedGoals.map((goal) => (

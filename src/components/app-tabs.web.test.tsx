@@ -8,9 +8,11 @@ import type { UserProfile } from '@/features/profile/model/user-profile';
 
 const mockRouter = { push: jest.fn(), replace: jest.fn() };
 let mockSearchParams: Record<string, string> = {};
+let mockPathname = '/app/profile';
 jest.mock('expo-router', () => ({
   useRouter: () => mockRouter,
   useLocalSearchParams: () => mockSearchParams,
+  usePathname: () => mockPathname,
 }));
 
 const mockUseUserProfile = jest.fn<() => UserProfile>();
@@ -84,6 +86,7 @@ beforeEach(() => {
   mockUseUserProfile.mockReset();
   mockUseUserProfile.mockReturnValue(defaultProfile);
   mockSearchParams = {};
+  mockPathname = '/app/profile';
 });
 
 describe('CustomTabList leave-app footer bar', () => {
@@ -143,5 +146,31 @@ describe('CustomTabList leave-app footer bar', () => {
 
     expect(customFooterStyle.backgroundColor).not.toBe(defaultFooterStyle.backgroundColor);
     expect(customLinkStyle.color).not.toBe(defaultLinkStyle.color);
+  });
+});
+
+describe('CustomTabList footer bar route gating', () => {
+  it('does not render the footer bar on non-Profile routes', async () => {
+    mockPathname = '/app/home';
+    const root = await mountTabList();
+
+    expect(() => findFooterBar(root)).toThrow();
+  });
+
+  it.each(['/app/home', '/app/sesh', '/app/tricks', '/app/stats'])(
+    'omits the footer bar on %s',
+    async (pathname) => {
+      mockPathname = pathname;
+      const root = await mountTabList();
+
+      expect(() => findFooterBar(root)).toThrow();
+    },
+  );
+
+  it('renders the footer bar on /app/profile', async () => {
+    mockPathname = '/app/profile';
+    const root = await mountTabList();
+
+    expect(findFooterBar(root)).toBeTruthy();
   });
 });

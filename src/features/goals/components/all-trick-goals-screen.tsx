@@ -4,7 +4,7 @@ import { styled } from 'styled-components/native';
 
 import { Button } from '@/components/ui/button';
 import { BodyText, DisplayTitle, Eyebrow } from '@/components/ui/typography';
-import { AppColors, BottomTabInset } from '@/constants/theme';
+import { AppColors } from '@/constants/theme';
 import {
   GoalForm,
   GoalRow,
@@ -71,7 +71,7 @@ export function AllTrickGoalsScreen({
   }
 
   return (
-    <Scroll contentContainerStyle={{ paddingBottom: 120 + BottomTabInset }}>
+    <Scroll contentContainerStyle={{ paddingBottom: 24 }}>
       <Content>
         <Eyebrow>Trick goals</Eyebrow>
         <PageTitle>Trick goals</PageTitle>

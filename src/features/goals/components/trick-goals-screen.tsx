@@ -5,7 +5,7 @@ import { styled } from 'styled-components/native';
 
 import { Button } from '@/components/ui/button';
 import { BodyText, DisplayTitle, Eyebrow } from '@/components/ui/typography';
-import { AppColors, BottomTabInset, Radii } from '@/constants/theme';
+import { AppColors, Radii } from '@/constants/theme';
 import {
   selectGoalProgress,
   selectGoalsForTrick,
@@ -52,7 +52,7 @@ export function TrickGoalsScreen({ trickId, trickName, onBack }: TrickGoalsScree
   }
 
   return (
-    <Scroll keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: 120 + BottomTabInset }}>
+    <Scroll keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: 24 }}>
       <Content>
         <Eyebrow>Goals</Eyebrow>
         <PageTitle>{trickName}</PageTitle>
@@ -183,7 +183,7 @@ export function GoalForm({
   };
 
   return (
-    <Scroll keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: 120 + BottomTabInset }}>
+    <Scroll keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: 24 }}>
       <Content>
         <Eyebrow>New goal</Eyebrow>
         <PageTitle>Set a target.</PageTitle>

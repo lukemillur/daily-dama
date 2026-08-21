@@ -1,4 +1,4 @@
-import { useRouter } from 'expo-router';
+import { usePathname, useRouter } from 'expo-router';
 import {
   Tabs,
   TabList,
@@ -69,6 +69,9 @@ export function TabButton({ children, isFocused, ...props }: TabTriggerSlotProps
 }
 
 export function CustomTabList({ hidden, children, ...props }: TabListProps & { readonly hidden?: boolean }) {
+  const pathname = usePathname();
+  const showFooter = pathname === '/app/profile';
+
   return (
     <View {...props} style={[styles.tabListContainer, hidden ? styles.tabListHidden : null]} pointerEvents="box-none">
       <View style={styles.topNavWrap} pointerEvents="box-none">
@@ -79,7 +82,7 @@ export function CustomTabList({ hidden, children, ...props }: TabListProps & { r
         </ResponsiveTabListInner>
       </View>
 
-      <AppFooterBar />
+      {showFooter && <AppFooterBar />}
     </View>
   );
 }
