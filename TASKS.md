@@ -141,7 +141,7 @@ _T132–T152 come from stories S001–S022 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 - **Area:** Sesh
 - **Priority:** Low
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Implementer
 - **Description:** The focused-tricks list on the Sesh practice screen (`sesh.tsx`, directly after "Practice several tricks") renders with no section heading of its own, leaving it ambiguous what the list represents.
 - **Exit criteria:** The Sesh practice screen shows a "Focused tricks" heading directly above the focused-tricks list (`TrickChoices`), positioned below the existing "Practice several tricks" text. `yarn test --runInBand` passes.
