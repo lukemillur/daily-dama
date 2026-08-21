@@ -4,6 +4,16 @@ Completed entries move here from `TASKS.md`'s `Backlog`, in the same commit that
 
 Entries keep their content as it was at completion. Don't retroactively edit a description or exit criteria after the fact; if something about a completed task turns out to be wrong or misleading, note that in a new entry or in code, not by rewriting history here.
 
+### [T134] Match the screenshot showcase's width to the page's text column
+
+- **Area:** Landing page
+- **Priority:** Medium
+- **Status:** Done
+- **Planning:** Implementer
+- **Description:** `ScreenshotItem` (`landing-page.tsx`) caps at 560px on desktop (set in T124), narrower than `Content`'s desktop column. Widen it to match `Content`'s current desktop max-width instead of a smaller fixed cap.
+- **Exit criteria:** At a desktop viewport (1280px+), `ScreenshotItem`'s resolved max-width equals `Content`'s resolved max-width — confirmed via a resolved-style unit test at desktop width asserting the two values are equal. Confirmed: `ScreenshotItem`'s desktop `max-width` now shares the `DESKTOP_CONTENT_MAX_WIDTH` (`1320px`) constant with `Content` (`landing-page.tsx`), rather than duplicating the literal, so the two values can't drift independently. A new test in `landing-page.test.tsx` (`LandingPage screenshot showcase sizing`) mounts the page at a 1280px mocked viewport, resolves both `ScreenshotItem` and `Content`'s styles via `resolvedStyleFor`, and asserts their `maxWidth` values are equal. `node .claude/scripts/verify.mjs` passed all four steps (test, lint, typecheck, web export).
+- **Notes:** From story S003. Depended on T138 (S008) for the final `Content` desktop width (1320px), which had already merged before this task started.
+
 ### [T138] Widen the landing page's desktop content column further
 
 - **Area:** Landing page

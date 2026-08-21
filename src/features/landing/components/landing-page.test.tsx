@@ -208,8 +208,11 @@ describe('LandingPage screenshot showcase sizing', () => {
 
     const itemNodes = root.root.findAllByProps({ testID: 'screenshot-item' });
     const itemStyle = resolvedStyleFor(root, itemNodes);
-    expect(itemStyle?.maxWidth).toBe(560);
     expect(itemStyle?.maxWidth).toBeGreaterThan(360);
+
+    const contentNodes = root.root.findAllByProps({ testID: 'landing-content' });
+    const contentStyle = resolvedStyleFor(root, contentNodes);
+    expect(itemStyle?.maxWidth).toBe(contentStyle?.maxWidth);
 
     const titleNodes = findByVisibleText(root, webTitle);
     const titleStyle = resolvedStyleFor(root, titleNodes);
@@ -220,6 +223,19 @@ describe('LandingPage screenshot showcase sizing', () => {
     const captionStyle = resolvedStyleFor(root, captionNodes);
     expect(captionStyle?.fontSize).toBe(18);
     expect(captionStyle?.fontSize).toBeGreaterThan(16);
+  });
+
+  it("matches the screenshot showcase's max-width to the content column's max-width at a desktop viewport", async () => {
+    mockUseWindowDimensions.mockReturnValue({ width: 1280, height: 900, scale: 1, fontScale: 1 });
+    const root = await mount();
+
+    const itemNodes = root.root.findAllByProps({ testID: 'screenshot-item' });
+    const itemStyle = resolvedStyleFor(root, itemNodes);
+
+    const contentNodes = root.root.findAllByProps({ testID: 'landing-content' });
+    const contentStyle = resolvedStyleFor(root, contentNodes);
+
+    expect(itemStyle?.maxWidth).toBe(contentStyle?.maxWidth);
   });
 });
 

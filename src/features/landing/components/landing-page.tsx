@@ -189,9 +189,13 @@ const LandingScroll = styled(ScrollView)`
   width: 100%;
 `;
 
+// Shared with `ScreenshotItem` so the showcase's desktop width always matches the page's
+// text column instead of duplicating the literal in two places.
+const DESKTOP_CONTENT_MAX_WIDTH = 1320;
+
 const Content = styled.View<{ readonly $isWebLayout: boolean }>`
   width: 100%;
-  max-width: ${({ $isWebLayout }) => ($isWebLayout ? 1320 : 620)}px;
+  max-width: ${({ $isWebLayout }) => ($isWebLayout ? DESKTOP_CONTENT_MAX_WIDTH : 620)}px;
   align-self: center;
   padding: ${({ $isWebLayout }) => ($isWebLayout ? '40px 48px 80px' : '40px 22px 80px')};
 `;
@@ -245,7 +249,7 @@ const ScreenshotItem = styled(Animated.View)<{ readonly $isWebLayout: boolean }>
   gap: 10px;
   align-items: center;
   width: 100%;
-  max-width: ${({ $isWebLayout }) => ($isWebLayout ? 560 : 360)}px;
+  max-width: ${({ $isWebLayout }) => ($isWebLayout ? DESKTOP_CONTENT_MAX_WIDTH : 360)}px;
   padding: ${({ $isWebLayout }) => ($isWebLayout ? '26px 26px 30px' : '18px 16px 22px')};
   background-color: ${AppColors.cream};
   border: 2px solid ${AppColors.ink};
