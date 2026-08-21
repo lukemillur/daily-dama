@@ -135,16 +135,6 @@ _T113–T120 come from stories S001–S008 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 _T121–T131 come from stories S001–S011 in [BACKLOG_STORIES.md](BACKLOG_STORIES.md) (the user's 2026-08-20 QA pass on T115–T120 plus general landing-page feedback), refined by `product-manager` and scoped in this pass. T123 is a two-child umbrella: T123.1 builds and validates the looping, text-bearing Big Cup scene in the trick-viz sandbox in isolation, and T123.2 wires it into the production landing page with a WebGL fallback — split because validating a wholly new capability (3D text, autoplay looping) in isolation is a different risk profile from integrating it into a page every visitor loads, mirroring how T117 split screenshot capture from display-logic wiring. Three product questions surfaced during S003's refinement were resolved before scoping rather than left `Blocked`: the hero is decorative-only (no drag/orbit/tap interaction), needs a static-image fallback for visitors whose browser can't run WebGL, and does not need to respect `prefers-reduced-motion` this iteration. All other entries are independent S-sized tickets — no required ordering between them beyond what each entry's own Notes call out (T124 and T128 both touch landing-page desktop sizing but are independent of each other; T131 references T130's corrected animation duration but has no hard git-level dependency on it)._
 
-### [T126] Fix the footer bar: lock it to the bottom and make it visually distinct
-
-- **Area:** Navigation / app shell
-- **Priority:** High
-- **Status:** In progress
-- **Planning:** Implementer
-- **Description:** `CustomTabList` (`src/components/app-tabs.web.tsx`) wraps the top nav pill and `AppFooterBar` in one container styled `position: 'absolute'` with no `top`/`bottom` offset, so the "footer" renders stacked near the top nav instead of pinned to the bottom of the screen; QA found no footer bar at all. Give the footer bar its own fixed-to-bottom positioning, a background visibly distinct from the page content behind it, and enough bottom padding/inset on scrollable content so it never overlaps what the user is viewing.
-- **Exit criteria:** On any in-app route (e.g. `/app/home`) at both mobile and desktop widths, the footer bar renders pinned to the bottom of the viewport (not scrolling away, not stacked under the top nav), shows "Leave app" left-aligned, has a background color visibly distinct from the content behind it, and scrolling a long page (e.g. Stats) to its end shows the last content item fully visible above the footer, not hidden behind it.
-- **Notes:** Re-does T115's original intent (see `TASKS_DONE.md`); the archived T115 entry stays as-written, history isn't rewritten. The theme-responsive requirement carries over — footer background must follow `useResolvedTheme()`, already wired in `AppFooterBar`.
-
 ### [T127] Drop "signing up" copy from the screenshot showcase
 
 - **Area:** Landing page
