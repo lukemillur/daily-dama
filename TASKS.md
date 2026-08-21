@@ -141,7 +141,7 @@ _T132–T152 come from stories S001–S022 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 - **Area:** Onboarding
 - **Priority:** Medium
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** In `kentei-onboarding.tsx`'s `themeSelect` step, `OnboardingThemeStep`'s `onSelectPreset` handler currently both applies the preset and calls `finishOnboarding()` immediately, so tapping any preset instantly exits onboarding. Split preview from commit: selecting a preset should only apply it live; a separate "Finish onboarding" action should be what advances into the app.
 - **Exit criteria:** On the onboarding theme step, tapping a preset previews it (background/accent visibly change) without leaving the step or navigating; a distinct "Finish onboarding" control is what calls `completeOnboarding` and navigates to `/app/sesh`. `yarn test --runInBand` passes, including a test asserting preset selection alone does not trigger `completeOnboarding`.
