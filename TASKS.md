@@ -135,16 +135,3 @@ _T113–T120 come from stories S001–S008 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 _T121–T131 come from stories S001–S011 in [BACKLOG_STORIES.md](BACKLOG_STORIES.md) (the user's 2026-08-20 QA pass on T115–T120 plus general landing-page feedback), refined by `product-manager` and scoped in this pass. T123 is a two-child umbrella: T123.1 builds and validates the looping, text-bearing Big Cup scene in the trick-viz sandbox in isolation, and T123.2 wires it into the production landing page with a WebGL fallback — split because validating a wholly new capability (3D text, autoplay looping) in isolation is a different risk profile from integrating it into a page every visitor loads, mirroring how T117 split screenshot capture from display-logic wiring. Three product questions surfaced during S003's refinement were resolved before scoping rather than left `Blocked`: the hero is decorative-only (no drag/orbit/tap interaction), needs a static-image fallback for visitors whose browser can't run WebGL, and does not need to respect `prefers-reduced-motion` this iteration. All other entries are independent S-sized tickets — no required ordering between them beyond what each entry's own Notes call out (T124 and T128 both touch landing-page desktop sizing but are independent of each other; T131 references T130's corrected animation duration but has no hard git-level dependency on it)._
 
-### [T131] Apply the CTA's entrance animation to the screenshot showcase
-
-- **Area:** Landing page
-- **Priority:** Low
-- **Status:** Not started
-- **Planning:** Required
-- **Description:** Screenshot items (`ScreenshotItem`, `landing-page.tsx:232`) have no entrance animation, unlike `LandingCta`'s `FadeInUp` treatment. Convert `ScreenshotItem` to an animated component using the same `FadeInUp` pattern, at the corrected (slower) duration from T130.
-- **Exit criteria:** Each screenshot item renders with an `entering={FadeInUp...}` animation matching the CTA panel's corrected duration/easing. `yarn test --runInBand`, `yarn lint`, and `yarn tsc --noEmit` all pass.
-- **Notes:** References T130's corrected duration value — if T130 hasn't merged yet, use the same slower duration decided there rather than today's 450ms. No hard git-level dependency; can technically be done in either order.
-
-## Done
-
-Completed entries live in [TASKS_DONE.md](TASKS_DONE.md) — not part of the top-to-bottom read above; see step 5 under _Completing a task_.
