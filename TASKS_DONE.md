@@ -4,6 +4,18 @@ Completed entries move here from `TASKS.md`'s `Backlog`, in the same commit that
 
 Entries keep their content as it was at completion. Don't retroactively edit a description or exit criteria after the fact; if something about a completed task turns out to be wrong or misleading, note that in a new entry or in code, not by rewriting history here.
 
+### [T135] Center the screenshot showcase items
+
+- **Area:** Landing page
+- **Priority:** Low
+- **Status:** Done
+- **Planning:** Implementer
+- **Description:** `Content` is a plain `View` with no `alignItems` set, so `ScreenshotItem`'s `max-width`-capped children default to the flex cross-axis start (left) rather than centering within the column. Center them at both mobile and desktop widths.
+- **Exit criteria:** At both mobile and desktop viewport widths, `ScreenshotItem` renders center-aligned within its containing section — confirmed via a resolved-style unit test asserting a centering style (e.g. `align-items: center`) on the relevant container.
+- **Notes:** From story S004. Independent of T134/T003 — a width-parity fix alone wouldn't center anything, since the underlying cause is missing cross-axis alignment, not sizing.
+- **Resolution:** The actual flex ancestor governing `ScreenshotItem`'s cross-axis position is `ScreenshotSection` (the direct parent inside `Content`), not `Content` itself — `Content`'s own children (`Headline`, `Lede`, `FeatureList`, etc.) rely on its default `stretch` alignment to fill the column, so adding `align-items: center` there would have re-centered the whole page's text blocks as shrink-wrapped elements instead of just the showcase. Added `align-items: center` to `ScreenshotSection` (`landing-page.tsx`) and a `testID="screenshot-section"` for testability, scoping the fix to the screenshot showcase only. Verified via new resolved-style unit tests (`LandingPage screenshot showcase centering`) asserting `alignItems: 'center'` on `ScreenshotSection` at both a 375px mobile and a 1280px desktop mocked viewport. `node .claude/scripts/verify.mjs` passed all four steps (test, lint, typecheck, web export).
+
+
 ### [T133] Fix the looping hero's overlap with page text on mobile
 
 - **Area:** Landing page

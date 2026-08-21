@@ -148,7 +148,7 @@ export function LandingPage() {
             ))}
           </FeatureList>
 
-          <ScreenshotSection>
+          <ScreenshotSection testID="screenshot-section">
             <ScreenshotHeading>See it in action</ScreenshotHeading>
             {screenshots.map((screenshot, index) => (
               <ScreenshotItem
@@ -228,6 +228,7 @@ const FeatureBody = styled(BodyText)`
 const ScreenshotSection = styled.View`
   margin-top: 40px;
   gap: 28px;
+  align-items: center;
 `;
 
 const ScreenshotHeading = styled.Text`
