@@ -151,7 +151,7 @@ _T132–T152 come from stories S001–S022 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 - **Area:** Landing page
 - **Priority:** Low
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Implementer
 - **Description:** `Content` is a plain `View` with no `alignItems` set, so `ScreenshotItem`'s `max-width`-capped children default to the flex cross-axis start (left) rather than centering within the column. Center them at both mobile and desktop widths.
 - **Exit criteria:** At both mobile and desktop viewport widths, `ScreenshotItem` renders center-aligned within its containing section — confirmed via a resolved-style unit test asserting a centering style (e.g. `align-items: center`) on the relevant container.
