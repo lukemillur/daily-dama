@@ -114,6 +114,7 @@ Some areas have their own root-level handoff document. Read the relevant one bef
 - [.claude/scripts/README.md](.claude/scripts/README.md) — the `newTicket` workflow's deterministic tooling (claim/resume, verification wrapper, worktree cleanup, config validation) and the agent/skill boundaries around it.
 - [TRICK_VIZ_HANDOFF.md](TRICK_VIZ_HANDOFF.md) — procedural 3D trick visualization (`src/features/trick-viz/`). Verified kendama geometry, the ken-pose abstraction, keyframe/easing pitfalls, the verlet string, and environment traps (React Compiler, stale console buffers, sandbox access gating).
 - [DEPLOYMENT_HANDOFF.md](DEPLOYMENT_HANDOFF.md) — web deploy to dailydama.com.
+- [supabase/README.md](supabase/README.md) — local Supabase Auth CLI configuration: rebuild/reset workflow, local policy (verified email, 10-character password minimum, one-hour JWTs, fixed `localhost:8081/auth/callback`), and manual REST/Mailpit verification.
 
 # Git state expectations
 

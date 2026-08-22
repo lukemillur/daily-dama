@@ -3,6 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 
 import ProfileScreen from '@/app/app/profile/index';
+import type { AuthState } from '@/features/auth/model/auth-state';
 import {
   serializeUserProfile,
   USER_PROFILE_STORAGE_KEY,
@@ -23,6 +24,21 @@ jest.mock('expo-router', () => ({ useRouter: () => ({ replace: jest.fn(), push: 
 // test focus purely on the copy this screen renders once onboarding is complete.
 jest.mock('@/features/onboarding/state/require-onboarding', () => ({
   useRequireOnboarding: () => true,
+}));
+// ProfileScreen now renders AccountSection, which calls useAuthState()/useAuthActions()
+// directly (T154.2) -- this file mounts ProfileScreen with no AuthProvider in the tree, so it
+// must mock the module. Defaults to guest so every pre-existing assertion above (which knows
+// nothing about Auth) keeps passing unchanged. Deep behavioral coverage of AccountSection itself
+// lives in account-section.test.tsx -- these are thin integration assertions only.
+let mockAuthState: AuthState = { status: 'guest', reason: 'unconfigured' };
+const mockSignOut = jest.fn<() => Promise<{ error: unknown }>>();
+jest.mock('@/features/auth/state/auth-provider', () => ({
+  useAuthState: () => mockAuthState,
+  useAuthActions: () => ({ signOut: mockSignOut }),
+}));
+jest.mock('@/features/auth/observability/auth-observability', () => ({
+  trackAuthEvent: jest.fn(),
+  logAuthWarning: jest.fn(),
 }));
 
 function findByText(root: ReactTestRenderer, text: string | RegExp) {
@@ -75,6 +91,39 @@ function collectTextInOrder(root: ReactTestRenderer): string[] {
   walk(json);
   return texts;
 }
+
+describe('ProfileScreen account section', () => {
+  beforeEach(async () => {
+    await AsyncStorage.clear();
+    mockAuthState = { status: 'guest', reason: 'unconfigured' };
+    mockSignOut.mockReset();
+  });
+
+  it('shows no Log out control for a guest', async () => {
+    const root = await mountProfileScreen();
+
+    expect(findByText(root, 'Log out')).toHaveLength(0);
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  it('shows the Log out control when authenticated', async () => {
+    mockAuthState = {
+      status: 'authenticated',
+      session: { access_token: 'tok', user: { email: 'someone@example.com' } } as never,
+      lastEvent: 'SIGNED_IN',
+    };
+    const root = await mountProfileScreen();
+
+    expect(findByText(root, 'Log out').length).toBeGreaterThan(0);
+
+    act(() => {
+      root.unmount();
+    });
+  });
+});
 
 describe('ProfileScreen Kentei assessment copy', () => {
   beforeEach(async () => {

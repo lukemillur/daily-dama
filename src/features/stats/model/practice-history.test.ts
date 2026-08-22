@@ -7,6 +7,7 @@ import {
   getPersonalBest,
   isEligibleTimedAttempt,
   hasPriorLaceForTrick,
+  isFirstEverRegularSession,
   isFirstLaceForTrick,
   practiceHistoryReducer,
   selectRegularSessions,
@@ -303,6 +304,25 @@ describe('selectRegularSessions', () => {
       BIG_CUP_FIRST,
       AIRPLANE_ZERO_LACES,
     ]);
+  });
+});
+
+describe('isFirstEverRegularSession', () => {
+  it('is true for empty prior sessions and no origin', () => {
+    expect(isFirstEverRegularSession([], undefined)).toBe(true);
+  });
+
+  it('is false when a prior regular session exists', () => {
+    expect(isFirstEverRegularSession([BIG_CUP_FIRST], undefined)).toBe(false);
+  });
+
+  it('is true when prior sessions are all assessment-origin', () => {
+    const assessmentSession: PracticeSessionRecord = { ...BIG_CUP_FIRST, origin: 'assessment' };
+    expect(isFirstEverRegularSession([assessmentSession], undefined)).toBe(true);
+  });
+
+  it('is false when this summary is itself an assessment session', () => {
+    expect(isFirstEverRegularSession([], 'assessment')).toBe(false);
   });
 });
 

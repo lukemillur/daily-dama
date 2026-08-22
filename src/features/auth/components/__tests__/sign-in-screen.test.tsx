@@ -1,0 +1,253 @@
+import { beforeEach, describe, expect, it, jest } from '@jest/globals';
+import { act, create, type ReactTestRenderer } from 'react-test-renderer';
+
+import type { AuthState } from '@/features/auth/model/auth-state';
+
+import { SignInScreen } from '@/features/auth/components/sign-in-screen';
+
+const mockReplace = jest.fn();
+const mockPush = jest.fn();
+jest.mock('expo-router', () => ({ useRouter: () => ({ replace: mockReplace, push: mockPush }) }));
+
+const mockSignInWithPassword = jest.fn<() => Promise<{ error: unknown }>>();
+let mockAuthState: AuthState = { status: 'initializing' };
+
+jest.mock('@/features/auth/state/auth-provider', () => ({
+  useAuthState: () => mockAuthState,
+  useAuthActions: () => ({ signInWithPassword: mockSignInWithPassword }),
+}));
+
+const mockTrackAuthEvent = jest.fn();
+const mockLogAuthWarning = jest.fn();
+jest.mock('@/features/auth/observability/auth-observability', () => ({
+  trackAuthEvent: (...args: unknown[]) => mockTrackAuthEvent(...args),
+  logAuthWarning: (...args: unknown[]) => mockLogAuthWarning(...args),
+}));
+
+const EMAIL = 'someone@example.com';
+const PASSWORD = 'whateverpassword';
+
+function findByLabel(renderer: ReactTestRenderer, label: string) {
+  return renderer.root.find((node) => node.props.accessibilityLabel === label);
+}
+
+function containsText(renderer: ReactTestRenderer, text: string | RegExp) {
+  return (
+    renderer.root.findAll((node) => {
+      const { children } = node.props;
+      if (typeof children !== 'string') return false;
+      return typeof text === 'string' ? children === text : text.test(children);
+    }).length > 0
+  );
+}
+
+function countInputs(root: ReactTestRenderer): number {
+  return root.root.findAll(
+    (node) => node.props.accessibilityLabel === 'Email' || node.props.accessibilityLabel === 'Password',
+  ).length;
+}
+
+async function mount() {
+  let root!: ReactTestRenderer;
+  await act(async () => {
+    root = create(<SignInScreen />);
+  });
+  return root;
+}
+
+async function setInput(root: ReactTestRenderer, label: string, value: string) {
+  const input = findByLabel(root, label);
+  await act(async () => {
+    input.props.onChangeText(value);
+  });
+}
+
+async function submit(root: ReactTestRenderer) {
+  const button = findByLabel(root, 'Sign in');
+  await act(async () => {
+    await button.props.onPress();
+  });
+}
+
+async function fillValidForm(root: ReactTestRenderer) {
+  await setInput(root, 'Email', EMAIL);
+  await setInput(root, 'Password', PASSWORD);
+}
+
+describe('SignInScreen', () => {
+  beforeEach(() => {
+    mockSignInWithPassword.mockReset();
+    mockReplace.mockReset();
+    mockPush.mockReset();
+    mockTrackAuthEvent.mockReset();
+    mockLogAuthWarning.mockReset();
+    mockAuthState = { status: 'guest', reason: 'signedOut' };
+  });
+
+  it('navigates to /auth/forgot-password when "Forgot password?" is pressed', async () => {
+    const root = await mount();
+    const button = findByLabel(root, 'Forgot password?');
+
+    await act(async () => {
+      button.props.onPress();
+    });
+
+    expect(mockPush).toHaveBeenCalledWith('/auth/forgot-password');
+  });
+
+  it('shows loading copy and no inputs while initializing', async () => {
+    mockAuthState = { status: 'initializing' };
+    const root = await mount();
+
+    expect(containsText(root, /Checking your session/)).toBe(true);
+    expect(countInputs(root)).toBe(0);
+  });
+
+  it('redirects to /app/home immediately when already authenticated, without showing the form', async () => {
+    mockAuthState = {
+      status: 'authenticated',
+      session: { access_token: 'tok' } as never,
+      lastEvent: 'SIGNED_IN',
+    };
+    const root = await mount();
+
+    expect(mockReplace).toHaveBeenCalledWith('/app/home');
+    expect(countInputs(root)).toBe(0);
+    expect(mockSignInWithPassword).not.toHaveBeenCalled();
+  });
+
+  it('shows field errors for empty email and password and never calls signInWithPassword', async () => {
+    const root = await mount();
+
+    await submit(root);
+
+    expect(containsText(root, 'Enter your email.')).toBe(true);
+    expect(containsText(root, 'Enter your password.')).toBe(true);
+    expect(mockSignInWithPassword).not.toHaveBeenCalled();
+  });
+
+  it('renders the exact same copy for an unknown email and a wrong password (enumeration safety)', async () => {
+    mockSignInWithPassword.mockResolvedValue({ error: { code: 'user_not_found', message: 'nope' } });
+    const unknownEmailRoot = await mount();
+    await fillValidForm(unknownEmailRoot);
+    await submit(unknownEmailRoot);
+
+    mockSignInWithPassword.mockResolvedValue({ error: { code: 'invalid_credentials', message: 'nope' } });
+    const wrongPasswordRoot = await mount();
+    await fillValidForm(wrongPasswordRoot);
+    await submit(wrongPasswordRoot);
+
+    const sharedCopy = 'Incorrect email or password. Try again.';
+    expect(containsText(unknownEmailRoot, sharedCopy)).toBe(true);
+    expect(containsText(wrongPasswordRoot, sharedCopy)).toBe(true);
+  });
+
+  it('shows unverified-email copy, distinct from the generic invalid-credentials copy', async () => {
+    mockSignInWithPassword.mockResolvedValue({ error: { code: 'email_not_confirmed', message: 'nope' } });
+    const root = await mount();
+    await fillValidForm(root);
+    await submit(root);
+
+    expect(containsText(root, /Verify your email before signing in/)).toBe(true);
+    expect(containsText(root, 'Incorrect email or password. Try again.')).toBe(false);
+  });
+
+  it('shows offline copy and keeps the form on an offline-shaped error', async () => {
+    mockSignInWithPassword.mockResolvedValue({ error: new TypeError('Failed to fetch') });
+    const root = await mount();
+    await fillValidForm(root);
+    await submit(root);
+
+    expect(containsText(root, /offline/i)).toBe(true);
+    expect(countInputs(root)).toBeGreaterThan(0);
+  });
+
+  it('shows rate-limited copy when throttled', async () => {
+    mockSignInWithPassword.mockResolvedValue({ error: { code: 'over_request_rate_limit', message: 'slow down' } });
+    const root = await mount();
+    await fillValidForm(root);
+    await submit(root);
+
+    expect(containsText(root, /Too many attempts/)).toBe(true);
+  });
+
+  it('shows expired-session copy when signInWithPassword resolves a session_expired error', async () => {
+    mockSignInWithPassword.mockResolvedValue({ error: { code: 'session_expired', message: 'expired' } });
+    const root = await mount();
+    await fillValidForm(root);
+    await submit(root);
+
+    expect(containsText(root, /Your session has expired/)).toBe(true);
+  });
+
+  it('signs in successfully, calling signInWithPassword once with trimmed input and then replacing to /app/home', async () => {
+    mockSignInWithPassword.mockResolvedValue({ error: null });
+    const root = await mount();
+    await setInput(root, 'Email', `  ${EMAIL}  `);
+    await setInput(root, 'Password', PASSWORD);
+    await submit(root);
+
+    expect(mockSignInWithPassword).toHaveBeenCalledTimes(1);
+    expect(mockSignInWithPassword).toHaveBeenCalledWith(EMAIL, PASSWORD);
+    expect(mockReplace).toHaveBeenCalledWith('/app/home');
+    expect(mockTrackAuthEvent).toHaveBeenCalledWith('sign_in_success');
+  });
+
+  it('guards against a repeat submission firing signInWithPassword twice', async () => {
+    let resolveFirst!: (value: { error: unknown }) => void;
+    mockSignInWithPassword.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveFirst = resolve;
+        }),
+    );
+    const root = await mount();
+    await fillValidForm(root);
+
+    const button = findByLabel(root, 'Sign in');
+    await act(async () => {
+      button.props.onPress();
+      await button.props.onPress();
+    });
+
+    expect(mockSignInWithPassword).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      resolveFirst({ error: null });
+    });
+  });
+
+  it('lets a guest continue to /app/home without calling signInWithPassword', async () => {
+    const root = await mount();
+    const guestButton = findByLabel(root, 'Continue as guest');
+
+    await act(async () => {
+      guestButton.props.onPress();
+    });
+
+    expect(mockReplace).toHaveBeenCalledWith('/app/home');
+    expect(mockSignInWithPassword).not.toHaveBeenCalled();
+  });
+
+  it('never exposes the raw password outside the controlled input value', async () => {
+    mockSignInWithPassword.mockResolvedValue({ error: { code: 'invalid_credentials', message: 'nope' } });
+    const root = await mount();
+    await fillValidForm(root);
+    await submit(root);
+
+    const textNodes = root.root.findAll((node) => typeof node.props.children === 'string');
+    for (const node of textNodes) {
+      expect(node.props.children as string).not.toContain(PASSWORD);
+    }
+  });
+
+  it('routes failures only through logAuthWarning/trackAuthEvent, with the right category tracked', async () => {
+    mockSignInWithPassword.mockResolvedValue({ error: { code: 'invalid_credentials', message: 'nope' } });
+    const root = await mount();
+    await fillValidForm(root);
+    await submit(root);
+
+    expect(mockLogAuthWarning).toHaveBeenCalledWith('Sign-in failed.', { code: 'invalid_credentials', message: 'nope' });
+    expect(mockTrackAuthEvent).toHaveBeenCalledWith('sign_in_error', 'invalidCredentials');
+  });
+});

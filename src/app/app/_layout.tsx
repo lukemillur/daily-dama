@@ -6,22 +6,25 @@ import { AppThemeProvider } from '@/features/profile/components/app-theme-provid
 import { KenteiRankAutoPromotion } from '@/features/profile/state/kentei-rank-auto-promotion';
 import { UserProfileProvider } from '@/features/profile/state/user-profile-provider';
 import { PracticeHistoryProvider } from '@/features/stats/state/practice-history-provider';
+import { IdentityProvider } from '@/shared/persistence/identity-provider';
 
 export default function AppShellLayout() {
   return (
-    <CustomTrickProvider>
-      <UserProfileProvider>
-        <PracticeHistoryProvider>
-          <NoteProvider>
-            <GoalProvider>
-              <AppThemeProvider>
-                <KenteiRankAutoPromotion />
-                <AppTabs />
-              </AppThemeProvider>
-            </GoalProvider>
-          </NoteProvider>
-        </PracticeHistoryProvider>
-      </UserProfileProvider>
-    </CustomTrickProvider>
+    <IdentityProvider>
+      <CustomTrickProvider>
+        <UserProfileProvider>
+          <PracticeHistoryProvider>
+            <NoteProvider>
+              <GoalProvider>
+                <AppThemeProvider>
+                  <KenteiRankAutoPromotion />
+                  <AppTabs />
+                </AppThemeProvider>
+              </GoalProvider>
+            </NoteProvider>
+          </PracticeHistoryProvider>
+        </UserProfileProvider>
+      </CustomTrickProvider>
+    </IdentityProvider>
   );
 }
