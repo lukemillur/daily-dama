@@ -223,7 +223,7 @@ _All currently actionable backend-roadmap work is phase-gated and active in depe
 
 - **Area:** Post-Sesh Auth invitation
 - **Priority:** High (inherited from parent T153)
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** Show a dismissible, optional signup invitation on the completion UI for the first completed Sesh in the current guest practice-history namespace. Derive eligibility from authoritative practice history and keep dismissal local to that completion UI rather than adding a profile field, storage key, or persistence domain.
 - **Exit criteria:** Component/provider tests prove the invitation appears for an unauthenticated guest's first successfully recorded Sesh, can be dismissed or can open signup without changing the completed record, does not appear on later completions or after reloading the persisted first record, never appears for an authenticated user, and does not alter completion deduplication or any existing guest flow.
