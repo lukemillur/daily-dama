@@ -12,6 +12,8 @@ describe('categorizeAuthError', () => {
     weak_password: 'weakPassword',
     over_request_rate_limit: 'rateLimited',
     otp_expired: 'expiredOrInvalidLink',
+    session_not_found: 'expiredOrInvalidLink',
+    session_expired: 'expiredOrInvalidLink',
   };
 
   it.each(authApiErrorFixtures)('maps code $code to its actionable category', (fixture) => {

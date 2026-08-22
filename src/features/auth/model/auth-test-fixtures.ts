@@ -15,6 +15,8 @@ export const authApiErrorFixtures = [
   { code: 'weak_password', status: 422, message: 'Password is too weak' },
   { code: 'over_request_rate_limit', status: 429, message: 'Rate limit exceeded' },
   { code: 'otp_expired', status: 403, message: 'Token has expired or is invalid' },
+  { code: 'session_not_found', status: 403, message: 'Session not found' },
+  { code: 'session_expired', status: 403, message: 'Session expired' },
 ];
 
 export function networkFailure(): TypeError {

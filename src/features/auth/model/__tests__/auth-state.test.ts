@@ -38,4 +38,30 @@ describe('deriveAuthState', () => {
       lastEvent: 'TOKEN_REFRESHED',
     });
   });
+
+  it('maps PASSWORD_RECOVERY to passwordRecovery', () => {
+    expect(deriveAuthState('PASSWORD_RECOVERY', fakeSession)).toEqual({
+      status: 'passwordRecovery',
+      session: fakeSession,
+    });
+  });
+
+  it('keeps passwordRecovery across a later TOKEN_REFRESHED for the same session', () => {
+    const previous = deriveAuthState('PASSWORD_RECOVERY', fakeSession);
+    const refreshed = { ...fakeSession, access_token: 'new-token' } as unknown as Session;
+    expect(deriveAuthState('TOKEN_REFRESHED', refreshed, previous)).toEqual({
+      status: 'passwordRecovery',
+      session: refreshed,
+    });
+  });
+
+  it('drops passwordRecovery back to guest on SIGNED_OUT', () => {
+    const previous = deriveAuthState('PASSWORD_RECOVERY', fakeSession);
+    expect(deriveAuthState('SIGNED_OUT', null, previous)).toEqual({ status: 'guest', reason: 'signedOut' });
+  });
+
+  it('drops passwordRecovery back to guest when the session becomes null', () => {
+    const previous = deriveAuthState('PASSWORD_RECOVERY', fakeSession);
+    expect(deriveAuthState('TOKEN_REFRESHED', null, previous)).toEqual({ status: 'guest', reason: 'signedOut' });
+  });
 });

@@ -5,6 +5,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from 'react';
 
@@ -20,6 +21,7 @@ interface AuthActions {
     password: string,
   ) => Promise<{ error: AuthError | null }>;
   readonly signOut: () => Promise<{ error: AuthError | null }>;
+  readonly completePasswordRecovery: (newPassword: string) => Promise<{ error: AuthError | null }>;
 }
 
 const AuthStateContext = createContext<AuthState | undefined>(undefined);
@@ -27,6 +29,11 @@ const AuthActionsContext = createContext<AuthActions | undefined>(undefined);
 
 export function AuthProvider({ children }: PropsWithChildren) {
   const [state, setState] = useState<AuthState>(INITIALIZING_AUTH_STATE);
+  const stateRef = useRef(state);
+
+  useEffect(() => {
+    stateRef.current = state;
+  }, [state]);
 
   useEffect(() => {
     const client = getSupabaseClient();
@@ -42,7 +49,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
       const {
         data: { subscription },
       } = client.auth.onAuthStateChange((event, session) => {
-        setState(deriveAuthState(event, session));
+        setState((current) => deriveAuthState(event, session, current));
       });
 
       return () => {
@@ -77,9 +84,24 @@ export function AuthProvider({ children }: PropsWithChildren) {
     return { error };
   }, []);
 
+  const completePasswordRecovery = useCallback(async (newPassword: string) => {
+    if (stateRef.current.status !== 'passwordRecovery') {
+      return { error: new AuthError('No active password recovery session.', 401, 'session_not_found') };
+    }
+
+    const client = getSupabaseClient();
+
+    if (!client) {
+      return { error: new AuthError('Supabase is not configured.') };
+    }
+
+    const { error } = await client.auth.updateUser({ password: newPassword });
+    return { error };
+  }, []);
+
   const actions = useMemo(
-    () => ({ signInWithPassword, signOut }),
-    [signInWithPassword, signOut],
+    () => ({ signInWithPassword, signOut, completePasswordRecovery }),
+    [signInWithPassword, signOut, completePasswordRecovery],
   );
 
   return (
