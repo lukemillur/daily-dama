@@ -401,16 +401,6 @@ _Phase 3 activation: T156–T160 come from S035–S038 and `BACKEND_ROADMAP.md` 
 - **Description:** Prevent guest and authenticated caches from sharing keys or allowing late work from one identity to update another.
 - **Notes:** Umbrella from S038. Complete T156.1–T156.3 before domain synchronization. The existing hydration fallback and skipped-initial-write behavior must survive unchanged.
 
-### [T156.1] Define identity-scoped storage and generation ownership
-
-- **Area:** Shared persistence
-- **Priority:** High
-- **Status:** In progress
-- **Planning:** Required
-- **Description:** Introduce an explicit `guest` / `user:<verified-user-id>` identity model, a scoped `KeyValueStorage` adapter, and generation tokens that let async persistence/sync results prove they still belong to the current identity.
-- **Exit criteria:** Unit tests prove identical logical keys resolve to isolated physical namespaces, unverified or malformed identities are rejected, generation changes invalidate late results, and the adapter never accepts identity from mutation payload data.
-- **Notes:** From S038 and roadmap synchronization security. Depends on T153.4. Do not move native credentials or add outboxes yet.
-
 ### [T156.2] Rehydrate every provider from its current identity namespace
 
 - **Area:** Persistent provider composition
