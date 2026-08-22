@@ -209,16 +209,6 @@ _Phase 2 activation: T155 comes from S034 and `BACKEND_ROADMAP.md` Phase 2. Its 
 - **Description:** Represent all persisted Daily Dama domains in a constrained, typed Postgres/Data API boundary before any provider begins synchronization.
 - **Notes:** Umbrella from S034. Complete T155.1–T155.13. No production migrations or live user data exist yet.
 
-### [T155.3] Model custom tricks and immutable practice sessions
-
-- **Area:** Custom tricks / practice-history cloud schema
-- **Priority:** High
-- **Status:** Not started
-- **Planning:** Required
-- **Description:** Add `api.custom_tricks` and `api.practice_sessions`, preserving stable trick IDs, authoritative name snapshots, non-nested sequence steps, insert-only historical sessions, client-fact timing, and user-scoped pagination indexes.
-- **Exit criteria:** Database tests accept valid standalone tricks, sequences, and session snapshots; reject nested sequences, malformed discriminated steps, invalid timing/counts, and duplicate IDs; and prove an authenticated client cannot update or delete a practice session after insertion.
-- **Notes:** From S034 and documented custom-trick/Sesh invariants. Depends on T155.1.
-
 ### [T155.4] Model mutable goals and notes with tombstones
 
 - **Area:** Goals / notes cloud schema
