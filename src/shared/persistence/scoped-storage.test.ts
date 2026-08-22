@@ -1,7 +1,10 @@
-import { describe, expect, it } from '@jest/globals';
+import { describe, expect, it, jest } from '@jest/globals';
 
 import type { Identity } from '@/shared/persistence/identity';
-import { createScopedKeyValueStorage } from '@/shared/persistence/scoped-storage';
+import {
+  createGuestMigratingStorage,
+  createScopedKeyValueStorage,
+} from '@/shared/persistence/scoped-storage';
 import type { KeyValueStorage } from '@/shared/persistence/storage';
 
 const USER_A_ID = '11111111-1111-1111-1111-111111111111';
@@ -103,5 +106,65 @@ describe('createScopedKeyValueStorage', () => {
     const storage = createScopedKeyValueStorage(failingBase, createFakeContext({ kind: 'guest' }));
 
     await expect(storage.setItem('key', 'value')).rejects.toBe(failure);
+  });
+});
+
+describe('createGuestMigratingStorage', () => {
+  it('skips the legacy read entirely on a scoped hit', async () => {
+    const store = createFakeStore();
+    const context = createFakeContext({ kind: 'guest' });
+    store.raw.set('guest:user-profile', 'namespaced-value');
+    store.raw.set('user-profile', 'legacy-value');
+
+    const storage = createGuestMigratingStorage(store, context);
+    const value = await storage.getItem('user-profile');
+
+    expect(value).toBe('namespaced-value');
+    // The legacy value is untouched -- it was never read or overwritten.
+    expect(store.raw.get('user-profile')).toBe('legacy-value');
+  });
+
+  it('falls back to the legacy bare key on a scoped miss for a guest identity, and writes it through', async () => {
+    const store = createFakeStore();
+    const context = createFakeContext({ kind: 'guest' });
+    store.raw.set('user-profile', 'legacy-value');
+
+    const storage = createGuestMigratingStorage(store, context);
+    const value = await storage.getItem('user-profile');
+
+    expect(value).toBe('legacy-value');
+    expect(store.raw.get('guest:user-profile')).toBe('legacy-value');
+    // The legacy key is left in place (no forensic erasure).
+    expect(store.raw.get('user-profile')).toBe('legacy-value');
+
+    // Subsequent reads use the namespaced key -- migration only happens once.
+    store.raw.set('guest:user-profile', 'updated-namespaced-value');
+    const secondRead = await storage.getItem('user-profile');
+    expect(secondRead).toBe('updated-namespaced-value');
+  });
+
+  it('returns null on a scoped miss with no legacy data for a guest identity', async () => {
+    const store = createFakeStore();
+    const context = createFakeContext({ kind: 'guest' });
+
+    const storage = createGuestMigratingStorage(store, context);
+    const value = await storage.getItem('user-profile');
+
+    expect(value).toBeNull();
+    expect(store.raw.size).toBe(0);
+  });
+
+  it('never touches the legacy bare key for a non-guest identity', async () => {
+    const store = createFakeStore();
+    const context = createFakeContext({ kind: 'user', userId: USER_A_ID });
+    store.raw.set('user-profile', 'legacy-value');
+
+    const getItemSpy = jest.spyOn(store, 'getItem');
+    const storage = createGuestMigratingStorage(store, context);
+    const value = await storage.getItem('user-profile');
+
+    expect(value).toBeNull();
+    expect(getItemSpy).not.toHaveBeenCalledWith('user-profile');
+    expect(getItemSpy).toHaveBeenCalledWith(`user:${USER_A_ID}:user-profile`);
   });
 });

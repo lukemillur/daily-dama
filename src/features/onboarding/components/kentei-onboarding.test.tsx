@@ -11,6 +11,12 @@ import {
 } from '@/features/profile/persistence/user-profile-persistence';
 import { UserProfileProvider } from '@/features/profile/state/user-profile-provider';
 import { KENDAMA_KENTEI_TRICKS } from '@/features/tricks/data/kendama-kentei-tricks';
+import { GUEST_IDENTITY } from '@/shared/persistence/identity';
+import { physicalKey } from '@/shared/persistence/scoped-storage';
+
+// This test doesn't wrap providers in <IdentityProvider>, so UserProfileProvider hydrates against
+// the module's default guest handle -- writes land at the guest-namespaced physical key.
+const GUEST_USER_PROFILE_KEY = physicalKey(GUEST_IDENTITY, USER_PROFILE_STORAGE_KEY);
 
 jest.mock('@react-native-async-storage/async-storage', () =>
   require('@react-native-async-storage/async-storage/jest/async-storage-mock'),
@@ -84,7 +90,7 @@ async function driveToThemeSelect(root: ReactTestRenderer) {
 }
 
 async function readPersistedProfile() {
-  const persisted = await AsyncStorage.getItem(USER_PROFILE_STORAGE_KEY);
+  const persisted = await AsyncStorage.getItem(GUEST_USER_PROFILE_KEY);
   expect(persisted).not.toBeNull();
   return deserializeUserProfile(persisted!);
 }

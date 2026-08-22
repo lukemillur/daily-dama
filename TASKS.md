@@ -401,16 +401,6 @@ _Phase 3 activation: T156–T160 come from S035–S038 and `BACKEND_ROADMAP.md` 
 - **Description:** Prevent guest and authenticated caches from sharing keys or allowing late work from one identity to update another.
 - **Notes:** Umbrella from S038. Complete T156.1–T156.3 before domain synchronization. The existing hydration fallback and skipped-initial-write behavior must survive unchanged.
 
-### [T156.2] Rehydrate every provider from its current identity namespace
-
-- **Area:** Persistent provider composition
-- **Priority:** High
-- **Status:** In progress
-- **Planning:** Required
-- **Description:** Inject identity-scoped storage into the profile, custom-trick, practice-history, goal, and note providers; on identity change, cancel stale hydration, restore the new namespace, and preserve each provider's safe fallback, write queue, and skipped initial write.
-- **Exit criteria:** Provider integration tests switch guest → user A → user B → guest and prove each domain rehydrates only its own data, no empty initial state overwrites restored data, writes remain ordered, and a deliberately delayed user-A load cannot commit after user B becomes current.
-- **Notes:** From S038. Depends on T156.1. This changes provider orchestration but not reducer state shapes.
-
 ### [T156.3] Prove cross-account local-data isolation
 
 - **Area:** Persistence security testing
