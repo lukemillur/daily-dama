@@ -213,7 +213,7 @@ _Phase 2 activation: T155 comes from S034 and `BACKEND_ROADMAP.md` Phase 2. Its 
 
 - **Area:** Database validation
 - **Priority:** High
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** Add database-level validation for profile variants, goals, custom tricks, and sequence-step JSON so callers bypassing frontend runtime validation cannot store impossible domain states.
 - **Exit criteria:** Parameterized raw Data API tests submit valid and malformed examples for every discriminated shape and confirm only valid records persist, including explicit rejection of nested sequences, unknown fields/variants, invalid ranks, and ambiguous goal payloads.
