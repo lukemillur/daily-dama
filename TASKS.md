@@ -213,7 +213,7 @@ _Phase 2 activation: T155 comes from S034 and `BACKEND_ROADMAP.md` Phase 2. Its 
 
 - **Area:** Goals / notes cloud schema
 - **Priority:** High
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** Add `api.goals` and `api.notes` with their discriminated variants, trick/session name snapshots, revisions, edit timestamps, soft-deletion tombstones, ownership constraints, and user-scoped ordering indexes.
 - **Exit criteria:** Migration tests accept every current goal/note variant, reject malformed variants and invalid session references, increment revisions through valid edits, and prove a tombstoned record cannot be silently recreated by a stale mutation using the same identity/revision.
