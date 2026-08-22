@@ -1,3 +1,4 @@
+import { useAudioPlayer } from 'expo-audio';
 import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
 import { Link } from 'expo-router';
 import { useEffect, useLayoutEffect, useMemo, useReducer, useRef, useState, type ReactNode } from 'react';
@@ -92,6 +93,8 @@ export function Sesh({
   const { setLastSesh } = useUserProfileActions();
   const { notes } = useNotes();
   const recordedSummaryId = useRef<string | undefined>(undefined);
+  const timerCuePlayer = useAudioPlayer(require('@/assets/audio/sesh-timer-complete.wav'));
+  const timerElapsedTransitionRef = useRef(false);
   const [personalBest, setPersonalBest] = useState<number | undefined>(undefined);
   const [liveChallengeEnabled, setLiveChallengeEnabled] = useState(false);
   const [firstLaceCelebration, setFirstLaceCelebration] = useState(false);
@@ -130,6 +133,11 @@ export function Sesh({
     if (recordedSummaryId.current === summaryId) return;
 
     recordedSummaryId.current = summaryId;
+    if (timerElapsedTransitionRef.current) {
+      timerCuePlayer.seekTo(0);
+      timerCuePlayer.play();
+    }
+    timerElapsedTransitionRef.current = false;
     setFirstLaceCelebration(isFirstLaceForTrick(sessions, state.summary));
     setJustAchievedGoals(
       selectGoalsForTrick(goals, state.summary.trick.id).filter((goal) => {
@@ -143,7 +151,7 @@ export function Sesh({
       }),
     );
     recordCompletedSesh(state.summary, origin);
-  }, [goals, origin, recordCompletedSesh, sessions, state]);
+  }, [goals, origin, recordCompletedSesh, sessions, state, timerCuePlayer]);
 
   useEffect(() => {
     if (!shouldKeepScreenAwake(state.status)) return;
@@ -233,7 +241,10 @@ export function Sesh({
         onPause={() => dispatch({ type: 'seshPaused', now: Date.now() })}
         onResume={() => dispatch({ type: 'seshResumed', now: Date.now() })}
         onEnd={() => dispatch({ type: 'seshEnded', now: Date.now() })}
-        onTimerElapsed={() => dispatch({ type: 'timerElapsed', now: Date.now() })}
+        onTimerElapsed={() => {
+          timerElapsedTransitionRef.current = true;
+          dispatch({ type: 'timerElapsed', now: Date.now() });
+        }}
       />
     );
   }

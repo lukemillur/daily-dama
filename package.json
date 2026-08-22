@@ -9,6 +9,7 @@
     "@vercel/analytics": "^2.0.1",
     "expo": "~57.0.10",
     "expo-asset": "~57.0.9",
+    "expo-audio": "~57.0.4",
     "expo-constants": "~57.0.9",
     "expo-font": "~57.0.1",
     "expo-gl": "~57.0.2",
