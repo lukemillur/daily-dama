@@ -26,6 +26,8 @@ interface AuthActions {
     code: string,
   ) => Promise<{ redirectType: 'recovery' | null; error: AuthError | null }>;
   readonly requestPasswordReset: (email: string) => Promise<{ error: AuthError | null }>;
+  readonly signUp: (email: string, password: string) => Promise<{ error: AuthError | null }>;
+  readonly resendSignupConfirmation: (email: string) => Promise<{ error: AuthError | null }>;
 }
 
 const AuthStateContext = createContext<AuthState | undefined>(undefined);
@@ -141,6 +143,43 @@ export function AuthProvider({ children }: PropsWithChildren) {
     return { error };
   }, []);
 
+  const signUp = useCallback(async (email: string, password: string) => {
+    const client = getSupabaseClient();
+
+    if (!client) {
+      return { error: new AuthError('Supabase is not configured.') };
+    }
+
+    if (typeof window === 'undefined') {
+      return { error: new AuthError('Unable to resolve the callback URL.') };
+    }
+
+    // Same fixed, non-attacker-influenceable redirect pattern as requestPasswordReset above.
+    const redirectTo = `${window.location.origin}/auth/callback`;
+    const { error } = await client.auth.signUp({ email, password, options: { emailRedirectTo: redirectTo } });
+    return { error };
+  }, []);
+
+  const resendSignupConfirmation = useCallback(async (email: string) => {
+    const client = getSupabaseClient();
+
+    if (!client) {
+      return { error: new AuthError('Supabase is not configured.') };
+    }
+
+    if (typeof window === 'undefined') {
+      return { error: new AuthError('Unable to resolve the callback URL.') };
+    }
+
+    const redirectTo = `${window.location.origin}/auth/callback`;
+    const { error } = await client.auth.resend({
+      type: 'signup',
+      email,
+      options: { emailRedirectTo: redirectTo },
+    });
+    return { error };
+  }, []);
+
   const actions = useMemo(
     () => ({
       signInWithPassword,
@@ -148,6 +187,8 @@ export function AuthProvider({ children }: PropsWithChildren) {
       completePasswordRecovery,
       exchangeCodeForSession,
       requestPasswordReset,
+      signUp,
+      resendSignupConfirmation,
     }),
     [
       signInWithPassword,
@@ -155,6 +196,8 @@ export function AuthProvider({ children }: PropsWithChildren) {
       completePasswordRecovery,
       exchangeCodeForSession,
       requestPasswordReset,
+      signUp,
+      resendSignupConfirmation,
     ],
   );
 
