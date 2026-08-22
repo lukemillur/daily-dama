@@ -18,7 +18,8 @@ jest.mock('@react-native-async-storage/async-storage', () =>
 );
 // ProfileScreen calls useRouter() directly (for "Start Kentei assessment"). No test in the repo
 // currently mocks expo-router — this file is new.
-jest.mock('expo-router', () => ({ useRouter: () => ({ replace: jest.fn(), push: jest.fn() }) }));
+const mockRouterPush = jest.fn();
+jest.mock('expo-router', () => ({ useRouter: () => ({ replace: jest.fn(), push: mockRouterPush }) }));
 // This test doesn't care about the redirect-when-incomplete behavior useRequireOnboarding adds —
 // mocking it directly (rather than expo-router alone) skips that dependency entirely and lets the
 // test focus purely on the copy this screen renders once onboarding is complete.
@@ -97,6 +98,7 @@ describe('ProfileScreen account section', () => {
     await AsyncStorage.clear();
     mockAuthState = { status: 'guest', reason: 'unconfigured' };
     mockSignOut.mockReset();
+    mockRouterPush.mockReset();
   });
 
   it('shows no Log out control for a guest', async () => {
@@ -118,6 +120,55 @@ describe('ProfileScreen account section', () => {
     const root = await mountProfileScreen();
 
     expect(findByText(root, 'Log out').length).toBeGreaterThan(0);
+
+    act(() => {
+      root.unmount();
+    });
+  });
+});
+
+describe('ProfileScreen guest account entry points', () => {
+  beforeEach(async () => {
+    await AsyncStorage.clear();
+    mockAuthState = { status: 'guest', reason: 'unconfigured' };
+    mockRouterPush.mockReset();
+  });
+
+  it('lets an unauthenticated guest open sign-up and sign-in', async () => {
+    const root = await mountProfileScreen();
+
+    const signUp = root.root.find((node) => node.props.accessibilityLabel === 'Sign up');
+    const signIn = root.root.find((node) => node.props.accessibilityLabel === 'Sign in');
+
+    act(() => {
+      signUp.props.onPress();
+    });
+    expect(mockRouterPush).toHaveBeenCalledWith('/auth/sign-up');
+
+    act(() => {
+      signIn.props.onPress();
+    });
+    expect(mockRouterPush).toHaveBeenCalledWith('/auth/sign-in');
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  it('shows neither guest entry point for an authenticated user', async () => {
+    mockAuthState = {
+      status: 'authenticated',
+      session: { access_token: 'tok', user: { email: 'someone@example.com' } } as never,
+      lastEvent: 'SIGNED_IN',
+    };
+    const root = await mountProfileScreen();
+
+    expect(
+      root.root.findAll((node) => node.props.accessibilityLabel === 'Sign up'),
+    ).toHaveLength(0);
+    expect(
+      root.root.findAll((node) => node.props.accessibilityLabel === 'Sign in'),
+    ).toHaveLength(0);
 
     act(() => {
       root.unmount();
