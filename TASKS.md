@@ -213,7 +213,7 @@ _Phase 2 activation: T155 comes from S034 and `BACKEND_ROADMAP.md` Phase 2. Its 
 
 - **Area:** Database mutation controls
 - **Priority:** High
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** Add private trigger functions with explicit safe `search_path` values to own `created_at`, `updated_at`, revisions, receipt timestamps, and immutable ownership fields; restrict update grants so RLS is not the only protection.
 - **Exit criteria:** Raw authenticated requests prove inserts and updates cannot choose or preserve forged server-owned values, valid mutations receive authoritative timestamps/revisions, every `SECURITY DEFINER` function has an audited fixed `search_path`, and the complete migration rebuild remains clean.
