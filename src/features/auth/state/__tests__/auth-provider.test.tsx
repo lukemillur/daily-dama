@@ -31,9 +31,15 @@ function createFakeClient(overrides?: { onAuthStateChangeImpl?: (cb: AuthCallbac
   const signInWithPassword = jest.fn(async (): Promise<{ error: unknown }> => ({ error: null }));
   const signOut = jest.fn(async (): Promise<{ error: unknown }> => ({ error: null }));
   const updateUser = jest.fn(async (): Promise<{ error: unknown }> => ({ error: null }));
+  const exchangeCodeForSession = jest.fn(
+    async (): Promise<{ data: unknown; error: unknown }> => ({
+      data: { redirectType: null },
+      error: null,
+    }),
+  );
 
   const client = {
-    auth: { onAuthStateChange, signInWithPassword, signOut, updateUser },
+    auth: { onAuthStateChange, signInWithPassword, signOut, updateUser, exchangeCodeForSession },
   } as unknown as SupabaseClient;
 
   return {
@@ -42,6 +48,7 @@ function createFakeClient(overrides?: { onAuthStateChangeImpl?: (cb: AuthCallbac
     signInWithPassword,
     signOut,
     updateUser,
+    exchangeCodeForSession,
     emit: (event: AuthChangeEvent, session: Session | null) => capturedCallback?.(event, session),
   };
 }
@@ -311,6 +318,68 @@ describe('AuthProvider', () => {
     });
 
     expect(result).toEqual({ error: updateError });
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  it('exchangeCodeForSession resolves redirectType recovery for a recovery code', async () => {
+    const fake = createFakeClient();
+    fake.exchangeCodeForSession.mockResolvedValueOnce({
+      data: { redirectType: 'recovery' },
+      error: null,
+    });
+    mockGetSupabaseClient.mockReturnValue(fake.client);
+
+    const root = await mount();
+
+    let result: { redirectType: 'recovery' | null; error: unknown } | undefined;
+    await act(async () => {
+      result = await captured.actions!.exchangeCodeForSession('a-code');
+    });
+
+    expect(fake.exchangeCodeForSession).toHaveBeenCalledWith('a-code');
+    expect(result).toEqual({ redirectType: 'recovery', error: null });
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  it('exchangeCodeForSession resolves redirectType null for a signup-confirmation code', async () => {
+    const fake = createFakeClient();
+    fake.exchangeCodeForSession.mockResolvedValueOnce({
+      data: { redirectType: null },
+      error: null,
+    });
+    mockGetSupabaseClient.mockReturnValue(fake.client);
+
+    const root = await mount();
+
+    let result: { redirectType: 'recovery' | null; error: unknown } | undefined;
+    await act(async () => {
+      result = await captured.actions!.exchangeCodeForSession('a-code');
+    });
+
+    expect(result).toEqual({ redirectType: null, error: null });
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  it('exchangeCodeForSession passes through an error without a redirectType', async () => {
+    const fake = createFakeClient();
+    const exchangeError = { message: 'invalid code', code: 'flow_state_expired' };
+    fake.exchangeCodeForSession.mockResolvedValueOnce({ data: null, error: exchangeError });
+    mockGetSupabaseClient.mockReturnValue(fake.client);
+
+    const root = await mount();
+
+    let result: { redirectType: 'recovery' | null; error: unknown } | undefined;
+    await act(async () => {
+      result = await captured.actions!.exchangeCodeForSession('a-code');
+    });
+
+    expect(result).toEqual({ redirectType: null, error: exchangeError });
     act(() => {
       root.unmount();
     });

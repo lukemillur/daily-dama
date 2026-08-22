@@ -189,16 +189,6 @@ _All currently actionable backend-roadmap work is phase-gated and active in depe
 - **Exit criteria:** A dated, secret-free delivery record proves hosted confirmation and recovery messages arrive through Resend from the Auth subdomain with their callback URLs intact, Resend link tracking is disabled, SPF and DKIM pass, and the subdomain publishes a visible DMARC `p=none` policy; no SMTP credential appears in tracked files or client-exposed environment values.
 - **Notes:** From S032 and roadmap Phase 1 backend item 4 plus the email/redirect security requirements. Depends on T153.1–T153.2. T162 later repeats deliverability checks before external signup and may tighten the DMARC policy using observed delivery evidence.
 
-### [T153.7] Build the fixed-destination PKCE callback foundation
-
-- **Area:** Authentication callbacks
-- **Priority:** High (inherited from parent T153)
-- **Status:** In progress
-- **Planning:** Required
-- **Description:** Add `/auth/callback` as the sole owner of manual PKCE code exchange. Exchange each code once, derive the completed Auth flow without accepting an arbitrary destination, route successful signup confirmation only to `/app/home` and password recovery only to `/auth/reset-password`, and clear sensitive callback parameters before subsequent navigation or analytics.
-- **Exit criteria:** Automated route/provider tests prove exactly one exchange for a valid confirmation and recovery code, the two fixed success destinations, safe handling of missing, malformed, expired, reused, offline, and verifier-mismatched codes, and rejection of an attempted `next`/open redirect; a static web export emits the callback route without accessing browser globals, and the final browser URL plus application logs and Analytics contain no code or token.
-- **Notes:** From S032 and roadmap email/redirect security. Depends on T153.4–T153.6. The successful email-change destination is deliberately added later by T154.1. Production and local callback URLs must match T153.1–T153.2 exactly.
-
 ### [T153.8] Build signup, check-email, verification, and resend
 
 - **Area:** Account creation UI
