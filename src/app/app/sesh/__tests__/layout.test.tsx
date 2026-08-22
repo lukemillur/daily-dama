@@ -42,6 +42,9 @@ jest.mock('@/features/profile/state/user-profile-provider', () => ({
 jest.mock('@/features/custom-tricks/state/custom-trick-provider', () => ({
   useCustomTricks: () => ({ tricks: [] }),
 }));
+jest.mock('@/features/auth/state/auth-provider', () => ({
+  useAuthState: () => ({ status: 'guest', reason: 'unconfigured' }),
+}));
 jest.mock('@/features/sesh/components/sesh', () => ({
   Sesh: () => {
     const { Text: MockText } = require('react-native');
