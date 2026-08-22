@@ -179,46 +179,6 @@ _All currently actionable backend-roadmap work is phase-gated and active in depe
 - **Exit criteria:** A dated, secret-free delivery record proves hosted confirmation and recovery messages arrive through Resend from the Auth subdomain with their callback URLs intact, Resend link tracking is disabled, SPF and DKIM pass, and the subdomain publishes a visible DMARC `p=none` policy; no SMTP credential appears in tracked files or client-exposed environment values.
 - **Notes:** From S032 and roadmap Phase 1 backend item 4 plus the email/redirect security requirements. Depends on T153.1–T153.2. T162 later repeats deliverability checks before external signup and may tighten the DMARC policy using observed delivery evidence.
 
-### [T153.4] Add a static-render-safe web Supabase client and Auth state
-
-- **Area:** Authentication state
-- **Priority:** High (inherited from parent T153)
-- **Status:** Not started
-- **Planning:** Required
-- **Description:** Add `@supabase/supabase-js`, a browser-persistent client configured only from `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, and one authoritative Auth provider modeled as `initializing`, `guest`, or `authenticated`. Configure `flowType: 'pkce'`, leave URL detection disabled so T153.7 owns the single code exchange, and ensure client construction and storage access are safe during Expo Router's Node static-render pass.
-- **Exit criteria:** Provider tests drive missing/malformed configuration, initial session resolution, sign-in, sign-out, token refresh, Auth events, and offline initialization; children and every existing `/app` guest route remain renderable while Auth is `initializing` or unavailable; server rendering touches no browser globals; and `yarn expo export --platform web --output-dir /tmp/daily-dama-web-export` succeeds with only publishable Supabase configuration reachable from application code.
-- **Notes:** From S032. Depends on T145 and T153.1. T145 first moves rehydration-dependent domain providers under `/app`; mount Auth above the root `<Slot>` without adding an Auth hydration gate. The Auth state is the application's session/UI authority, not a substitute for later database RLS authorization. Keep a platform seam for Phase 5, but implement and verify web only.
-
-### [T153.5] Centralize Auth errors and sensitive-data redaction
-
-- **Area:** Authentication observability
-- **Priority:** High (inherited from parent T153)
-- **Status:** Not started
-- **Planning:** Required
-- **Description:** Define structured, actionable Auth error categories and one redacted application logging/analytics boundary before any Auth route is added. Normalize enumeration-sensitive failures and prevent raw Supabase errors, callback URLs, or entered credentials from reaching UI, application-owned console calls, or Vercel Analytics.
-- **Exit criteria:** Unit tests feed representative Supabase errors and URLs containing emails, passwords, JWT-like values, refresh tokens, PKCE codes, and nested identifiers through the boundary and prove UI categories remain actionable while application logs and Analytics events contain none of those values; the root Analytics `beforeSend` handling drops or sanitizes callback query and fragment data.
-- **Notes:** From S032/S033 and roadmap Auth/client security requirements. Depends on T153.4. This relocates former T154.3 so signup, sign-in, recovery, callbacks, credential maintenance, and logout share the boundary from their first implementation.
-
-### [T153.6] Build the recovery-session password reset route
-
-- **Area:** Password reset UI
-- **Priority:** High (inherited from parent T153)
-- **Status:** Not started
-- **Planning:** Required
-- **Description:** Add the public static route `/auth/reset-password`, but permit password submission only while the Auth provider holds a valid password-recovery session. Provide confirmation, mismatch, weak-password, expired-session, offline, loading, and completion states through the structured Auth boundary.
-- **Exit criteria:** Route/provider tests prove a valid injected recovery session can set a compliant new password exactly once, while a direct visit without recovery state, an expired session, mismatched or weak input, offline submission, and repeat submission are handled deterministically without exposing a password, session, or email in the URL, logs, or analytics; the web export emits the reset route.
-- **Notes:** From S032. Depends on T153.4–T153.5. This route precedes T153.7 so Expo Router typed routes can validate the callback's fixed recovery destination in every intermediate commit.
-
-### [T153.7] Build the fixed-destination PKCE callback foundation
-
-- **Area:** Authentication callbacks
-- **Priority:** High (inherited from parent T153)
-- **Status:** Not started
-- **Planning:** Required
-- **Description:** Add `/auth/callback` as the sole owner of manual PKCE code exchange. Exchange each code once, derive the completed Auth flow without accepting an arbitrary destination, route successful signup confirmation only to `/app/home` and password recovery only to `/auth/reset-password`, and clear sensitive callback parameters before subsequent navigation or analytics.
-- **Exit criteria:** Automated route/provider tests prove exactly one exchange for a valid confirmation and recovery code, the two fixed success destinations, safe handling of missing, malformed, expired, reused, offline, and verifier-mismatched codes, and rejection of an attempted `next`/open redirect; a static web export emits the callback route without accessing browser globals, and the final browser URL plus application logs and Analytics contain no code or token.
-- **Notes:** From S032 and roadmap email/redirect security. Depends on T153.4–T153.6. The successful email-change destination is deliberately added later by T154.1. Production and local callback URLs must match T153.1–T153.2 exactly.
-
 ### [T153.8] Build signup, check-email, verification, and resend
 
 - **Area:** Account creation UI
@@ -228,16 +188,6 @@ _All currently actionable backend-roadmap work is phase-gated and active in depe
 - **Description:** Add `/auth/sign-up` and `/auth/check-email` using the Auth provider and structured error boundary, with ten-character password validation, generic duplicate-account handling, verification guidance, and explicit resend, offline, throttled, expired, and verifier-missing behavior. Do not place the submitted email in route parameters or analytics.
 - **Exit criteria:** Route tests and a local browser walkthrough prove a guest can submit signup, receives the same public result for a new or existing address, reaches check-email guidance, resends within the configured limits, opens the Mailpit confirmation in the same browser profile, completes T153.7's callback, and reaches authenticated `/app/home`; invalid, offline, throttled, expired, and missing-verifier cases remain actionable without exposing whether an account exists.
 - **Notes:** From S032. Depends on T153.1, T153.4–T153.5, and T153.7. Preserve Daily Dama's existing visual system without depending on profile-backed theme hydration or introducing a generic Auth dashboard shell.
-
-### [T153.9] Build sign-in and failure states
-
-- **Area:** Sign-in UI
-- **Priority:** High (inherited from parent T153)
-- **Status:** Not started
-- **Planning:** Required
-- **Description:** Add `/auth/sign-in` using the Auth provider and structured error boundary, with generic credential failure plus explicit loading, validation, unverified-email, offline, throttled, expired-session, and success behavior while leaving all guest routes accessible.
-- **Exit criteria:** Route/provider tests and a browser walkthrough prove a verified user can sign in and reach `/app/home`, unknown-email and wrong-password attempts receive the same public credential response, and unverified, invalid, offline, throttled, and repeat-submit cases remain deterministic without placing credentials or account facts in URLs, logs, or analytics; a guest can always leave the route and continue into `/app`.
-- **Notes:** From S032. Depends on T153.4–T153.5. Sign-in is separate from T153.8 because it is an independently testable route and security surface.
 
 ### [T153.10] Build the forgot-password request flow
 
@@ -258,16 +208,6 @@ _All currently actionable backend-roadmap work is phase-gated and active in depe
 - **Description:** Add optional sign-up and sign-in entry points to Profile for unauthenticated users, using the existing Profile composition and Auth state without gating, clearing, importing, or otherwise changing guest data.
 - **Exit criteria:** Profile component/browser tests prove an unauthenticated, onboarded guest can open `/auth/sign-up` and `/auth/sign-in`, an authenticated user sees neither guest entry, and navigating to or returning from either route leaves the existing profile, trick, Sesh, Stats, goal, and note state unchanged.
 - **Notes:** From S032 and roadmap Phase 1 frontend item 4. Depends on T153.8–T153.9. This is a local Profile navigation change; authenticated account-management surfaces remain in T154 and guest-data import remains T159.
-
-### [T153.12] Invite a guest after their first completed Sesh
-
-- **Area:** Post-Sesh Auth invitation
-- **Priority:** High (inherited from parent T153)
-- **Status:** Not started
-- **Planning:** Required
-- **Description:** Show a dismissible, optional signup invitation on the completion UI for the first completed Sesh in the current guest practice-history namespace. Derive eligibility from authoritative practice history and keep dismissal local to that completion UI rather than adding a profile field, storage key, or persistence domain.
-- **Exit criteria:** Component/provider tests prove the invitation appears for an unauthenticated guest's first successfully recorded Sesh, can be dismissed or can open signup without changing the completed record, does not appear on later completions or after reloading the persisted first record, never appears for an authenticated user, and does not alter completion deduplication or any existing guest flow.
-- **Notes:** From S032 and roadmap Phase 1 frontend item 6. Depends on T153.4 and T153.8. Do not start guest-data import here. Planning is required because this reads across Auth and practice-history providers beside the existing two-layer completed-Sesh deduplication boundary.
 
 ### [T153.13] Verify Phase 1 web Auth security end to end
 
@@ -298,18 +238,6 @@ _Phase 1/4 shared account-maintenance activation: T154 comes from S033 and the c
 - **Description:** Configure Supabase secure email change and add `/app/profile/account/security` with current-password verification for password changes, including reauthentication, expiry, generic errors, and confirmation guidance through T153.5's shared boundary.
 - **Exit criteria:** Route/provider tests and a browser walkthrough confirm a signed-in user can change a password only after supplying the current password, can initiate and complete secure email change, and receives actionable expired/offline states without exposing sensitive values in URLs, logs, or analytics.
 - **Notes:** From S033 and roadmap Phase 1 backend item 5/frontend item 5. Depends on T153.2, T153.3, T153.4, T153.5, and T153.7. T153.7 establishes the callback allowlist; this task adds only the fixed secure-email-change result needed by this route. Do not add MFA or account deletion.
-
-### [T154.2] Add current-device logout and fresh guest return
-
-- **Area:** Authentication session lifecycle
-- **Priority:** Medium
-- **Status:** Not started
-- **Planning:** Required
-- **Description:** Add a Profile logout action using `signOut({ scope: 'local' })`, transition authoritative Auth state back to guest, and leave other device sessions untouched.
-- **Exit criteria:** Provider and browser tests confirm logout invalidates the current browser session, returns to a usable guest workspace, does not request global sign-out, and handles offline or expired-session responses deterministically.
-- **Notes:** From S033. Depends on T153.4 and T154.1. Before outboxes exist, this is the basic logout path; T158 later adds the unsynced-change guard and account-cache handling.
-
----
 
 _Phase 2 activation: T155 comes from S034 and `BACKEND_ROADMAP.md` Phase 2. Its thirteen S-sized children establish the database security boundary, model all six resources, prove grants/RLS and constraints, generate typed repository contracts, and add pure runtime mappings before any provider synchronizes. The sequence is dependency-driven: schema and tests precede generated types and mappings; existing reducer authority, hydration fallback, and skipped-initial-write behavior remain unchanged._
 
@@ -462,26 +390,6 @@ _Phase 3 activation: T156–T160 come from S035–S038 and `BACKEND_ROADMAP.md` 
 - **Status:** Not started
 - **Description:** Prevent guest and authenticated caches from sharing keys or allowing late work from one identity to update another.
 - **Notes:** Umbrella from S038. Complete T156.1–T156.3 before domain synchronization. The existing hydration fallback and skipped-initial-write behavior must survive unchanged.
-
-### [T156.1] Define identity-scoped storage and generation ownership
-
-- **Area:** Shared persistence
-- **Priority:** High
-- **Status:** Not started
-- **Planning:** Required
-- **Description:** Introduce an explicit `guest` / `user:<verified-user-id>` identity model, a scoped `KeyValueStorage` adapter, and generation tokens that let async persistence/sync results prove they still belong to the current identity.
-- **Exit criteria:** Unit tests prove identical logical keys resolve to isolated physical namespaces, unverified or malformed identities are rejected, generation changes invalidate late results, and the adapter never accepts identity from mutation payload data.
-- **Notes:** From S038 and roadmap synchronization security. Depends on T153.4. Do not move native credentials or add outboxes yet.
-
-### [T156.2] Rehydrate every provider from its current identity namespace
-
-- **Area:** Persistent provider composition
-- **Priority:** High
-- **Status:** Not started
-- **Planning:** Required
-- **Description:** Inject identity-scoped storage into the profile, custom-trick, practice-history, goal, and note providers; on identity change, cancel stale hydration, restore the new namespace, and preserve each provider's safe fallback, write queue, and skipped initial write.
-- **Exit criteria:** Provider integration tests switch guest → user A → user B → guest and prove each domain rehydrates only its own data, no empty initial state overwrites restored data, writes remain ordered, and a deliberately delayed user-A load cannot commit after user B becomes current.
-- **Notes:** From S038. Depends on T156.1. This changes provider orchestration but not reducer state shapes.
 
 ### [T156.3] Prove cross-account local-data isolation
 
