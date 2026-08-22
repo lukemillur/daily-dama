@@ -213,7 +213,7 @@ _Phase 2 activation: T155 comes from S034 and `BACKEND_ROADMAP.md` Phase 2. Its 
 
 - **Area:** Database authorization
 - **Priority:** High
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** Enable RLS in table-creation migrations and add least-privilege operation grants plus user-scoped `USING` and `WITH CHECK` policies for every exposed resource, with select/insert-only permissions for practice sessions.
 - **Exit criteria:** Raw HTTP tests prove anonymous denial, user A isolation from user B across select/insert/update/delete, rejection of ownership changes, correct allowed operations for each table, and denial of practice-session updates/deletes even by the owner.
