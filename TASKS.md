@@ -209,16 +209,6 @@ _Phase 2 activation: T155 comes from S034 and `BACKEND_ROADMAP.md` Phase 2. Its 
 - **Description:** Represent all persisted Daily Dama domains in a constrained, typed Postgres/Data API boundary before any provider begins synchronization.
 - **Notes:** Umbrella from S034. Complete T155.1–T155.13. No production migrations or live user data exist yet.
 
-### [T155.1] Create private and exposed schemas with deny-by-default privileges
-
-- **Area:** Database security boundary
-- **Priority:** High
-- **Status:** In progress
-- **Planning:** Required
-- **Description:** Add migrations for the exposed `api` schema and non-exposed `private` schema, revoke default and automatic privileges, configure the Data API exposure deliberately, and grant no application-table access to `anon`.
-- **Exit criteria:** A clean local reset succeeds; catalog assertions prove only `api` is exposed, `private` helpers are unreachable through the Data API, default privileges are revoked, and raw anonymous requests cannot access application resources.
-- **Notes:** From S034 and roadmap Phase 2 item 1. Depends on T153.1.
-
 ### [T155.2] Model profiles and per-trick user state
 
 - **Area:** Profile cloud schema
