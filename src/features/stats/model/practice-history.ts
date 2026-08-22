@@ -91,6 +91,20 @@ export function selectRegularSessions(
   return sessions.filter((session) => session.origin === undefined);
 }
 
+// True when no prior *regular* (non-assessment) session exists in `priorSessions` — i.e.
+// completing this summary would be the guest's first completed Sesh ever, outside the Kentei
+// assessment flow. Mirrors isFirstLaceForTrick's contract: `priorSessions` must be the history
+// as it stood BEFORE this summary was recorded. `origin` is the origin this summary is *about*
+// to be recorded under — if it's itself an assessment session, it can never be "the first
+// regular Sesh" regardless of what came before it.
+export function isFirstEverRegularSession(
+  priorSessions: readonly PracticeSessionRecord[],
+  origin: PracticeSessionOrigin | undefined,
+): boolean {
+  if (origin !== undefined) return false;
+  return selectRegularSessions(priorSessions).length === 0;
+}
+
 export function createPracticeSessionRecordId(summary: SeshSummary): string {
   return `${summary.startedAt}:${summary.endedAt}:${summary.trick.id}`;
 }

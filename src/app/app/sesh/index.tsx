@@ -2,6 +2,7 @@ import { useLocalSearchParams } from 'expo-router';
 import { useMemo } from 'react';
 
 import { Screen } from '@/components/ui/screen';
+import { useAuthState } from '@/features/auth/state/auth-provider';
 import { useCustomTricks } from '@/features/custom-tricks/state/custom-trick-provider';
 import { useRequireOnboarding } from '@/features/onboarding/state/require-onboarding';
 import { Sesh } from '@/features/sesh/components/sesh';
@@ -23,6 +24,7 @@ export default function SeshScreen() {
   }>();
   const { lastSesh, selectedTrickIds } = useUserProfile();
   const { tricks: customTricks } = useCustomTricks();
+  const authState = useAuthState();
   const availableTricks = useMemo(
     () => selectAvailablePracticeTricks(KENDAMA_KENTEI_TRICKS, customTricks),
     [customTricks],
@@ -51,6 +53,7 @@ export default function SeshScreen() {
         preferredTrickId={preferredTrickId}
         directPracticeTrickId={isDirectPractice ? linkedTrickId : undefined}
         selectedTrickIds={selectedTrickIds}
+        authStatus={authState.status}
       />
     </Screen>
   );

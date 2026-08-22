@@ -22,6 +22,14 @@ import {
   usePracticeHistoryActions,
 } from '@/features/stats/state/practice-history-provider';
 import { KENDAMA_KENTEI_TRICKS } from '@/features/tricks/data/kendama-kentei-tricks';
+import { GUEST_IDENTITY } from '@/shared/persistence/identity';
+import { physicalKey } from '@/shared/persistence/scoped-storage';
+
+// These tests don't wrap providers in <IdentityProvider>, so they hydrate against the module's
+// default guest handle (see identity-provider.tsx's DEFAULT_HANDLE) -- every read/write from the
+// providers under test resolves to the guest-namespaced physical key, not the bare logical key.
+const GUEST_USER_PROFILE_KEY = physicalKey(GUEST_IDENTITY, USER_PROFILE_STORAGE_KEY);
+const GUEST_PRACTICE_HISTORY_KEY = physicalKey(GUEST_IDENTITY, PRACTICE_HISTORY_STORAGE_KEY);
 
 // Both mocks are hoisted above these imports by babel-jest, so the requires below run before
 // the real modules are ever reached. The requires (rather than importing and referencing the
@@ -176,7 +184,7 @@ describe('KenteiRankAutoPromotion celebration', () => {
       selectedTrickIds: [],
       manuallyUnlockedTrickIds: [...RANK_1_TRICK_IDS],
     } as const;
-    await AsyncStorage.setItem(USER_PROFILE_STORAGE_KEY, serializeUserProfile(advancedProfile));
+    await AsyncStorage.setItem(GUEST_USER_PROFILE_KEY, serializeUserProfile(advancedProfile));
 
     const root = await mountAndHydrate();
 
@@ -190,7 +198,7 @@ describe('KenteiRankAutoPromotion celebration', () => {
     // Start from a clean slate rather than whatever a prior test in this file left in
     // AsyncStorage (the mock persists across tests within a file, and other tests here
     // intentionally advance/seed a profile).
-    await AsyncStorage.removeItem(USER_PROFILE_STORAGE_KEY);
+    await AsyncStorage.removeItem(GUEST_USER_PROFILE_KEY);
 
     // Enter assessment at Rank 4 (Advanced), fail the very first trick shown -> resolved Rank 3
     // with nothing landed. This is the exact scenario that used to seed all of Rank 3 as
@@ -216,7 +224,7 @@ describe('KenteiRankAutoPromotion celebration', () => {
 
     expect(hasAccessibilityLabel(root, 'Rank up celebration')).toBe(false);
 
-    const persisted = await AsyncStorage.getItem(USER_PROFILE_STORAGE_KEY);
+    const persisted = await AsyncStorage.getItem(GUEST_USER_PROFILE_KEY);
     expect(persisted).not.toBeNull();
     const profile = deserializeUserProfile(persisted!);
     expect(profile?.kenteiRank).toBe(3);
@@ -234,8 +242,8 @@ describe('KenteiRankAutoPromotion celebration', () => {
   });
 
   it('does not promote the rank when a completed Sesh records zero laces for every trick in the rank', async () => {
-    await AsyncStorage.removeItem(USER_PROFILE_STORAGE_KEY);
-    await AsyncStorage.removeItem(PRACTICE_HISTORY_STORAGE_KEY);
+    await AsyncStorage.removeItem(GUEST_USER_PROFILE_KEY);
+    await AsyncStorage.removeItem(GUEST_PRACTICE_HISTORY_KEY);
 
     const root = await mountAndHydrate({ recordLandingCount: 0 });
 
@@ -253,7 +261,7 @@ describe('KenteiRankAutoPromotion celebration', () => {
 
     expect(hasAccessibilityLabel(root, 'Rank up celebration')).toBe(false);
 
-    const persisted = await AsyncStorage.getItem(USER_PROFILE_STORAGE_KEY);
+    const persisted = await AsyncStorage.getItem(GUEST_USER_PROFILE_KEY);
     expect(persisted).not.toBeNull();
     const profile = deserializeUserProfile(persisted!);
     expect(profile?.kenteiRank).toBe(1);
@@ -263,8 +271,8 @@ describe('KenteiRankAutoPromotion celebration', () => {
     // Stats/Home now filter out `origin: 'assessment'` sessions (see selectRegularSessions), but
     // KenteiRankAutoPromotion deliberately reads unfiltered history and must keep seeing
     // assessment-sourced landings so auto-promotion still fires off Kentei-assessment lacing.
-    await AsyncStorage.removeItem(USER_PROFILE_STORAGE_KEY);
-    await AsyncStorage.removeItem(PRACTICE_HISTORY_STORAGE_KEY);
+    await AsyncStorage.removeItem(GUEST_USER_PROFILE_KEY);
+    await AsyncStorage.removeItem(GUEST_PRACTICE_HISTORY_KEY);
 
     const root = await mountAndHydrate({ recordLandingCount: 1, origin: 'assessment' });
 
@@ -282,15 +290,15 @@ describe('KenteiRankAutoPromotion celebration', () => {
 
     expect(hasAccessibilityLabel(root, 'Rank up celebration')).toBe(true);
 
-    const persisted = await AsyncStorage.getItem(USER_PROFILE_STORAGE_KEY);
+    const persisted = await AsyncStorage.getItem(GUEST_USER_PROFILE_KEY);
     expect(persisted).not.toBeNull();
     const profile = deserializeUserProfile(persisted!);
     expect(profile?.kenteiRank).toBe(2);
   });
 
   it('promotes the rank when a completed Sesh lands a real lace for every trick in the rank', async () => {
-    await AsyncStorage.removeItem(USER_PROFILE_STORAGE_KEY);
-    await AsyncStorage.removeItem(PRACTICE_HISTORY_STORAGE_KEY);
+    await AsyncStorage.removeItem(GUEST_USER_PROFILE_KEY);
+    await AsyncStorage.removeItem(GUEST_PRACTICE_HISTORY_KEY);
 
     const root = await mountAndHydrate({ recordLandingCount: 1 });
 
@@ -308,7 +316,7 @@ describe('KenteiRankAutoPromotion celebration', () => {
 
     expect(hasAccessibilityLabel(root, 'Rank up celebration')).toBe(true);
 
-    const persisted = await AsyncStorage.getItem(USER_PROFILE_STORAGE_KEY);
+    const persisted = await AsyncStorage.getItem(GUEST_USER_PROFILE_KEY);
     expect(persisted).not.toBeNull();
     const profile = deserializeUserProfile(persisted!);
     expect(profile?.kenteiRank).toBe(2);

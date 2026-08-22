@@ -42,10 +42,12 @@ import {
   type SeshSummary,
 } from '@/features/sesh/model/sesh';
 import { formatKenteiStanding, isTrickSummary, type PracticeTrick } from '@/features/tricks/model/trick';
+import type { AuthStatus } from '@/features/auth/model/auth-state';
 import {
   createPracticeSessionRecordId,
   getPersonalBest,
   hasPriorLaceForTrick,
+  isFirstEverRegularSession,
   isFirstLaceForTrick,
   type PracticeSessionOrigin,
   type PracticeSessionRecord,
@@ -70,6 +72,11 @@ interface SeshProps {
    * mirrors `MultiTrickSeshProps.origin` for structural consistency.
    */
   readonly origin?: PracticeSessionOrigin;
+  /**
+   * Supplied by the route file from `useAuthState()`; omitted (as in every
+   * existing test) means the guest signup invite never renders.
+   */
+  readonly authStatus?: AuthStatus;
 }
 
 export function Sesh({
@@ -79,6 +86,7 @@ export function Sesh({
   directPracticeTrickId,
   selectedTrickIds,
   origin,
+  authStatus,
 }: SeshProps) {
   const [state, dispatch] = useReducer(
     seshReducer,
@@ -98,6 +106,7 @@ export function Sesh({
   const [hadPriorLaceAtSeshStart, setHadPriorLaceAtSeshStart] = useState(false);
   const [goalBaselines, setGoalBaselines] = useState<readonly GoalProgress[]>([]);
   const [justAchievedGoals, setJustAchievedGoals] = useState<readonly Goal[]>([]);
+  const [showSignupInvite, setShowSignupInvite] = useState(false);
   const practiceTricks = useMemo(
     () => selectSeshPracticeTricks(availableTricks, selectedTrickIds, preferredTrickId),
     [availableTricks, preferredTrickId, selectedTrickIds],
@@ -142,8 +151,9 @@ export function Sesh({
         return isGoalNewlyAchieved(goal, baseline.current, contribution);
       }),
     );
+    setShowSignupInvite(authStatus === 'guest' && isFirstEverRegularSession(sessions, origin));
     recordCompletedSesh(state.summary, origin);
-  }, [goals, origin, recordCompletedSesh, sessions, state]);
+  }, [authStatus, goals, origin, recordCompletedSesh, sessions, state]);
 
   useEffect(() => {
     if (!shouldKeepScreenAwake(state.status)) return;
@@ -246,10 +256,12 @@ export function Sesh({
       sessions={sessions}
       isFirstLace={firstLaceCelebration}
       justAchievedGoals={justAchievedGoals}
+      showSignupInvite={showSignupInvite}
       onReset={() => {
         setFirstLaceCelebration(false);
         setHadPriorLaceAtSeshStart(false);
         setJustAchievedGoals([]);
+        setShowSignupInvite(false);
         dispatch({ type: 'seshReset' });
       }}
       onRepeat={() => {
@@ -261,6 +273,7 @@ export function Sesh({
         setLiveChallengeEnabled(false);
         setFirstLaceCelebration(false);
         setJustAchievedGoals([]);
+        setShowSignupInvite(false);
         setHadPriorLaceAtSeshStart(hasPriorLaceForTrick(sessions, state.summary.trick.id));
         setGoalBaselines(
           selectGoalsForTrick(goals, state.summary.trick.id).map((goal) =>
@@ -946,6 +959,7 @@ export function CompletedSesh({
   sessions = [],
   isFirstLace,
   justAchievedGoals = [],
+  showSignupInvite = false,
   onReset,
   onRepeat,
 }: {
@@ -955,6 +969,7 @@ export function CompletedSesh({
   readonly sessions?: readonly PracticeSessionRecord[];
   readonly isFirstLace: boolean;
   readonly justAchievedGoals?: readonly Goal[];
+  readonly showSignupInvite?: boolean;
   readonly onReset: () => void;
   readonly onRepeat: () => void;
 }) {
@@ -1001,10 +1016,36 @@ export function CompletedSesh({
         <LandingHistory landings={summary.landings} />
         {goalProgressList.length > 0 ? <SeshGoalsPanel goalProgressList={goalProgressList} /> : null}
         {promptForNote ? <SeshNotePrompt summary={summary} /> : null}
+        {showSignupInvite ? <PostSeshSignupInvite /> : null}
         <PrimaryButton onPress={onRepeat}>Repeat sesh</PrimaryButton>
         <SecondaryButton variant="secondary" onPress={onReset}>Start another sesh</SecondaryButton>
       </ActiveContent>
     </ScrollArea>
+  );
+}
+
+function PostSeshSignupInvite() {
+  const [dismissed, setDismissed] = useState(false);
+  if (dismissed) return null;
+
+  return (
+    <InviteCard accessibilityLabel="Guest signup invitation">
+      <InviteTitle>Save this sesh for good.</InviteTitle>
+      <InviteCopy>
+        Right now your practice history only lives on this device. Sign up free to keep it if you
+        switch devices or clear your browser.
+      </InviteCopy>
+      <InviteActions>
+        <Link href="/auth/sign-up" asChild>
+          <InviteSignUpButton accessibilityRole="link">Sign up</InviteSignUpButton>
+        </Link>
+        <InviteDismissButton
+          accessibilityLabel="Dismiss signup invitation"
+          onPress={() => setDismissed(true)}>
+          Not now
+        </InviteDismissButton>
+      </InviteActions>
+    </InviteCard>
   );
 }
 
@@ -1262,6 +1303,12 @@ const NotePromptButton = styled(Pressable)<{ $disabled?: boolean }>`min-height: 
 const NotePromptButtonText = styled.Text`color: ${({ theme }) => theme.accent}; font-size: 14px; font-weight: 900;`;
 const NotePromptSecondaryButton = styled(Pressable)`min-height: 44px; flex: 1; align-items: center; justify-content: center; padding: 10px 18px; border: 2px solid ${AppColors.ink}; border-radius: 5px;`;
 const NotePromptSecondaryButtonText = styled.Text`color: ${({ theme }) => theme.text}; font-size: 14px; font-weight: 900;`;
+const InviteCard = styled.View`width: 100%; max-width: 500px; background-color: #f8f1dd; border: 2px solid ${AppColors.ink}; padding: 18px; margin-top: 20px;`;
+const InviteTitle = styled.Text`color: ${({ theme }) => theme.text}; font-size: 17px; font-weight: 900;`;
+const InviteCopy = styled.Text`color: ${({ theme }) => theme.text}; font-size: 13px; font-weight: 650; line-height: 19px; margin-top: 6px;`;
+const InviteActions = styled.View`flex-direction: row; gap: 10px; margin-top: 14px;`;
+const InviteSignUpButton = styled(Button).attrs({ size: 'medium' })`flex: 1;`;
+const InviteDismissButton = styled(Button).attrs({ variant: 'secondary', size: 'medium' })`flex: 1;`;
 const SummaryGrid = styled.View`width: 100%; flex-direction: row; flex-wrap: wrap; gap: 10px; margin-top: 28px;`;
 const Metric = styled.View`min-width: 46%; flex-grow: 1; background-color: #f8f1dd; border-top-width: 5px; border-top-color: #d84929; padding: 18px;`;
 const MetricValue = styled.Text`color: #18382e; font-size: 30px; font-variant: tabular-nums; font-weight: 900;`;

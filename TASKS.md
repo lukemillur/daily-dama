@@ -159,16 +159,6 @@ _All currently actionable backend-roadmap work is phase-gated and active in depe
 - **Description:** Add the complete Phase 1 web Auth foundation while preserving unrestricted guest access to `/app`.
 - **Notes:** Umbrella from S032. Complete T153.1–T153.13. Native callbacks, SecureStore, and synchronization are excluded.
 
-### [T153.1] Establish reproducible local Supabase Auth development
-
-- **Area:** Backend development environment
-- **Priority:** High (inherited from parent T153)
-- **Status:** Not started
-- **Planning:** Required
-- **Description:** Add repository-owned Supabase CLI configuration, local Auth policy and email templates, ignored local environment files, and the smallest documented workflow needed to rebuild and test Auth locally without committing credentials. Configure verified email, a ten-character password minimum, one-hour JWTs, and `http://localhost:8081/auth/callback` as the fixed local callback.
-- **Exit criteria:** From a fresh checkout with the documented CLI and Docker-compatible prerequisites, `supabase start` and a clean local database reset succeed; a nine-character signup is rejected, an unverified user cannot sign in, Mailpit receives the repository-owned confirmation email targeting the exact local callback, and `git check-ignore` confirms every documented local credential file is ignored while the tracked configuration contains only placeholders or environment references.
-- **Notes:** From S032 and `BACKEND_ROADMAP.md` Phase 1 backend items 1, 3, and 6. This establishes the local backend contract only; application consumption begins in T153.4. When Auth flows are being tested, use the fixed port rather than selecting an arbitrary fallback port because the PKCE verifier and redirect origin must match.
-
 ### [T153.2] Configure the hosted development project and Auth policy
 
 - **Area:** Hosted Supabase Auth configuration
@@ -219,16 +209,6 @@ _All currently actionable backend-roadmap work is phase-gated and active in depe
 - **Exit criteria:** Profile component/browser tests prove an unauthenticated, onboarded guest can open `/auth/sign-up` and `/auth/sign-in`, an authenticated user sees neither guest entry, and navigating to or returning from either route leaves the existing profile, trick, Sesh, Stats, goal, and note state unchanged.
 - **Notes:** From S032 and roadmap Phase 1 frontend item 4. Depends on T153.8–T153.9. This is a local Profile navigation change; authenticated account-management surfaces remain in T154 and guest-data import remains T159.
 
-### [T153.12] Invite a guest after their first completed Sesh
-
-- **Area:** Post-Sesh Auth invitation
-- **Priority:** High (inherited from parent T153)
-- **Status:** Not started
-- **Planning:** Required
-- **Description:** Show a dismissible, optional signup invitation on the completion UI for the first completed Sesh in the current guest practice-history namespace. Derive eligibility from authoritative practice history and keep dismissal local to that completion UI rather than adding a profile field, storage key, or persistence domain.
-- **Exit criteria:** Component/provider tests prove the invitation appears for an unauthenticated guest's first successfully recorded Sesh, can be dismissed or can open signup without changing the completed record, does not appear on later completions or after reloading the persisted first record, never appears for an authenticated user, and does not alter completion deduplication or any existing guest flow.
-- **Notes:** From S032 and roadmap Phase 1 frontend item 6. Depends on T153.4 and T153.8. Do not start guest-data import here. Planning is required because this reads across Auth and practice-history providers beside the existing two-layer completed-Sesh deduplication boundary.
-
 ### [T153.13] Verify Phase 1 web Auth security end to end
 
 - **Area:** Authentication security testing
@@ -258,18 +238,6 @@ _Phase 1/4 shared account-maintenance activation: T154 comes from S033 and the c
 - **Description:** Configure Supabase secure email change and add `/app/profile/account/security` with current-password verification for password changes, including reauthentication, expiry, generic errors, and confirmation guidance through T153.5's shared boundary.
 - **Exit criteria:** Route/provider tests and a browser walkthrough confirm a signed-in user can change a password only after supplying the current password, can initiate and complete secure email change, and receives actionable expired/offline states without exposing sensitive values in URLs, logs, or analytics.
 - **Notes:** From S033 and roadmap Phase 1 backend item 5/frontend item 5. Depends on T153.2, T153.3, T153.4, T153.5, and T153.7. T153.7 establishes the callback allowlist; this task adds only the fixed secure-email-change result needed by this route. Do not add MFA or account deletion.
-
-### [T154.2] Add current-device logout and fresh guest return
-
-- **Area:** Authentication session lifecycle
-- **Priority:** Medium
-- **Status:** Not started
-- **Planning:** Required
-- **Description:** Add a Profile logout action using `signOut({ scope: 'local' })`, transition authoritative Auth state back to guest, and leave other device sessions untouched.
-- **Exit criteria:** Provider and browser tests confirm logout invalidates the current browser session, returns to a usable guest workspace, does not request global sign-out, and handles offline or expired-session responses deterministically.
-- **Notes:** From S033. Depends on T153.4 and T154.1. Before outboxes exist, this is the basic logout path; T158 later adds the unsynced-change guard and account-cache handling.
-
----
 
 _Phase 2 activation: T155 comes from S034 and `BACKEND_ROADMAP.md` Phase 2. Its thirteen S-sized children establish the database security boundary, model all six resources, prove grants/RLS and constraints, generate typed repository contracts, and add pure runtime mappings before any provider synchronizes. The sequence is dependency-driven: schema and tests precede generated types and mappings; existing reducer authority, hydration fallback, and skipped-initial-write behavior remain unchanged._
 
@@ -422,26 +390,6 @@ _Phase 3 activation: T156–T160 come from S035–S038 and `BACKEND_ROADMAP.md` 
 - **Status:** Not started
 - **Description:** Prevent guest and authenticated caches from sharing keys or allowing late work from one identity to update another.
 - **Notes:** Umbrella from S038. Complete T156.1–T156.3 before domain synchronization. The existing hydration fallback and skipped-initial-write behavior must survive unchanged.
-
-### [T156.1] Define identity-scoped storage and generation ownership
-
-- **Area:** Shared persistence
-- **Priority:** High
-- **Status:** Not started
-- **Planning:** Required
-- **Description:** Introduce an explicit `guest` / `user:<verified-user-id>` identity model, a scoped `KeyValueStorage` adapter, and generation tokens that let async persistence/sync results prove they still belong to the current identity.
-- **Exit criteria:** Unit tests prove identical logical keys resolve to isolated physical namespaces, unverified or malformed identities are rejected, generation changes invalidate late results, and the adapter never accepts identity from mutation payload data.
-- **Notes:** From S038 and roadmap synchronization security. Depends on T153.4. Do not move native credentials or add outboxes yet.
-
-### [T156.2] Rehydrate every provider from its current identity namespace
-
-- **Area:** Persistent provider composition
-- **Priority:** High
-- **Status:** Not started
-- **Planning:** Required
-- **Description:** Inject identity-scoped storage into the profile, custom-trick, practice-history, goal, and note providers; on identity change, cancel stale hydration, restore the new namespace, and preserve each provider's safe fallback, write queue, and skipped initial write.
-- **Exit criteria:** Provider integration tests switch guest → user A → user B → guest and prove each domain rehydrates only its own data, no empty initial state overwrites restored data, writes remain ordered, and a deliberately delayed user-A load cannot commit after user B becomes current.
-- **Notes:** From S038. Depends on T156.1. This changes provider orchestration but not reducer state shapes.
 
 ### [T156.3] Prove cross-account local-data isolation
 
