@@ -48,6 +48,44 @@ anon/service keys anywhere for manual testing, put them in `.env.local` at the
 repo root (already gitignored) — never in `.env.example` or any other tracked
 file.
 
+### Running Data API JSON-invariant tests
+
+Every domain-invariant proof above (pgTAP) runs SQL directly inside a
+transaction that gets rolled back. `supabase/tests/data-api/` proves the same
+invariants a second way: real HTTP requests through PostgREST (the Data API),
+using a genuine, confirmed, signed-in `authenticated` JWT — the actual path a
+client takes, not a SQL-level shortcut. It covers every discriminated shape
+(profile `lastSesh` plan variants, custom-trick step variants including
+nested-sequence rejection in both directions, goal count/time variants) with
+valid/malformed parameterized cases, plus a few cases pgTAP cannot exercise at
+all: forged server-owned columns (expect `42501`), unrecognized JSON keys that
+aren't any column (expect PostgREST's own `PGRST204`), and bulk (JSON-array)
+insert atomicity.
+
+This suite needs a running local stack with a recent `db reset` (it exercises
+real rows against the live stack, not a rolled-back transaction):
+
+```sh
+npx --yes supabase@2.115.0 start       # if not already running
+npx --yes supabase@2.115.0 db reset
+yarn test:data-api
+```
+
+Each test file creates and deletes its own confirmed test user via the
+`auth/v1/admin/users` API, so no manual signup/Mailpit step is needed (unlike
+the Auth-policy manual-verification steps below). Deleting that user cascades
+to every `api.*` row it owns, so no per-table teardown is needed either.
+Finish with `npx --yes supabase@2.115.0 db reset` afterward, the same way the
+pgTAP section above instructs, so no fixture rows linger for a subsequent run
+of either suite.
+
+Like pgTAP, `yarn test:data-api` is **not** part of `node .claude/scripts/
+verify.mjs` or the standard `yarn test`/`lint`/`tsc`/`export` sequence: it
+requires a running local Supabase/Docker stack that CI and the standard
+verification loop do not assume. T155.8 will consolidate every security/
+migration test source (pgTAP, this suite, and later Data API suites) into one
+repeatable command; until then, run it explicitly as shown above.
+
 ## Local Auth policy (see `config.toml`)
 
 - Email confirmations are required (`enable_confirmations = true`) — unverified

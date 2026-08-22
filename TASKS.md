@@ -209,16 +209,6 @@ _Phase 2 activation: T155 comes from S034 and `BACKEND_ROADMAP.md` Phase 2. Its 
 - **Description:** Represent all persisted Daily Dama domains in a constrained, typed Postgres/Data API boundary before any provider begins synchronization.
 - **Notes:** Umbrella from S034. Complete T155.1–T155.13. No production migrations or live user data exist yet.
 
-### [T155.6] Enforce domain JSON invariants inside Postgres
-
-- **Area:** Database validation
-- **Priority:** High
-- **Status:** Not started
-- **Planning:** Required
-- **Description:** Add database-level validation for profile variants, goals, custom tricks, and sequence-step JSON so callers bypassing frontend runtime validation cannot store impossible domain states.
-- **Exit criteria:** Parameterized raw Data API tests submit valid and malformed examples for every discriminated shape and confirm only valid records persist, including explicit rejection of nested sequences, unknown fields/variants, invalid ranks, and ambiguous goal payloads.
-- **Notes:** From S034 and roadmap database-security requirements. Depends on T155.2–T155.4.
-
 ### [T155.7] Add explicit authenticated grants and row-level security
 
 - **Area:** Database authorization
