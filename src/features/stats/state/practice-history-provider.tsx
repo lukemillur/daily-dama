@@ -1,15 +1,4 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import {
-  createContext,
-  type PropsWithChildren,
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useReducer,
-  useRef,
-  useState,
-} from 'react';
+import { createContext, type PropsWithChildren, useCallback, useContext, useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { AppColors } from '@/constants/theme';
@@ -17,6 +6,7 @@ import type { SeshSummary } from '@/features/sesh/model/sesh';
 import {
   INITIAL_PRACTICE_HISTORY,
   type PracticeHistory,
+  type PracticeHistoryAction,
   type PracticeSessionOrigin,
   practiceHistoryReducer,
 } from '@/features/stats/model/practice-history';
@@ -24,7 +14,7 @@ import {
   loadPracticeHistory,
   savePracticeHistory,
 } from '@/features/stats/persistence/practice-history-persistence';
-import { createWriteQueue } from '@/shared/persistence/storage';
+import { useIdentityScopedDomain } from '@/shared/persistence/use-identity-scoped-domain';
 
 interface PracticeHistoryActions {
   readonly recordCompletedSesh: (summary: SeshSummary, origin?: PracticeSessionOrigin) => void;
@@ -34,46 +24,22 @@ const PracticeHistoryStateContext = createContext<PracticeHistory | undefined>(u
 const PracticeHistoryActionsContext = createContext<PracticeHistoryActions | undefined>(undefined);
 
 export function PracticeHistoryProvider({ children }: PropsWithChildren) {
-  const [history, dispatch] = useReducer(practiceHistoryReducer, INITIAL_PRACTICE_HISTORY);
-  const [hasHydrated, setHasHydrated] = useState(false);
-  const shouldSkipInitialWrite = useRef(true);
-  const [enqueueWrite] = useState(() =>
-    createWriteQueue(async (nextHistory: PracticeHistory) => {
-      const result = await savePracticeHistory(AsyncStorage, nextHistory);
-      if (result.status === 'failed') {
-        console.warn('Unable to persist practice history.', result.error);
-      }
+  const { state: history, dispatch, hasHydrated } = useIdentityScopedDomain({
+    reducer: practiceHistoryReducer,
+    initialState: INITIAL_PRACTICE_HISTORY,
+    load: loadPracticeHistory,
+    save: savePracticeHistory,
+    createRestoreAction: (value: PracticeHistory): PracticeHistoryAction => ({
+      type: 'historyRestored',
+      history: value,
     }),
-  );
-
-  useEffect(() => {
-    let isCurrent = true;
-
-    loadPracticeHistory(AsyncStorage).then((result) => {
-      if (!isCurrent) return;
-
-      if (result.status === 'recovered') {
-        console.warn('Unable to restore practice history. Using an empty history.', result.error);
-      }
-
-      dispatch({ type: 'historyRestored', history: result.value });
-      setHasHydrated(true);
-    });
-
-    return () => {
-      isCurrent = false;
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!hasHydrated) return;
-    if (shouldSkipInitialWrite.current) {
-      shouldSkipInitialWrite.current = false;
-      return;
-    }
-
-    void enqueueWrite(history);
-  }, [enqueueWrite, hasHydrated, history]);
+    onRecovered: (error) => {
+      console.warn('Unable to restore practice history. Using an empty history.', error);
+    },
+    onSaveFailed: (error) => {
+      console.warn('Unable to persist practice history.', error);
+    },
+  });
 
   const recordCompletedSesh = useCallback((summary: SeshSummary, origin?: PracticeSessionOrigin) => {
     dispatch({ type: 'sessionRecorded', summary, origin });

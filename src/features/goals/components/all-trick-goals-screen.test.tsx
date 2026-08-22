@@ -14,6 +14,12 @@ import {
 } from '@/features/stats/state/practice-history-provider';
 import type { PracticeTrick } from '@/features/tricks/model/trick';
 import type { DirectoryTrick } from '@/features/tricks/model/trick-directory';
+import { GUEST_IDENTITY } from '@/shared/persistence/identity';
+import { physicalKey } from '@/shared/persistence/scoped-storage';
+
+// This test doesn't wrap providers in <IdentityProvider>, so GoalProvider hydrates against the
+// module's default guest handle -- writes land at the guest-namespaced physical key.
+const GUEST_GOALS_KEY = physicalKey(GUEST_IDENTITY, GOALS_STORAGE_KEY);
 
 // AllTrickGoalsScreen transitively imports practice-history-provider, which pulls in
 // AsyncStorage. Mock it the same way sesh.test.tsx and kentei-rank-auto-promotion.test.tsx do.
@@ -274,7 +280,7 @@ describe('AllTrickGoalsScreen', () => {
     await act(async () => {
       await new Promise((resolve) => setTimeout(resolve, 0));
     });
-    const serialized = await AsyncStorage.getItem(GOALS_STORAGE_KEY);
+    const serialized = await AsyncStorage.getItem(GUEST_GOALS_KEY);
     expect(JSON.parse(serialized ?? '{}').goals).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ trickId: 'big-cup', trickName: 'Big Cup', targetCount: 7 }),

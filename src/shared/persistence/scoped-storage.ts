@@ -22,3 +22,38 @@ export function createScopedKeyValueStorage(
     setItem: (key, value) => base.setItem(physicalKey(context.getIdentity(), key), value),
   };
 }
+
+/**
+ * Wraps `createScopedKeyValueStorage` with a one-time backward-compat fallback for guest data
+ * written before T156.2 introduced identity namespacing, when every domain lived at the bare
+ * logical key (e.g. `daily-dama:user-profile`) instead of `guest:daily-dama:user-profile`.
+ *
+ * On a scoped miss while the current identity is `guest`, falls back to the legacy bare key on
+ * `base`. A legacy hit is written through to the namespaced key so every subsequent read/write
+ * uses the namespaced key going forward -- the fallback path is only ever exercised once per
+ * domain per device. The legacy key itself is deliberately left in place (no forensic erasure).
+ *
+ * `user:<uuid>` identities never had legacy data (that namespace didn't exist pre-T156.1), so the
+ * fallback is skipped entirely for them -- they never touch the bare key.
+ */
+export function createGuestMigratingStorage(
+  base: KeyValueStorage,
+  context: Pick<IdentityContext, 'getIdentity'>,
+): KeyValueStorage {
+  const scoped = createScopedKeyValueStorage(base, context);
+
+  return {
+    getItem: async (key) => {
+      const scopedValue = await scoped.getItem(key);
+      if (scopedValue !== null) return scopedValue;
+      if (context.getIdentity().kind !== 'guest') return null;
+
+      const legacyValue = await base.getItem(key);
+      if (legacyValue === null) return null;
+
+      await scoped.setItem(key, legacyValue);
+      return legacyValue;
+    },
+    setItem: (key, value) => scoped.setItem(key, value),
+  };
+}

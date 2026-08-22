@@ -1,19 +1,9 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import {
-  createContext,
-  type PropsWithChildren,
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useReducer,
-  useRef,
-  useState,
-} from 'react';
+import { createContext, type PropsWithChildren, useCallback, useContext, useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { AppColors } from '@/constants/theme';
 import {
+  type GoalAction,
   createGoal,
   createGoalId,
   type Goal,
@@ -26,7 +16,7 @@ import {
 } from '@/features/goals/model/goal';
 import { loadGoals, saveGoals } from '@/features/goals/persistence/goal-persistence';
 import { useUserProfileActions } from '@/features/profile/state/user-profile-provider';
-import { createWriteQueue } from '@/shared/persistence/storage';
+import { useIdentityScopedDomain } from '@/shared/persistence/use-identity-scoped-domain';
 
 type SaveGoalResult =
   | { readonly status: 'invalid'; readonly errors: GoalDraftErrors }
@@ -41,49 +31,25 @@ const GoalStateContext = createContext<GoalCollection | undefined>(undefined);
 const GoalActionsContext = createContext<GoalActions | undefined>(undefined);
 
 export function GoalProvider({ children }: PropsWithChildren) {
-  const [collection, dispatch] = useReducer(goalReducer, INITIAL_GOALS);
   // GoalProvider must be rendered inside UserProfileProvider (see _layout.tsx's provider
   // nesting order) so addGoal can focus the goal's trick as part of the same save action.
   const { addSelectedTrick } = useUserProfileActions();
-  const [hasHydrated, setHasHydrated] = useState(false);
-  const shouldSkipInitialWrite = useRef(true);
-  const [enqueueWrite] = useState(() =>
-    createWriteQueue(async (nextCollection: GoalCollection) => {
-      const result = await saveGoals(AsyncStorage, nextCollection);
-      if (result.status === 'failed') {
-        console.warn('Unable to persist goals.', result.error);
-      }
+  const { state: collection, dispatch, hasHydrated } = useIdentityScopedDomain({
+    reducer: goalReducer,
+    initialState: INITIAL_GOALS,
+    load: loadGoals,
+    save: saveGoals,
+    createRestoreAction: (value: GoalCollection): GoalAction => ({
+      type: 'goalsRestored',
+      collection: value,
     }),
-  );
-
-  useEffect(() => {
-    let isCurrent = true;
-
-    loadGoals(AsyncStorage).then((result) => {
-      if (!isCurrent) return;
-
-      if (result.status === 'recovered') {
-        console.warn('Unable to restore goals. Using an empty collection.', result.error);
-      }
-
-      dispatch({ type: 'goalsRestored', collection: result.value });
-      setHasHydrated(true);
-    });
-
-    return () => {
-      isCurrent = false;
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!hasHydrated) return;
-    if (shouldSkipInitialWrite.current) {
-      shouldSkipInitialWrite.current = false;
-      return;
-    }
-
-    void enqueueWrite(collection);
-  }, [collection, enqueueWrite, hasHydrated]);
+    onRecovered: (error) => {
+      console.warn('Unable to restore goals. Using an empty collection.', error);
+    },
+    onSaveFailed: (error) => {
+      console.warn('Unable to persist goals.', error);
+    },
+  });
 
   const addGoal = useCallback((input: GoalCreationInput): SaveGoalResult => {
     const validation = validateGoalCreation(input);

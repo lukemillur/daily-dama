@@ -1,16 +1,5 @@
-import {
-  createContext,
-  type PropsWithChildren,
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useReducer,
-  useRef,
-  useState,
-} from 'react';
+import { createContext, type PropsWithChildren, useCallback, useContext, useMemo } from 'react';
 import { Platform, StyleSheet, Text, View } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { track } from '@vercel/analytics';
 
 import { AppColors } from '@/constants/theme';
@@ -18,6 +7,7 @@ import {
   createLastSesh,
   INITIAL_USER_PROFILE,
   type UserProfile,
+  type UserProfileAction,
   userProfileReducer,
 } from '@/features/profile/model/user-profile';
 import {
@@ -25,7 +15,7 @@ import {
   saveUserProfile,
 } from '@/features/profile/persistence/user-profile-persistence';
 import type { SeshPlan } from '@/features/sesh/model/sesh';
-import { createWriteQueue } from '@/shared/persistence/storage';
+import { useIdentityScopedDomain } from '@/shared/persistence/use-identity-scoped-domain';
 
 interface UserProfileActions {
   readonly toggleSelectedTrick: (trickId: string) => void;
@@ -54,47 +44,22 @@ const UserProfileStateContext = createContext<UserProfile | undefined>(undefined
 const UserProfileActionsContext = createContext<UserProfileActions | undefined>(undefined);
 
 export function UserProfileProvider({ children }: PropsWithChildren) {
-  const [profile, dispatch] = useReducer(userProfileReducer, INITIAL_USER_PROFILE);
-  const [hasHydrated, setHasHydrated] = useState(false);
-  const shouldSkipInitialWrite = useRef(true);
-  const [enqueueWrite] = useState(() =>
-    createWriteQueue(async (nextProfile: UserProfile) => {
-      const result = await saveUserProfile(AsyncStorage, nextProfile);
-      if (result.status === 'failed') {
-        console.warn('Unable to persist the user profile.', result.error);
-      }
+  const { state: profile, dispatch, hasHydrated } = useIdentityScopedDomain({
+    reducer: userProfileReducer,
+    initialState: INITIAL_USER_PROFILE,
+    load: loadUserProfile,
+    save: saveUserProfile,
+    createRestoreAction: (value: UserProfile): UserProfileAction => ({
+      type: 'profileRestored',
+      profile: value,
     }),
-  );
-
-  useEffect(() => {
-    let isCurrent = true;
-
-    loadUserProfile(AsyncStorage).then((result) => {
-      if (!isCurrent) return;
-
-      if (result.status === 'recovered') {
-        console.warn('Unable to restore the saved user profile. Using safe defaults.', result.error);
-      }
-
-      dispatch({ type: 'profileRestored', profile: result.value });
-      setHasHydrated(true);
-    });
-
-    return () => {
-      isCurrent = false;
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!hasHydrated) return;
-
-    if (shouldSkipInitialWrite.current) {
-      shouldSkipInitialWrite.current = false;
-      return;
-    }
-
-    void enqueueWrite(profile);
-  }, [enqueueWrite, hasHydrated, profile]);
+    onRecovered: (error) => {
+      console.warn('Unable to restore the saved user profile. Using safe defaults.', error);
+    },
+    onSaveFailed: (error) => {
+      console.warn('Unable to persist the user profile.', error);
+    },
+  });
 
   const toggleSelectedTrick = useCallback((trickId: string) => {
     dispatch({ type: 'selectedTrickToggled', trickId });
