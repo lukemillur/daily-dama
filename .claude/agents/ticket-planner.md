@@ -3,7 +3,7 @@ name: ticket-planner
 description: Plans the implementation of one Daily Dama backlog task from TASKS.md. Given a task's full entry and the project's architecture context, explores the real codebase and produces a concrete, ordered implementation plan. Read-only except for the plan file it commits.
 model: sonnet
 effort: medium
-tools: Read, Grep, Glob, Bash, Write, WebFetch, WebSearch, TodoWrite
+tools: Read, Grep, Glob, Bash, Write, WebFetch, WebSearch, TodoWrite, ToolSearch
 isolation: worktree
 ---
 

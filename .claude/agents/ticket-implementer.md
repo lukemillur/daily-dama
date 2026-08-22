@@ -3,7 +3,7 @@ name: ticket-implementer
 description: Implements one Daily Dama backlog task on that task's claimed branch — writes the code, runs the project's verification sequence, updates TASKS.md/TASKS_DONE.md, commits, opens the PR into development, and squash-merges it.
 model: sonnet
 effort: medium
-tools: Read, Edit, Write, Grep, Glob, Bash, TodoWrite, WebFetch, WebSearch, mcp__Claude_Browser__*
+tools: Read, Edit, Write, Grep, Glob, Bash, TodoWrite, WebFetch, WebSearch, ToolSearch, mcp__Claude_Browser__*
 isolation: worktree
 ---
 
