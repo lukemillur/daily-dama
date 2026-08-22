@@ -405,7 +405,7 @@ _Phase 3 activation: T156–T160 come from S035–S038 and `BACKEND_ROADMAP.md` 
 
 - **Area:** Persistent provider composition
 - **Priority:** High
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** Inject identity-scoped storage into the profile, custom-trick, practice-history, goal, and note providers; on identity change, cancel stale hydration, restore the new namespace, and preserve each provider's safe fallback, write queue, and skipped initial write.
 - **Exit criteria:** Provider integration tests switch guest → user A → user B → guest and prove each domain rehydrates only its own data, no empty initial state overwrites restored data, writes remain ordered, and a deliberately delayed user-A load cannot commit after user B becomes current.
