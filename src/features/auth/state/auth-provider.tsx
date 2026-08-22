@@ -22,6 +22,9 @@ interface AuthActions {
   ) => Promise<{ error: AuthError | null }>;
   readonly signOut: () => Promise<{ error: AuthError | null }>;
   readonly completePasswordRecovery: (newPassword: string) => Promise<{ error: AuthError | null }>;
+  readonly exchangeCodeForSession: (
+    code: string,
+  ) => Promise<{ redirectType: 'recovery' | null; error: AuthError | null }>;
 }
 
 const AuthStateContext = createContext<AuthState | undefined>(undefined);
@@ -99,9 +102,27 @@ export function AuthProvider({ children }: PropsWithChildren) {
     return { error };
   }, []);
 
+  const exchangeCodeForSession = useCallback(async (code: string) => {
+    const client = getSupabaseClient();
+
+    if (!client) {
+      return { redirectType: null, error: new AuthError('Supabase is not configured.') };
+    }
+
+    const { data, error } = await client.auth.exchangeCodeForSession(code);
+    if (error) return { redirectType: null, error };
+
+    // supabase-js's public TS signature under-declares this: exchangeCodeForSession's runtime
+    // success payload includes `redirectType: 'recovery' | null`, used to distinguish a
+    // password-recovery code from a signup-confirmation code, but the declared return type
+    // (AuthTokenResponse) omits it. Confirmed against the installed 2.112.3 GoTrueClient source.
+    const redirectType = (data as unknown as { redirectType: 'recovery' | null }).redirectType;
+    return { redirectType, error: null };
+  }, []);
+
   const actions = useMemo(
-    () => ({ signInWithPassword, signOut, completePasswordRecovery }),
-    [signInWithPassword, signOut, completePasswordRecovery],
+    () => ({ signInWithPassword, signOut, completePasswordRecovery, exchangeCodeForSession }),
+    [signInWithPassword, signOut, completePasswordRecovery, exchangeCodeForSession],
   );
 
   return (
