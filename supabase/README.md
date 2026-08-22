@@ -25,6 +25,24 @@ npx --yes supabase@2.115.0 status     # prints local API URL, anon key, service_
 `db reset` any time you want a clean local database without tearing down the
 whole stack.
 
+### Running migration tests (pgTAP)
+
+Schema migrations under `supabase/migrations/` are covered by pgTAP tests
+under `supabase/tests/` (one `.test.sql` file per ticket for now). Run them
+against a freshly reset local database:
+
+```sh
+npx --yes supabase@2.115.0 db reset       # re-apply all migrations from clean
+npx --yes supabase@2.115.0 test db --local
+```
+
+The first `test db --local` run pulls the `public.ecr.aws/supabase/pg_prove`
+Docker image, so it needs network access once. Always finish on another
+`db reset` so no fixture rows or manually-dropped constraints from a
+regression check linger in the running local DB. T155.8 will consolidate
+this into one repeatable command as more tables/tests are added; until then,
+this two-command sequence is how migration tests are run locally.
+
 **Never commit the output of `supabase status`.** If you save the printed
 anon/service keys anywhere for manual testing, put them in `.env.local` at the
 repo root (already gitignored) — never in `.env.example` or any other tracked
