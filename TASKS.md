@@ -213,7 +213,7 @@ _Phase 2 activation: T155 comes from S034 and `BACKEND_ROADMAP.md` Phase 2. Its 
 
 - **Area:** Backend testing
 - **Priority:** High
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** Consolidate clean-reset, catalog, constraint, grant, RLS, pagination, and raw Data API negative tests into a dependency-free or repository-standard command suitable for local work and CI.
 - **Exit criteria:** One documented command resets the local database and runs all migration/security tests, including anonymous access, cross-user access, protected columns, malformed JSON, practice-session immutability, and a paginated fixture exceeding 1,000 sessions; it exits non-zero when a representative policy is deliberately weakened.
