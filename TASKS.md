@@ -209,16 +209,6 @@ _Phase 2 activation: T155 comes from S034 and `BACKEND_ROADMAP.md` Phase 2. Its 
 - **Description:** Represent all persisted Daily Dama domains in a constrained, typed Postgres/Data API boundary before any provider begins synchronization.
 - **Notes:** Umbrella from S034. Complete T155.1–T155.13. No production migrations or live user data exist yet.
 
-### [T155.4] Model mutable goals and notes with tombstones
-
-- **Area:** Goals / notes cloud schema
-- **Priority:** High
-- **Status:** In progress
-- **Planning:** Required
-- **Description:** Add `api.goals` and `api.notes` with their discriminated variants, trick/session name snapshots, revisions, edit timestamps, soft-deletion tombstones, ownership constraints, and user-scoped ordering indexes.
-- **Exit criteria:** Migration tests accept every current goal/note variant, reject malformed variants and invalid session references, increment revisions through valid edits, and prove a tombstoned record cannot be silently recreated by a stale mutation using the same identity/revision.
-- **Notes:** From S034. Depends on T155.1. Historical name snapshots remain authoritative.
-
 ### [T155.5] Protect server-owned timestamps, revisions, and ownership
 
 - **Area:** Database mutation controls
