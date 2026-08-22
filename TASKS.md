@@ -213,7 +213,7 @@ _Phase 2 activation: T155 comes from S034 and `BACKEND_ROADMAP.md` Phase 2. Its 
 
 - **Area:** Custom tricks / practice-history cloud schema
 - **Priority:** High
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** Add `api.custom_tricks` and `api.practice_sessions`, preserving stable trick IDs, authoritative name snapshots, non-nested sequence steps, insert-only historical sessions, client-fact timing, and user-scoped pagination indexes.
 - **Exit criteria:** Database tests accept valid standalone tricks, sequences, and session snapshots; reject nested sequences, malformed discriminated steps, invalid timing/counts, and duplicate IDs; and prove an authenticated client cannot update or delete a practice session after insertion.
