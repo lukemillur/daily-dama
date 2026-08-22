@@ -148,5 +148,17 @@ export function restClient(config, accessToken) {
     get: (path, options) => request('GET', path, options),
     post: (path, body, options) => request('POST', path, { ...options, body }),
     patch: (path, body, options) => request('PATCH', path, { ...options, body }),
+    delete: (path, options) => request('DELETE', path, options),
   };
+}
+
+/**
+ * Returns a REST client using only the anon key -- both `apikey` and
+ * `Authorization` are the anon key, with no signed-in session -- to prove
+ * anonymous denial (T155.7). `anon` is never granted `USAGE ON SCHEMA api`
+ * (T155.1), so every request through this client is expected to fail at the
+ * schema layer before any per-table RLS policy is even evaluated.
+ */
+export function anonClient(config) {
+  return restClient(config, config.anonKey);
 }

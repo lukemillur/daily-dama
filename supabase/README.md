@@ -79,6 +79,12 @@ Finish with `npx --yes supabase@2.115.0 db reset` afterward, the same way the
 pgTAP section above instructs, so no fixture rows linger for a subsequent run
 of either suite.
 
+`supabase/tests/data-api/` also carries T155.7's authorization suite
+(anonymous denial, cross-user isolation, ownership-change rejection, and each
+table's per-operation grant matrix) alongside the JSON-invariant suite above,
+run via the same `yarn test:data-api` command — both concerns live in the
+same directory and share the same run steps.
+
 Like pgTAP, `yarn test:data-api` is **not** part of `node .claude/scripts/
 verify.mjs` or the standard `yarn test`/`lint`/`tsc`/`export` sequence: it
 requires a running local Supabase/Docker stack that CI and the standard

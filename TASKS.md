@@ -209,16 +209,6 @@ _Phase 2 activation: T155 comes from S034 and `BACKEND_ROADMAP.md` Phase 2. Its 
 - **Description:** Represent all persisted Daily Dama domains in a constrained, typed Postgres/Data API boundary before any provider begins synchronization.
 - **Notes:** Umbrella from S034. Complete T155.1–T155.13. No production migrations or live user data exist yet.
 
-### [T155.7] Add explicit authenticated grants and row-level security
-
-- **Area:** Database authorization
-- **Priority:** High
-- **Status:** In progress
-- **Planning:** Required
-- **Description:** Enable RLS in table-creation migrations and add least-privilege operation grants plus user-scoped `USING` and `WITH CHECK` policies for every exposed resource, with select/insert-only permissions for practice sessions.
-- **Exit criteria:** Raw HTTP tests prove anonymous denial, user A isolation from user B across select/insert/update/delete, rejection of ownership changes, correct allowed operations for each table, and denial of practice-session updates/deletes even by the owner.
-- **Notes:** From S034. Depends on T155.2–T155.6. Test grants and RLS independently so one cannot mask a failure in the other.
-
 ### [T155.8] Build a repeatable database security and migration test harness
 
 - **Area:** Backend testing
