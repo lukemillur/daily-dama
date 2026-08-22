@@ -23,6 +23,7 @@ const SUBMIT_ERROR_COPY: Record<AuthErrorCategory, string> = {
   // Sign-in specific interpretation of the shared "expired session" category -- see T153.9's
   // plan for why this reuses expiredOrInvalidLink rather than adding new model surface.
   expiredOrInvalidLink: 'Your session has expired. Sign in again to continue.',
+  missingVerifier: 'Something went wrong. Please try again.',
   weakPassword: 'Something went wrong. Please try again.',
   accountAlreadyExists: 'Something went wrong. Please try again.',
   unknown: 'Something went wrong. Please try again.',
@@ -136,6 +137,13 @@ export function SignInScreen() {
         <FormActions>
           <Button accessibilityLabel="Sign in" disabled={isSubmitting} fill onPress={handleSubmit}>
             {isSubmitting ? 'Signing in...' : 'Sign in'}
+          </Button>
+          <Button
+            accessibilityLabel="Forgot password?"
+            variant="secondary"
+            fill
+            onPress={() => router.push('/auth/forgot-password')}>
+            Forgot password?
           </Button>
           <Button
             accessibilityLabel="Continue as guest"

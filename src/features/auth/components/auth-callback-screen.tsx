@@ -12,6 +12,8 @@ import { useAuthActions } from '@/features/auth/state/auth-provider';
 
 const ERROR_COPY: Record<AuthErrorCategory, string> = {
   expiredOrInvalidLink: 'This link has expired or was already used. Request a new one and try again.',
+  missingVerifier:
+    'This link only works in the browser and device you requested it from. Open your email there, or go back and request a new link from that same browser.',
   offline: "You're offline. Check your connection and try again.",
   rateLimited: 'Too many attempts. Wait a moment and try again.',
   weakPassword: 'Something went wrong. Please try again.',

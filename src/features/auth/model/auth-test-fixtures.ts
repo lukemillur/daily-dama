@@ -17,6 +17,8 @@ export const authApiErrorFixtures = [
   { code: 'otp_expired', status: 403, message: 'Token has expired or is invalid' },
   { code: 'session_not_found', status: 403, message: 'Session not found' },
   { code: 'session_expired', status: 403, message: 'Session expired' },
+  { code: 'bad_code_verifier', status: 403, message: 'code challenge does not match previously saved code verifier' },
+  { code: 'flow_state_not_found', status: 403, message: 'PKCE flow state not found' },
 ];
 
 export function networkFailure(): TypeError {

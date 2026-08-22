@@ -18,6 +18,7 @@ const LOG_OUT_ERROR_COPY: Record<AuthErrorCategory, string> = {
   accountAlreadyExists: 'Something went wrong. Please try again.',
   weakPassword: 'Something went wrong. Please try again.',
   expiredOrInvalidLink: 'Something went wrong. Please try again.',
+  missingVerifier: 'Something went wrong. Please try again.',
   rateLimited: 'Something went wrong. Please try again.',
   offline: "You're offline. Check your connection and try again.",
   unknown: 'Something went wrong. Please try again.',

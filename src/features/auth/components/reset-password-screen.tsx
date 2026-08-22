@@ -14,6 +14,7 @@ import { useAuthActions, useAuthState } from '@/features/auth/state/auth-provide
 const SUBMIT_ERROR_COPY: Record<AuthErrorCategory, string> = {
   weakPassword: 'Choose a stronger password and try again.',
   expiredOrInvalidLink: 'This recovery link has expired. Request a new one and try again.',
+  missingVerifier: 'Something went wrong. Please try again.',
   offline: "You're offline. Check your connection and try again.",
   rateLimited: 'Too many attempts. Wait a moment and try again.',
   invalidCredentials: 'Something went wrong. Please try again.',

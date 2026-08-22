@@ -189,16 +189,6 @@ _All currently actionable backend-roadmap work is phase-gated and active in depe
 - **Exit criteria:** Route tests and a local browser walkthrough prove a guest can submit signup, receives the same public result for a new or existing address, reaches check-email guidance, resends within the configured limits, opens the Mailpit confirmation in the same browser profile, completes T153.7's callback, and reaches authenticated `/app/home`; invalid, offline, throttled, expired, and missing-verifier cases remain actionable without exposing whether an account exists.
 - **Notes:** From S032. Depends on T153.1, T153.4–T153.5, and T153.7. Preserve Daily Dama's existing visual system without depending on profile-backed theme hydration or introducing a generic Auth dashboard shell.
 
-### [T153.10] Build the forgot-password request flow
-
-- **Area:** Password recovery request UI
-- **Priority:** High (inherited from parent T153)
-- **Status:** Not started
-- **Planning:** Required
-- **Description:** Add `/auth/forgot-password` with a generic recovery-request response, exact callback initiation, and explicit loading, validation, offline, throttled, and resend guidance. Complete recovery through the existing T153.7 callback and T153.6 reset route without putting an email or destination URL into route parameters.
-- **Exit criteria:** Route tests prove known and unknown addresses receive the same public response and offline, invalid, throttled, and repeat submissions are deterministic; a local same-browser Mailpit walkthrough requests recovery, exchanges the PKCE code once through `/auth/callback`, reaches `/auth/reset-password`, changes the password, signs in with the new password, and leaves no email, code, password, or token in URLs, application logs, or Analytics.
-- **Notes:** From S032. Depends on T153.4–T153.7. Supabase's same-browser/device PKCE verifier limitation must be explained in the recovery guidance and missing-verifier error.
-
 ### [T153.11] Add guest account entry points to Profile
 
 - **Area:** Profile Auth entry
