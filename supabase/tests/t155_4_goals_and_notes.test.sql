@@ -294,8 +294,13 @@ select throws_ok(
 -- as a statement but affects zero rows; verify isolation by reading the
 -- foreign row back afterward (still requires resetting role, since this
 -- session's RLS also hides it from the attacker's own SELECT).
+-- This targets deleted_at rather than target_count: target_count is not
+-- column-level UPDATE-granted (T155.5 -- goal-target editing is not yet
+-- exercised locally, see T157.7), so a forged PATCH naming it would fail
+-- with a column-privilege error before RLS is even reached; deleted_at is
+-- the one column authenticated genuinely has UPDATE privilege on today.
 select lives_ok(
-  $$ update api.goals set target_count = 999
+  $$ update api.goals set deleted_at = now()
      where user_id = '00000000-0000-0000-0000-00000000001d' and id = 'goal-foreign' $$,
   'an authenticated client''s update statement targeting another user''s goal does not raise (RLS silently matches zero rows)'
 );
@@ -309,8 +314,8 @@ select throws_ok(
 reset role;
 
 select is(
-  (select target_count from api.goals where user_id = '00000000-0000-0000-0000-00000000001d' and id = 'goal-foreign'),
-  10,
+  (select deleted_at from api.goals where user_id = '00000000-0000-0000-0000-00000000001d' and id = 'goal-foreign'),
+  null,
   'the foreign goal is unchanged: RLS isolated it from the cross-user update attempt above'
 );
 
