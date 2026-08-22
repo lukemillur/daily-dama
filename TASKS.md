@@ -253,7 +253,7 @@ _Phase 1/4 shared account-maintenance activation: T154 comes from S033 and the c
 
 - **Area:** Authentication session lifecycle
 - **Priority:** Medium
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** Add a Profile logout action using `signOut({ scope: 'local' })`, transition authoritative Auth state back to guest, and leave other device sessions untouched.
 - **Exit criteria:** Provider and browser tests confirm logout invalidates the current browser session, returns to a usable guest workspace, does not request global sign-out, and handles offline or expired-session responses deterministically.
