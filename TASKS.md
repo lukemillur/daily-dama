@@ -199,16 +199,6 @@ _All currently actionable backend-roadmap work is phase-gated and active in depe
 - **Exit criteria:** Route tests and a local browser walkthrough prove a guest can submit signup, receives the same public result for a new or existing address, reaches check-email guidance, resends within the configured limits, opens the Mailpit confirmation in the same browser profile, completes T153.7's callback, and reaches authenticated `/app/home`; invalid, offline, throttled, expired, and missing-verifier cases remain actionable without exposing whether an account exists.
 - **Notes:** From S032. Depends on T153.1, T153.4–T153.5, and T153.7. Preserve Daily Dama's existing visual system without depending on profile-backed theme hydration or introducing a generic Auth dashboard shell.
 
-### [T153.9] Build sign-in and failure states
-
-- **Area:** Sign-in UI
-- **Priority:** High (inherited from parent T153)
-- **Status:** Not started
-- **Planning:** Required
-- **Description:** Add `/auth/sign-in` using the Auth provider and structured error boundary, with generic credential failure plus explicit loading, validation, unverified-email, offline, throttled, expired-session, and success behavior while leaving all guest routes accessible.
-- **Exit criteria:** Route/provider tests and a browser walkthrough prove a verified user can sign in and reach `/app/home`, unknown-email and wrong-password attempts receive the same public credential response, and unverified, invalid, offline, throttled, and repeat-submit cases remain deterministic without placing credentials or account facts in URLs, logs, or analytics; a guest can always leave the route and continue into `/app`.
-- **Notes:** From S032. Depends on T153.4–T153.5. Sign-in is separate from T153.8 because it is an independently testable route and security surface.
-
 ### [T153.10] Build the forgot-password request flow
 
 - **Area:** Password recovery request UI
