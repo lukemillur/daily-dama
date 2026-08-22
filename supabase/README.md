@@ -45,6 +45,9 @@ file.
 - The signup-confirmation email uses the repository-owned template at
   `supabase/templates/confirmation.html` instead of Supabase's generic
   default copy.
+- The password-recovery email uses the repository-owned template at
+  `supabase/templates/recovery.html` instead of Supabase's generic default
+  copy.
 
 This config is local-only. It does not touch the hosted Supabase project —
 that is mirrored separately in T153.2.
@@ -114,6 +117,27 @@ Open `http://127.0.0.1:54324`, find the confirmation email, and confirm:
 - The confirmation link's `redirect_to` (or `next`) query parameter is
   exactly `http://localhost:8081/auth/callback` — not a substring/prefix
   match, and not silently falling back to `site_url`.
+
+**Mailpit receives the repository-owned recovery (password reset) email
+targeting the exact callback:**
+
+Trigger a recovery email with the raw REST call (there is no frontend yet):
+
+```sh
+curl -i -X POST 'http://127.0.0.1:54321/auth/v1/recover?redirect_to=http%3A%2F%2Flocalhost%3A8081%2Fauth%2Fcallback' \
+  -H "apikey: LOCAL_ANON_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "email": "test@example.com" }'
+```
+
+Open `http://127.0.0.1:54324`, find the recovery email, and confirm:
+
+- The subject/body match `supabase/templates/recovery.html` (Daily Dama
+  branding, "Reset your Daily Dama password" subject), not Supabase's
+  generic "Reset password" default.
+- The recovery link's `redirect_to` (or `next`) query parameter is exactly
+  `http://localhost:8081/auth/callback`, matching the same callback
+  convention as confirmation.
 
 ## Non-goals of this ticket
 

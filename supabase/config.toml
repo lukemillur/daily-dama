@@ -254,6 +254,11 @@ otp_expiry = 3600
 subject = "Confirm your Daily Dama account"
 content_path = "./supabase/templates/confirmation.html"
 
+# Repository-owned recovery (password reset) email (replaces Supabase's generic default copy).
+[auth.email.template.recovery]
+subject = "Reset your Daily Dama password"
+content_path = "./supabase/templates/recovery.html"
+
 # Uncomment to customize notification email template
 # [auth.email.notification.password_changed]
 # enabled = true
