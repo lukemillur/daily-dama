@@ -30,16 +30,26 @@ import {
   usePracticeHistoryActions,
 } from '@/features/stats/state/practice-history-provider';
 import type { PracticeTrick, TrickSummary } from '@/features/tricks/model/trick';
+import * as ExpoAudio from 'expo-audio';
 
 // ActiveSesh/CompletedSesh are re-exported from a module that also (transitively) imports
 // practice-history-provider, which pulls in AsyncStorage. Mock it the same way
 // kentei-rank-auto-promotion.test.tsx does — the tests here never touch storage directly.
 // This mock call is hoisted above the imports above by babel-jest, so the require below runs
 // before the real module is ever reached.
+jest.mock('expo-audio', () => {
+  const mockAudioPlayer = { play: jest.fn(), seekTo: jest.fn() };
+  return { useAudioPlayer: jest.fn(() => mockAudioPlayer), __mockAudioPlayer: mockAudioPlayer };
+});
+
 jest.mock('@react-native-async-storage/async-storage', () =>
   // eslint-disable-next-line @typescript-eslint/no-require-imports -- required by jest hoisting
   require('@react-native-async-storage/async-storage/jest/async-storage-mock'),
 );
+
+const mockAudioPlayer = (
+  ExpoAudio as unknown as { __mockAudioPlayer: { play: jest.Mock; seekTo: jest.Mock } }
+).__mockAudioPlayer;
 
 const TRICK: PracticeTrick = { id: 'big-cup', name: 'Big Cup' };
 const TRICK_WITH_KENTEI: TrickSummary = {
@@ -2020,6 +2030,121 @@ describe('Sesh regular practice origin (T062.1)', () => {
       });
 
       expect(findByAccessibilityLabel(root, 'session-0-origin:none').length).toBeGreaterThan(0);
+
+      act(() => {
+        root.unmount();
+      });
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+});
+
+describe('Sesh timer-complete audio cue (T152)', () => {
+  // The cue must fire exactly once for a natural timerElapsed-driven completion, and never
+  // for an early manual seshEnded-driven completion -- same distinction the reducer itself
+  // deliberately does not track (per AGENTS.md's Sesh section), so this exercises the full
+  // Sesh component rather than the reducer in isolation.
+
+  beforeEach(() => {
+    mockAudioPlayer.play.mockClear();
+    mockAudioPlayer.seekTo.mockClear();
+  });
+
+  it('plays the timer-complete cue once when a timed sesh completes naturally', async () => {
+    await AsyncStorage.clear();
+    jest.useFakeTimers();
+    try {
+      let root!: ReactTestRenderer;
+      await act(async () => {
+        root = create(
+          <UserProfileProvider>
+            <NoteProvider>
+              <GoalProvider>
+                <PracticeHistoryProvider>
+                  <Sesh
+                    availableTricks={[TRICK]}
+                    selectedTrickIds={[TRICK.id]}
+                    initialPlan={createTimedSeshPlan(1)}
+                  />
+                </PracticeHistoryProvider>
+              </GoalProvider>
+            </NoteProvider>
+          </UserProfileProvider>,
+        );
+      });
+      act(() => {
+        pressByAccessibilityLabel(root, `Start a sesh with ${TRICK.name}`);
+      });
+
+      act(() => {
+        jest.advanceTimersByTime(1000);
+      });
+      act(() => {
+        jest.advanceTimersByTime(1000);
+      });
+      act(() => {
+        jest.advanceTimersByTime(1000);
+      });
+
+      act(() => {
+        jest.advanceTimersByTime(60000);
+      });
+
+      expect(mockAudioPlayer.play).toHaveBeenCalledTimes(1);
+      expect(mockAudioPlayer.seekTo).toHaveBeenCalledWith(0);
+
+      act(() => {
+        root.unmount();
+      });
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it('does not play the cue when a timed sesh is ended early', async () => {
+    await AsyncStorage.clear();
+    jest.useFakeTimers();
+    try {
+      let root!: ReactTestRenderer;
+      await act(async () => {
+        root = create(
+          <UserProfileProvider>
+            <NoteProvider>
+              <GoalProvider>
+                <PracticeHistoryProvider>
+                  <Sesh
+                    availableTricks={[TRICK]}
+                    selectedTrickIds={[TRICK.id]}
+                    initialPlan={createTimedSeshPlan(1)}
+                  />
+                </PracticeHistoryProvider>
+              </GoalProvider>
+            </NoteProvider>
+          </UserProfileProvider>,
+        );
+      });
+      act(() => {
+        pressByAccessibilityLabel(root, `Start a sesh with ${TRICK.name}`);
+      });
+      act(() => {
+        jest.advanceTimersByTime(1000);
+      });
+      act(() => {
+        jest.advanceTimersByTime(1000);
+      });
+      act(() => {
+        jest.advanceTimersByTime(1000);
+      });
+
+      act(() => {
+        jest.advanceTimersByTime(10000);
+      });
+      act(() => {
+        pressByVisibleText(root, 'End Sesh');
+      });
+
+      expect(mockAudioPlayer.play).not.toHaveBeenCalled();
 
       act(() => {
         root.unmount();
