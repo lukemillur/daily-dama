@@ -405,7 +405,7 @@ _Phase 3 activation: T156–T160 come from S035–S038 and `BACKEND_ROADMAP.md` 
 
 - **Area:** Shared persistence
 - **Priority:** High
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** Introduce an explicit `guest` / `user:<verified-user-id>` identity model, a scoped `KeyValueStorage` adapter, and generation tokens that let async persistence/sync results prove they still belong to the current identity.
 - **Exit criteria:** Unit tests prove identical logical keys resolve to isolated physical namespaces, unverified or malformed identities are rejected, generation changes invalidate late results, and the adapter never accepts identity from mutation payload data.
