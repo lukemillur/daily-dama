@@ -213,7 +213,7 @@ _Phase 2 activation: T155 comes from S034 and `BACKEND_ROADMAP.md` Phase 2. Its 
 
 - **Area:** Database security boundary
 - **Priority:** High
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** Add migrations for the exposed `api` schema and non-exposed `private` schema, revoke default and automatic privileges, configure the Data API exposure deliberately, and grant no application-table access to `anon`.
 - **Exit criteria:** A clean local reset succeeds; catalog assertions prove only `api` is exposed, `private` helpers are unreachable through the Data API, default privileges are revoked, and raw anonymous requests cannot access application resources.
