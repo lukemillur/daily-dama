@@ -6,7 +6,8 @@ import type { AuthState } from '@/features/auth/model/auth-state';
 import { SignInScreen } from '@/features/auth/components/sign-in-screen';
 
 const mockReplace = jest.fn();
-jest.mock('expo-router', () => ({ useRouter: () => ({ replace: mockReplace, push: jest.fn() }) }));
+const mockPush = jest.fn();
+jest.mock('expo-router', () => ({ useRouter: () => ({ replace: mockReplace, push: mockPush }) }));
 
 const mockSignInWithPassword = jest.fn<() => Promise<{ error: unknown }>>();
 let mockAuthState: AuthState = { status: 'initializing' };
@@ -77,9 +78,21 @@ describe('SignInScreen', () => {
   beforeEach(() => {
     mockSignInWithPassword.mockReset();
     mockReplace.mockReset();
+    mockPush.mockReset();
     mockTrackAuthEvent.mockReset();
     mockLogAuthWarning.mockReset();
     mockAuthState = { status: 'guest', reason: 'signedOut' };
+  });
+
+  it('navigates to /auth/forgot-password when "Forgot password?" is pressed', async () => {
+    const root = await mount();
+    const button = findByLabel(root, 'Forgot password?');
+
+    await act(async () => {
+      button.props.onPress();
+    });
+
+    expect(mockPush).toHaveBeenCalledWith('/auth/forgot-password');
   });
 
   it('shows loading copy and no inputs while initializing', async () => {

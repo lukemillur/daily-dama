@@ -14,6 +14,8 @@ describe('categorizeAuthError', () => {
     otp_expired: 'expiredOrInvalidLink',
     session_not_found: 'expiredOrInvalidLink',
     session_expired: 'expiredOrInvalidLink',
+    bad_code_verifier: 'missingVerifier',
+    flow_state_not_found: 'missingVerifier',
   };
 
   it.each(authApiErrorFixtures)('maps code $code to its actionable category', (fixture) => {

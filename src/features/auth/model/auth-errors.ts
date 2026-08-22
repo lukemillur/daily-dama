@@ -10,6 +10,7 @@ export type AuthErrorCategory =
   | 'accountAlreadyExists'
   | 'weakPassword'
   | 'expiredOrInvalidLink'
+  | 'missingVerifier'
   | 'rateLimited'
   | 'offline'
   | 'unknown';
@@ -31,8 +32,6 @@ const WEAK_PASSWORD_CODES = new Set(['weak_password']);
 const EXPIRED_OR_INVALID_LINK_CODES = new Set([
   'otp_expired',
   'flow_state_expired',
-  'flow_state_not_found',
-  'bad_code_verifier',
   'bad_oauth_callback',
   'bad_oauth_state',
   // T153.6: a password-recovery session that has expired or no longer exists (e.g. the
@@ -41,6 +40,12 @@ const EXPIRED_OR_INVALID_LINK_CODES = new Set([
   'session_not_found',
   'session_expired',
 ]);
+// T153.10: distinct from plain expiry above -- these two codes mean the PKCE code verifier
+// Supabase needed to complete the exchange isn't present in this browser's storage, which
+// happens when a recovery/confirmation link is opened in a different browser or device than the
+// one that requested it. That's an actionable, different instruction ("open it in the same
+// browser") than "this link timed out, request a new one," so it gets its own category.
+const MISSING_VERIFIER_CODES = new Set(['bad_code_verifier', 'flow_state_not_found']);
 const RATE_LIMITED_CODES = new Set([
   'over_request_rate_limit',
   'over_email_send_rate_limit',
@@ -74,6 +79,7 @@ export function categorizeAuthError(error: unknown): AuthErrorCategory {
     if (ACCOUNT_ALREADY_EXISTS_CODES.has(code)) return 'accountAlreadyExists';
     if (WEAK_PASSWORD_CODES.has(code)) return 'weakPassword';
     if (EXPIRED_OR_INVALID_LINK_CODES.has(code)) return 'expiredOrInvalidLink';
+    if (MISSING_VERIFIER_CODES.has(code)) return 'missingVerifier';
     if (RATE_LIMITED_CODES.has(code)) return 'rateLimited';
   }
 

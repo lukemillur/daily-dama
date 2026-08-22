@@ -190,7 +190,7 @@ describe('AuthCallbackScreen', () => {
     expect(containsText(root, /expired or was already used/i)).toBe(true);
   });
 
-  it('shows expired/invalid copy for a reused code (bad_code_verifier)', async () => {
+  it('shows missing-verifier copy for a code opened in a different browser/device (bad_code_verifier)', async () => {
     mockExchangeCodeForSession.mockResolvedValue({
       redirectType: null,
       error: { code: 'bad_code_verifier', message: 'mismatch' },
@@ -200,7 +200,7 @@ describe('AuthCallbackScreen', () => {
     const root = await mount();
 
     expect(mockReplace).not.toHaveBeenCalled();
-    expect(containsText(root, /expired or was already used/i)).toBe(true);
+    expect(containsText(root, /browser and device you requested it from/i)).toBe(true);
   });
 
   it('shows offline copy when the exchange resolves an offline-shaped error', async () => {

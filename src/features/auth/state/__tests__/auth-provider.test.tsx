@@ -37,9 +37,17 @@ function createFakeClient(overrides?: { onAuthStateChangeImpl?: (cb: AuthCallbac
       error: null,
     }),
   );
+  const resetPasswordForEmail = jest.fn(async (): Promise<{ error: unknown }> => ({ error: null }));
 
   const client = {
-    auth: { onAuthStateChange, signInWithPassword, signOut, updateUser, exchangeCodeForSession },
+    auth: {
+      onAuthStateChange,
+      signInWithPassword,
+      signOut,
+      updateUser,
+      exchangeCodeForSession,
+      resetPasswordForEmail,
+    },
   } as unknown as SupabaseClient;
 
   return {
@@ -49,6 +57,7 @@ function createFakeClient(overrides?: { onAuthStateChangeImpl?: (cb: AuthCallbac
     signOut,
     updateUser,
     exchangeCodeForSession,
+    resetPasswordForEmail,
     emit: (event: AuthChangeEvent, session: Session | null) => capturedCallback?.(event, session),
   };
 }
@@ -383,6 +392,56 @@ describe('AuthProvider', () => {
     act(() => {
       root.unmount();
     });
+  });
+
+  it('requestPasswordReset forwards email and a redirectTo ending in /auth/callback, with a null error', async () => {
+    const fake = createFakeClient();
+    mockGetSupabaseClient.mockReturnValue(fake.client);
+
+    const originalWindow = (globalThis as { window?: unknown }).window;
+    (globalThis as { window?: unknown }).window = { location: { origin: 'https://dailydama.com' } };
+
+    const root = await mount();
+
+    let result: { error: unknown } | undefined;
+    await act(async () => {
+      result = await captured.actions!.requestPasswordReset('person@example.com');
+    });
+
+    expect(fake.resetPasswordForEmail).toHaveBeenCalledWith('person@example.com', {
+      redirectTo: 'https://dailydama.com/auth/callback',
+    });
+    expect(result).toEqual({ error: null });
+
+    act(() => {
+      root.unmount();
+    });
+    (globalThis as { window?: unknown }).window = originalWindow;
+  });
+
+  it('requestPasswordReset forwards a failure error from resetPasswordForEmail without mutating AuthState', async () => {
+    const fake = createFakeClient();
+    const resetError = { message: 'rate limited', code: 'over_email_send_rate_limit' };
+    fake.resetPasswordForEmail.mockResolvedValueOnce({ error: resetError });
+    mockGetSupabaseClient.mockReturnValue(fake.client);
+
+    const originalWindow = (globalThis as { window?: unknown }).window;
+    (globalThis as { window?: unknown }).window = { location: { origin: 'https://dailydama.com' } };
+
+    const root = await mount();
+
+    let result: { error: unknown } | undefined;
+    await act(async () => {
+      result = await captured.actions!.requestPasswordReset('person@example.com');
+    });
+
+    expect(result).toEqual({ error: resetError });
+    expect(captured.state).toEqual({ status: 'initializing' });
+
+    act(() => {
+      root.unmount();
+    });
+    (globalThis as { window?: unknown }).window = originalWindow;
   });
 
   it('unsubscribes from the auth listener on unmount', async () => {

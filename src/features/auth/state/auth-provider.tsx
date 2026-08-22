@@ -25,6 +25,7 @@ interface AuthActions {
   readonly exchangeCodeForSession: (
     code: string,
   ) => Promise<{ redirectType: 'recovery' | null; error: AuthError | null }>;
+  readonly requestPasswordReset: (email: string) => Promise<{ error: AuthError | null }>;
 }
 
 const AuthStateContext = createContext<AuthState | undefined>(undefined);
@@ -120,9 +121,41 @@ export function AuthProvider({ children }: PropsWithChildren) {
     return { redirectType, error: null };
   }, []);
 
+  const requestPasswordReset = useCallback(async (email: string) => {
+    const client = getSupabaseClient();
+
+    if (!client) {
+      return { error: new AuthError('Supabase is not configured.') };
+    }
+
+    if (typeof window === 'undefined') {
+      return { error: new AuthError('Unable to resolve the callback URL.') };
+    }
+
+    // Fixed, non-attacker-influenceable redirect -- never accept a destination from a route
+    // param or query string here (see the task's enumeration/redirect-safety requirement and
+    // BACKEND_ROADMAP.md's "no wildcard production redirects" rule). Supabase's own server-side
+    // redirect allowlist (T153.2) is the second layer of defense.
+    const redirectTo = `${window.location.origin}/auth/callback`;
+    const { error } = await client.auth.resetPasswordForEmail(email, { redirectTo });
+    return { error };
+  }, []);
+
   const actions = useMemo(
-    () => ({ signInWithPassword, signOut, completePasswordRecovery, exchangeCodeForSession }),
-    [signInWithPassword, signOut, completePasswordRecovery, exchangeCodeForSession],
+    () => ({
+      signInWithPassword,
+      signOut,
+      completePasswordRecovery,
+      exchangeCodeForSession,
+      requestPasswordReset,
+    }),
+    [
+      signInWithPassword,
+      signOut,
+      completePasswordRecovery,
+      exchangeCodeForSession,
+      requestPasswordReset,
+    ],
   );
 
   return (
