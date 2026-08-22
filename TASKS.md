@@ -169,16 +169,6 @@ _All currently actionable backend-roadmap work is phase-gated and active in depe
 - **Exit criteria:** A dated, secret-free delivery record proves hosted confirmation and recovery messages arrive through Resend from the Auth subdomain with their callback URLs intact, Resend link tracking is disabled, SPF and DKIM pass, and the subdomain publishes a visible DMARC `p=none` policy; no SMTP credential appears in tracked files or client-exposed environment values.
 - **Notes:** From S032 and roadmap Phase 1 backend item 4 plus the email/redirect security requirements. Depends on T153.1–T153.2. T162 later repeats deliverability checks before external signup and may tighten the DMARC policy using observed delivery evidence.
 
-### [T153.8] Build signup, check-email, verification, and resend
-
-- **Area:** Account creation UI
-- **Priority:** High (inherited from parent T153)
-- **Status:** In progress
-- **Planning:** Required
-- **Description:** Add `/auth/sign-up` and `/auth/check-email` using the Auth provider and structured error boundary, with ten-character password validation, generic duplicate-account handling, verification guidance, and explicit resend, offline, throttled, expired, and verifier-missing behavior. Do not place the submitted email in route parameters or analytics.
-- **Exit criteria:** Route tests and a local browser walkthrough prove a guest can submit signup, receives the same public result for a new or existing address, reaches check-email guidance, resends within the configured limits, opens the Mailpit confirmation in the same browser profile, completes T153.7's callback, and reaches authenticated `/app/home`; invalid, offline, throttled, expired, and missing-verifier cases remain actionable without exposing whether an account exists.
-- **Notes:** From S032. Depends on T153.1, T153.4–T153.5, and T153.7. Preserve Daily Dama's existing visual system without depending on profile-backed theme hydration or introducing a generic Auth dashboard shell.
-
 ### [T153.11] Add guest account entry points to Profile
 
 - **Area:** Profile Auth entry
