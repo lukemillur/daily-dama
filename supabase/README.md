@@ -63,8 +63,7 @@ curl -i -X POST 'http://127.0.0.1:54321/auth/v1/signup' \
   -H "Content-Type: application/json" \
   -d '{
     "email": "test@example.com",
-    "password": "ninechar1",
-    "options": { "emailRedirectTo": "http://localhost:8081/auth/callback" }
+    "password": "ninechar1"
   }'
 ```
 
@@ -76,15 +75,22 @@ Repeat the signup with a 10+ character password (the confirmation email goes
 to Mailpit and the account stays unconfirmed):
 
 ```sh
-curl -i -X POST 'http://127.0.0.1:54321/auth/v1/signup' \
+curl -i -X POST 'http://127.0.0.1:54321/auth/v1/signup?redirect_to=http%3A%2F%2Flocalhost%3A8081%2Fauth%2Fcallback' \
   -H "apikey: LOCAL_ANON_KEY" \
   -H "Content-Type: application/json" \
   -d '{
     "email": "test@example.com",
-    "password": "tencharacters",
-    "options": { "emailRedirectTo": "http://localhost:8081/auth/callback" }
+    "password": "tencharacters"
   }'
 ```
+
+Note: the raw REST endpoint reads the redirect target from the redirect_to
+query parameter, not from a body field. (supabase-js's emailRedirectTo
+option is a client-library abstraction that sends this same query parameter
+under the hood -- it is not a JSON body key on the wire. Sending it nested
+under options in the body here is silently ignored and the email falls
+back to site_url, so it must be the exact query parameter shown above to
+hit the exact callback.)
 
 Then attempt to sign in before confirming:
 
