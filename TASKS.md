@@ -203,7 +203,7 @@ _All currently actionable backend-roadmap work is phase-gated and active in depe
 
 - **Area:** Password recovery request UI
 - **Priority:** High (inherited from parent T153)
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** Add `/auth/forgot-password` with a generic recovery-request response, exact callback initiation, and explicit loading, validation, offline, throttled, and resend guidance. Complete recovery through the existing T153.7 callback and T153.6 reset route without putting an email or destination URL into route parameters.
 - **Exit criteria:** Route tests prove known and unknown addresses receive the same public response and offline, invalid, throttled, and repeat submissions are deterministic; a local same-browser Mailpit walkthrough requests recovery, exchanges the PKCE code once through `/auth/callback`, reaches `/auth/reset-password`, changes the password, signs in with the new password, and leaves no email, code, password, or token in URLs, application logs, or Analytics.
