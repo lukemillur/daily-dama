@@ -159,16 +159,6 @@ _All currently actionable backend-roadmap work is phase-gated and active in depe
 - **Description:** Add the complete Phase 1 web Auth foundation while preserving unrestricted guest access to `/app`.
 - **Notes:** Umbrella from S032. Complete T153.1–T153.13. Native callbacks, SecureStore, and synchronization are excluded.
 
-### [T153.1] Establish reproducible local Supabase Auth development
-
-- **Area:** Backend development environment
-- **Priority:** High (inherited from parent T153)
-- **Status:** Not started
-- **Planning:** Required
-- **Description:** Add repository-owned Supabase CLI configuration, local Auth policy and email templates, ignored local environment files, and the smallest documented workflow needed to rebuild and test Auth locally without committing credentials. Configure verified email, a ten-character password minimum, one-hour JWTs, and `http://localhost:8081/auth/callback` as the fixed local callback.
-- **Exit criteria:** From a fresh checkout with the documented CLI and Docker-compatible prerequisites, `supabase start` and a clean local database reset succeed; a nine-character signup is rejected, an unverified user cannot sign in, Mailpit receives the repository-owned confirmation email targeting the exact local callback, and `git check-ignore` confirms every documented local credential file is ignored while the tracked configuration contains only placeholders or environment references.
-- **Notes:** From S032 and `BACKEND_ROADMAP.md` Phase 1 backend items 1, 3, and 6. This establishes the local backend contract only; application consumption begins in T153.4. When Auth flows are being tested, use the fixed port rather than selecting an arbitrary fallback port because the PKCE verifier and redirect origin must match.
-
 ### [T153.2] Configure the hosted development project and Auth policy
 
 - **Area:** Hosted Supabase Auth configuration
