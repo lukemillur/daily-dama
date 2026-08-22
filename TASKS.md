@@ -173,7 +173,7 @@ _All currently actionable backend-roadmap work is phase-gated and active in depe
 
 - **Area:** Profile Auth entry
 - **Priority:** High (inherited from parent T153)
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Implementer
 - **Description:** Add optional sign-up and sign-in entry points to Profile for unauthenticated users, using the existing Profile composition and Auth state without gating, clearing, importing, or otherwise changing guest data.
 - **Exit criteria:** Profile component/browser tests prove an unauthenticated, onboarded guest can open `/auth/sign-up` and `/auth/sign-in`, an authenticated user sees neither guest entry, and navigating to or returning from either route leaves the existing profile, trick, Sesh, Stats, goal, and note state unchanged.
