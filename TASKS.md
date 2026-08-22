@@ -209,16 +209,6 @@ _Phase 2 activation: T155 comes from S034 and `BACKEND_ROADMAP.md` Phase 2. Its 
 - **Description:** Represent all persisted Daily Dama domains in a constrained, typed Postgres/Data API boundary before any provider begins synchronization.
 - **Notes:** Umbrella from S034. Complete T155.1–T155.13. No production migrations or live user data exist yet.
 
-### [T155.5] Protect server-owned timestamps, revisions, and ownership
-
-- **Area:** Database mutation controls
-- **Priority:** High
-- **Status:** Not started
-- **Planning:** Required
-- **Description:** Add private trigger functions with explicit safe `search_path` values to own `created_at`, `updated_at`, revisions, receipt timestamps, and immutable ownership fields; restrict update grants so RLS is not the only protection.
-- **Exit criteria:** Raw authenticated requests prove inserts and updates cannot choose or preserve forged server-owned values, valid mutations receive authoritative timestamps/revisions, every `SECURITY DEFINER` function has an audited fixed `search_path`, and the complete migration rebuild remains clean.
-- **Notes:** From S034 and roadmap Phase 2 item 3. Depends on T155.2–T155.4.
-
 ### [T155.6] Enforce domain JSON invariants inside Postgres
 
 - **Area:** Database validation
