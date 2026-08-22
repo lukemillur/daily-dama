@@ -219,16 +219,6 @@ _All currently actionable backend-roadmap work is phase-gated and active in depe
 - **Exit criteria:** Profile component/browser tests prove an unauthenticated, onboarded guest can open `/auth/sign-up` and `/auth/sign-in`, an authenticated user sees neither guest entry, and navigating to or returning from either route leaves the existing profile, trick, Sesh, Stats, goal, and note state unchanged.
 - **Notes:** From S032 and roadmap Phase 1 frontend item 4. Depends on T153.8–T153.9. This is a local Profile navigation change; authenticated account-management surfaces remain in T154 and guest-data import remains T159.
 
-### [T153.12] Invite a guest after their first completed Sesh
-
-- **Area:** Post-Sesh Auth invitation
-- **Priority:** High (inherited from parent T153)
-- **Status:** Not started
-- **Planning:** Required
-- **Description:** Show a dismissible, optional signup invitation on the completion UI for the first completed Sesh in the current guest practice-history namespace. Derive eligibility from authoritative practice history and keep dismissal local to that completion UI rather than adding a profile field, storage key, or persistence domain.
-- **Exit criteria:** Component/provider tests prove the invitation appears for an unauthenticated guest's first successfully recorded Sesh, can be dismissed or can open signup without changing the completed record, does not appear on later completions or after reloading the persisted first record, never appears for an authenticated user, and does not alter completion deduplication or any existing guest flow.
-- **Notes:** From S032 and roadmap Phase 1 frontend item 6. Depends on T153.4 and T153.8. Do not start guest-data import here. Planning is required because this reads across Auth and practice-history providers beside the existing two-layer completed-Sesh deduplication boundary.
-
 ### [T153.13] Verify Phase 1 web Auth security end to end
 
 - **Area:** Authentication security testing

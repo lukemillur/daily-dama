@@ -696,6 +696,79 @@ describe('CompletedSesh first-lace celebration', () => {
   });
 });
 
+describe('CompletedSesh signup invite', () => {
+  const summary: SeshSummary = {
+    trick: TRICK,
+    plan: PLAN,
+    startedAt: 0,
+    endedAt: 5000,
+    durationMs: 5000,
+    landings: [landing(1000)],
+  };
+
+  it('renders the invite with a link to sign-up when showSignupInvite is true', async () => {
+    const root = await mountWithNoteProvider(
+      <CompletedSesh
+        summary={summary}
+        isFirstLace={false}
+        showSignupInvite={true}
+        onReset={noop}
+        onRepeat={noop}
+      />,
+    );
+
+    expect(findByAccessibilityLabel(root, 'Guest signup invitation').length).toBeGreaterThan(0);
+    const signUpLinks = root.root.findAll((node) => node.props.href === '/auth/sign-up');
+    expect(signUpLinks.length).toBeGreaterThan(0);
+  });
+
+  it('dismisses the invite without changing the completed record', async () => {
+    const root = await mountWithNoteProvider(
+      <CompletedSesh
+        summary={summary}
+        isFirstLace={false}
+        showSignupInvite={true}
+        onReset={noop}
+        onRepeat={noop}
+      />,
+    );
+
+    const beforeText = JSON.stringify(root.toJSON());
+    expect(beforeText).toContain(summary.trick.name);
+
+    act(() => {
+      pressByAccessibilityLabel(root, 'Dismiss signup invitation');
+    });
+
+    expect(findByAccessibilityLabel(root, 'Guest signup invitation')).toHaveLength(0);
+    const afterText = JSON.stringify(root.toJSON());
+    expect(afterText).toContain(summary.trick.name);
+    expect(afterText).toContain(String(summary.landings.length));
+  });
+
+  it('does not render the invite when showSignupInvite is omitted (regression default)', async () => {
+    const root = await mountWithNoteProvider(
+      <CompletedSesh summary={summary} isFirstLace={false} onReset={noop} onRepeat={noop} />,
+    );
+
+    expect(findByAccessibilityLabel(root, 'Guest signup invitation')).toHaveLength(0);
+  });
+
+  it('does not render the invite when showSignupInvite is explicitly false', async () => {
+    const root = await mountWithNoteProvider(
+      <CompletedSesh
+        summary={summary}
+        isFirstLace={false}
+        showSignupInvite={false}
+        onReset={noop}
+        onRepeat={noop}
+      />,
+    );
+
+    expect(findByAccessibilityLabel(root, 'Guest signup invitation')).toHaveLength(0);
+  });
+});
+
 describe('CompletedSesh note prompt', () => {
   const lacedSummary: SeshSummary = {
     trick: TRICK,
@@ -1619,6 +1692,211 @@ describe('Sesh wiring - goal celebration ordering (regression)', () => {
     } finally {
       jest.useRealTimers();
     }
+  });
+});
+
+describe('Sesh signup invite integration', () => {
+  // Practice history persists to the shared AsyncStorage mock across every test in this file.
+  // These tests assert on "is this the first ever regular session" from a clean slate, so they
+  // need genuinely empty persisted history rather than whatever earlier tests left behind.
+  beforeEach(async () => {
+    await AsyncStorage.clear();
+  });
+
+  function SessionCount() {
+    const { sessions } = usePracticeHistory();
+    return <Text accessibilityLabel={`session-count:${sessions.length}`} />;
+  }
+
+  async function mountSesh(authStatus?: ComponentProps<typeof Sesh>['authStatus']) {
+    let root!: ReactTestRenderer;
+    await act(async () => {
+      root = create(
+        <UserProfileProvider>
+          <NoteProvider>
+            <GoalProvider>
+              <PracticeHistoryProvider>
+                <Sesh
+                  availableTricks={[TRICK]}
+                  selectedTrickIds={[TRICK.id]}
+                  authStatus={authStatus}
+                />
+                <SessionCount />
+              </PracticeHistoryProvider>
+            </GoalProvider>
+          </NoteProvider>
+        </UserProfileProvider>,
+      );
+    });
+    return root;
+  }
+
+  function completeASesh(root: ReactTestRenderer, startLabel: string) {
+    act(() => {
+      pressByAccessibilityLabel(root, startLabel);
+    });
+    act(() => {
+      jest.advanceTimersByTime(1000);
+    });
+    act(() => {
+      jest.advanceTimersByTime(1000);
+    });
+    act(() => {
+      jest.advanceTimersByTime(1000);
+    });
+    act(() => {
+      pressByAccessibilityLabel(root, 'Laced');
+    });
+    act(() => {
+      pressByVisibleText(root, 'End Sesh');
+    });
+  }
+
+  it('shows the invite for a guest completing their first sesh', async () => {
+    jest.useFakeTimers();
+    try {
+      const root = await mountSesh('guest');
+      completeASesh(root, `Start a sesh with ${TRICK.name}`);
+
+      expect(findByAccessibilityLabel(root, 'Guest signup invitation').length).toBeGreaterThan(0);
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it('does not show the invite on a later completion in the same session', async () => {
+    jest.useFakeTimers();
+    try {
+      const root = await mountSesh('guest');
+      completeASesh(root, `Start a sesh with ${TRICK.name}`);
+      expect(findByAccessibilityLabel(root, 'Guest signup invitation').length).toBeGreaterThan(0);
+
+      act(() => {
+        pressByVisibleText(root, 'Repeat sesh');
+      });
+      act(() => {
+        jest.advanceTimersByTime(1000);
+      });
+      act(() => {
+        jest.advanceTimersByTime(1000);
+      });
+      act(() => {
+        jest.advanceTimersByTime(1000);
+      });
+      act(() => {
+        pressByAccessibilityLabel(root, 'Laced');
+      });
+      act(() => {
+        pressByVisibleText(root, 'End Sesh');
+      });
+
+      expect(findByAccessibilityLabel(root, 'Guest signup invitation')).toHaveLength(0);
+      expect(findByAccessibilityLabel(root, 'session-count:2').length).toBeGreaterThan(0);
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it('never shows the invite for an authenticated user, even on the first completion', async () => {
+    jest.useFakeTimers();
+    try {
+      const root = await mountSesh('authenticated');
+      completeASesh(root, `Start a sesh with ${TRICK.name}`);
+
+      expect(findByAccessibilityLabel(root, 'Guest signup invitation')).toHaveLength(0);
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it('never shows the invite when authStatus is omitted (fail-closed default)', async () => {
+    jest.useFakeTimers();
+    try {
+      const root = await mountSesh(undefined);
+      completeASesh(root, `Start a sesh with ${TRICK.name}`);
+
+      expect(findByAccessibilityLabel(root, 'Guest signup invitation')).toHaveLength(0);
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it('does not affect completion dedup or history whether the invite is dismissed or not', async () => {
+    jest.useFakeTimers();
+    try {
+      const root = await mountSesh('guest');
+      completeASesh(root, `Start a sesh with ${TRICK.name}`);
+
+      expect(findByAccessibilityLabel(root, 'session-count:1').length).toBeGreaterThan(0);
+
+      act(() => {
+        pressByAccessibilityLabel(root, 'Dismiss signup invitation');
+      });
+
+      expect(findByAccessibilityLabel(root, 'session-count:1').length).toBeGreaterThan(0);
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it('a fresh mount with a persisted first regular session lands on the picker, never the invite (reload semantics)', async () => {
+    // Sesh's reducer is plain in-memory React state -- no persistence of `state.status`. A real
+    // page reload always restarts a fresh Sesh instance at 'choosing', which never renders
+    // CompletedSesh (and therefore never the invite) regardless of practice-history content. This
+    // test constructs the only thing "reload" can mean here: seed one regular session through the
+    // real persistence path, unmount, then mount a brand-new tree that rehydrates it from
+    // AsyncStorage -- landing on the picker, not on a stale completed screen.
+    function SeedRecorder() {
+      const { recordCompletedSesh } = usePracticeHistoryActions();
+      return (
+        <Pressable
+          accessibilityLabel="seed-first-session"
+          onPress={() =>
+            recordCompletedSesh({
+              trick: TRICK,
+              plan: PLAN,
+              startedAt: 0,
+              endedAt: 5000,
+              durationMs: 5000,
+              landings: [landing(1000)],
+            })
+          }
+        />
+      );
+    }
+
+    let seedRoot!: ReactTestRenderer;
+    await act(async () => {
+      seedRoot = create(
+        <PracticeHistoryProvider>
+          <SeedRecorder />
+        </PracticeHistoryProvider>,
+      );
+    });
+    act(() => {
+      pressByAccessibilityLabel(seedRoot, 'seed-first-session');
+    });
+    await act(async () => {
+      seedRoot.unmount();
+    });
+
+    let root!: ReactTestRenderer;
+    await act(async () => {
+      root = create(
+        <UserProfileProvider>
+          <NoteProvider>
+            <GoalProvider>
+              <PracticeHistoryProvider>
+                <Sesh availableTricks={[TRICK]} selectedTrickIds={[TRICK.id]} authStatus="guest" />
+              </PracticeHistoryProvider>
+            </GoalProvider>
+          </NoteProvider>
+        </UserProfileProvider>,
+      );
+    });
+
+    expect(findByAccessibilityLabel(root, 'Guest signup invitation')).toHaveLength(0);
+    expect(findByAccessibilityLabel(root, `Start a sesh with ${TRICK.name}`).length).toBeGreaterThan(0);
   });
 });
 
