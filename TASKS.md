@@ -213,7 +213,7 @@ _Phase 2 activation: T155 comes from S034 and `BACKEND_ROADMAP.md` Phase 2. Its 
 
 - **Area:** Profile cloud schema
 - **Priority:** High
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** Add `api.profiles` and `api.user_trick_states` with `auth.users(id) ON DELETE CASCADE`, profile/trick-state invariants, appropriate indexes, revisions/tombstones where mutable, and no client-controlled ownership.
 - **Exit criteria:** Migration tests accept every valid current `UserProfile` shape, reject invalid Kentei ranks, theme/streak/last-Sesh variants and duplicate trick states, prove cascade deletion, and show mutation payloads cannot assign another `user_id`.
