@@ -35,6 +35,11 @@ const EXPIRED_OR_INVALID_LINK_CODES = new Set([
   'bad_code_verifier',
   'bad_oauth_callback',
   'bad_oauth_state',
+  // T153.6: a password-recovery session that has expired or no longer exists (e.g. the
+  // reset-password route revisited after the recovery link's session is gone) collapses
+  // into the same "this link is no longer valid" copy as the OAuth/OTP cases above.
+  'session_not_found',
+  'session_expired',
 ]);
 const RATE_LIMITED_CODES = new Set([
   'over_request_rate_limit',

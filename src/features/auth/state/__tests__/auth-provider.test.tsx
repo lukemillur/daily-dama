@@ -30,9 +30,10 @@ function createFakeClient(overrides?: { onAuthStateChangeImpl?: (cb: AuthCallbac
 
   const signInWithPassword = jest.fn(async (): Promise<{ error: unknown }> => ({ error: null }));
   const signOut = jest.fn(async (): Promise<{ error: unknown }> => ({ error: null }));
+  const updateUser = jest.fn(async (): Promise<{ error: unknown }> => ({ error: null }));
 
   const client = {
-    auth: { onAuthStateChange, signInWithPassword, signOut },
+    auth: { onAuthStateChange, signInWithPassword, signOut, updateUser },
   } as unknown as SupabaseClient;
 
   return {
@@ -40,6 +41,7 @@ function createFakeClient(overrides?: { onAuthStateChangeImpl?: (cb: AuthCallbac
     unsubscribe,
     signInWithPassword,
     signOut,
+    updateUser,
     emit: (event: AuthChangeEvent, session: Session | null) => capturedCallback?.(event, session),
   };
 }
@@ -229,6 +231,86 @@ describe('AuthProvider', () => {
     const root = await mount();
 
     expect(captured.state).toEqual({ status: 'guest', reason: 'error' });
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  it('resolves to passwordRecovery when PASSWORD_RECOVERY fires with a session', async () => {
+    const fake = createFakeClient();
+    mockGetSupabaseClient.mockReturnValue(fake.client);
+
+    const root = await mount();
+    const session = { access_token: 'recovery' } as unknown as Session;
+    act(() => {
+      fake.emit('PASSWORD_RECOVERY', session);
+    });
+
+    expect(captured.state).toEqual({ status: 'passwordRecovery', session });
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  it('completePasswordRecovery rejects with session_not_found when not in passwordRecovery status, without calling updateUser', async () => {
+    const fake = createFakeClient();
+    mockGetSupabaseClient.mockReturnValue(fake.client);
+
+    const root = await mount();
+    expect(captured.state).toEqual({ status: 'initializing' });
+
+    let result: { error: unknown } | undefined;
+    await act(async () => {
+      result = await captured.actions!.completePasswordRecovery('new-password-123');
+    });
+
+    expect(fake.updateUser).not.toHaveBeenCalled();
+    expect((result?.error as { code?: string } | undefined)?.code).toBe('session_not_found');
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  it('completePasswordRecovery calls updateUser with the given password when in passwordRecovery status, and forwards a null error', async () => {
+    const fake = createFakeClient();
+    mockGetSupabaseClient.mockReturnValue(fake.client);
+
+    const root = await mount();
+    act(() => {
+      fake.emit('PASSWORD_RECOVERY', { access_token: 'recovery' } as unknown as Session);
+    });
+
+    let result: { error: unknown } | undefined;
+    await act(async () => {
+      result = await captured.actions!.completePasswordRecovery('new-password-123');
+    });
+
+    expect(fake.updateUser).toHaveBeenCalledWith({ password: 'new-password-123' });
+    expect(result).toEqual({ error: null });
+    // State does not mutate directly from the action -- only via a subsequent real event.
+    expect(captured.state).toEqual({ status: 'passwordRecovery', session: { access_token: 'recovery' } });
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  it('completePasswordRecovery forwards a failure error from updateUser', async () => {
+    const fake = createFakeClient();
+    const updateError = { message: 'weak password', code: 'weak_password' };
+    fake.updateUser.mockResolvedValueOnce({ error: updateError });
+    mockGetSupabaseClient.mockReturnValue(fake.client);
+
+    const root = await mount();
+    act(() => {
+      fake.emit('PASSWORD_RECOVERY', { access_token: 'recovery' } as unknown as Session);
+    });
+
+    let result: { error: unknown } | undefined;
+    await act(async () => {
+      result = await captured.actions!.completePasswordRecovery('weak');
+    });
+
+    expect(result).toEqual({ error: updateError });
     act(() => {
       root.unmount();
     });

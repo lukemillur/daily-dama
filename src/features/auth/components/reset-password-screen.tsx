@@ -1,0 +1,215 @@
+import { useRouter } from 'expo-router';
+import { useState } from 'react';
+import { ScrollView, TextInput } from 'react-native';
+import { styled } from 'styled-components/native';
+
+import { Button } from '@/components/ui/button';
+import { Screen } from '@/components/ui/screen';
+import { BodyText, DisplayTitle, Eyebrow } from '@/components/ui/typography';
+import { AppColors } from '@/constants/theme';
+import { categorizeAuthError, type AuthErrorCategory } from '@/features/auth/model/auth-errors';
+import { validateNewPassword } from '@/features/auth/model/password-policy';
+import { useAuthActions, useAuthState } from '@/features/auth/state/auth-provider';
+
+const SUBMIT_ERROR_COPY: Record<AuthErrorCategory, string> = {
+  weakPassword: 'Choose a stronger password and try again.',
+  expiredOrInvalidLink: 'This recovery link has expired. Request a new one and try again.',
+  offline: "You're offline. Check your connection and try again.",
+  rateLimited: 'Too many attempts. Wait a moment and try again.',
+  invalidCredentials: 'Something went wrong. Please try again.',
+  unverifiedEmail: 'Something went wrong. Please try again.',
+  accountAlreadyExists: 'Something went wrong. Please try again.',
+  unknown: 'Something went wrong. Please try again.',
+};
+
+export function ResetPasswordScreen() {
+  const authState = useAuthState();
+  const { completePasswordRecovery } = useAuthActions();
+  const router = useRouter();
+
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [hasSubmitted, setHasSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [completed, setCompleted] = useState(false);
+  const [submitCategory, setSubmitCategory] = useState<AuthErrorCategory | undefined>(undefined);
+
+  const validation = validateNewPassword(password, confirmPassword);
+  const errors = hasSubmitted && validation.status === 'invalid' ? validation.errors : {};
+
+  const handleSubmit = async () => {
+    if (isSubmitting || completed) return;
+
+    setHasSubmitted(true);
+    setSubmitCategory(undefined);
+
+    const nextValidation = validateNewPassword(password, confirmPassword);
+    if (nextValidation.status === 'invalid') return;
+
+    setIsSubmitting(true);
+    const { error } = await completePasswordRecovery(password);
+    setIsSubmitting(false);
+
+    if (error) {
+      setSubmitCategory(categorizeAuthError(error));
+      return;
+    }
+
+    setCompleted(true);
+  };
+
+  if (authState.status === 'initializing') {
+    return (
+      <Screen align="center">
+        <Centered>
+          <Eyebrow>Password reset</Eyebrow>
+          <PageTitle>Checking your recovery link...</PageTitle>
+        </Centered>
+      </Screen>
+    );
+  }
+
+  if (authState.status !== 'passwordRecovery') {
+    return (
+      <Screen align="center">
+        <Centered>
+          <Eyebrow>Password reset</Eyebrow>
+          <PageTitle>This link is no longer valid.</PageTitle>
+          <Introduction>
+            Your password reset link has expired or was already used. Request a new one to continue.
+          </Introduction>
+          <FormActions>
+            <Button accessibilityLabel="Back to home" onPress={() => router.replace('/')}>
+              Back to home
+            </Button>
+          </FormActions>
+        </Centered>
+      </Screen>
+    );
+  }
+
+  if (completed) {
+    return (
+      <Screen align="center">
+        <Centered>
+          <Eyebrow>Password reset</Eyebrow>
+          <PageTitle>Your password has been updated.</PageTitle>
+          <Introduction>You can now sign in with your new password.</Introduction>
+          <FormActions>
+            <Button accessibilityLabel="Back to home" onPress={() => router.replace('/')}>
+              Back to home
+            </Button>
+          </FormActions>
+        </Centered>
+      </Screen>
+    );
+  }
+
+  return (
+    <FormScroll keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: 24 }}>
+      <FormContent>
+        <Eyebrow>Password reset</Eyebrow>
+        <PageTitle>Choose a new password.</PageTitle>
+        <Introduction>Enter and confirm a new password for your account.</Introduction>
+
+        <Field>
+          <FieldLabel>New password</FieldLabel>
+          <FieldInput
+            accessibilityLabel="New password"
+            autoCapitalize="none"
+            autoCorrect={false}
+            onChangeText={setPassword}
+            placeholder="New password"
+            placeholderTextColor={AppColors.textSubtle}
+            secureTextEntry
+            value={password}
+          />
+          {errors.password ? <ErrorText>{errors.password}</ErrorText> : null}
+        </Field>
+
+        <Field>
+          <FieldLabel>Confirm new password</FieldLabel>
+          <FieldInput
+            accessibilityLabel="Confirm new password"
+            autoCapitalize="none"
+            autoCorrect={false}
+            onChangeText={setConfirmPassword}
+            placeholder="Confirm new password"
+            placeholderTextColor={AppColors.textSubtle}
+            secureTextEntry
+            value={confirmPassword}
+          />
+          {errors.confirmPassword ? <ErrorText>{errors.confirmPassword}</ErrorText> : null}
+        </Field>
+
+        {submitCategory ? <ErrorText>{SUBMIT_ERROR_COPY[submitCategory]}</ErrorText> : null}
+
+        <FormActions>
+          <Button
+            accessibilityLabel="Set new password"
+            disabled={isSubmitting}
+            fill
+            onPress={handleSubmit}>
+            {isSubmitting ? 'Setting password...' : 'Set new password'}
+          </Button>
+        </FormActions>
+      </FormContent>
+    </FormScroll>
+  );
+}
+
+const FormScroll = styled(ScrollView)`
+  flex: 1;
+  width: 100%;
+`;
+const FormContent = styled.View`
+  width: 100%;
+  max-width: 680px;
+  align-self: center;
+  padding: 38px 22px 0;
+`;
+const Centered = styled.View`
+  width: 100%;
+  max-width: 480px;
+  align-items: center;
+  padding: 38px 22px;
+`;
+const PageTitle = styled(DisplayTitle)`
+  margin-top: 12px;
+  text-align: center;
+`;
+const Introduction = styled(BodyText)`
+  max-width: 480px;
+  margin-top: 16px;
+  text-align: center;
+`;
+const Field = styled.View`
+  margin-top: 28px;
+`;
+const FieldLabel = styled.Text`
+  color: ${({ theme }) => theme.text};
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+`;
+const FieldInput = styled(TextInput)`
+  min-height: 56px;
+  background-color: ${AppColors.paper};
+  border: 2px solid ${AppColors.ink};
+  color: ${AppColors.ink};
+  font-size: 18px;
+  font-weight: 800;
+  margin-top: 8px;
+  padding: 12px 14px;
+`;
+const ErrorText = styled.Text`
+  color: ${AppColors.red};
+  font-size: 12px;
+  font-weight: 800;
+  margin-top: 7px;
+`;
+const FormActions = styled.View`
+  gap: 10px;
+  margin-top: 36px;
+`;
