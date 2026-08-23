@@ -37,6 +37,7 @@ import type {
   CustomTrickRow,
 } from '@/features/custom-tricks/persistence/custom-trick-cloud-repository';
 import type { Json } from '@/shared/supabase/database-types';
+import type { NewOutboxOperationInput } from '@/shared/sync/outbox-operation';
 
 export type CustomTrickMappingIssueReason =
   | 'wrongType'
@@ -315,4 +316,54 @@ export function mapCustomTrickCollectionToUpsertInputs(
   userId: string,
 ): readonly CustomTrickInsert[] {
   return collection.tricks.map((trick) => mapCustomTrickToUpsertInput(trick, userId));
+}
+
+/**
+ * T157.5: pure diff between a `CustomTrickCollection` before and after a
+ * local mutation, emitting the outbox operations that would bring the
+ * server up to date. Unlike `diffProfileForOutboxOperations`, there is only
+ * one row type here (no scalar/child-table split) so there is no "scalar op
+ * first" two-tier ordering concept -- op order is simply ascending trick id,
+ * purely so downstream callers/tests are deterministic (each op targets a
+ * distinct `recordId`, so order otherwise has no semantic meaning).
+ *
+ * A trick present in both `previous` and `next` is compared via
+ * `JSON.stringify` (not a field-by-field diff) for the same reason
+ * `scalarFieldsEqual` in `profile-cloud-mapping.ts` uses it: every
+ * `CustomTrick` field is plain JSON-serializable data constructed
+ * exclusively by the trusted reducer.
+ */
+export function diffCustomTricksForOutboxOperations(
+  previous: CustomTrickCollection,
+  next: CustomTrickCollection,
+  userId: string,
+): readonly NewOutboxOperationInput[] {
+  const previousById = new Map(previous.tricks.map((trick) => [trick.id, trick]));
+  const nextById = new Map(next.tricks.map((trick) => [trick.id, trick]));
+
+  const operations: NewOutboxOperationInput[] = [];
+  const trickIdsInStableOrder = Array.from(
+    new Set([...previousById.keys(), ...nextById.keys()]),
+  ).sort();
+
+  for (const trickId of trickIdsInStableOrder) {
+    const previousTrick = previousById.get(trickId);
+    const nextTrick = nextById.get(trickId);
+
+    if (nextTrick === undefined) {
+      operations.push({ domain: 'customTricks', operationType: 'delete', recordId: trickId, payload: null });
+      continue;
+    }
+
+    if (previousTrick === undefined || JSON.stringify(previousTrick) !== JSON.stringify(nextTrick)) {
+      operations.push({
+        domain: 'customTricks',
+        operationType: 'upsert',
+        recordId: trickId,
+        payload: mapCustomTrickToUpsertInput(nextTrick, userId) as unknown as Record<string, unknown>,
+      });
+    }
+  }
+
+  return operations;
 }
