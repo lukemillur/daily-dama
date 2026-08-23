@@ -52,6 +52,20 @@ function isSessionRecord(value: unknown): value is PracticeSessionRecord {
   );
 }
 
+// T157.6: the sync envelope's `state` is stored as a plain object inside a
+// larger JSON document, not as a standalone serialized string -- this
+// operates on an in-memory `unknown` value, mirroring
+// `deserializePracticeHistory`'s own validation logic (session shape + id
+// uniqueness) without the JSON.parse/version-field step. Same idiom as
+// `isCustomTrickCollection` (T157.5).
+export function isPracticeHistory(value: unknown): value is PracticeHistory {
+  if (!isRecord(value) || !Array.isArray(value.sessions) || !value.sessions.every(isSessionRecord)) {
+    return false;
+  }
+  const ids = value.sessions.map((session) => session.id);
+  return new Set(ids).size === ids.length;
+}
+
 export function serializePracticeHistory(history: PracticeHistory) {
   const document: PracticeHistoryDocumentV1 = {
     version: PRACTICE_HISTORY_SCHEMA_VERSION,

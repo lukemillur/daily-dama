@@ -1,7 +1,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(34);
+select plan(35);
 
 -- Fixture auth users.
 insert into auth.users (id) values
@@ -195,9 +195,22 @@ select throws_ok(
        user_id, id, trick_id, trick_name, started_at, completed_at, duration_ms, lace_count
      ) values (
        '00000000-0000-0000-0000-00000000000b', 'sesh-bad-2', 'lighthouse', 'Lighthouse',
-       1000000, 1030000, 999, 1
+       1000000, 1030000, 40000, 1
      ) $$,
-  '23514', null, 'a duration_ms that does not match completed_at minus started_at is rejected'
+  '23514', null, 'a duration_ms exceeding completed_at minus started_at is rejected'
+);
+
+-- A duration_ms strictly less than completed_at minus started_at is valid --
+-- this is the paused-session case (sesh.ts's seshPaused/seshResumed): active
+-- practice time can be less than wall-clock elapsed time.
+select lives_ok(
+  $$ insert into api.practice_sessions (
+       user_id, id, trick_id, trick_name, started_at, completed_at, duration_ms, lace_count
+     ) values (
+       '00000000-0000-0000-0000-00000000000b', 'sesh-paused', 'lighthouse', 'Lighthouse',
+       1000000, 1030000, 20000, 3
+     ) $$,
+  'a duration_ms less than completed_at minus started_at (a paused session) is valid'
 );
 
 select throws_ok(
@@ -231,7 +244,7 @@ select throws_ok(
   '23514', null, 'an unknown origin value is rejected'
 );
 
--- 28: duplicate session id for the same user.
+-- 29: duplicate session id for the same user.
 select throws_ok(
   $$ insert into api.practice_sessions (
        user_id, id, trick_id, trick_name, started_at, completed_at, duration_ms, lace_count
@@ -242,10 +255,10 @@ select throws_ok(
   '23505', null, 'a duplicate practice session id for the same user is rejected'
 );
 
--- 29-30: cascade deletion.
+-- 30-31: cascade deletion.
 select is(
-  (select count(*)::int from api.practice_sessions where user_id = '00000000-0000-0000-0000-00000000000b'), 2,
-  'sanity: two practice sessions exist before account deletion'
+  (select count(*)::int from api.practice_sessions where user_id = '00000000-0000-0000-0000-00000000000b'), 3,
+  'sanity: three practice sessions exist before account deletion'
 );
 
 delete from auth.users where id = '00000000-0000-0000-0000-00000000000b';
@@ -255,7 +268,7 @@ select is(
   'deleting the auth user cascades to delete its practice-session rows'
 );
 
--- 31-34: ownership and immutability under RLS, for an authenticated client.
+-- 32-35: ownership and immutability under RLS, for an authenticated client.
 insert into auth.users (id) values
   ('00000000-0000-0000-0000-00000000000c'),
   ('00000000-0000-0000-0000-00000000000d');
