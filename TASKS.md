@@ -214,16 +214,6 @@ _Phase 3 activation: T156–T160 come from S035–S038 and `BACKEND_ROADMAP.md` 
 - **Description:** Add durable, ordered, identity-owned synchronization while keeping every current workflow usable offline and every reducer independent of Supabase.
 - **Notes:** Umbrella from S035. Complete T157.1–T157.9 in order. Depends on T155 and T156. Realtime subscriptions remain deferred.
 
-### [T157.3] Implement paginated pulls and idempotent ordered pushes
-
-- **Area:** Synchronization transport
-- **Priority:** High
-- **Status:** Not started
-- **Planning:** Required
-- **Description:** Add repository-agnostic transport orchestration for stable ordered pagination, mutation-ID-based idempotent retries, optimistic revision checks, tombstones, and application of server-returned revisions/timestamps.
-- **Exit criteria:** Transport tests pull more than 1,000 ordered fixtures without gaps/duplicates, retry a successful write after a simulated lost acknowledgement without duplication, reject stale revisions into a typed conflict, apply authoritative server metadata, and continue unrelated operations after one conflict.
-- **Notes:** From S035. Depends on T155.9, T157.1, and T157.2. Use injected clocks/network repositories for deterministic tests.
-
 ### [T157.4] Synchronize profile and trick state first
 
 - **Area:** Profile synchronization
