@@ -33,9 +33,11 @@ import {
   MAX_GOAL_TARGET_MINUTES,
   MIN_GOAL_TARGET_MINUTES,
   type Goal,
+  type GoalCollection,
 } from '@/features/goals/model/goal';
 import type { GoalCloudPatch, GoalInsert, GoalRow } from '@/features/goals/persistence/goal-cloud-repository';
 import { isNormalizedText } from '@/features/goals/persistence/goal-persistence';
+import type { NewOutboxOperationInput } from '@/shared/sync/outbox-operation';
 
 const MIN_GOAL_TARGET_MS = MIN_GOAL_TARGET_MINUTES * 60_000;
 const MAX_GOAL_TARGET_MS = MAX_GOAL_TARGET_MINUTES * 60_000;
@@ -350,4 +352,74 @@ export function prepareGoalDeletionPatch(known: GoalCloudEntry, deletedAtMs: num
   }
 
   return { status: 'prepared', patch: { deleted_at: new Date(deletedAtMs).toISOString() } };
+}
+
+export type GoalCollectionMappingResult =
+  | { readonly status: 'invalid'; readonly issues: readonly GoalMappingIssue[] }
+  | { readonly status: 'valid'; readonly collection: GoalCollection };
+
+/**
+ * T157.7: composes a `GoalCollection` (active goals only) from pulled
+ * `goals` rows, for the driver hook's pull-adopt branch. Delegates entirely
+ * to `mapGoalRowsToDomainEntries` for validation (same "one malformed row
+ * invalidates the whole batch" posture), then filters to `'active'` entries
+ * -- a tombstoned row is a real fact the sync layer needs (revision
+ * tracking), but it must never resurrect into the locally-rendered
+ * `GoalCollection`.
+ */
+export function mapGoalRowsToDomainCollection(
+  rows: readonly GoalRow[],
+  expectedUserId: string,
+): GoalCollectionMappingResult {
+  const result = mapGoalRowsToDomainEntries(rows, expectedUserId);
+  if (result.status === 'invalid') return result;
+
+  const goals = result.entries
+    .filter((entry): entry is Extract<typeof entry, { status: 'active' }> => entry.status === 'active')
+    .map((entry) => entry.goal);
+
+  return { status: 'valid', collection: { goals } };
+}
+
+/**
+ * T157.7: pure diff between a `GoalCollection` before and after a local
+ * mutation, emitting the outbox operations that would bring the server up
+ * to date. Copies `diffCustomTricksForOutboxOperations`'s shape exactly:
+ * key both sides by id, sorted-union id order for determinism, missing in
+ * `next` -> delete, new-or-changed (via JSON.stringify inequality) ->
+ * upsert. Reusing `mapGoalToInsertInput` for the upsert payload is correct
+ * for both a genuine create and an edit -- the transport layer, not this
+ * diff, decides whether to `.insert()` or `.update()` a subset of columns.
+ */
+export function diffGoalsForOutboxOperations(
+  previous: GoalCollection,
+  next: GoalCollection,
+  userId: string,
+): readonly NewOutboxOperationInput[] {
+  const previousById = new Map(previous.goals.map((goal) => [goal.id, goal]));
+  const nextById = new Map(next.goals.map((goal) => [goal.id, goal]));
+
+  const operations: NewOutboxOperationInput[] = [];
+  const goalIdsInStableOrder = Array.from(new Set([...previousById.keys(), ...nextById.keys()])).sort();
+
+  for (const goalId of goalIdsInStableOrder) {
+    const previousGoal = previousById.get(goalId);
+    const nextGoal = nextById.get(goalId);
+
+    if (nextGoal === undefined) {
+      operations.push({ domain: 'goals', operationType: 'delete', recordId: goalId, payload: null });
+      continue;
+    }
+
+    if (previousGoal === undefined || JSON.stringify(previousGoal) !== JSON.stringify(nextGoal)) {
+      operations.push({
+        domain: 'goals',
+        operationType: 'upsert',
+        recordId: goalId,
+        payload: mapGoalToInsertInput(nextGoal, userId) as unknown as Record<string, unknown>,
+      });
+    }
+  }
+
+  return operations;
 }

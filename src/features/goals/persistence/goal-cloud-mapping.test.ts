@@ -1,8 +1,10 @@
 import { describe, expect, it } from '@jest/globals';
 
-import type { Goal } from '@/features/goals/model/goal';
+import type { Goal, GoalCollection } from '@/features/goals/model/goal';
 import type { GoalRow } from '@/features/goals/persistence/goal-cloud-repository';
 import {
+  diffGoalsForOutboxOperations,
+  mapGoalRowsToDomainCollection,
   mapGoalRowToDomainEntry,
   mapGoalRowsToDomainEntries,
   mapGoalToInsertInput,
@@ -400,5 +402,117 @@ describe('no input mutation', () => {
     expect(() => prepareGoalDeletionPatch(entry, DELETED_TIMESTAMP_MS)).not.toThrow();
 
     expect(JSON.stringify(entry)).toBe(before);
+  });
+});
+
+describe('mapGoalRowsToDomainCollection', () => {
+  it('composes an active-only GoalCollection from a mix of active and tombstoned rows', () => {
+    const active = makeGoalRow({ id: 'goal-active' });
+    const tombstoned = makeGoalRow({ id: 'goal-tombstoned', deleted_at: DELETED_TIMESTAMP });
+
+    const result = mapGoalRowsToDomainCollection([active, tombstoned], USER_ID);
+    expect(result.status).toBe('valid');
+    if (result.status !== 'valid') return;
+    expect(result.collection.goals.map((goal) => goal.id)).toEqual(['goal-active']);
+  });
+
+  it('returns invalid when any row is malformed, same posture as mapGoalRowsToDomainEntries', () => {
+    const malformed = { ...makeGoalRow(), kind: 'bogus' } as unknown as GoalRow;
+    const result = mapGoalRowsToDomainCollection([malformed], USER_ID);
+    expect(result.status).toBe('invalid');
+  });
+
+  it('returns a valid empty collection for an empty row list', () => {
+    const result = mapGoalRowsToDomainCollection([], USER_ID);
+    expect(result).toEqual({ status: 'valid', collection: { goals: [] } });
+  });
+});
+
+describe('diffGoalsForOutboxOperations', () => {
+  const COUNT_GOAL: Goal = {
+    id: 'goal-a',
+    trickId: 'lighthouse',
+    trickName: 'Lighthouse',
+    kind: 'count',
+    targetCount: 10,
+    createdAt: TIMESTAMP_MS,
+  };
+  const TIME_GOAL: Goal = {
+    id: 'goal-b',
+    trickId: 'big-cup',
+    trickName: 'Big cup',
+    kind: 'time',
+    targetMs: 600000,
+    createdAt: TIMESTAMP_MS,
+  };
+
+  it('produces no operations for a no-op diff', () => {
+    const collection: GoalCollection = { goals: [COUNT_GOAL, TIME_GOAL] };
+    expect(diffGoalsForOutboxOperations(collection, collection, USER_ID)).toEqual([]);
+  });
+
+  it('emits an upsert for a newly added goal', () => {
+    const previous: GoalCollection = { goals: [] };
+    const next: GoalCollection = { goals: [COUNT_GOAL] };
+
+    expect(diffGoalsForOutboxOperations(previous, next, USER_ID)).toEqual([
+      {
+        domain: 'goals',
+        operationType: 'upsert',
+        recordId: COUNT_GOAL.id,
+        payload: mapGoalToInsertInput(COUNT_GOAL, USER_ID),
+      },
+    ]);
+  });
+
+  it('emits a delete for a removed goal', () => {
+    const previous: GoalCollection = { goals: [COUNT_GOAL] };
+    const next: GoalCollection = { goals: [] };
+
+    expect(diffGoalsForOutboxOperations(previous, next, USER_ID)).toEqual([
+      { domain: 'goals', operationType: 'delete', recordId: COUNT_GOAL.id, payload: null },
+    ]);
+  });
+
+  it('emits a single upsert for an edited goal (target changed, same id/kind)', () => {
+    const edited: Goal = { ...COUNT_GOAL, targetCount: 999 };
+    const previous: GoalCollection = { goals: [COUNT_GOAL] };
+    const next: GoalCollection = { goals: [edited] };
+
+    expect(diffGoalsForOutboxOperations(previous, next, USER_ID)).toEqual([
+      {
+        domain: 'goals',
+        operationType: 'upsert',
+        recordId: COUNT_GOAL.id,
+        payload: mapGoalToInsertInput(edited, USER_ID),
+      },
+    ]);
+  });
+
+  it('diffs a batch of several goals at once, each in stable id-sorted order', () => {
+    const goalZ: Goal = { ...COUNT_GOAL, id: 'goal-z' };
+    const goalA: Goal = { ...TIME_GOAL, id: 'goal-a-new' };
+    const previous: GoalCollection = { goals: [COUNT_GOAL, TIME_GOAL] };
+    const next: GoalCollection = { goals: [goalZ, goalA] }; // COUNT_GOAL/TIME_GOAL both removed, two new added
+
+    const operations = diffGoalsForOutboxOperations(previous, next, USER_ID);
+    const recordIds = operations.map((op) => op.recordId);
+    expect(recordIds).toEqual([...recordIds].sort());
+    expect(operations).toEqual([
+      { domain: 'goals', operationType: 'delete', recordId: COUNT_GOAL.id, payload: null },
+      {
+        domain: 'goals',
+        operationType: 'upsert',
+        recordId: goalA.id,
+        payload: mapGoalToInsertInput(goalA, USER_ID),
+      },
+      { domain: 'goals', operationType: 'delete', recordId: TIME_GOAL.id, payload: null },
+      {
+        domain: 'goals',
+        operationType: 'upsert',
+        recordId: goalZ.id,
+        payload: mapGoalToInsertInput(goalZ, USER_ID),
+      },
+    ]);
   });
 });
