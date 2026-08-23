@@ -203,8 +203,14 @@ create table api.practice_sessions (
   constraint practice_sessions_started_at_positive check (started_at > 0),
   constraint practice_sessions_completed_not_before_started
     check (completed_at >= started_at),
+  -- Permissive, not exact-equality: duration_ms is active practice time,
+  -- which can be less than wall-clock elapsed time when a session was
+  -- paused (sesh.ts's seshPaused/seshResumed). Matches the domain's own
+  -- local-storage validator (practice-history-persistence.ts) and the
+  -- row->domain mapper's read-side invariant (practice-history-cloud-
+  -- mapping.ts) -- see T157.6.
   constraint practice_sessions_duration_matches_timing
-    check (duration_ms = completed_at - started_at),
+    check (duration_ms <= completed_at - started_at),
   constraint practice_sessions_lace_count_nonnegative check (lace_count >= 0),
   constraint practice_sessions_planned_duration_positive
     check (planned_duration_ms is null or planned_duration_ms > 0),

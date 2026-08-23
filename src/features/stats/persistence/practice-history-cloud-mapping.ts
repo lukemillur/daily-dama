@@ -12,20 +12,15 @@
 // because `PracticeSessionRecord`/`PracticeHistory` are already trusted,
 // reducer-constructed shapes by the time anything calls these mappers.
 //
-// KNOWN SCHEMA/DOMAIN MISMATCH: the T155.3 migration's
-// `practice_sessions_duration_matches_timing` CHECK constraint enforces
-// exact equality (`duration_ms = completed_at - started_at`). That is
-// stricter than the actual domain invariant -- `sesh.tsx`/`sesh.ts`'s
-// reducer supports pausing an active session, so a genuinely-valid local
-// session can have `durationMs < completedAt - startedAt` (active practice
-// time can be less than wall-clock elapsed time). This mapper's row->domain
-// validation below intentionally uses the permissive, domain-correct
-// invariant (`durationMs <= completedAt - startedAt`, matching
-// `practice-history-persistence.ts`'s local storage validator), NOT the
-// DB's stricter equality check. Whoever picks up T157.6 (wiring real
-// inserts) needs to know the current migration's CHECK constraint will
-// reject a genuinely-valid paused session's insert -- that's a schema
-// change out of scope for this ticket.
+// The T155.3 migration's `practice_sessions_duration_matches_timing` CHECK
+// constraint was fixed by T157.6 to match the permissive, domain-correct
+// invariant this mapper's row->domain validation already used
+// (`durationMs <= completedAt - startedAt`, matching
+// `practice-history-persistence.ts`'s local storage validator) -- a
+// genuinely-valid paused session (`sesh.tsx`/`sesh.ts`'s reducer supports
+// pausing an active session) can have `durationMs < completedAt -
+// startedAt`, since active practice time can be less than wall-clock
+// elapsed time.
 
 import type { PracticeHistory, PracticeSessionRecord } from '@/features/stats/model/practice-history';
 import type {
@@ -33,6 +28,7 @@ import type {
   PracticeSessionRow,
 } from '@/features/stats/persistence/practice-history-cloud-repository';
 import { isFiniteNonNegativeNumber } from '@/features/stats/persistence/practice-history-persistence';
+import type { NewOutboxOperationInput } from '@/shared/sync/outbox-operation';
 
 export type PracticeSessionMappingIssueReason =
   | 'wrongType'
@@ -328,4 +324,37 @@ export function mapPracticeHistoryToInsertInputs(
   userId: string,
 ): readonly PracticeSessionInsert[] {
   return history.sessions.map((session) => mapPracticeSessionRecordToInsertInput(session, userId));
+}
+
+/**
+ * T157.6: the pure diff from a `PracticeHistory` change to outbox
+ * operations, mirroring `diffCustomTricksForOutboxOperations`
+ * (custom-trick-cloud-mapping.ts) but simplified for an immutable,
+ * insert-only domain -- see `.claude/plans/T157.6.md` "The pure diff" for
+ * the full design.
+ *
+ * Only sessions newly present in `next` (by id, not in `previous`) emit an
+ * `upsert` operation. No delete branch: nothing in this domain ever removes
+ * a session locally. No content-equality check for ids present in both:
+ * practice-session records are immutable, so re-comparing content would be
+ * dead code.
+ */
+export function diffPracticeHistoryForOutboxOperations(
+  previous: PracticeHistory,
+  next: PracticeHistory,
+  userId: string,
+): readonly NewOutboxOperationInput[] {
+  const previousIds = new Set(previous.sessions.map((session) => session.id));
+  const newSessions = next.sessions.filter((session) => !previousIds.has(session.id));
+
+  // Stable order: ascending id. Each op targets a distinct recordId, so this
+  // has no semantic meaning beyond determinism.
+  const sorted = [...newSessions].sort((left, right) => (left.id < right.id ? -1 : left.id > right.id ? 1 : 0));
+
+  return sorted.map((session) => ({
+    domain: 'practiceHistory' as const,
+    operationType: 'upsert' as const,
+    recordId: session.id,
+    payload: mapPracticeSessionRecordToInsertInput(session, userId) as unknown as Record<string, unknown>,
+  }));
 }

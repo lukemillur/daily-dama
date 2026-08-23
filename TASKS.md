@@ -214,16 +214,6 @@ _Phase 3 activation: T156–T160 come from S035–S038 and `BACKEND_ROADMAP.md` 
 - **Description:** Add durable, ordered, identity-owned synchronization while keeping every current workflow usable offline and every reducer independent of Supabase.
 - **Notes:** Umbrella from S035. Complete T157.1–T157.9 in order. Depends on T155 and T156. Realtime subscriptions remain deferred.
 
-### [T157.6] Synchronize immutable practice history
-
-- **Area:** Practice-history synchronization
-- **Priority:** High
-- **Status:** Not started
-- **Planning:** Required
-- **Description:** Integrate completed-Sesh insertion and paginated pulls with the synchronization layer, retaining provider/reducer deduplication, immutable snapshots, client-fact timestamps, and Stats derivation.
-- **Exit criteria:** Integration tests record sessions offline, reload and retry after a lost acknowledgement, synchronize more than 1,000 records, deduplicate by stable record identity, reject attempted remote mutation, and derive identical Stats locally and after second-browser rehydration.
-- **Notes:** From S035 domain rollout 3. Depends on T157.5 and T155.12. Synchronization must never alter an in-progress Sesh reducer.
-
 ### [T157.7] Synchronize goals with optimistic revisions and tombstones
 
 - **Area:** Goal synchronization

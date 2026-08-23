@@ -3,6 +3,7 @@ import { describe, expect, it } from '@jest/globals';
 import type { PracticeHistory, PracticeSessionRecord } from '@/features/stats/model/practice-history';
 import type { PracticeSessionRow } from '@/features/stats/persistence/practice-history-cloud-repository';
 import {
+  diffPracticeHistoryForOutboxOperations,
   mapPracticeHistoryToInsertInputs,
   mapPracticeSessionRecordToInsertInput,
   mapPracticeSessionRowToDomainRecord,
@@ -431,5 +432,74 @@ describe('no input mutation', () => {
 
     expect(JSON.stringify(row)).toBe(rowBefore);
     expect(JSON.stringify(rows)).toBe(rowsBefore);
+  });
+});
+
+function makeSession(id: string, overrides: Partial<PracticeSessionRecord> = {}): PracticeSessionRecord {
+  return {
+    id,
+    trickId: 'lighthouse',
+    trickName: 'Lighthouse',
+    startedAt: 1_000,
+    completedAt: 5_000,
+    durationMs: 4_000,
+    laceCount: 2,
+    ...overrides,
+  };
+}
+
+describe('diffPracticeHistoryForOutboxOperations', () => {
+  it('emits no operations for an identical PracticeHistory', () => {
+    const history: PracticeHistory = { sessions: [makeSession('session-1')] };
+    expect(diffPracticeHistoryForOutboxOperations(history, history, USER_ID)).toEqual([]);
+  });
+
+  it('emits an upsert for one newly added session', () => {
+    const previous: PracticeHistory = { sessions: [] };
+    const added = makeSession('session-new');
+    const next: PracticeHistory = { sessions: [added] };
+
+    expect(diffPracticeHistoryForOutboxOperations(previous, next, USER_ID)).toEqual([
+      {
+        domain: 'practiceHistory',
+        operationType: 'upsert',
+        recordId: 'session-new',
+        payload: mapPracticeSessionRecordToInsertInput(added, USER_ID),
+      },
+    ]);
+  });
+
+  it('emits operations for several new sessions in stable ascending-id order', () => {
+    const previous: PracticeHistory = { sessions: [] };
+    const sessionB = makeSession('session-b');
+    const sessionA = makeSession('session-a');
+    const sessionC = makeSession('session-c');
+    // Deliberately out-of-order in `next.sessions` to prove the diff sorts, not just preserves.
+    const next: PracticeHistory = { sessions: [sessionB, sessionC, sessionA] };
+
+    const operations = diffPracticeHistoryForOutboxOperations(previous, next, USER_ID);
+    expect(operations.map((op) => op.recordId)).toEqual(['session-a', 'session-b', 'session-c']);
+  });
+
+  it('emits no operation for a session present in both previous and next (immutable, no content diff)', () => {
+    const session = makeSession('session-unchanged');
+    const previous: PracticeHistory = { sessions: [session] };
+    // Byte-identical content, present in both -- a regression guard against
+    // accidentally reintroducing a content-diff (this domain's records
+    // never change, unlike custom tricks).
+    const next: PracticeHistory = { sessions: [session] };
+
+    expect(diffPracticeHistoryForOutboxOperations(previous, next, USER_ID)).toEqual([]);
+  });
+
+  it('emits only the new session when previous and next share one session and add another', () => {
+    const shared = makeSession('session-shared');
+    const added = makeSession('session-added', { startedAt: 2_000, completedAt: 6_000 });
+    const previous: PracticeHistory = { sessions: [shared] };
+    const next: PracticeHistory = { sessions: [shared, added] };
+
+    const operations = diffPracticeHistoryForOutboxOperations(previous, next, USER_ID);
+    expect(operations).toHaveLength(1);
+    expect(operations[0]?.recordId).toBe('session-added');
   });
 });
