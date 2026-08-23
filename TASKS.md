@@ -214,16 +214,6 @@ _Phase 3 activation: T156–T160 come from S035–S038 and `BACKEND_ROADMAP.md` 
 - **Description:** Add durable, ordered, identity-owned synchronization while keeping every current workflow usable offline and every reducer independent of Supabase.
 - **Notes:** Umbrella from S035. Complete T157.1–T157.9 in order. Depends on T155 and T156. Realtime subscriptions remain deferred.
 
-### [T157.7] Synchronize goals with optimistic revisions and tombstones
-
-- **Area:** Goal synchronization
-- **Priority:** High
-- **Status:** In progress
-- **Planning:** Required
-- **Description:** Integrate goal creation, editing, deletion, tombstones, and stale-revision detection with the scoped outbox and coordinator without coupling GoalProvider to Supabase.
-- **Exit criteria:** Integration tests exercise count/time goals offline through reconnect, lost acknowledgements, edits, deletion, stale-device resurrection attempts, and second-browser hydration; conflicts pause only the affected goal and accepted results update local revision metadata.
-- **Notes:** From S035 domain rollout 4. Depends on T157.6 and the goal portion of T155.13.
-
 ### [T157.8] Synchronize notes with optimistic revisions and tombstones
 
 - **Area:** Note synchronization

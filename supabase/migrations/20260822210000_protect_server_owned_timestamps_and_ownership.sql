@@ -247,14 +247,15 @@ grant insert (
 
 -- api.goals: id/user_id/created_at/revision/updated_at are fully
 -- server-owned; trick_id/trick_name/kind/target_count/target_ms are
--- client-supplied identity/content at insert time but not yet editable in
--- place (the local reducer only adds/deletes goals today -- see T155.4's
--- comment that T157.7 wires up in-place target editing). deleted_at is the
--- one column genuinely meant to be UPDATE-granted: setting it is how a
+-- client-supplied identity/content at insert time. deleted_at is the
+-- one column genuinely meant to be UPDATE-granted here: setting it is how a
 -- client requests a soft delete, even though
 -- private.enforce_goal_note_mutation_invariants always substitutes now()
--- for whatever value is sent. When T157.7 adds goal-target editing, extend
--- the UPDATE grant here to include target_count/target_ms.
+-- for whatever value is sent. T157.7's own later migration
+-- (20260823010000_extend_goals_update_grant_for_target_editing.sql) extends
+-- the UPDATE grant to also cover target_count/target_ms, once in-place goal
+-- target editing exists locally -- trick_id/trick_name/kind stay
+-- UPDATE-ungranted forever; a goal's trick and kind are fixed at creation.
 revoke insert, update on api.goals from authenticated;
 
 grant insert (
