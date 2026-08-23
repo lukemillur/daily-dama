@@ -214,16 +214,6 @@ _Phase 3 activation: T156–T160 come from S035–S038 and `BACKEND_ROADMAP.md` 
 - **Description:** Add durable, ordered, identity-owned synchronization while keeping every current workflow usable offline and every reducer independent of Supabase.
 - **Notes:** Umbrella from S035. Complete T157.1–T157.9 in order. Depends on T155 and T156. Realtime subscriptions remain deferred.
 
-### [T157.2] Build a single-flight identity-aware sync coordinator
-
-- **Area:** Synchronization orchestration
-- **Priority:** High
-- **Status:** In progress
-- **Planning:** Required
-- **Description:** Implement an explicit coordinator state machine that permits one sync per identity, models cancellation/retry, tags runs with identity generations, and continues safely after contained operation failures.
-- **Exit criteria:** State-machine tests cover overlapping triggers, cancellation, identity change, network failure, retry, partial-domain failure, and stale completion; at most one run owns an identity at a time and no late result can mutate current state after logout or account switching.
-- **Notes:** From S035. Depends on T157.1. Keep scheduling effects and clocks outside the reducer/state machine.
-
 ### [T157.3] Implement paginated pulls and idempotent ordered pushes
 
 - **Area:** Synchronization transport
