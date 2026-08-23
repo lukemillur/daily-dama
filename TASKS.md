@@ -218,7 +218,7 @@ _Phase 3 activation: T156–T160 come from S035–S038 and `BACKEND_ROADMAP.md` 
 
 - **Area:** Synchronization persistence
 - **Priority:** High
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** Define serializable mutation operations, stable operation IDs, per-domain cursors, acknowledgements, retry metadata, and atomic versioned envelopes that own local domain state and its outbox together.
 - **Exit criteria:** Unit tests prove a local state change and its operation persist atomically, survive reload, retain stable IDs across retries, preserve FIFO order, reject malformed envelopes, and cannot be loaded or acknowledged under another identity.
