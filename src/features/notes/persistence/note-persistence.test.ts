@@ -3,6 +3,7 @@ import { describe, expect, it, jest } from '@jest/globals';
 import type { NoteCollection } from '@/features/notes/model/note';
 import {
   deserializeNotes,
+  isNoteCollection,
   loadNotes,
   NOTES_SCHEMA_VERSION,
   NOTES_STORAGE_KEY,
@@ -123,5 +124,35 @@ describe('note persistence', () => {
 
     await expect(saveNotes(storage, COLLECTION)).resolves.toEqual({ status: 'saved' });
     expect(storage.setItem).toHaveBeenCalledWith(NOTES_STORAGE_KEY, serializeNotes(COLLECTION));
+  });
+});
+
+describe('isNoteCollection', () => {
+  it('accepts a well-formed collection', () => {
+    expect(isNoteCollection(COLLECTION)).toBe(true);
+  });
+
+  it('accepts an empty collection', () => {
+    expect(isNoteCollection({ notes: [] })).toBe(true);
+  });
+
+  it('rejects a malformed note', () => {
+    expect(isNoteCollection({ notes: [{ id: 'partial' }] })).toBe(false);
+  });
+
+  it('rejects duplicate ids', () => {
+    expect(
+      isNoteCollection({
+        notes: [
+          { id: 'dup', trickId: 'big-cup', trickName: 'Big cup', body: 'A', createdAt: 1, updatedAt: 1 },
+          { id: 'dup', trickId: 'big-cup', trickName: 'Big cup', body: 'B', createdAt: 2, updatedAt: 2 },
+        ],
+      }),
+    ).toBe(false);
+  });
+
+  it('rejects a non-record value', () => {
+    expect(isNoteCollection(null)).toBe(false);
+    expect(isNoteCollection([])).toBe(false);
   });
 });
