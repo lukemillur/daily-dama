@@ -206,24 +206,6 @@ _Phase 2 activation: T155 comes from S034 and `BACKEND_ROADMAP.md` Phase 2. Its 
 
 _Phase 3 activation: T156–T160 come from S035–S038 and `BACKEND_ROADMAP.md` Phase 3. The dependency chain deliberately separates identity-partitioned persistence (T156), durable synchronization mechanics and ordered domain rollout (T157), outbox-aware logout (T158), resumable guest conversion (T159), and visible conflict recovery (T160). Each child owns one persistence, orchestration, domain, or UX boundary; Realtime remains deferred and synchronization may never alter the active Sesh state machine._
 
-### [T156] Partition local persistence by verified identity
-
-- **Area:** Local persistence security
-- **Priority:** High
-- **Status:** Not started
-- **Description:** Prevent guest and authenticated caches from sharing keys or allowing late work from one identity to update another.
-- **Notes:** Umbrella from S038. Complete T156.1–T156.3 before domain synchronization. The existing hydration fallback and skipped-initial-write behavior must survive unchanged.
-
-### [T156.3] Prove cross-account local-data isolation
-
-- **Area:** Persistence security testing
-- **Priority:** High
-- **Status:** Not started
-- **Planning:** Required
-- **Description:** Add an end-to-end provider test matrix that seeds distinct profile, custom-trick, practice-history, goal, note, and pending-metadata fixtures for guest, user A, and user B and exercises repeated identity switches.
-- **Exit criteria:** One automated matrix proves no identity can render, overwrite, or submit another identity's fixtures; a late queued write and a late hydration result are both discarded after switching; and returning to each identity restores exactly its own state.
-- **Notes:** From S038. Depends on T156.2. Outbox-specific assertions are extended when T157.1 lands.
-
 ### [T157] Add local-first synchronization across every domain
 
 - **Area:** Synchronization
