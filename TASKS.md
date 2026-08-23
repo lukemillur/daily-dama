@@ -209,16 +209,6 @@ _Phase 2 activation: T155 comes from S034 and `BACKEND_ROADMAP.md` Phase 2. Its 
 - **Description:** Represent all persisted Daily Dama domains in a constrained, typed Postgres/Data API boundary before any provider begins synchronization.
 - **Notes:** Umbrella from S034. Complete T155.1–T155.13. No production migrations or live user data exist yet.
 
-### [T155.11] Map custom-trick and sequence rows at the runtime boundary
-
-- **Area:** Custom tricks cloud mapping
-- **Priority:** High
-- **Status:** Not started
-- **Planning:** Required
-- **Description:** Implement pure mappings and runtime validation for standalone custom tricks and sequences while preserving stored step-name snapshots and rejecting nested sequences or source-name re-resolution.
-- **Exit criteria:** Unit tests round-trip every valid custom-trick variant, reject malformed rows and nested sequences, retain stored step names after source trick rename/deletion fixtures, and prove mapping does not mutate domain or row inputs.
-- **Notes:** From S034. Depends on T155.9. The provisional local v1 schema may change in place before external users exist.
-
 ### [T155.12] Map immutable practice-session rows at the runtime boundary
 
 - **Area:** Practice-history cloud mapping
