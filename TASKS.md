@@ -209,16 +209,6 @@ _Phase 2 activation: T155 comes from S034 and `BACKEND_ROADMAP.md` Phase 2. Its 
 - **Description:** Represent all persisted Daily Dama domains in a constrained, typed Postgres/Data API boundary before any provider begins synchronization.
 - **Notes:** Umbrella from S034. Complete T155.1–T155.13. No production migrations or live user data exist yet.
 
-### [T155.10] Map profile and trick-state rows at the runtime boundary
-
-- **Area:** Profile cloud mapping
-- **Priority:** High
-- **Status:** In progress
-- **Planning:** Required
-- **Description:** Implement pure mappings and runtime response validation between `UserProfile` plus focused/manually-laced state and the `profiles`/`user_trick_states` rows, with explicit absence and structured validation errors.
-- **Exit criteria:** Unit tests round-trip every valid profile variant, reject malformed/partial/foreign-user rows, preserve stable trick-state identity, and demonstrate no input object is mutated; TypeScript compilation prevents ambiguous empty-object fallbacks.
-- **Notes:** From S034. Depends on T155.9. Do not integrate the provider or synchronization yet.
-
 ### [T155.11] Map custom-trick and sequence rows at the runtime boundary
 
 - **Area:** Custom tricks cloud mapping
