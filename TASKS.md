@@ -218,7 +218,7 @@ _Phase 3 activation: T156–T160 come from S035–S038 and `BACKEND_ROADMAP.md` 
 
 - **Area:** Persistence security testing
 - **Priority:** High
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** Add an end-to-end provider test matrix that seeds distinct profile, custom-trick, practice-history, goal, note, and pending-metadata fixtures for guest, user A, and user B and exercises repeated identity switches.
 - **Exit criteria:** One automated matrix proves no identity can render, overwrite, or submit another identity's fixtures; a late queued write and a late hydration result are both discarded after switching; and returning to each identity restores exactly its own state.
