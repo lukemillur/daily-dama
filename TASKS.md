@@ -218,7 +218,7 @@ _Phase 3 activation: T156–T160 come from S035–S038 and `BACKEND_ROADMAP.md` 
 
 - **Area:** Note synchronization
 - **Priority:** High
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** Integrate notes, optional completed-Sesh references, edits, deletion tombstones, and stale-revision detection with the scoped outbox and coordinator while preserving trick/session snapshots.
 - **Exit criteria:** Integration tests create/edit/delete notes offline, retain optional practice-session associations, retry idempotently, defeat stale-device resurrection, rehydrate on a second browser, and continue unrelated note/goal operations when one note conflicts.
