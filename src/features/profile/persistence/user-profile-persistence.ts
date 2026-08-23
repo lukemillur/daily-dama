@@ -27,11 +27,11 @@ function isStringArray(value: unknown): value is string[] {
   );
 }
 
-function isKenteiRank(value: unknown): value is number {
+export function isKenteiRank(value: unknown): value is number {
   return Number.isInteger(value) && Number(value) >= 1 && Number(value) <= 12;
 }
 
-function isLastSesh(value: unknown): value is LastSesh {
+export function isLastSesh(value: unknown): value is LastSesh {
   if (!isRecord(value)) return false;
 
   const { trickId, plan } = value;
@@ -56,7 +56,7 @@ function isThemeColor(value: unknown): value is string {
   return typeof value === 'string' && isValidThemeHexColor(value);
 }
 
-function isStreakThresholdMs(value: unknown): value is number {
+export function isStreakThresholdMs(value: unknown): value is number {
   return (
     typeof value === 'number' &&
     Number.isInteger(value) &&
