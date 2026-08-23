@@ -213,7 +213,7 @@ _Phase 2 activation: T155 comes from S034 and `BACKEND_ROADMAP.md` Phase 2. Its 
 
 - **Area:** Profile cloud mapping
 - **Priority:** High
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** Implement pure mappings and runtime response validation between `UserProfile` plus focused/manually-laced state and the `profiles`/`user_trick_states` rows, with explicit absence and structured validation errors.
 - **Exit criteria:** Unit tests round-trip every valid profile variant, reject malformed/partial/foreign-user rows, preserve stable trick-state identity, and demonstrate no input object is mutated; TypeScript compilation prevents ambiguous empty-object fallbacks.
