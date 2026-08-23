@@ -4,15 +4,16 @@ import { Platform } from 'react-native';
 
 import { logAuthWarning } from '@/features/auth/observability/auth-observability';
 import { resolveSupabaseConfig } from '@/features/auth/persistence/supabase-config';
+import type { Database } from '@/shared/supabase/database-types';
 
-let memoizedClient: SupabaseClient | null | undefined;
+let memoizedClient: SupabaseClient<Database, 'api'> | null | undefined;
 
 /**
  * Lazily constructs and memoizes the browser-persistent Supabase client.
  * Must only ever be invoked from an effect (never at module scope or in a
  * render body) so Expo Router's Node static-render pass never runs it.
  */
-export function getSupabaseClient(): SupabaseClient | null {
+export function getSupabaseClient(): SupabaseClient<Database, 'api'> | null {
   if (memoizedClient !== undefined) {
     return memoizedClient;
   }
@@ -35,7 +36,7 @@ export function getSupabaseClient(): SupabaseClient | null {
     return memoizedClient;
   }
 
-  memoizedClient = createClient(config.url, config.publishableKey, {
+  memoizedClient = createClient<Database, 'api'>(config.url, config.publishableKey, {
     auth: {
       flowType: 'pkce',
       detectSessionInUrl: false,
@@ -43,6 +44,7 @@ export function getSupabaseClient(): SupabaseClient | null {
       autoRefreshToken: true,
       storage: AsyncStorage,
     },
+    db: { schema: 'api' },
   });
 
   return memoizedClient;

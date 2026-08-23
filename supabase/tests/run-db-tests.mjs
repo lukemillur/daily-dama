@@ -8,7 +8,8 @@
 // non-zero exit on any failure.
 //
 // Usage:
-//   yarn test:db                       # default: start, reset, pgTAP,
+//   yarn test:db                       # default: start, reset, generated
+//                                       # database-types drift check, pgTAP,
 //                                       # Data API suite, cleanup reset
 //   yarn test:db -- --mutation-check   # opt-in: prove the harness fails
 //                                       # closed when a representative RLS
@@ -57,6 +58,11 @@ function runDefaultSequence() {
 
   steps.push(run('supabase start', [...SUPABASE, 'start']));
   if (steps[0].code === 0) steps.push(run('db reset', [...SUPABASE, 'db', 'reset']));
+  if (steps.every((step) => step.code === 0)) {
+    steps.push(
+      run('db:generate-types --check', ['node', 'supabase/scripts/generate-database-types.mjs', '--check']),
+    );
+  }
   if (steps.every((step) => step.code === 0)) {
     steps.push(run('pgTAP (test db --local)', [...SUPABASE, 'test', 'db', '--local']));
   }

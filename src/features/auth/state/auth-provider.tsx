@@ -13,7 +13,7 @@ import { AuthError } from '@supabase/supabase-js';
 
 import { deriveAuthState, INITIALIZING_AUTH_STATE, type AuthState } from '@/features/auth/model/auth-state';
 import { logAuthWarning } from '@/features/auth/observability/auth-observability';
-import { getSupabaseClient } from '@/features/auth/persistence/supabase-client';
+import { getSupabaseClient } from '@/shared/supabase/supabase-client';
 
 interface AuthActions {
   readonly signInWithPassword: (
