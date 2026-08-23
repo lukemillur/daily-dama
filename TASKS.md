@@ -218,7 +218,7 @@ _Phase 3 activation: T156–T160 come from S035–S038 and `BACKEND_ROADMAP.md` 
 
 - **Area:** Practice-history synchronization
 - **Priority:** High
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** Integrate completed-Sesh insertion and paginated pulls with the synchronization layer, retaining provider/reducer deduplication, immutable snapshots, client-fact timestamps, and Stats derivation.
 - **Exit criteria:** Integration tests record sessions offline, reload and retry after a lost acknowledgement, synchronize more than 1,000 records, deduplicate by stable record identity, reject attempted remote mutation, and derive identical Stats locally and after second-browser rehydration.
