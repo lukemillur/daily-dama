@@ -214,16 +214,6 @@ _Phase 3 activation: T156–T160 come from S035–S038 and `BACKEND_ROADMAP.md` 
 - **Description:** Add durable, ordered, identity-owned synchronization while keeping every current workflow usable offline and every reducer independent of Supabase.
 - **Notes:** Umbrella from S035. Complete T157.1–T157.9 in order. Depends on T155 and T156. Realtime subscriptions remain deferred.
 
-### [T157.1] Define durable outbox and mutation-identity contracts
-
-- **Area:** Synchronization persistence
-- **Priority:** High
-- **Status:** In progress
-- **Planning:** Required
-- **Description:** Define serializable mutation operations, stable operation IDs, per-domain cursors, acknowledgements, retry metadata, and atomic versioned envelopes that own local domain state and its outbox together.
-- **Exit criteria:** Unit tests prove a local state change and its operation persist atomically, survive reload, retain stable IDs across retries, preserve FIFO order, reject malformed envelopes, and cannot be loaded or acknowledged under another identity.
-- **Notes:** From S035. Depends on T155.9 and T156.3. Keep runtime handles, promises, Sets, Maps, timers, and Supabase clients out of persisted state.
-
 ### [T157.2] Build a single-flight identity-aware sync coordinator
 
 - **Area:** Synchronization orchestration
