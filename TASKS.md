@@ -218,7 +218,7 @@ _Phase 3 activation: T156–T160 come from S035–S038 and `BACKEND_ROADMAP.md` 
 
 - **Area:** Goal synchronization
 - **Priority:** High
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** Integrate goal creation, editing, deletion, tombstones, and stale-revision detection with the scoped outbox and coordinator without coupling GoalProvider to Supabase.
 - **Exit criteria:** Integration tests exercise count/time goals offline through reconnect, lost acknowledgements, edits, deletion, stale-device resurrection attempts, and second-browser hydration; conflicts pause only the affected goal and accepted results update local revision metadata.
