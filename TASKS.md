@@ -218,7 +218,7 @@ _Phase 3 activation: T156–T160 come from S035–S038 and `BACKEND_ROADMAP.md` 
 
 - **Area:** Profile synchronization
 - **Priority:** High
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** Integrate the profile/trick repositories, runtime mappings, scoped persistence envelope, and coordinator with `UserProfileProvider`, preserving current reducer authority, hydration behavior, and local offline writes.
 - **Exit criteria:** Integration tests create and edit all profile/trick-state variants offline, reload with pending work, reconnect and synchronize, rehydrate the result in a second browser identity fixture, resolve accepted server revisions, and prove no sync effect changes active Sesh state.
