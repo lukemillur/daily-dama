@@ -213,7 +213,7 @@ _Phase 2 activation: T155 comes from S034 and `BACKEND_ROADMAP.md` Phase 2. Its 
 
 - **Area:** Frontend cloud data boundary
 - **Priority:** High
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** Add deterministic Supabase TypeScript type generation and define one cloud repository contract per existing persistent domain, keeping generated row types, network errors, and Supabase clients outside reducers and domain models.
 - **Exit criteria:** A documented generation command produces a stable checked-in type file from a clean local reset; type tests or compilation prove each domain repository exposes typed paginated reads and mutation results without leaking Supabase query builders into providers or reducers.
