@@ -22,15 +22,15 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
-function isNormalizedText(value: unknown): value is string {
+export function isNormalizedText(value: unknown): value is string {
   return typeof value === 'string' && value.length > 0 && value === value.trim();
 }
 
-function isOptionalKenteiRank(value: unknown) {
+export function isOptionalKenteiRank(value: unknown) {
   return value === undefined || (Number.isInteger(value) && Number(value) >= 1 && Number(value) <= 12);
 }
 
-function isSequenceStep(value: unknown): value is SequenceStep {
+export function isSequenceStep(value: unknown): value is SequenceStep {
   if (!isRecord(value) || !isNormalizedText(value.name)) return false;
   if (value.kind === 'customText') return value.sourceTrickId === undefined;
   return value.kind === 'existingTrick' && isNormalizedText(value.sourceTrickId);
