@@ -65,7 +65,7 @@ export function isStreakThresholdMs(value: unknown): value is number {
   );
 }
 
-function parseUserProfile(value: unknown): UserProfile | undefined {
+export function parseUserProfile(value: unknown): UserProfile | undefined {
   if (!isRecord(value)) return undefined;
 
   const {

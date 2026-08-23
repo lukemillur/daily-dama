@@ -28,6 +28,7 @@ import type {
   UserTrickStateUpsertInput,
 } from '@/features/profile/persistence/profile-cloud-repository';
 import type { Json } from '@/shared/supabase/database-types';
+import type { NewOutboxOperationInput } from '@/shared/sync/outbox-operation';
 
 export type ProfileMappingIssueReason =
   | 'missingField'
@@ -375,4 +376,112 @@ export function mapUserProfileToTrickStateUpsertInputs(
     // from at least one of the two source arrays.
     is_manually_unlocked: manuallyUnlockedTrickIds.includes(trickId),
   }));
+}
+
+function extractScalarFields(profile: UserProfile): ProfileScalarFields {
+  // Spread-omit rather than destructure-with-underscore-prefixes so this
+  // stays correct if UserProfile grows another scalar field later without
+  // anyone needing to remember to update this function.
+  const { selectedTrickIds: _selectedTrickIds, manuallyUnlockedTrickIds: _manuallyUnlockedTrickIds, ...scalarFields } =
+    profile;
+  return scalarFields;
+}
+
+function scalarFieldsEqual(a: ProfileScalarFields, b: ProfileScalarFields): boolean {
+  // Every field on ProfileScalarFields is plain JSON-serializable data
+  // (booleans, numbers, strings, or the small LastSesh shape) constructed
+  // exclusively by the trusted reducer -- deep-equality via JSON is safe and
+  // avoids hand-writing a field-by-field comparator that drifts from the
+  // model as fields are added.
+  return JSON.stringify(a) === JSON.stringify(b);
+}
+
+interface TrickStateFlags {
+  readonly isSelected: boolean;
+  readonly isManuallyUnlocked: boolean;
+}
+
+function trickStateFlagsByTrickId(
+  upsertInputs: readonly UserTrickStateUpsertInput[],
+): Map<string, TrickStateFlags> {
+  const map = new Map<string, TrickStateFlags>();
+  for (const input of upsertInputs) {
+    map.set(input.trick_id, {
+      isSelected: input.is_selected ?? false,
+      isManuallyUnlocked: input.is_manually_unlocked ?? false,
+    });
+  }
+  return map;
+}
+
+/**
+ * Pure diff: given a `UserProfile` before and after a local mutation, emits
+ * the outbox operations that would bring the server up to date. Stable,
+ * deterministic op order (scalar op if any first, then trick ops in
+ * ascending trick-id order) purely so downstream callers/tests are not
+ * flaky -- order otherwise has no semantic meaning since each op targets a
+ * distinct `recordId`.
+ *
+ * `userId` is used as `recordId` for the scalar `profile` row -- this is
+ * what lets the push adapter route "is this the profile row or a
+ * trick-state row?" by a single `request.recordId === userId` check, since
+ * `userId` is always a UUID (`isValidVerifiedUserId`) and no trick id
+ * (standard or `custom-<...>`) is ever UUID-shaped.
+ */
+export function diffProfileForOutboxOperations(
+  previous: UserProfile,
+  next: UserProfile,
+  userId: string,
+): readonly NewOutboxOperationInput[] {
+  const operations: NewOutboxOperationInput[] = [];
+
+  const previousScalarFields = extractScalarFields(previous);
+  const nextScalarFields = extractScalarFields(next);
+  if (!scalarFieldsEqual(previousScalarFields, nextScalarFields)) {
+    operations.push({
+      domain: 'profile',
+      operationType: 'upsert',
+      recordId: userId,
+      payload: mapUserProfileToProfileUpsertInput(next, userId) as unknown as Record<string, unknown>,
+    });
+  }
+
+  const previousTrickStates = trickStateFlagsByTrickId(mapUserProfileToTrickStateUpsertInputs(previous, userId));
+  const nextTrickStateInputs = mapUserProfileToTrickStateUpsertInputs(next, userId);
+  const nextTrickStates = trickStateFlagsByTrickId(nextTrickStateInputs);
+
+  const nextTrickStateInputsByTrickId = new Map(nextTrickStateInputs.map((input) => [input.trick_id, input]));
+
+  const trickIdsInStableOrder = Array.from(
+    new Set([...previousTrickStates.keys(), ...nextTrickStates.keys()]),
+  ).sort();
+
+  for (const trickId of trickIdsInStableOrder) {
+    const previousFlags = previousTrickStates.get(trickId);
+    const nextFlags = nextTrickStates.get(trickId);
+
+    if (nextFlags === undefined) {
+      // Present before, absent now: the trick was fully deselected and
+      // manually-unlock-removed in one diff.
+      operations.push({ domain: 'profile', operationType: 'delete', recordId: trickId, payload: null });
+      continue;
+    }
+
+    if (
+      previousFlags === undefined ||
+      previousFlags.isSelected !== nextFlags.isSelected ||
+      previousFlags.isManuallyUnlocked !== nextFlags.isManuallyUnlocked
+    ) {
+      const input = nextTrickStateInputsByTrickId.get(trickId);
+      if (input === undefined) continue; // unreachable: trickId came from nextTrickStates itself
+      operations.push({
+        domain: 'profile',
+        operationType: 'upsert',
+        recordId: trickId,
+        payload: input as unknown as Record<string, unknown>,
+      });
+    }
+  }
+
+  return operations;
 }

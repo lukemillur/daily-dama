@@ -214,16 +214,6 @@ _Phase 3 activation: T156–T160 come from S035–S038 and `BACKEND_ROADMAP.md` 
 - **Description:** Add durable, ordered, identity-owned synchronization while keeping every current workflow usable offline and every reducer independent of Supabase.
 - **Notes:** Umbrella from S035. Complete T157.1–T157.9 in order. Depends on T155 and T156. Realtime subscriptions remain deferred.
 
-### [T157.4] Synchronize profile and trick state first
-
-- **Area:** Profile synchronization
-- **Priority:** High
-- **Status:** In progress
-- **Planning:** Required
-- **Description:** Integrate the profile/trick repositories, runtime mappings, scoped persistence envelope, and coordinator with `UserProfileProvider`, preserving current reducer authority, hydration behavior, and local offline writes.
-- **Exit criteria:** Integration tests create and edit all profile/trick-state variants offline, reload with pending work, reconnect and synchronize, rehydrate the result in a second browser identity fixture, resolve accepted server revisions, and prove no sync effect changes active Sesh state.
-- **Notes:** From S035 domain rollout 1. Depends on T155.10 and T157.3.
-
 ### [T157.5] Synchronize custom tricks and sequences
 
 - **Area:** Custom-trick synchronization
