@@ -11,7 +11,7 @@ import {
 } from '@/features/auth/state/auth-provider';
 
 const mockGetSupabaseClient = jest.fn();
-jest.mock('@/features/auth/persistence/supabase-client', () => ({
+jest.mock('@/shared/supabase/supabase-client', () => ({
   getSupabaseClient: () => mockGetSupabaseClient(),
 }));
 

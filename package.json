@@ -53,7 +53,8 @@
     "test": "jest --runInBand",
     "test:workflow": "node --test '.claude/scripts/test/*.test.mjs'",
     "test:data-api": "node --test 'supabase/tests/data-api/**/*.test.mjs'",
-    "test:db": "node supabase/tests/run-db-tests.mjs"
+    "test:db": "node supabase/tests/run-db-tests.mjs",
+    "db:generate-types": "node supabase/scripts/generate-database-types.mjs"
   },
   "jest": {
     "preset": "jest-expo",

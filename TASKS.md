@@ -209,16 +209,6 @@ _Phase 2 activation: T155 comes from S034 and `BACKEND_ROADMAP.md` Phase 2. Its 
 - **Description:** Represent all persisted Daily Dama domains in a constrained, typed Postgres/Data API boundary before any provider begins synchronization.
 - **Notes:** Umbrella from S034. Complete T155.1–T155.13. No production migrations or live user data exist yet.
 
-### [T155.9] Generate database types and define cloud repository contracts
-
-- **Area:** Frontend cloud data boundary
-- **Priority:** High
-- **Status:** In progress
-- **Planning:** Required
-- **Description:** Add deterministic Supabase TypeScript type generation and define one cloud repository contract per existing persistent domain, keeping generated row types, network errors, and Supabase clients outside reducers and domain models.
-- **Exit criteria:** A documented generation command produces a stable checked-in type file from a clean local reset; type tests or compilation prove each domain repository exposes typed paginated reads and mutation results without leaking Supabase query builders into providers or reducers.
-- **Notes:** From S034 and roadmap Phase 2 frontend items 1 and 3. Depends on T155.8.
-
 ### [T155.10] Map profile and trick-state rows at the runtime boundary
 
 - **Area:** Profile cloud mapping
