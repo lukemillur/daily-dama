@@ -213,7 +213,7 @@ _Phase 2 activation: T155 comes from S034 and `BACKEND_ROADMAP.md` Phase 2. Its 
 
 - **Area:** Custom tricks cloud mapping
 - **Priority:** High
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** Implement pure mappings and runtime validation for standalone custom tricks and sequences while preserving stored step-name snapshots and rejecting nested sequences or source-name re-resolution.
 - **Exit criteria:** Unit tests round-trip every valid custom-trick variant, reject malformed rows and nested sequences, retain stored step names after source trick rename/deletion fixtures, and prove mapping does not mutate domain or row inputs.
