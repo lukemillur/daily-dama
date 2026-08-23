@@ -4,6 +4,24 @@ Completed entries move here from `TASKS.md`'s `Backlog`, in the same commit that
 
 Entries keep their content as it was at completion. Don't retroactively edit a description or exit criteria after the fact; if something about a completed task turns out to be wrong or misleading, note that in a new entry or in code, not by rewriting history here.
 
+### [T155] Establish the secure cloud data foundation
+
+- **Area:** Supabase database
+- **Priority:** High
+- **Status:** Done
+- **Description:** Represent all persisted Daily Dama domains in a constrained, typed Postgres/Data API boundary before any provider begins synchronization.
+- **Notes:** Umbrella from S034. Complete T155.1–T155.13. No production migrations or live user data exist yet. All thirteen children (T155.1–T155.13) are done.
+
+### [T155.13] Map goal and note rows at the runtime boundary
+
+- **Area:** Goals / notes cloud mapping
+- **Priority:** High
+- **Status:** Done
+- **Planning:** Required
+- **Description:** Implement pure mappings and runtime validation for count/time goals and notes, including tombstones, revisions, optional practice-session association, and authoritative name snapshots.
+- **Exit criteria:** Unit tests round-trip all goal/note variants and tombstones, reject ambiguous variants, stale or malformed revisions, invalid session associations, and foreign-user rows, and prove neither domain state nor mutation payload preparation is mutated. Confirmed: new `src/features/goals/persistence/goal-cloud-mapping.ts` and `src/features/notes/persistence/note-cloud-mapping.ts` mirror T155.10/T155.11/T155.12's discriminated-Result pattern. Both introduce a tombstone-aware `GoalCloudEntry`/`NoteCloudEntry` (`'active' | 'deleted'`) that reuses the full `Goal`/`Note` snapshot for both statuses, so a tombstoned row round-trips to a first-class valid representation rather than absent/invalid. Row->domain mappers reject ambiguous variants mirroring the DB's `goals_count_shape`/`goals_time_shape` CHECK constraints (`'ambiguousVariant'`), malformed/stale-shaped revisions (`'invalidRevision'`), invalid `practice_session_id` shape (`'invalidSessionAssociation'`, non-blank-string-only, no stronger contract than the DB's own CHECK), and foreign-user rows first. New `prepareGoalDeletionPatch`/`prepareNoteDeletionPatch`/`prepareNoteEditPatch` mutation-payload-preparation functions reject preparing a mutation against an already-tombstoned known entry (`'alreadyDeleted'`, the "stale mutation" case mirroring the DB trigger's unconditional rejection) or a malformed revision, take `deletedAtMs` as an explicit parameter rather than calling `Date.now()` internally, and never mutate their inputs. `goal-cloud-mapping.type-check.ts`/`note-cloud-mapping.type-check.ts` (tsc-only, not jest-collected) prove `invalid` branches can't access their success payload without narrowing, `'active'` entries reject `.meta.deletedAt` access, and only server-owned columns are optional on the insert types. `goal-cloud-mapping.test.ts`/`note-cloud-mapping.test.ts` (71 cases total) cover round-trips for both goal kinds and both note practice-session-association states, tombstone round-trips, ambiguous-variant/out-of-range/malformed-revision/malformed-deleted_at/foreign-user/invalid-session-association/updated_at-before-created_at rejection, batch duplicate-id detection and order preservation with mixed active+tombstoned entries, insert-input field mapping and server-owned-column omission, mutation-prep success/rejection paths, and no-input-mutation proofs for frozen domain values, rows, and cloud entries. Two small additive exports (`isNormalizedText`/`isFiniteNonNegative`/`isPositiveInteger` in `goal-persistence.ts`, `isNormalizedText`/`isFiniteNonNegative` in `note-persistence.ts`) were made first so the new mapping files could reuse them. Full verification: `node .claude/scripts/verify.mjs` (4/4 steps: test, lint, typecheck, web export) passes clean.
+- **Notes:** From S034. Depends on T155.9. Provider integration belongs to T157.
+
 ### [T155.12] Map immutable practice-session rows at the runtime boundary
 
 - **Area:** Practice-history cloud mapping

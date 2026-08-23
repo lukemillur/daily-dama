@@ -201,23 +201,6 @@ _Phase 1/4 shared account-maintenance activation: T154 comes from S033 and the c
 
 _Phase 2 activation: T155 comes from S034 and `BACKEND_ROADMAP.md` Phase 2. Its thirteen S-sized children establish the database security boundary, model all six resources, prove grants/RLS and constraints, generate typed repository contracts, and add pure runtime mappings before any provider synchronizes. The sequence is dependency-driven: schema and tests precede generated types and mappings; existing reducer authority, hydration fallback, and skipped-initial-write behavior remain unchanged._
 
-### [T155] Establish the secure cloud data foundation
-
-- **Area:** Supabase database
-- **Priority:** High
-- **Status:** Not started
-- **Description:** Represent all persisted Daily Dama domains in a constrained, typed Postgres/Data API boundary before any provider begins synchronization.
-- **Notes:** Umbrella from S034. Complete T155.1–T155.13. No production migrations or live user data exist yet.
-
-### [T155.13] Map goal and note rows at the runtime boundary
-
-- **Area:** Goals / notes cloud mapping
-- **Priority:** High
-- **Status:** In progress
-- **Planning:** Required
-- **Description:** Implement pure mappings and runtime validation for count/time goals and notes, including tombstones, revisions, optional practice-session association, and authoritative name snapshots.
-- **Exit criteria:** Unit tests round-trip all goal/note variants and tombstones, reject ambiguous variants, stale or malformed revisions, invalid session associations, and foreign-user rows, and prove neither domain state nor mutation payload preparation is mutated.
-- **Notes:** From S034. Depends on T155.9. Provider integration belongs to T157.
 
 ---
 
