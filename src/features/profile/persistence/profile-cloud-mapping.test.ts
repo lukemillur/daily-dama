@@ -4,6 +4,7 @@ import type { UserProfile } from '@/features/profile/model/user-profile';
 import type { ProfileRow, UserTrickStateRow } from '@/features/profile/persistence/profile-cloud-repository';
 import {
   composeUserProfileFromCloudRows,
+  diffProfileForOutboxOperations,
   mapProfileRowToDomainFields,
   mapTrickStateRowsToDomainFields,
   mapUserProfileToProfileUpsertInput,
@@ -473,5 +474,72 @@ describe('no input mutation', () => {
 
     expect(JSON.stringify(profileRow)).toBe(profileRowBefore);
     expect(JSON.stringify(trickStateRows)).toBe(trickStateRowsBefore);
+  });
+});
+
+describe('diffProfileForOutboxOperations', () => {
+  const BASE: UserProfile = { hasCompletedOnboarding: false, selectedTrickIds: [] };
+
+  it('emits no operations when nothing relevant changed', () => {
+    const ops = diffProfileForOutboxOperations(BASE, { ...BASE }, USER_ID);
+    expect(ops).toEqual([]);
+  });
+
+  it('emits a scalar-only upsert when only a scalar field changed', () => {
+    const next: UserProfile = { ...BASE, hasCompletedOnboarding: true, kenteiRank: 5 };
+    const ops = diffProfileForOutboxOperations(BASE, next, USER_ID);
+    expect(ops).toHaveLength(1);
+    expect(ops[0]).toMatchObject({ domain: 'profile', operationType: 'upsert', recordId: USER_ID });
+    expect(ops[0].payload).toMatchObject({ has_completed_onboarding: true, kentei_rank: 5 });
+  });
+
+  it('emits an upsert when a trick is added', () => {
+    const next: UserProfile = { ...BASE, selectedTrickIds: ['trick-1'] };
+    const ops = diffProfileForOutboxOperations(BASE, next, USER_ID);
+    expect(ops).toHaveLength(1);
+    expect(ops[0]).toMatchObject({ domain: 'profile', operationType: 'upsert', recordId: 'trick-1' });
+    expect(ops[0].payload).toMatchObject({ trick_id: 'trick-1', is_selected: true, is_manually_unlocked: false });
+  });
+
+  it('emits a delete when a trick is removed entirely', () => {
+    const previous: UserProfile = { ...BASE, selectedTrickIds: ['trick-1'] };
+    const next: UserProfile = { ...BASE, selectedTrickIds: [] };
+    const ops = diffProfileForOutboxOperations(previous, next, USER_ID);
+    expect(ops).toHaveLength(1);
+    expect(ops[0]).toEqual({ domain: 'profile', operationType: 'delete', recordId: 'trick-1', payload: null });
+  });
+
+  it('emits an upsert when a trick flag changes without full removal', () => {
+    const previous: UserProfile = { ...BASE, selectedTrickIds: ['trick-1'] };
+    const next: UserProfile = { ...BASE, selectedTrickIds: [], manuallyUnlockedTrickIds: ['trick-1'] };
+    const ops = diffProfileForOutboxOperations(previous, next, USER_ID);
+    expect(ops).toHaveLength(1);
+    expect(ops[0]).toMatchObject({ domain: 'profile', operationType: 'upsert', recordId: 'trick-1' });
+    expect(ops[0].payload).toMatchObject({ is_selected: false, is_manually_unlocked: true });
+  });
+
+  it('handles a batch of several trick ids and scalar changes at once, with a stable, deterministic op order', () => {
+    const previous: UserProfile = {
+      ...BASE,
+      selectedTrickIds: ['trick-b', 'trick-c'],
+      manuallyUnlockedTrickIds: [],
+    };
+    const next: UserProfile = {
+      ...BASE,
+      hasCompletedOnboarding: true,
+      kenteiRank: 3,
+      selectedTrickIds: ['trick-a', 'trick-b'],
+      manuallyUnlockedTrickIds: ['trick-d'],
+    };
+    // trick-a: added (upsert). trick-b: unchanged (selected both times, no op).
+    // trick-c: removed entirely (delete). trick-d: added via manual unlock (upsert).
+    const ops = diffProfileForOutboxOperations(previous, next, USER_ID);
+
+    expect(ops.map((op) => ({ recordId: op.recordId, operationType: op.operationType }))).toEqual([
+      { recordId: USER_ID, operationType: 'upsert' },
+      { recordId: 'trick-a', operationType: 'upsert' },
+      { recordId: 'trick-c', operationType: 'delete' },
+      { recordId: 'trick-d', operationType: 'upsert' },
+    ]);
   });
 });

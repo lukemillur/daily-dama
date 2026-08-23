@@ -85,6 +85,41 @@ export function applyLocalMutation<State>(
   };
 }
 
+// Like applyLocalMutation, but coalesces to at most one pending operation
+// per (domain, recordId) instead of always appending. A burst of rapid local
+// edits to the same record (e.g. toggling one trick's selection on/off
+// repeatedly offline) must not pile up N distinct pending outbox operations
+// for that recordId -- doing so would require pushOutboxOperations' callers
+// to track a mid-batch-mutating expected revision per operation, which the
+// transport contract doesn't support. Any existing pending entry for
+// `operationInput.recordId` (within this envelope's own domain -- operations
+// for other domains never coexist in one envelope) is removed first, then
+// the fresh one is appended, preserving FIFO order for every other record.
+export function replacePendingOperationForRecord<State>(
+  envelope: SyncEnvelope<State>,
+  identity: Identity,
+  nextState: State,
+  operationInput: NewOutboxOperationInput,
+  createdAt: number,
+  operationId: string = createOutboxOperationId(createdAt),
+): SyncEnvelopeMutationResult<State> {
+  if (!checkIdentity(envelope, identity)) return { status: 'rejected', reason: 'identityMismatch' };
+  if (operationInput.domain !== envelope.domain) return { status: 'rejected', reason: 'domainMismatch' };
+
+  const operation = createOutboxOperation(operationId, operationInput, createdAt);
+  const outboxWithoutExistingPending = envelope.outbox.filter(
+    (op) => op.recordId !== operationInput.recordId,
+  );
+  return {
+    status: 'applied',
+    envelope: {
+      ...envelope,
+      state: nextState,
+      outbox: [...outboxWithoutExistingPending, operation],
+    },
+  };
+}
+
 // Acknowledging removes the operation from the outbox entirely -- there is
 // no persisted "acknowledged" status to accumulate forever. While present in
 // `outbox`, an operation is pending; once a server ack is applied here, it

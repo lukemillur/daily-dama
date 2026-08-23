@@ -13,6 +13,7 @@ import {
   deserializeSyncEnvelope,
   loadSyncEnvelope,
   recordOutboxOperationAttempt,
+  replacePendingOperationForRecord,
   saveSyncEnvelope,
   serializeSyncEnvelope,
   updateSyncCursor,
@@ -265,6 +266,83 @@ describe('SyncEnvelope FIFO order', () => {
     expect(persisted).toHaveLength(2);
     const final = persisted[persisted.length - 1];
     expect(final.outbox.map((op) => op.recordId)).toEqual(['goal-a', 'goal-b']);
+  });
+});
+
+describe('SyncEnvelope replacePendingOperationForRecord', () => {
+  it('replaces (not appends) a pending entry for the same recordId', () => {
+    const envelope = createInitialSyncEnvelope('goals', GUEST_IDENTITY, INITIAL_STATE);
+    const first = replacePendingOperationForRecord(
+      envelope,
+      GUEST_IDENTITY,
+      { items: ['goal-1'] },
+      operationInput('goal-1', { name: 'first' }),
+      1000,
+      'op-first',
+    );
+    expect(first.status).toBe('applied');
+    if (first.status !== 'applied') return;
+    expect(first.envelope.outbox).toHaveLength(1);
+
+    const second = replacePendingOperationForRecord(
+      first.envelope,
+      GUEST_IDENTITY,
+      { items: ['goal-1'] },
+      operationInput('goal-1', { name: 'second' }),
+      1100,
+      'op-second',
+    );
+    expect(second.status).toBe('applied');
+    if (second.status !== 'applied') return;
+    expect(second.envelope.outbox).toHaveLength(1);
+    expect(second.envelope.outbox[0]).toMatchObject({ operationId: 'op-second', payload: { name: 'second' } });
+  });
+
+  it('still appends normally for a different recordId', () => {
+    const envelope = createInitialSyncEnvelope('goals', GUEST_IDENTITY, INITIAL_STATE);
+    const first = replacePendingOperationForRecord(
+      envelope,
+      GUEST_IDENTITY,
+      { items: ['goal-1'] },
+      operationInput('goal-1'),
+      1000,
+      'op-1',
+    );
+    expect(first.status).toBe('applied');
+    if (first.status !== 'applied') return;
+
+    const second = replacePendingOperationForRecord(
+      first.envelope,
+      GUEST_IDENTITY,
+      { items: ['goal-1', 'goal-2'] },
+      operationInput('goal-2'),
+      1100,
+      'op-2',
+    );
+    expect(second.status).toBe('applied');
+    if (second.status !== 'applied') return;
+    expect(second.envelope.outbox.map((op) => op.operationId)).toEqual(['op-1', 'op-2']);
+  });
+
+  it('rejects identity/domain mismatch the same as applyLocalMutation', () => {
+    const envelope = createInitialSyncEnvelope('goals', USER_A_IDENTITY, INITIAL_STATE);
+    const identityMismatch = replacePendingOperationForRecord(
+      envelope,
+      USER_B_IDENTITY,
+      { items: ['goal-1'] },
+      operationInput('goal-1'),
+      1000,
+    );
+    expect(identityMismatch).toEqual({ status: 'rejected', reason: 'identityMismatch' });
+
+    const domainMismatch = replacePendingOperationForRecord(
+      createInitialSyncEnvelope('goals', GUEST_IDENTITY, INITIAL_STATE),
+      GUEST_IDENTITY,
+      { items: ['x'] },
+      { domain: 'notes', operationType: 'upsert', recordId: 'note-1', payload: { body: 'x' } },
+      1000,
+    );
+    expect(domainMismatch).toEqual({ status: 'rejected', reason: 'domainMismatch' });
   });
 });
 

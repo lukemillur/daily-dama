@@ -14,8 +14,13 @@ import {
   loadUserProfile,
   saveUserProfile,
 } from '@/features/profile/persistence/user-profile-persistence';
+import { createProfileSyncTransportAdapter } from '@/features/profile/persistence/profile-sync-transport';
+import { useProfileDomainSync } from '@/features/profile/state/use-profile-domain-sync';
 import type { SeshPlan } from '@/features/sesh/model/sesh';
+import { useIdentityHandle } from '@/shared/persistence/identity-provider';
 import { useIdentityScopedDomain } from '@/shared/persistence/use-identity-scoped-domain';
+import { getSupabaseClient } from '@/shared/supabase/supabase-client';
+import type { DomainSyncRecord, SyncTrigger } from '@/shared/sync/coordinator';
 
 interface UserProfileActions {
   readonly toggleSelectedTrick: (trickId: string) => void;
@@ -43,6 +48,14 @@ interface UserProfileActions {
 const UserProfileStateContext = createContext<UserProfile | undefined>(undefined);
 const UserProfileActionsContext = createContext<UserProfileActions | undefined>(undefined);
 
+export interface UserProfileSync {
+  readonly runSync: (trigger: SyncTrigger) => Promise<DomainSyncRecord>;
+  readonly isSyncing: boolean;
+  readonly lastResult: DomainSyncRecord | undefined;
+}
+
+const UserProfileSyncContext = createContext<UserProfileSync | undefined>(undefined);
+
 export function UserProfileProvider({ children }: PropsWithChildren) {
   const { state: profile, dispatch, hasHydrated } = useIdentityScopedDomain({
     reducer: userProfileReducer,
@@ -59,6 +72,27 @@ export function UserProfileProvider({ children }: PropsWithChildren) {
     onSaveFailed: (error) => {
       console.warn('Unable to persist the user profile.', error);
     },
+  });
+
+  // Additive: a second, parallel identity-scoped domain instance tracking
+  // sync bookkeeping (T157.4). The primary reducer above stays completely
+  // untouched and remains the sole source of truth for the rendered
+  // `UserProfile` -- this hook only pulls/pushes in the background and, on
+  // a safe pull-adopt, dispatches the same `profileRestored` action
+  // hydration itself uses.
+  const { identity } = useIdentityHandle();
+  const getTransport = useCallback(() => {
+    if (identity.kind !== 'user') return undefined;
+    const client = getSupabaseClient();
+    if (client === null) return undefined;
+    return createProfileSyncTransportAdapter(client, identity.userId);
+  }, [identity]);
+
+  const sync = useProfileDomainSync({
+    profile,
+    hasHydratedProfile: hasHydrated,
+    dispatchProfile: dispatch,
+    getTransport,
   });
 
   const toggleSelectedTrick = useCallback((trickId: string) => {
@@ -167,7 +201,7 @@ export function UserProfileProvider({ children }: PropsWithChildren) {
   return (
     <UserProfileStateContext.Provider value={profile}>
       <UserProfileActionsContext.Provider value={actions}>
-        {children}
+        <UserProfileSyncContext.Provider value={sync}>{children}</UserProfileSyncContext.Provider>
       </UserProfileActionsContext.Provider>
     </UserProfileStateContext.Provider>
   );
@@ -213,4 +247,16 @@ export function useUserProfileActions() {
   }
 
   return actions;
+}
+
+// Exposed for a future manual-retry affordance (T160.1) and for tests --
+// deliberately no UI consumes this yet.
+export function useUserProfileSync(): UserProfileSync {
+  const sync = useContext(UserProfileSyncContext);
+
+  if (!sync) {
+    throw new Error('useUserProfileSync must be used within UserProfileProvider.');
+  }
+
+  return sync;
 }
