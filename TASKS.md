@@ -209,16 +209,6 @@ _Phase 2 activation: T155 comes from S034 and `BACKEND_ROADMAP.md` Phase 2. Its 
 - **Description:** Represent all persisted Daily Dama domains in a constrained, typed Postgres/Data API boundary before any provider begins synchronization.
 - **Notes:** Umbrella from S034. Complete T155.1–T155.13. No production migrations or live user data exist yet.
 
-### [T155.12] Map immutable practice-session rows at the runtime boundary
-
-- **Area:** Practice-history cloud mapping
-- **Priority:** High
-- **Status:** In progress
-- **Planning:** Required
-- **Description:** Implement pure mappings and runtime validation for immutable completed-Sesh records, preserving historical trick snapshots, client-fact start/end timing, active duration, origin, and deterministic pagination identity.
-- **Exit criteria:** Unit tests round-trip timed/open-ended/assessment records, reject malformed timing and duplicate/foreign-user rows, preserve historical names, and confirm server receipt timestamps never replace client domain timestamps.
-- **Notes:** From S034. Depends on T155.9. Stats must continue deriving totals from immutable domain records.
-
 ### [T155.13] Map goal and note rows at the runtime boundary
 
 - **Area:** Goals / notes cloud mapping
