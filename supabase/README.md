@@ -39,9 +39,9 @@ npx --yes supabase@2.115.0 test db --local
 The first `test db --local` run pulls the `public.ecr.aws/supabase/pg_prove`
 Docker image, so it needs network access once. Always finish on another
 `db reset` so no fixture rows or manually-dropped constraints from a
-regression check linger in the running local DB. T155.8 will consolidate
-this into one repeatable command as more tables/tests are added; until then,
-this two-command sequence is how migration tests are run locally.
+regression check linger in the running local DB. See "One repeatable
+command" below for the consolidated way to run this alongside every other
+migration/security test source.
 
 **Never commit the output of `supabase status`.** If you save the printed
 anon/service keys anywhere for manual testing, put them in `.env.local` at the
@@ -81,16 +81,57 @@ of either suite.
 
 `supabase/tests/data-api/` also carries T155.7's authorization suite
 (anonymous denial, cross-user isolation, ownership-change rejection, and each
-table's per-operation grant matrix) alongside the JSON-invariant suite above,
-run via the same `yarn test:data-api` command — both concerns live in the
-same directory and share the same run steps.
+table's per-operation grant matrix) and T155.8's pagination fixture
+(`t155_8_pagination.test.mjs`: 1,200 `practice_sessions` rows for one user,
+paginated past PostgREST's 1,000-row `max_rows` cap) alongside the
+JSON-invariant suite above, run via the same `yarn test:data-api` command —
+all three concerns live in the same directory and share the same run steps.
 
 Like pgTAP, `yarn test:data-api` is **not** part of `node .claude/scripts/
 verify.mjs` or the standard `yarn test`/`lint`/`tsc`/`export` sequence: it
 requires a running local Supabase/Docker stack that CI and the standard
-verification loop do not assume. T155.8 will consolidate every security/
-migration test source (pgTAP, this suite, and later Data API suites) into one
-repeatable command; until then, run it explicitly as shown above.
+verification loop do not assume. Run it explicitly as shown above, or as
+part of the consolidated `yarn test:db` command below.
+
+## One repeatable command
+
+`yarn test:db` (`supabase/tests/run-db-tests.mjs`) consolidates the
+clean-reset, pgTAP, and Data API steps above into one command, suitable for
+local work and CI (non-interactive, exit-code-driven — it is not itself
+wired into a CI workflow, since none exists yet that references Supabase).
+It requires Docker/the local Supabase stack, same as the individual commands
+above; if the stack isn't started yet, the command starts it itself.
+
+```sh
+yarn test:db
+```
+
+In order: `supabase start` (idempotent), `db reset`, pgTAP (`test db
+--local`), the Data API suite (`yarn test:data-api`, including the T155.8
+pagination fixture), then a final cleanup `db reset` that always runs even
+if an earlier step failed — so the stack is never left dirty by a failed
+run. The command's own exit code reflects only the first four steps; a
+passing cleanup reset never masks an earlier failure, and a failed cleanup
+reset after an otherwise-passing run still exits non-zero.
+
+### Mutation check
+
+`yarn test:db -- --mutation-check` proves the whole harness fails closed
+against a real, live policy regression — not just that today's pgTAP/Data
+API assertions pass. It resets to a clean baseline, deliberately weakens
+`practice_sessions_select_own` (the strictest exposed table's cross-user
+isolation policy) to `using (true)`, reruns the cross-user isolation suite
+expecting it to fail, then always restores the migration-defined policy via
+another `db reset` regardless of the outcome. The script itself exits `0`
+with a "mutation check passed" message if the suite caught the weakened
+policy, or `1` with a "mutation check FAILED" message if it didn't (a real
+coverage gap).
+
+This is noisier than the default run (it prints an expected-looking test
+failure, and it mutates the live local DB, even though it restores it
+afterward) and mutates a real policy, so it is not part of the routine
+per-commit loop. Run it whenever RLS policies change, and periodically as a
+sanity check that the harness still fails closed.
 
 ## Local Auth policy (see `config.toml`)
 
