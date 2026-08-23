@@ -1,8 +1,9 @@
 import { describe, expect, it } from '@jest/globals';
 
-import type { CustomTrick } from '@/features/custom-tricks/model/custom-trick';
+import type { CustomTrick, CustomTrickCollection } from '@/features/custom-tricks/model/custom-trick';
 import type { CustomTrickRow } from '@/features/custom-tricks/persistence/custom-trick-cloud-repository';
 import {
+  diffCustomTricksForOutboxOperations,
   mapCustomTrickCollectionToUpsertInputs,
   mapCustomTrickRowToDomainTrick,
   mapCustomTrickRowsToDomainCollection,
@@ -467,5 +468,119 @@ describe('no input mutation', () => {
 
     expect(JSON.stringify(row)).toBe(rowBefore);
     expect(JSON.stringify(rows)).toBe(rowsBefore);
+  });
+});
+
+describe('diffCustomTricksForOutboxOperations', () => {
+  const STANDALONE: CustomTrick = { id: 'custom-a', kind: 'standalone', name: 'Around the World', kenteiRank: 3 };
+  const SEQUENCE: CustomTrick = {
+    id: 'custom-b',
+    kind: 'sequence',
+    name: 'Morning line',
+    steps: [
+      { kind: 'existingTrick', sourceTrickId: 'big-cup', name: 'Big cup' },
+      { kind: 'customText', name: 'Airplane variation' },
+    ],
+  };
+
+  it('produces no operations for a no-op diff', () => {
+    const collection: CustomTrickCollection = { tricks: [STANDALONE, SEQUENCE] };
+    expect(diffCustomTricksForOutboxOperations(collection, collection, USER_ID)).toEqual([]);
+  });
+
+  it('emits an upsert for a newly added standalone trick', () => {
+    const previous: CustomTrickCollection = { tricks: [] };
+    const next: CustomTrickCollection = { tricks: [STANDALONE] };
+
+    expect(diffCustomTricksForOutboxOperations(previous, next, USER_ID)).toEqual([
+      {
+        domain: 'customTricks',
+        operationType: 'upsert',
+        recordId: STANDALONE.id,
+        payload: mapCustomTrickToUpsertInput(STANDALONE, USER_ID),
+      },
+    ]);
+  });
+
+  it('emits an upsert for a newly added sequence trick', () => {
+    const previous: CustomTrickCollection = { tricks: [] };
+    const next: CustomTrickCollection = { tricks: [SEQUENCE] };
+
+    expect(diffCustomTricksForOutboxOperations(previous, next, USER_ID)).toEqual([
+      {
+        domain: 'customTricks',
+        operationType: 'upsert',
+        recordId: SEQUENCE.id,
+        payload: mapCustomTrickToUpsertInput(SEQUENCE, USER_ID),
+      },
+    ]);
+  });
+
+  it('emits a full-payload upsert (not a partial patch) on name/kentei_rank/steps edits', () => {
+    const editedName: CustomTrick = { ...STANDALONE, name: 'Around the World v2' };
+    const previous: CustomTrickCollection = { tricks: [editedName] };
+
+    const nameChanged = diffCustomTricksForOutboxOperations(previous, { tricks: [STANDALONE] }, USER_ID);
+    expect(nameChanged).toEqual([
+      { domain: 'customTricks', operationType: 'upsert', recordId: STANDALONE.id, payload: mapCustomTrickToUpsertInput(STANDALONE, USER_ID) },
+    ]);
+
+    const editedRank: CustomTrick = { ...STANDALONE, kenteiRank: 9 };
+    const rankChanged = diffCustomTricksForOutboxOperations({ tricks: [STANDALONE] }, { tricks: [editedRank] }, USER_ID);
+    expect(rankChanged).toEqual([
+      { domain: 'customTricks', operationType: 'upsert', recordId: STANDALONE.id, payload: mapCustomTrickToUpsertInput(editedRank, USER_ID) },
+    ]);
+
+    const editedSteps: CustomTrick = {
+      ...SEQUENCE,
+      steps: [...SEQUENCE.steps, { kind: 'customText', name: 'Extra step' }],
+    };
+    const stepsChanged = diffCustomTricksForOutboxOperations({ tricks: [SEQUENCE] }, { tricks: [editedSteps] }, USER_ID);
+    expect(stepsChanged).toEqual([
+      { domain: 'customTricks', operationType: 'upsert', recordId: SEQUENCE.id, payload: mapCustomTrickToUpsertInput(editedSteps, USER_ID) },
+    ]);
+  });
+
+  it('emits a delete for a removed trick', () => {
+    const previous: CustomTrickCollection = { tricks: [STANDALONE] };
+    const next: CustomTrickCollection = { tricks: [] };
+
+    expect(diffCustomTricksForOutboxOperations(previous, next, USER_ID)).toEqual([
+      { domain: 'customTricks', operationType: 'delete', recordId: STANDALONE.id, payload: null },
+    ]);
+  });
+
+  it('handles a batch of several simultaneous changes in stable ascending-id order', () => {
+    const untouched: CustomTrick = { id: 'custom-z', kind: 'standalone', name: 'Untouched' };
+    const removed: CustomTrick = { id: 'custom-m', kind: 'standalone', name: 'Going away' };
+    const editedBefore: CustomTrick = { id: 'custom-c', kind: 'standalone', name: 'Old name' };
+    const editedAfter: CustomTrick = { id: 'custom-c', kind: 'standalone', name: 'New name' };
+    const added: CustomTrick = { id: 'custom-a', kind: 'standalone', name: 'Brand new' };
+
+    const previous: CustomTrickCollection = { tricks: [untouched, removed, editedBefore] };
+    const next: CustomTrickCollection = { tricks: [untouched, editedAfter, added] };
+
+    const operations = diffCustomTricksForOutboxOperations(previous, next, USER_ID);
+
+    expect(operations).toHaveLength(3);
+    expect(operations.map((op) => op.recordId)).toEqual(['custom-a', 'custom-c', 'custom-m']); // ascending id order
+    expect(operations[0]).toEqual({
+      domain: 'customTricks',
+      operationType: 'upsert',
+      recordId: 'custom-a',
+      payload: mapCustomTrickToUpsertInput(added, USER_ID),
+    });
+    expect(operations[1]).toEqual({
+      domain: 'customTricks',
+      operationType: 'upsert',
+      recordId: 'custom-c',
+      payload: mapCustomTrickToUpsertInput(editedAfter, USER_ID),
+    });
+    expect(operations[2]).toEqual({
+      domain: 'customTricks',
+      operationType: 'delete',
+      recordId: 'custom-m',
+      payload: null,
+    });
   });
 });

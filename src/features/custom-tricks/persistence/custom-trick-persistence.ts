@@ -36,7 +36,7 @@ export function isSequenceStep(value: unknown): value is SequenceStep {
   return value.kind === 'existingTrick' && isNormalizedText(value.sourceTrickId);
 }
 
-function isCustomTrick(value: unknown): value is CustomTrick {
+export function isCustomTrick(value: unknown): value is CustomTrick {
   if (!isRecord(value)) return false;
 
   const { id, kind, name, kenteiRank, steps } = value;
@@ -47,6 +47,20 @@ function isCustomTrick(value: unknown): value is CustomTrick {
   if (kind === 'standalone') return steps === undefined;
   if (kind !== 'sequence' || !Array.isArray(steps) || steps.length < 2) return false;
   return steps.every(isSequenceStep);
+}
+
+// T157.5: validates an in-memory (already-parsed) value as a
+// `CustomTrickCollection`, unlike `deserializeCustomTricks` which only
+// operates on a JSON *string*. Used as the `SyncEnvelopeCodec<
+// CustomTrickSyncSnapshot>.isState` predicate's `collection` field check --
+// the sync envelope's `state` is stored as a plain object inside a larger
+// JSON document, not as a standalone serialized string.
+export function isCustomTrickCollection(value: unknown): value is CustomTrickCollection {
+  if (!isRecord(value) || !Array.isArray(value.tricks) || !value.tricks.every(isCustomTrick)) {
+    return false;
+  }
+  const ids = value.tricks.map((trick) => trick.id);
+  return new Set(ids).size === ids.length;
 }
 
 export function serializeCustomTricks(collection: CustomTrickCollection) {
