@@ -7,8 +7,9 @@
 // rationale; not re-derived verbatim here.
 
 import { isNormalizedText as isNormalizedTextNote } from '@/features/notes/persistence/note-persistence';
-import type { Note } from '@/features/notes/model/note';
+import type { Note, NoteCollection } from '@/features/notes/model/note';
 import type { NoteCloudPatch, NoteInsert, NoteRow } from '@/features/notes/persistence/note-cloud-repository';
+import type { NewOutboxOperationInput } from '@/shared/sync/outbox-operation';
 
 export type NoteMappingIssueReason =
   | 'wrongType'
@@ -302,4 +303,70 @@ export function prepareNoteEditPatch(known: NoteCloudEntry, body: string): NoteE
   }
 
   return { status: 'prepared', patch: { body } };
+}
+
+export type NoteCollectionMappingResult =
+  | { readonly status: 'invalid'; readonly issues: readonly NoteMappingIssue[] }
+  | { readonly status: 'valid'; readonly collection: NoteCollection };
+
+/**
+ * T157.8: composes a `NoteCollection` (active notes only) from pulled
+ * `notes` rows, for the driver hook's pull-adopt branch. Mirrors
+ * `mapGoalRowsToDomainCollection` exactly -- delegates to
+ * `mapNoteRowsToDomainEntries` for validation, then filters to `'active'`
+ * entries so a tombstoned row never resurrects into the locally-rendered
+ * `NoteCollection`.
+ */
+export function mapNoteRowsToDomainCollection(
+  rows: readonly NoteRow[],
+  expectedUserId: string,
+): NoteCollectionMappingResult {
+  const result = mapNoteRowsToDomainEntries(rows, expectedUserId);
+  if (result.status === 'invalid') return result;
+
+  const notes = result.entries
+    .filter((entry): entry is Extract<typeof entry, { status: 'active' }> => entry.status === 'active')
+    .map((entry) => entry.note);
+
+  return { status: 'valid', collection: { notes } };
+}
+
+/**
+ * T157.8: pure diff between a `NoteCollection` before and after a local
+ * mutation, emitting the outbox operations that would bring the server up
+ * to date. Mirrors `diffGoalsForOutboxOperations` exactly: key both sides
+ * by id, sorted-union id order for determinism, missing in `next` ->
+ * delete, new-or-changed (via JSON.stringify inequality) -> upsert.
+ */
+export function diffNotesForOutboxOperations(
+  previous: NoteCollection,
+  next: NoteCollection,
+  userId: string,
+): readonly NewOutboxOperationInput[] {
+  const previousById = new Map(previous.notes.map((note) => [note.id, note]));
+  const nextById = new Map(next.notes.map((note) => [note.id, note]));
+
+  const operations: NewOutboxOperationInput[] = [];
+  const noteIdsInStableOrder = Array.from(new Set([...previousById.keys(), ...nextById.keys()])).sort();
+
+  for (const noteId of noteIdsInStableOrder) {
+    const previousNote = previousById.get(noteId);
+    const nextNote = nextById.get(noteId);
+
+    if (nextNote === undefined) {
+      operations.push({ domain: 'notes', operationType: 'delete', recordId: noteId, payload: null });
+      continue;
+    }
+
+    if (previousNote === undefined || JSON.stringify(previousNote) !== JSON.stringify(nextNote)) {
+      operations.push({
+        domain: 'notes',
+        operationType: 'upsert',
+        recordId: noteId,
+        payload: mapNoteToInsertInput(nextNote, userId) as unknown as Record<string, unknown>,
+      });
+    }
+  }
+
+  return operations;
 }

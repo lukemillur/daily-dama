@@ -38,6 +38,18 @@ function isNote(value: unknown): value is Note {
   return updatedAt >= createdAt;
 }
 
+// T157.8: validates an in-memory (already-parsed) value as a
+// `NoteCollection`, unlike `deserializeNotes` which only operates on a JSON
+// *string*. Used as the `SyncEnvelopeCodec<NoteSyncSnapshot>.isState`
+// predicate's `collection` field check, mirroring `isGoalCollection` exactly.
+export function isNoteCollection(value: unknown): value is NoteCollection {
+  if (!isRecord(value) || !Array.isArray(value.notes) || !value.notes.every(isNote)) {
+    return false;
+  }
+  const ids = value.notes.map((note) => note.id);
+  return new Set(ids).size === ids.length;
+}
+
 export function serializeNotes(collection: NoteCollection) {
   const document: NoteDocumentV1 = {
     version: NOTES_SCHEMA_VERSION,

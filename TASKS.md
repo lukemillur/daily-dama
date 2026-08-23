@@ -214,16 +214,6 @@ _Phase 3 activation: T156–T160 come from S035–S038 and `BACKEND_ROADMAP.md` 
 - **Description:** Add durable, ordered, identity-owned synchronization while keeping every current workflow usable offline and every reducer independent of Supabase.
 - **Notes:** Umbrella from S035. Complete T157.1–T157.9 in order. Depends on T155 and T156. Realtime subscriptions remain deferred.
 
-### [T157.8] Synchronize notes with optimistic revisions and tombstones
-
-- **Area:** Note synchronization
-- **Priority:** High
-- **Status:** Not started
-- **Planning:** Required
-- **Description:** Integrate notes, optional completed-Sesh references, edits, deletion tombstones, and stale-revision detection with the scoped outbox and coordinator while preserving trick/session snapshots.
-- **Exit criteria:** Integration tests create/edit/delete notes offline, retain optional practice-session associations, retry idempotently, defeat stale-device resurrection, rehydrate on a second browser, and continue unrelated note/goal operations when one note conflicts.
-- **Notes:** From S035 domain rollout 5. Depends on T157.7 and the note portion of T155.13.
-
 ### [T157.9] Trigger synchronization without disrupting active practice
 
 - **Area:** Synchronization lifecycle

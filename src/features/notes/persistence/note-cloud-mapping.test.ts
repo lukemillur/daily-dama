@@ -2,7 +2,10 @@ import { describe, expect, it } from '@jest/globals';
 
 import type { Note } from '@/features/notes/model/note';
 import type { NoteRow } from '@/features/notes/persistence/note-cloud-repository';
+import type { NoteCollection } from '@/features/notes/model/note';
 import {
+  diffNotesForOutboxOperations,
+  mapNoteRowsToDomainCollection,
   mapNoteRowToDomainEntry,
   mapNoteRowsToDomainEntries,
   mapNoteToInsertInput,
@@ -426,5 +429,134 @@ describe('no input mutation', () => {
     expect(() => prepareNoteEditPatch(entry, 'Updated body.')).not.toThrow();
 
     expect(JSON.stringify(entry)).toBe(before);
+  });
+});
+
+describe('mapNoteRowsToDomainCollection', () => {
+  it('composes an active-only NoteCollection from a mix of active and tombstoned rows', () => {
+    const active = makeNoteRow({ id: 'note-active' });
+    const tombstoned = makeNoteRow({ id: 'note-tombstoned', deleted_at: DELETED_TIMESTAMP });
+
+    const result = mapNoteRowsToDomainCollection([active, tombstoned], USER_ID);
+    expect(result.status).toBe('valid');
+    if (result.status !== 'valid') return;
+    expect(result.collection.notes.map((note) => note.id)).toEqual(['note-active']);
+  });
+
+  it('returns invalid when any row is malformed, same posture as mapNoteRowsToDomainEntries', () => {
+    const malformed = { ...makeNoteRow(), body: '   ' } as unknown as NoteRow;
+    const result = mapNoteRowsToDomainCollection([malformed], USER_ID);
+    expect(result.status).toBe('invalid');
+  });
+
+  it('returns a valid empty collection for an empty row list', () => {
+    const result = mapNoteRowsToDomainCollection([], USER_ID);
+    expect(result).toEqual({ status: 'valid', collection: { notes: [] } });
+  });
+});
+
+describe('diffNotesForOutboxOperations', () => {
+  const NOTE_A: Note = {
+    id: 'note-a',
+    trickId: 'lighthouse',
+    trickName: 'Lighthouse',
+    body: 'Getting the timing down.',
+    createdAt: TIMESTAMP_MS,
+    updatedAt: TIMESTAMP_MS,
+  };
+  const NOTE_B: Note = {
+    id: 'note-b',
+    trickId: 'big-cup',
+    trickName: 'Big cup',
+    body: 'Almost there.',
+    practiceSessionId: 'session-42',
+    createdAt: TIMESTAMP_MS,
+    updatedAt: TIMESTAMP_MS,
+  };
+
+  it('produces no operations for a no-op diff', () => {
+    const collection: NoteCollection = { notes: [NOTE_A, NOTE_B] };
+    expect(diffNotesForOutboxOperations(collection, collection, USER_ID)).toEqual([]);
+  });
+
+  it('emits an upsert for a newly added note', () => {
+    const previous: NoteCollection = { notes: [] };
+    const next: NoteCollection = { notes: [NOTE_A] };
+
+    expect(diffNotesForOutboxOperations(previous, next, USER_ID)).toEqual([
+      {
+        domain: 'notes',
+        operationType: 'upsert',
+        recordId: NOTE_A.id,
+        payload: mapNoteToInsertInput(NOTE_A, USER_ID),
+      },
+    ]);
+  });
+
+  it('emits a delete for a removed note', () => {
+    const previous: NoteCollection = { notes: [NOTE_A] };
+    const next: NoteCollection = { notes: [] };
+
+    expect(diffNotesForOutboxOperations(previous, next, USER_ID)).toEqual([
+      { domain: 'notes', operationType: 'delete', recordId: NOTE_A.id, payload: null },
+    ]);
+  });
+
+  it('emits a single upsert for an edited note (body changed, same id)', () => {
+    const edited: Note = { ...NOTE_A, body: 'New wording.', updatedAt: LATER_TIMESTAMP_MS };
+    const previous: NoteCollection = { notes: [NOTE_A] };
+    const next: NoteCollection = { notes: [edited] };
+
+    expect(diffNotesForOutboxOperations(previous, next, USER_ID)).toEqual([
+      {
+        domain: 'notes',
+        operationType: 'upsert',
+        recordId: NOTE_A.id,
+        payload: mapNoteToInsertInput(edited, USER_ID),
+      },
+    ]);
+  });
+
+  it('diffs a note carrying a practiceSessionId, keeping it present in the payload', () => {
+    const previous: NoteCollection = { notes: [] };
+    const next: NoteCollection = { notes: [NOTE_B] };
+
+    const operations = diffNotesForOutboxOperations(previous, next, USER_ID);
+    expect(operations).toEqual([
+      {
+        domain: 'notes',
+        operationType: 'upsert',
+        recordId: NOTE_B.id,
+        payload: mapNoteToInsertInput(NOTE_B, USER_ID),
+      },
+    ]);
+    expect((operations[0].payload as Record<string, unknown>).practice_session_id).toBe('session-42');
+  });
+
+  it('diffs a batch of several notes at once, each in stable id-sorted order', () => {
+    const noteZ: Note = { ...NOTE_A, id: 'note-z' };
+    const noteA: Note = { ...NOTE_B, id: 'note-a-new' };
+    const previous: NoteCollection = { notes: [NOTE_A, NOTE_B] };
+    const next: NoteCollection = { notes: [noteZ, noteA] }; // NOTE_A/NOTE_B both removed, two new added
+
+    const operations = diffNotesForOutboxOperations(previous, next, USER_ID);
+    const recordIds = operations.map((op) => op.recordId);
+    expect(recordIds).toEqual([...recordIds].sort());
+    expect(operations).toEqual([
+      { domain: 'notes', operationType: 'delete', recordId: NOTE_A.id, payload: null },
+      {
+        domain: 'notes',
+        operationType: 'upsert',
+        recordId: noteA.id,
+        payload: mapNoteToInsertInput(noteA, USER_ID),
+      },
+      { domain: 'notes', operationType: 'delete', recordId: NOTE_B.id, payload: null },
+      {
+        domain: 'notes',
+        operationType: 'upsert',
+        recordId: noteZ.id,
+        payload: mapNoteToInsertInput(noteZ, USER_ID),
+      },
+    ]);
   });
 });
