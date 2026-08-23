@@ -218,7 +218,7 @@ _Phase 3 activation: T156–T160 come from S035–S038 and `BACKEND_ROADMAP.md` 
 
 - **Area:** Synchronization transport
 - **Priority:** High
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** Add repository-agnostic transport orchestration for stable ordered pagination, mutation-ID-based idempotent retries, optimistic revision checks, tombstones, and application of server-returned revisions/timestamps.
 - **Exit criteria:** Transport tests pull more than 1,000 ordered fixtures without gaps/duplicates, retry a successful write after a simulated lost acknowledgement without duplication, reject stale revisions into a typed conflict, apply authoritative server metadata, and continue unrelated operations after one conflict.
