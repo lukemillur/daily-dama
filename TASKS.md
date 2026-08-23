@@ -218,7 +218,7 @@ _Phase 3 activation: T156–T160 come from S035–S038 and `BACKEND_ROADMAP.md` 
 
 - **Area:** Synchronization orchestration
 - **Priority:** High
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** Implement an explicit coordinator state machine that permits one sync per identity, models cancellation/retry, tags runs with identity generations, and continues safely after contained operation failures.
 - **Exit criteria:** State-machine tests cover overlapping triggers, cancellation, identity change, network failure, retry, partial-domain failure, and stale completion; at most one run owns an identity at a time and no late result can mutate current state after logout or account switching.
