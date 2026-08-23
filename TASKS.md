@@ -213,7 +213,7 @@ _Phase 2 activation: T155 comes from S034 and `BACKEND_ROADMAP.md` Phase 2. Its 
 
 - **Area:** Practice-history cloud mapping
 - **Priority:** High
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** Implement pure mappings and runtime validation for immutable completed-Sesh records, preserving historical trick snapshots, client-fact start/end timing, active duration, origin, and deterministic pagination identity.
 - **Exit criteria:** Unit tests round-trip timed/open-ended/assessment records, reject malformed timing and duplicate/foreign-user rows, preserve historical names, and confirm server receipt timestamps never replace client domain timestamps.
