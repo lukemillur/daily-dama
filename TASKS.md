@@ -213,7 +213,7 @@ _Phase 2 activation: T155 comes from S034 and `BACKEND_ROADMAP.md` Phase 2. Its 
 
 - **Area:** Goals / notes cloud mapping
 - **Priority:** High
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** Implement pure mappings and runtime validation for count/time goals and notes, including tombstones, revisions, optional practice-session association, and authoritative name snapshots.
 - **Exit criteria:** Unit tests round-trip all goal/note variants and tombstones, reject ambiguous variants, stale or malformed revisions, invalid session associations, and foreign-user rows, and prove neither domain state nor mutation payload preparation is mutated.
