@@ -218,7 +218,7 @@ _Phase 3 activation: T156–T160 come from S035–S038 and `BACKEND_ROADMAP.md` 
 
 - **Area:** Custom-trick synchronization
 - **Priority:** High
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** Integrate custom tricks with the scoped outbox/coordinator while preserving stable IDs, stored step-name snapshots, deletion tombstones, and the no-nested-sequences rule offline and across browsers.
 - **Exit criteria:** Integration tests create, edit, and delete standalone tricks and sequences offline; retry/reconnect without duplicates; rehydrate on a second browser; preserve historical step names after source rename/deletion; and surface same-record stale revisions without blocking unrelated tricks.
