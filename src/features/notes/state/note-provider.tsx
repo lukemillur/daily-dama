@@ -17,7 +17,12 @@ import {
   validateNoteEdit,
 } from '@/features/notes/model/note';
 import { loadNotes, saveNotes } from '@/features/notes/persistence/note-persistence';
+import { createNoteSyncTransportAdapter } from '@/features/notes/persistence/note-sync-transport';
+import { useNoteDomainSync } from '@/features/notes/state/use-note-domain-sync';
+import { useIdentityHandle } from '@/shared/persistence/identity-provider';
 import { useIdentityScopedDomain } from '@/shared/persistence/use-identity-scoped-domain';
+import { getSupabaseClient } from '@/shared/supabase/supabase-client';
+import type { DomainSyncRecord, SyncTrigger } from '@/shared/sync/coordinator';
 
 type SaveNoteResult =
   | { readonly status: 'invalid'; readonly errors: NoteDraftErrors }
@@ -31,6 +36,14 @@ interface NoteActions {
 
 const NoteStateContext = createContext<NoteCollection | undefined>(undefined);
 const NoteActionsContext = createContext<NoteActions | undefined>(undefined);
+
+export interface NoteSync {
+  readonly runSync: (trigger: SyncTrigger) => Promise<DomainSyncRecord>;
+  readonly isSyncing: boolean;
+  readonly lastResult: DomainSyncRecord | undefined;
+}
+
+const NoteSyncContext = createContext<NoteSync | undefined>(undefined);
 
 export function NoteProvider({ children }: PropsWithChildren) {
   const { state: collection, dispatch, hasHydrated } = useIdentityScopedDomain({
@@ -48,6 +61,27 @@ export function NoteProvider({ children }: PropsWithChildren) {
     onSaveFailed: (error) => {
       console.warn('Unable to persist notes.', error);
     },
+  });
+
+  // Additive: a second, parallel identity-scoped domain instance tracking
+  // sync bookkeeping (T157.8). The primary reducer above stays completely
+  // untouched and remains the sole source of truth for the rendered
+  // `NoteCollection` -- this hook only pulls/pushes in the background and,
+  // on a safe pull-adopt, dispatches the same `notesRestored` action
+  // hydration itself uses.
+  const { identity } = useIdentityHandle();
+  const getTransport = useCallback(() => {
+    if (identity.kind !== 'user') return undefined;
+    const client = getSupabaseClient();
+    if (client === null) return undefined;
+    return createNoteSyncTransportAdapter(client, identity.userId);
+  }, [identity]);
+
+  const sync = useNoteDomainSync({
+    collection,
+    hasHydratedCollection: hasHydrated,
+    dispatchCollection: dispatch,
+    getTransport,
   });
 
   const addNote = useCallback((input: NoteCreationInput): SaveNoteResult => {
@@ -94,7 +128,9 @@ export function NoteProvider({ children }: PropsWithChildren) {
 
   return (
     <NoteStateContext.Provider value={collection}>
-      <NoteActionsContext.Provider value={actions}>{children}</NoteActionsContext.Provider>
+      <NoteActionsContext.Provider value={actions}>
+        <NoteSyncContext.Provider value={sync}>{children}</NoteSyncContext.Provider>
+      </NoteActionsContext.Provider>
     </NoteStateContext.Provider>
   );
 }
@@ -109,6 +145,14 @@ export function useNoteActions() {
   const actions = useContext(NoteActionsContext);
   if (!actions) throw new Error('useNoteActions must be used within NoteProvider.');
   return actions;
+}
+
+// Exposed for a future manual-retry affordance (T160.1) and for tests --
+// deliberately no UI consumes this yet.
+export function useNoteSync(): NoteSync {
+  const sync = useContext(NoteSyncContext);
+  if (!sync) throw new Error('useNoteSync must be used within NoteProvider.');
+  return sync;
 }
 
 const styles = StyleSheet.create({

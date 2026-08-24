@@ -1,0 +1,260 @@
+import { beforeEach, describe, expect, it, jest } from '@jest/globals';
+import { act, create, type ReactTestRenderer } from 'react-test-renderer';
+
+import type { AuthState } from '@/features/auth/model/auth-state';
+
+import { SignUpScreen } from '@/features/auth/components/sign-up-screen';
+
+const mockReplace = jest.fn();
+const mockPush = jest.fn();
+jest.mock('expo-router', () => ({ useRouter: () => ({ replace: mockReplace, push: mockPush }) }));
+
+const mockSignUp = jest.fn<() => Promise<{ error: unknown }>>();
+let mockAuthState: AuthState = { status: 'guest', reason: 'signedOut' };
+
+jest.mock('@/features/auth/state/auth-provider', () => ({
+  useAuthState: () => mockAuthState,
+  useAuthActions: () => ({ signUp: mockSignUp }),
+}));
+
+const mockSetPendingVerificationEmail = jest.fn();
+jest.mock('@/features/auth/state/pending-verification-email', () => ({
+  useSetPendingVerificationEmail: () => mockSetPendingVerificationEmail,
+}));
+
+const mockTrackAuthEvent = jest.fn();
+const mockLogAuthWarning = jest.fn();
+jest.mock('@/features/auth/observability/auth-observability', () => ({
+  trackAuthEvent: (...args: unknown[]) => mockTrackAuthEvent(...args),
+  logAuthWarning: (...args: unknown[]) => mockLogAuthWarning(...args),
+}));
+
+function findByLabel(renderer: ReactTestRenderer, label: string) {
+  return renderer.root.find((node) => node.props.accessibilityLabel === label);
+}
+
+function containsText(renderer: ReactTestRenderer, text: string | RegExp) {
+  return (
+    renderer.root.findAll((node) => {
+      const { children } = node.props;
+      if (typeof children !== 'string') return false;
+      return typeof text === 'string' ? children === text : text.test(children);
+    }).length > 0
+  );
+}
+
+async function mount() {
+  let root!: ReactTestRenderer;
+  await act(async () => {
+    root = create(<SignUpScreen />);
+  });
+  return root;
+}
+
+async function fillAndSubmit(
+  root: ReactTestRenderer,
+  { email, password, confirmPassword }: { email: string; password: string; confirmPassword: string },
+) {
+  await act(async () => {
+    findByLabel(root, 'Email').props.onChangeText(email);
+    findByLabel(root, 'Password').props.onChangeText(password);
+    findByLabel(root, 'Confirm password').props.onChangeText(confirmPassword);
+  });
+  await act(async () => {
+    await findByLabel(root, 'Sign up').props.onPress();
+  });
+}
+
+describe('SignUpScreen', () => {
+  beforeEach(() => {
+    mockSignUp.mockReset();
+    mockReplace.mockReset();
+    mockPush.mockReset();
+    mockSetPendingVerificationEmail.mockReset();
+    mockTrackAuthEvent.mockReset();
+    mockLogAuthWarning.mockReset();
+    mockAuthState = { status: 'guest', reason: 'signedOut' };
+  });
+
+  it('redirects to /app/home when already authenticated', async () => {
+    mockAuthState = { status: 'authenticated', session: {} as never, lastEvent: 'SIGNED_IN' };
+
+    await mount();
+
+    expect(mockReplace).toHaveBeenCalledWith('/app/home');
+  });
+
+  it('blocks submission and shows a field error for an empty email', async () => {
+    const root = await mount();
+
+    await fillAndSubmit(root, {
+      email: '',
+      password: 'a-long-enough-password',
+      confirmPassword: 'a-long-enough-password',
+    });
+
+    expect(containsText(root, 'Enter your email.')).toBe(true);
+    expect(mockSignUp).not.toHaveBeenCalled();
+  });
+
+  it('blocks submission and shows a field error for a malformed email', async () => {
+    const root = await mount();
+
+    await fillAndSubmit(root, {
+      email: 'not-an-email',
+      password: 'a-long-enough-password',
+      confirmPassword: 'a-long-enough-password',
+    });
+
+    expect(containsText(root, 'Enter a valid email address.')).toBe(true);
+    expect(mockSignUp).not.toHaveBeenCalled();
+  });
+
+  it('blocks submission and shows a field error for a short password', async () => {
+    const root = await mount();
+
+    await fillAndSubmit(root, {
+      email: 'person@example.com',
+      password: 'short',
+      confirmPassword: 'short',
+    });
+
+    expect(containsText(root, 'Use at least 10 characters.')).toBe(true);
+    expect(mockSignUp).not.toHaveBeenCalled();
+  });
+
+  it('blocks submission and shows a field error for a mismatched confirm password', async () => {
+    const root = await mount();
+
+    await fillAndSubmit(root, {
+      email: 'person@example.com',
+      password: 'a-long-enough-password',
+      confirmPassword: 'a-different-password',
+    });
+
+    expect(containsText(root, 'Passwords do not match.')).toBe(true);
+    expect(mockSignUp).not.toHaveBeenCalled();
+  });
+
+  it('on true success, sets the pending email, tracks sign_up_success, and navigates to check-email', async () => {
+    mockSignUp.mockResolvedValue({ error: null });
+    const root = await mount();
+
+    await fillAndSubmit(root, {
+      email: 'fresh@example.com',
+      password: 'a-long-enough-password',
+      confirmPassword: 'a-long-enough-password',
+    });
+
+    expect(mockSetPendingVerificationEmail).toHaveBeenCalledWith('fresh@example.com');
+    expect(mockTrackAuthEvent).toHaveBeenCalledWith('sign_up_success');
+    expect(mockReplace).toHaveBeenCalledWith('/auth/check-email');
+  });
+
+  it('on an accountAlreadyExists error, takes the identical path as true success (enumeration-safe)', async () => {
+    mockSignUp.mockResolvedValue({
+      error: { message: 'already registered', code: 'user_already_exists' },
+    });
+    const root = await mount();
+
+    await fillAndSubmit(root, {
+      email: 'duplicate@example.com',
+      password: 'a-long-enough-password',
+      confirmPassword: 'a-long-enough-password',
+    });
+
+    expect(mockSetPendingVerificationEmail).toHaveBeenCalledWith('duplicate@example.com');
+    expect(mockTrackAuthEvent).toHaveBeenCalledWith('sign_up_success');
+    expect(mockTrackAuthEvent).not.toHaveBeenCalledWith('sign_up_error', expect.anything());
+    expect(mockReplace).toHaveBeenCalledWith('/auth/check-email');
+    expect(mockLogAuthWarning).not.toHaveBeenCalled();
+  });
+
+  it('shows offline copy and stays on the form for an offline-shaped error', async () => {
+    mockSignUp.mockResolvedValue({ error: new TypeError('Failed to fetch') });
+    const root = await mount();
+
+    await fillAndSubmit(root, {
+      email: 'person@example.com',
+      password: 'a-long-enough-password',
+      confirmPassword: 'a-long-enough-password',
+    });
+
+    expect(containsText(root, /offline/i)).toBe(true);
+    expect(mockReplace).not.toHaveBeenCalledWith('/auth/check-email');
+  });
+
+  it('shows throttled copy and stays on the form for a rate-limited error', async () => {
+    mockSignUp.mockResolvedValue({
+      error: { code: 'over_email_send_rate_limit', message: 'rate limited' },
+    });
+    const root = await mount();
+
+    await fillAndSubmit(root, {
+      email: 'person@example.com',
+      password: 'a-long-enough-password',
+      confirmPassword: 'a-long-enough-password',
+    });
+
+    expect(containsText(root, /Too many attempts/i)).toBe(true);
+    expect(mockReplace).not.toHaveBeenCalledWith('/auth/check-email');
+  });
+
+  it('shows weak-password copy and stays on the form for a weak_password error', async () => {
+    mockSignUp.mockResolvedValue({ error: { code: 'weak_password', message: 'too weak' } });
+    const root = await mount();
+
+    await fillAndSubmit(root, {
+      email: 'person@example.com',
+      password: 'a-long-enough-password',
+      confirmPassword: 'a-long-enough-password',
+    });
+
+    expect(containsText(root, /stronger password/i)).toBe(true);
+    expect(mockReplace).not.toHaveBeenCalledWith('/auth/check-email');
+  });
+
+  it('calls signUp exactly once on a rapid double-submit', async () => {
+    let resolveFn: (value: { error: unknown }) => void;
+    mockSignUp.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveFn = resolve;
+        }),
+    );
+    const root = await mount();
+
+    await act(async () => {
+      findByLabel(root, 'Email').props.onChangeText('person@example.com');
+      findByLabel(root, 'Password').props.onChangeText('a-long-enough-password');
+      findByLabel(root, 'Confirm password').props.onChangeText('a-long-enough-password');
+    });
+
+    const button = findByLabel(root, 'Sign up');
+    await act(async () => {
+      const first = button.props.onPress();
+      const second = button.props.onPress();
+      resolveFn!({ error: null });
+      await Promise.all([first, second]);
+    });
+
+    expect(mockSignUp).toHaveBeenCalledTimes(1);
+  });
+
+  it('never renders the raw password anywhere in the tree', async () => {
+    mockSignUp.mockResolvedValue({ error: null });
+    const root = await mount();
+    const rawPassword = 'a-very-specific-password-1';
+
+    await fillAndSubmit(root, {
+      email: 'person@example.com',
+      password: rawPassword,
+      confirmPassword: rawPassword,
+    });
+
+    const textNodes = root.root.findAll((node) => typeof node.props.children === 'string');
+    for (const node of textNodes) {
+      expect(node.props.children as string).not.toContain(rawPassword);
+    }
+  });
+});

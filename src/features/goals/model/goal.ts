@@ -109,9 +109,58 @@ export function createGoal(id: string, value: GoalCreationValidValue, createdAt:
       };
 }
 
+// T157.7: a goal's `kind` (and its trick attachment) never changes in
+// place -- editing only ever changes the numeric target within the same
+// kind, matching the DB UPDATE grant's shape (target_count/target_ms only,
+// never trick_id/trick_name/kind). Reuses the same target validators
+// `validateGoalCreation` uses.
+export type GoalTargetEditInput =
+  | { readonly kind: 'count'; readonly targetCount: number }
+  | { readonly kind: 'time'; readonly targetMinutes: number };
+
+export interface GoalTargetEditErrors {
+  readonly target?: string;
+}
+
+export type GoalTargetEditValidValue =
+  | { readonly kind: 'count'; readonly targetCount: number }
+  | { readonly kind: 'time'; readonly targetMs: number };
+
+export type GoalTargetEditValidation =
+  | { readonly status: 'invalid'; readonly errors: GoalTargetEditErrors }
+  | { readonly status: 'valid'; readonly value: GoalTargetEditValidValue };
+
+export function validateGoalTargetEdit(input: GoalTargetEditInput): GoalTargetEditValidation {
+  if (input.kind === 'count') {
+    if (!isValidGoalTargetCount(input.targetCount)) {
+      return {
+        status: 'invalid',
+        errors: { target: `Enter a whole number of laces from ${MIN_GOAL_TARGET_COUNT} to ${MAX_GOAL_TARGET_COUNT}.` },
+      };
+    }
+    return { status: 'valid', value: { kind: 'count', targetCount: input.targetCount } };
+  }
+
+  if (!isValidGoalTargetMinutes(input.targetMinutes)) {
+    return {
+      status: 'invalid',
+      errors: { target: `Enter a whole number of minutes from ${MIN_GOAL_TARGET_MINUTES} to ${MAX_GOAL_TARGET_MINUTES}.` },
+    };
+  }
+  return { status: 'valid', value: { kind: 'time', targetMs: input.targetMinutes * 60_000 } };
+}
+
+/** Applies an already-validated target edit to an existing goal, preserving id/trick/kind/createdAt. */
+export function applyGoalTargetEdit(goal: Goal, value: GoalTargetEditValidValue): Goal {
+  return value.kind === 'count'
+    ? { id: goal.id, trickId: goal.trickId, trickName: goal.trickName, kind: 'count', targetCount: value.targetCount, createdAt: goal.createdAt }
+    : { id: goal.id, trickId: goal.trickId, trickName: goal.trickName, kind: 'time', targetMs: value.targetMs, createdAt: goal.createdAt };
+}
+
 export type GoalAction =
   | { readonly type: 'goalsRestored'; readonly collection: GoalCollection }
   | { readonly type: 'goalAdded'; readonly goal: Goal }
+  | { readonly type: 'goalEdited'; readonly goal: Goal }
   | { readonly type: 'goalDeleted'; readonly goalId: string };
 
 export function goalReducer(state: GoalCollection, action: GoalAction): GoalCollection {
@@ -122,6 +171,10 @@ export function goalReducer(state: GoalCollection, action: GoalAction): GoalColl
       return state.goals.some((goal) => goal.id === action.goal.id)
         ? state
         : { goals: [...state.goals, action.goal] };
+    case 'goalEdited':
+      return state.goals.some((goal) => goal.id === action.goal.id)
+        ? { goals: state.goals.map((goal) => (goal.id === action.goal.id ? action.goal : goal)) }
+        : state;
     case 'goalDeleted':
       return state.goals.some((goal) => goal.id === action.goalId)
         ? { goals: state.goals.filter((goal) => goal.id !== action.goalId) }

@@ -3,6 +3,7 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import { AppColors } from '@/constants/theme';
 import {
+  applyGoalTargetEdit,
   type GoalAction,
   createGoal,
   createGoalId,
@@ -11,24 +12,46 @@ import {
   type GoalCreationInput,
   type GoalDraftErrors,
   goalReducer,
+  type GoalTargetEditErrors,
+  type GoalTargetEditInput,
   INITIAL_GOALS,
   validateGoalCreation,
+  validateGoalTargetEdit,
 } from '@/features/goals/model/goal';
 import { loadGoals, saveGoals } from '@/features/goals/persistence/goal-persistence';
+import { createGoalSyncTransportAdapter } from '@/features/goals/persistence/goal-sync-transport';
+import { useGoalDomainSync } from '@/features/goals/state/use-goal-domain-sync';
 import { useUserProfileActions } from '@/features/profile/state/user-profile-provider';
+import { useIdentityHandle } from '@/shared/persistence/identity-provider';
 import { useIdentityScopedDomain } from '@/shared/persistence/use-identity-scoped-domain';
+import { getSupabaseClient } from '@/shared/supabase/supabase-client';
+import type { DomainSyncRecord, SyncTrigger } from '@/shared/sync/coordinator';
 
 type SaveGoalResult =
   | { readonly status: 'invalid'; readonly errors: GoalDraftErrors }
   | { readonly status: 'saved'; readonly goal: Goal };
 
+type EditGoalResult =
+  | { readonly status: 'invalid'; readonly errors: GoalTargetEditErrors }
+  | { readonly status: 'saved'; readonly goal: Goal }
+  | { readonly status: 'missing' };
+
 interface GoalActions {
   readonly addGoal: (input: GoalCreationInput) => SaveGoalResult;
+  readonly editGoal: (goalId: string, input: GoalTargetEditInput) => EditGoalResult;
   readonly deleteGoal: (goalId: string) => void;
 }
 
 const GoalStateContext = createContext<GoalCollection | undefined>(undefined);
 const GoalActionsContext = createContext<GoalActions | undefined>(undefined);
+
+export interface GoalSync {
+  readonly runSync: (trigger: SyncTrigger) => Promise<DomainSyncRecord>;
+  readonly isSyncing: boolean;
+  readonly lastResult: DomainSyncRecord | undefined;
+}
+
+const GoalSyncContext = createContext<GoalSync | undefined>(undefined);
 
 export function GoalProvider({ children }: PropsWithChildren) {
   // GoalProvider must be rendered inside UserProfileProvider (see _layout.tsx's provider
@@ -51,6 +74,27 @@ export function GoalProvider({ children }: PropsWithChildren) {
     },
   });
 
+  // Additive: a second, parallel identity-scoped domain instance tracking
+  // sync bookkeeping (T157.7). The primary reducer above stays completely
+  // untouched and remains the sole source of truth for the rendered
+  // `GoalCollection` -- this hook only pulls/pushes in the background and,
+  // on a safe pull-adopt, dispatches the same `goalsRestored` action
+  // hydration itself uses.
+  const { identity } = useIdentityHandle();
+  const getTransport = useCallback(() => {
+    if (identity.kind !== 'user') return undefined;
+    const client = getSupabaseClient();
+    if (client === null) return undefined;
+    return createGoalSyncTransportAdapter(client, identity.userId);
+  }, [identity]);
+
+  const sync = useGoalDomainSync({
+    collection,
+    hasHydratedCollection: hasHydrated,
+    dispatchCollection: dispatch,
+    getTransport,
+  });
+
   const addGoal = useCallback((input: GoalCreationInput): SaveGoalResult => {
     const validation = validateGoalCreation(input);
     if (validation.status === 'invalid') return validation;
@@ -61,11 +105,29 @@ export function GoalProvider({ children }: PropsWithChildren) {
     return { status: 'saved', goal };
   }, [addSelectedTrick]);
 
+  const editGoal = useCallback(
+    (goalId: string, input: GoalTargetEditInput): EditGoalResult => {
+      const existing = collection.goals.find((goal) => goal.id === goalId);
+      if (!existing || existing.kind !== input.kind) return { status: 'missing' };
+
+      const validation = validateGoalTargetEdit(input);
+      if (validation.status === 'invalid') return validation;
+
+      const goal = applyGoalTargetEdit(existing, validation.value);
+      dispatch({ type: 'goalEdited', goal });
+      return { status: 'saved', goal };
+    },
+    [collection.goals],
+  );
+
   const deleteGoal = useCallback((goalId: string) => {
     dispatch({ type: 'goalDeleted', goalId });
   }, []);
 
-  const actions = useMemo(() => ({ addGoal, deleteGoal }), [addGoal, deleteGoal]);
+  const actions = useMemo(
+    () => ({ addGoal, editGoal, deleteGoal }),
+    [addGoal, editGoal, deleteGoal],
+  );
 
   if (!hasHydrated) {
     return (
@@ -78,7 +140,9 @@ export function GoalProvider({ children }: PropsWithChildren) {
 
   return (
     <GoalStateContext.Provider value={collection}>
-      <GoalActionsContext.Provider value={actions}>{children}</GoalActionsContext.Provider>
+      <GoalActionsContext.Provider value={actions}>
+        <GoalSyncContext.Provider value={sync}>{children}</GoalSyncContext.Provider>
+      </GoalActionsContext.Provider>
     </GoalStateContext.Provider>
   );
 }
@@ -93,6 +157,14 @@ export function useGoalActions() {
   const actions = useContext(GoalActionsContext);
   if (!actions) throw new Error('useGoalActions must be used within GoalProvider.');
   return actions;
+}
+
+// Exposed for a future manual-retry affordance (T160.1) and for tests --
+// deliberately no UI consumes this yet.
+export function useGoalSync(): GoalSync {
+  const sync = useContext(GoalSyncContext);
+  if (!sync) throw new Error('useGoalSync must be used within GoalProvider.');
+  return sync;
 }
 
 const styles = StyleSheet.create({

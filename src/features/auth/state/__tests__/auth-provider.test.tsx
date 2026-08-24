@@ -11,7 +11,7 @@ import {
 } from '@/features/auth/state/auth-provider';
 
 const mockGetSupabaseClient = jest.fn();
-jest.mock('@/features/auth/persistence/supabase-client', () => ({
+jest.mock('@/shared/supabase/supabase-client', () => ({
   getSupabaseClient: () => mockGetSupabaseClient(),
 }));
 
@@ -38,6 +38,8 @@ function createFakeClient(overrides?: { onAuthStateChangeImpl?: (cb: AuthCallbac
     }),
   );
   const resetPasswordForEmail = jest.fn(async (): Promise<{ error: unknown }> => ({ error: null }));
+  const signUp = jest.fn(async (): Promise<{ error: unknown }> => ({ error: null }));
+  const resend = jest.fn(async (): Promise<{ error: unknown }> => ({ error: null }));
 
   const client = {
     auth: {
@@ -47,6 +49,8 @@ function createFakeClient(overrides?: { onAuthStateChangeImpl?: (cb: AuthCallbac
       updateUser,
       exchangeCodeForSession,
       resetPasswordForEmail,
+      signUp,
+      resend,
     },
   } as unknown as SupabaseClient;
 
@@ -58,6 +62,8 @@ function createFakeClient(overrides?: { onAuthStateChangeImpl?: (cb: AuthCallbac
     updateUser,
     exchangeCodeForSession,
     resetPasswordForEmail,
+    signUp,
+    resend,
     emit: (event: AuthChangeEvent, session: Session | null) => capturedCallback?.(event, session),
   };
 }
@@ -454,5 +460,108 @@ describe('AuthProvider', () => {
     });
 
     expect(fake.unsubscribe).toHaveBeenCalledTimes(1);
+  });
+
+  it('signUp forwards email, password, and a redirectTo ending in /auth/callback, with a null error', async () => {
+    const fake = createFakeClient();
+    mockGetSupabaseClient.mockReturnValue(fake.client);
+
+    const originalWindow = (globalThis as { window?: unknown }).window;
+    (globalThis as { window?: unknown }).window = { location: { origin: 'https://dailydama.com' } };
+
+    const root = await mount();
+
+    let result: { error: unknown } | undefined;
+    await act(async () => {
+      result = await captured.actions!.signUp('person@example.com', 'a-long-enough-password');
+    });
+
+    expect(fake.signUp).toHaveBeenCalledWith({
+      email: 'person@example.com',
+      password: 'a-long-enough-password',
+      options: { emailRedirectTo: 'https://dailydama.com/auth/callback' },
+    });
+    expect(result).toEqual({ error: null });
+
+    act(() => {
+      root.unmount();
+    });
+    (globalThis as { window?: unknown }).window = originalWindow;
+  });
+
+  it('signUp forwards a failure error from signUp without mutating AuthState', async () => {
+    const fake = createFakeClient();
+    const signUpError = { message: 'already exists', code: 'user_already_exists' };
+    fake.signUp.mockResolvedValueOnce({ error: signUpError });
+    mockGetSupabaseClient.mockReturnValue(fake.client);
+
+    const originalWindow = (globalThis as { window?: unknown }).window;
+    (globalThis as { window?: unknown }).window = { location: { origin: 'https://dailydama.com' } };
+
+    const root = await mount();
+
+    let result: { error: unknown } | undefined;
+    await act(async () => {
+      result = await captured.actions!.signUp('person@example.com', 'a-long-enough-password');
+    });
+
+    expect(result).toEqual({ error: signUpError });
+    expect(captured.state).toEqual({ status: 'initializing' });
+
+    act(() => {
+      root.unmount();
+    });
+    (globalThis as { window?: unknown }).window = originalWindow;
+  });
+
+  it('resendSignupConfirmation forwards email and a redirectTo ending in /auth/callback, with a null error', async () => {
+    const fake = createFakeClient();
+    mockGetSupabaseClient.mockReturnValue(fake.client);
+
+    const originalWindow = (globalThis as { window?: unknown }).window;
+    (globalThis as { window?: unknown }).window = { location: { origin: 'https://dailydama.com' } };
+
+    const root = await mount();
+
+    let result: { error: unknown } | undefined;
+    await act(async () => {
+      result = await captured.actions!.resendSignupConfirmation('person@example.com');
+    });
+
+    expect(fake.resend).toHaveBeenCalledWith({
+      type: 'signup',
+      email: 'person@example.com',
+      options: { emailRedirectTo: 'https://dailydama.com/auth/callback' },
+    });
+    expect(result).toEqual({ error: null });
+
+    act(() => {
+      root.unmount();
+    });
+    (globalThis as { window?: unknown }).window = originalWindow;
+  });
+
+  it('resendSignupConfirmation forwards a failure error from resend', async () => {
+    const fake = createFakeClient();
+    const resendError = { message: 'rate limited', code: 'over_email_send_rate_limit' };
+    fake.resend.mockResolvedValueOnce({ error: resendError });
+    mockGetSupabaseClient.mockReturnValue(fake.client);
+
+    const originalWindow = (globalThis as { window?: unknown }).window;
+    (globalThis as { window?: unknown }).window = { location: { origin: 'https://dailydama.com' } };
+
+    const root = await mount();
+
+    let result: { error: unknown } | undefined;
+    await act(async () => {
+      result = await captured.actions!.resendSignupConfirmation('person@example.com');
+    });
+
+    expect(result).toEqual({ error: resendError });
+
+    act(() => {
+      root.unmount();
+    });
+    (globalThis as { window?: unknown }).window = originalWindow;
   });
 });

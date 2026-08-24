@@ -10,11 +10,18 @@ import {
   type PracticeSessionOrigin,
   practiceHistoryReducer,
 } from '@/features/stats/model/practice-history';
+import type { PracticeSessionRow } from '@/features/stats/persistence/practice-history-cloud-repository';
 import {
   loadPracticeHistory,
   savePracticeHistory,
 } from '@/features/stats/persistence/practice-history-persistence';
+import { createPracticeHistorySyncTransportAdapter } from '@/features/stats/persistence/practice-history-sync-transport';
+import { usePracticeHistoryDomainSync } from '@/features/stats/state/use-practice-history-domain-sync';
+import { useIdentityHandle } from '@/shared/persistence/identity-provider';
 import { useIdentityScopedDomain } from '@/shared/persistence/use-identity-scoped-domain';
+import { getSupabaseClient } from '@/shared/supabase/supabase-client';
+import type { DomainSyncRecord, SyncTrigger } from '@/shared/sync/coordinator';
+import type { SyncTransportRepository } from '@/shared/sync/transport';
 
 interface PracticeHistoryActions {
   readonly recordCompletedSesh: (summary: SeshSummary, origin?: PracticeSessionOrigin) => void;
@@ -22,6 +29,14 @@ interface PracticeHistoryActions {
 
 const PracticeHistoryStateContext = createContext<PracticeHistory | undefined>(undefined);
 const PracticeHistoryActionsContext = createContext<PracticeHistoryActions | undefined>(undefined);
+
+export interface PracticeHistorySync {
+  readonly runSync: (trigger: SyncTrigger) => Promise<DomainSyncRecord>;
+  readonly isSyncing: boolean;
+  readonly lastResult: DomainSyncRecord | undefined;
+}
+
+const PracticeHistorySyncContext = createContext<PracticeHistorySync | undefined>(undefined);
 
 export function PracticeHistoryProvider({ children }: PropsWithChildren) {
   const { state: history, dispatch, hasHydrated } = useIdentityScopedDomain({
@@ -39,6 +54,27 @@ export function PracticeHistoryProvider({ children }: PropsWithChildren) {
     onSaveFailed: (error) => {
       console.warn('Unable to persist practice history.', error);
     },
+  });
+
+  // Additive: a second, parallel identity-scoped domain instance tracking
+  // sync bookkeeping (T157.6). The primary reducer above stays completely
+  // untouched and remains the sole source of truth for the rendered
+  // `PracticeHistory` -- this hook only pulls/pushes in the background and,
+  // on a pull-adopt merge, dispatches the same `historyRestored` action
+  // hydration itself uses.
+  const { identity } = useIdentityHandle();
+  const getTransport = useCallback((): SyncTransportRepository<PracticeSessionRow> | undefined => {
+    if (identity.kind !== 'user') return undefined;
+    const client = getSupabaseClient();
+    if (client === null) return undefined;
+    return createPracticeHistorySyncTransportAdapter(client, identity.userId);
+  }, [identity]);
+
+  const sync = usePracticeHistoryDomainSync({
+    history,
+    hasHydratedHistory: hasHydrated,
+    dispatchHistory: dispatch,
+    getTransport,
   });
 
   const recordCompletedSesh = useCallback((summary: SeshSummary, origin?: PracticeSessionOrigin) => {
@@ -59,7 +95,7 @@ export function PracticeHistoryProvider({ children }: PropsWithChildren) {
   return (
     <PracticeHistoryStateContext.Provider value={history}>
       <PracticeHistoryActionsContext.Provider value={actions}>
-        {children}
+        <PracticeHistorySyncContext.Provider value={sync}>{children}</PracticeHistorySyncContext.Provider>
       </PracticeHistoryActionsContext.Provider>
     </PracticeHistoryStateContext.Provider>
   );
@@ -77,6 +113,16 @@ export function usePracticeHistoryActions() {
     throw new Error('usePracticeHistoryActions must be used within PracticeHistoryProvider.');
   }
   return actions;
+}
+
+// Exposed for a future manual-retry affordance (T160.1) and for tests --
+// deliberately no UI consumes this yet.
+export function usePracticeHistorySync(): PracticeHistorySync {
+  const sync = useContext(PracticeHistorySyncContext);
+  if (!sync) {
+    throw new Error('usePracticeHistorySync must be used within PracticeHistoryProvider.');
+  }
+  return sync;
 }
 
 const styles = StyleSheet.create({
