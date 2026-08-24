@@ -115,6 +115,7 @@ Some areas have their own root-level handoff document. Read the relevant one bef
 - [TRICK_VIZ_HANDOFF.md](TRICK_VIZ_HANDOFF.md) — procedural 3D trick visualization (`src/features/trick-viz/`). Verified kendama geometry, the ken-pose abstraction, keyframe/easing pitfalls, the verlet string, and environment traps (React Compiler, stale console buffers, sandbox access gating).
 - [DEPLOYMENT_HANDOFF.md](DEPLOYMENT_HANDOFF.md) — web deploy to dailydama.com.
 - [supabase/README.md](supabase/README.md) — local Supabase Auth CLI configuration: rebuild/reset workflow, local policy (verified email, 10-character password minimum, one-hour JWTs, fixed `localhost:8081/auth/callback`), and manual REST/Mailpit verification.
+- [security/README.md](security/README.md) — the report-only web Content Security Policy: policy rationale, the raw-HTML sink audit guard, and the header-check/Playwright/manual verification commands.
 
 # Git state expectations
 

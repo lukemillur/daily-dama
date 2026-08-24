@@ -2882,3 +2882,50 @@ describe('Sesh theming (T097)', () => {
     });
   });
 });
+
+describe("ActiveSesh sequence steps (T162.1)", () => {
+  beforeEach(() => {
+    jest.useFakeTimers();
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  it("renders a hostile sequence-step name as literal text, not executable HTML", () => {
+    const hostile = `<img src=x onerror="window.__pwned=1">`;
+    const trickWithSequence: PracticeTrick = {
+      id: "custom-sequence-1",
+      name: "Hostile Sequence",
+      sequenceSteps: [hostile],
+    };
+    let root!: ReactTestRenderer;
+    act(() => {
+      root = create(
+        <ActiveSesh
+          trick={trickWithSequence}
+          plan={PLAN}
+          startedAt={Date.now()}
+          landings={[]}
+          pausedDurationMs={0}
+          liveChallengeEnabled={false}
+          hadPriorLaceAtSeshStart={false}
+          onLaced={noop}
+          onPause={noop}
+          onResume={noop}
+          onEnd={noop}
+          onTimerElapsed={noop}
+        />,
+      );
+    });
+
+    const matches = root.root.findAll(
+      (node) => typeof node.type === "string" && node.props.children === hostile,
+    );
+    expect(matches.length).toBeGreaterThan(0);
+
+    act(() => {
+      root.unmount();
+    });
+  });
+});

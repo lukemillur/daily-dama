@@ -352,16 +352,6 @@ _Phase 6 activation: T162 comes from S041 and `BACKEND_ROADMAP.md` Phase 6. Its 
 - **Description:** Keep external signup disabled until web security, abuse controls, production isolation, deliverability, capacity, recovery, and the complete acceptance suite have recorded evidence.
 - **Notes:** Umbrella from S041. Complete T162.1–T162.8 after the applicable T153–T161 work. This is a hard gate, not a speculative scale-up project.
 
-### [T162.1] Deploy and evaluate a report-only Content Security Policy
-
-- **Area:** Web security headers
-- **Priority:** High
-- **Status:** In progress
-- **Planning:** Required
-- **Description:** Add a minimally permissive report-only CSP for the static Expo/Vercel app, covering only required Daily Dama, Supabase, Vercel Analytics, font/asset, and development origins; audit raw-HTML sinks and sanitize or remove any path that could inject note/custom-trick content.
-- **Exit criteria:** The production-like web export serves the report-only policy, automated header checks reject unlisted script/connect/frame origins, browser walkthroughs cover Auth and core app routes with no unexplained violations, and tests prove untrusted note/custom-trick text cannot become executable HTML.
-- **Notes:** From S041 and roadmap client/web security. Depends on the final web Auth/sync origin set. Start report-only; enforcement is T162.2.
-
 ### [T162.2] Enforce CSP and the remaining defensive web headers
 
 - **Area:** Web deployment security
