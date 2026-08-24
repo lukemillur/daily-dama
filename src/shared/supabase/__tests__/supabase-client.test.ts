@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, jest } from '@jest/globals';
 import { Platform } from 'react-native';
-import { getSupabaseClient, resetSupabaseClientForTests } from '@/features/auth/persistence/supabase-client';
+import { getSupabaseClient, resetSupabaseClientForTests } from '@/shared/supabase/supabase-client';
 
 jest.mock('@react-native-async-storage/async-storage', () =>
   // eslint-disable-next-line @typescript-eslint/no-require-imports -- required by jest hoisting
@@ -66,7 +66,7 @@ describe('getSupabaseClient', () => {
     const [url, publishableKey, options] = mockCreateClient.mock.calls[0] as unknown as [
       string,
       string,
-      { auth: Record<string, unknown> },
+      { auth: Record<string, unknown>; db: Record<string, unknown> },
     ];
 
     expect(url).toBe('https://example.supabase.co');
@@ -77,6 +77,7 @@ describe('getSupabaseClient', () => {
       persistSession: true,
       autoRefreshToken: true,
     });
+    expect(options.db).toEqual({ schema: 'api' });
 
     // eslint-disable-next-line @typescript-eslint/no-require-imports -- match the module under test's import
     const AsyncStorage = require('@react-native-async-storage/async-storage');

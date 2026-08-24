@@ -8,7 +8,7 @@ import { AuthProvider } from '@/features/auth/state/auth-provider';
 import { IdentityProvider, useIdentityHandle } from '@/shared/persistence/identity-provider';
 
 const mockGetSupabaseClient = jest.fn();
-jest.mock('@/features/auth/persistence/supabase-client', () => ({
+jest.mock('@/shared/supabase/supabase-client', () => ({
   getSupabaseClient: () => mockGetSupabaseClient(),
 }));
 

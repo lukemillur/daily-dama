@@ -1,6 +1,6 @@
 import { useAudioPlayer } from 'expo-audio';
 import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
-import { Link, type Href } from 'expo-router';
+import { Link } from 'expo-router';
 import { useEffect, useLayoutEffect, useMemo, useReducer, useRef, useState, type ReactNode } from 'react';
 import { Animated, Pressable, ScrollView, TextInput } from 'react-native';
 import { styled } from 'styled-components/native';
@@ -1047,9 +1047,7 @@ function PostSeshSignupInvite() {
         switch devices or clear your browser.
       </InviteCopy>
       <InviteActions>
-        {/* T153.8 (sign-up route) is not built yet on this branch's typed-route graph;
-            cast pending until that route exists so this pre-existing T153.12 link stays typechecked. */}
-        <Link href={'/auth/sign-up' as Href} asChild>
+        <Link href="/auth/sign-up" asChild>
           <InviteSignUpButton accessibilityRole="link">Sign up</InviteSignUpButton>
         </Link>
         <InviteDismissButton

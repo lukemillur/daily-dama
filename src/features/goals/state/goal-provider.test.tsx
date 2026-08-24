@@ -1,8 +1,9 @@
-import { describe, expect, it, jest } from '@jest/globals';
+import { beforeEach, describe, expect, it, jest } from '@jest/globals';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Pressable } from 'react-native';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 
-import { GoalProvider, useGoalActions } from '@/features/goals/state/goal-provider';
+import { GoalProvider, useGoalActions, useGoals } from '@/features/goals/state/goal-provider';
 import {
   useUserProfile,
   useUserProfileActions,
@@ -107,5 +108,97 @@ describe('GoalProvider cross-domain focused-trick wiring', () => {
     });
 
     expect(selectedTrickIdsOf(root).split(',').filter(Boolean)).toEqual(['big-cup']);
+  });
+});
+
+function EditHarness() {
+  const { goals } = useGoals();
+  const { addGoal, editGoal } = useGoalActions();
+  const goal = goals[0];
+
+  return (
+    <>
+      <Pressable
+        accessibilityLabel="add-count-goal-for-edit"
+        onPress={() => addGoal({ kind: 'count', trickId: 'big-cup', trickName: 'Big Cup', targetCount: 10 })}
+      />
+      <Pressable
+        accessibilityLabel="edit-count-goal"
+        onPress={() => {
+          if (goal) editGoal(goal.id, { kind: 'count', targetCount: 40 });
+        }}
+      />
+      <Pressable
+        accessibilityLabel="edit-missing-goal"
+        onPress={() => editGoal('does-not-exist', { kind: 'count', targetCount: 40 })}
+      />
+      <Pressable
+        accessibilityLabel={`goal-target:${goal?.kind === 'count' ? goal.targetCount : 'none'}`}
+        onPress={() => {}}
+      />
+    </>
+  );
+}
+
+function goalTargetOf(root: ReactTestRenderer): string {
+  const [match] = root.root.findAll(
+    (node) =>
+      typeof node.props.accessibilityLabel === 'string' && node.props.accessibilityLabel.startsWith('goal-target:'),
+  );
+  return match.props.accessibilityLabel.slice('goal-target:'.length);
+}
+
+describe('GoalProvider editGoal', () => {
+  // Guest identity persists to a fixed storage key -- without clearing
+  // between tests, a later test's fresh mount would rehydrate an earlier
+  // test's persisted (mocked) AsyncStorage data instead of starting empty.
+  beforeEach(async () => {
+    await AsyncStorage.clear();
+  });
+
+  it('edits an existing goal target in place, preserving id/trick/kind', async () => {
+    let root!: ReactTestRenderer;
+    await act(async () => {
+      root = create(
+        <UserProfileProvider>
+          <GoalProvider>
+            <EditHarness />
+          </GoalProvider>
+        </UserProfileProvider>,
+      );
+    });
+
+    act(() => {
+      pressByAccessibilityLabel(root, 'add-count-goal-for-edit');
+    });
+    expect(goalTargetOf(root)).toBe('10');
+
+    act(() => {
+      pressByAccessibilityLabel(root, 'edit-count-goal');
+    });
+    expect(goalTargetOf(root)).toBe('40');
+  });
+
+  it('is a no-op when the goal id is not found', async () => {
+    let root!: ReactTestRenderer;
+    await act(async () => {
+      root = create(
+        <UserProfileProvider>
+          <GoalProvider>
+            <EditHarness />
+          </GoalProvider>
+        </UserProfileProvider>,
+      );
+    });
+
+    act(() => {
+      pressByAccessibilityLabel(root, 'add-count-goal-for-edit');
+    });
+    expect(goalTargetOf(root)).toBe('10');
+
+    act(() => {
+      pressByAccessibilityLabel(root, 'edit-missing-goal');
+    });
+    expect(goalTargetOf(root)).toBe('10');
   });
 });

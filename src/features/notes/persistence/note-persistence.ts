@@ -17,11 +17,11 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
-function isNormalizedText(value: unknown): value is string {
+export function isNormalizedText(value: unknown): value is string {
   return typeof value === 'string' && value.length > 0 && value === value.trim();
 }
 
-function isFiniteNonNegative(value: unknown): value is number {
+export function isFiniteNonNegative(value: unknown): value is number {
   return typeof value === 'number' && Number.isFinite(value) && value >= 0;
 }
 
@@ -36,6 +36,18 @@ function isNote(value: unknown): value is Note {
   if (practiceSessionId !== undefined && !isNormalizedText(practiceSessionId)) return false;
   if (!isFiniteNonNegative(createdAt) || !isFiniteNonNegative(updatedAt)) return false;
   return updatedAt >= createdAt;
+}
+
+// T157.8: validates an in-memory (already-parsed) value as a
+// `NoteCollection`, unlike `deserializeNotes` which only operates on a JSON
+// *string*. Used as the `SyncEnvelopeCodec<NoteSyncSnapshot>.isState`
+// predicate's `collection` field check, mirroring `isGoalCollection` exactly.
+export function isNoteCollection(value: unknown): value is NoteCollection {
+  if (!isRecord(value) || !Array.isArray(value.notes) || !value.notes.every(isNote)) {
+    return false;
+  }
+  const ids = value.notes.map((note) => note.id);
+  return new Set(ids).size === ids.length;
 }
 
 export function serializeNotes(collection: NoteCollection) {
