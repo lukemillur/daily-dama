@@ -155,7 +155,7 @@ _Phase 1/4 shared account-maintenance activation: T154 comes from S033 and the c
 
 - **Area:** Account security UI
 - **Priority:** Medium
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** Configure Supabase secure email change and add `/app/profile/account/security` with current-password verification for password changes, including reauthentication, expiry, generic errors, and confirmation guidance through T153.5's shared boundary.
 - **Exit criteria:** Route/provider tests and a browser walkthrough confirm a signed-in user can change a password only after supplying the current password, can initiate and complete secure email change, and receives actionable expired/offline states without exposing sensitive values in URLs, logs, or analytics.
