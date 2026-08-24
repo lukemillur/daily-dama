@@ -19,6 +19,9 @@ const DEPENDS_ON_CLAUSE = /\bdepends on\b([\s\S]*?)\.(?!\d)/gi;
 const TASK_ID = /T\d+(?:\.\d+)?/g;
 const DEPENDS_ON_RANGE = /(T\d+(?:\.\d+)?)\s*[–-]\s*(T\d+(?:\.\d+)?)/g;
 
+/** Lower ranks first: High-priority tickets sort ahead of Medium/Low/unset. */
+const PRIORITY_RANK = { high: 0, medium: 1, low: 2 };
+
 /** Planning policies. `required` runs the separate ticket-planner stage. */
 export const PLANNING_REQUIRED = 'required';
 export const PLANNING_IMPLEMENTER = 'implementer';
@@ -208,6 +211,55 @@ export function resolveDependsOn(task, knownIds) {
   }
   ids.delete(task.id);
   return ids;
+}
+
+/**
+ * How many other not-yet-done tasks name each task as a dependency (via
+ * resolveDependsOn), keyed by task id. A high count means completing that
+ * task unblocks several others — the signal `orderByUnblockValue` sorts on.
+ *
+ * @param {Array<Task>} tasks
+ * @param {Set<string>} doneIds
+ * @returns {Map<string, number>}
+ */
+export function computeUnblockFanOut(tasks, doneIds) {
+  const knownIds = new Set([...tasks.map((task) => task.id), ...doneIds]);
+  const dependsOn = new Map(tasks.map((task) => [task.id, resolveDependsOn(task, knownIds)]));
+  return new Map(
+    tasks.map((task) => [
+      task.id,
+      tasks.filter((other) => !doneIds.has(other.id) && dependsOn.get(other.id).has(task.id)).length,
+    ]),
+  );
+}
+
+/**
+ * Reorder tasks by unblock value instead of file order: highest unblock
+ * fan-out first, then declared Priority (High > Medium > Low > unset), then
+ * original file order as the final tiebreak. Selection semantics — which
+ * candidates are skipped for being an umbrella, wrong status, an unmet
+ * dependency, or already claimed — are unchanged; this only changes which
+ * actionable candidate `selectTask`'s continuous-mode scan reaches first.
+ *
+ * @param {Array<Task>} tasks
+ * @param {Set<string>} doneIds
+ * @returns {Array<Task>} a new array; does not mutate `tasks`
+ */
+export function orderByUnblockValue(tasks, doneIds) {
+  const fanOut = computeUnblockFanOut(tasks, doneIds);
+  const fileIndex = new Map(tasks.map((task, index) => [task.id, index]));
+  // Match the leading word only: a value like "Medium (inherited from parent
+  // T104)" must still rank as Medium, not fall through to "unset".
+  const priorityRank = (task) => {
+    const match = /^\s*(high|medium|low)\b/i.exec(task.fields.Priority ?? '');
+    return match ? PRIORITY_RANK[match[1].toLowerCase()] : 3;
+  };
+  return [...tasks].sort(
+    (a, b) =>
+      fanOut.get(b.id) - fanOut.get(a.id) ||
+      priorityRank(a) - priorityRank(b) ||
+      fileIndex.get(a.id) - fileIndex.get(b.id),
+  );
 }
 
 /**

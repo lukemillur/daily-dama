@@ -7,8 +7,10 @@ import { fileURLToPath } from 'node:url';
 import {
   branchNameFor,
   childrenOf,
+  computeUnblockFanOut,
   expandDependsOnRange,
   isUmbrella,
+  orderByUnblockValue,
   parseBacklog,
   parseDoneIds,
   resolveDependsOn,
@@ -89,6 +91,36 @@ test('resolveDependsOn unions named ids with every expanded range', () => {
   assert.deepEqual([...resolveDependsOn(byId('T107'), knownIds)].sort(), ['T098', 'T099', 'T900']);
   assert.deepEqual([...resolveDependsOn(byId('T108'), knownIds)].sort(), ['T104.1', 'T104.2']);
   assert.deepEqual([...resolveDependsOn(byId('T109'), knownIds)].sort(), ['T100', 'T101', 'T102', 'T103']);
+});
+
+test('computeUnblockFanOut counts every not-yet-done task naming an id, directly or via a range', () => {
+  const fanOut = computeUnblockFanOut(tasks, doneIds);
+  assert.equal(fanOut.get('T104.1'), 2, 'named directly by T104.2 and via T108’s range');
+  assert.equal(fanOut.get('T104.2'), 1, 'named only via T108’s range');
+  assert.equal(fanOut.get('T100'), 1, 'named only via T109’s cross-ticket range');
+  assert.equal(fanOut.get('T105'), 0, 'nothing depends on T105');
+});
+
+test('orderByUnblockValue sorts by fan-out, then Priority, then original file order', () => {
+  // T104.1 is the only fan-out-2 id (T104.2 and T108 each name it). Among the
+  // fan-out-1 group (T100, T101, T102, T103, T104.2), High-priority T101
+  // sorts first, then Medium T104.2, then the Low-priority ties in file
+  // order. The remaining fan-out-0 tasks keep that same tiebreak.
+  const ordered = orderByUnblockValue(tasks, doneIds).map((task) => task.id);
+  assert.deepEqual(ordered, [
+    'T104.1',
+    'T101',
+    'T104.2',
+    'T100',
+    'T102',
+    'T103',
+    'T104',
+    'T105',
+    'T106',
+    'T107',
+    'T108',
+    'T109',
+  ]);
 });
 
 test('parses done IDs and respects a non-Done archived status', () => {

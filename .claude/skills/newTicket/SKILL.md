@@ -1,6 +1,6 @@
 ---
 name: newTicket
-description: Claims a Daily Dama backlog task — a specific one if named, otherwise the next available one — and drives it end-to-end against `development`: deterministic claim script, then the ticket-planner and ticket-implementer agents (plan, implement, merge). No plan-approval gate. When no task is named, keeps going: one task after another, each in fresh subagents so context never accumulates. A task that gets blocked (claimed, or blocked at planning/implementation/merge) is recorded and skipped, not fatal — the loop moves on to any other independent task, while a task that actually depends on the blocked one stays correctly skipped too. The loop stops only when the backlog is exhausted, the claim mechanism itself fails, or the session's usage limit is reached. Also resumes an interrupted task with `/newTicket resume T0NN`.
+description: Claims a Daily Dama backlog task — a specific one if named, otherwise the next available one — and drives it end-to-end against `development`: deterministic claim script, then the ticket-planner and ticket-implementer agents (plan, implement, merge). No plan-approval gate. When no task is named, keeps going: one task after another, each in fresh subagents so context never accumulates, by default in TASKS.md file order — pass `ranked` (`/newTicket ranked`) to instead pick each cycle's task by unblock value (how many other pending tasks depend on it, then declared Priority). A task that gets blocked (claimed, or blocked at planning/implementation/merge) is recorded and skipped, not fatal — the loop moves on to any other independent task, while a task that actually depends on the blocked one stays correctly skipped too. The loop stops only when the backlog is exhausted, the claim mechanism itself fails, or the session's usage limit is reached. Also resumes an interrupted task with `/newTicket resume T0NN`.
 allowed-tools: Agent(ticket-planner), Agent(ticket-implementer), Bash(node .claude/scripts/ticket-claim.mjs:*), Bash(node .claude/scripts/worktree-cleanup.mjs:*)
 disallowed-tools: Artifact, AskUserQuestion, BashOutput, Edit, EnterWorktree, ExitWorktree, Glob, Grep, KillShell, Monitor, NotebookEdit, Read, SendMessage, Skill, SlashCommand, TaskCreate, TaskGet, TaskList, TaskStop, TaskUpdate, TodoWrite, ToolSearch, WebFetch, WebSearch, Write, mcp__Claude_Browser__*
 ---
@@ -32,9 +32,12 @@ Read what the user actually said; there's no argument syntax to parse.
 
 | They said | You run |
 | :-- | :-- |
-| `/newTicket` (nothing named) | continuous mode: cycles back to back |
+| `/newTicket` (nothing named) | continuous mode: cycles back to back, file order |
+| `/newTicket ranked` | continuous mode: cycles back to back, highest-unblock-value order |
 | `/newTicket T035`, "work on the laced count task" | one cycle for that task |
 | `/newTicket resume T034`, `/newTicket T034 --resume` | one cycle resuming that task's existing claim branch |
+
+`ranked` only changes *which* actionable task continuous mode reaches first each cycle — every other rule on this page (skip/stop conditions, one task per cycle, fresh subagents) is identical. It cannot combine with a task ID or `resume`; both of those already pick one task directly, so `ticket-claim.mjs` rejects the combination as a usage error rather than guessing which one wins.
 
 ## One cycle
 
@@ -43,14 +46,15 @@ Exactly one task, claim → plan (maybe) → implement → cleanup. Post a short
 ### 1. Claim
 
 ```sh
-node .claude/scripts/ticket-claim.mjs                 # continuous: next actionable task
+node .claude/scripts/ticket-claim.mjs                 # continuous: next actionable task, file order
+node .claude/scripts/ticket-claim.mjs ranked          # continuous: next actionable task, ranked by unblock value
 node .claude/scripts/ticket-claim.mjs T035            # named
 node .claude/scripts/ticket-claim.mjs resume T034     # resume
 ```
 
 Parse the JSON. Its `status` is one of:
 
-- **`claimed`** — post `T0NN: claimed (branch <branch>) — <one-line paraphrase of the task>`. Carry `entry`, `branch`, `planFile`, `planExists`, `planning` into step 2.
+- **`claimed`** — post `T0NN: claimed (branch <branch>) — <one-line paraphrase of the task>`. When `ranked` is `true`, also mention `unblockFanOut` in that line (e.g. "— ranked pick, unblock fan-out 4"). Carry `entry`, `branch`, `planFile`, `planExists`, `planning` into step 2.
 - **`resumed`** — post `T0NN: resuming <branch> (plan <exists|missing>)`. Same fields; the script did not modify the branch.
 - **`blocked`** — post `T0NN: blocked — <blocker.detail>`. Cycle ends. If `blocker.resumeCommand` is present, include it verbatim so the user can pick the task back up. Whether this also ends the *run* (continuous mode) depends on the reason — see Continuous mode below.
 - **`backlog-exhausted`** — post `no actionable tasks left in backlog`. Cycle ends; not an error.
@@ -135,6 +139,8 @@ Nothing exposes remaining capacity ahead of time, so the guard is reactive: if a
 Nothing is wrong with the task: the branch stays claimed and pushed, and a committed `.claude/plans/<ID>.md` survives. Recover with `/newTicket resume T0NN`, which detects the durable plan and skips straight to implementation.
 
 ## Continuous mode
+
+If the user said `ranked`, pass it through to every claim call this run (step 1's command becomes `node .claude/scripts/ticket-claim.mjs ranked`). Nothing else below changes: `ticket-claim.mjs` re-parses `TASKS.md`/`TASKS_DONE.md` and recomputes the ranking fresh on every call, so a merge earlier in the run that unblocks a new ticket is already reflected in the very next cycle's pick — there is no separate re-ranking step for you to remember.
 
 1. Run a cycle with no task ID.
 2. Append its outcome (task ID, PR URL, or blocker/limit detail) to a running tally in your reply text — not in any file.

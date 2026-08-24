@@ -1,18 +1,13 @@
 #!/usr/bin/env node
-// Deterministic value-ranking for actionable TASKS.md backlog tickets.
+// Human-facing preview of the full unblock-value order behind
+// `ticket-claim.mjs ranked`. That command drives selection directly and only
+// reports the one task it picked; this script prints the whole ranked list —
+// including tasks currently below the top pick — for a human deciding
+// whether to just run `/newTicket ranked` or aim at a specific id instead.
 //
-// Companion to ticket-claim.mjs: reuses exactly the same parsing and the
-// exact same actionable definition (not-started, non-umbrella, every
-// dependency — including multi-id and ranged "Depends on" clauses — already
-// in TASKS_DONE.md, no existing task/<ID>-* branch on origin) via
-// lib/tasks.mjs, so the two never disagree about what's pickable. It only
-// adds an order: unblock fan-out, then Priority, then file order, instead of
-// ticket-claim.mjs's plain file-order scan.
-//
-// This exists so a caller who wants "the highest-value next ticket" doesn't
-// have to read all of TASKS.md/TASKS_DONE.md into a model context every
-// cycle just to re-derive it — this script does that parsing in plain node
-// and prints only the compact ranked result.
+// Reuses lib/tasks.mjs's parsing and ordering (parseBacklog/parseDoneIds/
+// isUmbrella/resolveDependsOn/orderByUnblockValue/computeUnblockFanOut) so
+// this list and `ticket-claim.mjs ranked`'s pick can never disagree.
 //
 // Usage:
 //   node .claude/scripts/rank-tickets.mjs             # full ranked list, best first
@@ -22,10 +17,15 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { createRunner } from './lib/exec.mjs';
-import { parseBacklog, parseDoneIds, isUmbrella, resolveDependsOn } from './lib/tasks.mjs';
+import {
+  computeUnblockFanOut,
+  isUmbrella,
+  orderByUnblockValue,
+  parseBacklog,
+  parseDoneIds,
+  resolveDependsOn,
+} from './lib/tasks.mjs';
 import { remoteClaims } from './ticket-claim.mjs';
-
-const PRIORITY_RANK = { high: 0, medium: 1, low: 2 };
 
 function parseArgs(argv) {
   const options = { top: null, repoRoot: null };
@@ -42,34 +42,29 @@ export function rankTickets({ tasksMd, doneMd, claimedBranches }) {
   const tasks = parseBacklog(tasksMd);
   const doneIds = parseDoneIds(doneMd);
   const knownIds = new Set([...tasks.map((task) => task.id), ...doneIds]);
-  const dependsOn = new Map(tasks.map((task) => [task.id, resolveDependsOn(task, knownIds)]));
-  const unmetDependency = (task) => [...dependsOn.get(task.id)].find((dependency) => !doneIds.has(dependency));
-  const fileIndex = new Map(tasks.map((task, index) => [task.id, index]));
+  const unmetDependency = (task) => [...resolveDependsOn(task, knownIds)].find((dependency) => !doneIds.has(dependency));
+  const fanOut = computeUnblockFanOut(tasks, doneIds);
 
-  const actionable = tasks.filter(
-    (task) =>
-      !isUmbrella(task, tasks) &&
-      task.status === 'Not started' &&
-      !unmetDependency(task) &&
-      (claimedBranches.get(task.id) ?? []).length === 0,
+  const actionable = new Set(
+    tasks
+      .filter(
+        (task) =>
+          !isUmbrella(task, tasks) &&
+          task.status === 'Not started' &&
+          !unmetDependency(task) &&
+          (claimedBranches.get(task.id) ?? []).length === 0,
+      )
+      .map((task) => task.id),
   );
 
-  // How many other not-yet-done tickets name this one in their own "Depends on".
-  const fanOut = (id) => tasks.filter((task) => !doneIds.has(task.id) && dependsOn.get(task.id).has(id)).length;
-
-  return actionable
+  return orderByUnblockValue(tasks, doneIds)
+    .filter((task) => actionable.has(task.id))
     .map((task) => ({
       id: task.id,
       title: task.title,
       priority: (task.fields.Priority ?? '').trim(),
-      fanOut: fanOut(task.id),
-    }))
-    .sort(
-      (a, b) =>
-        b.fanOut - a.fanOut ||
-        (PRIORITY_RANK[a.priority.toLowerCase()] ?? 3) - (PRIORITY_RANK[b.priority.toLowerCase()] ?? 3) ||
-        fileIndex.get(a.id) - fileIndex.get(b.id),
-    );
+      fanOut: fanOut.get(task.id),
+    }));
 }
 
 function main() {
