@@ -5,33 +5,51 @@
 # security/README.md for why the default ruleset already covers this app's real
 # Supabase secret shapes (anon/service_role keys, Auth session/refresh JWTs).
 #
-# Every allowlist entry below matches on the exact leaked *value* (regexes), not on a
-# whole file path, so a real secret later pasted into one of these files would still be
-# caught. Each entry documents which confirmed-synthetic fixture it exists for.
+# All entries below live in a single [[allowlists]] block (not one block per entry):
+# gitleaks-action's bundled engine was observed in a real CI run to only reliably honor
+# a single global allowlist block, silently dropping the effect of some entries when
+# split across multiple [[allowlists]] blocks -- confirmed by comparing a local
+# `gitleaks detect` run (v8.30.1, via the pinned Docker image) against the same commit
+# range scanned by gitleaks-action in CI. Keep every regex in this one list.
+#
+# Every regex below matches on the exact leaked *value*, not on a whole file path, so a
+# real secret later pasted into one of these files would still be caught.
 
 [extend]
 useDefault = true
 
 [[allowlists]]
-description = "jwt.io canonical example JWT used as a fixture in src/features/auth/model/auth-test-fixtures.ts -- not a real Supabase/Auth token, matches gitleaks' default 'jwt' rule."
+description = "Confirmed synthetic/fixture/placeholder values, never real secrets. See the description before each regex for which file/fixture it exists for."
 regexes = [
+  # jwt.io canonical example JWT used as a fixture in
+  # src/features/auth/model/auth-test-fixtures.ts -- not a real Supabase/Auth token,
+  # matches gitleaks' default 'jwt' rule.
   '''eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9\.eyJzdWIiOiIxMjM0NTY3ODkwIn0\.dozjgNryP4J3jVmNHl0w5N_XgL0n3I9PYRR2FyMorQI''',
-]
-
-[[allowlists]]
-description = "Synthetic REFRESH_TOKEN fixture in src/features/auth/model/auth-test-fixtures.ts -- randomly generated for tests, not a real refresh token, matches gitleaks' default 'generic-api-key' rule."
-regexes = [
+  # Synthetic REFRESH_TOKEN fixture in src/features/auth/model/auth-test-fixtures.ts --
+  # randomly generated for tests, not a real refresh token, matches gitleaks' default
+  # 'generic-api-key' rule.
   '''vJv8bZ0kL3nQ7wR2xY9dC1mF4hT6sA8u''',
-]
-
-[[allowlists]]
-description = "WRONG_PASSWORD test fixture in e2e/auth/01-sign-in-equivalence.spec.ts -- a deliberately wrong password string used to assert sign-in rejection, not a real credential, matches gitleaks' default 'generic-api-key' rule."
-regexes = [
+  # WRONG_PASSWORD test fixture in e2e/auth/01-sign-in-equivalence.spec.ts -- a
+  # deliberately wrong password string used to assert sign-in rejection, not a real
+  # credential, matches gitleaks' default 'generic-api-key' rule.
   '''incorrect-horse-battery-1''',
+  # LOCAL_ANON_KEY documented placeholder in supabase/README.md and
+  # .claude/plans/*.md (history-only, planning documents are deleted once their task
+  # closes per this repo's convention) curl examples -- a literal placeholder string
+  # for the local Supabase Auth CLI stack, never a real key, matches gitleaks' default
+  # 'curl-auth-header' rule.
+  '''LOCAL_ANON_KEY''',
+  # SERVICE_ROLE_KEY documented placeholder in .claude/plans/T153.10.md
+  # (history-only) curl examples -- same as LOCAL_ANON_KEY above, a literal
+  # placeholder, never a real key, matches gitleaks' default 'curl-auth-header' rule.
+  '''SERVICE_ROLE_KEY''',
 ]
 
-[[allowlists]]
-description = "LOCAL_ANON_KEY documented placeholder in supabase/README.md (and history-only .claude/plans/T153.10.md) curl examples -- a literal placeholder string for the local Supabase Auth CLI stack, never a real key, matches gitleaks' default 'curl-auth-header' rule."
-regexes = [
-  '''LOCAL_ANON_KEY''',
-]
+# Deliberately NOT allowlisted: the fake-secret fixture used by
+# security/scripts/verify-secret-detection.mjs's self-test. Its whole point is to
+# prove gitleaks still catches a JWT-shaped secret assembled at test run time -- if it
+# were allowlisted here, the self-test would falsely report "no leaks found" for the
+# scratch repos it builds using this same config. That script splits the fake JWT
+# across three separate string constants joined with "." at runtime specifically so
+# the full JWT-shaped string never appears as one contiguous literal in this repo's
+# real, permanent source/history for the default 'jwt' rule to (correctly) skip.

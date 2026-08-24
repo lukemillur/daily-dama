@@ -31,8 +31,19 @@ mkdirSync(SCRATCH_ROOT, { recursive: true });
 // segments, a "role":"service_role" payload) -- not a real key, never issued by any
 // real Supabase project. Representative of the "service-role keys and Auth sessions"
 // shape called out in the task description.
-const FAKE_SECRET =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoic2VydmljZV9yb2xlIiwiaXNzIjoic3VwYWJhc2UtZGVtbyJ9.fakeSignatureNotARealSecretXyz123456789";
+//
+// Deliberately split across three constants and joined at runtime, instead of one
+// contiguous literal: the assembled string is what a scratch-repo/scratch-bundle
+// fixture needs to trip gitleaks' default 'jwt' rule for this self-test to mean
+// anything, but this source file itself is committed to this repo's real, permanent
+// history -- if the full JWT-shaped string appeared here as one literal, the
+// `secret-scan` CI job would (correctly) flag this very file on every run, and the
+// only fix would be adding it to .gitleaks.toml's allowlist, which would then also
+// suppress it inside the scratch repos below and silently break this self-test.
+const FAKE_SECRET_HEADER = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9";
+const FAKE_SECRET_PAYLOAD = "eyJyb2xlIjoic2VydmljZV9yb2xlIiwiaXNzIjoic3VwYWJhc2UtZGVtbyJ9";
+const FAKE_SECRET_SIGNATURE = "fakeSignatureNotARealSecretXyz123456789";
+const FAKE_SECRET = [FAKE_SECRET_HEADER, FAKE_SECRET_PAYLOAD, FAKE_SECRET_SIGNATURE].join(".");
 
 function runGitCommand(args, cwd) {
   const result = spawnSync("git", args, { cwd, encoding: "utf8" });
