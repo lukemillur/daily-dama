@@ -149,16 +149,6 @@ _All currently actionable backend-roadmap work is phase-gated and active in depe
 - **Description:** Add the complete Phase 1 web Auth foundation while preserving unrestricted guest access to `/app`.
 - **Notes:** Umbrella from S032. Complete T153.1–T153.13. Native callbacks, SecureStore, and synchronization are excluded.
 
-### [T153.3] Configure Resend Auth email delivery and DNS authentication
-
-- **Area:** Auth email delivery
-- **Priority:** High (inherited from parent T153)
-- **Status:** Not started
-- **Planning:** Required
-- **Description:** Configure Supabase custom SMTP through Resend using the dedicated `auth.dailydama.com` sending subdomain, mirror the repository-owned confirmation and recovery templates into the hosted project, and disable link tracking so single-use Auth URLs are not rewritten.
-- **Exit criteria:** A dated, secret-free delivery record proves hosted confirmation and recovery messages arrive through Resend from the Auth subdomain with their callback URLs intact, Resend link tracking is disabled, SPF and DKIM pass, and the subdomain publishes a visible DMARC `p=none` policy; no SMTP credential appears in tracked files or client-exposed environment values.
-- **Notes:** From S032 and roadmap Phase 1 backend item 4 plus the email/redirect security requirements. Depends on T153.1–T153.2. T162 later repeats deliverability checks before external signup and may tighten the DMARC policy using observed delivery evidence.
-
 ### [T153.13] Verify Phase 1 web Auth security end to end
 
 - **Area:** Authentication security testing
