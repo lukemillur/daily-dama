@@ -97,6 +97,33 @@ A non-task heading inside Backlog. Parsing must ignore it.
 - **Exit criteria:** Tests, once unblocked.
 - **Notes:** None.
 
+### [T107] Cover a multi-id dependency clause
+
+- **Area:** Repository documentation
+- **Priority:** Low
+- **Status:** Not started
+- **Description:** Fixture only. Depends on T099, T098, and T900.
+- **Exit criteria:** n/a — fixture only.
+- **Notes:** None.
+
+### [T108] Cover a same-ticket decimal dependency range
+
+- **Area:** Repository documentation
+- **Priority:** Low
+- **Status:** Not started
+- **Description:** Fixture only. Depends on T104.1–T104.2.
+- **Exit criteria:** n/a — fixture only.
+- **Notes:** None.
+
+### [T109] Cover a cross-ticket dependency range
+
+- **Area:** Repository documentation
+- **Priority:** Low
+- **Status:** Not started
+- **Description:** Fixture only. Depends on T100–T103.
+- **Exit criteria:** n/a — fixture only.
+- **Notes:** None.
+
 ## Done
 
 Completed entries live in TASKS_DONE.fixture.md.

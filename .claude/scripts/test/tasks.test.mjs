@@ -7,9 +7,11 @@ import { fileURLToPath } from 'node:url';
 import {
   branchNameFor,
   childrenOf,
+  expandDependsOnRange,
   isUmbrella,
   parseBacklog,
   parseDoneIds,
+  resolveDependsOn,
   resolvePlanningPolicy,
   selectTask,
   setTaskStatus,
@@ -30,7 +32,7 @@ const noClaims = new Map();
 test('parses only [T###] headings from the Backlog section', () => {
   assert.deepEqual(
     tasks.map((task) => task.id),
-    ['T100', 'T101', 'T102', 'T103', 'T104', 'T104.1', 'T104.2', 'T105', 'T106'],
+    ['T100', 'T101', 'T102', 'T103', 'T104', 'T104.1', 'T104.2', 'T105', 'T106', 'T107', 'T108', 'T109'],
   );
   assert.equal(byId('T100').title, 'Rename a label on the summary card');
   assert.equal(byId('T100').status, 'Not started');
@@ -61,6 +63,32 @@ test('extracts stated dependencies', () => {
   assert.deepEqual(byId('T104.2').dependsOn, ['T104.1']);
   assert.deepEqual(byId('T105').dependsOn, ['T900']);
   assert.deepEqual(byId('T101').dependsOn, []);
+});
+
+test('extracts every id in a multi-id "Depends on A, B, and C" clause, not just the first', () => {
+  assert.deepEqual(byId('T107').dependsOn, ['T099', 'T098', 'T900']);
+});
+
+test('captures dependency ranges separately, for expansion once the full known-id set is available', () => {
+  assert.deepEqual(byId('T108').dependsOnRanges, [['T104.1', 'T104.2']]);
+  assert.deepEqual(byId('T109').dependsOnRanges, [['T100', 'T103']]);
+});
+
+test('expandDependsOnRange: a same-top-level range expands the decimal sub-range', () => {
+  const knownIds = new Set(tasks.map((task) => task.id));
+  assert.deepEqual(expandDependsOnRange('T104.1', 'T104.2', knownIds).sort(), ['T104.1', 'T104.2']);
+});
+
+test('expandDependsOnRange: a cross-ticket range expands to every known id whose top-level number falls inside it', () => {
+  const knownIds = new Set(tasks.map((task) => task.id));
+  assert.deepEqual(expandDependsOnRange('T100', 'T103', knownIds).sort(), ['T100', 'T101', 'T102', 'T103']);
+});
+
+test('resolveDependsOn unions named ids with every expanded range', () => {
+  const knownIds = new Set(tasks.map((task) => task.id));
+  assert.deepEqual([...resolveDependsOn(byId('T107'), knownIds)].sort(), ['T098', 'T099', 'T900']);
+  assert.deepEqual([...resolveDependsOn(byId('T108'), knownIds)].sort(), ['T104.1', 'T104.2']);
+  assert.deepEqual([...resolveDependsOn(byId('T109'), knownIds)].sort(), ['T100', 'T101', 'T102', 'T103']);
 });
 
 test('parses done IDs and respects a non-Done archived status', () => {
@@ -309,4 +337,41 @@ test('selection: a named unknown / blocked / dependent / claimed task each repor
     requestedId: 'T103',
   });
   assert.equal(claimed.blocker.reason, 'claimed');
+});
+
+test('selection: a multi-id dependency clause blocks on any unmet member, not only the first named', () => {
+  // T107 depends on T099 (Done), T098 (archived but not Done), and T900
+  // (never archived). A parser that only reads the first id after "depends
+  // on" would see just T099, treat T107 as satisfied, and wrongly select it.
+  const result = selectTask({ tasks, doneIds, claimedBranches: noClaims, requestedId: 'T107' });
+  assert.equal(result.status, 'blocked');
+  assert.equal(result.blocker.reason, 'dependency');
+  assert.match(result.blocker.detail, /T098/);
+});
+
+test('selection: a same-ticket decimal dependency range blocks until every id in the range is archived', () => {
+  let result = selectTask({ tasks, doneIds, claimedBranches: noClaims, requestedId: 'T108' });
+  assert.equal(result.status, 'blocked');
+  assert.equal(result.blocker.reason, 'dependency');
+
+  const partiallyDone = new Set([...doneIds, 'T104.1']);
+  result = selectTask({ tasks, doneIds: partiallyDone, claimedBranches: noClaims, requestedId: 'T108' });
+  assert.equal(result.status, 'blocked');
+  assert.match(result.blocker.detail, /T104\.2/);
+
+  const fullyDone = new Set([...doneIds, 'T104.1', 'T104.2']);
+  result = selectTask({ tasks, doneIds: fullyDone, claimedBranches: noClaims, requestedId: 'T108' });
+  assert.equal(result.status, 'selected');
+  assert.equal(result.task.id, 'T108');
+});
+
+test('selection: a cross-ticket dependency range expands to every existing id in that span', () => {
+  let result = selectTask({ tasks, doneIds, claimedBranches: noClaims, requestedId: 'T109' });
+  assert.equal(result.status, 'blocked');
+  assert.equal(result.blocker.reason, 'dependency');
+
+  const allDone = new Set([...doneIds, 'T100', 'T101', 'T102', 'T103']);
+  result = selectTask({ tasks, doneIds: allDone, claimedBranches: noClaims, requestedId: 'T109' });
+  assert.equal(result.status, 'selected');
+  assert.equal(result.task.id, 'T109');
 });
