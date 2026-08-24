@@ -18,7 +18,12 @@ import {
   loadCustomTricks,
   saveCustomTricks,
 } from '@/features/custom-tricks/persistence/custom-trick-persistence';
+import { createCustomTrickSyncTransportAdapter } from '@/features/custom-tricks/persistence/custom-trick-sync-transport';
+import { useCustomTrickDomainSync } from '@/features/custom-tricks/state/use-custom-trick-domain-sync';
+import { useIdentityHandle } from '@/shared/persistence/identity-provider';
 import { useIdentityScopedDomain } from '@/shared/persistence/use-identity-scoped-domain';
+import { getSupabaseClient } from '@/shared/supabase/supabase-client';
+import type { DomainSyncRecord, SyncTrigger } from '@/shared/sync/coordinator';
 
 type SaveCustomTrickResult =
   | Extract<CustomTrickDraftValidation, { status: 'invalid' }>
@@ -32,6 +37,14 @@ interface CustomTrickActions {
 
 const CustomTrickStateContext = createContext<CustomTrickCollection | undefined>(undefined);
 const CustomTrickActionsContext = createContext<CustomTrickActions | undefined>(undefined);
+
+export interface CustomTrickSync {
+  readonly runSync: (trigger: SyncTrigger) => Promise<DomainSyncRecord>;
+  readonly isSyncing: boolean;
+  readonly lastResult: DomainSyncRecord | undefined;
+}
+
+const CustomTrickSyncContext = createContext<CustomTrickSync | undefined>(undefined);
 
 export function CustomTrickProvider({ children }: PropsWithChildren) {
   const { state: collection, dispatch, hasHydrated } = useIdentityScopedDomain({
@@ -49,6 +62,27 @@ export function CustomTrickProvider({ children }: PropsWithChildren) {
     onSaveFailed: (error) => {
       console.warn('Unable to persist custom tricks.', error);
     },
+  });
+
+  // Additive: a second, parallel identity-scoped domain instance tracking
+  // sync bookkeeping (T157.5). The primary reducer above stays completely
+  // untouched and remains the sole source of truth for the rendered
+  // `CustomTrickCollection` -- this hook only pulls/pushes in the background
+  // and, on a safe pull-adopt, dispatches the same `customTricksRestored`
+  // action hydration itself uses.
+  const { identity } = useIdentityHandle();
+  const getTransport = useCallback(() => {
+    if (identity.kind !== 'user') return undefined;
+    const client = getSupabaseClient();
+    if (client === null) return undefined;
+    return createCustomTrickSyncTransportAdapter(client, identity.userId);
+  }, [identity]);
+
+  const sync = useCustomTrickDomainSync({
+    collection,
+    hasHydratedCollection: hasHydrated,
+    dispatchCollection: dispatch,
+    getTransport,
   });
 
   const addCustomTrick = useCallback((draft: CustomTrickDraft): SaveCustomTrickResult => {
@@ -93,7 +127,7 @@ export function CustomTrickProvider({ children }: PropsWithChildren) {
   return (
     <CustomTrickStateContext.Provider value={collection}>
       <CustomTrickActionsContext.Provider value={actions}>
-        {children}
+        <CustomTrickSyncContext.Provider value={sync}>{children}</CustomTrickSyncContext.Provider>
       </CustomTrickActionsContext.Provider>
     </CustomTrickStateContext.Provider>
   );
@@ -111,6 +145,16 @@ export function useCustomTrickActions() {
     throw new Error('useCustomTrickActions must be used within CustomTrickProvider.');
   }
   return actions;
+}
+
+// Exposed for a future manual-retry affordance (T160.1) and for tests --
+// deliberately no UI consumes this yet.
+export function useCustomTrickSync(): CustomTrickSync {
+  const sync = useContext(CustomTrickSyncContext);
+  if (!sync) {
+    throw new Error('useCustomTrickSync must be used within CustomTrickProvider.');
+  }
+  return sync;
 }
 
 const styles = StyleSheet.create({

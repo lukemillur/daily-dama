@@ -17,19 +17,19 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
-function isNormalizedText(value: unknown): value is string {
+export function isNormalizedText(value: unknown): value is string {
   return typeof value === 'string' && value.length > 0 && value === value.trim();
 }
 
-function isFiniteNonNegative(value: unknown): value is number {
+export function isFiniteNonNegative(value: unknown): value is number {
   return typeof value === 'number' && Number.isFinite(value) && value >= 0;
 }
 
-function isPositiveInteger(value: unknown): value is number {
+export function isPositiveInteger(value: unknown): value is number {
   return typeof value === 'number' && Number.isInteger(value) && value > 0;
 }
 
-function isGoal(value: unknown): value is Goal {
+export function isGoal(value: unknown): value is Goal {
   if (!isRecord(value)) return false;
 
   const { id, trickId, trickName, kind, targetCount, targetMs, createdAt } = value;
@@ -45,6 +45,19 @@ function isGoal(value: unknown): value is Goal {
     return isPositiveInteger(targetMs);
   }
   return false;
+}
+
+// T157.7: validates an in-memory (already-parsed) value as a
+// `GoalCollection`, unlike `deserializeGoals` which only operates on a JSON
+// *string*. Used as the `SyncEnvelopeCodec<GoalSyncSnapshot>.isState`
+// predicate's `collection` field check, mirroring
+// `isCustomTrickCollection` exactly.
+export function isGoalCollection(value: unknown): value is GoalCollection {
+  if (!isRecord(value) || !Array.isArray(value.goals) || !value.goals.every(isGoal)) {
+    return false;
+  }
+  const ids = value.goals.map((goal) => goal.id);
+  return new Set(ids).size === ids.length;
 }
 
 export function serializeGoals(collection: GoalCollection) {
