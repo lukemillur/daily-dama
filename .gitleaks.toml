@@ -1,0 +1,37 @@
+# T162.3: gitleaks configuration for this repo's secret scanning (history scan via
+# gitleaks-action in CI, and the built-web-bundle scan run by
+# security/scripts/check-bundle-secrets.mjs). Extends the default gitleaks ruleset
+# (JWT, generic-api-key, curl-auth-header, etc.) rather than replacing it -- see
+# security/README.md for why the default ruleset already covers this app's real
+# Supabase secret shapes (anon/service_role keys, Auth session/refresh JWTs).
+#
+# Every allowlist entry below matches on the exact leaked *value* (regexes), not on a
+# whole file path, so a real secret later pasted into one of these files would still be
+# caught. Each entry documents which confirmed-synthetic fixture it exists for.
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "jwt.io canonical example JWT used as a fixture in src/features/auth/model/auth-test-fixtures.ts -- not a real Supabase/Auth token, matches gitleaks' default 'jwt' rule."
+regexes = [
+  '''eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9\.eyJzdWIiOiIxMjM0NTY3ODkwIn0\.dozjgNryP4J3jVmNHl0w5N_XgL0n3I9PYRR2FyMorQI''',
+]
+
+[[allowlists]]
+description = "Synthetic REFRESH_TOKEN fixture in src/features/auth/model/auth-test-fixtures.ts -- randomly generated for tests, not a real refresh token, matches gitleaks' default 'generic-api-key' rule."
+regexes = [
+  '''vJv8bZ0kL3nQ7wR2xY9dC1mF4hT6sA8u''',
+]
+
+[[allowlists]]
+description = "WRONG_PASSWORD test fixture in e2e/auth/01-sign-in-equivalence.spec.ts -- a deliberately wrong password string used to assert sign-in rejection, not a real credential, matches gitleaks' default 'generic-api-key' rule."
+regexes = [
+  '''incorrect-horse-battery-1''',
+]
+
+[[allowlists]]
+description = "LOCAL_ANON_KEY documented placeholder in supabase/README.md (and history-only .claude/plans/T153.10.md) curl examples -- a literal placeholder string for the local Supabase Auth CLI stack, never a real key, matches gitleaks' default 'curl-auth-header' rule."
+regexes = [
+  '''LOCAL_ANON_KEY''',
+]

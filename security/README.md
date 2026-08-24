@@ -1,9 +1,11 @@
-# Web security headers (T162.1 / T162.2)
+# Web security headers (T162.1 / T162.2) and CI scanning (T162.3)
 
-This is the handoff for the static web export Content Security Policy (CSP) and the
-remaining defensive headers. T162.1 shipped the CSP in report-only mode; T162.2
-flipped it to enforcing mode and added Strict-Transport-Security,
-X-Content-Type-Options, Referrer-Policy, and a fully restrictive Permissions-Policy.
+This is the handoff for the static web export Content Security Policy (CSP), the
+remaining defensive headers, and CI dependency/secret/bundle scanning. T162.1 shipped
+the CSP in report-only mode; T162.2 flipped it to enforcing mode and added
+Strict-Transport-Security, X-Content-Type-Options, Referrer-Policy, and a fully
+restrictive Permissions-Policy. T162.3 added `.github/workflows/ci.yml` jobs that
+scan dependencies, secrets, and the built web bundle on every PR/push.
 
 ## Where the policy lives
 
@@ -133,8 +135,80 @@ effect (an actual protocol upgrade) can only be verified against a real HTTPS de
 never this local HTTP harness -- the automated checks here can only confirm the header
 is present with the correct value.
 
+## CI dependency, secret, and built-bundle scanning (T162.3)
+
+Four new `ci.yml` jobs run automatically on every pull request and push to
+`main`/`development` -- **unlike** `security:check-headers`/`test:e2e:security` above,
+which are manual-only (build+serve a fresh export, not part of `.claude/scripts/verify.mjs`'s
+default loop). Don't assume parity between the two groups.
+
+- `dependency-audit` -- runs `yarn security:check-dependency-audit`
+  (`security/scripts/check-dependency-audit.mjs`). `yarn audit --level <severity>` does
+  **not** gate Yarn Classic's exit code: the flag only filters the printed report, while
+  the actual exit code is a bitmask of every severity present regardless of `--level`
+  (confirmed locally while planning this task). This script instead runs
+  `yarn audit --json`, parses the NDJSON output itself, and fails if any `high`/`critical`
+  advisory isn't listed in `security/accepted-dependency-advisories.json`. That file is a
+  small, dated, reasoned allowlist -- currently the four Metro/bundler-devDependency
+  advisories (`image-size` x2, `nanoid`, `uuid`) that have no upstream patch as of
+  2026-08-24 and are build-time-only (never shipped in the web bundle). Revisit it on the
+  next Expo/Metro upgrade; prefer bumping the dependency and removing the entry over
+  leaving it stale.
+- `secret-scan` -- `gitleaks/gitleaks-action@v3` scans the full checked-out git history
+  (`fetch-depth: 0`) using this repo's `.gitleaks.toml`, which extends gitleaks' default
+  ruleset (already covers this app's real secret shapes -- Supabase anon/service_role
+  keys and Auth session/refresh JWTs are all JWT- or high-entropy-token-shaped, matching
+  the default `jwt`/`generic-api-key` rules) plus a small allowlist of four confirmed
+  false positives found while planning this task (the jwt.io example JWT and a synthetic
+  refresh-token fixture in `src/features/auth/model/auth-test-fixtures.ts`, a
+  deliberately-wrong-password test fixture in `e2e/auth/01-sign-in-equivalence.spec.ts`,
+  and the `LOCAL_ANON_KEY` documented placeholder in `supabase/README.md`). Each
+  allowlist entry matches on the exact leaked *value* via a regex, not a whole file path,
+  so a real secret later pasted into one of those files would still be caught.
+  `GITLEAKS_ENABLE_COMMENTS` is set to `"false"` so the job never needs
+  `pull-requests: write` -- see the permissions note below.
+- `bundle-secret-scan` -- runs `yarn security:check-bundle-secrets`
+  (`security/scripts/check-bundle-secrets.mjs`): builds a fresh production-like export
+  via the same `buildExport()` used by `check-csp-headers.mjs`, then scans `dist/` with
+  the plain `gitleaks` CLI (via its official Docker image, pinned by digest -- required
+  because `gitleaks-action` only scans a checked-out repo's git history, not an
+  arbitrary directory). Catches secrets accidentally baked into the client bundle
+  (only `EXPO_PUBLIC_*` values are ever safe there).
+- `secret-scan-self-test` -- runs `yarn security:verify-secret-detection`
+  (`security/scripts/verify-secret-detection.mjs`, `node:test`-based). A permanent
+  regression guard proving the scanning wiring itself still works, in the same spirit as
+  `security/dangerous-html-audit.test.ts`. It builds a synthetic, clearly-fake
+  Supabase-service-role-shaped JWT into a throwaway scratch git repo and a throwaway
+  copy of a real `dist/` export **at test run time**, asserts gitleaks flags both, and
+  asserts an unmodified control (an empty scratch repo; an unmodified export copy)
+  scans clean. No secret-shaped fixture content is ever committed to this repo's real,
+  permanent history or working tree -- that's the trap a naive "commit a fixture secret"
+  test would fall into. Scratch dirs are created under a repo-local, gitignored
+  `.security-scratch/` directory rather than the OS temp dir: Docker Desktop's default
+  macOS file sharing does not cover `/tmp`/`/var/folders`, so mounting a system-tmpdir
+  path into the gitleaks container silently scans 0 bytes there; a repo-local path works
+  both locally and on native-Linux CI runners.
+
+**Documented gap:** there is no default gitleaks rule specific to Resend/SMTP secrets.
+Nothing in this repo's source or env handling currently touches those (SMTP config is
+Supabase-dashboard-side per `supabase/RESEND_DNS_AUTH.md`), so a bespoke rule wasn't
+worth adding for this task. Revisit if SMTP credentials are ever handled in-repo.
+
+**Permissions:** `ci.yml` sets a workflow-level `permissions: contents: read`, made
+explicit in the file itself (matching the repo's actual default) rather than left as an
+invisible external setting. No job above needs write access to any permission scope.
+
+**Running these locally** (the two Docker-based ones require Docker running locally,
+same as the local Supabase stack in `supabase/README.md`):
+
+- `yarn security:check-dependency-audit` -- no Docker needed.
+- `yarn security:check-bundle-secrets` -- requires Docker.
+- `yarn security:verify-secret-detection` -- requires Docker.
+
 ## Status
 
 This ships **enforced** as of T162.2. `Content-Security-Policy` is enforcing (no
 longer `-Report-Only`), and `vercel.json` also sets Strict-Transport-Security,
 X-Content-Type-Options, Referrer-Policy, and Permissions-Policy on every route.
+CI dependency/secret/bundle scanning shipped in T162.3 and runs automatically on every
+PR/push per `ci.yml`'s existing triggers.

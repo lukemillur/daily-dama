@@ -49,3 +49,8 @@ example
 # Playwright run artifacts
 /test-results/
 /playwright-report/
+
+# security self-test scratch dirs (T162.3) -- created under the repo root, not
+# os.tmpdir(), because Docker Desktop's default macOS file sharing does not cover
+# /tmp/var/folders, only paths under the user's home directory.
+/.security-scratch/
