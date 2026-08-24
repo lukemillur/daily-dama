@@ -35,6 +35,7 @@
     "three": "^0.185.1"
   },
   "devDependencies": {
+    "@playwright/test": "^1.62.1",
     "@react-native/jest-preset": "0.86.2",
     "@types/jest": "29.5.14",
     "@types/react": "~19.2.2",
@@ -51,7 +52,8 @@
     "web": "expo start --web",
     "lint": "expo lint",
     "test": "jest --runInBand",
-    "test:workflow": "node --test '.claude/scripts/test/*.test.mjs'"
+    "test:workflow": "node --test '.claude/scripts/test/*.test.mjs'",
+    "test:e2e:auth": "node .claude/scripts/run-auth-e2e.mjs"
   },
   "jest": {
     "preset": "jest-expo",
@@ -62,10 +64,12 @@
     },
     "testPathIgnorePatterns": [
       "/node_modules/",
-      "<rootDir>/.claude/worktrees/"
+      "<rootDir>/.claude/worktrees/",
+      "<rootDir>/e2e/"
     ],
     "modulePathIgnorePatterns": [
-      "<rootDir>/.claude/worktrees/"
+      "<rootDir>/.claude/worktrees/",
+      "<rootDir>/e2e/"
     ]
   },
   "private": true
