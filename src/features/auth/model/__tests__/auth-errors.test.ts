@@ -16,6 +16,7 @@ describe('categorizeAuthError', () => {
     session_expired: 'expiredOrInvalidLink',
     bad_code_verifier: 'missingVerifier',
     flow_state_not_found: 'missingVerifier',
+    pkce_code_verifier_not_found: 'missingVerifier',
   };
 
   it.each(authApiErrorFixtures)('maps code $code to its actionable category', (fixture) => {

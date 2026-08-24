@@ -141,24 +141,6 @@ _T132–T152 come from stories S001–S022 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 _All currently actionable backend-roadmap work is phase-gated and active in dependency order: Phase 1/Auth T153–T154, Phase 2 T155, Phase 3 T156–T160, Phase 4 T161, and the Phase 6 launch gate T162. T154 is the shared credential-maintenance prerequisite named by both Phase 1 and Phase 4, and is ordered before T158's guarded-logout integration. Phase 5 has no active ticket while native hardening is deferred. Supabase, unrestricted guest access, web PKCE, exact callbacks, local-first synchronization, immediate deletion, and the roadmap's security requirements are settled decisions._
 
-### [T153] Establish optional web account access and recovery
-
-- **Area:** Authentication
-- **Priority:** High
-- **Status:** Not started
-- **Description:** Add the complete Phase 1 web Auth foundation while preserving unrestricted guest access to `/app`.
-- **Notes:** Umbrella from S032. Complete T153.1–T153.13. Native callbacks, SecureStore, and synchronization are excluded.
-
-### [T153.13] Verify Phase 1 web Auth security end to end
-
-- **Area:** Authentication security testing
-- **Priority:** High (inherited from parent T153)
-- **Status:** Not started
-- **Planning:** Required
-- **Description:** Add a black-box Phase 1 acceptance suite spanning a clean local Supabase reset and the completed web routes. Verify already-implemented behavior only: this checkpoint must not become a second implementation ticket for missing Auth branches or redaction logic.
-- **Exit criteria:** One documented command resets local Supabase and passes an acceptance matrix covering new/existing signup equivalence, unknown/wrong-password sign-in equivalence, known/unknown recovery equivalence, verification and reset, resend limits, expired sessions, missing/reused/malformed/verifier-mismatched callbacks, open-redirect rejection, application-log/Analytics redaction, and guest access to every existing `/app` top-level route while Auth is initializing, offline, or unavailable; the standard Jest, lint, TypeScript, and static web-export sequence also passes with all `/auth/*` routes present.
-- **Notes:** From S032 and roadmap Phase 1 security/verification requirements. Depends on T153.1 and T153.4–T153.12. The redaction boundary covers application-owned console calls and Vercel Analytics events; Supabase service logs and browser network tooling are outside this frontend acceptance boundary. Defects found here return to their owning ticket or a new focused follow-up rather than being silently implemented in this suite.
-
 _Phase 1/4 shared account-maintenance activation: T154 comes from S033 and the credential-maintenance/logout items repeated across `BACKEND_ROADMAP.md` Phases 1 and 4. It follows the core Auth routes and precedes Phase 3's T158 guarded logout, while account deletion stays separate in T161._
 
 ### [T154] Add secure signed-in credential maintenance
