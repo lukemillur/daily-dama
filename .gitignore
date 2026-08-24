@@ -45,3 +45,7 @@ example
 
 # agent worktree isolation
 .claude/worktrees/
+
+# Playwright run artifacts
+/test-results/
+/playwright-report/
