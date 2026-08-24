@@ -160,6 +160,11 @@ site_url = "http://localhost:8081"
 # The public URL that Auth serves on. Defaults to the API external URL with `/auth/v1` appended.
 # external_url = ""
 # A list of *exact* URLs that auth providers are permitted to redirect to post authentication.
+# T154.1 note: verified live against this local stack that GoTrue's own match here ignores the
+# query string -- a redirectTo of "http://localhost:8081/auth/callback?flow=email_change"
+# (AuthProvider.changeEmail's redirect, used to discriminate an email-change confirmation from a
+# signup confirmation in AuthCallbackScreen) is accepted without adding it as its own entry here.
+# Do not assume this also holds for the hosted project without the same live check.
 additional_redirect_urls = ["http://localhost:8081/auth/callback"]
 # How long tokens are valid for, in seconds. Defaults to 3600 (1 hour), maximum 604,800 (1 week).
 # Explicitly pinned to one hour per BACKEND_ROADMAP.md Phase 1 policy -- do not rely on the CLI default.
@@ -222,10 +227,19 @@ web3 = 30
 enable_signup = true
 # If enabled, a user will be required to confirm any email change on both the old, and new email
 # addresses. If disabled, only the new email is required to confirm.
+# T154.1 relies on this being true: it's this project's "secure email change" setting, and
+# AccountSecurityScreen's change-email flow assumes both a current- and new-address confirmation
+# are required before an email actually changes.
 double_confirm_changes = true
 # If enabled, users need to confirm their email address before signing in.
 enable_confirmations = true
 # If enabled, users will need to reauthenticate or have logged in recently to change their password.
+# T154.1 deliberately leaves this false: current-password verification for the signed-in
+# password-change flow is implemented at the app layer instead (AuthProvider.changePassword
+# calls signInWithPassword with the account's own known email before updateUser), not via
+# GoTrue's reauthentication-OTP mechanism. Do not flip this to true to "fix" password-change
+# security -- it would require GoTrue's separate reauthenticate() flow, which is MFA/OTP-adjacent
+# and explicitly out of scope for this ticket.
 secure_password_change = false
 # Controls the minimum amount of time that must pass before sending another signup confirmation or password reset email.
 max_frequency = "1s"

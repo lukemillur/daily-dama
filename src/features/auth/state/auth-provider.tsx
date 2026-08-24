@@ -28,6 +28,11 @@ interface AuthActions {
   readonly requestPasswordReset: (email: string) => Promise<{ error: AuthError | null }>;
   readonly signUp: (email: string, password: string) => Promise<{ error: AuthError | null }>;
   readonly resendSignupConfirmation: (email: string) => Promise<{ error: AuthError | null }>;
+  readonly changePassword: (
+    currentPassword: string,
+    newPassword: string,
+  ) => Promise<{ error: AuthError | null }>;
+  readonly changeEmail: (newEmail: string) => Promise<{ error: AuthError | null }>;
 }
 
 const AuthStateContext = createContext<AuthState | undefined>(undefined);
@@ -180,6 +185,69 @@ export function AuthProvider({ children }: PropsWithChildren) {
     return { error };
   }, []);
 
+  const changePassword = useCallback(async (currentPassword: string, newPassword: string) => {
+    if (stateRef.current.status !== 'authenticated') {
+      return { error: new AuthError('No active session.', 401, 'session_not_found') };
+    }
+
+    const client = getSupabaseClient();
+
+    if (!client) {
+      return { error: new AuthError('Supabase is not configured.') };
+    }
+
+    const email = stateRef.current.session.user.email;
+    if (!email) {
+      // Defensive only -- this app is email/password-only, so an authenticated user should
+      // always have an email. Kept as a generic session error rather than a crash.
+      return { error: new AuthError('No account email on the current session.', 401, 'session_not_found') };
+    }
+
+    // Re-establish a brand-new, fully valid session immediately before updateUser -- this is
+    // the app-level current-password verification (see the ticket's plan for why this is used
+    // instead of GoTrue's own reauthenticate()/secure_password_change). Signing back in against
+    // the account's own already-known email is not an enumeration risk: the caller is already
+    // authenticated and already knows this email.
+    const { error: signInError } = await client.auth.signInWithPassword({
+      email,
+      password: currentPassword,
+    });
+    if (signInError) {
+      return { error: signInError };
+    }
+
+    const { error } = await client.auth.updateUser({ password: newPassword });
+    return { error };
+  }, []);
+
+  const changeEmail = useCallback(async (newEmail: string) => {
+    if (stateRef.current.status !== 'authenticated') {
+      return { error: new AuthError('No active session.', 401, 'session_not_found') };
+    }
+
+    const client = getSupabaseClient();
+
+    if (!client) {
+      return { error: new AuthError('Supabase is not configured.') };
+    }
+
+    if (typeof window === 'undefined') {
+      return { error: new AuthError('Unable to resolve the callback URL.') };
+    }
+
+    // Fixed, non-attacker-influenceable redirect, same pattern as requestPasswordReset/signUp
+    // above -- plus a flow=email_change discriminator so AuthCallbackScreen can tell an
+    // email-change confirmation link apart from a signup-confirmation link, neither of which
+    // GoTrue itself distinguishes via redirectType or a stable field on the completing session
+    // (confirmed live against local GoTrue: new_email is only present on the *first*-clicked
+    // confirmation's redirect, which carries no code at all when double_confirm_changes is on --
+    // the *second*-clicked link is the one that returns an exchangeable code, and by then
+    // new_email has already been cleared from the returned session).
+    const redirectTo = window.location.origin + '/auth/callback?flow=email_change';
+    const { error } = await client.auth.updateUser({ email: newEmail }, { emailRedirectTo: redirectTo });
+    return { error };
+  }, []);
+
   const actions = useMemo(
     () => ({
       signInWithPassword,
@@ -189,6 +257,8 @@ export function AuthProvider({ children }: PropsWithChildren) {
       requestPasswordReset,
       signUp,
       resendSignupConfirmation,
+      changePassword,
+      changeEmail,
     }),
     [
       signInWithPassword,
@@ -198,6 +268,8 @@ export function AuthProvider({ children }: PropsWithChildren) {
       requestPasswordReset,
       signUp,
       resendSignupConfirmation,
+      changePassword,
+      changeEmail,
     ],
   );
 

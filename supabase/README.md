@@ -333,6 +333,14 @@ resend-limit spec intercepts that one request and fulfills it with GoTrue's real
 `over_email_send_rate_limit` response shape instead -- proving the *app's* reaction to
 that response, since the server-side enforcement itself is not exercisable locally.
 
+T154.1's `e2e/auth/07-account-security.spec.ts` spends four further real sends this
+same way, riding on the same no-op-without-SMTP finding above: two for the full
+two-address `double_confirm_changes` email-change scenario (one to the current
+address, one to the new address, in the one `updateUser({ email })` call) and two
+more for the parallel email-change redaction scenario. All four are real Mailpit
+sends read back via `fetchLatestAuthLink`, not synthesized links -- `generateLink`
+was already ruled out above for not producing an exchangeable PKCE `code`.
+
 ## Non-goals of this ticket
 
 - No hosted/remote Supabase project changes (T153.2).
