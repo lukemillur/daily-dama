@@ -1,11 +1,14 @@
 #!/usr/bin/env node
-// T162.1: automated header-rejection check for the report-only CSP.
+// T162.2 (headers added by T162.1 report-only phase, now enforced): automated
+// header-rejection check for the enforced CSP plus the remaining defensive headers.
 // Builds a fresh production-like export, serves it exactly like Vercel would (via
-// build-and-serve.mjs), then asserts the served Content-Security-Policy-Report-Only
-// header is present, byte-identical across sampled routes, matches an independently
-// written expected allow-list (not round-tripped from vercel.json), never contains a
-// bare wildcard, and that the script-src hash still matches a fresh recomputation from
-// the actual exported inline bootstrap script (the drift guard called out in the plan).
+// build-and-serve.mjs), then asserts the served Content-Security-Policy header is
+// present, byte-identical across sampled routes, matches an independently written
+// expected allow-list (not round-tripped from vercel.json), never contains a bare
+// wildcard, that the script-src hash still matches a fresh recomputation from the
+// actual exported inline bootstrap script (the drift guard called out in the plan),
+// and that Strict-Transport-Security, X-Content-Type-Options, Referrer-Policy, and
+// Permissions-Policy are all present with their exact expected values.
 
 import { test } from "node:test";
 import assert from "node:assert/strict";
@@ -43,6 +46,20 @@ const EXPECTED_DIRECTIVES = {
   "form-action": ["'self'"],
 };
 
+// Independently written expected values for the four defensive headers added in
+// T162.2, not round-tripped from vercel.json.
+const EXPECTED_OTHER_HEADERS = {
+  "strict-transport-security": "max-age=63072000; includeSubDomains",
+  "x-content-type-options": "nosniff",
+  "referrer-policy": "strict-origin-when-cross-origin",
+  "permissions-policy":
+    "accelerometer=(), ambient-light-sensor=(), autoplay=(), battery=(), camera=(), " +
+    "display-capture=(), document-domain=(), encrypted-media=(), fullscreen=(), " +
+    "geolocation=(), gyroscope=(), magnetometer=(), microphone=(), midi=(), payment=(), " +
+    "picture-in-picture=(), publickey-credentials-get=(), screen-wake-lock=(), sync-xhr=(), " +
+    "usb=(), web-share=(), xr-spatial-tracking=()",
+};
+
 function parseCsp(value) {
   const directives = {};
   for (const part of value.split(";")) {
@@ -75,25 +92,46 @@ function extractInlineScripts(htmlFiles) {
   return scriptsByFile;
 }
 
-test("report-only CSP header (T162.1)", async (t) => {
+test("enforced CSP and defensive headers (T162.2)", async (t) => {
   const { server, port } = await buildAndServe();
   t.after(() => server.close());
   const baseUrl = `http://localhost:${port}`;
 
   const headerValues = new Set();
+  const otherHeaderValuesByName = new Map(Object.keys(EXPECTED_OTHER_HEADERS).map((name) => [name, new Set()]));
 
   await t.test("is present and byte-identical across sampled routes", async () => {
     for (const route of ROUTES) {
       const response = await fetch(`${baseUrl}${route}`);
-      const header = response.headers.get("content-security-policy-report-only");
-      assert.ok(header, `missing CSP-Report-Only header on ${route}`);
+      const header = response.headers.get("content-security-policy");
+      assert.ok(header, `missing CSP header on ${route}`);
       headerValues.add(header);
+
+      for (const headerName of Object.keys(EXPECTED_OTHER_HEADERS)) {
+        const value = response.headers.get(headerName);
+        assert.ok(value, `missing ${headerName} header on ${route}`);
+        otherHeaderValuesByName.get(headerName).add(value);
+      }
     }
     assert.equal(
       headerValues.size,
       1,
       "expected a single catch-all header rule to produce one identical value across all sampled routes",
     );
+    for (const [headerName, values] of otherHeaderValuesByName) {
+      assert.equal(
+        values.size,
+        1,
+        `expected ${headerName} to be byte-identical across all sampled routes`,
+      );
+    }
+  });
+
+  await t.test("defensive headers match their independently written expected values", () => {
+    for (const [headerName, expectedValue] of Object.entries(EXPECTED_OTHER_HEADERS)) {
+      const [actualValue] = [...otherHeaderValuesByName.get(headerName)];
+      assert.equal(actualValue, expectedValue, `unexpected value for ${headerName}`);
+    }
   });
 
   await t.test("matches the independently written expected allow-list, with no bare wildcard", () => {
