@@ -1,9 +1,13 @@
 import { test, expect, type Page } from "@playwright/test";
 
-// T162.1: proves the report-only CSP in vercel.json does not fire unexplained
+// T162.1/T162.2: proves the enforced CSP in vercel.json does not fire unexplained
 // securitypolicyviolation events across the Auth and core app routes. Playwright has
 // no built-in CSP API, so this registers a DOM listener via addInitScript and forwards
 // each violation back to the Node test through an exposed function.
+//
+// Under enforcement (as of T162.2), a violation here also means broken functionality
+// on that route, not just a console warning -- raises the stakes for whoever debugs a
+// red run here later.
 
 const AUTH_ROUTES = [
   "/auth/sign-in",
@@ -68,7 +72,7 @@ async function assertNoViolations(page: Page, route: string): Promise<void> {
   expect(violations, `unexplained CSP violations on ${route}: ${JSON.stringify(violations)}`).toEqual([]);
 }
 
-test.describe("report-only CSP: Auth routes have no unexplained violations", () => {
+test.describe("enforced CSP: Auth routes have no unexplained violations", () => {
   for (const route of AUTH_ROUTES) {
     test(route, async ({ page }) => {
       await assertNoViolations(page, route);
@@ -76,7 +80,7 @@ test.describe("report-only CSP: Auth routes have no unexplained violations", () 
   }
 });
 
-test.describe("report-only CSP: core app routes have no unexplained violations", () => {
+test.describe("enforced CSP: core app routes have no unexplained violations", () => {
   for (const route of CORE_APP_ROUTES) {
     test(route, async ({ page }) => {
       await assertNoViolations(page, route);

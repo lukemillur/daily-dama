@@ -1,10 +1,9 @@
 import { test, expect, type Page } from "@playwright/test";
 
-// T162.1: positive control. Proves the report-only CSP header is genuinely active end
-// to end -- a definitely-unlisted origin fetch is flagged with a connect-src violation
-// -- not just present as inert response-header text nobody is listening to. Once
-// T162.2 flips this header to enforcing mode, this same request would actually be
-// rejected by the browser.
+// T162.1/T162.2: positive control. Proves the enforced CSP header is genuinely active
+// end to end -- a definitely-unlisted origin fetch is flagged with a connect-src
+// violation, with disposition "enforce" -- not just present as inert response-header
+// text nobody is listening to, and not merely still logging as report-only would.
 
 const ONBOARDED_PROFILE_DOCUMENT = JSON.stringify({
   version: 1,
@@ -20,6 +19,7 @@ async function seedOnboardedProfile(page: Page): Promise<void> {
 interface Violation {
   readonly violatedDirective: string;
   readonly blockedURI: string;
+  readonly disposition: string;
 }
 
 test("a definitely-unlisted origin fetch is flagged as a connect-src violation", async ({ page }) => {
@@ -32,6 +32,7 @@ test("a definitely-unlisted origin fetch is flagged as a connect-src violation",
       (window as unknown as { __reportCspViolation: (violation: unknown) => void }).__reportCspViolation({
         violatedDirective: event.violatedDirective,
         blockedURI: event.blockedURI,
+        disposition: event.disposition,
       });
     });
   });
@@ -48,4 +49,7 @@ test("a definitely-unlisted origin fetch is flagged as a connect-src violation",
     violation.violatedDirective.startsWith("connect-src"),
   );
   expect(connectSrcViolations.length).toBeGreaterThan(0);
+  for (const violation of connectSrcViolations) {
+    expect(violation.disposition).toBe("enforce");
+  }
 });
