@@ -149,16 +149,6 @@ _All currently actionable backend-roadmap work is phase-gated and active in depe
 - **Description:** Add the complete Phase 1 web Auth foundation while preserving unrestricted guest access to `/app`.
 - **Notes:** Umbrella from S032. Complete T153.1–T153.13. Native callbacks, SecureStore, and synchronization are excluded.
 
-### [T153.2] Configure the hosted development project and Auth policy
-
-- **Area:** Hosted Supabase Auth configuration
-- **Priority:** High (inherited from parent T153)
-- **Status:** Not started
-- **Planning:** Required
-- **Description:** Create the single hosted free development project and mirror T153.1's verified-email password policy, exact web callback allowlist, ten-character password minimum, and one-hour access-token lifetime without creating the reserved production project.
-- **Exit criteria:** A dated, secret-free configuration record shows the hosted development project has verified-email password Auth, exactly the approved `http://localhost:8081/auth/callback` and `https://dailydama.com/auth/callback` redirects, a ten-character minimum, and a 3,600-second JWT lifetime; live probes reject a nine-character signup and deny sign-in before email verification.
-- **Notes:** From S032 and roadmap Phase 1 backend items 2–3. Depends on T153.1. Secure email change belongs to T154.1; Resend and DNS belong to T153.3.
-
 ### [T153.3] Configure Resend Auth email delivery and DNS authentication
 
 - **Area:** Auth email delivery
