@@ -197,6 +197,13 @@ worth adding for this task. Revisit if SMTP credentials are ever handled in-repo
 **Permissions:** `ci.yml` sets a workflow-level `permissions: contents: read`, made
 explicit in the file itself (matching the repo's actual default) rather than left as an
 invisible external setting. No job above needs write access to any permission scope.
+`secret-scan` additionally sets a job-level `permissions: pull-requests: read` override
+-- discovered from a real CI run: `gitleaks-action` calls the GitHub API to list a PR's
+commits on `pull_request` events, which needs `pull-requests: read`, and failed with
+"Resource not accessible by integration" under the contents-only workflow default. This
+is still read-only, so it doesn't change the "no write permissions" guarantee; PR
+commenting (the one gitleaks-action feature that would need `pull-requests: write`)
+stays disabled via `GITLEAKS_ENABLE_COMMENTS: "false"`.
 
 **Running these locally** (the two Docker-based ones require Docker running locally,
 same as the local Supabase stack in `supabase/README.md`):

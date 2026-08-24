@@ -11,9 +11,10 @@ concurrency:
   cancel-in-progress: true
 
 # T162.3: explicit, auditable in this file rather than relying on an invisible
-# org/repo default setting. No job below needs more than read access -- gitleaks-action's
-# PR-comment feature (which would need pull-requests: write) is disabled instead of
-# granting it, see the secret-scan job below.
+# org/repo default setting. This is the baseline every job gets; secret-scan adds a
+# job-level `pull-requests: read` override (see below) to list a PR's commits --
+# still read-only. gitleaks-action's PR-comment feature (which would need
+# pull-requests: write) is disabled instead of granting it.
 permissions:
   contents: read
 
@@ -62,6 +63,16 @@ jobs:
 
   secret-scan:
     runs-on: ubuntu-latest
+    # gitleaks-action calls the GitHub API to list the PR's commits on `pull_request`
+    # events (to scope which commits to scan), which needs `pull-requests: read` --
+    # discovered from a real CI run failing with "Resource not accessible by
+    # integration" under the workflow-level contents-only default. This is still
+    # read-only, so "runs for pull requests... without gaining write permissions"
+    # still holds; PR commenting (the one feature that would need
+    # `pull-requests: write`) stays disabled via GITLEAKS_ENABLE_COMMENTS below.
+    permissions:
+      contents: read
+      pull-requests: read
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
