@@ -250,4 +250,19 @@ describe('TrickDirectory', () => {
     expect(flatTexts.some((text) => text.includes('—'))).toBe(false);
     expect(flatTexts).toContain('Goals');
   });
+
+  it("renders a hostile custom trick name as literal text, not executable HTML (T162.1)", () => {
+    const hostile = `<img src=x onerror="window.__pwned=1">`;
+    const hostileTricks = [
+      { id: "hostile-1", name: hostile, customKind: "standalone" as const },
+    ];
+    let root!: import("react-test-renderer").ReactTestRenderer;
+    act(() => {
+      root = create(<TrickDirectory tricks={hostileTricks} />);
+    });
+
+    const flatTexts = allText(root);
+
+    expect(flatTexts).toContain(hostile);
+  });
 });
