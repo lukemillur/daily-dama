@@ -11,12 +11,18 @@ function adminClient(config: LocalSupabaseConfig) {
   return createClient(config.url, config.serviceRoleKey, { auth: { persistSession: false } });
 }
 
-/** Seeds an already-verified account instantly -- zero email budget spent. */
+/**
+ * Seeds an already-verified account instantly -- zero email budget spent. Returns the created
+ * user's id (T154.1: needed to seed an identity-namespaced localStorage profile document for
+ * tests that sign in, since `createScopedKeyValueStorage`'s `user:<uuid>:...` physical key is
+ * not the same as the bare/legacy key a guest-only test can seed -- see
+ * src/shared/persistence/scoped-storage.ts's guest-only migration fallback).
+ */
 export async function seedConfirmedUser(
   config: LocalSupabaseConfig,
   email: string,
   password: string,
-): Promise<void> {
+): Promise<string> {
   const admin = adminClient(config);
   const result = await admin.auth.admin.createUser({
     email,
@@ -24,6 +30,7 @@ export async function seedConfirmedUser(
     email_confirm: true,
   });
   if (result.error) throw result.error;
+  return result.data.user.id;
 }
 
 /**

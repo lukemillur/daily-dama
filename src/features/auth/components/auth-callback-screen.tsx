@@ -27,6 +27,14 @@ type CallbackParams = {
   code?: string | string[];
   error?: string | string[];
   error_code?: string | string[];
+  // A fixed, app-chosen discriminator appended only by changeEmail's redirectTo -- see
+  // auth-provider.tsx's changeEmail for why GoTrue itself doesn't expose a reliable signal for
+  // "this is an email-change confirmation" (neither redirectType nor a stable session field).
+  flow?: string | string[];
+  // GoTrue's own mid-flow signal for double_confirm_changes: set (with no `code` and no
+  // `error`) on the *first* of the two email-change confirmation links to be opened, meaning
+  // the change isn't complete yet and the other inbox's link still needs to be opened.
+  message?: string | string[];
 };
 
 function firstStringOrUndefined(value: string | string[] | undefined): string | undefined {
@@ -50,6 +58,10 @@ export function AuthCallbackScreen() {
   const { exchangeCodeForSession } = useAuthActions();
 
   const [errorCategory, setErrorCategory] = useState<AuthErrorCategory | undefined>(undefined);
+  // True when GoTrue's double_confirm_changes redirected back with only a `message` param (the
+  // first of the two email-change confirmation links was just opened) -- distinct from the
+  // errorCategory states below, since this is expected mid-flow progress, not a failure.
+  const [awaitingOtherEmailConfirmation, setAwaitingOtherEmailConfirmation] = useState(false);
   const processedCodeRef = useRef<string | null>(null);
   // True only until the component actually unmounts -- deliberately separate from the main
   // effect below, so a dep-change re-run of that effect (which always runs its own cleanup
@@ -78,6 +90,16 @@ export function AuthCallbackScreen() {
       return;
     }
 
+    // GoTrue's double_confirm_changes mid-flow redirect: no code, no error, just a `message`
+    // saying the other inbox's link still needs to be opened. This must be checked before the
+    // generic "missing code" fallback below, or it would incorrectly show "this link is no
+    // longer valid" for what is actually expected progress.
+    if (!code && firstStringOrUndefined(params.message)) {
+      Promise.resolve().then(() => setAwaitingOtherEmailConfirmation(true));
+      trackAuthEvent('auth_callback_email_change_pending');
+      return;
+    }
+
     if (!code) {
       const category = categorizeAuthError({ code: 'flow_state_not_found' });
       Promise.resolve().then(() => setErrorCategory(category));
@@ -103,7 +125,18 @@ export function AuthCallbackScreen() {
       }
 
       trackAuthEvent('auth_callback_success');
-      router.replace(redirectType === 'recovery' ? '/auth/reset-password' : '/app/home');
+      // A closed, three-way destination switch -- never derived from an arbitrary param. The
+      // `flow` discriminator is app-chosen (set only by changeEmail's own redirectTo) and is
+      // checked against exactly one recognized value; anything else falls through to the
+      // existing recovery/home behavior (fail closed, not fail open).
+      const flow = firstStringOrUndefined(params.flow);
+      if (flow === 'email_change') {
+        router.replace('/app/profile/account/security');
+      } else if (redirectType === 'recovery') {
+        router.replace('/auth/reset-password');
+      } else {
+        router.replace('/app/home');
+      }
     })();
     // Deliberately depend on the whole params object (not just its extracted fields): expo-router
     // can hand back a new params object identity on a re-render even when its values are
@@ -111,6 +144,26 @@ export function AuthCallbackScreen() {
     // makes that safe -- see its check above.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params]);
+
+  if (awaitingOtherEmailConfirmation) {
+    return (
+      <Screen align="center">
+        <Centered>
+          <Eyebrow>Sign-in</Eyebrow>
+          <PageTitle>One more step.</PageTitle>
+          <Introduction>
+            Check both your current and new email inboxes to confirm this change. This link
+            confirmed one of the two -- open the link in the other inbox to finish.
+          </Introduction>
+          <FormActions>
+            <Button accessibilityLabel="Back to home" onPress={() => router.replace('/')}>
+              Back to home
+            </Button>
+          </FormActions>
+        </Centered>
+      </Screen>
+    );
+  }
 
   if (errorCategory) {
     return (

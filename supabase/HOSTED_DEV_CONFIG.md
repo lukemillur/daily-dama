@@ -68,3 +68,29 @@ gitignored `.env.local`, matching the variable names already documented in
 `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY`). The DB password and any Management
 API personal access token belong only in the account owner's password
 manager or a gitignored local file — never in this repository.
+
+## 2026-08-24 update — T154.1 (signed-in password/email change)
+
+This ticket's app-layer work (`AuthProvider.changePassword`/`changeEmail`,
+`AccountSecurityScreen`, `AuthCallbackScreen`'s email-change destination) was implemented and
+verified against the **local** Supabase/Mailpit stack only. This run's environment did not have
+the hosted project's Management API personal access token available, so the following from the
+ticket's plan step 3 was **not** performed and remains open:
+
+- Confirming the hosted equivalent of `double_confirm_changes` (likely
+  `mailer_secure_email_change_enabled` -- not yet confirmed against a live `GET
+  /v1/projects/{ref}/config/auth` response) is enabled.
+- Confirming the hosted equivalent of `secure_password_change` stays at its default/off value.
+
+Whoever next has Management API access to the hosted `Daily Dama Dev` project should run that
+`GET`, record the actual field name and value here, and set it if it isn't already enabled --
+the app's email-change flow silently degrades to single-confirmation if secure email change is
+off on the hosted project (still functional, just not the two-address-confirmation design this
+ticket assumes).
+
+No redirect-allowlist change was needed for this ticket's `?flow=email_change` callback
+discriminator against the **local** stack (see `supabase/config.toml`'s
+`additional_redirect_urls` comment for the live-verified reason: GoTrue's match here ignores the
+query string). This has not been separately verified against the hosted project's
+`uri_allow_list` matching behavior -- treat that as unconfirmed until it is checked live, rather
+than assuming it behaves identically.
