@@ -4,6 +4,16 @@ Completed entries move here from `TASKS.md`'s `Backlog`, in the same commit that
 
 Entries keep their content as it was at completion. Don't retroactively edit a description or exit criteria after the fact; if something about a completed task turns out to be wrong or misleading, note that in a new entry or in code, not by rewriting history here.
 
+### [T166] Re-invite guests to sign up every 5th completed Sesh after the first
+
+- **Area:** Sesh / guest invitation
+- **Priority:** Medium
+- **Status:** Done
+- **Planning:** Implementer
+- **Description:** `sesh.tsx` shows the post-Sesh signup invite only via `isFirstEverRegularSession` (T153.12). Extend eligibility so the invite also reappears every 5th regular (non-assessment) completed session after that first one, using the already-available `selectRegularSessions` count at the same call site.
+- **Exit criteria:** `practice-history.test.ts` and `sesh.test.tsx` pass, including tests asserting the invite is absent on sessions 2–5 after the first, present again on the 6th completed regular session (5th after the first), and continues on that same 5-session cadence; unchanged: never shown to an authenticated user. Confirmed: replaced `isFirstEverRegularSession` with `isRegularSessionInviteEligible` in `practice-history.ts` — `selectRegularSessions(priorSessions).length % 5 === 0` (origin-gated the same way as before), which is true on the first-ever regular Sesh (count 0) and every 5th one after (5, 10, 15, ...). `sesh.tsx`'s single call site now calls the new function. `practice-history.test.ts`'s old `isFirstEverRegularSession` describe block was replaced with cadence tests for `isRegularSessionInviteEligible` (absent 2–5, present at 6, cadence continuing at 11/16/21, gaps at 7–10, assessment-origin history not counted, self-assessment never eligible). `sesh.test.tsx`'s "Sesh signup invite integration" describe block gained two integration tests driving the real Sesh flow through repeated completions: invite absent on sessions 2–5 then present on 6, and absent 7–10 then present on 11. `yarn test --runInBand` (119 suites/1495 tests) and `yarn tsc --noEmit` pass; `yarn eslint` on changed files is clean (one pre-existing unrelated warning elsewhere in `sesh.test.tsx`).
+- **Notes:** From S045, extends T153.12. Pure arithmetic on `selectRegularSessions(priorSessions).length` — no new persistence or counting infrastructure needed.
+
 ### [T165] Preselect the Default theme preset and remove "Skip for now" from onboarding
 
 - **Area:** Onboarding

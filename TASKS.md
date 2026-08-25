@@ -149,16 +149,6 @@ _T163–T181 come from stories S042–S062 in [BACKLOG_STORIES.md](BACKLOG_STORI
 - **Exit criteria:** `yarn test --runInBand` passes, including a test asserting that selecting a non-default preset during onboarding changes the rendered background color away from `AppColors.yellow`; confirmed in-browser via the Expo dev server that tapping a preset visibly changes the onboarding screen's background, not just its text/accent.
 - **Notes:** From S043 — a regression against T146's own exit criteria ("background/accent visibly change"), not new scope. Touches the same files as T165; doable in either order, but worth verifying together since both change `onboarding-theme-step.tsx`/`kentei-onboarding.tsx`'s rendered output.
 
-### [T166] Re-invite guests to sign up every 5th completed Sesh after the first
-
-- **Area:** Sesh / guest invitation
-- **Priority:** Medium
-- **Status:** Not started
-- **Planning:** Implementer
-- **Description:** `sesh.tsx` shows the post-Sesh signup invite only via `isFirstEverRegularSession` (T153.12). Extend eligibility so the invite also reappears every 5th regular (non-assessment) completed session after that first one, using the already-available `selectRegularSessions` count at the same call site.
-- **Exit criteria:** `practice-history.test.ts` and `sesh.test.tsx` pass, including tests asserting the invite is absent on sessions 2–5 after the first, present again on the 6th completed regular session (5th after the first), and continues on that same 5-session cadence; unchanged: never shown to an authenticated user.
-- **Notes:** From S045, extends T153.12. Pure arithmetic on `selectRegularSessions(priorSessions).length` — no new persistence or counting infrastructure needed. Get the off-by-one right relative to "first" (session 1 shows it, sessions 2–5 don't, session 6 does).
-
 ### [T167] Ask "How long would you like to practice a day?" during onboarding
 
 - **Area:** Onboarding

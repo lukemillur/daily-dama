@@ -48,8 +48,8 @@ import {
   createPracticeSessionRecordId,
   getPersonalBest,
   hasPriorLaceForTrick,
-  isFirstEverRegularSession,
   isFirstLaceForTrick,
+  isRegularSessionInviteEligible,
   type PracticeSessionOrigin,
   type PracticeSessionRecord,
 } from '@/features/stats/model/practice-history';
@@ -159,7 +159,7 @@ export function Sesh({
         return isGoalNewlyAchieved(goal, baseline.current, contribution);
       }),
     );
-    setShowSignupInvite(authStatus === 'guest' && isFirstEverRegularSession(sessions, origin));
+    setShowSignupInvite(authStatus === 'guest' && isRegularSessionInviteEligible(sessions, origin));
     recordCompletedSesh(state.summary, origin);
   }, [authStatus, goals, origin, recordCompletedSesh, sessions, state, timerCuePlayer]);
 
