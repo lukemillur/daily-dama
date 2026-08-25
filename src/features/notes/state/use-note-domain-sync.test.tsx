@@ -408,6 +408,14 @@ describe('useNoteDomainSync', () => {
     const { root, captured } = await mountHarness(INITIAL_NOTES, () => transport, USER_IDENTITY);
     await flush();
 
+    // T157.9: login-triggering moved from this hook to the shared sync
+    // coordinator, so this hook's own tests must drive the pull-adopt
+    // explicitly rather than relying on an auto-fired login effect.
+    await act(async () => {
+      await captured.runSync?.('manual');
+    });
+    await flush();
+
     expect(captured.collection).toEqual({
       notes: [
         {
@@ -454,6 +462,14 @@ describe('useNoteDomainSync', () => {
     const transport = createFakeNoteSyncTransport({ seedRows: [activeNote, tombstonedNote] });
 
     const { root, captured } = await mountHarness(INITIAL_NOTES, () => transport, USER_IDENTITY);
+    await flush();
+
+    // T157.9: login-triggering moved from this hook to the shared sync
+    // coordinator, so this hook's own tests must drive the pull-adopt
+    // explicitly rather than relying on an auto-fired login effect.
+    await act(async () => {
+      await captured.runSync?.('manual');
+    });
     await flush();
 
     expect(captured.collection?.notes.map((note) => note.id)).toEqual(['note-active']);

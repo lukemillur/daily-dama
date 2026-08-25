@@ -7,6 +7,7 @@ import { KenteiRankAutoPromotion } from '@/features/profile/state/kentei-rank-au
 import { UserProfileProvider } from '@/features/profile/state/user-profile-provider';
 import { PracticeHistoryProvider } from '@/features/stats/state/practice-history-provider';
 import { IdentityProvider } from '@/shared/persistence/identity-provider';
+import { SyncCoordinatorProvider } from '@/shared/sync/sync-coordinator-provider';
 
 export default function AppShellLayout() {
   return (
@@ -16,10 +17,12 @@ export default function AppShellLayout() {
           <PracticeHistoryProvider>
             <NoteProvider>
               <GoalProvider>
-                <AppThemeProvider>
-                  <KenteiRankAutoPromotion />
-                  <AppTabs />
-                </AppThemeProvider>
+                <SyncCoordinatorProvider>
+                  <AppThemeProvider>
+                    <KenteiRankAutoPromotion />
+                    <AppTabs />
+                  </AppThemeProvider>
+                </SyncCoordinatorProvider>
               </GoalProvider>
             </NoteProvider>
           </PracticeHistoryProvider>

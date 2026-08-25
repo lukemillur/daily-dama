@@ -48,6 +48,8 @@ export interface UseGoalDomainSyncResult {
   readonly runSync: (trigger: SyncTrigger) => Promise<DomainSyncRecord>;
   readonly isSyncing: boolean;
   readonly lastResult: DomainSyncRecord | undefined;
+  readonly hasHydrated: boolean;
+  readonly localMutationTick: number;
 }
 
 const PULL_PAGE_SIZE = 200;
@@ -93,6 +95,10 @@ export function useGoalDomainSync(options: UseGoalDomainSyncOptions): UseGoalDom
   const [isSyncing, setIsSyncing] = useState(false);
   const [lastResult, setLastResult] = useState<DomainSyncRecord | undefined>(undefined);
   const inFlightRef = useRef<Promise<DomainSyncRecord> | undefined>(undefined);
+  // Bumped once per enqueued local-mutation diff below -- the shared sync
+  // coordinator (T157.9) debounces on this counter instead of the whole
+  // domain state object, so its effect dependency stays a stable scalar.
+  const [localMutationTick, setLocalMutationTick] = useState(0);
 
   // Set immediately before a pull-adopt dispatches `goalsRestored` into the
   // primary reducer, and consumed (without diffing) by the effect below.
@@ -225,9 +231,11 @@ export function useGoalDomainSync(options: UseGoalDomainSyncOptions): UseGoalDom
 
   const runSync = useCallback(
     (trigger: SyncTrigger): Promise<DomainSyncRecord> => {
-      // Local single-flight guard -- a deliberately simple per-domain
-      // stand-in, superseded once T157.9 wires the real shared
-      // `syncCoordinatorReducer`.
+      // Local single-flight guard -- defense in depth against a direct
+      // `runSync()` call bypassing the shared coordinator (some tests do
+      // this deliberately). The real single-flight authority in production
+      // is now the shared `syncCoordinatorReducer` driven by
+      // `use-sync-coordinator.ts` (T157.9).
       if (inFlightRef.current) return inFlightRef.current;
 
       setIsSyncing(true);
@@ -287,6 +295,7 @@ export function useGoalDomainSync(options: UseGoalDomainSyncOptions): UseGoalDom
       goalRevisions: envelope.state.state.goalRevisions,
     };
 
+    setLocalMutationTick((tick) => tick + 1);
     envelope.dispatch({
       type: 'localMutationApplied',
       identity,
@@ -298,17 +307,15 @@ export function useGoalDomainSync(options: UseGoalDomainSyncOptions): UseGoalDom
     // eslint-disable-next-line react-hooks/exhaustive-deps -- envelope.dispatch is a stable useReducer dispatch; envelope.state is read fresh above and intentionally excluded to avoid re-diffing on every revision-cache update this same effect's own dispatch causes.
   }, [options.collection, bothHydrated, generation, identity]);
 
-  // The one built-in trigger this task adds: once per identity generation
-  // after both domains have hydrated, for signed-in users only. Everything
-  // else (foreground, real reconnect detection, debouncing) is T157.9.
-  const triggeredGenerationRef = useRef<number | undefined>(undefined);
-  useEffect(() => {
-    if (identity.kind !== 'user') return;
-    if (!bothHydrated) return;
-    if (triggeredGenerationRef.current === generation) return;
-    triggeredGenerationRef.current = generation;
-    void runSync('login');
-  }, [identity, bothHydrated, generation, runSync]);
+  // Login triggering (and every other cross-domain trigger: foreground,
+  // reconnect, local-mutation debouncing, manual retry) now lives in the
+  // shared driver, `use-sync-coordinator.ts` (T157.9), which owns firing
+  // `runSync('login')` once per identity generation across all five
+  // domains via `syncCoordinatorReducer`. This hook only surfaces the two
+  // scalar facts that driver needs (`hasHydrated`, `localMutationTick`).
 
-  return useMemo(() => ({ runSync, isSyncing, lastResult }), [runSync, isSyncing, lastResult]);
+  return useMemo(
+    () => ({ runSync, isSyncing, lastResult, hasHydrated: bothHydrated, localMutationTick }),
+    [runSync, isSyncing, lastResult, bothHydrated, localMutationTick],
+  );
 }
