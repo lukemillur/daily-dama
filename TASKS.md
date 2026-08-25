@@ -153,7 +153,7 @@ _T163–T181 come from stories S042–S062 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 - **Area:** Authentication UI
 - **Priority:** Medium
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** The four `/auth/*` route-group screens (sign-up, sign-in, forgot-password, reset-password) sit outside `/app/*`, so they only ever see the root `_layout.tsx`'s `DefaultAppThemeProvider` (the fixed prototype palette), never the user's personalized `themeBackgroundColor`/`themeAccentColor` — even though each already calls `<Screen>` and would pick up a real theme automatically if one were available. Give this route group access to the user's resolved theme (guest default when none is set) instead of the fixed provider.
 - **Exit criteria:** Component tests for all four screens pass, including one asserting each renders with the user's persisted theme background/accent when a preference exists, and the same default palette as today when none does (guest with no theme set). Confirmed in-browser: a user with a non-default theme sees it reflected on sign-up.
