@@ -153,7 +153,7 @@ _T163–T181 come from stories S042–S062 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 - **Area:** Tricks / Goals
 - **Priority:** Medium
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** In the trick picker used when creating a new goal (`trick-directory.tsx`), the "Choose" action is a small `RowAction` Pressable separate from the row's identity content. Apply T143's whole-card-tappable pattern here: tapping anywhere on the row selects the trick, matching the same visible press feedback T143 established for `GoalCard`.
 - **Exit criteria:** `yarn test --runInBand` passes, including a test asserting a row-level press in the goal-creation trick picker invokes the same selection behavior as today's "Choose" button, and that the row's other nested interactive controls (edit/delete/notes/goals/practice actions, depending on context) remain independently functional and don't also trigger selection.
