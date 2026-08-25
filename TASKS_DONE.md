@@ -4,6 +4,16 @@ Completed entries move here from `TASKS.md`'s `Backlog`, in the same commit that
 
 Entries keep their content as it was at completion. Don't retroactively edit a description or exit criteria after the fact; if something about a completed task turns out to be wrong or misleading, note that in a new entry or in code, not by rewriting history here.
 
+### [T169] Anchor the tricks-home checkmark to the card's rightmost edge
+
+- **Area:** Tricks
+- **Priority:** Medium
+- **Status:** Done
+- **Planning:** Implementer
+- **Description:** On the Tricks home screen's rows (`trick-directory.tsx`), the focused-trick checkmark (`SelectionIndicator`) sits inside `SelectableIdentity` alongside variable-length Notes/Goals count text in `RowActions`, causing its visual position to shift row to row. Move the checkmark to a fixed position flush against the card's rightmost edge, independent of count-text length.
+- **Exit criteria:** `yarn eslint`/existing component tests pass unchanged (no state reads change); confirmed in-browser via the Expo dev server that the checkmark sits at the same horizontal position across rows with differing note/goal counts.
+- **Notes:** From S048. Pure layout/styling change within one row component — no behavior or state change. Implemented by pulling the checkmark out of `SelectableIdentity` and rendering it as a new `SelectionIndicatorButton` sibling, placed after `RowActions` in `TrickRowContainer`/`ActivatableTrickRowContainer` so it's a fixed-width flex item flush to the row's right edge regardless of Notes/Goals label width. It carries its own accessibility label/`onPress` calling `onToggle` (in addition to the existing name-row toggle), so tapping the checkmark itself still toggles selection. `yarn eslint` and `yarn tsc --noEmit` pass clean; `trick-directory.test.tsx` passes unchanged. Verified in-browser via a local Expo web dev server (seeded guest-namespaced profile/notes/goals `localStorage` state via Playwright) that all `role="checkbox"` toggle buttons on the Tricks home screen sit at an identical `left: 445px` / `right: 500px` regardless of differing Notes/Goals count-text length across rows.
+
 ### [T168] Make the whole trick card tappable when picking a trick for a new goal
 
 - **Area:** Tricks / Goals
