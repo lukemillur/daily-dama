@@ -4,6 +4,7 @@ import { BodyText, DisplayTitle, Eyebrow } from "@/components/ui/typography";
 import { AppColors } from "@/constants/theme";
 import { ThemePresetGrid } from "@/features/profile/components/theme-preset-grid";
 import {
+  DEFAULT_THEME_PRESET,
   DEFAULT_THEME_PRESET_ID,
   RAINBOW_THEME_PRESETS,
   type ThemePreset,
@@ -12,16 +13,6 @@ import {
   useUserProfile,
   useUserProfileActions,
 } from "@/features/profile/state/user-profile-provider";
-
-// Swatch colors match `resolveTheme`'s fallback in `use-resolved-theme.ts` -- purely
-// presentational here; selecting this preset clears the stored preference (see
-// `DEFAULT_THEME_PRESET_ID` doc) rather than writing these hex values.
-const DEFAULT_THEME_PRESET: ThemePreset = {
-  id: DEFAULT_THEME_PRESET_ID,
-  label: "Default",
-  backgroundColor: AppColors.sage,
-  accentColor: AppColors.yellow,
-};
 
 const PRESETS_WITH_DEFAULT: readonly ThemePreset[] = [DEFAULT_THEME_PRESET, ...RAINBOW_THEME_PRESETS];
 

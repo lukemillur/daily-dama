@@ -4,6 +4,16 @@ Completed entries move here from `TASKS.md`'s `Backlog`, in the same commit that
 
 Entries keep their content as it was at completion. Don't retroactively edit a description or exit criteria after the fact; if something about a completed task turns out to be wrong or misleading, note that in a new entry or in code, not by rewriting history here.
 
+### [T165] Preselect the Default theme preset and remove "Skip for now" from onboarding
+
+- **Area:** Onboarding
+- **Priority:** Medium
+- **Status:** Done
+- **Planning:** Implementer
+- **Description:** `theme-presets.ts` has a `DEFAULT_THEME_PRESET_ID` sentinel used only by the Profile screen's preset grid (to clear the color preference), but no actual "Default" entry in `RAINBOW_THEME_PRESETS`, and `OnboardingThemeStep` still renders a "Skip for now" button (`onSkip`) wired identically to `onFinish`. Add a "Default" preset card, pre-selected on entering the onboarding theme step, and remove the "Skip for now" control entirely.
+- **Exit criteria:** `yarn test --runInBand` passes, including a test asserting the onboarding theme step shows a "Default" preset pre-selected on mount, no "Skip for now" control renders, and tapping "Finish onboarding" with no other selection completes onboarding on the default theme. Confirmed: added `DEFAULT_THEME_PRESET` (an actual `ThemePreset` object, reusing `DEFAULT_THEME_PRESET_ID`) to `theme-presets.ts`, and had `RainbowThemePresets` (Profile) consume the shared export instead of defining its own local copy. `OnboardingThemeStep` now renders `[DEFAULT_THEME_PRESET, ...RAINBOW_THEME_PRESETS]` and dropped the `onSkip` prop/button entirely. `kentei-onboarding.tsx`'s `themeSelect` case now derives `selectedPresetId` as the Default id whenever both theme colors are `undefined` (the initial-entry state), and its `onSelectPreset` special-cases the Default id to clear colors via `setThemeColors(undefined, undefined)`, mirroring the Profile screen's existing special-case handling. Replaced `kentei-onboarding.test.tsx`'s old "skip" test with two tests: one asserting the Default swatch is pre-selected (`accessibilityState.selected`) on mount and that no "Skip theme selection"/"Skip for now" control renders, and one asserting "Finish onboarding" with no other selection completes onboarding with `themeBackgroundColor`/`themeAccentColor` left `undefined`. `yarn test --runInBand` (119 suites/1490 tests) and `yarn tsc --noEmit` both pass; `yarn eslint` on changed files is clean (pre-existing unrelated `require()`-import warnings only).
+- **Notes:** From S044, extends T146. `onSkip` previously duplicated `onFinish`'s call exactly — nothing else depended on a distinct skip path. Touches the same files as T164 (still `Not started`, blocked in a separate worktree); no coordination needed since T164 only touches `home.tsx`'s background prop and adds its own test file, which do not overlap with this task's edits.
+
 ### [T163] Show the trick name on every goal card
 
 - **Area:** Goals

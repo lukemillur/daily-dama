@@ -1,3 +1,5 @@
+import { AppColors } from "@/constants/theme";
+
 /**
  * Pre-configured rainbow theme presets. Each preset pairs a background and accent color; hex
  * values are a design choice (visually distinct, readable pairs), not derived from anything else.
@@ -31,3 +33,18 @@ export const RAINBOW_THEME_PRESETS: readonly ThemePreset[] = [
  * preset.accent)` path every other preset uses.
  */
 export const DEFAULT_THEME_PRESET_ID = "default";
+
+/**
+ * Actual Default preset card. Swatch colors match resolveTheme fallback in
+ * use-resolved-theme.ts -- purely presentational; selecting this preset clears the stored
+ * background/accent preference (see DEFAULT_THEME_PRESET_ID doc above) rather than writing
+ * these hex values. Kept out of RAINBOW_THEME_PRESETS for the same reason DEFAULT_THEME_PRESET_ID
+ * is: its selection semantics are special-cased by callers, not the generic
+ * setThemeColors(preset.backgroundColor, preset.accentColor) path.
+ */
+export const DEFAULT_THEME_PRESET: ThemePreset = {
+  id: DEFAULT_THEME_PRESET_ID,
+  label: "Default",
+  backgroundColor: AppColors.sage,
+  accentColor: AppColors.yellow,
+};

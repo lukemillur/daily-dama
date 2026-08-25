@@ -149,16 +149,6 @@ _T163–T181 come from stories S042–S062 in [BACKLOG_STORIES.md](BACKLOG_STORI
 - **Exit criteria:** `yarn test --runInBand` passes, including a test asserting that selecting a non-default preset during onboarding changes the rendered background color away from `AppColors.yellow`; confirmed in-browser via the Expo dev server that tapping a preset visibly changes the onboarding screen's background, not just its text/accent.
 - **Notes:** From S043 — a regression against T146's own exit criteria ("background/accent visibly change"), not new scope. Touches the same files as T165; doable in either order, but worth verifying together since both change `onboarding-theme-step.tsx`/`kentei-onboarding.tsx`'s rendered output.
 
-### [T165] Preselect the Default theme preset and remove "Skip for now" from onboarding
-
-- **Area:** Onboarding
-- **Priority:** Medium
-- **Status:** Not started
-- **Planning:** Implementer
-- **Description:** `theme-presets.ts` has a `DEFAULT_THEME_PRESET_ID` sentinel used only by the Profile screen's preset grid (to clear the color preference), but no actual "Default" entry in `RAINBOW_THEME_PRESETS`, and `OnboardingThemeStep` still renders a "Skip for now" button (`onSkip`) wired identically to `onFinish`. Add a "Default" preset card, pre-selected on entering the onboarding theme step, and remove the "Skip for now" control entirely.
-- **Exit criteria:** `yarn test --runInBand` passes, including a test asserting the onboarding theme step shows a "Default" preset pre-selected on mount, no "Skip for now" control renders, and tapping "Finish onboarding" with no other selection completes onboarding on the default theme.
-- **Notes:** From S044, extends T146. `onSkip` currently duplicates `onFinish`'s call exactly — nothing else depends on a distinct skip path. Touches the same files as T164.
-
 ### [T166] Re-invite guests to sign up every 5th completed Sesh after the first
 
 - **Area:** Sesh / guest invitation
