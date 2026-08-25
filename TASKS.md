@@ -206,24 +206,6 @@ _Phase 2 activation: T155 comes from S034 and `BACKEND_ROADMAP.md` Phase 2. Its 
 
 _Phase 3 activation: T156–T160 come from S035–S038 and `BACKEND_ROADMAP.md` Phase 3. The dependency chain deliberately separates identity-partitioned persistence (T156), durable synchronization mechanics and ordered domain rollout (T157), outbox-aware logout (T158), resumable guest conversion (T159), and visible conflict recovery (T160). Each child owns one persistence, orchestration, domain, or UX boundary; Realtime remains deferred and synchronization may never alter the active Sesh state machine._
 
-### [T157] Add local-first synchronization across every domain
-
-- **Area:** Synchronization
-- **Priority:** High
-- **Status:** Not started
-- **Description:** Add durable, ordered, identity-owned synchronization while keeping every current workflow usable offline and every reducer independent of Supabase.
-- **Notes:** Umbrella from S035. Complete T157.1–T157.9 in order. Depends on T155 and T156. Realtime subscriptions remain deferred.
-
-### [T157.9] Trigger synchronization without disrupting active practice
-
-- **Area:** Synchronization lifecycle
-- **Priority:** High
-- **Status:** In progress
-- **Planning:** Required
-- **Description:** Wire login, foreground, local mutation, reconnection, and manual-retry triggers into the coordinator with debouncing/coalescing appropriate to each event and an explicit guard against synchronization effects changing Sesh state.
-- **Exit criteria:** Integration tests fire overlapping login/foreground/reconnect/local-mutation/manual events and prove they coalesce into single-flight runs, offline events remain pending, foreground during every active Sesh status leaves the Sesh state machine unchanged, and unmount/logout cancels subscriptions and stale work.
-- **Notes:** From S035. Depends on T157.4–T157.8. Do not add Realtime subscriptions.
-
 ### [T158] Protect logout when account changes are unsynchronized
 
 - **Area:** Authentication / synchronization boundary

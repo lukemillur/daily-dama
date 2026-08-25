@@ -281,9 +281,11 @@ describe('useProfileDomainSync', () => {
     });
     await flush();
 
-    // The offline push (login-trigger auto-run) fails, leaving the op
-    // pending -- nothing observable to assert on the transport (it never
-    // wrote), but the envelope must have persisted the pending op.
+    // No sync trigger fires here (the coordinator, not this hook, owns
+    // login-triggering as of T157.9) -- the local mutation is still
+    // enqueued as a pending outbox op by the diff effect above, which is
+    // all this test needs: nothing observable to assert on the transport
+    // (it never wrote), but the envelope must have persisted the pending op.
     act(() => {
       root.unmount();
     });
@@ -367,6 +369,14 @@ describe('useProfileDomainSync', () => {
     });
 
     const { root, captured } = await mountHarness(INITIAL_USER_PROFILE, () => transport, USER_IDENTITY);
+    await flush();
+
+    // T157.9: login-triggering moved from this hook to the shared sync
+    // coordinator, so this hook's own tests must drive the pull-adopt
+    // explicitly rather than relying on an auto-fired login effect.
+    await act(async () => {
+      await captured.runSync?.('manual');
+    });
     await flush();
 
     expect(captured.profile).toEqual({

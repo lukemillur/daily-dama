@@ -351,6 +351,14 @@ describe('useGoalDomainSync', () => {
     const { root, captured } = await mountHarness(INITIAL_GOALS, () => transport, USER_IDENTITY);
     await flush();
 
+    // T157.9: login-triggering moved from this hook to the shared sync
+    // coordinator, so this hook's own tests must drive the pull-adopt
+    // explicitly rather than relying on an auto-fired login effect.
+    await act(async () => {
+      await captured.runSync?.('manual');
+    });
+    await flush();
+
     expect(captured.collection).toEqual({
       goals: [
         {
@@ -399,6 +407,14 @@ describe('useGoalDomainSync', () => {
     const transport = createFakeGoalSyncTransport({ seedRows: [activeGoal, tombstonedGoal] });
 
     const { root, captured } = await mountHarness(INITIAL_GOALS, () => transport, USER_IDENTITY);
+    await flush();
+
+    // T157.9: login-triggering moved from this hook to the shared sync
+    // coordinator, so this hook's own tests must drive the pull-adopt
+    // explicitly rather than relying on an auto-fired login effect.
+    await act(async () => {
+      await captured.runSync?.('manual');
+    });
     await flush();
 
     expect(captured.collection?.goals.map((goal) => goal.id)).toEqual(['goal-active']);

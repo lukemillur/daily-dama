@@ -41,6 +41,8 @@ export interface NoteSync {
   readonly runSync: (trigger: SyncTrigger) => Promise<DomainSyncRecord>;
   readonly isSyncing: boolean;
   readonly lastResult: DomainSyncRecord | undefined;
+  readonly hasHydrated: boolean;
+  readonly localMutationTick: number;
 }
 
 const NoteSyncContext = createContext<NoteSync | undefined>(undefined);

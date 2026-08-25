@@ -374,6 +374,14 @@ describe('usePracticeHistoryDomainSync', () => {
     const { root, captured } = await mountHarness(INITIAL_PRACTICE_HISTORY, () => transport, USER_IDENTITY);
     await flush();
 
+    // T157.9: login-triggering moved from this hook to the shared sync
+    // coordinator, so this hook's own tests must drive the pull-adopt
+    // explicitly rather than relying on an auto-fired login effect.
+    await act(async () => {
+      await captured.runSync?.('manual');
+    });
+    await flush();
+
     expect(captured.history?.sessions.map((session) => session.id).sort()).toEqual(['session-seed-1', 'session-seed-2']);
 
     act(() => {
