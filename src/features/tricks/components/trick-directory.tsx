@@ -282,13 +282,25 @@ function TrickRow({
         onToggle();
       }}>
       {identity}
-      <SelectionIndicator $selected={isSelected}>
-        <SelectionMark>{isSelected ? '✓' : ''}</SelectionMark>
-      </SelectionIndicator>
     </SelectableIdentity>
   ) : (
     <IdentityContainer>{identity}</IdentityContainer>
   );
+
+  const selectionIndicatorElement = onToggle ? (
+    <SelectionIndicatorButton
+      accessibilityLabel={`${isSelected ? 'Deselect' : 'Select'} ${trick.name}`}
+      accessibilityRole="checkbox"
+      accessibilityState={{ checked: isSelected }}
+      onPress={(event) => {
+        event?.stopPropagation?.();
+        onToggle();
+      }}>
+      <SelectionIndicator $selected={isSelected}>
+        <SelectionMark>{isSelected ? '✓' : ''}</SelectionMark>
+      </SelectionIndicator>
+    </SelectionIndicatorButton>
+  ) : null;
 
   const hasRowActions = Boolean(onEdit && onDelete) || Boolean(onOpenNotes) || Boolean(onOpenGoals) || showPracticeAction;
 
@@ -366,6 +378,7 @@ function TrickRow({
         onPressOut={() => setPressed(false)}>
         {identityElement}
         {hasRowActions ? rowActionsElement : null}
+        {selectionIndicatorElement}
       </ActivatableTrickRowContainer>
     );
   }
@@ -374,6 +387,7 @@ function TrickRow({
     <TrickRowContainer $selected={isSelected} $laced={isLaced}>
       {identityElement}
       {hasRowActions ? rowActionsElement : null}
+      {selectionIndicatorElement}
     </TrickRowContainer>
   );
 }
@@ -551,6 +565,13 @@ const LacedCountLabel = styled.Text`
   color: #53635d;
   font-size: 11px;
   font-weight: 700;
+`;
+
+const SelectionIndicatorButton = styled(Pressable)`
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 22px 12px 8px;
 `;
 
 const SelectionIndicator = styled.View<{ readonly $selected: boolean }>`

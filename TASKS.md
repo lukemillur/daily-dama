@@ -149,16 +149,6 @@ _T163–T181 come from stories S042–S062 in [BACKLOG_STORIES.md](BACKLOG_STORI
 - **Exit criteria:** `yarn test --runInBand` passes, including a test asserting that selecting a non-default preset during onboarding changes the rendered background color away from `AppColors.yellow`; confirmed in-browser via the Expo dev server that tapping a preset visibly changes the onboarding screen's background, not just its text/accent.
 - **Notes:** From S043 — a regression against T146's own exit criteria ("background/accent visibly change"), not new scope. Touches the same files as T165; doable in either order, but worth verifying together since both change `onboarding-theme-step.tsx`/`kentei-onboarding.tsx`'s rendered output.
 
-### [T169] Anchor the tricks-home checkmark to the card's rightmost edge
-
-- **Area:** Tricks
-- **Priority:** Medium
-- **Status:** In progress
-- **Planning:** Implementer
-- **Description:** On the Tricks home screen's rows (`trick-directory.tsx`), the focused-trick checkmark (`SelectionIndicator`) sits inside `SelectableIdentity` alongside variable-length Notes/Goals count text in `RowActions`, causing its visual position to shift row to row. Move the checkmark to a fixed position flush against the card's rightmost edge, independent of count-text length.
-- **Exit criteria:** `yarn eslint`/existing component tests pass unchanged (no state reads change); confirmed in-browser via the Expo dev server that the checkmark sits at the same horizontal position across rows with differing note/goal counts.
-- **Notes:** From S048. Pure layout/styling change within one row component — no behavior or state change.
-
 ### [T170] Make sign-up, sign-in, forgot-password, and reset-password follow the user's theme
 
 - **Area:** Authentication UI
