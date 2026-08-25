@@ -1,0 +1,30 @@
+[
+  {
+    "id": 1138808,
+    "package": "image-size",
+    "severity": "high",
+    "reason": "Metro/bundler build-time devDependency (transitive via expo), not shipped in the web bundle, no upstream patch available as of 2026-08-24 -- revisit on next Expo/Metro upgrade.",
+    "noPatchAsOf": "2026-08-24"
+  },
+  {
+    "id": 1138809,
+    "package": "image-size",
+    "severity": "high",
+    "reason": "Metro/bundler build-time devDependency (transitive via expo), not shipped in the web bundle, no upstream patch available as of 2026-08-24 -- revisit on next Expo/Metro upgrade.",
+    "noPatchAsOf": "2026-08-24"
+  },
+  {
+    "id": 1139427,
+    "package": "nanoid",
+    "severity": "high",
+    "reason": "Metro/bundler build-time devDependency (transitive via expo), not shipped in the web bundle, no upstream patch available as of 2026-08-24 -- revisit on next Expo/Metro upgrade.",
+    "noPatchAsOf": "2026-08-24"
+  },
+  {
+    "id": 1119441,
+    "package": "uuid",
+    "severity": "moderate",
+    "reason": "Metro/bundler build-time devDependency (transitive via expo), not shipped in the web bundle, no upstream patch available as of 2026-08-24 -- revisit on next Expo/Metro upgrade.",
+    "noPatchAsOf": "2026-08-24"
+  }
+]

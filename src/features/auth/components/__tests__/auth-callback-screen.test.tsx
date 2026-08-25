@@ -132,6 +132,38 @@ describe('AuthCallbackScreen', () => {
     expect(mockReplace).toHaveBeenCalledWith('/auth/reset-password');
   });
 
+  it('exchanges a completing email-change code (flow=email_change) and redirects to the account security route', async () => {
+    mockExchangeCodeForSession.mockResolvedValue({ redirectType: null, error: null });
+    mockParams = { code: 'completing-email-change-code', flow: 'email_change' };
+
+    await mount();
+
+    expect(mockExchangeCodeForSession).toHaveBeenCalledTimes(1);
+    expect(mockReplace).toHaveBeenCalledTimes(1);
+    expect(mockReplace).toHaveBeenCalledWith('/app/profile/account/security');
+  });
+
+  it('ignores an unrecognized flow value and falls back to /app/home (fail closed, not open)', async () => {
+    mockExchangeCodeForSession.mockResolvedValue({ redirectType: null, error: null });
+    mockParams = { code: 'valid-code', flow: 'not-a-real-flow' } as never;
+
+    await mount();
+
+    expect(mockReplace).toHaveBeenCalledTimes(1);
+    expect(mockReplace).toHaveBeenCalledWith('/app/home');
+  });
+
+  it('shows mid-flow guidance (not an error) and does not exchange when only a message param is present', async () => {
+    mockParams = { message: 'Confirmation link accepted. Please proceed to confirm link sent to the other email' };
+
+    const root = await mount();
+
+    expect(mockExchangeCodeForSession).not.toHaveBeenCalled();
+    expect(mockReplace).not.toHaveBeenCalled();
+    expect(containsText(root, 'One more step.')).toBe(true);
+    expect(containsText(root, 'This link is no longer valid.')).toBe(false);
+  });
+
   it('never accepts or forwards an arbitrary next/destination param', async () => {
     mockExchangeCodeForSession.mockResolvedValue({ redirectType: null, error: null });
     mockParams = { code: 'valid-code', next: '/some/other/route' } as never;

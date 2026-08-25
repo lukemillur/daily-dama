@@ -40,6 +40,7 @@ function baseResponses({ branches = [], tasks = TASKS, done = DONE } = {}) {
 const options = (overrides = {}) => ({
   taskId: null,
   resume: false,
+  ranked: false,
   dryRun: false,
   fetch: true,
   base: 'origin/development',
@@ -65,6 +66,16 @@ test('argument parsing accepts every documented invocation', () => {
   assert.equal(parseArgs(['--dry-run']).dryRun, true);
   assert.throws(() => parseArgs(['resume']), /requires a task ID/);
   assert.throws(() => parseArgs(['--nope']), /unrecognized argument/);
+
+  assert.equal(parseArgs(['ranked']).ranked, true);
+  assert.equal(parseArgs(['--ranked']).ranked, true);
+  assert.equal(parseArgs([]).ranked, false);
+});
+
+test('ranked cannot combine with a named task or resume', () => {
+  assert.throws(() => parseArgs(['ranked', 'T035']), /only applies to continuous mode/);
+  assert.throws(() => parseArgs(['T035', 'ranked']), /only applies to continuous mode/);
+  assert.throws(() => parseArgs(['ranked', 'resume', 'T034']), /cannot combine with resume/);
 });
 
 test('remoteClaims groups branches by task ID and ignores non-task refs', () => {
@@ -229,6 +240,26 @@ test('a push failure with no competing branch is reported as push-failed, not as
   assert.equal(result.status, 'blocked');
   assert.equal(result.blocker.reason, 'push-failed');
   assert.match(result.blocker.detail, /network unreachable/);
+});
+
+test('ranked mode claims the highest-value actionable task instead of the first one in file order', () => {
+  const fileOrder = claim({ run: createFakeRunner(baseResponses()), repoRoot: REPO, options: options(), fileSystem: fakeFileSystem() });
+  assert.equal(fileOrder.taskId, 'T100');
+  assert.equal(fileOrder.ranked, false);
+  assert.equal(fileOrder.unblockFanOut, undefined, 'fan-out is only reported in ranked mode');
+
+  // T104.1 has the highest fan-out in the fixture (T104.2 and T108 both name
+  // it) and is itself actionable — a plain leaf, not the umbrella T104 — so
+  // ranked mode picks it over file-order's T100.
+  const ranked = claim({
+    run: createFakeRunner(baseResponses()),
+    repoRoot: REPO,
+    options: options({ ranked: true }),
+    fileSystem: fakeFileSystem(),
+  });
+  assert.equal(ranked.taskId, 'T104.1');
+  assert.equal(ranked.ranked, true);
+  assert.equal(ranked.unblockFanOut, 2);
 });
 
 test('an exhausted backlog is reported as backlog-exhausted, not blocked', () => {

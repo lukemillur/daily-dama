@@ -1,3 +1,4 @@
+import { useRouter } from 'expo-router';
 import { useRef, useState } from 'react';
 import { styled } from 'styled-components/native';
 
@@ -27,6 +28,7 @@ const LOG_OUT_ERROR_COPY: Record<AuthErrorCategory, string> = {
 export function AccountSection() {
   const authState = useAuthState();
   const { signOut } = useAuthActions();
+  const router = useRouter();
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorCategory, setErrorCategory] = useState<AuthErrorCategory | undefined>(undefined);
@@ -67,6 +69,12 @@ export function AccountSection() {
       <Divider />
       <SectionLabel>Account</SectionLabel>
       <AccountEmail>{authState.session.user.email ?? 'Your account'}</AccountEmail>
+      <SecurityLinkButton
+        accessibilityLabel="Manage account security"
+        onPress={() => router.push('/app/profile/account/security')}
+        variant="secondary">
+        Manage account security
+      </SecurityLinkButton>
       {errorCategory ? <ErrorText>{LOG_OUT_ERROR_COPY[errorCategory]}</ErrorText> : null}
       <LogOutButton
         accessibilityLabel="Log out"
@@ -105,6 +113,10 @@ const ErrorText = styled.Text`
   font-size: 12px;
   font-weight: 800;
   margin-top: 10px;
+`;
+const SecurityLinkButton = styled(Button).attrs({ size: 'medium' })`
+  align-self: flex-start;
+  margin-top: 18px;
 `;
 const LogOutButton = styled(Button).attrs({ size: 'medium' })`
   align-self: flex-start;

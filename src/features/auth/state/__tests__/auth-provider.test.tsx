@@ -450,6 +450,222 @@ describe('AuthProvider', () => {
     (globalThis as { window?: unknown }).window = originalWindow;
   });
 
+  it('changePassword rejects with session_not_found when not authenticated, without calling signInWithPassword or updateUser', async () => {
+    const fake = createFakeClient();
+    mockGetSupabaseClient.mockReturnValue(fake.client);
+
+    const root = await mount();
+    expect(captured.state).toEqual({ status: 'initializing' });
+
+    let result: { error: unknown } | undefined;
+    await act(async () => {
+      result = await captured.actions!.changePassword('old-password', 'new-password-123');
+    });
+
+    expect(fake.signInWithPassword).not.toHaveBeenCalled();
+    expect(fake.updateUser).not.toHaveBeenCalled();
+    expect((result?.error as { code?: string } | undefined)?.code).toBe('session_not_found');
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  it('changePassword signs in with the current password then updates, in that order, when authenticated', async () => {
+    const fake = createFakeClient();
+    mockGetSupabaseClient.mockReturnValue(fake.client);
+
+    const root = await mount();
+    const session = { access_token: 'a', user: { email: 'person@example.com' } } as unknown as Session;
+    act(() => {
+      fake.emit('SIGNED_IN', session);
+    });
+
+    const callOrder: string[] = [];
+    fake.signInWithPassword.mockImplementationOnce(async () => {
+      callOrder.push('signIn');
+      return { error: null };
+    });
+    fake.updateUser.mockImplementationOnce(async () => {
+      callOrder.push('updateUser');
+      return { error: null };
+    });
+
+    let result: { error: unknown } | undefined;
+    await act(async () => {
+      result = await captured.actions!.changePassword('old-password', 'new-password-123');
+    });
+
+    expect(fake.signInWithPassword).toHaveBeenCalledWith({
+      email: 'person@example.com',
+      password: 'old-password',
+    });
+    expect(fake.updateUser).toHaveBeenCalledWith({ password: 'new-password-123' });
+    expect(callOrder).toEqual(['signIn', 'updateUser']);
+    expect(result).toEqual({ error: null });
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  it('changePassword surfaces a wrong-current-password error and never calls updateUser', async () => {
+    const fake = createFakeClient();
+    const signInError = { message: 'invalid credentials', code: 'invalid_credentials' };
+    fake.signInWithPassword.mockResolvedValueOnce({ error: signInError });
+    mockGetSupabaseClient.mockReturnValue(fake.client);
+
+    const root = await mount();
+    act(() => {
+      fake.emit('SIGNED_IN', {
+        access_token: 'a',
+        user: { email: 'person@example.com' },
+      } as unknown as Session);
+    });
+
+    let result: { error: unknown } | undefined;
+    await act(async () => {
+      result = await captured.actions!.changePassword('wrong-password', 'new-password-123');
+    });
+
+    expect(fake.updateUser).not.toHaveBeenCalled();
+    expect(result).toEqual({ error: signInError });
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  it('changePassword surfaces an offline error from the sign-in step', async () => {
+    const fake = createFakeClient();
+    const offlineError = new TypeError('Failed to fetch');
+    fake.signInWithPassword.mockResolvedValueOnce({ error: offlineError });
+    mockGetSupabaseClient.mockReturnValue(fake.client);
+
+    const root = await mount();
+    act(() => {
+      fake.emit('SIGNED_IN', {
+        access_token: 'a',
+        user: { email: 'person@example.com' },
+      } as unknown as Session);
+    });
+
+    let result: { error: unknown } | undefined;
+    await act(async () => {
+      result = await captured.actions!.changePassword('old-password', 'new-password-123');
+    });
+
+    expect(fake.updateUser).not.toHaveBeenCalled();
+    expect(result).toEqual({ error: offlineError });
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  it('changePassword surfaces an offline error from the updateUser step, after a successful sign-in', async () => {
+    const fake = createFakeClient();
+    const offlineError = new TypeError('Failed to fetch');
+    fake.updateUser.mockResolvedValueOnce({ error: offlineError });
+    mockGetSupabaseClient.mockReturnValue(fake.client);
+
+    const root = await mount();
+    act(() => {
+      fake.emit('SIGNED_IN', {
+        access_token: 'a',
+        user: { email: 'person@example.com' },
+      } as unknown as Session);
+    });
+
+    let result: { error: unknown } | undefined;
+    await act(async () => {
+      result = await captured.actions!.changePassword('old-password', 'new-password-123');
+    });
+
+    expect(fake.signInWithPassword).toHaveBeenCalledTimes(1);
+    expect(result).toEqual({ error: offlineError });
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  it('changeEmail rejects with session_not_found when not authenticated, without calling updateUser', async () => {
+    const fake = createFakeClient();
+    mockGetSupabaseClient.mockReturnValue(fake.client);
+
+    const root = await mount();
+    expect(captured.state).toEqual({ status: 'initializing' });
+
+    let result: { error: unknown } | undefined;
+    await act(async () => {
+      result = await captured.actions!.changeEmail('new@example.com');
+    });
+
+    expect(fake.updateUser).not.toHaveBeenCalled();
+    expect((result?.error as { code?: string } | undefined)?.code).toBe('session_not_found');
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  it('changeEmail calls updateUser with the new email and a fixed redirectTo carrying flow=email_change, with a null error', async () => {
+    const fake = createFakeClient();
+    mockGetSupabaseClient.mockReturnValue(fake.client);
+
+    const originalWindow = (globalThis as { window?: unknown }).window;
+    (globalThis as { window?: unknown }).window = { location: { origin: 'https://dailydama.com' } };
+
+    const root = await mount();
+    act(() => {
+      fake.emit('SIGNED_IN', {
+        access_token: 'a',
+        user: { email: 'person@example.com' },
+      } as unknown as Session);
+    });
+
+    let result: { error: unknown } | undefined;
+    await act(async () => {
+      result = await captured.actions!.changeEmail('new@example.com');
+    });
+
+    expect(fake.updateUser).toHaveBeenCalledWith(
+      { email: 'new@example.com' },
+      { emailRedirectTo: 'https://dailydama.com/auth/callback?flow=email_change' },
+    );
+    expect(result).toEqual({ error: null });
+
+    act(() => {
+      root.unmount();
+    });
+    (globalThis as { window?: unknown }).window = originalWindow;
+  });
+
+  it('changeEmail forwards a failure error from updateUser', async () => {
+    const fake = createFakeClient();
+    const updateError = { message: 'rate limited', code: 'over_email_send_rate_limit' };
+    fake.updateUser.mockResolvedValueOnce({ error: updateError });
+    mockGetSupabaseClient.mockReturnValue(fake.client);
+
+    const originalWindow = (globalThis as { window?: unknown }).window;
+    (globalThis as { window?: unknown }).window = { location: { origin: 'https://dailydama.com' } };
+
+    const root = await mount();
+    act(() => {
+      fake.emit('SIGNED_IN', {
+        access_token: 'a',
+        user: { email: 'person@example.com' },
+      } as unknown as Session);
+    });
+
+    let result: { error: unknown } | undefined;
+    await act(async () => {
+      result = await captured.actions!.changeEmail('new@example.com');
+    });
+
+    expect(result).toEqual({ error: updateError });
+
+    act(() => {
+      root.unmount();
+    });
+    (globalThis as { window?: unknown }).window = originalWindow;
+  });
+
   it('unsubscribes from the auth listener on unmount', async () => {
     const fake = createFakeClient();
     mockGetSupabaseClient.mockReturnValue(fake.client);

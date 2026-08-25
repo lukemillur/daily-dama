@@ -14,6 +14,11 @@ jest.mock('@/features/auth/state/auth-provider', () => ({
   useAuthActions: () => ({ signOut: mockSignOut }),
 }));
 
+const mockPush = jest.fn();
+jest.mock('expo-router', () => ({
+  useRouter: () => ({ push: mockPush }),
+}));
+
 const mockTrackAuthEvent = jest.fn();
 const mockLogAuthWarning = jest.fn();
 jest.mock('@/features/auth/observability/auth-observability', () => ({
@@ -69,6 +74,7 @@ describe('AccountSection', () => {
     mockSignOut.mockReset();
     mockTrackAuthEvent.mockReset();
     mockLogAuthWarning.mockReset();
+    mockPush.mockReset();
     mockAuthState = { status: 'guest', reason: 'signedOut' };
   });
 
@@ -100,6 +106,25 @@ describe('AccountSection', () => {
     expect(containsText(root, EMAIL)).toBe(true);
     const button = findByLabel(root, 'Log out');
     expect(button.props.disabled).toBe(false);
+  });
+
+  it('renders a Manage account security link when authenticated, and navigates to the security route', async () => {
+    mockAuthState = authenticatedState();
+    const root = await mount();
+
+    const link = findByLabel(root, 'Manage account security');
+    await act(async () => {
+      link.props.onPress();
+    });
+
+    expect(mockPush).toHaveBeenCalledWith('/app/profile/account/security');
+  });
+
+  it('has no Manage account security link when not authenticated', async () => {
+    mockAuthState = { status: 'guest', reason: 'signedOut' };
+    const root = await mount();
+
+    expect(findAllByLabel(root, 'Manage account security').length).toBe(0);
   });
 
   it('falls back to a generic label when the session has no email', async () => {

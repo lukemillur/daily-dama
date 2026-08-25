@@ -45,7 +45,16 @@ const EXPIRED_OR_INVALID_LINK_CODES = new Set([
 // happens when a recovery/confirmation link is opened in a different browser or device than the
 // one that requested it. That's an actionable, different instruction ("open it in the same
 // browser") than "this link timed out, request a new one," so it gets its own category.
-const MISSING_VERIFIER_CODES = new Set(['bad_code_verifier', 'flow_state_not_found']);
+const MISSING_VERIFIER_CODES = new Set([
+  'bad_code_verifier',
+  'flow_state_not_found',
+  // Live-probed against local GoTrue (T153.13): fires for both a reused one-time callback
+  // link and a verifier-mismatched callback (a different browser/device completing the
+  // exchange than the one that started it). Without this code in the closed set, both cases
+  // fell through to 'unknown' and showed a generic error instead of the actionable
+  // same-browser instruction.
+  'pkce_code_verifier_not_found',
+]);
 const RATE_LIMITED_CODES = new Set([
   'over_request_rate_limit',
   'over_email_send_rate_limit',

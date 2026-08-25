@@ -19,6 +19,11 @@ export const authApiErrorFixtures = [
   { code: 'session_expired', status: 403, message: 'Session expired' },
   { code: 'bad_code_verifier', status: 403, message: 'code challenge does not match previously saved code verifier' },
   { code: 'flow_state_not_found', status: 403, message: 'PKCE flow state not found' },
+  {
+    code: 'pkce_code_verifier_not_found',
+    status: 403,
+    message: 'code verifier should be non-empty',
+  },
 ];
 
 export function networkFailure(): TypeError {
