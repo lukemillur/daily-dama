@@ -137,6 +137,198 @@ _T121–T131 come from stories S001–S011 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 _T132–T152 come from stories S001–S022 in [BACKLOG_STORIES.md](BACKLOG_STORIES.md) (the user's 2026-08-21 QA pass on T122–T131 plus general feedback across landing, goals, onboarding, theming, tricks, and Sesh), refined by `product-manager` and scoped in this pass. S006 (footer background responding to the rainbow theme preset) was not scoped: tracing `AppFooterBar` → `useResolvedTheme()` → `resolveTheme()` shows the footer's background already derives from the user's saved `themeBackgroundColor`/`themeAccentColor`, which preset selection already sets — the story's premise appears to already hold in the current code, so it's flagged back rather than scoped as a duplicate fix; see its Notes in `BACKLOG_STORIES.md` for the traced call chain. No umbrella tasks were needed — every story reduced to one independent S-sized ticket. T145 (S015, the landing-page load flicker) and T150 (S020, auto-focusing a trick on goal creation) were scoped `Planning: Required` from the start — both cross the persistence/provider boundaries AGENTS.md calls out. T146 (S016, onboarding theme preview) was also `Required` from the start, despite being a small, local change, because it modifies the onboarding flow's own state machine. Three more — T140 (S010, scroll-triggered showcase animation), T144 (S014, trick name/goals heading), and T149 (S019, hiding focused tricks while searching) — were raised from `Implementer` to `Required` during the scoping review pass (see each entry's Notes for why); their exit criteria are unchanged. T133 (S002) and T142 (S012) both touch hero sizing and are worth verifying together — a larger hero (T142) can reintroduce the mobile overlap T133 is fixing. T134 (S003) depends on T138's (S008) final content-column width to size against, so implementing T138 first avoids sizing against a stale value. T152 (S022, the sesh-timer audio cue) uses `expo-audio`, this SDK's supported audio API — `expo-av` is deprecated at the installed Expo SDK version (~57) and isn't present in the project's dependencies._
 
+_T163–T181 come from stories S042–S062 in [BACKLOG_STORIES.md](BACKLOG_STORIES.md) (the user's 2026-08-25 QA pass on the Full-Batch of PR #158–223 — four follow-up gaps on already-`Done` T144/T146/T153.12, plus general feedback mostly on onboarding and Auth/Account UI), refined by `product-manager` and scoped in this pass. Two stories were not scoped: **S051** (email-format validation at signup) traces to `validateSignUpFields`/`getEmailValidationError`, already wired into `sign-up-screen.tsx` and shown as field-level error text — the story's premise already holds, flagged back the same way S006 was. **S057** (enforce email uniqueness with a distinguishing message) was sent back, not scoped: `sign-up-screen.tsx` deliberately routes a duplicate-account signup through the *identical* success path as a real signup, by design, specifically to avoid becoming an email-enumeration oracle — the story's acceptance criteria asks for exactly the distinguishable response that design avoids. See both stories' Notes in `BACKLOG_STORIES.md`.  No umbrella tasks were needed — every scoped story reduced to one independent S-sized ticket. T164 (S043, onboarding background), T166 (S045, recurring guest invite), T169 (S048, checkmark alignment), T172 (S052, Account Security theming), T173 (S053, tab titles), T174 (S054, forgot-password layout), T175 (S055, logout destination), T177 (S058, sign-in/sign-up cross-links), T178 (S059, Enter-to-submit), T180 (S061, conditional forgot-password), and T181 (S062, Account Security back control) are `Implementer` — genuinely local, one- or two-file changes with a known pattern already used elsewhere in the app. T163 (S042), T165 (S044), T167 (S046), T171 (S050), and T176 (S056) are also `Implementer`-sized in isolation but are noted individually below where a nuance is worth flagging. T168 (S047), T170 (S049), and T179 (S060) are `Required`: T168 because `trick-directory.tsx`'s row is a shared, multi-consumer component with several mutually exclusive nested interactive children across its call sites, not a narrow single-purpose card like `GoalRow`; T170 because it's an architectural fix to which theme provider the `/auth/*` route group mounts under, not a local screen change; T179 because it changes `AuthProvider`'s `changeEmail` action signature, a shared Auth-actions surface. T167 (S046) is additionally `Required` because — like T146 before it — it changes onboarding's own step sequence, which this project's Planning rules call out for a separate pass regardless of size. T176 (S056) is `Required` because tracing the code surfaced no obvious defect (no stale closure, no missing dependency) — it needs a runtime timing investigation, not a known fix applied locally. T170 (S049) is the shared root cause behind the sign-up/sign-in/forgot-password/reset-password background problem QA reported only on sign-up; its Notes explain why all four are fixed together. T174 (S054, forgot-password layout) depends on T170 for its background half; T174 itself only covers spacing/alignment. T164 and T165 both touch `onboarding-theme-step.tsx`/`kentei-onboarding.tsx` and are independent but worth doing together to avoid re-testing the same screen twice, mirroring the T147/T148 precedent. T166 (S045) extends T153.12's existing `isFirstEverRegularSession`/`selectRegularSessions` model rather than adding new counting infrastructure._
+
+### [T163] Show the trick name on every goal card
+
+- **Area:** Goals
+- **Priority:** Medium
+- **Status:** Not started
+- **Planning:** Implementer
+- **Description:** `GoalRow` (`src/features/goals/components/trick-goals-screen.tsx`, shared by `TrickGoalsScreen` and `AllTrickGoalsScreen`) renders `GoalMeta`/`GoalBody`/`ProgressText` but never the goal's own trick name, even though the `GoalProgress` object passed in already carries `trickName`. Render it on the card itself, in a visually intentional treatment (not a cramped label), independent of whether either screen's own trick-name heading is also showing.
+- **Exit criteria:** `yarn test --runInBand` passes, including a test on both `TrickGoalsScreen` and `AllTrickGoalsScreen` asserting a goal card renders its trick's name, whether or not a heading is also present above it.
+- **Notes:** From S042. `GoalProgress.trickName` is already in scope at the render site — this is prop-already-there rendering, not a new data dependency. Exact visual treatment (eyebrow label, small tag, etc.) is an implementer call.
+
+### [T164] Make the onboarding theme step's background actually preview
+
+- **Area:** Onboarding
+- **Priority:** High
+- **Status:** Not started
+- **Planning:** Implementer
+- **Description:** `src/app/app/home.tsx` renders `<Screen background={profile.hasCompletedOnboarding ? undefined : AppColors.yellow} ...>` — hardcoding the mustard-yellow background for the entire duration of onboarding regardless of the theme preset the user just previewed via `setThemeColors` (T146). Make the background reflect the live-previewed `themeBackgroundColor` instead of this fixed fallback.
+- **Exit criteria:** `yarn test --runInBand` passes, including a test asserting that selecting a non-default preset during onboarding changes the rendered background color away from `AppColors.yellow`; confirmed in-browser via the Expo dev server that tapping a preset visibly changes the onboarding screen's background, not just its text/accent.
+- **Notes:** From S043 — a regression against T146's own exit criteria ("background/accent visibly change"), not new scope. Touches the same files as T165; doable in either order, but worth verifying together since both change `onboarding-theme-step.tsx`/`kentei-onboarding.tsx`'s rendered output.
+
+### [T165] Preselect the Default theme preset and remove "Skip for now" from onboarding
+
+- **Area:** Onboarding
+- **Priority:** Medium
+- **Status:** Not started
+- **Planning:** Implementer
+- **Description:** `theme-presets.ts` has a `DEFAULT_THEME_PRESET_ID` sentinel used only by the Profile screen's preset grid (to clear the color preference), but no actual "Default" entry in `RAINBOW_THEME_PRESETS`, and `OnboardingThemeStep` still renders a "Skip for now" button (`onSkip`) wired identically to `onFinish`. Add a "Default" preset card, pre-selected on entering the onboarding theme step, and remove the "Skip for now" control entirely.
+- **Exit criteria:** `yarn test --runInBand` passes, including a test asserting the onboarding theme step shows a "Default" preset pre-selected on mount, no "Skip for now" control renders, and tapping "Finish onboarding" with no other selection completes onboarding on the default theme.
+- **Notes:** From S044, extends T146. `onSkip` currently duplicates `onFinish`'s call exactly — nothing else depends on a distinct skip path. Touches the same files as T164.
+
+### [T166] Re-invite guests to sign up every 5th completed Sesh after the first
+
+- **Area:** Sesh / guest invitation
+- **Priority:** Medium
+- **Status:** Not started
+- **Planning:** Implementer
+- **Description:** `sesh.tsx` shows the post-Sesh signup invite only via `isFirstEverRegularSession` (T153.12). Extend eligibility so the invite also reappears every 5th regular (non-assessment) completed session after that first one, using the already-available `selectRegularSessions` count at the same call site.
+- **Exit criteria:** `practice-history.test.ts` and `sesh.test.tsx` pass, including tests asserting the invite is absent on sessions 2–5 after the first, present again on the 6th completed regular session (5th after the first), and continues on that same 5-session cadence; unchanged: never shown to an authenticated user.
+- **Notes:** From S045, extends T153.12. Pure arithmetic on `selectRegularSessions(priorSessions).length` — no new persistence or counting infrastructure needed. Get the off-by-one right relative to "first" (session 1 shows it, sessions 2–5 don't, session 6 does).
+
+### [T167] Ask "How long would you like to practice a day?" during onboarding
+
+- **Area:** Onboarding
+- **Priority:** Medium
+- **Status:** Not started
+- **Planning:** Required
+- **Description:** Add an onboarding step, after Kentei rank assessment and before theme selection, asking "How long would you like to practice a day?" with a five-minute minimum, writing to the same persisted profile field (`streakThresholdMs`) the Profile screen's existing "How much practice counts as a day?" control already reads and writes.
+- **Exit criteria:** `kentei-onboarding.test.tsx` passes, including a test asserting the new step appears in the correct position in the onboarding sequence, enforces the five-minute minimum, and that completing it persists the same `streakThresholdMs` value the Profile screen's control shows afterward.
+- **Notes:** From S046. Resolved during refinement: the Profile screen keeps its own control as a post-onboarding edit affordance — this step only sets the initial value. `Required` because it changes onboarding's own step sequence/state machine, matching T146's precedent for why a small onboarding change still gets a separate planning pass.
+
+### [T168] Make the whole trick card tappable when picking a trick for a new goal
+
+- **Area:** Tricks / Goals
+- **Priority:** Medium
+- **Status:** Not started
+- **Planning:** Required
+- **Description:** In the trick picker used when creating a new goal (`trick-directory.tsx`), the "Choose" action is a small `RowAction` Pressable separate from the row's identity content. Apply T143's whole-card-tappable pattern here: tapping anywhere on the row selects the trick, matching the same visible press feedback T143 established for `GoalCard`.
+- **Exit criteria:** `yarn test --runInBand` passes, including a test asserting a row-level press in the goal-creation trick picker invokes the same selection behavior as today's "Choose" button, and that the row's other nested interactive controls (edit/delete/notes/goals/practice actions, depending on context) remain independently functional and don't also trigger selection.
+- **Notes:** From S047. `Required` because `trick-directory.tsx`'s row is reused across several contexts with different, mutually exclusive nested interactive children — unlike `GoalRow`'s narrower reuse, wrapping the whole row in one outer `Pressable` needs care that other call sites' existing nested presses (stop-propagation) keep working.
+
+### [T169] Anchor the tricks-home checkmark to the card's rightmost edge
+
+- **Area:** Tricks
+- **Priority:** Medium
+- **Status:** Not started
+- **Planning:** Implementer
+- **Description:** On the Tricks home screen's rows (`trick-directory.tsx`), the focused-trick checkmark (`SelectionIndicator`) sits inside `SelectableIdentity` alongside variable-length Notes/Goals count text in `RowActions`, causing its visual position to shift row to row. Move the checkmark to a fixed position flush against the card's rightmost edge, independent of count-text length.
+- **Exit criteria:** `yarn eslint`/existing component tests pass unchanged (no state reads change); confirmed in-browser via the Expo dev server that the checkmark sits at the same horizontal position across rows with differing note/goal counts.
+- **Notes:** From S048. Pure layout/styling change within one row component — no behavior or state change.
+
+### [T170] Make sign-up, sign-in, forgot-password, and reset-password follow the user's theme
+
+- **Area:** Authentication UI
+- **Priority:** Medium
+- **Status:** Not started
+- **Planning:** Required
+- **Description:** The four `/auth/*` route-group screens (sign-up, sign-in, forgot-password, reset-password) sit outside `/app/*`, so they only ever see the root `_layout.tsx`'s `DefaultAppThemeProvider` (the fixed prototype palette), never the user's personalized `themeBackgroundColor`/`themeAccentColor` — even though each already calls `<Screen>` and would pick up a real theme automatically if one were available. Give this route group access to the user's resolved theme (guest default when none is set) instead of the fixed provider.
+- **Exit criteria:** Component tests for all four screens pass, including one asserting each renders with the user's persisted theme background/accent when a preference exists, and the same default palette as today when none does (guest with no theme set). Confirmed in-browser: a user with a non-default theme sees it reflected on sign-up.
+- **Notes:** From S049. `Required` because this is a provider/routing-boundary change (which theme provider the `/auth/*` group mounts under), not a per-screen fix — it resolves the QA comment about sign-up specifically, and is the same root cause behind T174's background half. Must not reintroduce T145's landing-page hydration-flicker fix (the `/auth/*` group's theme source must not gate first paint on persistence hydration the way the pre-T145 `/` route did).
+
+### [T171] Add a shared show/hide toggle for every password field
+
+- **Area:** Authentication UI
+- **Priority:** Medium
+- **Status:** Not started
+- **Planning:** Implementer
+- **Description:** Sign-up (password + confirm), sign-in (password), reset-password (new + confirm), and Account Security (current, new, confirm new) each render an ad hoc `styled(TextInput)` with `secureTextEntry` and near-identical styling. Extract one shared `PasswordInput` component (label, value, onChangeText, error, plus the new show/hide toggle) and use it at every one of these call sites.
+- **Exit criteria:** `yarn test --runInBand` passes, including a test on the shared component asserting the toggle reveals/hides the typed value, and updated tests on each of the five consuming screens confirming the toggle is present and functions.
+- **Notes:** From S050. Resolved during refinement: build this as one reusable component covering present and future password fields (including T179's new current-password field), not five one-off additions.
+
+### [T172] Restyle Account Security to match the user's theme
+
+- **Area:** Authentication UI / Account
+- **Priority:** Medium
+- **Status:** Not started
+- **Planning:** Implementer
+- **Description:** `account-security-screen.tsx` already renders inside `/app/*`'s real `AppThemeProvider` (unlike the four screens T170 covers), so its color problem isn't a missing theme source — it's specific color/contrast choices on this screen that read poorly against certain themes. Audit and fix the screen's own styled colors to derive properly from `useResolvedTheme()` the way other themed `/app/*` screens already do.
+- **Exit criteria:** Component test/snapshot coverage confirms Account Security's colors resolve from theme tokens rather than fixed values; confirmed in-browser with at least one non-default theme preset that text/background/button contrast reads correctly.
+- **Notes:** From S052. Distinct root cause from T170 — this screen already has theme access; the fix is within the screen itself, not a provider change.
+
+### [T173] Show the current section in the web tab title
+
+- **Area:** Navigation / web
+- **Priority:** Low
+- **Status:** Not started
+- **Planning:** Implementer
+- **Description:** No per-route title mechanism exists today (only the static "Daily Dama" from `app.json`). Add `expo-router/head`'s `<Head><title>...</title></Head>` to each of the five primary section routes (Home, Sesh, Tricks, Stats, Profile), rendering "Daily Dama: <Section>".
+- **Exit criteria:** `yarn expo export --platform web --output-dir /tmp/daily-dama-web-export` succeeds and the exported HTML for each of the five section routes contains its expected `<title>` text; confirmed in-browser that navigating between sections updates the browser tab title.
+- **Notes:** From S053. Web-only by nature — no native/mobile conflict. Five small, identical additions rather than one shared mechanism, since each route already renders independently.
+
+### [T174] Clean up the forgot-password screen's layout
+
+- **Area:** Authentication UI
+- **Priority:** Medium
+- **Status:** Not started
+- **Planning:** Implementer
+- **Description:** Align `forgot-password-screen.tsx`'s text and container spacing with the layout conventions already used on sign-in/sign-up (consistent margins, heading/body hierarchy, button placement).
+- **Exit criteria:** Confirmed in-browser via the Expo dev server that forgot-password's layout visually matches sign-in/sign-up's container and spacing conventions at both desktop and mobile widths; existing `forgot-password-screen` tests continue to pass.
+- **Notes:** From S054. Purely visual — no behavior change to the forgot-password flow. Its background-color half is covered by T170; this ticket is layout/spacing only.
+
+### [T175] Send the user to the landing page after logout
+
+- **Area:** Authentication
+- **Priority:** Medium
+- **Status:** Not started
+- **Planning:** Implementer
+- **Description:** `account-section.tsx`'s `handleLogOut` calls `signOut()` but performs no navigation today — the user stays wherever they were (typically Profile) once `AuthProvider`'s listener flips them to `guest`. Add an explicit `router.replace('/')` on successful sign-out.
+- **Exit criteria:** `account-section.test.tsx` passes, including a test asserting a successful sign-out navigates to `/`.
+- **Notes:** From S055. Check this doesn't conflict with T158 (guarded logout prompt) once that lands — this ticket only concerns where a *completed* sign-out navigates.
+
+### [T176] Fix Profile's Account section not rendering until a manual refresh
+
+- **Area:** Authentication / Profile
+- **Priority:** High
+- **Status:** Not started
+- **Planning:** Required
+- **Description:** After signing in and navigating to Profile without a manual page refresh, `AccountSection` doesn't show the signed-in state — it only appears correctly after a refresh. Both `AccountSection` and `AuthProvider` read/expose state in the expected reactive shape on inspection (no obvious stale closure or missing dependency), so this needs a runtime investigation of the actual sign-in → navigate → render timing, not a known local fix.
+- **Exit criteria:** A test or reproducible in-browser walkthrough proves signing in and navigating directly to Profile (no refresh) shows the Account section in its signed-in state; the root cause found during investigation is documented in this entry's completion notes.
+- **Notes:** From S056. `Required` specifically because the cause isn't yet visible from static inspection — plan for an investigation step before a fix, not just an implementation pass.
+
+### [T177] Let users move between sign-in and sign-up
+
+- **Area:** Authentication UI
+- **Priority:** Medium
+- **Status:** Not started
+- **Planning:** Implementer
+- **Description:** `sign-in-screen.tsx` links to forgot-password and guest continuation but not to sign-up; `sign-up-screen.tsx` has no link back to sign-in at all. Add a visible link each way.
+- **Exit criteria:** Component tests for both screens pass, including one asserting each screen's cross-link navigates to the other's route.
+- **Notes:** From S058. Small, low-risk addition — no existing behavior changes.
+
+### [T178] Let Enter submit the sign-up and sign-in forms on web
+
+- **Area:** Authentication UI
+- **Priority:** Low
+- **Status:** Not started
+- **Planning:** Implementer
+- **Description:** Neither `sign-up-screen.tsx` nor `sign-in-screen.tsx` has any `onSubmitEditing`/web-Enter handling today. Add both: RN `onSubmitEditing` on each field advancing to the next field or submitting on the last, and a web keydown handler so pressing Enter anywhere in the form submits it the same way clicking the primary button would (only when validation would allow an attempt).
+- **Exit criteria:** Component tests for both screens pass, including one asserting an Enter keypress triggers the same submit handler as clicking the primary button.
+- **Notes:** From S059. Resolved during refinement: scoped to sign-up/sign-in only, not change-password/change-email/forgot-password — those are deliberately deferred, partly to avoid rework ahead of T179/T180 restructuring Account Security's forms.
+
+### [T179] Require current-password confirmation before changing email
+
+- **Area:** Authentication
+- **Priority:** High
+- **Status:** Not started
+- **Planning:** Required
+- **Description:** `account-security-screen.tsx`'s change-email form only collects a new email today; `changeEmail` on `AuthProvider` takes `(newEmail: string)` with no password parameter. Add a current-password field to the same form, change `changeEmail`'s signature to accept and verify it, and block the change with a clear message on an incorrect password.
+- **Exit criteria:** `auth-provider.test.tsx` and `account-security-screen.test.tsx` pass, including tests asserting an incorrect current password blocks the email change with a clear error and never calls the underlying Supabase update, while a correct one proceeds as today.
+- **Notes:** From S060. Resolved during refinement: one combined form (password + new email submitted together), not a two-step re-auth-then-change flow. `Required` because it changes `AuthProvider`'s shared `changeEmail` action signature. Extends T154.1.
+
+### [T180] Gate forgot-password inside the change-password flow behind a wrong current password
+
+- **Area:** Authentication UI
+- **Priority:** Medium
+- **Status:** Not started
+- **Planning:** Implementer
+- **Description:** Account Security's change-password form has no forgot-password link today. Add one, but only shown after the user submits an incorrect current password (the `invalidCredentials` category is already captured at that call site) — with a visible warning that using it signs them out — and have it navigate directly to `/auth/forgot-password` (not sign-in first) while calling `signOut()`.
+- **Exit criteria:** `account-security-screen.test.tsx` passes, including tests asserting no forgot-password link renders by default, one appears with the sign-out warning after a wrong-password submission, and selecting it signs the user out and navigates to `/auth/forgot-password`.
+- **Notes:** From S061. Extends T154.1's change-password flow. Distinct from T174 (forgot-password's own visual layout).
+
+### [T181] Let users exit Account Security with an in-app back control
+
+- **Area:** Authentication UI
+- **Priority:** Low
+- **Status:** Not started
+- **Planning:** Implementer
+- **Description:** `account-security-screen.tsx` has no back/header affordance today, relying entirely on browser back. Add a secondary `Button` calling an `onBack` handler that returns to Profile, matching the existing pattern already used by `trick-goals-screen.tsx`, `all-trick-goals-screen.tsx`, `trick-notes-screen.tsx`, `all-notes-screen.tsx`, and `laced-tricks-screen.tsx` ("Back to Tricks"-style secondary button).
+- **Exit criteria:** `account-security-screen.test.tsx` passes, including a test asserting the back control navigates to Profile.
+- **Notes:** From S062. Small, low-risk navigation addition reusing an existing pattern.
+
 ---
 
 _All currently actionable backend-roadmap work is phase-gated and active in dependency order: Phase 1/Auth T153–T154, Phase 2 T155, Phase 3 T156–T160, Phase 4 T161, and the Phase 6 launch gate T162. T154 is the shared credential-maintenance prerequisite named by both Phase 1 and Phase 4, and is ordered before T158's guarded-logout integration. Phase 5 has no active ticket while native hardening is deferred. Supabase, unrestricted guest access, web PKCE, exact callbacks, local-first synchronization, immediate deletion, and the roadmap's security requirements are settled decisions._
