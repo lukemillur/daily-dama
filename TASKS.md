@@ -268,16 +268,6 @@ _Phase 4 activation: T161 comes from S039 and `BACKEND_ROADMAP.md` Phase 4. Its 
 - **Description:** Let an authenticated user permanently remove the Auth identity and every application row, then return to a clean guest workspace even when the success response is lost.
 - **Notes:** Umbrella from S039. Complete T161.1–T161.5. User-facing data export is excluded.
 
-### [T161.1] Implement the authenticated delete-account Edge Function
-
-- **Area:** Supabase Edge Function
-- **Priority:** High
-- **Status:** Not started
-- **Planning:** Required
-- **Description:** Add `POST /functions/v1/delete-account` in plain JavaScript with JSDoc and runtime request validation; require a valid JWT, fetch trusted identity server-side, validate `currentPassword` plus exact `DELETE`, and use the service-role client only inside Supabase secrets to remove the Auth user.
-- **Exit criteria:** Local function tests prove valid input returns `204` and cascades all application rows, while missing/invalid JWTs, malformed bodies, wrong confirmation, wrong passwords, and attempts to supply another identity are rejected; the service-role key is absent from app environment values and web bundles.
-- **Notes:** From S039 and the roadmap Edge Function contract. Depends on T155.7 and T153.5.
-
 ### [T161.2] Harden deletion against abuse, leakage, and lost responses
 
 - **Area:** Account deletion security

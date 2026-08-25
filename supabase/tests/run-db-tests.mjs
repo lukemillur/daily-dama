@@ -69,6 +69,9 @@ function runDefaultSequence() {
   if (steps.every((step) => step.code === 0)) {
     steps.push(run('Data API suite (yarn test:data-api)', ['yarn', 'test:data-api']));
   }
+  if (steps.every((step) => step.code === 0)) {
+    steps.push(run('Edge Function suite (yarn test:functions)', ['yarn', 'test:functions']));
+  }
 
   // Cleanup reset always runs, regardless of whether the steps above
   // succeeded, so the local stack is never left dirty by a failed run. Its

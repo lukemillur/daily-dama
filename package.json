@@ -55,6 +55,7 @@
     "test:workflow": "node --test '.claude/scripts/test/*.test.mjs'",
     "test:e2e:auth": "node .claude/scripts/run-auth-e2e.mjs",
     "test:data-api": "node --test 'supabase/tests/data-api/**/*.test.mjs'",
+    "test:functions": "node --test 'supabase/tests/functions/**/*.test.mjs'",
     "test:db": "node supabase/tests/run-db-tests.mjs",
     "db:generate-types": "node supabase/scripts/generate-database-types.mjs",
     "security:check-headers": "node security/scripts/check-csp-headers.mjs",

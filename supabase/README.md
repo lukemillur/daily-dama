@@ -79,6 +79,32 @@ Finish with `npx --yes supabase@2.115.0 db reset` afterward, the same way the
 pgTAP section above instructs, so no fixture rows linger for a subsequent run
 of either suite.
 
+### Running the delete-account Edge Function tests
+
+`supabase/tests/functions/` proves T161.1's `delete-account` Edge Function
+contract over real HTTP against a running local stack: valid input with a
+correct password and exact `DELETE` confirmation returns `204` and cascades
+every application row plus the Auth user itself; missing/invalid JWTs,
+malformed bodies, wrong confirmation text, wrong passwords, and a body that
+tries to name another user's id are all rejected.
+
+This suite needs the same running local stack and recent `db reset` as the
+Data API suite above (the CLI serves any function under
+`supabase/functions/<name>/` automatically once the stack is running, so no
+separate `supabase functions serve` step is needed):
+
+```sh
+npx --yes supabase@2.115.0 start       # if not already running
+npx --yes supabase@2.115.0 db reset
+yarn test:functions
+```
+
+It is folded into `yarn test:db` as a step after the Data API suite, and
+like that suite is not part of `node .claude/scripts/verify.mjs` (it needs a
+running Docker-backed local stack that the no-Docker verification sequence
+does not assume). Finish with `npx --yes supabase@2.115.0 db reset`
+afterward for the same reason the sections above do.
+
 `supabase/tests/data-api/` also carries T155.7's authorization suite
 (anonymous denial, cross-user isolation, ownership-change rejection, and each
 table's per-operation grant matrix) and T155.8's pagination fixture
