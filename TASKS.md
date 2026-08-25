@@ -153,7 +153,7 @@ _T163–T181 come from stories S042–S062 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 - **Area:** Onboarding
 - **Priority:** Medium
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** Add an onboarding step, after Kentei rank assessment and before theme selection, asking "How long would you like to practice a day?" with a five-minute minimum, writing to the same persisted profile field (`streakThresholdMs`) the Profile screen's existing "How much practice counts as a day?" control already reads and writes.
 - **Exit criteria:** `kentei-onboarding.test.tsx` passes, including a test asserting the new step appears in the correct position in the onboarding sequence, enforces the five-minute minimum, and that completing it persists the same `streakThresholdMs` value the Profile screen's control shows afterward.
