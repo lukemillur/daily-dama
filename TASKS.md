@@ -153,7 +153,7 @@ _T163–T181 come from stories S042–S062 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 - **Area:** Onboarding
 - **Priority:** Medium
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Implementer
 - **Description:** `theme-presets.ts` has a `DEFAULT_THEME_PRESET_ID` sentinel used only by the Profile screen's preset grid (to clear the color preference), but no actual "Default" entry in `RAINBOW_THEME_PRESETS`, and `OnboardingThemeStep` still renders a "Skip for now" button (`onSkip`) wired identically to `onFinish`. Add a "Default" preset card, pre-selected on entering the onboarding theme step, and remove the "Skip for now" control entirely.
 - **Exit criteria:** `yarn test --runInBand` passes, including a test asserting the onboarding theme step shows a "Default" preset pre-selected on mount, no "Skip for now" control renders, and tapping "Finish onboarding" with no other selection completes onboarding on the default theme.
