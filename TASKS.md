@@ -153,7 +153,7 @@ _T163–T181 come from stories S042–S062 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 - **Area:** Sesh / guest invitation
 - **Priority:** Medium
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Implementer
 - **Description:** `sesh.tsx` shows the post-Sesh signup invite only via `isFirstEverRegularSession` (T153.12). Extend eligibility so the invite also reappears every 5th regular (non-assessment) completed session after that first one, using the already-available `selectRegularSessions` count at the same call site.
 - **Exit criteria:** `practice-history.test.ts` and `sesh.test.tsx` pass, including tests asserting the invite is absent on sessions 2–5 after the first, present again on the 6th completed regular session (5th after the first), and continues on that same 5-session cadence; unchanged: never shown to an authenticated user.
