@@ -153,11 +153,25 @@ describe('KenteiOnboarding', () => {
     expect(profile?.selectedTrickIds.length).toBeGreaterThan(0);
   });
 
-  it('completes onboarding normally with no theme preference set when the step is skipped', async () => {
+  it('shows the Default preset pre-selected on mount and no Skip control', async () => {
     const root = await mountOnboarding();
     await driveToThemeSelect(root);
 
-    act(() => pressByAccessibilityLabel(root, 'Skip theme selection'));
+    expect(findByAccessibilityLabel(root, 'Skip theme selection').length).toBe(0);
+    expect(
+      root.root.findAll((node) => node.props.children === 'Skip for now').length,
+    ).toBe(0);
+
+    const [defaultSwatch] = findByAccessibilityLabel(root, 'Default theme preset');
+    expect(defaultSwatch).toBeDefined();
+    expect(defaultSwatch.props.accessibilityState.selected).toBe(true);
+  });
+
+  it('completes onboarding on the default theme when Finish is pressed with no other selection', async () => {
+    const root = await mountOnboarding();
+    await driveToThemeSelect(root);
+
+    act(() => pressByAccessibilityLabel(root, 'Finish onboarding'));
     await act(async () => {
       await Promise.resolve();
     });

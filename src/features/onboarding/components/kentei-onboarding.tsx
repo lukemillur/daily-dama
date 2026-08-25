@@ -16,7 +16,10 @@ import { OnboardingLevelStep } from '@/features/onboarding/components/onboarding
 import { OnboardingRankRevealStep } from '@/features/onboarding/components/onboarding-rank-reveal-step';
 import { OnboardingSelectionStep } from '@/features/onboarding/components/onboarding-selection-step';
 import { OnboardingThemeStep } from '@/features/onboarding/components/onboarding-theme-step';
-import { RAINBOW_THEME_PRESETS } from '@/features/profile/model/theme-presets';
+import {
+  DEFAULT_THEME_PRESET_ID,
+  RAINBOW_THEME_PRESETS,
+} from '@/features/profile/model/theme-presets';
 
 export function KenteiOnboarding() {
   const router = useRouter();
@@ -70,14 +73,22 @@ export function KenteiOnboarding() {
           preset.backgroundColor === themeBackgroundColor &&
           preset.accentColor === themeAccentColor,
       );
+      const selectedPresetId =
+        selectedPreset?.id ??
+        (themeBackgroundColor === undefined && themeAccentColor === undefined
+          ? DEFAULT_THEME_PRESET_ID
+          : undefined);
       return (
         <OnboardingThemeStep
-          selectedPresetId={selectedPreset?.id}
+          selectedPresetId={selectedPresetId}
           onSelectPreset={(preset) => {
-            setThemeColors(preset.backgroundColor, preset.accentColor);
+            if (preset.id === DEFAULT_THEME_PRESET_ID) {
+              setThemeColors(undefined, undefined);
+            } else {
+              setThemeColors(preset.backgroundColor, preset.accentColor);
+            }
           }}
           onFinish={finishOnboarding}
-          onSkip={finishOnboarding}
         />
       );
     }
