@@ -5,6 +5,82 @@ import type { AuthState } from '@/features/auth/model/auth-state';
 
 import { ForgotPasswordScreen } from '@/features/auth/components/forgot-password-screen';
 
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const ReactNative = require('react-native') as typeof import('react-native');
+
+jest.mock('@react-native-async-storage/async-storage', () =>
+  require('@react-native-async-storage/async-storage/jest/async-storage-mock'),
+);
+
+import { CachedAppThemeProvider } from '@/features/profile/components/app-theme-provider';
+import { USER_PROFILE_STORAGE_KEY } from '@/features/profile/persistence/user-profile-persistence';
+import { resolveTheme } from '@/features/profile/state/use-resolved-theme';
+import { GUEST_IDENTITY } from '@/shared/persistence/identity';
+import { physicalKey } from '@/shared/persistence/scoped-storage';
+
+const GUEST_SCOPED_KEY = physicalKey(GUEST_IDENTITY, USER_PROFILE_STORAGE_KEY);
+const originalPlatformOS = ReactNative.Platform.OS;
+
+function seedGuestProfile(overrides: { themeBackgroundColor?: string; themeAccentColor?: string }) {
+  return JSON.stringify({
+    version: 1,
+    profile: { hasCompletedOnboarding: false, selectedTrickIds: [], ...overrides },
+  });
+}
+
+// Mirrors resolvedButtonRootStyle from button.test.tsx: styled-components/native flattens
+// ButtonRoot's template into a resolved RN style object on the innermost host node carrying the
+// accessibility label; other wrapper layers keep an unresolved styled-components descriptor.
+function resolvedButtonRootStyle(renderer: ReactTestRenderer, label: string) {
+  const matches = renderer.root.findAll((node) => node.props.accessibilityLabel === label);
+  const withPlainStyle = matches.find(
+    (node) =>
+      typeof node.props.style === 'object' &&
+      node.props.style !== null &&
+      !Array.isArray(node.props.style) &&
+      typeof node.props.style.backgroundColor === 'string',
+  );
+  return withPlainStyle?.props.style as { backgroundColor?: string } | undefined;
+}
+
+function resolvedButtonLabelColor(renderer: ReactTestRenderer, label: string) {
+  const matches = renderer.root.findAll((node) => node.props.accessibilityLabel === label);
+  for (const match of matches) {
+    const textNode = match.findAll(
+      (node) =>
+        typeof node.props.style === 'object' &&
+        node.props.style !== null &&
+        !Array.isArray(node.props.style) &&
+        typeof node.props.style.color === 'string',
+    )[0];
+    if (textNode) return (textNode.props.style as { color: string }).color;
+  }
+  return undefined;
+}
+
+async function mountWithTheme() {
+  let root!: ReactTestRenderer;
+  await act(async () => {
+    root = create(
+      <CachedAppThemeProvider>
+        <ForgotPasswordScreen />
+      </CachedAppThemeProvider>,
+    );
+  });
+  return root;
+}
+
+function useWebLocalStorage(getItem: (key: string) => string | null) {
+  ReactNative.Platform.OS = 'web';
+  (globalThis as { window?: unknown }).window = globalThis;
+  Object.defineProperty(window, 'localStorage', { value: { getItem }, configurable: true });
+}
+
+function restorePlatform() {
+  ReactNative.Platform.OS = originalPlatformOS;
+  delete (window as unknown as { localStorage?: unknown }).localStorage;
+}
+
 const mockReplace = jest.fn();
 const mockPush = jest.fn();
 jest.mock('expo-router', () => ({ useRouter: () => ({ replace: mockReplace, push: mockPush }) }));
@@ -224,6 +300,43 @@ describe('ForgotPasswordScreen', () => {
     const textNodes = root.root.findAll((node) => typeof node.props.children === 'string');
     for (const node of textNodes) {
       expect(node.props.children as string).not.toContain(email);
+    }
+  });
+
+  it('renders the default palette (guest, no cached theme) via CachedAppThemeProvider', async () => {
+    useWebLocalStorage(() => null);
+    try {
+      const defaultTheme = resolveTheme({});
+      mockAuthState = { status: 'guest', reason: 'signedOut' };
+      const root = await mountWithTheme();
+
+      expect(resolvedButtonRootStyle(root, 'Send reset link')?.backgroundColor).toBe(defaultTheme.buttonBackground);
+      expect(resolvedButtonLabelColor(root, 'Send reset link')).toBe(defaultTheme.accent);
+    } finally {
+      restorePlatform();
+    }
+  });
+
+  it("renders the user's persisted guest theme background/accent via CachedAppThemeProvider", async () => {
+    const customBackground = '#123456';
+    const customAccent = '#abcdef';
+    useWebLocalStorage((key) =>
+      key === GUEST_SCOPED_KEY
+        ? seedGuestProfile({ themeBackgroundColor: customBackground, themeAccentColor: customAccent })
+        : null,
+    );
+    try {
+      const customTheme = resolveTheme({
+        themeBackgroundColor: customBackground,
+        themeAccentColor: customAccent,
+      });
+      mockAuthState = { status: 'guest', reason: 'signedOut' };
+      const root = await mountWithTheme();
+
+      expect(resolvedButtonRootStyle(root, 'Send reset link')?.backgroundColor).toBe(customTheme.buttonBackground);
+      expect(resolvedButtonLabelColor(root, 'Send reset link')).toBe(customTheme.accent);
+    } finally {
+      restorePlatform();
     }
   });
 });
