@@ -32,18 +32,24 @@ mkdirSync(SCRATCH_ROOT, { recursive: true });
 // real Supabase project. Representative of the "service-role keys and Auth sessions"
 // shape called out in the task description.
 //
-// Deliberately split across three constants and joined at runtime, instead of one
-// contiguous literal: the assembled string is what a scratch-repo/scratch-bundle
-// fixture needs to trip gitleaks' default 'jwt' rule for this self-test to mean
-// anything, but this source file itself is committed to this repo's real, permanent
-// history -- if the full JWT-shaped string appeared here as one literal, the
-// `secret-scan` CI job would (correctly) flag this very file on every run, and the
-// only fix would be adding it to .gitleaks.toml's allowlist, which would then also
-// suppress it inside the scratch repos below and silently break this self-test.
-const FAKE_SECRET_HEADER = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9";
-const FAKE_SECRET_PAYLOAD = "eyJyb2xlIjoic2VydmljZV9yb2xlIiwiaXNzIjoic3VwYWJhc2UtZGVtbyJ9";
-const FAKE_SECRET_SIGNATURE = "fakeSignatureNotARealSecretXyz123456789";
-const FAKE_SECRET = [FAKE_SECRET_HEADER, FAKE_SECRET_PAYLOAD, FAKE_SECRET_SIGNATURE].join(".");
+// Deliberately computed at runtime from plain, non-suspicious data rather than
+// written as a base64/JWT-shaped literal anywhere in this file: the assembled string
+// is what a scratch-repo/scratch-bundle fixture needs to trip gitleaks' default 'jwt'
+// rule for this self-test to mean anything, but this source file itself is committed
+// to this repo's real, permanent history. A precomputed base64 literal here -- even
+// split across multiple constants -- was tried and still tripped gitleaks' default
+// 'jwt'/'generic-api-key' rules on this file in a real CI run; allowlisting the exact
+// value would also suppress it inside the scratch repos below and silently break this
+// self-test. Deriving the base64 segments from readable JSON at runtime avoids ever
+// writing a secret-shaped string into the source itself.
+const FAKE_SECRET_HEADER = Buffer.from(JSON.stringify({ alg: "HS256", typ: "JWT" })).toString("base64url");
+const FAKE_SECRET_PAYLOAD = Buffer.from(
+  JSON.stringify({ role: "service_role", iss: "supabase-demo-fixture-not-real" }),
+).toString("base64url");
+const FAKE_SECRET_SIGNATURE = "not a real signature, just fixture bytes for a self test";
+const FAKE_SECRET = [FAKE_SECRET_HEADER, FAKE_SECRET_PAYLOAD, Buffer.from(FAKE_SECRET_SIGNATURE).toString("base64url")].join(
+  ".",
+);
 
 function runGitCommand(args, cwd) {
   const result = spawnSync("git", args, { cwd, encoding: "utf8" });
