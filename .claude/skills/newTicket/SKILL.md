@@ -39,6 +39,8 @@ Read what the user actually said; there's no argument syntax to parse.
 
 `ranked` only changes *which* actionable task continuous mode reaches first each cycle — every other rule on this page (skip/stop conditions, one task per cycle, fresh subagents) is identical. It cannot combine with a task ID or `resume`; both of those already pick one task directly, so `ticket-claim.mjs` rejects the combination as a usage error rather than guessing which one wins.
 
+**Default to file order.** Pass `ranked` to `ticket-claim.mjs` only when the user's own words literally contain `ranked` (e.g. `/newTicket ranked`, "run newTicket ranked"). Do not infer ranked mode from context, from a prior conversation, from this being a "good default," or from any other signal — an invocation with no such word, including a bare `/newTicket`, always means file order.
+
 ## One cycle
 
 Exactly one task, claim → plan (maybe) → implement → cleanup. Post a short plain one-line status (no headers, no emoji) as its own message at each checkpoint — you're the only visible progress while a cycle runs.
