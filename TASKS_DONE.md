@@ -12,6 +12,16 @@ Entries keep their content as it was at completion. Don't retroactively edit a d
 - **Description:** Add the complete Phase 1 web Auth foundation while preserving unrestricted guest access to `/app`.
 - **Notes:** Umbrella from S032. Complete T153.1–T153.13. Native callbacks, SecureStore, and synchronization are excluded. All thirteen children (T153.1–T153.13) are done; closed alongside T153.13, the last child to complete.
 
+### [T161.1] Implement the authenticated delete-account Edge Function
+
+- **Area:** Supabase Edge Function
+- **Priority:** High
+- **Status:** Done
+- **Planning:** Required
+- **Description:** Add `POST /functions/v1/delete-account` in plain JavaScript with JSDoc and runtime request validation; require a valid JWT, fetch trusted identity server-side, validate `currentPassword` plus exact `DELETE`, and use the service-role client only inside Supabase secrets to remove the Auth user.
+- **Exit criteria:** Local function tests prove valid input returns `204` and cascades all application rows, while missing/invalid JWTs, malformed bodies, wrong confirmation, wrong passwords, and attempts to supply another identity are rejected; the service-role key is absent from app environment values and web bundles. Confirmed: added `supabase/functions/delete-account/index.js` (plain JS + JSDoc, `verify_jwt = true` in `supabase/config.toml`) and `supabase/tests/functions/t161_1_delete_account.test.mjs` (`yarn test:functions`, folded into `yarn test:db`). Against a local reset stack, all 16 cases pass: valid deletion returns `204`/`Cache-Control: no-store`/empty body and cascades all six exposed tables plus the Auth user; missing/invalid JWT, seven malformed-body shapes, four wrong-confirmation variants (including case and trailing-space), wrong password, and a body with an extra `userId` naming another user are all rejected (`401`/`400`) while leaving the target user and rows intact. `grep` confirms no `SERVICE_ROLE` reference in `.env.example`/`app.json`/`src`, and the static web export contains no `SERVICE_ROLE_KEY` string. `node .claude/scripts/verify.mjs` (test/lint/typecheck/web-export) passes.
+- **Notes:** From S039 and the roadmap Edge Function contract. Depends on T155.7 and T153.5. Deviation from plan: the local Supabase CLI requires an explicit `entrypoint = "./functions/delete-account/index.js"` in `[functions.delete-account]` to serve a plain-`.js` function (its default lookup is `index.ts`), not called out in the plan. Cascade/row-intact assertions in the test suite use the target user's own (pre-deletion) access token against PostgREST rather than the service-role key: this schema's per-table PostgREST grants are scoped to `authenticated` only, so `service_role` (RLS-bypassing but ungranted at the table level) gets `42501` there; PostgREST verifies JWTs by signature alone and never checks `auth.users` existence, so the pre-deletion token still correctly proves zero rows post-cascade. Auth-user-existence checks (`GET /auth/v1/admin/users/<id>`) still use the service-role key against GoTrue's admin API, unaffected by this.
+
 ### [T153.13] Verify Phase 1 web Auth security end to end
 
 - **Area:** Authentication security testing
