@@ -107,6 +107,32 @@ describe('TrickGoalsScreen', () => {
     expect(findText(root, 'Big Cup goals')).toHaveLength(1);
   });
 
+  it('renders the goal card trick name whether or not the trick-goals heading is also present', () => {
+    mockGoals = [
+      { id: 'goal-1', trickId: 'big-cup', trickName: 'Big Cup', kind: 'count', targetCount: 10, createdAt: 0 },
+    ];
+    let root!: ReactTestRenderer;
+    act(() => {
+      root = create(<TrickGoalsScreen trickId="big-cup" trickName="Big Cup" onBack={() => {}} />);
+    });
+
+    // No section heading with a single goal, but the card itself still names its trick.
+    expect(findText(root, 'Big Cup goals')).toHaveLength(0);
+    expect(findText(root, 'Big Cup').length).toBeGreaterThan(0);
+
+    mockGoals = [
+      { id: 'goal-1', trickId: 'big-cup', trickName: 'Big Cup', kind: 'count', targetCount: 10, createdAt: 0 },
+      { id: 'goal-2', trickId: 'big-cup', trickName: 'Big Cup', kind: 'time', targetMs: 60_000, createdAt: 0 },
+    ];
+    act(() => {
+      root = create(<TrickGoalsScreen trickId="big-cup" trickName="Big Cup" onBack={() => {}} />);
+    });
+
+    // Section heading now present, and both goal cards still render their own trick name.
+    expect(findText(root, 'Big Cup goals')).toHaveLength(1);
+    expect(findText(root, 'Big Cup').length).toBeGreaterThanOrEqual(2);
+  });
+
   it('navigates to practice when the goal card is pressed anywhere other than Delete', () => {
     mockGoals = [
       { id: 'goal-1', trickId: 'big-cup', trickName: 'Big Cup', kind: 'count', targetCount: 10, createdAt: 0 },

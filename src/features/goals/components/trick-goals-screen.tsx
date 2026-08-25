@@ -143,6 +143,7 @@ export function GoalRow({
       onPress={() => router.push({ pathname: '/app/sesh', params: { trickId: goal.trickId, mode: 'practice' } })}
       onPressIn={() => setPressed(true)}
       onPressOut={() => setPressed(false)}>
+      <GoalTrickName>{goal.trickName}</GoalTrickName>
       <GoalMetaRow>
         <GoalMeta>{goal.kind === 'count' ? 'Lace count goal' : 'Practice time goal'}</GoalMeta>
         {progress.achieved ? <AchievedBadge>Achieved</AchievedBadge> : null}
@@ -283,6 +284,13 @@ const GoalCardPressable = styled(Pressable)<{ readonly $pressed: boolean }>`
   border-radius: ${Radii.panel}px;
   padding: 16px;
   opacity: ${({ $pressed }) => ($pressed ? 0.7 : 1)};
+`;
+const GoalTrickName = styled.Text`
+  color: ${AppColors.ink};
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: 0.4px;
+  margin-bottom: 8px;
 `;
 const GoalMetaRow = styled.View`flex-direction: row; align-items: center; justify-content: space-between; gap: 10px;`;
 const GoalMeta = styled.Text`color: ${AppColors.red}; font-size: 11px; font-weight: 900; letter-spacing: 0.8px; text-transform: uppercase;`;

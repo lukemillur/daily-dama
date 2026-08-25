@@ -4,6 +4,16 @@ Completed entries move here from `TASKS.md`'s `Backlog`, in the same commit that
 
 Entries keep their content as it was at completion. Don't retroactively edit a description or exit criteria after the fact; if something about a completed task turns out to be wrong or misleading, note that in a new entry or in code, not by rewriting history here.
 
+### [T163] Show the trick name on every goal card
+
+- **Area:** Goals
+- **Priority:** Medium
+- **Status:** Done
+- **Planning:** Implementer
+- **Description:** `GoalRow` (`src/features/goals/components/trick-goals-screen.tsx`, shared by `TrickGoalsScreen` and `AllTrickGoalsScreen`) renders `GoalMeta`/`GoalBody`/`ProgressText` but never the goal's own trick name, even though the `GoalProgress` object passed in already carries `trickName`. Render it on the card itself, in a visually intentional treatment (not a cramped label), independent of whether either screen's own trick-name heading is also showing.
+- **Exit criteria:** `yarn test --runInBand` passes, including a test on both `TrickGoalsScreen` and `AllTrickGoalsScreen` asserting a goal card renders its trick's name, whether or not a heading is also present above it. Confirmed: added a `GoalTrickName` eyebrow-style label above `GoalMetaRow` inside `GoalRow`'s card (`src/features/goals/components/trick-goals-screen.tsx`), rendering `goal.trickName` unconditionally, independent of either screen's own trick-name heading. Added a dedicated test in both `trick-goals-screen.test.tsx` and `all-trick-goals-screen.test.tsx` asserting the card renders the trick name both when a single-goal trick shows no section heading and when a multi-goal trick shows one; updated the pre-existing `all-trick-goals-screen.test.tsx` assertion that previously expected zero "Stall" text occurrences, since the single-goal trick's card now legitimately renders its own name. `yarn test --runInBand` and `yarn tsc --noEmit` both pass; `yarn eslint` on the changed files is clean.
+- **Notes:** From S042. `GoalProgress.trickName` is already in scope at the render site — this is prop-already-there rendering, not a new data dependency. Exact visual treatment (eyebrow label, small tag, etc.) is an implementer call.
+
 ### [T157] Add local-first synchronization across every domain
 
 - **Area:** Synchronization

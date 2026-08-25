@@ -140,9 +140,10 @@ describe('AllTrickGoalsScreen', () => {
       press(root, 'add-goal-b');
       press(root, 'record-sesh-a');
 
-      // Trick A has two goals -> heading shown. Trick B has one goal -> no heading.
+      // Trick A has two goals -> heading shown. Trick B has one goal -> no heading, but its
+      // card still names the trick.
       expect(findText(root, 'Big Cup goals')).toHaveLength(1);
-      expect(findText(root, 'Stall')).toHaveLength(0);
+      expect(findText(root, 'Stall').length).toBeGreaterThan(0);
       expect(findText(root, 'Stall goals')).toHaveLength(0);
       expect(findText(root, '3 / 3 laces')).toHaveLength(1);
       expect(findText(root, '0 / 5 laces')).toHaveLength(1);
@@ -160,6 +161,21 @@ describe('AllTrickGoalsScreen', () => {
     const root = await mountHarness();
 
     expect(findText(root, "No goals yet. Set one from a trick's Goals action, or add one below.")).toHaveLength(1);
+  });
+
+  it('renders each goal card trick name whether or not the group heading is also present', async () => {
+    const root = await mountHarness();
+
+    press(root, 'add-goal-a');
+    press(root, 'add-goal-a2');
+    press(root, 'add-goal-b');
+
+    // Trick A has a group heading (two goals); trick B does not (one goal). Both still name
+    // their trick on the card itself.
+    expect(findText(root, 'Big Cup goals')).toHaveLength(1);
+    expect(findText(root, 'Big Cup').length).toBeGreaterThanOrEqual(2);
+    expect(findText(root, 'Stall goals')).toHaveLength(0);
+    expect(findText(root, 'Stall').length).toBeGreaterThan(0);
   });
 
   it('navigates to /sesh with the correct trickId param when a goal card is pressed', async () => {
