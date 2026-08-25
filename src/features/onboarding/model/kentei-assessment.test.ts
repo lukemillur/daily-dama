@@ -261,9 +261,32 @@ describe('kenteiAssessmentReducer', () => {
     expect(toggledOff.status === 'selecting' && toggledOff.selectedTrickIds).toEqual([]);
   });
 
-  it('moves from selecting to themeSelect on themeStepEntered, carrying fields through', () => {
+  it('moves from selecting to durationSelect on durationStepEntered, carrying fields through', () => {
     const state: KenteiAssessmentState = {
       status: 'selecting',
+      rank: 6,
+      selectedTrickIds: ['trick-a'],
+      startingRank: 4,
+      landedTrickIds: ['trick-b'],
+    };
+    const next = kenteiAssessmentReducer(state, { type: 'durationStepEntered' });
+    expect(next).toEqual({
+      status: 'durationSelect',
+      rank: 6,
+      selectedTrickIds: ['trick-a'],
+      startingRank: 4,
+      landedTrickIds: ['trick-b'],
+    });
+  });
+
+  it('ignores durationStepEntered outside of selecting', () => {
+    const state: KenteiAssessmentState = { status: 'intro' };
+    expect(kenteiAssessmentReducer(state, { type: 'durationStepEntered' })).toEqual(state);
+  });
+
+  it('moves from durationSelect to themeSelect on themeStepEntered, carrying fields through', () => {
+    const state: KenteiAssessmentState = {
+      status: 'durationSelect',
       rank: 6,
       selectedTrickIds: ['trick-a'],
       startingRank: 4,
@@ -279,7 +302,7 @@ describe('kenteiAssessmentReducer', () => {
     });
   });
 
-  it('ignores themeStepEntered outside of selecting', () => {
+  it('ignores themeStepEntered outside of durationSelect', () => {
     const state: KenteiAssessmentState = { status: 'intro' };
     expect(kenteiAssessmentReducer(state, { type: 'themeStepEntered' })).toEqual(state);
   });
