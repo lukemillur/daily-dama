@@ -60,7 +60,12 @@ function runDefaultSequence() {
   if (steps[0].code === 0) steps.push(run('db reset', [...SUPABASE, 'db', 'reset']));
   if (steps.every((step) => step.code === 0)) {
     steps.push(
-      run('db:generate-types --check', ['node', 'supabase/scripts/generate-database-types.mjs', '--check']),
+      run('db:generate-types --check', [
+        'node',
+        'supabase/scripts/generate-database-types.mjs',
+        '--check',
+        '--reuse-current-database',
+      ]),
     );
   }
   if (steps.every((step) => step.code === 0)) {

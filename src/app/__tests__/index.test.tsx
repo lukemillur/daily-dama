@@ -1,168 +1,42 @@
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
-import { Image } from 'expo-image';
 import { act, create } from 'react-test-renderer';
 
 import RootRoute from '@/app/index';
-import type { CachedOnboardingStatus } from '@/features/profile/persistence/read-cached-onboarding-status';
 
-jest.mock('react-native-reanimated', () =>
-  require('react-native-reanimated/mock'),
-);
-
-// expo-image's native oversized-image observer wiring (initObserveIntegrationIfNeeded) throws
-// under jest-expo's native-module mock ('observe.getIntegrations is not a function') -- it isn't
-// exercised in this test, so mock the component with a lightweight stand-in that preserves the
-// props this suite asserts on (source, accessibilityLabel, alt).
-jest.mock('expo-image', () => {
-  const React = require('react');
-  const { View } = require('react-native');
-  return { Image: (props: Record<string, unknown>) => React.createElement(View, props) };
-});
-
-const mockRouter = { replace: jest.fn(), push: jest.fn() };
-let mockSearchParams: Record<string, string> = {};
-jest.mock('expo-router', () => ({
-  useLocalSearchParams: () => mockSearchParams,
-  useRouter: () => mockRouter,
+const mockUseRedirectOnboardedVisitorHome = jest.fn<() => boolean>();
+const mockLandingPage = jest.fn(() => null);
+jest.mock('@/features/landing/state/redirect-onboarded-visitor-home', () => ({
+  useRedirectOnboardedVisitorHome: () => mockUseRedirectOnboardedVisitorHome(),
 }));
 
-const mockUseCachedOnboardingStatus = jest.fn<() => CachedOnboardingStatus>();
-jest.mock('@/features/landing/state/use-cached-onboarding-status', () => ({
-  useCachedOnboardingStatus: () => mockUseCachedOnboardingStatus(),
-}));
+jest.mock('@/features/landing/components/landing-page', () => ({ LandingPage: () => mockLandingPage() }));
 
-describe('RootRoute (landing page)', () => {
+describe('RootRoute', () => {
   beforeEach(() => {
-    mockRouter.replace.mockClear();
-    mockRouter.push.mockClear();
-    mockSearchParams = {};
-    mockUseCachedOnboardingStatus.mockReset();
-    mockUseCachedOnboardingStatus.mockReturnValue({
-      hasCompletedOnboarding: false,
-      kenteiRank: undefined,
-    });
+    mockUseRedirectOnboardedVisitorHome.mockReset();
+    mockLandingPage.mockClear();
   });
 
-  it('renders distinct headline, lede, and feature copy using the typography components', async () => {
+  it('renders the landing-page boundary when no redirect is required', () => {
+    mockUseRedirectOnboardedVisitorHome.mockReturnValue(false);
+
     let root!: ReturnType<typeof create>;
-    await act(async () => {
+    act(() => {
       root = create(<RootRoute />);
     });
 
-    const headline = root.root.findAll(
-      (node) => node.props.children === 'Why Daily Dama',
-    );
-    expect(headline.length).toBeGreaterThan(0);
-
-    const lede = root.root.findAll(
-      (node) =>
-        typeof node.props.children === 'string' &&
-        node.props.children.includes('deliberate-practice half of your play'),
-    );
-    expect(lede.length).toBeGreaterThan(0);
-
-    const featureHeading = root.root.findAll(
-      (node) => node.props.children === 'Pick one trick and stick to it',
-    );
-    expect(featureHeading.length).toBeGreaterThan(0);
-
-    const ctaHeadline = root.root.findAll(
-      (node) => node.props.children === 'Start your first sesh.',
-    );
-    expect(ctaHeadline.length).toBeGreaterThan(0);
-
-    const ctaLabel = root.root.findAll(
-      (node) => node.props.children === 'Start your first Sesh',
-    );
-    expect(ctaLabel.length).toBeGreaterThan(0);
+    expect(root.toJSON()).toBeNull();
+    expect(mockLandingPage).toHaveBeenCalledTimes(1);
   });
 
-  it('renders the four screenshot images with descriptive alt text', async () => {
+  it('renders nothing when the redirect hook owns navigation', () => {
+    mockUseRedirectOnboardedVisitorHome.mockReturnValue(true);
+
     let root!: ReturnType<typeof create>;
-    await act(async () => {
+    act(() => {
       root = create(<RootRoute />);
     });
 
-    const images = root.root.findAll((node) => node.type === Image);
-
-    const expectedAltFragments = [
-      'home screen',
-      'first-ever lace',
-      'Custom trick form',
-      'Trick goals screen',
-    ];
-    // Scope this count to the screenshot images specifically rather than asserting on the
-    // raw total, in case other expo-image usages appear elsewhere on the page.
-    const screenshotImages = images.filter(
-      (node) =>
-        typeof node.props.accessibilityLabel === 'string' &&
-        expectedAltFragments.some((fragment) => node.props.accessibilityLabel.includes(fragment)),
-    );
-    expect(screenshotImages.length).toBe(4);
-
-    expectedAltFragments.forEach((fragment) => {
-      const matches = images.filter(
-        (node) =>
-          typeof node.props.accessibilityLabel === 'string' &&
-          node.props.accessibilityLabel.includes(fragment),
-      );
-      expect(matches.length).toBeGreaterThan(0);
-    });
-  });
-
-  it('redirects a fresh, fully-onboarded arrival straight to /app/home without rendering the landing page', async () => {
-    mockUseCachedOnboardingStatus.mockReturnValue({
-      hasCompletedOnboarding: true,
-      kenteiRank: 5,
-    });
-
-    let root!: ReturnType<typeof create>;
-    await act(async () => {
-      root = create(<RootRoute />);
-    });
-
-    expect(mockRouter.replace).toHaveBeenCalledWith('/app/home');
-    const headline = root.root.findAll(
-      (node) => node.props.children === 'Why Daily Dama',
-    );
-    expect(headline.length).toBe(0);
-  });
-
-  it('renders the landing page with no redirect when the in-app arrival signal is present', async () => {
-    mockUseCachedOnboardingStatus.mockReturnValue({
-      hasCompletedOnboarding: true,
-      kenteiRank: 5,
-    });
-    mockSearchParams = { from: 'app' };
-
-    let root!: ReturnType<typeof create>;
-    await act(async () => {
-      root = create(<RootRoute />);
-    });
-
-    expect(mockRouter.replace).not.toHaveBeenCalled();
-    const headline = root.root.findAll(
-      (node) => node.props.children === 'Why Daily Dama',
-    );
-    expect(headline.length).toBeGreaterThan(0);
-  });
-
-  it('renders the landing page for an incomplete onboarding profile even when the signal is present', async () => {
-    mockUseCachedOnboardingStatus.mockReturnValue({
-      hasCompletedOnboarding: false,
-      kenteiRank: undefined,
-    });
-    mockSearchParams = { from: 'app' };
-
-    let root!: ReturnType<typeof create>;
-    await act(async () => {
-      root = create(<RootRoute />);
-    });
-
-    expect(mockRouter.replace).not.toHaveBeenCalled();
-    const headline = root.root.findAll(
-      (node) => node.props.children === 'Why Daily Dama',
-    );
-    expect(headline.length).toBeGreaterThan(0);
+    expect(root.toJSON()).toBeNull();
   });
 });

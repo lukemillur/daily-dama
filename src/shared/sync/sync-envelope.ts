@@ -172,6 +172,90 @@ export function updateSyncCursor<State>(
   return { status: 'applied', envelope: { ...envelope, cursor, cursorUpdatedAt: updatedAt } };
 }
 
+export type SyncEnvelopeAction<State> =
+  | { readonly type: 'envelopeRestored'; readonly envelope: SyncEnvelope<State> }
+  | {
+      readonly type: 'localMutationApplied';
+      readonly identity: Identity;
+      readonly now: number;
+      readonly nextSnapshot: State;
+      readonly operationInputs: readonly NewOutboxOperationInput[];
+      readonly operationIds: readonly string[];
+    }
+  | { readonly type: 'operationAcknowledged'; readonly identity: Identity; readonly operationId: string }
+  | {
+      readonly type: 'operationAttemptRecorded';
+      readonly identity: Identity;
+      readonly operationId: string;
+      readonly attemptedAt: number;
+      readonly errorMessage: string | null;
+    }
+  | { readonly type: 'revisionRecorded'; readonly snapshot: State }
+  | {
+      readonly type: 'cursorUpdated';
+      readonly identity: Identity;
+      readonly cursor: string | null;
+      readonly updatedAt: number;
+    };
+
+/**
+ * Shared reducer for the five independent domain envelopes. Domain providers
+ * retain their own typed action aliases and persistence lifecycle, while this
+ * function is the single authority for identical outbox/cursor transitions.
+ */
+export function syncEnvelopeReducer<State>(
+  state: SyncEnvelope<State>,
+  action: SyncEnvelopeAction<State>,
+): SyncEnvelope<State> {
+  switch (action.type) {
+    case 'envelopeRestored':
+      return action.envelope;
+
+    case 'localMutationApplied': {
+      if (action.operationInputs.length !== action.operationIds.length) return state;
+
+      let next = state;
+      for (let index = 0; index < action.operationInputs.length; index += 1) {
+        const result = replacePendingOperationForRecord(
+          next,
+          action.identity,
+          action.nextSnapshot,
+          action.operationInputs[index],
+          action.now,
+          action.operationIds[index],
+        );
+        if (result.status !== 'applied') return state;
+        next = result.envelope;
+      }
+      return next;
+    }
+
+    case 'operationAcknowledged': {
+      const result = acknowledgeOutboxOperation(state, action.identity, action.operationId);
+      return result.status === 'applied' ? result.envelope : state;
+    }
+
+    case 'operationAttemptRecorded': {
+      const result = recordOutboxOperationAttempt(
+        state,
+        action.identity,
+        action.operationId,
+        action.attemptedAt,
+        action.errorMessage,
+      );
+      return result.status === 'applied' ? result.envelope : state;
+    }
+
+    case 'revisionRecorded':
+      return { ...state, state: action.snapshot };
+
+    case 'cursorUpdated': {
+      const result = updateSyncCursor(state, action.identity, action.cursor, action.updatedAt);
+      return result.status === 'applied' ? result.envelope : state;
+    }
+  }
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }

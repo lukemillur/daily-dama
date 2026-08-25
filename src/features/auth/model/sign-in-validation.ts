@@ -6,7 +6,7 @@
  * too short for this account") -- that would reopen the enumeration surface categorizeAuthError's
  * invalidCredentials collapse is closing. Real credential validity is entirely Supabase's job.
  */
-const EMAIL_SHAPE_PATTERN = /^\S+@\S+\.\S+$/;
+import { getEmailValidationError } from '@/features/auth/model/email-validation';
 
 export interface SignInFieldErrors {
   readonly email?: string;
@@ -20,12 +20,8 @@ export type SignInValidation =
 export function validateSignInFields(email: string, password: string): SignInValidation {
   const errors: { email?: string; password?: string } = {};
 
-  const trimmedEmail = email.trim();
-  if (trimmedEmail.length === 0) {
-    errors.email = 'Enter your email.';
-  } else if (!EMAIL_SHAPE_PATTERN.test(trimmedEmail)) {
-    errors.email = 'Enter a valid email address.';
-  }
+  const emailError = getEmailValidationError(email);
+  if (emailError) errors.email = emailError;
 
   if (password.length === 0) {
     errors.password = 'Enter your password.';

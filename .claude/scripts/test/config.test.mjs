@@ -5,7 +5,13 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { parseFrontmatter, toolList, validateAgent, validateRepo, validateSkill } from '../validate-agent-config.mjs';
-import { parseArgs as parseVerifyArgs, planSteps, STEPS } from '../verify.mjs';
+import {
+  buildStepArgv,
+  formatFailureResult,
+  parseArgs as parseVerifyArgs,
+  planSteps,
+  STEPS,
+} from '../verify.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(here, '../../..');
@@ -123,9 +129,19 @@ test('verify wrapper: step planning', () => {
     ['test', 'lint', 'typecheck'],
   );
   assert.deepEqual(planSteps(parseVerifyArgs(['--only', 'lint'])).map((step) => step.name), ['lint']);
+  const targeted = parseVerifyArgs(['--test-file', 'src/example.test.ts', '--test-file', 'src/other.test.ts']);
+  assert.deepEqual(targeted.only, ['test']);
+  assert.deepEqual(targeted.testFiles, ['src/example.test.ts', 'src/other.test.ts']);
+  assert.deepEqual(
+    buildStepArgv(STEPS[0], targeted, '/tmp/export'),
+    ['yarn', 'test', '--runInBand', '--runTestsByPath', 'src/example.test.ts', 'src/other.test.ts'],
+  );
   assert.equal(parseVerifyArgs(['--json']).json, true);
   assert.equal(parseVerifyArgs(['--skip-export', '--json']).json, true);
   assert.throws(() => parseVerifyArgs(['--only', 'nope']), /unknown step/);
+  assert.throws(() => parseVerifyArgs(['--only']), /requires a step name/);
+  assert.throws(() => parseVerifyArgs(['--test-file']), /requires a test file path/);
+  assert.throws(() => parseVerifyArgs(['--only', 'lint', '--test-file', 'x.test.ts']), /only be combined/);
   assert.throws(() => parseVerifyArgs(['--wat']), /unrecognized argument/);
 });
 
@@ -138,5 +154,12 @@ test('verify wrapper runs the documented commands in the documented order', () =
       'yarn tsc --noEmit',
       'yarn expo export --platform web --output-dir',
     ],
+  );
+});
+
+test('verify wrapper failure output uses the stored command and output tail', () => {
+  assert.equal(
+    formatFailureResult({ command: 'yarn lint', code: 1, outputTail: 'lint failed' }),
+    '\n--- `yarn lint` (exit 1) ---\nlint failed\n',
   );
 });

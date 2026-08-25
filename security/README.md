@@ -5,7 +5,8 @@ remaining defensive headers, and CI dependency/secret/bundle scanning. T162.1 sh
 the CSP in report-only mode; T162.2 flipped it to enforcing mode and added
 Strict-Transport-Security, X-Content-Type-Options, Referrer-Policy, and a fully
 restrictive Permissions-Policy. T162.3 added `.github/workflows/ci.yml` jobs that
-scan dependencies, secrets, and the built web bundle on every PR/push.
+scan dependencies, secrets, and the built web bundle. Their current risk-based
+cadence is documented below.
 
 ## Where the policy lives
 
@@ -137,10 +138,28 @@ is present with the correct value.
 
 ## CI dependency, secret, and built-bundle scanning (T162.3)
 
-Four new `ci.yml` jobs run automatically on every pull request and push to
-`main`/`development` -- **unlike** `security:check-headers`/`test:e2e:security` above,
-which are manual-only (build+serve a fresh export, not part of `.claude/scripts/verify.mjs`'s
-default loop). Don't assume parity between the two groups.
+The real-history `secret-scan` runs on every pull request and push to `main`.
+The other three jobs are selected by risk: relevant pull-request paths, every
+push to `main`, every published release, a weekly Monday schedule, and manual
+workflow dispatch. A small dependency-free selector
+(`security/scripts/select-ci-scans.mjs`) keeps unrelated PRs cheap while still
+letting each skipped job report a completed/skipped check to branch protection.
+This differs from `security:check-headers`/`test:e2e:security` above, which remain
+manual-only build-and-serve checks outside `.claude/scripts/verify.mjs`.
+
+The pull-request path matrix is intentionally explicit:
+
+- Dependency manifests/lockfiles, the accepted-advisory file, or the dependency
+  audit script run `dependency-audit`.
+- Application source/assets/public files, Expo/bundler configuration,
+  dependencies, or bundle-scanner wiring run `bundle-secret-scan`.
+- Gitleaks configuration or the shared scanner/export/self-test wiring runs
+  `secret-scan-self-test`.
+- Changes to `ci.yml` or the selector itself conservatively run all three.
+
+Scheduled, release, `main`-push, and manual runs ignore paths and run all three,
+so newly published advisories and external scanner drift are still detected even
+when the repository has not changed.
 
 - `dependency-audit` -- runs `yarn security:check-dependency-audit`
   (`security/scripts/check-dependency-audit.mjs`). `yarn audit --level <severity>` does
@@ -217,5 +236,7 @@ same as the local Supabase stack in `supabase/README.md`):
 This ships **enforced** as of T162.2. `Content-Security-Policy` is enforcing (no
 longer `-Report-Only`), and `vercel.json` also sets Strict-Transport-Security,
 X-Content-Type-Options, Referrer-Policy, and Permissions-Policy on every route.
-CI dependency/secret/bundle scanning shipped in T162.3 and runs automatically on every
-PR/push per `ci.yml`'s existing triggers.
+CI dependency/secret/bundle scanning shipped in T162.3. Real commit scanning is
+universal on PRs; the more expensive dependency, bundle, and scanner-self-test
+jobs follow the risk-based PR, weekly, release, `main`-push, and manual cadence
+documented above.

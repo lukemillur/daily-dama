@@ -56,13 +56,19 @@ as the same successful claim.
 
 ```sh
 node .claude/scripts/verify.mjs                 # test, lint, typecheck, web export
-node .claude/scripts/verify.mjs --skip-export   # docs/test-only changes
+node .claude/scripts/verify.mjs --skip-export   # test, lint, and typecheck only
 node .claude/scripts/verify.mjs --only lint     # one step, repeatable
+node .claude/scripts/verify.mjs --test-file src/features/foo/foo.test.ts
 node .claude/scripts/verify.mjs --keep-going    # don't stop at the first failure
 node .claude/scripts/verify.mjs --json          # machine-readable result
 ```
 
 One line per step on success; on failure, the failing command's output tail plus a non-zero exit. The complete log of every step is always written to a temp file whose path is printed. Give it a 600000 ms tool timeout.
+
+`--test-file` is repeatable, uses Jest's exact `--runTestsByPath` selection,
+and runs only the test step. Prefer it over `--findRelatedTests` for known
+feature files; shared-module changes still require the conservative area rules
+in `AGENTS.md`.
 
 `--json` emits one JSON object with `status`, the planned options, per-step
 status/exit code/duration/command, the first failed step when applicable, and

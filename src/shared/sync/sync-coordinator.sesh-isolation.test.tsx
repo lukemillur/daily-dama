@@ -1,9 +1,9 @@
 // T157.9 exit criterion: the fully-wired proof that overlapping sync
 // triggers coalesce into a single-flight run, and that sync activity of
 // every kind never perturbs an active Sesh through every one of its
-// statuses (choosing/countdown/active/completed). Combines the five
-// per-domain '*-provider.sync-sesh-isolation.test.tsx' harnesses (T157.4-
-// T157.8) into one file that mounts all five real domain providers plus
+// statuses (choosing/countdown/active/completed). Replaces the former five
+// per-domain provider/Sesh harnesses with one file that mounts all five real
+// domain providers plus
 // the real SyncCoordinatorProvider plus the real Sesh component. The
 // narrower, faster-to-debug unit coverage for the coordinator hook itself
 // (in isolation, with fake domain handles) lives in

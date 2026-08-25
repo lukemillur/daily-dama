@@ -77,7 +77,38 @@ Stats are derived from completed practice-history records rather than maintained
 
 ## Verification and local development
 
-Use Yarn. The standard verification sequence is:
+Use Yarn. Verification is risk-based: use the narrowest trustworthy evidence
+while iterating, then escalate according to the changed boundary. Do not run the
+complete app sequence merely because a task is being completed.
+
+- **App UI/routes:** exact component and route tests while iterating; relevant
+  feature tests plus full `yarn tsc --noEmit` before completion. Run a web export
+  when routing, bundling, assets, Expo configuration, or dependencies can be
+  affected.
+- **Domain/state:** exact model tests while iterating; all model tests in the
+  affected domain plus full typechecking before completion.
+- **Persistence/sync:** affected domain persistence, mapping, envelope, and hook
+  tests plus the relevant shared persistence/sync contracts. Escalate to the
+  complete app suite for hydration, identity, write ordering, provider hierarchy,
+  concurrency, or cross-domain changes.
+- **Supabase/Auth/security:** use their dedicated suites documented in
+  `supabase/README.md` and `security/README.md`. Do not substitute the app Jest
+  suite for a real database, Auth, or browser security boundary.
+- **Workflow tooling:** exact Node test files while iterating and
+  `yarn test:workflow` before completion; app verification is unnecessary unless
+  app code/configuration also changed.
+- **Configuration/dependencies:** run the complete app sequence plus any
+  dedicated dependency, security, or platform checks affected by the change.
+- **Documentation only:** inspect commands, links, and referenced paths. No app
+  suite is required unless the documentation changes an executable workflow
+  contract.
+
+Use `yarn eslint <changed-files...>` for a scoped lint pass during iteration.
+TypeScript changes normally receive the full typecheck because it is fast and
+indirect type dependencies are not safely file-selectable.
+
+The complete app sequence, reserved for release/foundational/configuration/
+dependency changes and conservative escalation, is:
 
 ```sh
 yarn test --runInBand
@@ -86,7 +117,16 @@ yarn tsc --noEmit
 yarn expo export --platform web --output-dir /tmp/daily-dama-web-export
 ```
 
-`node .claude/scripts/verify.mjs` runs all four in order as one command, prints one line per step, and on failure prints the failing command's output and exits non-zero (`--skip-export` omits the export for docs- or test-only changes). Add `--json` when an agent or workflow needs machine-readable step evidence. Use it when you'd otherwise spend four separate tool calls; run the individual commands when you're iterating on one of them.
+`node .claude/scripts/verify.mjs` runs all four in order as one command, prints
+one line per step, and on failure prints the failing command's output and exits
+non-zero. `--test-file <path>` is repeatable and runs exact Jest files only;
+`--skip-export` omits export; `--only <step>` selects named steps; `--json`
+returns machine-readable evidence. Successful logs do not need to be inspected.
+
+For task branches, the relevant local evidence and exit criteria must pass before
+opening the PR. CI's full app checks must then pass before squash-merging into
+`development`; this replaces mandatory local full-suite repetition for narrow
+changes. CI is an automated gate, not a human review gate.
 
 The workflow tooling under `.claude/scripts/` has its own dependency-free test suite, separate from the app's jest suite: `yarn test:workflow`.
 

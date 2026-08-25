@@ -157,13 +157,6 @@ describe('CustomTabList leave-app footer bar', () => {
 });
 
 describe('CustomTabList footer bar route gating', () => {
-  it('does not render the footer bar on non-Profile routes', async () => {
-    mockPathname = '/app/home';
-    const root = await mountTabList();
-
-    expect(() => findFooterBar(root)).toThrow();
-  });
-
   it.each(['/app/home', '/app/sesh', '/app/tricks', '/app/stats'])(
     'omits the footer bar on %s',
     async (pathname) => {

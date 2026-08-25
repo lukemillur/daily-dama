@@ -3,14 +3,8 @@ import { describe, expect, it } from '@jest/globals';
 import { validateSignUpFields } from '@/features/auth/model/signup-validation';
 
 describe('validateSignUpFields', () => {
-  it('flags an empty email', () => {
-    const result = validateSignUpFields('', 'longenoughpassword', 'longenoughpassword');
-    expect(result).toEqual({ status: 'invalid', errors: { email: 'Enter your email.' } });
-  });
-
-  it('flags a malformed email', () => {
-    const result = validateSignUpFields('not-an-email', 'longenoughpassword', 'longenoughpassword');
-    expect(result).toEqual({
+  it('includes the shared email error in the flow-specific result', () => {
+    expect(validateSignUpFields('not-an-email', 'longenoughpassword', 'longenoughpassword')).toEqual({
       status: 'invalid',
       errors: { email: 'Enter a valid email address.' },
     });

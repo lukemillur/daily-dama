@@ -51,7 +51,9 @@ ls src/features/<area>/**; grep -rn '<symbol>' src --include='*.ts*' -l; sed -n 
 
 Follow the plan. If it turns out to be wrong once you're actually in the code, deviate — but note why in your final summary rather than silently doing something else.
 
-Run the task's own targeted tests as you go (`yarn test --runInBand <path-pattern>`) — a tight loop on the file you're editing is much cheaper than the full sequence, and step 5 still runs everything.
+Run the task's own targeted tests as you go (`node .claude/scripts/verify.mjs
+--test-file <exact-path>`) — a tight loop on the files being changed is much
+cheaper than the complete sequence.
 
 ## 4. Verify the exit criteria
 
@@ -65,17 +67,15 @@ by itself prove a required browser interaction. If any required criterion is
 
 If that needs the browser preview: **do not use `preview_start` with a named config from `.claude/launch.json`** — those configs have no `cwd` of their own, so the tool reuses (or starts) a server rooted in the main repo checkout, not your isolated worktree, and you'd silently verify pre-edit code. Start your own dev server in this worktree instead (`yarn expo start --web --port <port>`, backgrounded) on a port other than 8081/8091 — check it's actually free first rather than assuming, since a prior cycle's server may still be up. Then `preview_start` with `{url: "http://localhost:<port>"}`. Stop that server once you're done verifying so it doesn't linger past this call.
 
-## 5. Run the full verification sequence (one command)
+## 5. Run the risk-based completion checks
 
-```sh
-node .claude/scripts/verify.mjs
-```
-
-That runs `yarn test --runInBand`, `yarn lint`, `yarn tsc --noEmit` and the web export in order, prints one line per step, and on failure prints the failing command's output and exits non-zero. Give the call a generous timeout (600000 ms) — the full sequence takes minutes. Full logs are written to the file path it reports; read that file if the printed tail isn't enough.
-
-Add `--skip-export` **only** when the change cannot affect the web bundle at all — a markdown/docs-only or test-only change. Anything touching `src/`, config, or dependencies runs the full sequence.
-
-The task isn't done if it breaks the baseline, even when its own criteria pass. Only read `AGENTS.md` itself if the plan or the code raises an architecture question these commands don't answer.
+Follow `AGENTS.md`'s verification matrix. At minimum, run the relevant feature/
+domain tests and full `yarn tsc --noEmit` for TypeScript changes; lint changed
+files with `yarn eslint <files...>`. Workflow-only changes run
+`yarn test:workflow`; docs-only changes need no app suite. Use the complete
+`node .claude/scripts/verify.mjs` sequence only for its documented escalation
+conditions. The PR's required CI app checks provide the broad baseline before
+merge when a narrow task does not repeat it locally.
 
 ## 6. Commit and archive (batch the lookups)
 
@@ -92,12 +92,23 @@ grep -n '^### \[<sibling-ID>\]' -A 4 TASKS_DONE.md; grep -n '^### \[<ID>\]' -A 4
 ## 7. PR and merge
 
 ```sh
-git add -A && git commit -m '[<ID>] <summary>' && git push origin <branch> && gh pr create --base development --title '...' --body '...'
+git add -A && git commit -m '[<ID>] <summary>' && git push origin <branch>
+pr_url="$(gh pr create --base development --title '...' --body '...')"
 ```
 
 The PR body includes the task ID, the task's **Description** field verbatim from `TASKS.md`, and what changed.
 
-Then attempt **exactly one** plain squash-merge: `gh pr merge --squash --delete-branch`. No review gate, no waiting on CI — that much is pre-authorized for your own claimed branch per `AGENTS.md` § Git state expectations, same as the push.
+Wait for required CI checks before attempting the merge:
+
+```sh
+gh pr checks "$pr_url" --watch --fail-fast
+```
+
+If required checks fail or cannot be confirmed, stop and report
+`RESULT.status: blocked-at-merge` with the exact check output. Do not bypass or
+retry with administrative flags. Once they pass, attempt **exactly one** plain
+squash-merge: `gh pr merge --squash --delete-branch`. No human review gate is
+required; the automated CI gate and merge remain pre-authorized.
 
 Always reconcile the remote PR state after that one command, including when it
 returns non-zero:

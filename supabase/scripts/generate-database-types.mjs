@@ -53,12 +53,14 @@ function run(name, argv, options = {}) {
   return { name, code, stdout: proc.stdout ?? '', stderr: proc.stderr ?? '' };
 }
 
-function generateTypesContent() {
-  const start = run('supabase start', [...SUPABASE, 'start']);
-  if (start.code !== 0) return { code: start.code, content: null };
+function generateTypesContent(manageLifecycle) {
+  if (manageLifecycle) {
+    const start = run('supabase start', [...SUPABASE, 'start']);
+    if (start.code !== 0) return { code: start.code, content: null };
 
-  const reset = run('db reset', [...SUPABASE, 'db', 'reset']);
-  if (reset.code !== 0) return { code: reset.code, content: null };
+    const reset = run('db reset', [...SUPABASE, 'db', 'reset']);
+    if (reset.code !== 0) return { code: reset.code, content: null };
+  }
 
   const genTypes = run('gen types typescript', [
     ...SUPABASE,
@@ -77,13 +79,22 @@ function generateTypesContent() {
 function main() {
   const args = process.argv.slice(2);
   const checkMode = args.includes('--check');
-  const unknown = args.filter((arg) => arg !== '--check');
+  const reuseCurrentDatabase = args.includes('--reuse-current-database');
+  const unknown = args.filter((arg) => arg !== '--check' && arg !== '--reuse-current-database');
   if (unknown.length > 0) {
     process.stderr.write(`unrecognized argument(s): ${unknown.join(', ')}\n`);
     process.exit(2);
   }
+  if (reuseCurrentDatabase && !checkMode) {
+    process.stderr.write('--reuse-current-database is only valid with --check\n');
+    process.exit(2);
+  }
 
-  const { code, content } = generateTypesContent();
+  // The consolidated database suite has already started and reset the stack,
+  // so its drift check reuses that exact schema. Standalone invocations retain
+  // the safer self-contained start/reset/cleanup lifecycle.
+  const manageLifecycle = !reuseCurrentDatabase;
+  const { code, content } = generateTypesContent(manageLifecycle);
 
   let finalCode = code;
 
@@ -123,15 +134,15 @@ function main() {
     }
   }
 
-  // Cleanup reset always runs, regardless of outcome, so the local stack is
-  // never left dirty by a failed or check-mode run.
-  const cleanup = run('cleanup db reset', [...SUPABASE, 'db', 'reset']);
+  // Standalone runs own cleanup. When nested in test:db, the outer harness
+  // owns the unconditional cleanup reset and must be allowed to report it.
+  const cleanup = manageLifecycle ? run('cleanup db reset', [...SUPABASE, 'db', 'reset']) : null;
 
   if (finalCode !== 0) {
     process.stdout.write(`\nGENERATE DATABASE TYPES: FAIL\n`);
     process.exit(finalCode || 1);
   }
-  if (cleanup.code !== 0) {
+  if (cleanup && cleanup.code !== 0) {
     process.stdout.write('\nGENERATE DATABASE TYPES: FAIL — succeeded but the final cleanup `db reset` failed\n');
     process.exit(cleanup.code || 1);
   }

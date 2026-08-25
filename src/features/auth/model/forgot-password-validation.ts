@@ -6,7 +6,7 @@
  * reopen the enumeration surface resetPasswordForEmail's uniform success response is closing.
  * Real account existence is entirely Supabase's job, and it deliberately never reports it back.
  */
-const EMAIL_SHAPE_PATTERN = /^\S+@\S+\.\S+$/;
+import { getEmailValidationError } from '@/features/auth/model/email-validation';
 
 export interface ForgotPasswordFieldErrors {
   readonly email?: string;
@@ -19,12 +19,8 @@ export type ForgotPasswordValidation =
 export function validateForgotPasswordEmail(email: string): ForgotPasswordValidation {
   const errors: { email?: string } = {};
 
-  const trimmedEmail = email.trim();
-  if (trimmedEmail.length === 0) {
-    errors.email = 'Enter your email.';
-  } else if (!EMAIL_SHAPE_PATTERN.test(trimmedEmail)) {
-    errors.email = 'Enter a valid email address.';
-  }
+  const emailError = getEmailValidationError(email);
+  if (emailError) errors.email = emailError;
 
   return Object.keys(errors).length > 0 ? { status: 'invalid', errors } : { status: 'valid' };
 }

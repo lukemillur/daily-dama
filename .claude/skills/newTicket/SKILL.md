@@ -146,7 +146,7 @@ If the user said `ranked`, pass it through to every claim call this run (step 1'
 
 1. Run a cycle with no task ID.
 2. Append its outcome (task ID, PR URL, or blocker/limit detail) to a running tally in your reply text — not in any file.
-3. `success` → next cycle immediately (pre-authorized, matching the protocol's no-review-gate design).
+3. `success` → next cycle immediately (pre-authorized after required CI passes; no human review gate).
 4. `blocked` at the claim step (step 1) for a reason other than `claimed` → stop the run. This means the claim mechanism itself failed for that task — a stray local branch, a push that failed with no competing branch, or a script error — and blindly retrying would just reselect the same task and hit the same failure again. Report it as you would any blocker.
 5. Any other `blocked` — the rare claim-step `claimed` (a lost push race on the task the scan just selected), or a block from planning, implementation, or merge — → record it in the tally and start the next cycle immediately, same as `success`. Do **not** stop the run for this: the task's own claim branch already exists remotely, so the next `ticket-claim.mjs` call skips right past it on its own (continuous-mode selection now treats an already-claimed candidate as a skip, not a stop) and moves on to an unrelated task later in the backlog. A task that genuinely `depends on` the blocked one keeps getting skipped too, automatically, by the script's own dependency check — never work around that check yourself to "unblock" a dependent task early.
 6. `usage-limit` or `backlog-exhausted` → stop.

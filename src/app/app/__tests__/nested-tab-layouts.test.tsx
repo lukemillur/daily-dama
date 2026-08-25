@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { act, create } from 'react-test-renderer';
 
+import ProfileLayout from '@/app/app/profile/_layout';
 import TricksLayout from '@/app/app/tricks/_layout';
 
 const mockRouter = { replace: jest.fn() };
@@ -9,6 +10,7 @@ const mockTabNavigation = {
   getState: () => ({
     routes: [
       { key: 'home-tab', name: 'index' },
+      { key: 'profile-tab', name: 'profile' },
       { key: 'tricks-tab', name: 'tricks' },
       { key: 'stats-tab', name: 'stats' },
     ],
@@ -22,30 +24,33 @@ jest.mock('expo-router', () => ({
   useRouter: () => mockRouter,
 }));
 
-describe('TricksLayout', () => {
+const CASES = [
+  { name: 'Profile', Layout: ProfileLayout, tabKey: 'profile-tab', href: '/app/profile' },
+  { name: 'Tricks', Layout: TricksLayout, tabKey: 'tricks-tab', href: '/app/tricks' },
+] as const;
+
+describe('nested tab layouts', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    mockTabNavigation.addListener.mockImplementation((_event, listener) => {
-      return listener;
-    });
+    mockTabNavigation.addListener.mockImplementation((_event, listener) => listener);
   });
 
-  it('returns a nested Tricks route to its index when the Tricks tab is pressed', () => {
+  it.each(CASES)('returns $name to its index when its active tab is pressed', ({ Layout, tabKey, href }) => {
     act(() => {
-      create(<TricksLayout />);
+      create(<Layout />);
     });
 
     const listener = mockTabNavigation.addListener.mock.calls[0]![1] as (event: { target?: string }) => void;
     act(() => {
-      listener({ target: 'tricks-tab' });
+      listener({ target: tabKey });
     });
 
-    expect(mockRouter.replace).toHaveBeenCalledWith('/app/tricks');
+    expect(mockRouter.replace).toHaveBeenCalledWith(href);
   });
 
-  it('ignores presses for other tabs', () => {
+  it.each(CASES)('ignores other tab presses for $name', ({ Layout }) => {
     act(() => {
-      create(<TricksLayout />);
+      create(<Layout />);
     });
 
     const listener = mockTabNavigation.addListener.mock.calls[0]![1] as (event: { target?: string }) => void;

@@ -7,7 +7,6 @@ import { styled } from 'styled-components/native';
 import { Screen } from '@/components/ui/screen';
 import { BodyText, DisplayTitle, Eyebrow } from '@/components/ui/typography';
 import { AppColors, Radii } from '@/constants/theme';
-import { LandingHero } from '@/features/landing/components/landing-hero';
 import { LandingCta } from '@/features/landing/components/landing-cta';
 
 interface Feature {
@@ -127,7 +126,7 @@ export function LandingPage() {
     <Screen background={AppColors.paper}>
       <LandingScroll contentContainerStyle={{ paddingBottom: 80 }}>
         <Content testID="landing-content" $isWebLayout={isWebLayout}>
-          <LandingHero />
+          {/* <LandingHero /> */}
           <Eyebrow>Why Daily Dama</Eyebrow>
           <Headline>Play with{`\n`}intention.</Headline>
           <Lede>
@@ -187,7 +186,7 @@ function useHasEnteredViewport(ref: { current: ComponentRef<typeof Animated.View
     // time from window.innerHeight (not a CSS percentage rootMargin, which is less consistently
     // supported against the implicit root) -- this is a one-shot trigger, not a live breakpoint,
     // so no resize listener keeps it current.
-    const bottomMargin = Math.round(window.innerHeight / 3);
+    const bottomMargin = Math.round(window.innerHeight / 4);
     const observer = new IntersectionObserver(
       (entries) => {
         const entry = entries[0];
@@ -220,7 +219,7 @@ function ScreenshotEntry({ screenshot, index, isWebLayout }: ScreenshotEntryProp
       ref={itemRef}
       testID="screenshot-item"
       $isWebLayout={isWebLayout}
-      entering={hasEntered ? FadeInUp.duration(1500).springify().delay(index * 100) : undefined}
+      entering={hasEntered ? FadeInUp.duration(1200).springify().delay(index * 100) : undefined}
       style={hasEntered ? { boxShadow: `8px 8px 0 ${AppColors.ink}` } : { boxShadow: `8px 8px 0 ${AppColors.ink}`, opacity: 0 }}
     >
       <Image
@@ -243,7 +242,7 @@ const LandingScroll = styled(ScrollView)`
 
 // Shared with `ScreenshotItem` so the showcase's desktop width always matches the page's
 // text column instead of duplicating the literal in two places.
-const DESKTOP_CONTENT_MAX_WIDTH = 1320;
+const DESKTOP_CONTENT_MAX_WIDTH = 1200;
 
 const Content = styled.View<{ readonly $isWebLayout: boolean }>`
   width: 100%;

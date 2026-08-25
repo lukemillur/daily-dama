@@ -11,8 +11,7 @@
  * duplicating the length constant or match check here.
  */
 import { validateNewPassword } from '@/features/auth/model/password-policy';
-
-const EMAIL_SHAPE_PATTERN = /^\S+@\S+\.\S+$/;
+import { getEmailValidationError } from '@/features/auth/model/email-validation';
 
 export interface SignUpFieldErrors {
   readonly email?: string;
@@ -31,12 +30,8 @@ export function validateSignUpFields(
 ): SignUpValidation {
   const errors: { email?: string; password?: string; confirmPassword?: string } = {};
 
-  const trimmedEmail = email.trim();
-  if (trimmedEmail.length === 0) {
-    errors.email = 'Enter your email.';
-  } else if (!EMAIL_SHAPE_PATTERN.test(trimmedEmail)) {
-    errors.email = 'Enter a valid email address.';
-  }
+  const emailError = getEmailValidationError(email);
+  if (emailError) errors.email = emailError;
 
   const passwordValidation = validateNewPassword(password, confirmPassword);
   if (passwordValidation.status === 'invalid') {

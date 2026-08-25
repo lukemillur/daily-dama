@@ -132,7 +132,7 @@ npx --yes supabase@2.115.0 start      # if not already running
 yarn db:generate-types                # regenerate + overwrite the checked-in file
 ```
 
-`yarn db:generate-types` (`supabase/scripts/generate-database-types.mjs`)
+Standalone `yarn db:generate-types` (`supabase/scripts/generate-database-types.mjs`)
 always runs `supabase start` then a clean `db reset` before generating, so
 the output only ever reflects `supabase/migrations/` from a clean state, not
 whatever ad hoc state the local stack happened to be in. It generates with
@@ -143,9 +143,9 @@ of outcome, so the stack is never left dirty.
 Run `yarn db:generate-types -- --check` to verify the checked-in file has no
 drift against a fresh generation, without overwriting it — it diffs
 byte-for-byte and exits non-zero on mismatch. This is wired into `yarn
-test:db` (see below), right after `db reset` and before pgTAP, so schema/type
-drift is caught before the rest of the suite runs against a schema the
-checked-in types no longer describe.
+test:db` (see below), right after its existing `db reset` and before pgTAP,
+so schema/type drift is caught before the rest of the suite runs against a
+schema the checked-in types no longer describe.
 
 Regenerate (`yarn db:generate-types`, no `--check`) and commit the result
 after any migration change.
@@ -163,13 +163,13 @@ above; if the stack isn't started yet, the command starts it itself.
 yarn test:db
 ```
 
-In order: `supabase start` (idempotent), `db reset`, a `yarn db:generate-
-types -- --check` drift check against the checked-in `database-types.ts`,
-pgTAP (`test db --local`), the Data API suite (`yarn test:data-api`,
-including the T155.8 pagination fixture), then a final cleanup `db reset`
-that always runs even if an earlier step failed — so the stack is never left
-dirty by a failed
-run. The command's own exit code reflects only the first four steps; a
+In order: `supabase start` (idempotent), `db reset`, a generated-types drift
+check that reuses that clean database and compares against the checked-in
+`database-types.ts`, pgTAP (`test db --local`), the Data API suite (`yarn
+test:data-api`, including the T155.8 pagination fixture), then a final cleanup
+`db reset` that always runs even if an earlier step failed — so the stack is
+never left dirty by a failed run. The command's own exit code preserves any
+earlier test-step failure; a
 passing cleanup reset never masks an earlier failure, and a failed cleanup
 reset after an otherwise-passing run still exits non-zero.
 

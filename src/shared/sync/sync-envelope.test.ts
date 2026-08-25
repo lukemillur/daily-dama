@@ -16,6 +16,7 @@ import {
   replacePendingOperationForRecord,
   saveSyncEnvelope,
   serializeSyncEnvelope,
+  syncEnvelopeReducer,
   updateSyncCursor,
   type SyncEnvelope,
   type SyncEnvelopeCodec,
@@ -81,6 +82,99 @@ describe('SyncEnvelope atomic pairing', () => {
     expect(persisted.state).toEqual({ items: ['goal-1'] });
     expect(persisted.outbox).toHaveLength(1);
     expect(persisted.outbox[0].recordId).toBe('goal-1');
+  });
+});
+
+describe('syncEnvelopeReducer', () => {
+  it('atomically applies a batch against the final snapshot and coalesces matching records', () => {
+    const state = createInitialSyncEnvelope('goals', GUEST_IDENTITY, INITIAL_STATE);
+    const next = syncEnvelopeReducer(state, {
+      type: 'localMutationApplied',
+      identity: GUEST_IDENTITY,
+      now: 1000,
+      nextSnapshot: { items: ['goal-1', 'goal-2'] },
+      operationInputs: [operationInput('goal-1'), operationInput('goal-2')],
+      operationIds: ['op-1', 'op-2'],
+    });
+
+    expect(next.state).toEqual({ items: ['goal-1', 'goal-2'] });
+    expect(next.outbox.map(({ operationId }) => operationId)).toEqual(['op-1', 'op-2']);
+
+    const coalesced = syncEnvelopeReducer(next, {
+      type: 'localMutationApplied',
+      identity: GUEST_IDENTITY,
+      now: 1100,
+      nextSnapshot: { items: ['goal-1 revised', 'goal-2'] },
+      operationInputs: [operationInput('goal-1', { name: 'revised' })],
+      operationIds: ['op-3'],
+    });
+
+    expect(coalesced.outbox.map(({ operationId }) => operationId)).toEqual(['op-2', 'op-3']);
+  });
+
+  it('rejects an invalid batch without partially changing state', () => {
+    const state = createInitialSyncEnvelope('goals', GUEST_IDENTITY, INITIAL_STATE);
+    expect(
+      syncEnvelopeReducer(state, {
+        type: 'localMutationApplied',
+        identity: GUEST_IDENTITY,
+        now: 1000,
+        nextSnapshot: { items: ['goal-1'] },
+        operationInputs: [operationInput('goal-1')],
+        operationIds: [],
+      }),
+    ).toBe(state);
+
+    expect(
+      syncEnvelopeReducer(state, {
+        type: 'localMutationApplied',
+        identity: USER_A_IDENTITY,
+        now: 1000,
+        nextSnapshot: { items: ['goal-1'] },
+        operationInputs: [operationInput('goal-1')],
+        operationIds: ['op-1'],
+      }),
+    ).toBe(state);
+  });
+
+  it('handles acknowledgement, attempt, revision, cursor, and restoration transitions', () => {
+    const state = createInitialSyncEnvelope('goals', GUEST_IDENTITY, INITIAL_STATE);
+    const withOperation = syncEnvelopeReducer(state, {
+      type: 'localMutationApplied',
+      identity: GUEST_IDENTITY,
+      now: 1000,
+      nextSnapshot: { items: ['goal-1'] },
+      operationInputs: [operationInput('goal-1')],
+      operationIds: ['op-1'],
+    });
+    const attempted = syncEnvelopeReducer(withOperation, {
+      type: 'operationAttemptRecorded',
+      identity: GUEST_IDENTITY,
+      operationId: 'op-1',
+      attemptedAt: 1100,
+      errorMessage: 'offline',
+    });
+    expect(attempted.outbox[0]).toMatchObject({ attemptCount: 1, lastErrorMessage: 'offline' });
+
+    const withRevision = syncEnvelopeReducer(attempted, {
+      type: 'revisionRecorded',
+      snapshot: { items: ['server-confirmed'] },
+    });
+    const withCursor = syncEnvelopeReducer(withRevision, {
+      type: 'cursorUpdated',
+      identity: GUEST_IDENTITY,
+      cursor: 'cursor-1',
+      updatedAt: 1200,
+    });
+    expect(withCursor).toMatchObject({ state: { items: ['server-confirmed'] }, cursor: 'cursor-1' });
+
+    const acknowledged = syncEnvelopeReducer(withCursor, {
+      type: 'operationAcknowledged',
+      identity: GUEST_IDENTITY,
+      operationId: 'op-1',
+    });
+    expect(acknowledged.outbox).toEqual([]);
+    expect(syncEnvelopeReducer(state, { type: 'envelopeRestored', envelope: acknowledged })).toBe(acknowledged);
   });
 });
 

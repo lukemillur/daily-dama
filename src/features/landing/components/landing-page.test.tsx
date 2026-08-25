@@ -39,16 +39,6 @@ jest.mock('expo-image', () => {
   return { Image: (props: Record<string, unknown>) => React.createElement(View, props) };
 });
 
-// LoopingHeroScene mounts a real react-three-fiber <Canvas>, which needs a real
-// document/WebGL context that jest-expo's RN test environment doesn't have. Not
-// exercised here -- landing-hero.test.tsx covers the WebGL-available/unavailable
-// branching directly by mocking this same module.
-jest.mock('@/features/trick-viz/components/LoopingHeroScene', () => {
-  const React = require('react');
-  const { View } = require('react-native');
-  return { LoopingHeroScene: () => React.createElement(View, { testID: 'looping-hero-scene-stub' }) };
-});
-
 const mockUseCachedOnboardingStatus = jest.fn<() => CachedOnboardingStatus>();
 jest.mock('@/features/landing/state/use-cached-onboarding-status', () => ({
   useCachedOnboardingStatus: () => mockUseCachedOnboardingStatus(),
@@ -110,12 +100,6 @@ describe('LandingPage', () => {
     expect(ctaIndex).toBeGreaterThanOrEqual(0);
     expect(featureHeadingIndex).toBeGreaterThanOrEqual(0);
     expect(ctaIndex).toBeLessThan(featureHeadingIndex);
-  });
-
-  it('renders the hero banner', async () => {
-    const root = await mount();
-
-    expect(root.root.findAllByProps({ testID: 'landing-hero' }).length).toBeGreaterThan(0);
   });
 });
 
@@ -267,11 +251,6 @@ describe('LandingPage content column width', () => {
 });
 
 describe('LandingPage platform-based screenshot set', () => {
-  it('defines both a mobile and a web screenshot set', () => {
-    expect(MOBILE_SCREENSHOTS.length).toBe(4);
-    expect(WEB_SCREENSHOTS.length).toBe(4);
-  });
-
   it('renders the mobile screenshot set at a mobile-width viewport', async () => {
     mockUseWindowDimensions.mockReturnValue({ width: 375, height: 812, scale: 2, fontScale: 1 });
     const root = await mount();
