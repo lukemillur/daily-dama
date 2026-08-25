@@ -91,18 +91,19 @@ export function selectRegularSessions(
   return sessions.filter((session) => session.origin === undefined);
 }
 
-// True when no prior *regular* (non-assessment) session exists in `priorSessions` — i.e.
-// completing this summary would be the guest's first completed Sesh ever, outside the Kentei
-// assessment flow. Mirrors isFirstLaceForTrick's contract: `priorSessions` must be the history
-// as it stood BEFORE this summary was recorded. `origin` is the origin this summary is *about*
-// to be recorded under — if it's itself an assessment session, it can never be "the first
-// regular Sesh" regardless of what came before it.
-export function isFirstEverRegularSession(
+// Guest sign-up invite eligibility (T166, extends the earlier isFirstEverRegularSession from
+// T153.12): true on the guest's first-ever completed regular (non-assessment) Sesh, then again
+// every 5th regular Sesh after that (the 6th, 11th, 16th, ...) so guests who declined the first
+// invite keep getting re-invited on a steady cadence rather than only once. `priorSessions` must
+// be the history as it stood BEFORE this summary was recorded (mirrors isFirstLaceForTrick's
+// contract). `origin` is the origin this summary is *about* to be recorded under — if it's itself
+// an assessment session, it can never be eligible regardless of what came before it or the cadence.
+export function isRegularSessionInviteEligible(
   priorSessions: readonly PracticeSessionRecord[],
   origin: PracticeSessionOrigin | undefined,
 ): boolean {
   if (origin !== undefined) return false;
-  return selectRegularSessions(priorSessions).length === 0;
+  return selectRegularSessions(priorSessions).length % 5 === 0;
 }
 
 export function createPracticeSessionRecordId(summary: SeshSummary): string {

@@ -7,7 +7,7 @@ import {
   getPersonalBest,
   isEligibleTimedAttempt,
   hasPriorLaceForTrick,
-  isFirstEverRegularSession,
+  isRegularSessionInviteEligible,
   isFirstLaceForTrick,
   practiceHistoryReducer,
   selectRegularSessions,
@@ -307,22 +307,56 @@ describe('selectRegularSessions', () => {
   });
 });
 
-describe('isFirstEverRegularSession', () => {
-  it('is true for empty prior sessions and no origin', () => {
-    expect(isFirstEverRegularSession([], undefined)).toBe(true);
+describe('isRegularSessionInviteEligible', () => {
+  it('is true for empty prior sessions and no origin (the first-ever regular Sesh)', () => {
+    expect(isRegularSessionInviteEligible([], undefined)).toBe(true);
   });
 
-  it('is false when a prior regular session exists', () => {
-    expect(isFirstEverRegularSession([BIG_CUP_FIRST], undefined)).toBe(false);
+  it('is false for sessions 2 through 5 after the first', () => {
+    for (let priorCount = 1; priorCount <= 4; priorCount += 1) {
+      const priorSessions = Array.from({ length: priorCount }, (_, index) => ({
+        ...BIG_CUP_FIRST,
+        id: `big-cup-${index}`,
+      }));
+      expect(isRegularSessionInviteEligible(priorSessions, undefined)).toBe(false);
+    }
   });
 
-  it('is true when prior sessions are all assessment-origin', () => {
+  it('is true again on the 6th completed regular session (5th after the first)', () => {
+    const priorSessions = Array.from({ length: 5 }, (_, index) => ({
+      ...BIG_CUP_FIRST,
+      id: `big-cup-${index}`,
+    }));
+    expect(isRegularSessionInviteEligible(priorSessions, undefined)).toBe(true);
+  });
+
+  it('continues on a 5-session cadence (11th, 16th, 21st, ...)', () => {
+    for (const priorCount of [10, 15, 20]) {
+      const priorSessions = Array.from({ length: priorCount }, (_, index) => ({
+        ...BIG_CUP_FIRST,
+        id: `big-cup-${index}`,
+      }));
+      expect(isRegularSessionInviteEligible(priorSessions, undefined)).toBe(true);
+    }
+  });
+
+  it('is false between cadence points, e.g. the 7th through 10th session', () => {
+    for (const priorCount of [6, 7, 8, 9]) {
+      const priorSessions = Array.from({ length: priorCount }, (_, index) => ({
+        ...BIG_CUP_FIRST,
+        id: `big-cup-${index}`,
+      }));
+      expect(isRegularSessionInviteEligible(priorSessions, undefined)).toBe(false);
+    }
+  });
+
+  it('is true when prior sessions are all assessment-origin (they do not count toward the cadence)', () => {
     const assessmentSession: PracticeSessionRecord = { ...BIG_CUP_FIRST, origin: 'assessment' };
-    expect(isFirstEverRegularSession([assessmentSession], undefined)).toBe(true);
+    expect(isRegularSessionInviteEligible([assessmentSession], undefined)).toBe(true);
   });
 
   it('is false when this summary is itself an assessment session', () => {
-    expect(isFirstEverRegularSession([], 'assessment')).toBe(false);
+    expect(isRegularSessionInviteEligible([], 'assessment')).toBe(false);
   });
 });
 

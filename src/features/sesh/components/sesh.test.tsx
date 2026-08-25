@@ -1807,6 +1807,79 @@ describe('Sesh signup invite integration', () => {
     }
   });
 
+  function repeatASesh(root: ReactTestRenderer) {
+    act(() => {
+      pressByVisibleText(root, 'Repeat sesh');
+    });
+    act(() => {
+      jest.advanceTimersByTime(1000);
+    });
+    act(() => {
+      jest.advanceTimersByTime(1000);
+    });
+    act(() => {
+      jest.advanceTimersByTime(1000);
+    });
+    act(() => {
+      pressByAccessibilityLabel(root, 'Laced');
+    });
+    act(() => {
+      pressByVisibleText(root, 'End Sesh');
+    });
+  }
+
+  it('is absent on sessions 2 through 5, then reappears on the 6th completed regular session', async () => {
+    jest.useFakeTimers();
+    try {
+      const root = await mountSesh('guest');
+      completeASesh(root, `Start a sesh with ${TRICK.name}`);
+      expect(findByAccessibilityLabel(root, 'Guest signup invitation').length).toBeGreaterThan(0);
+
+      // Sessions 2 through 5: invite absent.
+      for (let session = 2; session <= 5; session += 1) {
+        repeatASesh(root);
+        expect(findByAccessibilityLabel(root, 'Guest signup invitation')).toHaveLength(0);
+        expect(
+          findByAccessibilityLabel(root, `session-count:${session}`).length,
+        ).toBeGreaterThan(0);
+      }
+
+      // Session 6 (the 5th after the first): invite reappears.
+      repeatASesh(root);
+      expect(findByAccessibilityLabel(root, 'Guest signup invitation').length).toBeGreaterThan(0);
+      expect(findByAccessibilityLabel(root, 'session-count:6').length).toBeGreaterThan(0);
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it('continues on a 5-session cadence past the 6th (absent 7-10, present on the 11th)', async () => {
+    jest.useFakeTimers();
+    try {
+      const root = await mountSesh('guest');
+      completeASesh(root, `Start a sesh with ${TRICK.name}`);
+
+      // Sessions 2 through 6.
+      for (let session = 2; session <= 6; session += 1) {
+        repeatASesh(root);
+      }
+      expect(findByAccessibilityLabel(root, 'Guest signup invitation').length).toBeGreaterThan(0);
+
+      // Sessions 7 through 10: invite absent.
+      for (let session = 7; session <= 10; session += 1) {
+        repeatASesh(root);
+        expect(findByAccessibilityLabel(root, 'Guest signup invitation')).toHaveLength(0);
+      }
+
+      // Session 11 (the 10th after the first): invite reappears.
+      repeatASesh(root);
+      expect(findByAccessibilityLabel(root, 'Guest signup invitation').length).toBeGreaterThan(0);
+      expect(findByAccessibilityLabel(root, 'session-count:11').length).toBeGreaterThan(0);
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
   it('never shows the invite for an authenticated user, even on the first completion', async () => {
     jest.useFakeTimers();
     try {
