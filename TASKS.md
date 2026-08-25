@@ -143,7 +143,7 @@ _T163–T181 come from stories S042–S062 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 - **Area:** Goals
 - **Priority:** Medium
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Implementer
 - **Description:** `GoalRow` (`src/features/goals/components/trick-goals-screen.tsx`, shared by `TrickGoalsScreen` and `AllTrickGoalsScreen`) renders `GoalMeta`/`GoalBody`/`ProgressText` but never the goal's own trick name, even though the `GoalProgress` object passed in already carries `trickName`. Render it on the card itself, in a visually intentional treatment (not a cramped label), independent of whether either screen's own trick-name heading is also showing.
 - **Exit criteria:** `yarn test --runInBand` passes, including a test on both `TrickGoalsScreen` and `AllTrickGoalsScreen` asserting a goal card renders its trick's name, whether or not a heading is also present above it.
