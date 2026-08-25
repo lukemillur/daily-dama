@@ -4,6 +4,16 @@ Completed entries move here from `TASKS.md`'s `Backlog`, in the same commit that
 
 Entries keep their content as it was at completion. Don't retroactively edit a description or exit criteria after the fact; if something about a completed task turns out to be wrong or misleading, note that in a new entry or in code, not by rewriting history here.
 
+### [T168] Make the whole trick card tappable when picking a trick for a new goal
+
+- **Area:** Tricks / Goals
+- **Priority:** Medium
+- **Status:** Done
+- **Planning:** Required
+- **Description:** In the trick picker used when creating a new goal (`trick-directory.tsx`), the "Choose" action is a small `RowAction` Pressable separate from the row's identity content. Apply T143's whole-card-tappable pattern here: tapping anywhere on the row selects the trick, matching the same visible press feedback T143 established for `GoalCard`.
+- **Exit criteria:** `yarn test --runInBand` passes, including a test asserting a row-level press in the goal-creation trick picker invokes the same selection behavior as today's "Choose" button, and that the row's other nested interactive controls (edit/delete/notes/goals/practice actions, depending on context) remain independently functional and don't also trigger selection. Confirmed: `TrickRow` now branches its outer container on `onActivate` — when set, the whole row (badge + name + meta) renders as a new `styled(Pressable)` (`ActivatableTrickRowContainer`), sharing `TrickRowContainer`'s layout/CSS via a common `trickRowLayout` block, dimming to 70% opacity while pressed (matching T143's `GoalCardPressable`) and carrying the same `Choose ${trick.name}` accessibility label/`onPress` the old small `RowAction` had. The nested Edit/Delete/Notes/Goals `RowAction` handlers now call `event?.stopPropagation?.()` before running their own callback (defensive on web; `react-test-renderer` doesn't simulate real bubbling). The `Link`-wrapped Practice action is left as a documented, accepted gap since `practiceAction` and `onActivate` never coexist at any current call site. `trick-directory.test.tsx` gained two tests: one asserting a row-level press on the goal-picker's "Choose" row invokes `onActivate` with the right trick and that the pressed node's own subtree contains the trick's name text; one asserting Edit/Delete/Notes/Goals each fire their own callback independently and never also trigger `onActivate`, while pressing the row itself still does. `yarn test --runInBand` (119 suites/1502 tests), full `yarn tsc --noEmit`, and `yarn eslint` on changed files all pass clean; also reran the onboarding, multi-trick Sesh entry, custom-trick-form, all-trick-goals-screen, and all-goals-route suites as a regression check on `TrickRowContainer`'s unchanged-when-no-`onActivate` behavior.
+- **Notes:** From S047. `Required` because `trick-directory.tsx`'s row is reused across several contexts with different, mutually exclusive nested interactive children — unlike `GoalRow`'s narrower reuse, wrapping the whole row in one outer `Pressable` needs care that other call sites' existing nested presses (stop-propagation) keep working.
+
 ### [T167] Ask "How long would you like to practice a day?" during onboarding
 
 - **Area:** Onboarding

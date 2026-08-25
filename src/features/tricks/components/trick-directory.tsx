@@ -1,5 +1,5 @@
 import { Link } from 'expo-router';
-import { type ReactElement, useMemo } from 'react';
+import { type ReactElement, useMemo, useState } from 'react';
 import { Pressable, SectionList, TextInput, type SectionListData } from 'react-native';
 import { css, styled } from 'styled-components/native';
 
@@ -240,6 +240,7 @@ function TrickRow({
   goalCount = 0,
   isLaced = false,
 }: TrickRowProps) {
+  const [pressed, setPressed] = useState(false);
   const customDescription = isCustomDirectoryTrick(trick)
     ? trick.customKind === 'sequence'
       ? 'custom sequence'
@@ -269,58 +270,110 @@ function TrickRow({
     </>
   );
 
+  const identityElement = onToggle ? (
+    <SelectableIdentity
+      accessibilityLabel={[trick.name, customDescription, isSelected ? 'selected' : 'not selected']
+        .filter(Boolean)
+        .join(', ')}
+      accessibilityRole="checkbox"
+      accessibilityState={{ checked: isSelected }}
+      onPress={(event) => {
+        event?.stopPropagation?.();
+        onToggle();
+      }}>
+      {identity}
+      <SelectionIndicator $selected={isSelected}>
+        <SelectionMark>{isSelected ? '✓' : ''}</SelectionMark>
+      </SelectionIndicator>
+    </SelectableIdentity>
+  ) : (
+    <IdentityContainer>{identity}</IdentityContainer>
+  );
+
+  const hasRowActions = Boolean(onEdit && onDelete) || Boolean(onOpenNotes) || Boolean(onOpenGoals) || showPracticeAction;
+
+  const rowActionsElement = (
+    <RowActions>
+      {onEdit && onDelete ? (
+        <>
+          <RowAction
+            accessibilityLabel={`Edit ${trick.name}`}
+            accessibilityRole="button"
+            onPress={(event) => {
+              event?.stopPropagation?.();
+              onEdit();
+            }}>
+            <RowActionText>Edit</RowActionText>
+          </RowAction>
+          <RowAction
+            accessibilityLabel={`Delete ${trick.name}`}
+            accessibilityRole="button"
+            onPress={(event) => {
+              event?.stopPropagation?.();
+              onDelete();
+            }}>
+            <DeleteActionText>Delete</DeleteActionText>
+          </RowAction>
+        </>
+      ) : null}
+      {onOpenNotes ? (
+        <RowAction
+          accessibilityLabel={`Notes for ${trick.name}`}
+          accessibilityRole="button"
+          onPress={(event) => {
+            event?.stopPropagation?.();
+            onOpenNotes();
+          }}>
+          <RowActionText>{noteCount > 0 ? `Notes — ${noteCount}` : 'Notes'}</RowActionText>
+        </RowAction>
+      ) : null}
+      {onOpenGoals ? (
+        <RowAction
+          accessibilityLabel={`Goals for ${trick.name}`}
+          accessibilityRole="button"
+          onPress={(event) => {
+            event?.stopPropagation?.();
+            onOpenGoals();
+          }}>
+          <RowActionText>{goalCount > 0 ? `Goals — ${goalCount}` : 'Goals'}</RowActionText>
+        </RowAction>
+      ) : null}
+      {showPracticeAction ? (
+        // `Link asChild` injects its own `onPress` into the child `RowAction`, so there is no
+        // clean seam here to intercept it with `stopPropagation`. `practiceAction` (Tricks-screen
+        // only) and `onActivate` (goal-picker only) never coexist at any current call site, so
+        // this is an accepted, documented gap. If a future call site ever combines them, this
+        // seam needs revisiting.
+        <Link asChild href={{ pathname: '/app/sesh', params: { trickId: trick.id, mode: 'practice' } }}>
+          <RowAction accessibilityLabel={`Practice ${trick.name}`} accessibilityRole="button">
+            <PracticeActionText>Practice</PracticeActionText>
+          </RowAction>
+        </Link>
+      ) : null}
+    </RowActions>
+  );
+
+  if (onActivate) {
+    return (
+      <ActivatableTrickRowContainer
+        $selected={isSelected}
+        $laced={isLaced}
+        $pressed={pressed}
+        accessibilityLabel={`Choose ${trick.name}`}
+        accessibilityRole="button"
+        onPress={onActivate}
+        onPressIn={() => setPressed(true)}
+        onPressOut={() => setPressed(false)}>
+        {identityElement}
+        {hasRowActions ? rowActionsElement : null}
+      </ActivatableTrickRowContainer>
+    );
+  }
+
   return (
     <TrickRowContainer $selected={isSelected} $laced={isLaced}>
-      {onToggle ? (
-        <SelectableIdentity
-          accessibilityLabel={[trick.name, customDescription, isSelected ? 'selected' : 'not selected']
-            .filter(Boolean)
-            .join(', ')}
-          accessibilityRole="checkbox"
-          accessibilityState={{ checked: isSelected }}
-          onPress={onToggle}>
-          {identity}
-          <SelectionIndicator $selected={isSelected}>
-            <SelectionMark>{isSelected ? '✓' : ''}</SelectionMark>
-          </SelectionIndicator>
-        </SelectableIdentity>
-      ) : (
-        <IdentityContainer>{identity}</IdentityContainer>
-      )}
-      <RowActions>
-        {onEdit && onDelete ? (
-          <>
-            <RowAction accessibilityLabel={`Edit ${trick.name}`} accessibilityRole="button" onPress={onEdit}>
-              <RowActionText>Edit</RowActionText>
-            </RowAction>
-            <RowAction accessibilityLabel={`Delete ${trick.name}`} accessibilityRole="button" onPress={onDelete}>
-              <DeleteActionText>Delete</DeleteActionText>
-            </RowAction>
-          </>
-        ) : null}
-        {onOpenNotes ? (
-          <RowAction accessibilityLabel={`Notes for ${trick.name}`} accessibilityRole="button" onPress={onOpenNotes}>
-            <RowActionText>{noteCount > 0 ? `Notes — ${noteCount}` : 'Notes'}</RowActionText>
-          </RowAction>
-        ) : null}
-        {onOpenGoals ? (
-          <RowAction accessibilityLabel={`Goals for ${trick.name}`} accessibilityRole="button" onPress={onOpenGoals}>
-            <RowActionText>{goalCount > 0 ? `Goals — ${goalCount}` : 'Goals'}</RowActionText>
-          </RowAction>
-        ) : null}
-        {onActivate ? (
-          <RowAction accessibilityLabel={`Choose ${trick.name}`} accessibilityRole="button" onPress={onActivate}>
-            <RowActionText>Choose</RowActionText>
-          </RowAction>
-        ) : null}
-        {showPracticeAction ? (
-          <Link asChild href={{ pathname: '/app/sesh', params: { trickId: trick.id, mode: 'practice' } }}>
-            <RowAction accessibilityLabel={`Practice ${trick.name}`} accessibilityRole="button">
-              <PracticeActionText>Practice</PracticeActionText>
-            </RowAction>
-          </Link>
-        ) : null}
-      </RowActions>
+      {identityElement}
+      {hasRowActions ? rowActionsElement : null}
     </TrickRowContainer>
   );
 }
@@ -409,13 +462,26 @@ const FocusedEmptyText = styled.Text`
   line-height: 20px;
 `;
 
-const TrickRowContainer = styled.View<{ readonly $selected: boolean; readonly $laced: boolean }>`
+const trickRowLayout = css<{ readonly $selected: boolean; readonly $laced: boolean }>`
   min-height: 66px;
   flex-direction: row;
   align-items: center;
   background-color: ${({ $selected, $laced }) => ($selected || $laced ? '#e5edcf' : '#f8f1dd')};
   border-left-width: ${({ $laced }) => ($laced ? '4px' : '0px')};
   border-left-color: ${({ $laced }) => ($laced ? '#274137' : 'transparent')};
+`;
+
+const TrickRowContainer = styled.View<{ readonly $selected: boolean; readonly $laced: boolean }>`
+  ${trickRowLayout}
+`;
+
+const ActivatableTrickRowContainer = styled(Pressable)<{
+  readonly $selected: boolean;
+  readonly $laced: boolean;
+  readonly $pressed: boolean;
+}>`
+  ${trickRowLayout}
+  opacity: ${({ $pressed }) => ($pressed ? 0.7 : 1)};
 `;
 
 const identityLayout = css`
