@@ -153,7 +153,7 @@ _T163–T181 come from stories S042–S062 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 - **Area:** Tricks
 - **Priority:** Medium
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Implementer
 - **Description:** On the Tricks home screen's rows (`trick-directory.tsx`), the focused-trick checkmark (`SelectionIndicator`) sits inside `SelectableIdentity` alongside variable-length Notes/Goals count text in `RowActions`, causing its visual position to shift row to row. Move the checkmark to a fixed position flush against the card's rightmost edge, independent of count-text length.
 - **Exit criteria:** `yarn eslint`/existing component tests pass unchanged (no state reads change); confirmed in-browser via the Expo dev server that the checkmark sits at the same horizontal position across rows with differing note/goal counts.
