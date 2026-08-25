@@ -149,16 +149,6 @@ _T163–T181 come from stories S042–S062 in [BACKLOG_STORIES.md](BACKLOG_STORI
 - **Exit criteria:** `yarn test --runInBand` passes, including a test asserting that selecting a non-default preset during onboarding changes the rendered background color away from `AppColors.yellow`; confirmed in-browser via the Expo dev server that tapping a preset visibly changes the onboarding screen's background, not just its text/accent.
 - **Notes:** From S043 — a regression against T146's own exit criteria ("background/accent visibly change"), not new scope. Touches the same files as T165; doable in either order, but worth verifying together since both change `onboarding-theme-step.tsx`/`kentei-onboarding.tsx`'s rendered output.
 
-### [T170] Make sign-up, sign-in, forgot-password, and reset-password follow the user's theme
-
-- **Area:** Authentication UI
-- **Priority:** Medium
-- **Status:** In progress
-- **Planning:** Required
-- **Description:** The four `/auth/*` route-group screens (sign-up, sign-in, forgot-password, reset-password) sit outside `/app/*`, so they only ever see the root `_layout.tsx`'s `DefaultAppThemeProvider` (the fixed prototype palette), never the user's personalized `themeBackgroundColor`/`themeAccentColor` — even though each already calls `<Screen>` and would pick up a real theme automatically if one were available. Give this route group access to the user's resolved theme (guest default when none is set) instead of the fixed provider.
-- **Exit criteria:** Component tests for all four screens pass, including one asserting each renders with the user's persisted theme background/accent when a preference exists, and the same default palette as today when none does (guest with no theme set). Confirmed in-browser: a user with a non-default theme sees it reflected on sign-up.
-- **Notes:** From S049. `Required` because this is a provider/routing-boundary change (which theme provider the `/auth/*` group mounts under), not a per-screen fix — it resolves the QA comment about sign-up specifically, and is the same root cause behind T174's background half. Must not reintroduce T145's landing-page hydration-flicker fix (the `/auth/*` group's theme source must not gate first paint on persistence hydration the way the pre-T145 `/` route did).
-
 ### [T171] Add a shared show/hide toggle for every password field
 
 - **Area:** Authentication UI
