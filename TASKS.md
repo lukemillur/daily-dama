@@ -149,16 +149,6 @@ _T163–T181 come from stories S042–S062 in [BACKLOG_STORIES.md](BACKLOG_STORI
 - **Exit criteria:** `yarn test --runInBand` passes, including a test asserting that selecting a non-default preset during onboarding changes the rendered background color away from `AppColors.yellow`; confirmed in-browser via the Expo dev server that tapping a preset visibly changes the onboarding screen's background, not just its text/accent.
 - **Notes:** From S043 — a regression against T146's own exit criteria ("background/accent visibly change"), not new scope. Touches the same files as T165; doable in either order, but worth verifying together since both change `onboarding-theme-step.tsx`/`kentei-onboarding.tsx`'s rendered output.
 
-### [T167] Ask "How long would you like to practice a day?" during onboarding
-
-- **Area:** Onboarding
-- **Priority:** Medium
-- **Status:** In progress
-- **Planning:** Required
-- **Description:** Add an onboarding step, after Kentei rank assessment and before theme selection, asking "How long would you like to practice a day?" with a five-minute minimum, writing to the same persisted profile field (`streakThresholdMs`) the Profile screen's existing "How much practice counts as a day?" control already reads and writes.
-- **Exit criteria:** `kentei-onboarding.test.tsx` passes, including a test asserting the new step appears in the correct position in the onboarding sequence, enforces the five-minute minimum, and that completing it persists the same `streakThresholdMs` value the Profile screen's control shows afterward.
-- **Notes:** From S046. Resolved during refinement: the Profile screen keeps its own control as a post-onboarding edit affordance — this step only sets the initial value. `Required` because it changes onboarding's own step sequence/state machine, matching T146's precedent for why a small onboarding change still gets a separate planning pass.
-
 ### [T168] Make the whole trick card tappable when picking a trick for a new goal
 
 - **Area:** Tricks / Goals

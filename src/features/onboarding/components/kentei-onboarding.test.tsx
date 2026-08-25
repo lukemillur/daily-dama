@@ -65,7 +65,7 @@ async function mountOnboarding() {
   return root;
 }
 
-async function driveToThemeSelect(root: ReactTestRenderer) {
+async function driveToDurationStep(root: ReactTestRenderer) {
   act(() => pressByVisibleText(root, 'Get started'));
   act(() =>
     pressByAccessibilityLabel(
@@ -87,6 +87,11 @@ async function driveToThemeSelect(root: ReactTestRenderer) {
   act(() => pressByAccessibilityLabel(root, firstTrickName + ', not selected'));
 
   act(() => pressByVisibleText(root, 'Start practicing'));
+}
+
+async function driveToThemeSelect(root: ReactTestRenderer) {
+  await driveToDurationStep(root);
+  act(() => pressByAccessibilityLabel(root, 'Continue to theme selection'));
 }
 
 async function readPersistedProfile() {
@@ -151,6 +156,7 @@ describe('KenteiOnboarding', () => {
     expect(profile?.hasCompletedOnboarding).toBe(true);
     expect(profile?.kenteiRank).toBe(1);
     expect(profile?.selectedTrickIds.length).toBeGreaterThan(0);
+    expect(profile?.streakThresholdMs).toBe(300_000);
   });
 
   it('shows the Default preset pre-selected on mount and no Skip control', async () => {
@@ -184,5 +190,59 @@ describe('KenteiOnboarding', () => {
     expect(profile?.hasCompletedOnboarding).toBe(true);
     expect(profile?.kenteiRank).toBe(1);
     expect(profile?.selectedTrickIds.length).toBeGreaterThan(0);
+  });
+
+  it('inserts the duration step strictly between selecting and themeSelect', async () => {
+    const root = await mountOnboarding();
+    await driveToDurationStep(root);
+
+    expect(
+      root.root.findAll((node) => node.props.children === 'You can change this later from your Profile.')
+        .length,
+    ).toBeGreaterThan(0);
+    expect(
+      root.root.findAll((node) => node.props.children === 'Select a theme that matches your setup.')
+        .length,
+    ).toBe(0);
+
+    act(() => pressByAccessibilityLabel(root, 'Continue to theme selection'));
+
+    expect(
+      root.root.findAll((node) => node.props.children === 'Select a theme that matches your setup.')
+        .length,
+    ).toBeGreaterThan(0);
+  });
+
+  it('enforces a five-minute minimum on the duration step', async () => {
+    const root = await mountOnboarding();
+    await driveToDurationStep(root);
+
+    act(() => {
+      findByAccessibilityLabel(root, 'Practice minutes per day')[0].props.onChangeText('3');
+    });
+    expect(findByAccessibilityLabel(root, 'Continue to theme selection')[0].props.disabled).toBe(true);
+
+    act(() => {
+      findByAccessibilityLabel(root, 'Practice minutes per day')[0].props.onChangeText('5');
+    });
+    expect(findByAccessibilityLabel(root, 'Continue to theme selection')[0].props.disabled).toBe(false);
+  });
+
+  it('persists the same streakThresholdMs field the Profile screen reads and writes', async () => {
+    const root = await mountOnboarding();
+    await driveToDurationStep(root);
+
+    act(() => {
+      findByAccessibilityLabel(root, 'Practice minutes per day')[0].props.onChangeText('12');
+    });
+    act(() => pressByAccessibilityLabel(root, 'Continue to theme selection'));
+
+    act(() => pressByAccessibilityLabel(root, 'Finish onboarding'));
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    const profile = await readPersistedProfile();
+    expect(profile?.streakThresholdMs).toBe(12 * 60_000);
   });
 });

@@ -4,6 +4,16 @@ Completed entries move here from `TASKS.md`'s `Backlog`, in the same commit that
 
 Entries keep their content as it was at completion. Don't retroactively edit a description or exit criteria after the fact; if something about a completed task turns out to be wrong or misleading, note that in a new entry or in code, not by rewriting history here.
 
+### [T167] Ask "How long would you like to practice a day?" during onboarding
+
+- **Area:** Onboarding
+- **Priority:** Medium
+- **Status:** Done
+- **Planning:** Required
+- **Description:** Add an onboarding step, after Kentei rank assessment and before theme selection, asking "How long would you like to practice a day?" with a five-minute minimum, writing to the same persisted profile field (`streakThresholdMs`) the Profile screen's existing "How much practice counts as a day?" control already reads and writes.
+- **Exit criteria:** `kentei-onboarding.test.tsx` passes, including a test asserting the new step appears in the correct position in the onboarding sequence, enforces the five-minute minimum, and that completing it persists the same `streakThresholdMs` value the Profile screen's control shows afterward. Confirmed: added a `durationSelect` reducer state strictly between `selecting` and `themeSelect` in `kentei-assessment.ts` (new `durationStepEntered` action, `themeStepEntered` re-guarded to require `durationSelect`), a new `OnboardingDurationStep` component enforcing a local 5-minute floor on top of the existing `isValidStreakThresholdMinutes`, wired through `kentei-onboarding.tsx` to the existing `setStreakThresholdMs` provider action. `kentei-onboarding.test.tsx` gained a `driveToDurationStep` helper plus tests asserting the step's position between selecting and theme selection, the 5-minute minimum (via `props.disabled`, not the `pressByAccessibilityLabel` helper), and that completing it persists the exact `streakThresholdMs` value (`12 * 60000`) Profile's own control would show. `kentei-assessment.test.ts` covers the new state transitions. `yarn test --runInBand` (119 suites/1500 tests), `yarn tsc --noEmit`, and `yarn eslint` on changed files all pass clean.
+- **Notes:** From S046. Resolved during refinement: the Profile screen keeps its own control as a post-onboarding edit affordance — this step only sets the initial value. `Required` because it changes onboarding's own step sequence/state machine, matching T146's precedent for why a small onboarding change still gets a separate planning pass.
+
 ### [T166] Re-invite guests to sign up every 5th completed Sesh after the first
 
 - **Area:** Sesh / guest invitation

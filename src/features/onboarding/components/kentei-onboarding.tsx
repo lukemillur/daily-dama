@@ -11,6 +11,7 @@ import {
   useUserProfileActions,
 } from '@/features/profile/state/user-profile-provider';
 import { OnboardingAssessmentStep } from '@/features/onboarding/components/onboarding-assessment-step';
+import { OnboardingDurationStep } from '@/features/onboarding/components/onboarding-duration-step';
 import { OnboardingIntroStep } from '@/features/onboarding/components/onboarding-intro-step';
 import { OnboardingLevelStep } from '@/features/onboarding/components/onboarding-level-step';
 import { OnboardingRankRevealStep } from '@/features/onboarding/components/onboarding-rank-reveal-step';
@@ -24,8 +25,8 @@ import {
 export function KenteiOnboarding() {
   const router = useRouter();
   const [state, dispatch] = useReducer(kenteiAssessmentReducer, INITIAL_KENTEI_ASSESSMENT);
-  const { completeOnboarding, setThemeColors } = useUserProfileActions();
-  const { themeBackgroundColor, themeAccentColor } = useUserProfile();
+  const { completeOnboarding, setStreakThresholdMs, setThemeColors } = useUserProfileActions();
+  const { streakThresholdMs, themeBackgroundColor, themeAccentColor } = useUserProfile();
 
   switch (state.status) {
     case 'intro':
@@ -58,6 +59,16 @@ export function KenteiOnboarding() {
           onToggleTrick={(trickId) => dispatch({ type: 'practiceTrickToggled', trickId })}
           onFinish={() => {
             if (state.selectedTrickIds.length === 0) return;
+            dispatch({ type: 'durationStepEntered' });
+          }}
+        />
+      );
+    case 'durationSelect':
+      return (
+        <OnboardingDurationStep
+          streakThresholdMs={streakThresholdMs}
+          onContinue={(thresholdMs) => {
+            setStreakThresholdMs(thresholdMs);
             dispatch({ type: 'themeStepEntered' });
           }}
         />
