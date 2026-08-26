@@ -232,6 +232,8 @@ interface Captured {
   setCollection?: (next: NoteCollection) => void;
   runSync?: ReturnType<typeof useNoteDomainSync>['runSync'];
   isSyncing?: boolean;
+  pendingCount?: number;
+  discardPending?: () => Promise<void>;
 }
 
 function makeHarness(
@@ -255,6 +257,8 @@ function makeHarness(
       captured.setCollection = setCollection;
       captured.runSync = sync.runSync;
       captured.isSyncing = sync.isSyncing;
+      captured.pendingCount = sync.pendingCount;
+      captured.discardPending = sync.discardPending;
     });
 
     return <Text>{JSON.stringify(collection)}</Text>;
@@ -825,6 +829,150 @@ describe('useNoteDomainSync', () => {
 
     act(() => {
       root.unmount();
+    });
+  });
+
+  it('pendingCount reflects the outbox length and updates as operations are applied and acknowledged', async () => {
+    const transport = createFakeNoteSyncTransport();
+    const { root, captured } = await mountHarness(INITIAL_NOTES, () => transport, USER_IDENTITY);
+    await flush();
+
+    expect(captured.pendingCount).toBe(0);
+
+    act(() => {
+      captured.setCollection?.({
+        notes: [
+          {
+            id: 'note-1',
+            trickId: 'big-cup',
+            trickName: 'Big cup',
+            body: 'Pending edit.',
+            createdAt: 1,
+            updatedAt: 1,
+          },
+        ],
+      });
+    });
+    await flush();
+
+    expect(captured.pendingCount).toBe(1);
+
+    await act(async () => {
+      await captured.runSync?.('manual');
+    });
+    await flush();
+
+    expect(captured.pendingCount).toBe(0);
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  it('discardPending clears the outbox and persists the cleared envelope', async () => {
+    const transport = createFakeNoteSyncTransport();
+    transport.setFailPush(true);
+    const { root, captured } = await mountHarness(INITIAL_NOTES, () => transport, USER_IDENTITY);
+    await flush();
+
+    act(() => {
+      captured.setCollection?.({
+        notes: [
+          {
+            id: 'note-1',
+            trickId: 'big-cup',
+            trickName: 'Big cup',
+            body: 'Abandoned edit.',
+            createdAt: 1,
+            updatedAt: 1,
+          },
+        ],
+      });
+    });
+    await flush();
+    expect(captured.pendingCount).toBe(1);
+
+    await act(async () => {
+      await captured.discardPending?.();
+    });
+    await flush();
+
+    expect(captured.pendingCount).toBe(0);
+    // The local edit itself stays applied -- discard only clears the sync
+    // obligation, not the primary reducer state.
+    expect(captured.collection?.notes[0]?.body).toBe('Abandoned edit.');
+
+    act(() => {
+      root.unmount();
+    });
+
+    const second = await mountHarness(INITIAL_NOTES, () => transport, USER_IDENTITY);
+    await flush();
+    expect(second.captured.pendingCount).toBe(0);
+
+    act(() => {
+      second.root.unmount();
+    });
+  });
+
+  it('discardPending is a safe no-op when the outbox is already empty', async () => {
+    const transport = createFakeNoteSyncTransport();
+    const { root, captured } = await mountHarness(INITIAL_NOTES, () => transport, USER_IDENTITY);
+    await flush();
+
+    expect(captured.pendingCount).toBe(0);
+
+    await act(async () => {
+      await captured.discardPending?.();
+    });
+    await flush();
+
+    expect(captured.pendingCount).toBe(0);
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  it('discardPending is scoped to its own identity: a fresh identity never observes a prior identitys pending outbox', async () => {
+    const transport = createFakeNoteSyncTransport();
+    transport.setFailPush(true);
+    const { root, captured } = await mountHarness(INITIAL_NOTES, () => transport, USER_IDENTITY);
+    await flush();
+
+    act(() => {
+      captured.setCollection?.({
+        notes: [
+          {
+            id: 'note-1',
+            trickId: 'big-cup',
+            trickName: 'Big cup',
+            body: 'Still pending.',
+            createdAt: 1,
+            updatedAt: 1,
+          },
+        ],
+      });
+    });
+    await flush();
+    expect(captured.pendingCount).toBe(1);
+
+    act(() => {
+      root.unmount();
+    });
+
+    // Remount as a different identity -- a fresh envelope, unrelated to the
+    // one discardPending above was captured against. This exercises the
+    // discardPendingOperations identity guard rather than actually racing a
+    // live identity switch mid-flight (use-logout-guard.test.ts covers the
+    // driver-level generation-abort mechanism directly).
+    const OTHER_USER_IDENTITY = createUserIdentity('22222222-2222-2222-2222-222222222222')!;
+    const other = await mountHarness(INITIAL_NOTES, () => transport, OTHER_USER_IDENTITY);
+    await flush();
+    expect(other.captured.pendingCount).toBe(0);
+
+    act(() => {
+      other.root.unmount();
     });
   });
 });

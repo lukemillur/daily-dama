@@ -187,6 +187,8 @@ interface Captured {
   setProfile?: (next: UserProfile) => void;
   runSync?: ReturnType<typeof useProfileDomainSync>['runSync'];
   isSyncing?: boolean;
+  pendingCount?: number;
+  discardPending?: () => Promise<void>;
 }
 
 // `captured` is closed over (not passed as a prop) so the harness component
@@ -213,6 +215,8 @@ function makeHarness(
       captured.setProfile = setProfile;
       captured.runSync = sync.runSync;
       captured.isSyncing = sync.isSyncing;
+      captured.pendingCount = sync.pendingCount;
+      captured.discardPending = sync.discardPending;
     });
 
     return <Text>{JSON.stringify(profile)}</Text>;
@@ -486,6 +490,110 @@ describe('useProfileDomainSync', () => {
 
     act(() => {
       root.unmount();
+    });
+  });
+
+  it('pendingCount reflects the outbox length and updates as operations are applied and acknowledged', async () => {
+    const transport = createFakeProfileSyncTransport();
+    const { root, captured } = await mountHarness(INITIAL_USER_PROFILE, () => transport, USER_IDENTITY);
+    await flush();
+
+    expect(captured.pendingCount).toBe(0);
+
+    act(() => {
+      captured.setProfile?.({ ...INITIAL_USER_PROFILE, selectedTrickIds: ['trick-1'] });
+    });
+    await flush();
+
+    expect(captured.pendingCount).toBe(1);
+
+    await act(async () => {
+      await captured.runSync?.('manual');
+    });
+    await flush();
+
+    expect(captured.pendingCount).toBe(0);
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  it('discardPending clears the outbox and persists the cleared envelope', async () => {
+    const transport = createFakeProfileSyncTransport();
+    transport.setFailPush(true);
+    const { root, captured } = await mountHarness(INITIAL_USER_PROFILE, () => transport, USER_IDENTITY);
+    await flush();
+
+    act(() => {
+      captured.setProfile?.({ ...INITIAL_USER_PROFILE, selectedTrickIds: ['trick-1'] });
+    });
+    await flush();
+    expect(captured.pendingCount).toBe(1);
+
+    await act(async () => {
+      await captured.discardPending?.();
+    });
+    await flush();
+
+    expect(captured.pendingCount).toBe(0);
+    expect(captured.profile?.selectedTrickIds).toEqual(['trick-1']);
+
+    act(() => {
+      root.unmount();
+    });
+
+    const second = await mountHarness(INITIAL_USER_PROFILE, () => transport, USER_IDENTITY);
+    await flush();
+    expect(second.captured.pendingCount).toBe(0);
+
+    act(() => {
+      second.root.unmount();
+    });
+  });
+
+  it('discardPending is a safe no-op when the outbox is already empty', async () => {
+    const transport = createFakeProfileSyncTransport();
+    const { root, captured } = await mountHarness(INITIAL_USER_PROFILE, () => transport, USER_IDENTITY);
+    await flush();
+
+    expect(captured.pendingCount).toBe(0);
+
+    await act(async () => {
+      await captured.discardPending?.();
+    });
+    await flush();
+
+    expect(captured.pendingCount).toBe(0);
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  it('discardPending is scoped to its own identity: a fresh identity never observes a prior identitys pending outbox', async () => {
+    const transport = createFakeProfileSyncTransport();
+    transport.setFailPush(true);
+    const { root, captured } = await mountHarness(INITIAL_USER_PROFILE, () => transport, USER_IDENTITY);
+    await flush();
+
+    act(() => {
+      captured.setProfile?.({ ...INITIAL_USER_PROFILE, selectedTrickIds: ['trick-1'] });
+    });
+    await flush();
+    expect(captured.pendingCount).toBe(1);
+
+    act(() => {
+      root.unmount();
+    });
+
+    const OTHER_USER_IDENTITY = createUserIdentity('22222222-2222-2222-2222-222222222222')!;
+    const other = await mountHarness(INITIAL_USER_PROFILE, () => transport, OTHER_USER_IDENTITY);
+    await flush();
+    expect(other.captured.pendingCount).toBe(0);
+
+    act(() => {
+      other.root.unmount();
     });
   });
 });

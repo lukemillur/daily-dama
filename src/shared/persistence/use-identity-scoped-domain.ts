@@ -1,4 +1,4 @@
-import { type Dispatch, useEffect, useLayoutEffect, useMemo, useReducer, useRef, useState } from 'react';
+import { type Dispatch, useCallback, useEffect, useLayoutEffect, useMemo, useReducer, useRef, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { useIdentityHandle } from '@/shared/persistence/identity-provider';
@@ -24,6 +24,13 @@ export interface UseIdentityScopedDomainResult<State, Action> {
   readonly state: State;
   readonly dispatch: Dispatch<Action>;
   readonly hasHydrated: boolean;
+  // Thin wrapper around the same internal enqueueWrite queue the
+  // hydration/write effect below already uses -- an explicit imperative
+  // save for a caller (T158s discard-pending-outbox flow) that needs to
+  // know a specific write has been durably queued before proceeding
+  // (e.g. to signOut()), without opening a second, independent write path
+  // that could race the effect-driven writer for the same storage key.
+  readonly saveNow: (value: State) => Promise<void>;
 }
 
 interface TaggedWrite<State> {
@@ -142,5 +149,13 @@ export function useIdentityScopedDomain<State, Action>(
     void enqueueWrite({ value: state, taggedGeneration });
   }, [state, hasHydrated, context, enqueueWrite]);
 
-  return { state, dispatch, hasHydrated };
+  const saveNow = useCallback(
+    (value: State) => {
+      const taggedGeneration = context.getGeneration();
+      return enqueueWrite({ value, taggedGeneration });
+    },
+    [context, enqueueWrite],
+  );
+
+  return { state, dispatch, hasHydrated, saveNow };
 }

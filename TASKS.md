@@ -137,16 +137,6 @@ _Phase 2 activation: T155 comes from S034 and `BACKEND_ROADMAP.md` Phase 2. Its 
 
 _Phase 3 activation: T156–T160 come from S035–S038 and `BACKEND_ROADMAP.md` Phase 3. The dependency chain deliberately separates identity-partitioned persistence (T156), durable synchronization mechanics and ordered domain rollout (T157), outbox-aware logout (T158), resumable guest conversion (T159), and visible conflict recovery (T160). Each child owns one persistence, orchestration, domain, or UX boundary; Realtime remains deferred and synchronization may never alter the active Sesh state machine._
 
-### [T158] Protect logout when account changes are unsynchronized
-
-- **Area:** Authentication / synchronization boundary
-- **Priority:** High
-- **Status:** Not started
-- **Planning:** Required
-- **Description:** Upgrade current-device logout to inspect the current identity's durable outboxes and offer Retry, Cancel, or Discard and log out, then clear in-memory account state without exposing or submitting it under the guest namespace.
-- **Exit criteria:** Provider/browser tests cover no-pending logout, successful Retry then logout, failed Retry with the prompt retained, Cancel, explicit Discard, offline behavior, and identity changes during the prompt; other-device sessions remain signed in and subsequent guest/user identities cannot access discarded account cache or operations.
-- **Notes:** From S038. Depends on T154.2, T156.3, and T157.9. Account-deletion cleanup is separate in T161.5.
-
 ### [T159] Merge guest data into new or existing accounts
 
 - **Area:** Guest conversion

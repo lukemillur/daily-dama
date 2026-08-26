@@ -157,6 +157,8 @@ interface Captured {
   setCollection?: (next: CustomTrickCollection) => void;
   runSync?: ReturnType<typeof useCustomTrickDomainSync>['runSync'];
   isSyncing?: boolean;
+  pendingCount?: number;
+  discardPending?: () => Promise<void>;
 }
 
 function makeHarness(
@@ -180,6 +182,8 @@ function makeHarness(
       captured.setCollection = setCollection;
       captured.runSync = sync.runSync;
       captured.isSyncing = sync.isSyncing;
+      captured.pendingCount = sync.pendingCount;
+      captured.discardPending = sync.discardPending;
     });
 
     return <Text>{JSON.stringify(collection)}</Text>;
@@ -610,6 +614,110 @@ describe('useCustomTrickDomainSync', () => {
 
     act(() => {
       root.unmount();
+    });
+  });
+
+  it('pendingCount reflects the outbox length and updates as operations are applied and acknowledged', async () => {
+    const transport = createFakeCustomTrickSyncTransport();
+    const { root, captured } = await mountHarness(INITIAL_CUSTOM_TRICKS, () => transport, USER_IDENTITY);
+    await flush();
+
+    expect(captured.pendingCount).toBe(0);
+
+    act(() => {
+      captured.setCollection?.({ tricks: [{ id: 'custom-1', kind: 'standalone', name: 'Around the World' }] });
+    });
+    await flush();
+
+    expect(captured.pendingCount).toBe(1);
+
+    await act(async () => {
+      await captured.runSync?.('manual');
+    });
+    await flush();
+
+    expect(captured.pendingCount).toBe(0);
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  it('discardPending clears the outbox and persists the cleared envelope', async () => {
+    const transport = createFakeCustomTrickSyncTransport();
+    transport.setFailPush(true);
+    const { root, captured } = await mountHarness(INITIAL_CUSTOM_TRICKS, () => transport, USER_IDENTITY);
+    await flush();
+
+    act(() => {
+      captured.setCollection?.({ tricks: [{ id: 'custom-1', kind: 'standalone', name: 'Around the World' }] });
+    });
+    await flush();
+    expect(captured.pendingCount).toBe(1);
+
+    await act(async () => {
+      await captured.discardPending?.();
+    });
+    await flush();
+
+    expect(captured.pendingCount).toBe(0);
+    expect(captured.collection?.tricks[0]?.id).toBe('custom-1');
+
+    act(() => {
+      root.unmount();
+    });
+
+    const second = await mountHarness(INITIAL_CUSTOM_TRICKS, () => transport, USER_IDENTITY);
+    await flush();
+    expect(second.captured.pendingCount).toBe(0);
+
+    act(() => {
+      second.root.unmount();
+    });
+  });
+
+  it('discardPending is a safe no-op when the outbox is already empty', async () => {
+    const transport = createFakeCustomTrickSyncTransport();
+    const { root, captured } = await mountHarness(INITIAL_CUSTOM_TRICKS, () => transport, USER_IDENTITY);
+    await flush();
+
+    expect(captured.pendingCount).toBe(0);
+
+    await act(async () => {
+      await captured.discardPending?.();
+    });
+    await flush();
+
+    expect(captured.pendingCount).toBe(0);
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  it('discardPending is scoped to its own identity: a fresh identity never observes a prior identitys pending outbox', async () => {
+    const transport = createFakeCustomTrickSyncTransport();
+    transport.setFailPush(true);
+    const { root, captured } = await mountHarness(INITIAL_CUSTOM_TRICKS, () => transport, USER_IDENTITY);
+    await flush();
+
+    act(() => {
+      captured.setCollection?.({ tricks: [{ id: 'custom-1', kind: 'standalone', name: 'Around the World' }] });
+    });
+    await flush();
+    expect(captured.pendingCount).toBe(1);
+
+    act(() => {
+      root.unmount();
+    });
+
+    const OTHER_USER_IDENTITY = createUserIdentity('22222222-2222-2222-2222-222222222222')!;
+    const other = await mountHarness(INITIAL_CUSTOM_TRICKS, () => transport, OTHER_USER_IDENTITY);
+    await flush();
+    expect(other.captured.pendingCount).toBe(0);
+
+    act(() => {
+      other.root.unmount();
     });
   });
 });

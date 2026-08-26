@@ -54,6 +54,8 @@ export interface UserProfileSync {
   readonly lastResult: DomainSyncRecord | undefined;
   readonly hasHydrated: boolean;
   readonly localMutationTick: number;
+  readonly pendingCount: number;
+  readonly discardPending: () => Promise<void>;
 }
 
 const UserProfileSyncContext = createContext<UserProfileSync | undefined>(undefined);

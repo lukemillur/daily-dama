@@ -51,6 +51,8 @@ export interface GoalSync {
   readonly lastResult: DomainSyncRecord | undefined;
   readonly hasHydrated: boolean;
   readonly localMutationTick: number;
+  readonly pendingCount: number;
+  readonly discardPending: () => Promise<void>;
 }
 
 const GoalSyncContext = createContext<GoalSync | undefined>(undefined);

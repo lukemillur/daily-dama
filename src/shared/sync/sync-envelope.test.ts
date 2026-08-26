@@ -11,6 +11,7 @@ import {
   applyLocalMutation,
   createInitialSyncEnvelope,
   deserializeSyncEnvelope,
+  discardPendingOperations,
   loadSyncEnvelope,
   recordOutboxOperationAttempt,
   replacePendingOperationForRecord,
@@ -620,5 +621,108 @@ describe('SyncEnvelope domain mismatch on mutation', () => {
       1000,
     );
     expect(result).toEqual({ status: 'rejected', reason: 'domainMismatch' });
+  });
+});
+
+
+describe('discardPendingOperations', () => {
+  it('clears a non-empty outbox and leaves state/cursor untouched', () => {
+    const envelope = createInitialSyncEnvelope('goals', GUEST_IDENTITY, INITIAL_STATE);
+    const withOperation = applyLocalMutation(
+      envelope,
+      GUEST_IDENTITY,
+      { items: ['goal-1'] },
+      operationInput('goal-1'),
+      1000,
+      'op-1',
+    );
+    expect(withOperation.status).toBe('applied');
+    if (withOperation.status !== 'applied') return;
+    const withCursor = updateSyncCursor(withOperation.envelope, GUEST_IDENTITY, 'cursor-abc', 2000);
+    expect(withCursor.status).toBe('applied');
+    if (withCursor.status !== 'applied') return;
+
+    const result = discardPendingOperations(withCursor.envelope, GUEST_IDENTITY);
+    expect(result.status).toBe('applied');
+    if (result.status !== 'applied') return;
+    expect(result.envelope.outbox).toEqual([]);
+    expect(result.envelope.state).toEqual({ items: ['goal-1'] });
+    expect(result.envelope.cursor).toBe('cursor-abc');
+  });
+
+  it('is a safe no-op on an already-empty outbox', () => {
+    const envelope = createInitialSyncEnvelope('goals', GUEST_IDENTITY, INITIAL_STATE);
+    const result = discardPendingOperations(envelope, GUEST_IDENTITY);
+    expect(result.status).toBe('applied');
+    if (result.status !== 'applied') return;
+    expect(result.envelope.outbox).toEqual([]);
+  });
+
+  it('is rejected as identityMismatch for a different identity, leaving the envelope untouched', () => {
+    const envelope = createInitialSyncEnvelope('goals', USER_A_IDENTITY, INITIAL_STATE);
+    const withOperation = applyLocalMutation(
+      envelope,
+      USER_A_IDENTITY,
+      { items: ['goal-1'] },
+      operationInput('goal-1'),
+      1000,
+      'op-1',
+    );
+    expect(withOperation.status).toBe('applied');
+    if (withOperation.status !== 'applied') return;
+
+    const result = discardPendingOperations(withOperation.envelope, USER_B_IDENTITY);
+    expect(result).toEqual({ status: 'rejected', reason: 'identityMismatch' });
+    expect(withOperation.envelope.outbox).toHaveLength(1);
+  });
+
+  it('round-trips an empty outbox through serialize/deserialize after a discard', () => {
+    const envelope = createInitialSyncEnvelope('goals', GUEST_IDENTITY, INITIAL_STATE);
+    const withOperation = applyLocalMutation(
+      envelope,
+      GUEST_IDENTITY,
+      { items: ['goal-1'] },
+      operationInput('goal-1'),
+      1000,
+      'op-1',
+    );
+    expect(withOperation.status).toBe('applied');
+    if (withOperation.status !== 'applied') return;
+
+    const discarded = discardPendingOperations(withOperation.envelope, GUEST_IDENTITY);
+    expect(discarded.status).toBe('applied');
+    if (discarded.status !== 'applied') return;
+
+    const serialized = serializeSyncEnvelope(discarded.envelope);
+    const deserialized = deserializeSyncEnvelope(serialized, 'goals', fixtureCodec);
+    expect(deserialized).toBeDefined();
+    expect(deserialized?.outbox).toEqual([]);
+    expect(deserialized?.state).toEqual({ items: ['goal-1'] });
+  });
+
+  it('the outboxDiscarded reducer action clears the outbox via syncEnvelopeReducer', () => {
+    const envelope = createInitialSyncEnvelope('goals', GUEST_IDENTITY, INITIAL_STATE);
+    const withOperation = applyLocalMutation(
+      envelope,
+      GUEST_IDENTITY,
+      { items: ['goal-1'] },
+      operationInput('goal-1'),
+      1000,
+      'op-1',
+    );
+    expect(withOperation.status).toBe('applied');
+    if (withOperation.status !== 'applied') return;
+
+    const next = syncEnvelopeReducer(withOperation.envelope, {
+      type: 'outboxDiscarded',
+      identity: GUEST_IDENTITY,
+    });
+    expect(next.outbox).toEqual([]);
+
+    const rejected = syncEnvelopeReducer(withOperation.envelope, {
+      type: 'outboxDiscarded',
+      identity: USER_A_IDENTITY,
+    });
+    expect(rejected).toBe(withOperation.envelope); // rejected mutation returns the same reference
   });
 });
