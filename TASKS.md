@@ -153,7 +153,7 @@ _T163–T181 come from stories S042–S062 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 - **Area:** Authentication UI / Account
 - **Priority:** Medium
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Implementer
 - **Description:** `account-security-screen.tsx` already renders inside `/app/*`'s real `AppThemeProvider` (unlike the four screens T170 covers), so its color problem isn't a missing theme source — it's specific color/contrast choices on this screen that read poorly against certain themes. Audit and fix the screen's own styled colors to derive properly from `useResolvedTheme()` the way other themed `/app/*` screens already do.
 - **Exit criteria:** Component test/snapshot coverage confirms Account Security's colors resolve from theme tokens rather than fixed values; confirmed in-browser with at least one non-default theme preset that text/background/button contrast reads correctly.
