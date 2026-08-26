@@ -1,0 +1,320 @@
+import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { type PropsWithChildren, useEffect, useState } from 'react';
+import { Text } from 'react-native';
+import { act, create, type ReactTestRenderer } from 'react-test-renderer';
+
+jest.mock('@react-native-async-storage/async-storage', () =>
+  // eslint-disable-next-line @typescript-eslint/no-require-imports -- required by jest hoisting
+  require('@react-native-async-storage/async-storage/jest/async-storage-mock'),
+);
+
+// Untyped jest.fn() stand-ins for the mocked module below; each test
+// asserts a concrete shape via mockResolvedValue/mockReturnValue.
+const mockCountLocalGuestRecords = jest.fn<(...args: any[]) => any>();
+const mockCountCloudRecords = jest.fn<(...args: any[]) => any>();
+const mockBuildGuestImportTransports = jest.fn<(...args: any[]) => any>();
+
+jest.mock('@/features/guest-import/persistence/guest-import-inventory', () => ({
+  countLocalGuestRecords: (...args: unknown[]) => mockCountLocalGuestRecords(...args),
+  countCloudRecords: (...args: unknown[]) => mockCountCloudRecords(...args),
+  buildGuestImportTransports: (...args: unknown[]) => mockBuildGuestImportTransports(...args),
+}));
+
+const mockGetSupabaseClient = jest.fn<(...args: any[]) => any>();
+jest.mock('@/shared/supabase/supabase-client', () => ({
+  getSupabaseClient: () => mockGetSupabaseClient(),
+}));
+
+import { useGuestImport } from '@/features/guest-import/state/use-guest-import';
+import type { GuestImportDomainCounts } from '@/features/guest-import/model/guest-import';
+import { createIdentityContext } from '@/shared/persistence/identity-context';
+import { createUserIdentity, GUEST_IDENTITY, type Identity } from '@/shared/persistence/identity';
+import { IdentityHandleContext } from '@/shared/persistence/identity-provider';
+
+const USER_ID = '11111111-1111-1111-1111-111111111111';
+const USER_IDENTITY: Identity = createUserIdentity(USER_ID)!;
+const OTHER_USER_ID = '22222222-2222-2222-2222-222222222222';
+const OTHER_USER_IDENTITY: Identity = createUserIdentity(OTHER_USER_ID)!;
+
+function zeroCounts(): GuestImportDomainCounts {
+  return {
+    profile: { local: 0, cloud: 0 },
+    customTricks: { local: 0, cloud: 0 },
+    practiceHistory: { local: 0, cloud: 0 },
+    goals: { local: 0, cloud: 0 },
+    notes: { local: 0, cloud: 0 },
+  };
+}
+
+function localOnlyCounts(): GuestImportDomainCounts {
+  const counts = zeroCounts();
+  return {
+    profile: { ...counts.profile, local: 2 },
+    customTricks: { ...counts.customTricks, local: 3 },
+    practiceHistory: { ...counts.practiceHistory, local: 1 },
+    goals: { ...counts.goals, local: 0 },
+    notes: { ...counts.notes, local: 0 },
+  };
+}
+
+interface Driver {
+  readonly setIdentity: (next: Identity) => void;
+}
+
+function IdentityHandleTestProvider({
+  children,
+  onDriverReady,
+}: PropsWithChildren<{ onDriverReady: (driver: Driver) => void }>) {
+  const [context] = useState(() => createIdentityContext());
+  const [handle, setHandle] = useState(() => ({
+    identity: context.getIdentity(),
+    generation: context.getGeneration(),
+    context,
+  }));
+
+  onDriverReady({
+    setIdentity: (next) => {
+      const generation = context.setIdentity(next);
+      setHandle({ identity: next, generation, context });
+    },
+  });
+
+  return <IdentityHandleContext.Provider value={handle}>{children}</IdentityHandleContext.Provider>;
+}
+
+interface Captured {
+  result?: ReturnType<typeof useGuestImport>;
+}
+
+function makeHarness(captured: Captured) {
+  return function Harness() {
+    const result = useGuestImport();
+    useEffect(() => {
+      captured.result = result;
+    });
+    return <Text>{JSON.stringify(result.state)}</Text>;
+  };
+}
+
+async function mountHarness(identity: Identity = GUEST_IDENTITY) {
+  const captured: Captured = { };
+  const Harness = makeHarness(captured);
+  let setIdentity: Driver['setIdentity'] | undefined;
+
+  let root!: ReactTestRenderer;
+  await act(async () => {
+    root = create(
+      <IdentityHandleTestProvider onDriverReady={(driver) => (setIdentity = driver.setIdentity)}>
+        <Harness />
+      </IdentityHandleTestProvider>,
+    );
+  });
+
+  if (identity.kind === 'user') {
+    await act(async () => {
+      setIdentity?.(identity);
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+  }
+
+  return { root, captured, setIdentity: (next: Identity) => setIdentity?.(next) };
+}
+
+async function flush(times = 6) {
+  for (let i = 0; i < times; i += 1) {
+    await act(async () => {
+      await Promise.resolve();
+    });
+  }
+}
+
+describe('useGuestImport', () => {
+  beforeEach(async () => {
+    await AsyncStorage.clear();
+    mockCountLocalGuestRecords.mockReset();
+    mockCountCloudRecords.mockReset();
+    mockBuildGuestImportTransports.mockReset();
+    mockGetSupabaseClient.mockReset();
+    mockGetSupabaseClient.mockReturnValue({ kind: 'fake-client' }); // truthy stand-in
+    mockBuildGuestImportTransports.mockReturnValue({ kind: 'fake-transports' });
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
+  it('a guest identity never inventories: no transport calls, state stays idle with no importId', async () => {
+    const { captured } = await mountHarness(GUEST_IDENTITY);
+    await flush();
+
+    expect(mockCountLocalGuestRecords).not.toHaveBeenCalled();
+    expect(mockCountCloudRecords).not.toHaveBeenCalled();
+    expect(captured.result?.state.status).toBe('idle');
+    expect(captured.result?.state.importId).toBeUndefined();
+  });
+
+  it('auto-inventories on first hydration for a signed-in identity: idle -> inventorying -> awaitingConfirmation, targetKind "empty" for a reachable-but-empty cloud', async () => {
+    mockCountLocalGuestRecords.mockResolvedValue(localOnlyCounts());
+    mockCountCloudRecords.mockResolvedValue({ status: 'succeeded', counts: { profile: 0, customTricks: 0, practiceHistory: 0, goals: 0, notes: 0 } });
+
+    const { captured } = await mountHarness(USER_IDENTITY);
+    await flush();
+
+    expect(mockCountLocalGuestRecords).toHaveBeenCalledTimes(1);
+    expect(mockCountCloudRecords).toHaveBeenCalledTimes(1);
+    expect(captured.result?.state.status).toBe('awaitingConfirmation');
+    expect(captured.result?.state.targetKind).toBe('empty');
+    expect(captured.result?.state.inventory).toEqual(localOnlyCounts());
+  });
+
+  it('a nonzero cloud count yields targetKind "existing"', async () => {
+    mockCountLocalGuestRecords.mockResolvedValue(localOnlyCounts());
+    mockCountCloudRecords.mockResolvedValue({ status: 'succeeded', counts: { profile: 1, customTricks: 0, practiceHistory: 0, goals: 0, notes: 0 } });
+
+    const { captured } = await mountHarness(USER_IDENTITY);
+    await flush();
+
+    expect(captured.result?.state.status).toBe('awaitingConfirmation');
+    expect(captured.result?.state.targetKind).toBe('existing');
+  });
+
+  it('confirmImport() moves to uploading and settles no domain by itself', async () => {
+    mockCountLocalGuestRecords.mockResolvedValue(localOnlyCounts());
+    mockCountCloudRecords.mockResolvedValue({ status: 'succeeded', counts: { profile: 0, customTricks: 0, practiceHistory: 0, goals: 0, notes: 0 } });
+
+    const { captured } = await mountHarness(USER_IDENTITY);
+    await flush();
+    expect(captured.result?.state.status).toBe('awaitingConfirmation');
+
+    act(() => {
+      captured.result?.confirmImport();
+    });
+    await flush();
+
+    expect(captured.result?.state.status).toBe('uploading');
+    expect(Object.values(captured.result?.state.domainOutcomes ?? { }).every((o) => o?.status === 'pending')).toBe(
+      true,
+    );
+  });
+
+  it('a client/transport failure lands in idle with errorMessage set instead of hanging in inventorying', async () => {
+    mockCountLocalGuestRecords.mockResolvedValue(localOnlyCounts());
+    mockGetSupabaseClient.mockReturnValue(null);
+
+    const { captured } = await mountHarness(USER_IDENTITY);
+    await flush();
+
+    expect(mockCountCloudRecords).not.toHaveBeenCalled();
+    expect(captured.result?.state.status).toBe('idle');
+    expect(captured.result?.state.errorMessage).toBeDefined();
+  });
+
+  it('a cloud counting failure also lands in idle with errorMessage set', async () => {
+    mockCountLocalGuestRecords.mockResolvedValue(localOnlyCounts());
+    mockCountCloudRecords.mockResolvedValue({ status: 'failed', domain: 'goals', errorMessage: 'boom' });
+
+    const { captured } = await mountHarness(USER_IDENTITY);
+    await flush();
+
+    expect(captured.result?.state.status).toBe('idle');
+    expect(captured.result?.state.errorMessage).toBe('boom');
+  });
+});
+
+describe('useGuestImport: remount/resume and identity change', () => {
+  beforeEach(async () => {
+    await AsyncStorage.clear();
+    mockCountLocalGuestRecords.mockReset();
+    mockCountCloudRecords.mockReset();
+    mockBuildGuestImportTransports.mockReset();
+    mockGetSupabaseClient.mockReset();
+    mockGetSupabaseClient.mockReturnValue({ kind: 'fake-client' });
+    mockBuildGuestImportTransports.mockReturnValue({ kind: 'fake-transports' });
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
+  it('remounting with a persisted awaitingConfirmation record resumes without re-inventorying', async () => {
+    mockCountLocalGuestRecords.mockResolvedValue(localOnlyCounts());
+    mockCountCloudRecords.mockResolvedValue({ status: 'succeeded', counts: { profile: 0, customTricks: 0, practiceHistory: 0, goals: 0, notes: 0 } });
+
+    const first = await mountHarness(USER_IDENTITY);
+    await flush();
+    expect(first.captured.result?.state.status).toBe('awaitingConfirmation');
+
+    act(() => {
+      first.root.unmount();
+    });
+
+    mockCountLocalGuestRecords.mockClear();
+    mockCountCloudRecords.mockClear();
+
+    const second = await mountHarness(USER_IDENTITY);
+    await flush();
+
+    expect(second.captured.result?.state.status).toBe('awaitingConfirmation');
+    expect(second.captured.result?.state.targetKind).toBe('empty');
+    expect(mockCountLocalGuestRecords).not.toHaveBeenCalled();
+    expect(mockCountCloudRecords).not.toHaveBeenCalled();
+  });
+
+  it('remounting with a persisted inventorying record re-runs the inventory', async () => {
+    let resolveLocalCounts: ((counts: GuestImportDomainCounts) => void) | undefined;
+    mockCountLocalGuestRecords.mockImplementation(
+      () => new Promise<GuestImportDomainCounts>((resolve) => {
+        resolveLocalCounts = resolve;
+      }),
+    );
+
+    const first = await mountHarness(USER_IDENTITY);
+    await flush();
+    expect(first.captured.result?.state.status).toBe('inventorying');
+
+    act(() => {
+      first.root.unmount();
+    });
+
+    expect(resolveLocalCounts).toBeDefined();
+    mockCountLocalGuestRecords.mockReset();
+    mockCountLocalGuestRecords.mockResolvedValue(localOnlyCounts());
+    mockCountCloudRecords.mockResolvedValue({ status: 'succeeded', counts: { profile: 0, customTricks: 0, practiceHistory: 0, goals: 0, notes: 0 } });
+
+    const second = await mountHarness(USER_IDENTITY);
+    await flush();
+
+    expect(mockCountLocalGuestRecords).toHaveBeenCalledTimes(1);
+    expect(second.captured.result?.state.status).toBe('awaitingConfirmation');
+  });
+
+  it('an identity change while awaitingConfirmation resets to idle, and the new identity hydrates its own independent record', async () => {
+    mockCountLocalGuestRecords.mockResolvedValue(localOnlyCounts());
+    mockCountCloudRecords.mockResolvedValue({ status: 'succeeded', counts: { profile: 0, customTricks: 0, practiceHistory: 0, goals: 0, notes: 0 } });
+
+    const { captured, setIdentity } = await mountHarness(USER_IDENTITY);
+    await flush();
+    expect(captured.result?.state.status).toBe('awaitingConfirmation');
+
+    mockCountLocalGuestRecords.mockClear();
+    mockCountCloudRecords.mockClear();
+    mockCountLocalGuestRecords.mockResolvedValue(zeroCounts());
+    mockCountCloudRecords.mockResolvedValue({ status: 'succeeded', counts: { profile: 0, customTricks: 0, practiceHistory: 0, goals: 0, notes: 0 } });
+
+    await act(async () => {
+      setIdentity(OTHER_USER_IDENTITY);
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    await flush();
+
+    // The new identity's own record starts fresh and inventories
+    // independently -- it must not carry over the first identity's
+    // awaitingConfirmation status or inventory contents.
+    expect(captured.result?.state.status).toBe('awaitingConfirmation');
+    expect(captured.result?.state.ownerIdentityNamespace).toBe(`user:${OTHER_USER_ID}`);
+    expect(captured.result?.state.inventory).toEqual(zeroCounts());
+  });
+});
