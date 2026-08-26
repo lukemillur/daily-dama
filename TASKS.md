@@ -149,7 +149,7 @@ _Phase 3 activation: T156–T160 come from S035–S038 and `BACKEND_ROADMAP.md` 
 
 - **Area:** Guest import orchestration
 - **Priority:** High
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** Add an explicit import state machine and durable progress record that inventories guest/cloud counts by domain before mutation, owns an import identity, and can resume after reload or network loss.
 - **Exit criteria:** State-machine tests cover inventory, awaiting confirmation, uploading, awaiting profile choice, conflicts, interruption, resume, completion, cancellation, and identity change; the UI shows accurate per-domain local/cloud counts before any guest record is uploaded.
