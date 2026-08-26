@@ -153,7 +153,7 @@ _T163–T181 come from stories S042–S062 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 - **Area:** Authentication UI
 - **Priority:** Medium
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Implementer
 - **Description:** Sign-up (password + confirm), sign-in (password), reset-password (new + confirm), and Account Security (current, new, confirm new) each render an ad hoc `styled(TextInput)` with `secureTextEntry` and near-identical styling. Extract one shared `PasswordInput` component (label, value, onChangeText, error, plus the new show/hide toggle) and use it at every one of these call sites.
 - **Exit criteria:** `yarn test --runInBand` passes, including a test on the shared component asserting the toggle reveals/hides the typed value, and updated tests on each of the five consuming screens confirming the toggle is present and functions.
