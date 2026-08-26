@@ -9,6 +9,7 @@ import { BodyText, DisplayTitle, Eyebrow } from '@/components/ui/typography';
 import { AppColors } from '@/constants/theme';
 import { categorizeAuthError, type AuthErrorCategory } from '@/features/auth/model/auth-errors';
 import { validateSignInFields } from '@/features/auth/model/sign-in-validation';
+import { PasswordInput } from '@/features/auth/components/password-input';
 import { logAuthWarning, trackAuthEvent } from '@/features/auth/observability/auth-observability';
 import { useAuthActions, useAuthState } from '@/features/auth/state/auth-provider';
 
@@ -116,21 +117,13 @@ export function SignInScreen() {
           {errors.email ? <ErrorText>{errors.email}</ErrorText> : null}
         </Field>
 
-        <Field>
-          <FieldLabel>Password</FieldLabel>
-          <FieldInput
-            accessibilityLabel="Password"
-            autoCapitalize="none"
-            autoCorrect={false}
-            secureTextEntry
-            textContentType="password"
-            onChangeText={setPassword}
-            placeholder="Password"
-            placeholderTextColor={AppColors.textSubtle}
-            value={password}
-          />
-          {errors.password ? <ErrorText>{errors.password}</ErrorText> : null}
-        </Field>
+        <PasswordInput
+          error={errors.password}
+          label="Password"
+          textContentType="password"
+          onChangeText={setPassword}
+          value={password}
+        />
 
         {submitCategory ? <ErrorText>{SUBMIT_ERROR_COPY[submitCategory]}</ErrorText> : null}
 

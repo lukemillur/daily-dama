@@ -192,6 +192,19 @@ describe('ResetPasswordScreen', () => {
       expect(mockCompletePasswordRecovery).not.toHaveBeenCalled();
     });
 
+    it('renders working visibility toggles for both new-password fields', async () => {
+      const root = await mount();
+
+      expect(findByLabel(root, 'Show New password')).toBeTruthy();
+      expect(findByLabel(root, 'Show Confirm new password')).toBeTruthy();
+      await act(async () => {
+        findByLabel(root, 'Show New password').props.onPress();
+      });
+
+      expect(findByLabel(root, 'New password').props.secureTextEntry).toBe(false);
+      expect(findByLabel(root, 'Hide New password')).toBeTruthy();
+    });
+
     it('shows a weak-password error on submit and never calls completePasswordRecovery', async () => {
       const root = await mount();
       const weak = 'short1';

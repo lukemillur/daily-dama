@@ -9,6 +9,7 @@ import { BodyText, DisplayTitle, Eyebrow } from '@/components/ui/typography';
 import { AppColors } from '@/constants/theme';
 import { categorizeAuthError, type AuthErrorCategory } from '@/features/auth/model/auth-errors';
 import { MIN_PASSWORD_LENGTH } from '@/features/auth/model/password-policy';
+import { PasswordInput } from '@/features/auth/components/password-input';
 import { validateSignUpFields } from '@/features/auth/model/signup-validation';
 import { logAuthWarning, trackAuthEvent } from '@/features/auth/observability/auth-observability';
 import { useAuthActions, useAuthState } from '@/features/auth/state/auth-provider';
@@ -129,38 +130,22 @@ export function SignUpScreen() {
           {errors.email ? <ErrorText>{errors.email}</ErrorText> : null}
         </Field>
 
-        <Field>
-          <FieldLabel>Password</FieldLabel>
-          <FieldHint>Use at least {MIN_PASSWORD_LENGTH} characters.</FieldHint>
-          <FieldInput
-            accessibilityLabel="Password"
-            autoCapitalize="none"
-            autoCorrect={false}
-            secureTextEntry
-            textContentType="newPassword"
-            onChangeText={setPassword}
-            placeholder="Password"
-            placeholderTextColor={AppColors.textSubtle}
-            value={password}
-          />
-          {errors.password ? <ErrorText>{errors.password}</ErrorText> : null}
-        </Field>
+        <PasswordInput
+          error={errors.password}
+          hint={<>Use at least {MIN_PASSWORD_LENGTH} characters.</>}
+          label="Password"
+          textContentType="newPassword"
+          onChangeText={setPassword}
+          value={password}
+        />
 
-        <Field>
-          <FieldLabel>Confirm password</FieldLabel>
-          <FieldInput
-            accessibilityLabel="Confirm password"
-            autoCapitalize="none"
-            autoCorrect={false}
-            secureTextEntry
-            textContentType="newPassword"
-            onChangeText={setConfirmPassword}
-            placeholder="Confirm password"
-            placeholderTextColor={AppColors.textSubtle}
-            value={confirmPassword}
-          />
-          {errors.confirmPassword ? <ErrorText>{errors.confirmPassword}</ErrorText> : null}
-        </Field>
+        <PasswordInput
+          error={errors.confirmPassword}
+          label="Confirm password"
+          textContentType="newPassword"
+          onChangeText={setConfirmPassword}
+          value={confirmPassword}
+        />
 
         {submitCategory ? <ErrorText>{SUBMIT_ERROR_COPY[submitCategory]}</ErrorText> : null}
 
@@ -208,12 +193,6 @@ const FieldLabel = styled.Text`
   font-weight: 900;
   letter-spacing: 1px;
   text-transform: uppercase;
-`;
-const FieldHint = styled.Text`
-  color: ${AppColors.textSubtle};
-  font-size: 12px;
-  font-weight: 700;
-  margin-top: 4px;
 `;
 const FieldInput = styled(TextInput)`
   min-height: 56px;

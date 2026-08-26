@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { ScrollView, TextInput } from 'react-native';
+import { ScrollView } from 'react-native';
 import { styled } from 'styled-components/native';
 
 import { Button } from '@/components/ui/button';
@@ -9,6 +9,7 @@ import { BodyText, DisplayTitle, Eyebrow } from '@/components/ui/typography';
 import { AppColors } from '@/constants/theme';
 import { categorizeAuthError, type AuthErrorCategory } from '@/features/auth/model/auth-errors';
 import { validateNewPassword } from '@/features/auth/model/password-policy';
+import { PasswordInput } from '@/features/auth/components/password-input';
 import { useAuthActions, useAuthState } from '@/features/auth/state/auth-provider';
 
 const SUBMIT_ERROR_COPY: Record<AuthErrorCategory, string> = {
@@ -113,35 +114,21 @@ export function ResetPasswordScreen() {
         <PageTitle>Choose a new password.</PageTitle>
         <Introduction>Enter and confirm a new password for your account.</Introduction>
 
-        <Field>
-          <FieldLabel>New password</FieldLabel>
-          <FieldInput
-            accessibilityLabel="New password"
-            autoCapitalize="none"
-            autoCorrect={false}
-            onChangeText={setPassword}
-            placeholder="New password"
-            placeholderTextColor={AppColors.textSubtle}
-            secureTextEntry
-            value={password}
-          />
-          {errors.password ? <ErrorText>{errors.password}</ErrorText> : null}
-        </Field>
+        <PasswordInput
+          error={errors.password}
+          label="New password"
+          onChangeText={setPassword}
+          textContentType="newPassword"
+          value={password}
+        />
 
-        <Field>
-          <FieldLabel>Confirm new password</FieldLabel>
-          <FieldInput
-            accessibilityLabel="Confirm new password"
-            autoCapitalize="none"
-            autoCorrect={false}
-            onChangeText={setConfirmPassword}
-            placeholder="Confirm new password"
-            placeholderTextColor={AppColors.textSubtle}
-            secureTextEntry
-            value={confirmPassword}
-          />
-          {errors.confirmPassword ? <ErrorText>{errors.confirmPassword}</ErrorText> : null}
-        </Field>
+        <PasswordInput
+          error={errors.confirmPassword}
+          label="Confirm new password"
+          onChangeText={setConfirmPassword}
+          textContentType="newPassword"
+          value={confirmPassword}
+        />
 
         {submitCategory ? <ErrorText>{SUBMIT_ERROR_COPY[submitCategory]}</ErrorText> : null}
 
@@ -183,26 +170,6 @@ const Introduction = styled(BodyText)`
   max-width: 480px;
   margin-top: 16px;
   text-align: center;
-`;
-const Field = styled.View`
-  margin-top: 28px;
-`;
-const FieldLabel = styled.Text`
-  color: ${({ theme }) => theme.text};
-  font-size: 13px;
-  font-weight: 900;
-  letter-spacing: 1px;
-  text-transform: uppercase;
-`;
-const FieldInput = styled(TextInput)`
-  min-height: 56px;
-  background-color: ${AppColors.paper};
-  border: 2px solid ${AppColors.ink};
-  color: ${AppColors.ink};
-  font-size: 18px;
-  font-weight: 800;
-  margin-top: 8px;
-  padding: 12px 14px;
 `;
 const ErrorText = styled.Text`
   color: ${AppColors.red};

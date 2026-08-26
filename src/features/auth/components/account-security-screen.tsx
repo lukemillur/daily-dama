@@ -10,6 +10,7 @@ import { AppColors } from '@/constants/theme';
 import { categorizeAuthError, type AuthErrorCategory } from '@/features/auth/model/auth-errors';
 import { validateForgotPasswordEmail } from '@/features/auth/model/forgot-password-validation';
 import { validateNewPassword } from '@/features/auth/model/password-policy';
+import { PasswordInput } from '@/features/auth/components/password-input';
 import { logAuthWarning, trackAuthEvent } from '@/features/auth/observability/auth-observability';
 import { useAuthActions, useAuthState } from '@/features/auth/state/auth-provider';
 
@@ -172,50 +173,29 @@ export function AccountSecurityScreen() {
 
         <SectionLabel>Change password</SectionLabel>
 
-        <Field>
-          <FieldLabel>Current password</FieldLabel>
-          <FieldInput
-            accessibilityLabel="Current password"
-            autoCapitalize="none"
-            autoCorrect={false}
-            onChangeText={setCurrentPassword}
-            placeholder="Current password"
-            placeholderTextColor={AppColors.textSubtle}
-            secureTextEntry
-            value={currentPassword}
-          />
-          {currentPasswordError ? <ErrorText>{currentPasswordError}</ErrorText> : null}
-        </Field>
+        <PasswordInput
+          error={currentPasswordError}
+          label="Current password"
+          onChangeText={setCurrentPassword}
+          textContentType="password"
+          value={currentPassword}
+        />
 
-        <Field>
-          <FieldLabel>New password</FieldLabel>
-          <FieldInput
-            accessibilityLabel="New password"
-            autoCapitalize="none"
-            autoCorrect={false}
-            onChangeText={setNewPassword}
-            placeholder="New password"
-            placeholderTextColor={AppColors.textSubtle}
-            secureTextEntry
-            value={newPassword}
-          />
-          {passwordErrors.password ? <ErrorText>{passwordErrors.password}</ErrorText> : null}
-        </Field>
+        <PasswordInput
+          error={passwordErrors.password}
+          label="New password"
+          onChangeText={setNewPassword}
+          textContentType="newPassword"
+          value={newPassword}
+        />
 
-        <Field>
-          <FieldLabel>Confirm new password</FieldLabel>
-          <FieldInput
-            accessibilityLabel="Confirm new password"
-            autoCapitalize="none"
-            autoCorrect={false}
-            onChangeText={setConfirmNewPassword}
-            placeholder="Confirm new password"
-            placeholderTextColor={AppColors.textSubtle}
-            secureTextEntry
-            value={confirmNewPassword}
-          />
-          {passwordErrors.confirmPassword ? <ErrorText>{passwordErrors.confirmPassword}</ErrorText> : null}
-        </Field>
+        <PasswordInput
+          error={passwordErrors.confirmPassword}
+          label="Confirm new password"
+          onChangeText={setConfirmNewPassword}
+          textContentType="newPassword"
+          value={confirmNewPassword}
+        />
 
         {passwordSubmitCategory ? (
           <ErrorText>{PASSWORD_ERROR_COPY[passwordSubmitCategory]}</ErrorText>
