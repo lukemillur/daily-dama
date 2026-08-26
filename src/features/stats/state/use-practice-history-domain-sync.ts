@@ -35,7 +35,7 @@ import { useIdentityHandle } from '@/shared/persistence/identity-provider';
 import { useIdentityScopedDomain } from '@/shared/persistence/use-identity-scoped-domain';
 import { createOutboxOperationId } from '@/shared/sync/outbox-operation';
 import type { DomainSyncOutcome, DomainSyncRecord, SyncTrigger } from '@/shared/sync/coordinator';
-import { createInitialSyncEnvelope, type SyncEnvelope } from '@/shared/sync/sync-envelope';
+import { createInitialSyncEnvelope, discardPendingOperations, type SyncEnvelope } from '@/shared/sync/sync-envelope';
 import { pullAllPages, pushOutboxOperations, type SyncTransportRepository } from '@/shared/sync/transport';
 
 export interface UsePracticeHistoryDomainSyncOptions {
@@ -51,6 +51,8 @@ export interface UsePracticeHistoryDomainSyncResult {
   readonly lastResult: DomainSyncRecord | undefined;
   readonly hasHydrated: boolean;
   readonly localMutationTick: number;
+  readonly pendingCount: number;
+  readonly discardPending: () => Promise<void>;
 }
 
 const PULL_PAGE_SIZE = 200;
@@ -297,8 +299,29 @@ export function usePracticeHistoryDomainSync(
   // domains via `syncCoordinatorReducer`. This hook only surfaces the two
   // scalar facts that driver needs (`hasHydrated`, `localMutationTick`).
 
+  const pendingCount = envelope.state.outbox.length;
+
+  const discardPending = useCallback(async () => {
+    const { identity: currentIdentity, envelopeState, envelopeDispatch } = latestRef.current;
+    if (envelopeState.outbox.length === 0) return;
+
+    const result = discardPendingOperations(envelopeState, currentIdentity);
+    if (result.status !== 'applied') return; // identity changed underneath; no-op
+
+    await envelope.saveNow(result.envelope);
+    envelopeDispatch({ type: 'outboxDiscarded', identity: currentIdentity });
+  }, [envelope]);
+
   return useMemo(
-    () => ({ runSync, isSyncing, lastResult, hasHydrated: bothHydrated, localMutationTick }),
-    [runSync, isSyncing, lastResult, bothHydrated, localMutationTick],
+    () => ({
+      runSync,
+      isSyncing,
+      lastResult,
+      hasHydrated: bothHydrated,
+      localMutationTick,
+      pendingCount,
+      discardPending,
+    }),
+    [runSync, isSyncing, lastResult, bothHydrated, localMutationTick, pendingCount, discardPending],
   );
 }

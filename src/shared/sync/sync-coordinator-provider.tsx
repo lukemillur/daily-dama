@@ -10,7 +10,7 @@
 // persists independently; SyncCoordinatorState is intentionally
 // ephemeral/in-memory only, reset to idle on reload.
 
-import { createContext, type PropsWithChildren, useContext, useMemo } from "react";
+import { createContext, type PropsWithChildren, useCallback, useContext, useMemo } from "react";
 
 import { useCustomTrickSync } from "@/features/custom-tricks/state/custom-trick-provider";
 import { useGoalSync } from "@/features/goals/state/goal-provider";
@@ -19,7 +19,21 @@ import { useUserProfileSync } from "@/features/profile/state/user-profile-provid
 import { usePracticeHistorySync } from "@/features/stats/state/practice-history-provider";
 import { useSyncCoordinator, type SyncDomainHandles, type UseSyncCoordinatorResult } from "@/shared/sync/use-sync-coordinator";
 
-const SyncCoordinatorContext = createContext<UseSyncCoordinatorResult | undefined>(undefined);
+export interface SyncCoordinatorStatus extends UseSyncCoordinatorResult {
+  // Sum of all five domains own pendingCount, reactive across renders.
+  // T158 (logout guard) is the only consumer today; T160.1s eventual
+  // Profile-wide sync-status surface is expected to reuse this same
+  // aggregation rather than duplicate it -- do not add further derived
+  // fields (last synced/offline/etc) here without that tasks own plan.
+  readonly pendingCount: number;
+  // Discards every domains pending outbox in parallel. Each domains own
+  // discardPending() durably persists its cleared envelope (via that
+  // domains saveNow, routed through the shared write queue) before this
+  // combined promise resolves.
+  readonly discardAllPending: () => Promise<void>;
+}
+
+const SyncCoordinatorContext = createContext<SyncCoordinatorStatus | undefined>(undefined);
 
 export function SyncCoordinatorProvider({ children }: PropsWithChildren) {
   const profile = useUserProfileSync();
@@ -35,10 +49,32 @@ export function SyncCoordinatorProvider({ children }: PropsWithChildren) {
 
   const status = useSyncCoordinator(domains);
 
-  return <SyncCoordinatorContext.Provider value={status}>{children}</SyncCoordinatorContext.Provider>;
+  const pendingCount =
+    profile.pendingCount +
+    customTricks.pendingCount +
+    practiceHistory.pendingCount +
+    goals.pendingCount +
+    notes.pendingCount;
+
+  const discardAllPending = useCallback(async () => {
+    await Promise.all([
+      profile.discardPending(),
+      customTricks.discardPending(),
+      practiceHistory.discardPending(),
+      goals.discardPending(),
+      notes.discardPending(),
+    ]);
+  }, [profile, customTricks, practiceHistory, goals, notes]);
+
+  const value: SyncCoordinatorStatus = useMemo(
+    () => ({ ...status, pendingCount, discardAllPending }),
+    [status, pendingCount, discardAllPending],
+  );
+
+  return <SyncCoordinatorContext.Provider value={value}>{children}</SyncCoordinatorContext.Provider>;
 }
 
-export function useSyncCoordinatorStatus(): UseSyncCoordinatorResult {
+export function useSyncCoordinatorStatus(): SyncCoordinatorStatus {
   const status = useContext(SyncCoordinatorContext);
 
   if (!status) {

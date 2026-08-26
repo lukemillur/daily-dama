@@ -151,6 +151,8 @@ interface Captured {
   recordSession?: (session: PracticeSessionRecord) => void;
   runSync?: ReturnType<typeof usePracticeHistoryDomainSync>['runSync'];
   isSyncing?: boolean;
+  pendingCount?: number;
+  discardPending?: () => Promise<void>;
 }
 
 function makeHarness(
@@ -184,6 +186,8 @@ function makeHarness(
       };
       captured.runSync = sync.runSync;
       captured.isSyncing = sync.isSyncing;
+      captured.pendingCount = sync.pendingCount;
+      captured.discardPending = sync.discardPending;
     });
 
     return <Text>{JSON.stringify(history)}</Text>;
@@ -453,6 +457,110 @@ describe('usePracticeHistoryDomainSync', () => {
 
     act(() => {
       root.unmount();
+    });
+  });
+
+  it('pendingCount reflects the outbox length and updates as operations are applied and acknowledged', async () => {
+    const transport = createFakePracticeHistorySyncTransport();
+    const { root, captured } = await mountHarness(INITIAL_PRACTICE_HISTORY, () => transport, USER_IDENTITY);
+    await flush();
+
+    expect(captured.pendingCount).toBe(0);
+
+    act(() => {
+      captured.recordSession?.(makeSession('session-pending-1'));
+    });
+    await flush();
+
+    expect(captured.pendingCount).toBe(1);
+
+    await act(async () => {
+      await captured.runSync?.('manual');
+    });
+    await flush();
+
+    expect(captured.pendingCount).toBe(0);
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  it('discardPending clears the outbox and persists the cleared envelope', async () => {
+    const transport = createFakePracticeHistorySyncTransport();
+    transport.setFailPush(true);
+    const { root, captured } = await mountHarness(INITIAL_PRACTICE_HISTORY, () => transport, USER_IDENTITY);
+    await flush();
+
+    act(() => {
+      captured.recordSession?.(makeSession('session-discard-1'));
+    });
+    await flush();
+    expect(captured.pendingCount).toBe(1);
+
+    await act(async () => {
+      await captured.discardPending?.();
+    });
+    await flush();
+
+    expect(captured.pendingCount).toBe(0);
+    expect(captured.history?.sessions[0]?.id).toBe('session-discard-1');
+
+    act(() => {
+      root.unmount();
+    });
+
+    const second = await mountHarness(INITIAL_PRACTICE_HISTORY, () => transport, USER_IDENTITY);
+    await flush();
+    expect(second.captured.pendingCount).toBe(0);
+
+    act(() => {
+      second.root.unmount();
+    });
+  });
+
+  it('discardPending is a safe no-op when the outbox is already empty', async () => {
+    const transport = createFakePracticeHistorySyncTransport();
+    const { root, captured } = await mountHarness(INITIAL_PRACTICE_HISTORY, () => transport, USER_IDENTITY);
+    await flush();
+
+    expect(captured.pendingCount).toBe(0);
+
+    await act(async () => {
+      await captured.discardPending?.();
+    });
+    await flush();
+
+    expect(captured.pendingCount).toBe(0);
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  it('discardPending is scoped to its own identity: a fresh identity never observes a prior identitys pending outbox', async () => {
+    const transport = createFakePracticeHistorySyncTransport();
+    transport.setFailPush(true);
+    const { root, captured } = await mountHarness(INITIAL_PRACTICE_HISTORY, () => transport, USER_IDENTITY);
+    await flush();
+
+    act(() => {
+      captured.recordSession?.(makeSession('session-isolation-1'));
+    });
+    await flush();
+    expect(captured.pendingCount).toBe(1);
+
+    act(() => {
+      root.unmount();
+    });
+
+    const OTHER_USER_IDENTITY = createUserIdentity('22222222-2222-2222-2222-222222222222')!;
+    const other = await mountHarness(INITIAL_PRACTICE_HISTORY, () => transport, OTHER_USER_IDENTITY);
+    await flush();
+    expect(other.captured.pendingCount).toBe(0);
+
+    act(() => {
+      other.root.unmount();
     });
   });
 });

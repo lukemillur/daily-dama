@@ -36,6 +36,8 @@ export interface PracticeHistorySync {
   readonly lastResult: DomainSyncRecord | undefined;
   readonly hasHydrated: boolean;
   readonly localMutationTick: number;
+  readonly pendingCount: number;
+  readonly discardPending: () => Promise<void>;
 }
 
 const PracticeHistorySyncContext = createContext<PracticeHistorySync | undefined>(undefined);

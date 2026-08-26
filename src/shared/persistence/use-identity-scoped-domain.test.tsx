@@ -22,6 +22,7 @@ jest.mock('@react-native-async-storage/async-storage', () =>
 );
 
 const USER_A: Identity = { kind: 'user', userId: '11111111-1111-1111-1111-111111111111' };
+const USER_B: Identity = { kind: 'user', userId: '22222222-2222-2222-2222-222222222222' };
 
 interface FakeState {
   readonly value: number;
@@ -86,16 +87,18 @@ interface Captured {
   hasHydrated?: boolean;
   setValue?: (value: number) => void;
   setIdentity?: (next: Identity) => void;
+  saveNow?: (value: FakeState) => Promise<void>;
 }
 
 function makeHarness(options: UseIdentityScopedDomainOptions<FakeState, FakeAction>, captured: Captured) {
   return function Harness() {
-    const { state, dispatch, hasHydrated } = useIdentityScopedDomain(options);
+    const { state, dispatch, hasHydrated, saveNow } = useIdentityScopedDomain(options);
 
     useEffect(() => {
       captured.state = state;
       captured.hasHydrated = hasHydrated;
       captured.setValue = (value: number) => dispatch({ type: 'valueSet', value });
+      captured.saveNow = saveNow;
     });
 
     return <Text>{JSON.stringify({ state, hasHydrated })}</Text>;
@@ -357,6 +360,108 @@ describe('useIdentityScopedDomain', () => {
     });
 
     expect(order).toEqual([1, 2, 3]);
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  it('orders an explicit saveNow call relative to an already-queued effect-driven write for the same domain', async () => {
+    const order: number[] = [];
+    const delaysMs = [30, 5];
+    let callIndex = 0;
+
+    const options: UseIdentityScopedDomainOptions<FakeState, FakeAction> = {
+      reducer: fakeReducer,
+      initialState: INITIAL_FAKE_STATE,
+      load: async () => ({ status: 'empty', value: INITIAL_FAKE_STATE }),
+      save: async (_storage, value) => {
+        const myDelay = delaysMs[callIndex] ?? 0;
+        callIndex += 1;
+        await new Promise((resolve) => setTimeout(resolve, myDelay));
+        order.push(value.value);
+        return { status: 'saved' };
+      },
+      createRestoreAction: (value) => ({ type: 'restored', value: value.value }),
+    };
+
+    const { root, captured } = await mountHarness(options);
+
+    act(() => {
+      captured.setValue?.(1);
+    });
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    let explicitSaveDone = false;
+    await act(async () => {
+      const promise = captured.saveNow?.({ value: 2 }).then(() => {
+        explicitSaveDone = true;
+      });
+      await promise;
+    });
+
+    // The explicit saveNow(2) call, made after the effect-driven write for
+    // value 1 was already queued, must resolve only after that earlier
+    // write -- both go through the same underlying queue, preserving FIFO
+    // order rather than racing on their own independent delays.
+    expect(explicitSaveDone).toBe(true);
+    expect(order).toEqual([1, 2]);
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  it('safely no-ops a saveNow call tagged with an already-superseded generation', async () => {
+    const setItem = jest.spyOn(AsyncStorage, 'setItem');
+
+    const options: UseIdentityScopedDomainOptions<FakeState, FakeAction> = {
+      reducer: fakeReducer,
+      initialState: INITIAL_FAKE_STATE,
+      load: async () => ({ status: 'empty', value: INITIAL_FAKE_STATE }),
+      save: async (storage, value) => {
+        await storage.setItem('fake-key', JSON.stringify(value));
+        return { status: 'saved' };
+      },
+      createRestoreAction: (value) => ({ type: 'restored', value: value.value }),
+    };
+
+    const { root, captured } = await mountHarness(options);
+
+    // Switch identity first, so the saveNow call below is tagged with a
+    // generation that is stale by the time the write queue actually runs
+    // it -- context.getGeneration() inside saveNow still captures the
+    // *current* generation at call time, so this proves the guard is
+    // exercised inside the queued write itself once a second identity
+    // switch follows before it resolves.
+    act(() => {
+      captured.setIdentity?.(USER_A);
+    });
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    setItem.mockClear();
+
+    let saveNowPromise: Promise<void> | undefined;
+    act(() => {
+      saveNowPromise = captured.saveNow?.({ value: 9 });
+    });
+
+    // A further identity switch supersedes the generation saveNow captured
+    // above before its queued write actually reaches storage.
+    act(() => {
+      captured.setIdentity?.(USER_B);
+    });
+
+    await act(async () => {
+      await saveNowPromise;
+      await Promise.resolve();
+    });
+
+    expect(setItem).not.toHaveBeenCalled();
 
     act(() => {
       root.unmount();

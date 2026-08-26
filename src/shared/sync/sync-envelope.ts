@@ -162,6 +162,19 @@ export function recordOutboxOperationAttempt<State>(
   return { status: 'applied', envelope: { ...envelope, outbox } };
 }
 
+// Discarding an outbox is unconditional: these operations were never
+// applied server-side, so there is no revision-cache bookkeeping to touch,
+// unlike acknowledgeOutboxOperation (a real server ack). The domain own
+// primary reducer state is untouched -- discarding only clears the sync
+// obligation, not any already-applied local edit.
+export function discardPendingOperations<State>(
+  envelope: SyncEnvelope<State>,
+  identity: Identity,
+): SyncEnvelopeMutationResult<State> {
+  if (!checkIdentity(envelope, identity)) return { status: 'rejected', reason: 'identityMismatch' }
+  return { status: 'applied', envelope: { ...envelope, outbox: [] } }
+}
+
 export function updateSyncCursor<State>(
   envelope: SyncEnvelope<State>,
   identity: Identity,
@@ -196,7 +209,8 @@ export type SyncEnvelopeAction<State> =
       readonly identity: Identity;
       readonly cursor: string | null;
       readonly updatedAt: number;
-    };
+    }
+  | { readonly type: 'outboxDiscarded'; readonly identity: Identity };
 
 /**
  * Shared reducer for the five independent domain envelopes. Domain providers
@@ -251,6 +265,11 @@ export function syncEnvelopeReducer<State>(
 
     case 'cursorUpdated': {
       const result = updateSyncCursor(state, action.identity, action.cursor, action.updatedAt);
+      return result.status === 'applied' ? result.envelope : state;
+    }
+
+    case 'outboxDiscarded': {
+      const result = discardPendingOperations(state, action.identity);
       return result.status === 'applied' ? result.envelope : state;
     }
   }

@@ -41,6 +41,21 @@ jest.mock('@/features/auth/observability/auth-observability', () => ({
   trackAuthEvent: jest.fn(),
   logAuthWarning: jest.fn(),
 }));
+// AccountSection (T158) also calls useLogoutGuard(), which pulls
+// useIdentityHandle() (unmocked -- its own real DEFAULT_HANDLE fallback
+// already covers a tree with no IdentityProvider, exactly this test's
+// setup) and useSyncCoordinatorStatus(). SyncCoordinatorProvider is not in
+// this tree, so it alone needs mocking. An inert default (idle, no pending
+// operations) is enough; deep behavioral coverage of the logout-guard flow
+// itself lives in account-section.test.tsx and use-logout-guard.test.tsx.
+jest.mock('@/shared/sync/sync-coordinator-provider', () => ({
+  useSyncCoordinatorStatus: () => ({
+    state: { status: 'idle', identityGeneration: 0, lastRun: undefined, pendingRerunTrigger: undefined },
+    requestManualSync: jest.fn(),
+    pendingCount: 0,
+    discardAllPending: jest.fn(async () => {}),
+  }),
+}));
 
 function findByText(root: ReactTestRenderer, text: string | RegExp) {
   return root.root.findAll((node) => {
