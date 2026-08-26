@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
+import { ThemeProvider as StyledThemeProvider, type DefaultTheme } from 'styled-components/native';
 
 import type { AuthState } from '@/features/auth/model/auth-state';
 import { networkFailure } from '@/features/auth/model/auth-test-fixtures';
@@ -29,6 +30,14 @@ jest.mock('@/features/auth/observability/auth-observability', () => ({
 const EMAIL = 'someone@example.com';
 const CURRENT_PASSWORD = 'currentpassword1';
 const NEW_PASSWORD = 'S3curePassw0rd!';
+const customTheme: DefaultTheme = {
+  background: '#123456',
+  accent: '#abcdef',
+  text: '#fedcba',
+  textMuted: '#997755',
+  buttonBackground: '#111111',
+  buttonBackgroundSecondary: '#222222',
+};
 
 function findByLabel(renderer: ReactTestRenderer, label: string) {
   return renderer.root.find((node) => node.props.accessibilityLabel === label);
@@ -62,6 +71,42 @@ async function mount() {
     root = create(<AccountSecurityScreen />);
   });
   return root;
+}
+
+async function mountWithTheme() {
+  let root!: ReactTestRenderer;
+  await act(async () => {
+    root = create(
+      <StyledThemeProvider theme={customTheme}>
+        <AccountSecurityScreen />
+      </StyledThemeProvider>,
+    );
+  });
+  return root;
+}
+
+function resolvedStyle(nodes: ReturnType<ReactTestRenderer['root']['findAll']>) {
+  const node = nodes.find(
+    (candidate) =>
+      typeof candidate.props.style === 'object' &&
+      candidate.props.style !== null &&
+      !Array.isArray(candidate.props.style),
+  );
+  return node?.props.style as Record<string, string | number> | undefined;
+}
+
+function resolvedButtonLabelColor(renderer: ReactTestRenderer, label: string) {
+  for (const button of renderer.root.findAll((node) => node.props.accessibilityLabel === label)) {
+    const labelNode = button.findAll(
+      (node) =>
+        typeof node.props.style === 'object' &&
+        node.props.style !== null &&
+        !Array.isArray(node.props.style) &&
+        typeof node.props.style.color === 'string',
+    )[0];
+    if (labelNode) return (labelNode.props.style as { color: string }).color;
+  }
+  return undefined;
 }
 
 async function setInput(root: ReactTestRenderer, label: string, value: string) {
@@ -122,6 +167,44 @@ describe('AccountSecurityScreen', () => {
 
     expect(findAllByLabel(root, 'Current password').length).toBe(0);
     expect(containsText(root, 'Sign in to manage account security.')).toBe(true);
+  });
+
+  it('resolves the Account Security surface, field, feedback, and buttons from the active theme', async () => {
+    mockAuthState = authenticatedState();
+    const root = await mountWithTheme();
+
+    const emailInputs = root.root.findAll((node) => node.props.accessibilityLabel === 'New email');
+    const emailInputStyle = resolvedStyle(emailInputs);
+    expect(emailInputStyle).toMatchObject({
+      backgroundColor: customTheme.background,
+      borderColor: customTheme.text,
+      color: customTheme.text,
+    });
+    expect(
+      emailInputs.find((node) => typeof node.props.placeholderTextColor === 'string')?.props
+        .placeholderTextColor,
+    ).toBe(customTheme.textMuted);
+
+    const dividerStyle = resolvedStyle(
+      root.root.findAll((node) => node.props.style?.height === 2),
+    );
+    expect(dividerStyle?.backgroundColor).toBe(customTheme.text);
+
+    const screenStyle = resolvedStyle(
+      root.root.findAll((node) => node.props.style?.backgroundColor === customTheme.background),
+    );
+    expect(screenStyle?.backgroundColor).toBe(customTheme.background);
+
+    const buttonStyle = resolvedStyle(root.root.findAll((node) => node.props.accessibilityLabel === 'Update email'));
+    expect(buttonStyle?.backgroundColor).toBe(customTheme.buttonBackgroundSecondary);
+    expect(resolvedButtonLabelColor(root, 'Update email')).toBe(customTheme.text);
+
+    await setInput(root, 'New email', 'not-an-email');
+    await pressLabel(root, 'Update email');
+    const errorStyle = resolvedStyle(
+      root.root.findAll((node) => node.props.children === 'Enter a valid email address.'),
+    );
+    expect(errorStyle?.color).toBe(customTheme.text);
   });
 
   it('changes the password on the happy path, clears fields, and shows success copy', async () => {
