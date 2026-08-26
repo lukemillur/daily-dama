@@ -149,16 +149,6 @@ _T163–T181 come from stories S042–S062 in [BACKLOG_STORIES.md](BACKLOG_STORI
 - **Exit criteria:** `yarn test --runInBand` passes, including a test asserting that selecting a non-default preset during onboarding changes the rendered background color away from `AppColors.yellow`; confirmed in-browser via the Expo dev server that tapping a preset visibly changes the onboarding screen's background, not just its text/accent.
 - **Notes:** From S043 — a regression against T146's own exit criteria ("background/accent visibly change"), not new scope. Touches the same files as T165; doable in either order, but worth verifying together since both change `onboarding-theme-step.tsx`/`kentei-onboarding.tsx`'s rendered output.
 
-### [T171] Add a shared show/hide toggle for every password field
-
-- **Area:** Authentication UI
-- **Priority:** Medium
-- **Status:** Not started
-- **Planning:** Implementer
-- **Description:** Sign-up (password + confirm), sign-in (password), reset-password (new + confirm), and Account Security (current, new, confirm new) each render an ad hoc `styled(TextInput)` with `secureTextEntry` and near-identical styling. Extract one shared `PasswordInput` component (label, value, onChangeText, error, plus the new show/hide toggle) and use it at every one of these call sites.
-- **Exit criteria:** `yarn test --runInBand` passes, including a test on the shared component asserting the toggle reveals/hides the typed value, and updated tests on each of the five consuming screens confirming the toggle is present and functions.
-- **Notes:** From S050. Resolved during refinement: build this as one reusable component covering present and future password fields (including T179's new current-password field), not five one-off additions.
-
 ### [T172] Restyle Account Security to match the user's theme
 
 - **Area:** Authentication UI / Account

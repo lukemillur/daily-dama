@@ -173,6 +173,19 @@ describe('SignUpScreen', () => {
     expect(mockSignUp).not.toHaveBeenCalled();
   });
 
+  it('renders working visibility toggles for both password fields', async () => {
+    const root = await mount();
+
+    expect(findByLabel(root, 'Show Password')).toBeTruthy();
+    expect(findByLabel(root, 'Show Confirm password')).toBeTruthy();
+    await act(async () => {
+      findByLabel(root, 'Show Confirm password').props.onPress();
+    });
+
+    expect(findByLabel(root, 'Confirm password').props.secureTextEntry).toBe(false);
+    expect(findByLabel(root, 'Hide Confirm password')).toBeTruthy();
+  });
+
   it('blocks submission and shows a field error for a malformed email', async () => {
     const root = await mount();
 

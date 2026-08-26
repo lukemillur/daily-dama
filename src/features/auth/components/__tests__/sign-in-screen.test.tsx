@@ -202,6 +202,19 @@ describe('SignInScreen', () => {
     expect(mockSignInWithPassword).not.toHaveBeenCalled();
   });
 
+  it('renders a working password visibility toggle', async () => {
+    const root = await mount();
+    await setInput(root, 'Password', PASSWORD);
+
+    expect(findByLabel(root, 'Password').props.secureTextEntry).toBe(true);
+    await act(async () => {
+      findByLabel(root, 'Show Password').props.onPress();
+    });
+
+    expect(findByLabel(root, 'Password').props.secureTextEntry).toBe(false);
+    expect(findByLabel(root, 'Hide Password')).toBeTruthy();
+  });
+
   it('renders the exact same copy for an unknown email and a wrong password (enumeration safety)', async () => {
     mockSignInWithPassword.mockResolvedValue({ error: { code: 'user_not_found', message: 'nope' } });
     const unknownEmailRoot = await mount();

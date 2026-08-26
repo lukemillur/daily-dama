@@ -4,6 +4,16 @@ Completed entries move here from `TASKS.md`'s `Backlog`, in the same commit that
 
 Entries keep their content as it was at completion. Don't retroactively edit a description or exit criteria after the fact; if something about a completed task turns out to be wrong or misleading, note that in a new entry or in code, not by rewriting history here.
 
+### [T171] Add a shared show/hide toggle for every password field
+
+- **Area:** Authentication UI
+- **Priority:** Medium
+- **Status:** Done
+- **Planning:** Implementer
+- **Description:** Sign-up (password + confirm), sign-in (password), reset-password (new + confirm), and Account Security (current, new, confirm new) each render an ad hoc `styled(TextInput)` with `secureTextEntry` and near-identical styling. Extract one shared `PasswordInput` component (label, value, onChangeText, error, plus the new show/hide toggle) and use it at every one of these call sites.
+- **Exit criteria:** `yarn test --runInBand` passes, including a test on the shared component asserting the toggle reveals/hides the typed value, and updated tests on each of the five consuming screens confirming the toggle is present and functions.
+- **Notes:** From S050. Resolved during refinement: build this as one reusable component covering present and future password fields (including T179's new current-password field), not five one-off additions. Implemented a shared `PasswordInput` for the four existing password-bearing screens (sign-up, sign-in, reset-password, and Account Security); the entry's “five consuming screens” wording does not match the four listed call sites. Component and each screen test verify the accessible toggle switches `secureTextEntry` between hidden and visible states. `yarn test --runInBand` and the full `node .claude/scripts/verify.mjs --json` sequence pass.
+
 ### [T170] Make sign-up, sign-in, forgot-password, and reset-password follow the user's theme
 
 - **Area:** Authentication UI
