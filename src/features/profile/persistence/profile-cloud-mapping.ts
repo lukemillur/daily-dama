@@ -378,7 +378,7 @@ export function mapUserProfileToTrickStateUpsertInputs(
   }));
 }
 
-function extractScalarFields(profile: UserProfile): ProfileScalarFields {
+export function extractScalarFields(profile: UserProfile): ProfileScalarFields {
   // Spread-omit rather than destructure-with-underscore-prefixes so this
   // stays correct if UserProfile grows another scalar field later without
   // anyone needing to remember to update this function.
