@@ -6,7 +6,6 @@ import { styled } from 'styled-components/native';
 import { Button } from '@/components/ui/button';
 import { Screen } from '@/components/ui/screen';
 import { BodyText, DisplayTitle, Eyebrow } from '@/components/ui/typography';
-import { AppColors } from '@/constants/theme';
 import { categorizeAuthError, type AuthErrorCategory } from '@/features/auth/model/auth-errors';
 import { validateForgotPasswordEmail } from '@/features/auth/model/forgot-password-validation';
 import { validateNewPassword } from '@/features/auth/model/password-policy';
@@ -156,6 +155,7 @@ export function AccountSecurityScreen() {
             <Button
               accessibilityLabel="Go to sign in"
               fill
+              variant="secondary"
               onPress={() => router.push('/auth/sign-in')}>
               Go to sign in
             </Button>
@@ -166,8 +166,9 @@ export function AccountSecurityScreen() {
   }
 
   return (
-    <FormScroll keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: 24 }}>
-      <FormContent>
+    <Screen>
+      <FormScroll keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: 24 }}>
+        <FormContent>
         <Eyebrow>Account security</Eyebrow>
         <PageTitle>Manage your account.</PageTitle>
 
@@ -207,6 +208,7 @@ export function AccountSecurityScreen() {
             accessibilityLabel="Update password"
             disabled={isSubmittingPassword}
             fill
+            variant="secondary"
             onPress={handlePasswordSubmit}>
             {isSubmittingPassword ? 'Updating...' : 'Update password'}
           </Button>
@@ -233,7 +235,6 @@ export function AccountSecurityScreen() {
                 textContentType="username"
                 onChangeText={setNewEmail}
                 placeholder="New email"
-                placeholderTextColor={AppColors.textSubtle}
                 value={newEmail}
               />
               {emailErrors.email ? <ErrorText>{emailErrors.email}</ErrorText> : null}
@@ -246,14 +247,16 @@ export function AccountSecurityScreen() {
                 accessibilityLabel="Update email"
                 disabled={isSubmittingEmail}
                 fill
+                variant="secondary"
                 onPress={handleEmailSubmit}>
                 {isSubmittingEmail ? 'Sending...' : 'Update email'}
               </Button>
             </FormActions>
           </>
         )}
-      </FormContent>
-    </FormScroll>
+        </FormContent>
+      </FormScroll>
+    </Screen>
   );
 }
 
@@ -292,7 +295,7 @@ const SectionLabel = styled.Text`
 `;
 const Divider = styled.View`
   height: 2px;
-  background-color: ${AppColors.ink};
+  background-color: ${({ theme }) => theme.text};
   margin: 34px 0 6px;
 `;
 const Field = styled.View`
@@ -305,18 +308,20 @@ const FieldLabel = styled.Text`
   letter-spacing: 1px;
   text-transform: uppercase;
 `;
-const FieldInput = styled(TextInput)`
+const FieldInput = styled(TextInput).attrs(({ theme }) => ({
+  placeholderTextColor: theme.textMuted,
+}))`
   min-height: 56px;
-  background-color: ${AppColors.paper};
-  border: 2px solid ${AppColors.ink};
-  color: ${AppColors.ink};
+  background-color: ${({ theme }) => theme.background};
+  border: 2px solid ${({ theme }) => theme.text};
+  color: ${({ theme }) => theme.text};
   font-size: 18px;
   font-weight: 800;
   margin-top: 8px;
   padding: 12px 14px;
 `;
 const ErrorText = styled.Text`
-  color: ${AppColors.red};
+  color: ${({ theme }) => theme.text};
   font-size: 12px;
   font-weight: 800;
   margin-top: 7px;

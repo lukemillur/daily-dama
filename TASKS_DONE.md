@@ -4,6 +4,16 @@ Completed entries move here from `TASKS.md`'s `Backlog`, in the same commit that
 
 Entries keep their content as it was at completion. Don't retroactively edit a description or exit criteria after the fact; if something about a completed task turns out to be wrong or misleading, note that in a new entry or in code, not by rewriting history here.
 
+### [T172] Restyle Account Security to match the user's theme
+
+- **Area:** Authentication UI / Account
+- **Priority:** Medium
+- **Status:** Done
+- **Planning:** Implementer
+- **Description:** `account-security-screen.tsx` already renders inside `/app/*`'s real `AppThemeProvider` (unlike the four screens T170 covers), so its color problem isn't a missing theme source — it's specific color/contrast choices on this screen that read poorly against certain themes. Audit and fix the screen's own styled colors to derive properly from `useResolvedTheme()` the way other themed `/app/*` screens already do.
+- **Exit criteria:** Component test/snapshot coverage confirms Account Security's colors resolve from theme tokens rather than fixed values; confirmed in-browser with at least one non-default theme preset that text/background/button contrast reads correctly.
+- **Notes:** From S052. Distinct root cause from T170 — this screen already has theme access; the fix is within the screen itself, not a provider change. The authenticated form now renders inside `Screen`, so it receives the active `AppThemeProvider` background. Its divider, email field surface/border/text/placeholder, and feedback copy resolve from styled theme tokens instead of fixed palette values; Account Security uses the secondary button token pair so button labels keep strong contrast. `account-security-screen.test.tsx` mounts a deliberately distinct theme and verifies the resolved surface, field, placeholder, divider, error, and button styles. In a local Expo web dev server, selecting the Blue preset rendered Account Security with its pale-blue background, dark readable title text, and a cream button with dark readable label. Focused Jest, scoped ESLint, full typecheck, and the full verification wrapper pass.
+
 ### [T171] Add a shared show/hide toggle for every password field
 
 - **Area:** Authentication UI

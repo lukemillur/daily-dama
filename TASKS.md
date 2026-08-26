@@ -149,16 +149,6 @@ _T163–T181 come from stories S042–S062 in [BACKLOG_STORIES.md](BACKLOG_STORI
 - **Exit criteria:** `yarn test --runInBand` passes, including a test asserting that selecting a non-default preset during onboarding changes the rendered background color away from `AppColors.yellow`; confirmed in-browser via the Expo dev server that tapping a preset visibly changes the onboarding screen's background, not just its text/accent.
 - **Notes:** From S043 — a regression against T146's own exit criteria ("background/accent visibly change"), not new scope. Touches the same files as T165; doable in either order, but worth verifying together since both change `onboarding-theme-step.tsx`/`kentei-onboarding.tsx`'s rendered output.
 
-### [T172] Restyle Account Security to match the user's theme
-
-- **Area:** Authentication UI / Account
-- **Priority:** Medium
-- **Status:** In progress
-- **Planning:** Implementer
-- **Description:** `account-security-screen.tsx` already renders inside `/app/*`'s real `AppThemeProvider` (unlike the four screens T170 covers), so its color problem isn't a missing theme source — it's specific color/contrast choices on this screen that read poorly against certain themes. Audit and fix the screen's own styled colors to derive properly from `useResolvedTheme()` the way other themed `/app/*` screens already do.
-- **Exit criteria:** Component test/snapshot coverage confirms Account Security's colors resolve from theme tokens rather than fixed values; confirmed in-browser with at least one non-default theme preset that text/background/button contrast reads correctly.
-- **Notes:** From S052. Distinct root cause from T170 — this screen already has theme access; the fix is within the screen itself, not a provider change.
-
 ### [T173] Show the current section in the web tab title
 
 - **Area:** Navigation / web
