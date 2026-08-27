@@ -107,7 +107,7 @@ export function ForgotPasswordScreen() {
           <Eyebrow>Forgot password</Eyebrow>
           <PageTitle>Check your email.</PageTitle>
           <Introduction>{CONFIRMATION_COPY}</Introduction>
-          <Introduction>{SAME_BROWSER_GUIDANCE}</Introduction>
+          <Guidance>{SAME_BROWSER_GUIDANCE}</Guidance>
           <FormActions>
             <Button accessibilityLabel="Resend" disabled={isSubmitting} fill onPress={submit}>
               {isSubmitting ? 'Sending...' : 'Resend'}
@@ -133,7 +133,7 @@ export function ForgotPasswordScreen() {
         <Introduction>
           Enter the email on your account and we&apos;ll send you a link to reset your password.
         </Introduction>
-        <Introduction>{SAME_BROWSER_GUIDANCE}</Introduction>
+        <Guidance>{SAME_BROWSER_GUIDANCE}</Guidance>
 
         <Field>
           <FieldLabel>Email</FieldLabel>
@@ -193,6 +193,11 @@ const PageTitle = styled(DisplayTitle)`
 const Introduction = styled(BodyText)`
   max-width: 480px;
   margin-top: 16px;
+  text-align: center;
+`;
+const Guidance = styled(BodyText)`
+  max-width: 480px;
+  margin-top: 8px;
   text-align: center;
 `;
 const Field = styled.View`
