@@ -54,6 +54,8 @@ export interface UseNoteDomainSyncResult {
   // renders, unlike runSyncImpls own internals which deliberately lag by
   // design. See sync-envelope.ts discardPendingOperations doc comment.
   readonly pendingCount: number;
+  readonly retryableFailureCount: number;
+  readonly conflictCount: number;
   // Durably clears this domains outbox (via the shared write queue, never
   // a second independent writer) without touching the primary NoteCollection
   // reducer state -- T158. A safe no-op when already empty or when the
@@ -228,6 +230,7 @@ export function useNoteDomainSync(options: UseNoteDomainSyncOptions): UseNoteDom
           operationId: outcome.operationId,
           attemptedAt: now,
           errorMessage,
+          failureKind: outcome.result.status === 'conflict' ? 'conflict' : 'retryable',
         });
       }
 
@@ -324,6 +327,8 @@ export function useNoteDomainSync(options: UseNoteDomainSyncOptions): UseNoteDom
   // scalar facts that driver needs (`hasHydrated`, `localMutationTick`).
 
   const pendingCount = envelope.state.outbox.length;
+  const retryableFailureCount = envelope.state.outbox.filter((operation) => operation.lastFailureKind === 'retryable').length;
+  const conflictCount = envelope.state.outbox.filter((operation) => operation.lastFailureKind === 'conflict').length;
 
   const discardPending = useCallback(async () => {
     const { identity: currentIdentity, envelopeState, envelopeDispatch } = latestRef.current;
@@ -344,8 +349,10 @@ export function useNoteDomainSync(options: UseNoteDomainSyncOptions): UseNoteDom
       hasHydrated: bothHydrated,
       localMutationTick,
       pendingCount,
+      retryableFailureCount,
+      conflictCount,
       discardPending,
     }),
-    [runSync, isSyncing, lastResult, bothHydrated, localMutationTick, pendingCount, discardPending],
+    [runSync, isSyncing, lastResult, bothHydrated, localMutationTick, pendingCount, retryableFailureCount, conflictCount, discardPending],
   );
 }

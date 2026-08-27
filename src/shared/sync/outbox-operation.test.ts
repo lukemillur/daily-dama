@@ -36,6 +36,7 @@ describe('createOutboxOperation', () => {
       attemptCount: 0,
       lastAttemptedAt: null,
       lastErrorMessage: null,
+      lastFailureKind: null,
     });
   });
 });
@@ -51,6 +52,7 @@ describe('isOutboxOperation', () => {
     attemptCount: 0,
     lastAttemptedAt: null,
     lastErrorMessage: null,
+    lastFailureKind: null,
   };
 
   it('accepts a fully valid operation', () => {

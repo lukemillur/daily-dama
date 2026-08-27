@@ -1,6 +1,7 @@
 import { isSyncDomain, type SyncDomain } from '@/shared/sync/domain';
 
 export type OutboxOperationType = 'upsert' | 'delete';
+export type OutboxFailureKind = 'retryable' | 'conflict';
 
 /**
  * One durable, serializable sync operation queued against a domain's
@@ -20,6 +21,7 @@ export interface OutboxOperation {
   readonly attemptCount: number; // starts at 0, incremented by recordOutboxOperationAttempt
   readonly lastAttemptedAt: number | null;
   readonly lastErrorMessage: string | null; // plain string only -- never an Error/exception object
+  readonly lastFailureKind?: OutboxFailureKind | null;
 }
 
 export interface NewOutboxOperationInput {
@@ -51,6 +53,7 @@ export function createOutboxOperation(
     attemptCount: 0,
     lastAttemptedAt: null,
     lastErrorMessage: null,
+    lastFailureKind: null,
   };
 }
 
@@ -74,6 +77,7 @@ export function isOutboxOperation(value: unknown): value is OutboxOperation {
     attemptCount,
     lastAttemptedAt,
     lastErrorMessage,
+    lastFailureKind,
   } = value;
 
   if (!isNonEmptyTrimmedString(operationId)) return false;
@@ -93,5 +97,6 @@ export function isOutboxOperation(value: unknown): value is OutboxOperation {
     return false;
   }
   if (lastErrorMessage !== null && typeof lastErrorMessage !== 'string') return false;
+  if (lastFailureKind !== null && lastFailureKind !== 'retryable' && lastFailureKind !== 'conflict') return false;
   return true;
 }

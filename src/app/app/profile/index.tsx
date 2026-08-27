@@ -13,6 +13,7 @@ import { GuestImportPreview } from "@/features/guest-import/components/guest-imp
 import { useRequireOnboarding } from "@/features/onboarding/state/require-onboarding";
 import { RainbowThemePresets } from "@/features/profile/components/rainbow-theme-presets";
 import { ThemeColorPicker } from "@/features/profile/components/theme-color-picker";
+import { SyncStatusSection } from "@/features/profile/components/sync-status-section";
 import {
   createStreakThresholdMs,
   DEFAULT_STREAK_THRESHOLD_MS,
@@ -50,6 +51,7 @@ export default function ProfileScreen() {
             </RankIdentity>
           </RankLine>
           <AccountSection />
+          <SyncStatusSection />
           <GuestImportPreview />
           <GuestAccountSection />
           <Divider />

@@ -4,6 +4,16 @@ Completed entries move here from `TASKS.md`'s `Backlog`, in the same commit that
 
 Entries keep their content as it was at completion. Don't retroactively edit a description or exit criteria after the fact; if something about a completed task turns out to be wrong or misleading, note that in a new entry or in code, not by rewriting history here.
 
+### [T160.1] Add a trustworthy synchronization status model and Profile surface
+
+- **Area:** Profile / sync status
+- **Priority:** High
+- **Status:** Done
+- **Planning:** Required
+- **Description:** Derive a serializable user-facing status from coordinator/outbox facts—last successful sync, pending count, syncing, offline, retryable failure, and conflicts—and render it in Profile with a manual retry action.
+- **Exit criteria:** Selector and component tests cover every mutually exclusive/combined state, pluralization and timestamps, retry dispatch, reload persistence, and identity changes; the UI never reports "synced" while pending or conflicting operations exist. Confirmed: added the pure serializable sync-status selector with explicit precedence and combined facts, deterministic count/timestamp formatters, durable `lastFailureKind` outbox metadata for retryable failures versus conflicts, and identity-namespaced successful-sync freshness persistence in SyncCoordinatorProvider. Profile now shows syncing, offline, pending, retryable failure, conflict, synced, and no-sync-yet copy with a manual retry action; it never reports synced while pending/conflicting/retryable operations remain. Focused sync/domain/Profile tests pass, and the full verifier passes all four steps (132 suites / 1,684 tests, lint, typecheck, web export). Native validation is deferred by active project scope; conflict-resolution UI remains T160.2.
+- **Notes:** From S037. Depends on T157.9. Keep transient runtime handles outside provider/domain state.
+
 
 ### [T159.1] Model resumable guest import and preview its scope
 
