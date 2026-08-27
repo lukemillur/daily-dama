@@ -51,6 +51,8 @@ export interface UseCustomTrickDomainSyncResult {
   readonly hasHydrated: boolean;
   readonly localMutationTick: number;
   readonly pendingCount: number;
+  readonly retryableFailureCount: number;
+  readonly conflictCount: number;
   readonly discardPending: () => Promise<void>;
 }
 
@@ -220,6 +222,7 @@ export function useCustomTrickDomainSync(
           operationId: outcome.operationId,
           attemptedAt: now,
           errorMessage,
+          failureKind: outcome.result.status === 'conflict' ? 'conflict' : 'retryable',
         });
       }
 
@@ -316,6 +319,8 @@ export function useCustomTrickDomainSync(
   // scalar facts that driver needs (`hasHydrated`, `localMutationTick`).
 
   const pendingCount = envelope.state.outbox.length;
+  const retryableFailureCount = envelope.state.outbox.filter((operation) => operation.lastFailureKind === 'retryable').length;
+  const conflictCount = envelope.state.outbox.filter((operation) => operation.lastFailureKind === 'conflict').length;
 
   const discardPending = useCallback(async () => {
     const { identity: currentIdentity, envelopeState, envelopeDispatch } = latestRef.current;
@@ -336,8 +341,10 @@ export function useCustomTrickDomainSync(
       hasHydrated: bothHydrated,
       localMutationTick,
       pendingCount,
+      retryableFailureCount,
+      conflictCount,
       discardPending,
     }),
-    [runSync, isSyncing, lastResult, bothHydrated, localMutationTick, pendingCount, discardPending],
+    [runSync, isSyncing, lastResult, bothHydrated, localMutationTick, pendingCount, retryableFailureCount, conflictCount, discardPending],
   );
 }

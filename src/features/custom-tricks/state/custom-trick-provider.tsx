@@ -45,6 +45,8 @@ export interface CustomTrickSync {
   readonly hasHydrated: boolean;
   readonly localMutationTick: number;
   readonly pendingCount: number;
+  readonly retryableFailureCount: number;
+  readonly conflictCount: number;
   readonly discardPending: () => Promise<void>;
 }
 

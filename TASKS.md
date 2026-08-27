@@ -193,16 +193,6 @@ _Phase 3 activation: T156–T160 come from S035–S038 and `BACKEND_ROADMAP.md` 
 - **Description:** Make pending work, failures, offline state, freshness, retry, and conflicts understandable without allowing one bad record to stop unrelated synchronization.
 - **Notes:** Umbrella from S037. Complete T160.1–T160.3. Depends on T157.
 
-### [T160.1] Add a trustworthy synchronization status model and Profile surface
-
-- **Area:** Profile / sync status
-- **Priority:** High
-- **Status:** Not started
-- **Planning:** Required
-- **Description:** Derive a serializable user-facing status from coordinator/outbox facts—last successful sync, pending count, syncing, offline, retryable failure, and conflicts—and render it in Profile with a manual retry action.
-- **Exit criteria:** Selector and component tests cover every mutually exclusive/combined state, pluralization and timestamps, retry dispatch, reload persistence, and identity changes; the UI never reports "synced" while pending or conflicting operations exist.
-- **Notes:** From S037. Depends on T157.9. Keep transient runtime handles outside provider/domain state.
-
 ### [T160.2] Add per-record conflict resolution
 
 - **Area:** Synchronization conflicts

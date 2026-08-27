@@ -4,6 +4,7 @@ import {
   isOutboxOperation,
   type NewOutboxOperationInput,
   type OutboxOperation,
+  type OutboxFailureKind,
 } from '@/shared/sync/outbox-operation';
 import type { SyncDomain } from '@/shared/sync/domain';
 import { identityNamespace, type Identity } from '@/shared/persistence/identity';
@@ -147,6 +148,7 @@ export function recordOutboxOperationAttempt<State>(
   operationId: string,
   attemptedAt: number,
   errorMessage: string | null,
+  failureKind: OutboxFailureKind | null = null,
 ): SyncEnvelopeMutationResult<State> {
   if (!checkIdentity(envelope, identity)) return { status: 'rejected', reason: 'identityMismatch' };
   const index = envelope.outbox.findIndex((op) => op.operationId === operationId);
@@ -158,6 +160,7 @@ export function recordOutboxOperationAttempt<State>(
     attemptCount: outbox[index].attemptCount + 1,
     lastAttemptedAt: attemptedAt,
     lastErrorMessage: errorMessage,
+    lastFailureKind: failureKind,
   };
   return { status: 'applied', envelope: { ...envelope, outbox } };
 }
@@ -202,6 +205,7 @@ export type SyncEnvelopeAction<State> =
       readonly operationId: string;
       readonly attemptedAt: number;
       readonly errorMessage: string | null;
+      readonly failureKind?: OutboxFailureKind | null;
     }
   | { readonly type: 'revisionRecorded'; readonly snapshot: State }
   | {
@@ -256,6 +260,7 @@ export function syncEnvelopeReducer<State>(
         action.operationId,
         action.attemptedAt,
         action.errorMessage,
+        action.failureKind ?? null,
       );
       return result.status === 'applied' ? result.envelope : state;
     }

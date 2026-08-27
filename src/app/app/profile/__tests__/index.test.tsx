@@ -53,6 +53,10 @@ jest.mock('@/shared/sync/sync-coordinator-provider', () => ({
     state: { status: 'idle', identityGeneration: 0, lastRun: undefined, pendingRerunTrigger: undefined },
     requestManualSync: jest.fn(),
     pendingCount: 0,
+    conflictCount: 0,
+    retryableFailureCount: 0,
+    syncStatus: { kind: 'no-sync-yet', coordinator: 'idle', pendingCount: 0, conflictCount: 0, retryableFailureCount: 0, online: true, lastSuccessfulSyncAt: undefined, isSynced: false },
+    retry: jest.fn(),
     discardAllPending: jest.fn(async () => {}),
   }),
 }));
