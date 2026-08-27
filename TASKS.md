@@ -225,16 +225,6 @@ _Phase 4 activation: T161 comes from S039 and `BACKEND_ROADMAP.md` Phase 4. Its 
 - **Description:** Let an authenticated user permanently remove the Auth identity and every application row, then return to a clean guest workspace even when the success response is lost.
 - **Notes:** Umbrella from S039. Complete T161.1–T161.5. User-facing data export is excluded.
 
-### [T161.2] Harden deletion against abuse, leakage, and lost responses
-
-- **Area:** Account deletion security
-- **Priority:** High
-- **Status:** In progress
-- **Planning:** Required
-- **Description:** Add per-user/IP rate limiting, current-password verification without retaining the resulting session, `Cache-Control: no-store`, structured redaction, and idempotent handling for a retry whose Auth user is already absent after a lost success response.
-- **Exit criteria:** Function tests enforce the configured attempt limit for user and IP dimensions, expose no password/JWT/email/body in logs, include `no-store` on every response, never return the verification session, and treat a verified retry for an already-deleted identity as completed rather than recreating or leaking state.
-- **Notes:** From S039. Depends on T161.1. Use a trusted server-side identity; never rate-limit or delete based on caller-supplied `user_id`.
-
 ### [T161.3] Prove cascade deletion and old-session denial
 
 - **Area:** Account deletion testing
