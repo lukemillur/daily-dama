@@ -358,7 +358,7 @@ _T163–T181 come from stories S042–S062 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 - **Area:** Authentication UI
 - **Priority:** Medium
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Implementer
 - **Description:** Align `forgot-password-screen.tsx`'s text and container spacing with the layout conventions already used on sign-in/sign-up (consistent margins, heading/body hierarchy, button placement).
 - **Exit criteria:** Confirmed in-browser via the Expo dev server that forgot-password's layout visually matches sign-in/sign-up's container and spacing conventions at both desktop and mobile widths; existing `forgot-password-screen` tests continue to pass.
