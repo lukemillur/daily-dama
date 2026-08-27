@@ -197,7 +197,7 @@ _Phase 3 activation: T156–T160 come from S035–S038 and `BACKEND_ROADMAP.md` 
 
 - **Area:** Profile / sync status
 - **Priority:** High
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** Derive a serializable user-facing status from coordinator/outbox facts—last successful sync, pending count, syncing, offline, retryable failure, and conflicts—and render it in Profile with a manual retry action.
 - **Exit criteria:** Selector and component tests cover every mutually exclusive/combined state, pluralization and timestamps, retry dispatch, reload persistence, and identity changes; the UI never reports "synced" while pending or conflicting operations exist.
