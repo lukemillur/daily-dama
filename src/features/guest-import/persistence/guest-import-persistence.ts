@@ -15,6 +15,7 @@ import {
   type GuestImportTargetKind,
   type GuestImportProgress,
 } from '@/features/guest-import/model/guest-import';
+import { isConflictSnapshot } from '@/shared/sync/conflict';
 import { isSyncDomain, SYNC_DOMAINS } from '@/shared/sync/domain';
 import type {
   KeyValueStorage,
@@ -54,7 +55,7 @@ function isOptionalString(value: unknown): value is string | undefined {
 }
 
 function isOptionalNumber(value: unknown): value is number | undefined {
-  return value === undefined || typeof value === 'number';
+  return value === undefined || (typeof value === 'number' && Number.isFinite(value));
 }
 
 function isNonNegativeInteger(value: unknown): value is number {
@@ -91,7 +92,26 @@ function isDomainOutcomes(
 }
 
 function isGuestImportConflict(value: unknown): value is GuestImportConflict {
-  return isRecord(value) && isSyncDomain(value.domain) && typeof value.recordId === 'string';
+  return isRecord(value) && isSyncDomain(value.domain) && isNonEmptyString(value.recordId) &&
+    isConflictSnapshot(value.guestSnapshot) && isConflictSnapshot(value.cloudSnapshot) &&
+    (value.cloudRevision === null || isPositiveInteger(value.cloudRevision));
+}
+
+function isNonEmptyString(value: unknown): value is string {
+  return typeof value === 'string' && value.length > 0 && value === value.trim();
+}
+
+function isPositiveInteger(value: unknown): value is number {
+  return typeof value === 'number' && Number.isInteger(value) && value >= 1;
+}
+
+function isRecordReference(value: unknown): boolean {
+  return isRecord(value) && isSyncDomain(value.domain) && isNonEmptyString(value.recordId);
+}
+
+function isProfileComparison(value: unknown): boolean {
+  return isRecord(value) && isConflictSnapshot(value.guest) &&
+    (value.cloud === null || isConflictSnapshot(value.cloud));
 }
 
 function isConflictsArray(value: unknown): value is readonly GuestImportConflict[] {
@@ -112,6 +132,7 @@ function isGuestImportProgress(value: unknown): value is GuestImportProgress | u
       typeof operation.attemptCount !== 'number' || !Number.isInteger(operation.attemptCount) || operation.attemptCount < 0 ||
       (operation.lastAttemptedAt !== null && typeof operation.lastAttemptedAt !== 'number') ||
       (operation.lastErrorMessage !== null && typeof operation.lastErrorMessage !== 'string') ||
+      (operation.expectedRevision !== null && !isPositiveInteger(operation.expectedRevision)) ||
       (operation.lastFailureKind !== null && operation.lastFailureKind !== 'retryable' && operation.lastFailureKind !== 'conflict')) return false;
     if (operation.operationType === 'delete' && operation.payload !== null) return false;
     if (operation.operationType === 'upsert' && !isRecord(operation.payload)) return false;
@@ -135,6 +156,8 @@ export function isGuestImportState(value: unknown): value is GuestImportState {
     startedAt,
     updatedAt,
     progress,
+    deduplications,
+    profileComparison,
   } = value;
 
   if (!isGuestImportStatus(status)) return false;
@@ -145,6 +168,8 @@ export function isGuestImportState(value: unknown): value is GuestImportState {
   if (!isDomainOutcomes(domainOutcomes)) return false;
   if (profileChoice !== undefined && profileChoice !== 'guest' && profileChoice !== 'cloud') return false;
   if (!isConflictsArray(conflicts)) return false;
+  if (!Array.isArray(deduplications) || !deduplications.every(isRecordReference)) return false;
+  if (profileComparison !== undefined && !isProfileComparison(profileComparison)) return false;
   if (!isOptionalString(errorMessage)) return false;
   if (!isOptionalNumber(startedAt)) return false;
   if (!isOptionalNumber(updatedAt)) return false;

@@ -13,6 +13,7 @@
 
 import { SYNC_DOMAINS, type SyncDomain } from '@/shared/sync/domain';
 import type { OutboxOperationType } from '@/shared/sync/outbox-operation';
+import type { ConflictSnapshot } from '@/shared/sync/conflict';
 
 export type GuestImportOperationStatus = 'pending' | 'acknowledged';
 
@@ -28,6 +29,7 @@ export interface GuestImportOperationProgress {
   readonly lastErrorMessage: string | null;
   readonly lastFailureKind?: 'retryable' | 'conflict' | null;
   readonly status: GuestImportOperationStatus;
+  readonly expectedRevision: number | null;
 }
 
 export interface GuestImportProgress {
@@ -60,6 +62,19 @@ export interface GuestImportDomainOutcome {
 export interface GuestImportConflict {
   readonly domain: SyncDomain;
   readonly recordId: string;
+  readonly guestSnapshot: ConflictSnapshot;
+  readonly cloudSnapshot: ConflictSnapshot;
+  readonly cloudRevision: number | null;
+}
+
+export interface GuestImportRecordReference {
+  readonly domain: SyncDomain;
+  readonly recordId: string;
+}
+
+export interface GuestImportProfileComparison {
+  readonly guest: ConflictSnapshot;
+  readonly cloud: ConflictSnapshot | null;
 }
 
 export interface GuestImportState {
@@ -71,6 +86,8 @@ export interface GuestImportState {
   readonly domainOutcomes: Readonly<Partial<Record<SyncDomain, GuestImportDomainOutcome>>>;
   readonly profileChoice: 'guest' | 'cloud' | undefined;
   readonly conflicts: readonly GuestImportConflict[];
+  readonly deduplications: readonly GuestImportRecordReference[];
+  readonly profileComparison: GuestImportProfileComparison | undefined;
   readonly errorMessage: string | undefined;
   readonly startedAt: number | undefined;
   readonly updatedAt: number | undefined;
@@ -86,6 +103,8 @@ export const INITIAL_GUEST_IMPORT_STATE: GuestImportState = {
   domainOutcomes: {},
   profileChoice: undefined,
   conflicts: [],
+  deduplications: [],
+  profileComparison: undefined,
   errorMessage: undefined,
   startedAt: undefined,
   updatedAt: undefined,
@@ -104,6 +123,15 @@ export type GuestImportAction =
   | { readonly type: 'confirmPressed'; readonly importId: string; readonly now: number }
   | { readonly type: 'progressPrepared'; readonly importId: string; readonly progress: GuestImportProgress; readonly now: number }
   | { readonly type: 'progressUpdated'; readonly importId: string; readonly progress: GuestImportProgress; readonly now: number }
+  | {
+      readonly type: 'existingMergePrepared';
+      readonly importId: string;
+      readonly progress: GuestImportProgress;
+      readonly profileComparison: GuestImportProfileComparison;
+      readonly deduplications: readonly GuestImportRecordReference[];
+      readonly conflicts: readonly GuestImportConflict[];
+      readonly now: number;
+    }
   | {
       readonly type: 'domainUploadSettled';
       readonly importId: string;
@@ -194,6 +222,18 @@ export function guestImportReducer(state: GuestImportState, action: GuestImportA
     case 'progressUpdated': {
       if (state.importId !== action.importId) return state;
       return { ...state, progress: action.progress, updatedAt: action.now };
+    }
+
+    case 'existingMergePrepared': {
+      if (state.status !== 'uploading' || state.importId !== action.importId) return state;
+      return {
+        ...state,
+        progress: action.progress,
+        profileComparison: action.profileComparison,
+        deduplications: action.deduplications,
+        conflicts: action.conflicts,
+        updatedAt: action.now,
+      };
     }
 
     case 'domainUploadSettled': {

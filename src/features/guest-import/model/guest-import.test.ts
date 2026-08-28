@@ -182,7 +182,7 @@ describe('guestImportReducer: upload/profile-choice/conflicts', () => {
     // profileChoiceMade correctly routes to 'conflicts' when present.
     const withConflicts: GuestImportState = {
       ...state,
-      conflicts: [{ domain: 'goals', recordId: 'goal-1' }],
+      conflicts: [{ domain: 'goals', recordId: 'goal-1', guestSnapshot: { id: 'goal-1' }, cloudSnapshot: { id: 'goal-1' }, cloudRevision: 2 }],
     };
     const afterChoice = guestImportReducer(withConflicts, {
       type: 'profileChoiceMade',
