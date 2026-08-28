@@ -290,7 +290,7 @@ _T163–T181 come from stories S042–S062 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 - **Area:** Authentication / Profile
 - **Priority:** High
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** After signing in and navigating to Profile without a manual page refresh, `AccountSection` doesn't show the signed-in state — it only appears correctly after a refresh. Both `AccountSection` and `AuthProvider` read/expose state in the expected reactive shape on inspection (no obvious stale closure or missing dependency), so this needs a runtime investigation of the actual sign-in → navigate → render timing, not a known local fix.
 - **Exit criteria:** A test or reproducible in-browser walkthrough proves signing in and navigating directly to Profile (no refresh) shows the Account section in its signed-in state; the root cause found during investigation is documented in this entry's completion notes.
