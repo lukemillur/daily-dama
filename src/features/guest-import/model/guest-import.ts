@@ -15,7 +15,8 @@ import { SYNC_DOMAINS, type SyncDomain } from '@/shared/sync/domain';
 import type { OutboxOperationType } from '@/shared/sync/outbox-operation';
 import type { ConflictSnapshot } from '@/shared/sync/conflict';
 
-export type GuestImportOperationStatus = 'pending' | 'acknowledged';
+export type GuestImportOperationStatus = 'pending' | 'acknowledged' | 'rejected';
+export type GuestImportSourceCleanupStatus = 'pending' | 'completed' | 'retained';
 
 export interface GuestImportOperationProgress {
   readonly operationId: string;
@@ -29,6 +30,10 @@ export interface GuestImportOperationProgress {
   readonly lastErrorMessage: string | null;
   readonly lastFailureKind?: 'retryable' | 'conflict' | null;
   readonly status: GuestImportOperationStatus;
+  /** Source ownership is separate from destination acknowledgement. */
+  readonly sourceCleanupStatus?: GuestImportSourceCleanupStatus;
+  readonly acknowledgedAt?: number | null;
+  readonly sourceCleanupCompletedAt?: number | null;
   readonly expectedRevision: number | null;
 }
 
@@ -192,6 +197,17 @@ function allConflictsResolved(state: GuestImportState): boolean {
   return state.conflicts.every((conflict) => resolved.has(conflictKey(conflict)));
 }
 
+export function isGuestImportFinalizable(state: GuestImportState): boolean {
+  if (state.status === 'uploading') return false;
+  if (state.profileChoice === undefined && state.targetKind === 'existing') return false;
+  if (state.conflicts.some((conflict) => !state.conflictResolutions.some((item) => conflictKey(item) === conflictKey(conflict)))) return false;
+  return (state.progress?.operations ?? []).every((operation) =>
+    operation.status === 'rejected' ||
+    (operation.status === 'acknowledged' &&
+      (operation.sourceCleanupStatus === 'completed' || operation.sourceCleanupStatus === 'retained')),
+  );
+}
+
 export function guestImportReducer(state: GuestImportState, action: GuestImportAction): GuestImportState {
   switch (action.type) {
     case 'importRequested': {
@@ -241,7 +257,8 @@ export function guestImportReducer(state: GuestImportState, action: GuestImportA
     case 'progressPrepared':
     case 'progressUpdated': {
       if (state.importId !== action.importId) return state;
-      return { ...state, progress: action.progress, updatedAt: action.now };
+      const next = { ...state, progress: action.progress, updatedAt: action.now };
+      return isGuestImportFinalizable(next) ? { ...next, status: 'completed' } : next;
     }
 
     case 'existingMergePrepared': {
@@ -279,7 +296,7 @@ export function guestImportReducer(state: GuestImportState, action: GuestImportA
       if (action.choice === 'cloud' && state.profileComparison?.cloud === null) return state;
       return {
         ...state,
-        status: state.conflicts.length > 0 ? 'conflicts' : 'completed',
+        status: state.conflicts.length > 0 ? 'conflicts' : (isGuestImportFinalizable({ ...state, profileChoice: action.choice }) ? 'completed' : 'awaitingProfileChoice'),
         profileChoice: action.choice,
         updatedAt: action.now,
       };
@@ -295,7 +312,7 @@ export function guestImportReducer(state: GuestImportState, action: GuestImportA
     case 'conflictsResolved': {
       if (state.status !== 'conflicts' || state.importId !== action.importId) return state;
       if (state.profileChoice === undefined || !allConflictsResolved(state)) return state;
-      return { ...state, status: 'completed', updatedAt: action.now };
+      return { ...state, status: isGuestImportFinalizable(state) ? 'completed' : 'conflicts', updatedAt: action.now };
     }
 
     case 'cancelPressed': {

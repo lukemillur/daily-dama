@@ -20,7 +20,7 @@ import type { CustomTrickRow } from '@/features/custom-tricks/persistence/custom
 import type { PracticeSessionRow } from '@/features/stats/persistence/practice-history-cloud-repository';
 import type { GoalRow } from '@/features/goals/persistence/goal-cloud-repository';
 import type { NoteRow } from '@/features/notes/persistence/note-cloud-repository';
-import type { GuestImportOperationProgress, GuestImportProgress } from '@/features/guest-import/model/guest-import';
+import type { GuestImportOperationProgress, GuestImportProgress, GuestImportSourceCleanupStatus } from '@/features/guest-import/model/guest-import';
 
 export interface GuestImportSourceSnapshot {
   readonly profile: UserProfile;
@@ -97,6 +97,9 @@ export interface RunGuestImportOptions {
   readonly saveProgress: (progress: GuestImportProgress) => Promise<void>;
   readonly now?: () => number;
   readonly beforeOperation?: (operation: GuestImportOperationProgress) => Promise<void>;
+  readonly beforeRequest?: (operation: GuestImportOperationProgress) => Promise<void>;
+  readonly cleanupSourceRecord?: (operation: GuestImportOperationProgress) => Promise<void>;
+  readonly cleanupReferences?: readonly { readonly domain: SyncDomain; readonly recordId: string }[];
 }
 
 export type GuestImportRunResult =
@@ -128,8 +131,10 @@ export async function runEmptyGuestImport(options: RunGuestImportOptions): Promi
   // closes the acknowledgement/guest-storage crash window: a failed cleanup
   // never causes a later resume to forget the source record.
   try {
-    for (const operation of progress.operations.filter((item) => item.status === 'acknowledged')) {
-      await acknowledgeGuestSourceRecord(guestStorage, operation);
+    for (const operation of progress.operations.filter((item) => item.status === 'acknowledged' && item.sourceCleanupStatus !== 'completed' && item.sourceCleanupStatus !== 'retained')) {
+      await (options.cleanupSourceRecord ?? ((item) => acknowledgeGuestSourceRecord(guestStorage, item)))(operation);
+      progress = markCleaned(progress, operation.operationId, options.now?.() ?? Date.now());
+      await options.saveProgress(progress);
     }
   } catch (error) {
     return { status: 'paused', progress, error };
@@ -144,8 +149,12 @@ export async function runEmptyGuestImport(options: RunGuestImportOptions): Promi
       } catch (error) {
         return { status: 'paused', progress, error };
       }
-      const outboxOperation: OutboxOperation = operation;
-      await options.saveProgress(progress);
+      const attemptedAt = options.now?.() ?? Date.now();
+      progress = updateOperation(progress, operation.operationId, (item) => ({ ...item, attemptCount: item.attemptCount + 1, lastAttemptedAt: attemptedAt, lastErrorMessage: null, lastFailureKind: null }));
+      try { await options.saveProgress(progress); } catch (error) { return { status: 'paused', progress, error }; }
+      const attemptedOperation = progress.operations.find((item) => item.operationId === operation.operationId)!;
+      try { await options.beforeRequest?.(attemptedOperation); } catch (error) { return { status: 'paused', progress, error }; }
+      const outboxOperation: OutboxOperation = attemptedOperation;
       let result: SyncTransportPushResult<unknown>;
       try {
         const pushed = await pushOutboxOperations(repository as SyncTransportRepository<unknown>, [outboxOperation], {
@@ -162,17 +171,35 @@ export async function runEmptyGuestImport(options: RunGuestImportOptions): Promi
       }
       progress = {
         ...progress,
-        operations: progress.operations.map((item) => item.operationId === operation.operationId ? { ...item, status: 'acknowledged' as const } : item),
+        operations: progress.operations.map((item) => item.operationId === operation.operationId ? { ...item, status: 'acknowledged' as const, sourceCleanupStatus: 'pending' as const, acknowledgedAt: options.now?.() ?? Date.now() } : item),
       };
-      await options.saveProgress(progress);
+      try { await options.saveProgress(progress); } catch (error) { return { status: 'paused', progress, error }; }
       try {
-        await acknowledgeGuestSourceRecord(guestStorage, operation);
+        await (options.cleanupSourceRecord ?? ((item) => acknowledgeGuestSourceRecord(guestStorage, item)))(operation);
+        progress = markCleaned(progress, operation.operationId, options.now?.() ?? Date.now());
+        await options.saveProgress(progress);
       } catch (error) {
         return { status: 'paused', progress, error };
       }
     }
   }
+  if (options.cleanupReferences) {
+    for (const reference of options.cleanupReferences) {
+      await acknowledgeGuestSourceRecord(guestStorage, {
+        operationId: `dedup-${reference.domain}-${reference.recordId}`, domain: reference.domain, operationType: 'delete', recordId: reference.recordId,
+        payload: null, createdAt: 0, attemptCount: 0, lastAttemptedAt: null, lastErrorMessage: null, status: 'acknowledged', expectedRevision: null,
+      });
+    }
+  }
   return { status: 'completed', progress };
+}
+
+function updateOperation(progress: GuestImportProgress, operationId: string, update: (operation: GuestImportOperationProgress) => GuestImportOperationProgress): GuestImportProgress {
+  return { ...progress, operations: progress.operations.map((item) => item.operationId === operationId ? update(item) : item) };
+}
+
+function markCleaned(progress: GuestImportProgress, operationId: string, at: number): GuestImportProgress {
+  return updateOperation(progress, operationId, (item) => ({ ...item, sourceCleanupStatus: 'completed' as GuestImportSourceCleanupStatus, sourceCleanupCompletedAt: at }));
 }
 
 async function acknowledgeGuestSourceRecord(storage: KeyValueStorage, operation: GuestImportOperationProgress): Promise<void> {
