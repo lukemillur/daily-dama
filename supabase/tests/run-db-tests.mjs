@@ -25,7 +25,7 @@
 
 import { spawnSync } from 'node:child_process';
 
-const SUPABASE = ['npx', '--yes', 'supabase@2.115.0'];
+const SUPABASE = ['npx', '--yes', 'supabase@2.116.0'];
 
 // The mutation check weakens this exact policy, defined in
 // supabase/migrations/20260822200050_add_custom_tricks_and_practice_sessions.sql.
@@ -73,6 +73,9 @@ function runDefaultSequence() {
   }
   if (steps.every((step) => step.code === 0)) {
     steps.push(run('Data API suite (yarn test:data-api)', ['yarn', 'test:data-api']));
+  }
+  if (steps.every((step) => step.code === 0)) {
+    steps.push(run('start before Edge Functions', [...SUPABASE, 'start']));
   }
   if (steps.every((step) => step.code === 0)) {
     steps.push(run('Edge Function suite (yarn test:functions)', ['yarn', 'test:functions']));

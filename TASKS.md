@@ -175,16 +175,6 @@ _Phase 4 activation: T161 comes from S039 and `BACKEND_ROADMAP.md` Phase 4. Its 
 - **Description:** Let an authenticated user permanently remove the Auth identity and every application row, then return to a clean guest workspace even when the success response is lost.
 - **Notes:** Umbrella from S039. Complete T161.1–T161.5. User-facing data export is excluded.
 
-### [T161.3] Prove cascade deletion and old-session denial
-
-- **Area:** Account deletion testing
-- **Priority:** High
-- **Status:** In progress
-- **Planning:** Required
-- **Description:** Add backend acceptance tests for complete cascade cleanup and calls from anonymous, expired, wrong-user, stale, and pre-deletion sessions, including attempts to recreate rows with an old JWT.
-- **Exit criteria:** Against a clean local reset, fixtures populate all six resources for two users; deleting user A removes only A, user B remains intact, every old user-A token is denied, foreign keys/policies prevent row recreation, and simulated response loss followed by retry converges on the same empty result.
-- **Notes:** From S039. Depends on T161.2 and T155.8.
-
 ### [T161.4] Add the permanent account-deletion route
 
 - **Area:** Account deletion UI

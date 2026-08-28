@@ -1,5 +1,5 @@
 // Shared helper for T155.6's Data API (HTTP) test suite. Talks to a real,
-// already-running local Supabase stack (`npx --yes supabase@2.115.0 start`)
+// already-running local Supabase stack (`npx --yes supabase@2.116.0 start`)
 // over PostgREST/GoTrue's HTTP surface — no direct DB connection, no mocks.
 // This module has no dependency on node:test so it can be reused by every
 // test file under supabase/tests/data-api/.
@@ -19,13 +19,13 @@ export function getLocalConfig() {
 
   let raw;
   try {
-    raw = execFileSync('npx', ['--yes', 'supabase@2.115.0', 'status', '-o', 'json'], {
+    raw = execFileSync('npx', ['--yes', 'supabase@2.116.0', 'status', '-o', 'json'], {
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'pipe'],
     });
   } catch (error) {
     throw new Error(
-      'Local Supabase stack is not running. Run `npx --yes supabase@2.115.0 start` ' +
+      'Local Supabase stack is not running. Run `npx --yes supabase@2.116.0 start` ' +
         '(and `db reset`) before running the Data API test suite.\n' +
         `Underlying error: ${error.message}`
     );
@@ -49,6 +49,10 @@ export function getLocalConfig() {
     apiUrl: parsed.API_URL,
     anonKey: parsed.ANON_KEY,
     serviceRoleKey: parsed.SERVICE_ROLE_KEY,
+    // Supabase CLI exposes the local signing secret in status JSON. Keeping
+    // it in the in-memory config lets acceptance tests construct a genuinely
+    // signed expired JWT without committing or printing the secret.
+    jwtSecret: parsed.JWT_SECRET ?? parsed.JWT_SECRET_KEY ?? parsed.jwt_secret,
   };
   return cachedConfig;
 }
