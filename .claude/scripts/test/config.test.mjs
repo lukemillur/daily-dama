@@ -103,6 +103,8 @@ test('newTicket continuous mode explicitly continues after recoverable blocks', 
   assert.match(skill, /After cleanup, return to step 1 immediately/);
   assert.match(skill, /invoke the next claim immediately in this same turn/);
   assert.match(skill, /The only outcomes that end continuous mode are a\s+claim-mechanism failure, a usage limit, or an exhausted backlog/);
+  assert.match(skill, /planner-side GitHub authentication\/network\/push failures/);
+  assert.match(skill, /failure must not terminate continuous mode/);
 });
 
 test('no subagent can spawn subagents', () => {
