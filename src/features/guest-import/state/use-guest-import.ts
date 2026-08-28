@@ -37,7 +37,8 @@ import {
   type GuestImportDomainCounts,
   type GuestImportState,
 } from '@/features/guest-import/model/guest-import';
-import { prepareGuestImport, runEmptyGuestImport } from '@/features/guest-import/persistence/guest-import-empty-account';
+import { prepareGuestImport, readGuestImportSnapshot, runEmptyGuestImport } from '@/features/guest-import/persistence/guest-import-empty-account';
+import { planExistingAccountMerge, readExistingAccountSnapshot } from '@/features/guest-import/persistence/guest-import-existing-account';
 import { identityNamespace } from '@/shared/persistence/identity';
 import { useIdentityHandle } from '@/shared/persistence/identity-provider';
 import { useIdentityScopedDomain } from '@/shared/persistence/use-identity-scoped-domain';
@@ -197,7 +198,7 @@ export function useGuestImport(): UseGuestImportResult {
 
   const importStartedRef = useRef<Set<string>>(new Set());
   useEffect(() => {
-    if (!hasHydrated || identity.kind !== 'user' || state.status !== 'uploading' || state.targetKind !== 'empty') return;
+    if (!hasHydrated || identity.kind !== 'user' || state.status !== 'uploading' || state.targetKind === undefined) return;
     const importId = state.importId;
     if (importId === undefined || importStartedRef.current.has(importId)) return;
     importStartedRef.current.add(importId);
@@ -206,7 +207,7 @@ export function useGuestImport(): UseGuestImportResult {
     void (async () => {
       try {
         let progress = latestRef.current.state.progress;
-        if (progress === undefined) {
+        if (progress === undefined && state.targetKind === 'empty') {
           const prepared = await prepareGuestImport({
             storage: AsyncStorage,
             destinationIdentity,
@@ -220,6 +221,27 @@ export function useGuestImport(): UseGuestImportResult {
           latestRef.current.dispatch({ type: 'progressPrepared', importId, progress, now: Date.now() });
           await latestRef.current.saveNow?.({ ...latestRef.current.state, progress });
         }
+        if (progress === undefined && state.targetKind === 'existing') {
+          const source = await readGuestImportSnapshot(AsyncStorage);
+          const client = getSupabaseClient();
+          if (client === null) throw new Error('No cloud connection is available to import your guest data.');
+          const transports = buildGuestImportTransports(client, destinationIdentity.userId);
+          const target = await readExistingAccountSnapshot(transports, destinationIdentity.userId);
+          if (target.status === 'failed') throw new Error(target.error.message);
+          const planned = planExistingAccountMerge({
+            guest: source,
+            cloud: target.snapshot,
+            destinationUserId: destinationIdentity.userId,
+            importId,
+            createdAt: Date.now(),
+            createOperationId: (domain, recordId) => `guest-import-op-${importId}-${domain}-${recordId}`,
+          });
+          progress = { sourceIdentityNamespace: 'guest', destinationIdentityNamespace: identityNamespace(destinationIdentity), operations: planned.operations };
+          if (cancelled || latestRef.current.state.importId !== importId) return;
+          latestRef.current.dispatch({ type: 'existingMergePrepared', importId, progress, profileComparison: planned.profileComparison, deduplications: planned.deduplications, conflicts: planned.conflicts, now: Date.now() });
+          await latestRef.current.saveNow?.({ ...latestRef.current.state, progress, profileComparison: planned.profileComparison, deduplications: planned.deduplications, conflicts: planned.conflicts });
+        }
+        if (progress === undefined) throw new Error('Guest import could not prepare its progress record.');
         const client = getSupabaseClient();
         if (client === null) throw new Error('No cloud connection is available to import your guest data.');
         const transports = buildGuestImportTransports(client, destinationIdentity.userId);
@@ -240,7 +262,8 @@ export function useGuestImport(): UseGuestImportResult {
         });
         if (cancelled || latestRef.current.state.importId !== importId || result.status !== 'completed') return;
         for (const domain of SYNC_DOMAINS) {
-          latestRef.current.dispatch({ type: 'domainUploadSettled', importId, domain, outcome: { status: 'succeeded', errorMessage: undefined }, now: Date.now() });
+          const hasConflict = latestRef.current.state.conflicts.some((conflict) => conflict.domain === domain);
+          latestRef.current.dispatch({ type: 'domainUploadSettled', importId, domain, outcome: { status: hasConflict ? 'conflict' : 'succeeded', errorMessage: undefined }, now: Date.now() });
         }
       } catch (error) {
         if (cancelled || latestRef.current.state.importId !== importId) return;

@@ -2537,3 +2537,13 @@ Completed entries live in [TASKS_DONE.md](TASKS_DONE.md) — not part of the top
 - **Description:** Align `forgot-password-screen.tsx`'s text and container spacing with the layout conventions already used on sign-in/sign-up (consistent margins, heading/body hierarchy, button placement).
 - **Exit criteria:** Confirmed in-browser via the Expo dev server that forgot-password's layout visually matches sign-in/sign-up's container and spacing conventions at both desktop and mobile widths; existing `forgot-password-screen` tests continue to pass.
 - **Notes:** From S054. Purely visual — no behavior change to the forgot-password flow. Its background-color half is covered by T170; this ticket is layout/spacing only. The form and confirmation layouts now use the same 16px primary-introduction margin and an 8px supporting-guidance margin, preserving the existing 680px form container, 480px text measure, 28px field separation, and 36px action separation used by sign-in/sign-up. Browser validation was blocked because the Expo dev server did not bind in the assigned worktree; native validation is deferred by project policy.
+
+### [T159.3] Merge immutable records and trick state into an existing account
+
+- **Area:** Guest-to-existing-account merge
+- **Priority:** High
+- **Status:** Done
+- **Planning:** Required
+- **Description:** Implement deterministic union rules for immutable practice records, focused/manually-laced trick state, identical IDs/payloads, and non-conflicting custom tricks, goals, and notes when the target account already contains data.
+- **Exit criteria:** Table-driven tests cover disjoint, identical, and overlapping fixtures for every domain; distinct immutable records and trick states union, identical IDs/payloads deduplicate, no target data is silently overwritten, and same-ID/different-payload records are emitted as conflicts. Confirmed: the existing-account target loader validates every paginated cloud domain before producing a snapshot; the pure merge planner covers disjoint, identical, overlapping, profile-scalar, trick-state OR/revision, immutable-record, and goal/note tombstone fixtures; accepted operations are additive and same-ID payload differences are durable conflicts. Full application checks pass through the bundled Node launcher: 137 Jest suites / 1,716 tests, lint with 0 errors, strict TypeScript, and web export. Native validation is deferred by active project scope.
+- **Notes:** From S036. Depends on T159.2. T159.4 owns profile choice and conflict resolution; T159.5 owns final guest cleanup.

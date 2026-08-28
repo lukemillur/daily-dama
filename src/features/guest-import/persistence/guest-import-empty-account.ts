@@ -76,7 +76,7 @@ export async function prepareGuestImport(options: PrepareGuestImportOptions): Pr
   const operations = inputsForSnapshot(snapshot, options.destinationUserId).map((input) => {
     const operationId = options.createOperationId(input.domain, input.recordId);
     const operation = createOutboxOperation(operationId, input, options.createdAt);
-    return { ...operation, status: 'pending' as const } satisfies GuestImportOperationProgress;
+    return { ...operation, status: 'pending' as const, expectedRevision: null } satisfies GuestImportOperationProgress;
   });
   return {
     snapshot,
@@ -149,7 +149,7 @@ export async function runEmptyGuestImport(options: RunGuestImportOptions): Promi
       let result: SyncTransportPushResult<unknown>;
       try {
         const pushed = await pushOutboxOperations(repository as SyncTransportRepository<unknown>, [outboxOperation], {
-          getExpectedRevision: () => null,
+          getExpectedRevision: (item) => progress.operations.find((candidate) => candidate.operationId === item.operationId)?.expectedRevision ?? null,
         });
         result = pushed.outcomes[0].result;
       } catch (error) {
