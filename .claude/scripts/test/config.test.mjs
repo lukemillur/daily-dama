@@ -98,6 +98,13 @@ test('the newTicket skill restricts as well as pre-approves', () => {
   assert.equal(allowed.some((tool) => tool === 'Bash' || tool === 'Bash(*)'), false, 'generic Bash is not pre-approved');
 });
 
+test('newTicket continuous mode explicitly continues after recoverable blocks', () => {
+  const skill = fs.readFileSync(path.join(repoRoot, '.claude/skills/newTicket/SKILL.md'), 'utf8');
+  assert.match(skill, /After cleanup, return to step 1 immediately/);
+  assert.match(skill, /invoke the next claim immediately in this same turn/);
+  assert.match(skill, /The only outcomes that end continuous mode are a\s+claim-mechanism failure, a usage limit, or an exhausted backlog/);
+});
+
 test('no subagent can spawn subagents', () => {
   const agentsDir = path.join(repoRoot, '.claude/agents');
   const agents = fs.readdirSync(agentsDir).filter((name) => name.endsWith('.md'));

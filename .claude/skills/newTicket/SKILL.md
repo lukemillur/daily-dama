@@ -45,6 +45,14 @@ Read what the user actually said; there's no argument syntax to parse.
 
 Exactly one task, claim → plan (maybe) → implement → cleanup. Post a short plain one-line status (no headers, no emoji) as its own message at each checkpoint — you're the only visible progress while a cycle runs.
 
+In continuous mode, a cycle is an iteration of the run, not the end of the
+skill invocation. After cleanup, return to step 1 immediately for every
+recoverable outcome (`success`, a claimed-task skip, or a block from planning,
+implementation, or merge). Do not send the final report or wait for a new user
+message between those cycles. The only outcomes that end continuous mode are a
+claim-mechanism failure, a usage limit, or an exhausted backlog; the detailed
+rules are below.
+
 ### 1. Claim
 
 ```sh
@@ -128,7 +136,7 @@ A cycle covers exactly one task and ends in exactly one state. Never let a cycle
 | :-- | :-- | :-- |
 | `success` | merged into `development` | start the next cycle immediately, no confirmation |
 | `blocked` at the claim step, reason ≠ `claimed` | the claim mechanism itself failed for this task (stray local branch, failed push with no competing branch, script error) | stop the loop; report the reason — retrying would just hit the same failure on the same task forever |
-| `blocked`, reason `claimed`, or blocked during planning/implementation/merge | this specific task can't proceed right now, but the claim/plan/implement machinery is fine | record it, start the next cycle — see Continuous mode below |
+| `blocked`, reason `claimed`, or blocked during planning/implementation/merge | this specific task can't proceed right now, but the claim/plan/implement machinery is fine | record it, clean up, and start the next cycle immediately — see Continuous mode below |
 | `usage-limit` | an `Agent` call failed for capacity reasons | stop the loop; the task stays claimed and resumable |
 | `backlog-exhausted` | no actionable task remains | stop the loop; not an error |
 
@@ -148,7 +156,7 @@ If the user said `ranked`, pass it through to every claim call this run (step 1'
 2. Append its outcome (task ID, PR URL, or blocker/limit detail) to a running tally in your reply text — not in any file.
 3. `success` → next cycle immediately (pre-authorized after required CI passes; no human review gate).
 4. `blocked` at the claim step (step 1) for a reason other than `claimed` → stop the run. This means the claim mechanism itself failed for that task — a stray local branch, a push that failed with no competing branch, or a script error — and blindly retrying would just reselect the same task and hit the same failure again. Report it as you would any blocker.
-5. Any other `blocked` — the rare claim-step `claimed` (a lost push race on the task the scan just selected), or a block from planning, implementation, or merge — → record it in the tally and start the next cycle immediately, same as `success`. Do **not** stop the run for this: the task's own claim branch already exists remotely, so the next `ticket-claim.mjs` call skips right past it on its own (continuous-mode selection now treats an already-claimed candidate as a skip, not a stop) and moves on to an unrelated task later in the backlog. A task that genuinely `depends on` the blocked one keeps getting skipped too, automatically, by the script's own dependency check — never work around that check yourself to "unblock" a dependent task early.
+5. Any other `blocked` — the rare claim-step `claimed` (a lost push race on the task the scan just selected), or a block from planning, implementation, or merge — → append it to the tally, run cleanup for the stage worktree, and invoke the next claim immediately in this same turn. Do **not** stop the run or return a final response for this: the task's own claim branch already exists remotely, so the next `ticket-claim.mjs` call skips right past it on its own (continuous-mode selection now treats an already-claimed candidate as a skip, not a stop) and moves on to an unrelated task later in the backlog. A task that genuinely `depends on` the blocked one keeps getting skipped too, automatically, by the script's own dependency check — never work around that check yourself to "unblock" a dependent task early.
 6. `usage-limit` or `backlog-exhausted` → stop.
 
 Each cycle's subagents are fresh, with no memory of prior cycles, by design.
