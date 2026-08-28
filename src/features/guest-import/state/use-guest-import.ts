@@ -205,8 +205,10 @@ export function useGuestImport(): UseGuestImportResult {
   useEffect(() => {
     if (!hasHydrated || identity.kind !== 'user' || state.status !== 'uploading' || state.targetKind === undefined) return;
     const importId = state.importId;
-    if (importId === undefined || importStartedRef.current.has(importId)) return;
-    importStartedRef.current.add(importId);
+    if (importId === undefined) return;
+    const phaseKey = `${importId}:${state.status}:${state.profileChoice ?? ''}:${state.conflictResolutions.length}`;
+    if (importStartedRef.current.has(phaseKey)) return;
+    importStartedRef.current.add(phaseKey);
     let cancelled = false;
     const destinationIdentity = identity;
     void (async () => {
@@ -253,12 +255,18 @@ export function useGuestImport(): UseGuestImportResult {
         // The hook remains inert when a test/dry-run inventory supplies no
         // mutation-capable transport; production adapters always expose push.
         if (typeof transports.profile?.push !== 'function') return;
+        const profilePlan = state.profileChoice && state.profileComparison ? planProfileChoice({ comparison: state.profileComparison, choice: state.profileChoice, destinationUserId: destinationIdentity.userId, expectedRevision: null, operationId: `guest-import-profile-${importId}`, createdAt: state.startedAt ?? Date.now() }) : undefined;
         const result = state.targetKind === 'existing'
-          ? { status: 'completed' as const, progress: await runExistingGuestImport({ progress, repositories: transports, saveProgress: async (nextProgress) => {
+          ? { status: 'completed' as const, progress: await runExistingGuestImport({
+            progress, repositories: transports, storage: AsyncStorage, destinationIdentity, destinationUserId: destinationIdentity.userId,
+            profileChoice: state.profileChoice, profileOperation: profilePlan?.operation, cleanupReferences: state.deduplications,
+            conflicts: latestRef.current.state.conflicts, resolutions: latestRef.current.state.conflictResolutions,
+            saveProgress: async (nextProgress) => {
               if (cancelled || latestRef.current.state.importId !== importId) return;
               latestRef.current.dispatch({ type: 'progressUpdated', importId, progress: nextProgress, now: Date.now() });
               await latestRef.current.saveNow?.({ ...latestRef.current.state, progress: nextProgress });
-            }, conflicts: latestRef.current.state.conflicts, resolutions: latestRef.current.state.conflictResolutions }) }
+            },
+          }) }
           : await runEmptyGuestImport({
           storage: AsyncStorage,
           destinationIdentity,
@@ -270,11 +278,12 @@ export function useGuestImport(): UseGuestImportResult {
             latestRef.current.dispatch({ type: 'progressUpdated', importId, progress: nextProgress, now: Date.now() });
             await latestRef.current.saveNow?.({ ...latestRef.current.state, progress: nextProgress });
           },
+          now: () => Date.now(),
         });
         if (cancelled || latestRef.current.state.importId !== importId || result.status !== 'completed') return;
         for (const domain of SYNC_DOMAINS) {
           const hasConflict = latestRef.current.state.conflicts.some((conflict) => conflict.domain === domain);
-          latestRef.current.dispatch({ type: 'domainUploadSettled', importId, domain, outcome: { status: hasConflict ? 'conflict' : 'succeeded', errorMessage: undefined }, now: Date.now() });
+          if (latestRef.current.state.status === 'uploading') latestRef.current.dispatch({ type: 'domainUploadSettled', importId, domain, outcome: { status: hasConflict ? 'conflict' : 'succeeded', errorMessage: undefined }, now: Date.now() });
         }
       } catch (error) {
         if (cancelled || latestRef.current.state.importId !== importId) return;
@@ -283,7 +292,7 @@ export function useGuestImport(): UseGuestImportResult {
       }
     })();
     return () => { cancelled = true; };
-  }, [hasHydrated, identity, state.status, state.targetKind, state.importId]);
+  }, [hasHydrated, identity, state.status, state.targetKind, state.importId, state.profileChoice, state.profileComparison, state.deduplications, state.startedAt, state.conflictResolutions.length]);
 
   const confirmImport = useCallback(() => {
     const latest = latestRef.current;

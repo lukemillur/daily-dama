@@ -145,16 +145,6 @@ _Phase 3 activation: T156–T160 come from S035–S038 and `BACKEND_ROADMAP.md` 
 - **Description:** Import guest data through explicit, resumable merge rules without clearing any local source record before server acknowledgement.
 - **Notes:** Umbrella from S036. Complete T159.1–T159.5. Depends on T157 and the identity isolation established by T156.
 
-### [T159.5] Finalize guest import only after acknowledgements
-
-- **Area:** Guest import recovery
-- **Priority:** High
-- **Status:** In progress
-- **Planning:** Required
-- **Description:** Complete resumability and cleanup so acknowledged source records are tracked durably, retries cannot duplicate server data, and the guest namespace is cleared only after all accepted records and choices are confirmed.
-- **Exit criteria:** Fault-injection tests interrupt every import phase, restart with the same import identity, and prove accepted records are not duplicated, rejected/unresolved records remain available, guest data is never cleared early, and successful completion switches to the account namespace with a matching second-browser dataset.
-- **Notes:** From S036. Depends on T159.2–T159.4.
-
 ### [T160] Expose synchronization health and record-level conflict recovery
 
 - **Area:** Synchronization UX

@@ -140,19 +140,25 @@ function isGuestImportProgress(value: unknown): value is GuestImportProgress | u
     return false;
   }
   if (!Array.isArray(value.operations)) return false;
+  const seen = new Set<string>();
   return value.operations.every((operation) => {
     if (!isRecord(operation)) return false;
-    if (typeof operation.operationId !== 'string' || !isSyncDomain(operation.domain)) return false;
+    if (typeof operation.operationId !== 'string' || operation.operationId.length === 0 || seen.has(operation.operationId) || !isSyncDomain(operation.domain)) return false;
+    seen.add(operation.operationId);
     if (operation.operationType !== 'upsert' && operation.operationType !== 'delete') return false;
     if (typeof operation.recordId !== 'string' || typeof operation.createdAt !== 'number' ||
       typeof operation.attemptCount !== 'number' || !Number.isInteger(operation.attemptCount) || operation.attemptCount < 0 ||
-      (operation.lastAttemptedAt !== null && typeof operation.lastAttemptedAt !== 'number') ||
+      (operation.lastAttemptedAt !== null && (typeof operation.lastAttemptedAt !== 'number' || !Number.isFinite(operation.lastAttemptedAt))) ||
       (operation.lastErrorMessage !== null && typeof operation.lastErrorMessage !== 'string') ||
       (operation.expectedRevision !== null && !isPositiveInteger(operation.expectedRevision)) ||
       (operation.lastFailureKind !== null && operation.lastFailureKind !== 'retryable' && operation.lastFailureKind !== 'conflict')) return false;
     if (operation.operationType === 'delete' && operation.payload !== null) return false;
     if (operation.operationType === 'upsert' && !isRecord(operation.payload)) return false;
-    return operation.status === 'pending' || operation.status === 'acknowledged';
+    const cleanup = operation.sourceCleanupStatus;
+    return (operation.status === 'pending' || operation.status === 'acknowledged' || operation.status === 'rejected') &&
+      (cleanup === undefined || cleanup === 'pending' || cleanup === 'completed' || cleanup === 'retained') &&
+      (operation.acknowledgedAt === undefined || operation.acknowledgedAt === null || typeof operation.acknowledgedAt === 'number') &&
+      (operation.sourceCleanupCompletedAt === undefined || operation.sourceCleanupCompletedAt === null || typeof operation.sourceCleanupCompletedAt === 'number');
   });
 }
 

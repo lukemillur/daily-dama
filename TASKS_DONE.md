@@ -4,6 +4,16 @@ Completed entries move here from `TASKS.md`'s `Backlog`, in the same commit that
 
 Entries keep their content as it was at completion. Don't retroactively edit a description or exit criteria after the fact; if something about a completed task turns out to be wrong or misleading, note that in a new entry or in code, not by rewriting history here.
 
+### [T159.5] Finalize guest import only after acknowledgements
+
+- **Area:** Guest import recovery
+- **Priority:** High
+- **Status:** Done
+- **Planning:** Required
+- **Description:** Complete resumability and cleanup so acknowledged source records are tracked durably, retries cannot duplicate server data, and the guest namespace is cleared only after all accepted records and choices are confirmed.
+- **Exit criteria:** Fault-injection tests interrupt every import phase, restart with the same import identity, and prove accepted records are not duplicated, rejected/unresolved records remain available, guest data is never cleared early, and successful completion switches to the account namespace with a matching second-browser dataset. Confirmed: durable source-cleanup status and acknowledgement timestamps now survive reload; attempt metadata is persisted before each request; retries reuse operation IDs; cleanup is performed only after acknowledgement and is replayable after cleanup failure; malformed/duplicate progress operations are rejected; focused fault-injection and second-browser suites pass, and the full verifier passes all four steps. Native validation is deferred by active web-only project scope.
+- **Notes:** From S036. Depends on T159.2–T159.4. Preserves the independent five-domain persistence boundaries and the existing identity-generation namespace guard.
+
 ### [T159.4] Let users choose profile preferences and resolve import conflicts
 
 - **Area:** Guest merge decisions

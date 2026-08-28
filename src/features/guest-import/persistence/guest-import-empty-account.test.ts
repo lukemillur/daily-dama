@@ -81,6 +81,20 @@ describe('empty guest-account import', () => {
     const resumed = await runEmptyGuestImport({ storage: source, destinationIdentity: USER, destinationUserId: USER_ID, progress: paused.progress, repositories: retry.repositories as never, saveProgress });
     expect(resumed.status).toBe('completed');
     expect(paused.progress.operations[0].operationId).toBe(plan.progress.operations[0].operationId);
+    expect(paused.progress.operations[0].attemptCount).toBe(1);
+  });
+
+  it('persists acknowledgement before cleanup and resumes after cleanup failure without duplicating the server write', async () => {
+    const source = storage(); await seedAll(source); const plan = await prepared(source); const fake = repositories();
+    let progress = plan.progress; let failCleanup = true;
+    const paused = await runEmptyGuestImport({ storage: source, destinationIdentity: USER, destinationUserId: USER_ID, progress, repositories: fake.repositories as never, saveProgress: async (next) => { progress = next; }, cleanupSourceRecord: async (operation) => { if (failCleanup) { failCleanup = false; throw new Error(`cleanup:${operation.domain}`); } } });
+    expect(paused.status).toBe('paused');
+    expect(paused.progress.operations[0].status).toBe('acknowledged');
+    expect(paused.progress.operations[0].sourceCleanupStatus).toBe('pending');
+    const resumed = await runEmptyGuestImport({ storage: source, destinationIdentity: USER, destinationUserId: USER_ID, progress: paused.progress, repositories: fake.repositories as never, saveProgress: async (next) => { progress = next; }, cleanupSourceRecord: async () => undefined });
+    expect(resumed.status).toBe('completed');
+    expect(fake.applied.size).toBe(plan.progress.operations.length);
+    expect(resumed.progress.operations.every((operation) => operation.sourceCleanupStatus === 'completed')).toBe(true);
   });
 
   it.each(['profile', 'customTricks', 'practiceHistory', 'goals', 'notes'] as const)('resumes after interruption at the %s boundary', async (boundary) => {
