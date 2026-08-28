@@ -155,6 +155,7 @@ export function createProfileSyncTransportAdapter(
             recordId: request.recordId,
             expectedRevision: request.expectedRevision,
             serverRevision: row.revision,
+            serverRow: row,
           },
         };
       }
@@ -213,6 +214,7 @@ export function createProfileSyncTransportAdapter(
           recordId: trickId,
           expectedRevision: request.expectedRevision,
           serverRevision: existing.revision,
+          serverRow: existing,
         },
       };
     } catch (cause) {
@@ -279,6 +281,7 @@ export function createProfileSyncTransportAdapter(
             recordId: trickId,
             expectedRevision: request.expectedRevision,
             serverRevision: existing.revision,
+            serverRow: existing,
           },
         };
       }

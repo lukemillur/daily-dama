@@ -4,6 +4,16 @@ Completed entries move here from `TASKS.md`'s `Backlog`, in the same commit that
 
 Entries keep their content as it was at completion. Don't retroactively edit a description or exit criteria after the fact; if something about a completed task turns out to be wrong or misleading, note that in a new entry or in code, not by rewriting history here.
 
+### [T160.2] Add per-record conflict resolution
+
+- **Area:** Synchronization conflicts
+- **Priority:** High
+- **Status:** Done
+- **Planning:** Required
+- **Description:** Add `/app/profile/sync-conflicts` with typed comparisons and explicit local/server resolution for profile, custom-trick, goal, and note conflicts, while immutable-session duplicates follow their deterministic identity rule.
+- **Exit criteria:** Route/state tests render representative conflicts for every mutable resource, apply either resolution as a new revision-aware operation, persist unresolved conflicts across reload, remove only resolved items, and leave unrelated outbox operations running. Confirmed: added the serializable validated conflict contract and persisted per-envelope records; transport adapters now retain current server rows for comparisons; all four mutable domain drivers record conflicts and guard resolution by identity, generation, record, and operation ID. Keep-local updates the server revision cache and enqueues a fresh operation ID; keep-server validates/adopts typed rows and tombstones while suppressing feedback writes; sibling outbox/conflict records remain untouched. Profile now links to the hydration-gated `/app/profile/sync-conflicts` route, with stable ordering, explicit accessible choices, and no-conflicts state. Focused conflict/envelope/component tests pass, and `node .claude/scripts/verify.mjs --json` passes all four steps (test, lint, typecheck, web export). Native validation is deferred by active project scope; immutable practice-history conflicts remain excluded by deterministic insert-only identity handling.
+- **Notes:** From S037. Depends on T160.1 and T157.4–T157.8. No automatic last-write-wins option.
+
 ### [T160.1] Add a trustworthy synchronization status model and Profile surface
 
 - **Area:** Profile / sync status

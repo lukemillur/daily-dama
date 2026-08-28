@@ -170,6 +170,7 @@ async function classifyNoteUpdateFailure(
             recordId: noteId,
             expectedRevision: request.expectedRevision,
             serverRevision: existing.revision,
+            serverRow: existing,
           },
         };
   }
@@ -183,6 +184,7 @@ async function classifyNoteUpdateFailure(
       recordId: noteId,
       expectedRevision: request.expectedRevision,
       serverRevision: existing.revision,
+      serverRow: existing,
     },
   };
 }

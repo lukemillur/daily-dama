@@ -25,16 +25,18 @@ export type SyncTransportPullResult<Row> =
   | { readonly status: 'succeeded'; readonly page: SyncTransportPage<Row> }
   | { readonly status: 'failed'; readonly error: CloudRepositoryError };
 
-export interface SyncConflict {
+export interface SyncConflict<Row = Record<string, unknown>> {
   readonly operationId: string;
   readonly recordId: string;
   readonly expectedRevision: number | null;
   readonly serverRevision: number;
+  /** The validated current row, or null when the server has no row. */
+  readonly serverRow?: Row | null;
 }
 
 export type SyncTransportPushResult<Row> =
   | { readonly status: 'succeeded'; readonly row: Row }
-  | { readonly status: 'conflict'; readonly conflict: SyncConflict }
+  | { readonly status: 'conflict'; readonly conflict: SyncConflict<Row> }
   | { readonly status: 'failed'; readonly error: CloudRepositoryError };
 
 export interface SyncPushRequest {

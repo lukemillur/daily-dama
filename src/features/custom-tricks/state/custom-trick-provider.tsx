@@ -24,6 +24,7 @@ import { useIdentityHandle } from '@/shared/persistence/identity-provider';
 import { useIdentityScopedDomain } from '@/shared/persistence/use-identity-scoped-domain';
 import { getSupabaseClient } from '@/shared/supabase/supabase-client';
 import type { DomainSyncRecord, SyncTrigger } from '@/shared/sync/coordinator';
+import type { SyncConflictRecord } from '@/shared/sync/conflict';
 
 type SaveCustomTrickResult =
   | Extract<CustomTrickDraftValidation, { status: 'invalid' }>
@@ -47,6 +48,8 @@ export interface CustomTrickSync {
   readonly pendingCount: number;
   readonly retryableFailureCount: number;
   readonly conflictCount: number;
+  readonly conflicts: readonly SyncConflictRecord[];
+  readonly resolveConflict: (recordId: string, choice: 'local' | 'server') => Promise<void>;
   readonly discardPending: () => Promise<void>;
 }
 

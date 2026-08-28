@@ -184,6 +184,7 @@ async function classifyGoalUpdateFailure(
             recordId: goalId,
             expectedRevision: request.expectedRevision,
             serverRevision: existing.revision,
+            serverRow: existing,
           },
         };
   }
@@ -197,6 +198,7 @@ async function classifyGoalUpdateFailure(
       recordId: goalId,
       expectedRevision: request.expectedRevision,
       serverRevision: existing.revision,
+      serverRow: existing,
     },
   };
 }
