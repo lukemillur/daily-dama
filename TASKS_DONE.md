@@ -4,16 +4,6 @@ Completed entries move here from `TASKS.md`'s `Backlog`, in the same commit that
 
 Entries keep their content as it was at completion. Don't retroactively edit a description or exit criteria after the fact; if something about a completed task turns out to be wrong or misleading, note that in a new entry or in code, not by rewriting history here.
 
-### [T159.2] Import all guest data into a new empty account
-
-- **Area:** Guest-to-new-account import
-- **Priority:** High
-- **Status:** Done
-- **Planning:** Required
-- **Description:** Implement the empty-account path using the standard outboxes/repositories, preserving operation IDs and source guest data until each domain's records are acknowledged.
-- **Exit criteria:** Integration tests import fixtures spanning all five local domains into an empty account, simulate interruption and lost acknowledgements at each domain boundary, resume without duplicates, rehydrate the complete result in another browser, and retain every unacknowledged guest record locally. Confirmed: added a durable prepared-operation progress contract and an injectable empty-account runner using the existing mapping and sequential outbox transport primitives. Fixtures cover profile, custom tricks, practice history, goals, and notes; table-driven interruption tests cover every domain boundary; a server-commit/lost-ack test resumes with the original operation ID; acknowledged source records are removed individually and acknowledged cleanup is replayed after cleanup failure windows, while pending source data remains untouched. The normal authenticated hook now prepares and resumes the empty-target import with identity/import guards. Focused guest-import tests and full typecheck pass; web/mobile platform scope remains web-only per project policy.
-- **Notes:** From S036. Depends on T159.1. Existing-account merge, conflict choice, final namespace cleanup, and second-browser live pull remain T159.3–T159.5 responsibilities.
-
 ### [T160.2] Add per-record conflict resolution
 
 - **Area:** Synchronization conflicts
