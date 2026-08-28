@@ -88,6 +88,12 @@ every application row plus the Auth user itself; missing/invalid JWTs,
 malformed bodies, wrong confirmation text, wrong passwords, and a body that
 tries to name another user's id are all rejected.
 
+The handler applies a 30-attempt limit per trusted Auth user and per trusted
+edge-proxy client IP in a 15-minute window. The prototype limiter is bounded
+and isolate-local; hosted deployments need distributed enforcement validation
+in T162.4. The proxy-provided IP is used only as a rate-limit dimension, never
+as an authorization identity.
+
 This suite needs the same running local stack and recent `db reset` as the
 Data API suite above (the CLI serves any function under
 `supabase/functions/<name>/` automatically once the stack is running, so no

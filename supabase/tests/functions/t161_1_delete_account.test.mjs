@@ -115,12 +115,14 @@ describe('T161.1 delete-account Edge Function', () => {
       const rawBody = JSON.stringify({ currentPassword: PASSWORD, confirmation: 'DELETE' });
       const result = await callDeleteAccount(config, undefined, rawBody);
       assert.equal(result.status, 401);
+      assert.equal(result.headers.get('cache-control'), 'no-store');
     });
 
     test('invalid bearer token returns 401', async () => {
       const rawBody = JSON.stringify({ currentPassword: PASSWORD, confirmation: 'DELETE' });
       const result = await callDeleteAccount(config, 'Bearer not-a-real-token', rawBody);
       assert.equal(result.status, 401);
+      assert.equal(result.headers.get('cache-control'), 'no-store');
     });
   });
 
@@ -153,6 +155,7 @@ describe('T161.1 delete-account Edge Function', () => {
       test(name + ' returns 400', async () => {
         const result = await callDeleteAccount(config, 'Bearer ' + accessToken, rawBody);
         assert.equal(result.status, 400);
+        assert.equal(result.headers.get('cache-control'), 'no-store');
       });
     }
   });
