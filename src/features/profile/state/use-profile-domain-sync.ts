@@ -27,7 +27,8 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
 import type { UserProfile, UserProfileAction } from '@/features/profile/model/user-profile';
-import { composeUserProfileFromCloudRows, diffProfileForOutboxOperations } from '@/features/profile/persistence/profile-cloud-mapping';
+import { composeUserProfileFromCloudRows, diffProfileForOutboxOperations, mapProfileRowToDomainFields, mapTrickStateRowsToDomainFields } from '@/features/profile/persistence/profile-cloud-mapping';
+import type { ProfileRow, UserTrickStateRow } from '@/features/profile/persistence/profile-cloud-repository';
 import {
   createInitialProfileSyncSnapshot,
   loadProfileSyncEnvelope,
@@ -39,8 +40,9 @@ import {
 import type { ProfileSyncTransport } from '@/features/profile/persistence/profile-sync-transport';
 import { useIdentityHandle } from '@/shared/persistence/identity-provider';
 import { useIdentityScopedDomain } from '@/shared/persistence/use-identity-scoped-domain';
-import { createOutboxOperationId, type OutboxOperation } from '@/shared/sync/outbox-operation';
+import { createOutboxOperation, createOutboxOperationId, type OutboxOperation } from '@/shared/sync/outbox-operation';
 import type { DomainSyncOutcome, DomainSyncRecord, SyncTrigger } from '@/shared/sync/coordinator';
+import type { SyncConflictRecord } from '@/shared/sync/conflict';
 import { createInitialSyncEnvelope, discardPendingOperations, type SyncEnvelope } from '@/shared/sync/sync-envelope';
 import { pullAllPages, pushOutboxOperations } from '@/shared/sync/transport';
 
@@ -60,6 +62,8 @@ export interface UseProfileDomainSyncResult {
   readonly pendingCount: number;
   readonly retryableFailureCount: number;
   readonly conflictCount: number;
+  readonly conflicts: readonly SyncConflictRecord[];
+  readonly resolveConflict: (recordId: string, choice: 'local' | 'server') => Promise<void>;
   readonly discardPending: () => Promise<void>;
 }
 
@@ -87,6 +91,7 @@ export function useProfileDomainSync(options: UseProfileDomainSyncOptions): UseP
   // comment): synced in a layout effect, never written during render.
   const latestRef = useRef({
     identity,
+    generation,
     profile: options.profile,
     dispatchProfile: options.dispatchProfile,
     getTransport: options.getTransport,
@@ -96,6 +101,7 @@ export function useProfileDomainSync(options: UseProfileDomainSyncOptions): UseP
   useLayoutEffect(() => {
     latestRef.current = {
       identity,
+      generation,
       profile: options.profile,
       dispatchProfile: options.dispatchProfile,
       getTransport: options.getTransport,
@@ -246,6 +252,20 @@ export function useProfileDomainSync(options: UseProfileDomainSyncOptions): UseP
           errorMessage,
           failureKind: outcome.result.status === 'conflict' ? 'conflict' : 'retryable',
         });
+        if (outcome.result.status === 'conflict' && op) {
+          const conflict: SyncConflictRecord = {
+            domain: 'profile',
+            recordId: outcome.recordId,
+            operationId: op.operationId,
+            operationType: op.operationType,
+            expectedRevision: outcome.result.conflict.expectedRevision,
+            serverRevision: outcome.result.conflict.serverRevision,
+            localSnapshot: (op.payload ?? null) as unknown as SyncConflictRecord['localSnapshot'],
+            serverSnapshot: (outcome.result.conflict.serverRow ?? null) as unknown as SyncConflictRecord['serverSnapshot'],
+            createdAt: now,
+          };
+          envelopeDispatch({ type: 'conflictRecorded', identity: currentIdentity, conflict });
+        }
       }
 
       return settle({ status: 'succeeded' });
@@ -342,7 +362,58 @@ export function useProfileDomainSync(options: UseProfileDomainSyncOptions): UseP
 
   const pendingCount = envelope.state.outbox.length;
   const retryableFailureCount = envelope.state.outbox.filter((operation) => operation.lastFailureKind === 'retryable').length;
-  const conflictCount = envelope.state.outbox.filter((operation) => operation.lastFailureKind === 'conflict').length;
+  const conflictCount = envelope.state.conflicts.length;
+  const resolveConflict = useCallback(async (recordId: string, choice: 'local' | 'server') => {
+    const current = latestRef.current;
+    const conflict = current.envelopeState.conflicts.find((item) => item.recordId === recordId);
+    if (!conflict || conflict.domain !== 'profile' || current.identity.kind !== 'user') return;
+    const now = Date.now();
+    if (current.generation !== generation || conflict.operationId !== current.envelopeState.outbox.find((op) => op.recordId === recordId)?.operationId) return;
+    let revisionSnapshot = current.envelopeState.state;
+    if (choice === 'server') {
+      const serverRow = conflict.serverSnapshot;
+      if (recordId === current.identity.userId) {
+        const mapped = mapProfileRowToDomainFields(serverRow as ProfileRow | null, current.identity.userId);
+        if (mapped.status !== 'valid') return;
+        suppressNextDiffRef.current = true;
+        current.dispatchProfile({ type: 'profileRestored', profile: { ...current.profile, ...mapped.fields } });
+        revisionSnapshot = { ...revisionSnapshot, profileRevision: conflict.serverRevision };
+      } else if (serverRow === null) {
+        const profile = {
+          ...current.profile,
+          selectedTrickIds: current.profile.selectedTrickIds.filter((id) => id !== recordId),
+          manuallyUnlockedTrickIds: (current.profile.manuallyUnlockedTrickIds ?? []).filter((id) => id !== recordId),
+        };
+        suppressNextDiffRef.current = true;
+        current.dispatchProfile({ type: 'profileRestored', profile });
+        const trickStateRevisions = { ...revisionSnapshot.trickStateRevisions };
+        delete trickStateRevisions[recordId];
+        revisionSnapshot = { ...revisionSnapshot, trickStateRevisions };
+      } else {
+        const mapped = mapTrickStateRowsToDomainFields([serverRow as UserTrickStateRow], current.identity.userId);
+        if (mapped.status !== 'valid') return;
+        const selected = new Set(current.profile.selectedTrickIds.filter((id) => id !== recordId));
+        const unlocked = new Set((current.profile.manuallyUnlockedTrickIds ?? []).filter((id) => id !== recordId));
+        if (mapped.fields.selectedTrickIds.includes(recordId)) selected.add(recordId);
+        if ((mapped.fields.manuallyUnlockedTrickIds ?? []).includes(recordId)) unlocked.add(recordId);
+        suppressNextDiffRef.current = true;
+        current.dispatchProfile({ type: 'profileRestored', profile: { ...current.profile, selectedTrickIds: [...selected], manuallyUnlockedTrickIds: [...unlocked] } });
+        revisionSnapshot = { ...revisionSnapshot, trickStateRevisions: { ...revisionSnapshot.trickStateRevisions, [recordId]: conflict.serverRevision } };
+      }
+    } else {
+      revisionSnapshot = {
+        ...revisionSnapshot,
+        ...(recordId === current.identity.userId ? { profileRevision: conflict.serverRevision } : { trickStateRevisions: { ...revisionSnapshot.trickStateRevisions, [recordId]: conflict.serverRevision } }),
+      };
+    }
+    const replacement = choice === 'local'
+      ? createOutboxOperation(createOutboxOperationId(now, Math.random()), {
+          domain: 'profile', operationType: conflict.operationType, recordId: conflict.recordId,
+          payload: conflict.localSnapshot as Record<string, unknown> | null,
+        }, now)
+      : undefined;
+    current.envelopeDispatch({ type: 'conflictResolved', identity: current.identity, domain: 'profile', recordId, operationId: conflict.operationId, replacement, revisionSnapshot });
+  }, [generation]);
 
   const discardPending = useCallback(async () => {
     const { identity: currentIdentity, envelopeState, envelopeDispatch } = latestRef.current;
@@ -365,8 +436,10 @@ export function useProfileDomainSync(options: UseProfileDomainSyncOptions): UseP
       pendingCount,
       retryableFailureCount,
       conflictCount,
+      conflicts: envelope.state.conflicts,
+      resolveConflict,
       discardPending,
     }),
-    [runSync, isSyncing, lastResult, bothHydrated, localMutationTick, pendingCount, retryableFailureCount, conflictCount, discardPending],
+    [runSync, isSyncing, lastResult, bothHydrated, localMutationTick, pendingCount, retryableFailureCount, conflictCount, discardPending, resolveConflict, envelope.state.conflicts],
   );
 }

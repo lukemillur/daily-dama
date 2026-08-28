@@ -193,16 +193,6 @@ _Phase 3 activation: T156–T160 come from S035–S038 and `BACKEND_ROADMAP.md` 
 - **Description:** Make pending work, failures, offline state, freshness, retry, and conflicts understandable without allowing one bad record to stop unrelated synchronization.
 - **Notes:** Umbrella from S037. Complete T160.1–T160.3. Depends on T157.
 
-### [T160.2] Add per-record conflict resolution
-
-- **Area:** Synchronization conflicts
-- **Priority:** High
-- **Status:** In progress
-- **Planning:** Required
-- **Description:** Add `/app/profile/sync-conflicts` with typed comparisons and explicit local/server resolution for profile, custom-trick, goal, and note conflicts, while immutable-session duplicates follow their deterministic identity rule.
-- **Exit criteria:** Route/state tests render representative conflicts for every mutable resource, apply either resolution as a new revision-aware operation, persist unresolved conflicts across reload, remove only resolved items, and leave unrelated outbox operations running.
-- **Notes:** From S037. Depends on T160.1 and T157.4–T157.8. No automatic last-write-wins option.
-
 ### [T160.3] Prove stale revisions and tombstones cannot block or resurrect unrelated data
 
 - **Area:** Synchronization conflict testing

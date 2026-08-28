@@ -19,6 +19,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import type { CustomTrickAction, CustomTrickCollection } from '@/features/custom-tricks/model/custom-trick';
 import {
   diffCustomTricksForOutboxOperations,
+  mapCustomTrickRowToDomainTrick,
   mapCustomTrickRowsToDomainCollection,
 } from '@/features/custom-tricks/persistence/custom-trick-cloud-mapping';
 import type { CustomTrickRow } from '@/features/custom-tricks/persistence/custom-trick-cloud-repository';
@@ -32,8 +33,9 @@ import {
 } from '@/features/custom-tricks/persistence/custom-trick-sync-envelope';
 import { useIdentityHandle } from '@/shared/persistence/identity-provider';
 import { useIdentityScopedDomain } from '@/shared/persistence/use-identity-scoped-domain';
-import { createOutboxOperationId, type OutboxOperation } from '@/shared/sync/outbox-operation';
+import { createOutboxOperation, createOutboxOperationId, type OutboxOperation } from '@/shared/sync/outbox-operation';
 import type { DomainSyncOutcome, DomainSyncRecord, SyncTrigger } from '@/shared/sync/coordinator';
+import type { SyncConflictRecord } from '@/shared/sync/conflict';
 import { createInitialSyncEnvelope, discardPendingOperations, type SyncEnvelope } from '@/shared/sync/sync-envelope';
 import { pullAllPages, pushOutboxOperations, type SyncTransportRepository } from '@/shared/sync/transport';
 
@@ -53,6 +55,8 @@ export interface UseCustomTrickDomainSyncResult {
   readonly pendingCount: number;
   readonly retryableFailureCount: number;
   readonly conflictCount: number;
+  readonly conflicts: readonly SyncConflictRecord[];
+  readonly resolveConflict: (recordId: string, choice: 'local' | 'server') => Promise<void>;
   readonly discardPending: () => Promise<void>;
 }
 
@@ -86,6 +90,7 @@ export function useCustomTrickDomainSync(
   // `use-profile-domain-sync.ts`'s own `latestRef`.
   const latestRef = useRef({
     identity,
+    generation,
     collection: options.collection,
     dispatchCollection: options.dispatchCollection,
     getTransport: options.getTransport,
@@ -95,6 +100,7 @@ export function useCustomTrickDomainSync(
   useLayoutEffect(() => {
     latestRef.current = {
       identity,
+      generation,
       collection: options.collection,
       dispatchCollection: options.dispatchCollection,
       getTransport: options.getTransport,
@@ -224,6 +230,20 @@ export function useCustomTrickDomainSync(
           errorMessage,
           failureKind: outcome.result.status === 'conflict' ? 'conflict' : 'retryable',
         });
+        if (outcome.result.status === 'conflict' && op) {
+          const conflict: SyncConflictRecord = {
+            domain: 'customTricks',
+            recordId: outcome.recordId,
+            operationId: op.operationId,
+            operationType: op.operationType,
+            expectedRevision: outcome.result.conflict.expectedRevision,
+            serverRevision: outcome.result.conflict.serverRevision,
+            localSnapshot: (op.payload ?? null) as unknown as SyncConflictRecord['localSnapshot'],
+            serverSnapshot: (outcome.result.conflict.serverRow ?? null) as unknown as SyncConflictRecord['serverSnapshot'],
+            createdAt: now,
+          };
+          envelopeDispatch({ type: 'conflictRecorded', identity: currentIdentity, conflict });
+        }
       }
 
       return settle({ status: 'succeeded' });
@@ -320,7 +340,39 @@ export function useCustomTrickDomainSync(
 
   const pendingCount = envelope.state.outbox.length;
   const retryableFailureCount = envelope.state.outbox.filter((operation) => operation.lastFailureKind === 'retryable').length;
-  const conflictCount = envelope.state.outbox.filter((operation) => operation.lastFailureKind === 'conflict').length;
+  const conflictCount = envelope.state.conflicts.length;
+  const resolveConflict = useCallback(async (recordId: string, choice: 'local' | 'server') => {
+    const current = latestRef.current;
+    const conflict = current.envelopeState.conflicts.find((item) => item.recordId === recordId);
+    if (!conflict || conflict.domain !== 'customTricks' || current.identity.kind !== 'user') return;
+    if (current.generation !== generation || conflict.operationId !== current.envelopeState.outbox.find((op) => op.recordId === recordId)?.operationId) return;
+    const now = Date.now();
+    let revisionSnapshot = current.envelopeState.state;
+    if (choice === 'server') {
+      if (conflict.serverSnapshot === null) {
+        current.dispatchCollection({ type: 'customTricksRestored', collection: { tricks: current.collection.tricks.filter((trick) => trick.id !== recordId) } });
+        suppressNextDiffRef.current = true;
+        const revisions = { ...revisionSnapshot.trickRevisions };
+        delete revisions[recordId];
+        revisionSnapshot = { ...revisionSnapshot, trickRevisions: revisions };
+      } else {
+        const mapped = mapCustomTrickRowToDomainTrick(conflict.serverSnapshot as CustomTrickRow, current.identity.userId);
+        if (mapped.status !== 'valid') return;
+        suppressNextDiffRef.current = true;
+        current.dispatchCollection({ type: 'customTricksRestored', collection: { tricks: [...current.collection.tricks.filter((trick) => trick.id !== recordId), mapped.trick] } });
+        revisionSnapshot = { ...revisionSnapshot, trickRevisions: { ...revisionSnapshot.trickRevisions, [recordId]: conflict.serverRevision } };
+      }
+    } else {
+      revisionSnapshot = { ...revisionSnapshot, trickRevisions: { ...revisionSnapshot.trickRevisions, [recordId]: conflict.serverRevision } };
+    }
+    const replacement = choice === 'local'
+      ? createOutboxOperation(createOutboxOperationId(now, Math.random()), {
+          domain: 'customTricks', operationType: conflict.operationType, recordId: conflict.recordId,
+          payload: conflict.localSnapshot as Record<string, unknown> | null,
+        }, now)
+      : undefined;
+    current.envelopeDispatch({ type: 'conflictResolved', identity: current.identity, domain: 'customTricks', recordId, operationId: conflict.operationId, replacement, revisionSnapshot });
+  }, [generation]);
 
   const discardPending = useCallback(async () => {
     const { identity: currentIdentity, envelopeState, envelopeDispatch } = latestRef.current;
@@ -343,8 +395,10 @@ export function useCustomTrickDomainSync(
       pendingCount,
       retryableFailureCount,
       conflictCount,
+      conflicts: envelope.state.conflicts,
+      resolveConflict,
       discardPending,
     }),
-    [runSync, isSyncing, lastResult, bothHydrated, localMutationTick, pendingCount, retryableFailureCount, conflictCount, discardPending],
+    [runSync, isSyncing, lastResult, bothHydrated, localMutationTick, pendingCount, retryableFailureCount, conflictCount, discardPending, resolveConflict, envelope.state.conflicts],
   );
 }

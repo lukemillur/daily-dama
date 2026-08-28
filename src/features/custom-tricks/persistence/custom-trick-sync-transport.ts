@@ -140,6 +140,7 @@ export function createCustomTrickSyncTransportAdapter(
           recordId: trickId,
           expectedRevision: request.expectedRevision,
           serverRevision: existing.revision,
+          serverRow: existing,
         },
       };
     } catch (cause) {
@@ -213,7 +214,8 @@ export function createCustomTrickSyncTransportAdapter(
             operationId: request.operationId,
             recordId: trickId,
             expectedRevision: request.expectedRevision,
-            serverRevision: existing.revision,
+          serverRevision: existing.revision,
+          serverRow: existing,
           },
         };
       }

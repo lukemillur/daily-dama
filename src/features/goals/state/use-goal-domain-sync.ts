@@ -19,6 +19,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import type { GoalAction, GoalCollection } from '@/features/goals/model/goal';
 import {
   diffGoalsForOutboxOperations,
+  mapGoalRowToDomainEntry,
   mapGoalRowsToDomainCollection,
 } from '@/features/goals/persistence/goal-cloud-mapping';
 import type { GoalRow } from '@/features/goals/persistence/goal-cloud-repository';
@@ -32,8 +33,9 @@ import {
 } from '@/features/goals/persistence/goal-sync-envelope';
 import { useIdentityHandle } from '@/shared/persistence/identity-provider';
 import { useIdentityScopedDomain } from '@/shared/persistence/use-identity-scoped-domain';
-import { createOutboxOperationId, type OutboxOperation } from '@/shared/sync/outbox-operation';
+import { createOutboxOperation, createOutboxOperationId, type OutboxOperation } from '@/shared/sync/outbox-operation';
 import type { DomainSyncOutcome, DomainSyncRecord, SyncTrigger } from '@/shared/sync/coordinator';
+import type { SyncConflictRecord } from '@/shared/sync/conflict';
 import { createInitialSyncEnvelope, discardPendingOperations, type SyncEnvelope } from '@/shared/sync/sync-envelope';
 import { pullAllPages, pushOutboxOperations, type SyncTransportRepository } from '@/shared/sync/transport';
 
@@ -53,6 +55,8 @@ export interface UseGoalDomainSyncResult {
   readonly pendingCount: number;
   readonly retryableFailureCount: number;
   readonly conflictCount: number;
+  readonly conflicts: readonly SyncConflictRecord[];
+  readonly resolveConflict: (recordId: string, choice: 'local' | 'server') => Promise<void>;
   readonly discardPending: () => Promise<void>;
 }
 
@@ -79,6 +83,7 @@ export function useGoalDomainSync(options: UseGoalDomainSyncOptions): UseGoalDom
   // `use-custom-trick-domain-sync.ts`'s own `latestRef`.
   const latestRef = useRef({
     identity,
+    generation,
     collection: options.collection,
     dispatchCollection: options.dispatchCollection,
     getTransport: options.getTransport,
@@ -88,6 +93,7 @@ export function useGoalDomainSync(options: UseGoalDomainSyncOptions): UseGoalDom
   useLayoutEffect(() => {
     latestRef.current = {
       identity,
+      generation,
       collection: options.collection,
       dispatchCollection: options.dispatchCollection,
       getTransport: options.getTransport,
@@ -225,6 +231,20 @@ export function useGoalDomainSync(options: UseGoalDomainSyncOptions): UseGoalDom
           errorMessage,
           failureKind: outcome.result.status === 'conflict' ? 'conflict' : 'retryable',
         });
+        if (outcome.result.status === 'conflict' && op) {
+          const conflict: SyncConflictRecord = {
+            domain: 'goals',
+            recordId: outcome.recordId,
+            operationId: op.operationId,
+            operationType: op.operationType,
+            expectedRevision: outcome.result.conflict.expectedRevision,
+            serverRevision: outcome.result.conflict.serverRevision,
+            localSnapshot: (op.payload ?? null) as unknown as SyncConflictRecord['localSnapshot'],
+            serverSnapshot: (outcome.result.conflict.serverRow ?? null) as unknown as SyncConflictRecord['serverSnapshot'],
+            createdAt: now,
+          };
+          envelopeDispatch({ type: 'conflictRecorded', identity: currentIdentity, conflict });
+        }
       }
 
       return settle({ status: 'succeeded' });
@@ -321,7 +341,34 @@ export function useGoalDomainSync(options: UseGoalDomainSyncOptions): UseGoalDom
 
   const pendingCount = envelope.state.outbox.length;
   const retryableFailureCount = envelope.state.outbox.filter((operation) => operation.lastFailureKind === 'retryable').length;
-  const conflictCount = envelope.state.outbox.filter((operation) => operation.lastFailureKind === 'conflict').length;
+  const conflictCount = envelope.state.conflicts.length;
+  const resolveConflict = useCallback(async (recordId: string, choice: 'local' | 'server') => {
+    const current = latestRef.current;
+    const conflict = current.envelopeState.conflicts.find((item) => item.recordId === recordId);
+    if (!conflict || conflict.domain !== 'goals' || current.identity.kind !== 'user') return;
+    if (current.generation !== generation || conflict.operationId !== current.envelopeState.outbox.find((op) => op.recordId === recordId)?.operationId) return;
+    const now = Date.now();
+    let revisionSnapshot = current.envelopeState.state;
+    if (choice === 'server') {
+      const mapped = conflict.serverSnapshot === null ? undefined : mapGoalRowToDomainEntry(conflict.serverSnapshot as GoalRow, current.identity.userId);
+      if (mapped !== undefined && mapped.status === 'invalid') return;
+      suppressNextDiffRef.current = true;
+      current.dispatchCollection({ type: 'goalsRestored', collection: { goals: [...current.collection.goals.filter((goal) => goal.id !== recordId), ...(mapped?.status === 'valid' && mapped.entry.status === 'active' ? [mapped.entry.goal] : [])] } });
+      const revisions = { ...revisionSnapshot.goalRevisions };
+      if (mapped?.status === 'valid' && mapped.entry.status === 'active') revisions[recordId] = conflict.serverRevision;
+      else delete revisions[recordId];
+      revisionSnapshot = { ...revisionSnapshot, goalRevisions: revisions };
+    } else {
+      revisionSnapshot = { ...revisionSnapshot, goalRevisions: { ...revisionSnapshot.goalRevisions, [recordId]: conflict.serverRevision } };
+    }
+    const replacement = choice === 'local'
+      ? createOutboxOperation(createOutboxOperationId(now, Math.random()), {
+          domain: 'goals', operationType: conflict.operationType, recordId: conflict.recordId,
+          payload: conflict.localSnapshot as Record<string, unknown> | null,
+        }, now)
+      : undefined;
+    current.envelopeDispatch({ type: 'conflictResolved', identity: current.identity, domain: 'goals', recordId, operationId: conflict.operationId, replacement, revisionSnapshot });
+  }, [generation]);
 
   const discardPending = useCallback(async () => {
     const { identity: currentIdentity, envelopeState, envelopeDispatch } = latestRef.current;
@@ -344,8 +391,10 @@ export function useGoalDomainSync(options: UseGoalDomainSyncOptions): UseGoalDom
       pendingCount,
       retryableFailureCount,
       conflictCount,
+      conflicts: envelope.state.conflicts,
+      resolveConflict,
       discardPending,
     }),
-    [runSync, isSyncing, lastResult, bothHydrated, localMutationTick, pendingCount, retryableFailureCount, conflictCount, discardPending],
+    [runSync, isSyncing, lastResult, bothHydrated, localMutationTick, pendingCount, retryableFailureCount, conflictCount, discardPending, resolveConflict, envelope.state.conflicts],
   );
 }
