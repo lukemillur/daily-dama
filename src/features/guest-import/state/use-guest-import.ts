@@ -36,9 +36,11 @@ import {
   type GuestImportAction,
   type GuestImportDomainCounts,
   type GuestImportState,
+  type GuestImportChoice,
 } from '@/features/guest-import/model/guest-import';
 import { prepareGuestImport, readGuestImportSnapshot, runEmptyGuestImport } from '@/features/guest-import/persistence/guest-import-empty-account';
 import { planExistingAccountMerge, readExistingAccountSnapshot } from '@/features/guest-import/persistence/guest-import-existing-account';
+import { planProfileChoice, runExistingGuestImport } from '@/features/guest-import/persistence/guest-import-decisions';
 import { identityNamespace } from '@/shared/persistence/identity';
 import { useIdentityHandle } from '@/shared/persistence/identity-provider';
 import { useIdentityScopedDomain } from '@/shared/persistence/use-identity-scoped-domain';
@@ -50,6 +52,9 @@ export interface UseGuestImportResult {
   readonly confirmImport: () => void;
   readonly cancelImport: () => void;
   readonly dismiss: () => void;
+  readonly chooseProfile?: (choice: GuestImportChoice) => void;
+  readonly resolveConflict?: (domain: import('@/shared/sync/domain').SyncDomain, recordId: string, choice: GuestImportChoice) => void;
+  readonly finishConflicts?: () => void;
 }
 
 function mergeCounts(
@@ -248,7 +253,13 @@ export function useGuestImport(): UseGuestImportResult {
         // The hook remains inert when a test/dry-run inventory supplies no
         // mutation-capable transport; production adapters always expose push.
         if (typeof transports.profile?.push !== 'function') return;
-        const result = await runEmptyGuestImport({
+        const result = state.targetKind === 'existing'
+          ? { status: 'completed' as const, progress: await runExistingGuestImport({ progress, repositories: transports, saveProgress: async (nextProgress) => {
+              if (cancelled || latestRef.current.state.importId !== importId) return;
+              latestRef.current.dispatch({ type: 'progressUpdated', importId, progress: nextProgress, now: Date.now() });
+              await latestRef.current.saveNow?.({ ...latestRef.current.state, progress: nextProgress });
+            }, conflicts: latestRef.current.state.conflicts, resolutions: latestRef.current.state.conflictResolutions }) }
+          : await runEmptyGuestImport({
           storage: AsyncStorage,
           destinationIdentity,
           destinationUserId: destinationIdentity.userId,
@@ -290,5 +301,23 @@ export function useGuestImport(): UseGuestImportResult {
     dispatch({ type: 'dismissPressed' });
   }, [dispatch]);
 
-  return { state, confirmImport, cancelImport, dismiss };
+  const chooseProfile = useCallback((choice: GuestImportChoice) => {
+    const latest = latestRef.current;
+    if (latest.state.importId === undefined || latest.state.profileComparison === undefined) return;
+    const plan = planProfileChoice({ comparison: latest.state.profileComparison, choice, destinationUserId: identity.kind === 'user' ? identity.userId : '', expectedRevision: null, operationId: `guest-import-profile-${latest.state.importId}`, createdAt: Date.now() });
+    const progress = plan.operation === null || latest.state.progress === undefined ? latest.state.progress : { ...latest.state.progress, operations: [...latest.state.progress.operations, plan.operation] };
+    latest.dispatch({ type: 'profileChoiceMade', importId: latest.state.importId, choice, now: Date.now() });
+    if (progress !== undefined) latest.dispatch({ type: 'progressUpdated', importId: latest.state.importId, progress, now: Date.now() });
+  }, [identity]);
+  const resolveConflict = useCallback((domain: import('@/shared/sync/domain').SyncDomain, recordId: string, choice: GuestImportChoice) => {
+    const latest = latestRef.current;
+    if (latest.state.importId === undefined) return;
+    latest.dispatch({ type: 'conflictResolved', importId: latest.state.importId, domain, recordId, choice, now: Date.now() });
+  }, []);
+  const finishConflicts = useCallback(() => {
+    const latest = latestRef.current;
+    if (latest.state.importId !== undefined) latest.dispatch({ type: 'conflictsResolved', importId: latest.state.importId, now: Date.now() });
+  }, []);
+
+  return { state, confirmImport, cancelImport, dismiss, chooseProfile, resolveConflict, finishConflicts };
 }

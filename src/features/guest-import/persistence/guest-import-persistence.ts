@@ -14,6 +14,7 @@ import {
   type GuestImportStatus,
   type GuestImportTargetKind,
   type GuestImportProgress,
+  type GuestImportConflictResolution,
 } from '@/features/guest-import/model/guest-import';
 import { isConflictSnapshot } from '@/shared/sync/conflict';
 import { isSyncDomain, SYNC_DOMAINS } from '@/shared/sync/domain';
@@ -115,7 +116,22 @@ function isProfileComparison(value: unknown): boolean {
 }
 
 function isConflictsArray(value: unknown): value is readonly GuestImportConflict[] {
-  return Array.isArray(value) && value.every(isGuestImportConflict);
+  if (!Array.isArray(value) || !value.every(isGuestImportConflict)) return false;
+  const keys = value.map((item) => `${item.domain}:${item.recordId}`);
+  return new Set(keys).size === keys.length;
+}
+
+function isConflictResolutions(value: unknown, conflicts: readonly GuestImportConflict[]): value is readonly GuestImportConflictResolution[] {
+  if (!Array.isArray(value)) return false;
+  const conflictKeys = new Set(conflicts.map((item) => `${item.domain}:${item.recordId}`));
+  const seen = new Set<string>();
+  return value.every((item) => {
+    if (!isRecord(item) || !isSyncDomain(item.domain) || !isNonEmptyString(item.recordId) || (item.choice !== 'guest' && item.choice !== 'cloud')) return false;
+    const key = `${item.domain}:${item.recordId}`;
+    if (!conflictKeys.has(key) || seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 }
 
 function isGuestImportProgress(value: unknown): value is GuestImportProgress | undefined {
@@ -151,6 +167,7 @@ export function isGuestImportState(value: unknown): value is GuestImportState {
     targetKind,
     domainOutcomes,
     profileChoice,
+    conflictResolutions,
     conflicts,
     errorMessage,
     startedAt,
@@ -168,6 +185,7 @@ export function isGuestImportState(value: unknown): value is GuestImportState {
   if (!isDomainOutcomes(domainOutcomes)) return false;
   if (profileChoice !== undefined && profileChoice !== 'guest' && profileChoice !== 'cloud') return false;
   if (!isConflictsArray(conflicts)) return false;
+  if (!isConflictResolutions(conflictResolutions, conflicts)) return false;
   if (!Array.isArray(deduplications) || !deduplications.every(isRecordReference)) return false;
   if (profileComparison !== undefined && !isProfileComparison(profileComparison)) return false;
   if (!isOptionalString(errorMessage)) return false;

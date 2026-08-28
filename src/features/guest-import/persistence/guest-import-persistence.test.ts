@@ -42,6 +42,10 @@ function fullState(status: GuestImportState['status']): GuestImportState {
     targetKind: 'existing',
     domainOutcomes: domainOutcomes as unknown as GuestImportState['domainOutcomes'],
     profileChoice: 'cloud',
+    conflictResolutions: [
+      { domain: 'goals', recordId: 'goal-1', choice: 'cloud' },
+      { domain: 'notes', recordId: 'note-1', choice: 'guest' },
+    ],
     conflicts: [
       { domain: 'goals', recordId: 'goal-1', guestSnapshot: { id: 'goal-1' }, cloudSnapshot: { id: 'goal-1' }, cloudRevision: 2 },
       { domain: 'notes', recordId: 'note-1', guestSnapshot: { id: 'note-1' }, cloudSnapshot: { id: 'note-1' }, cloudRevision: null },
