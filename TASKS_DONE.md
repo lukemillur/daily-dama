@@ -4,6 +4,16 @@ Completed entries move here from `TASKS.md`'s `Backlog`, in the same commit that
 
 Entries keep their content as it was at completion. Don't retroactively edit a description or exit criteria after the fact; if something about a completed task turns out to be wrong or misleading, note that in a new entry or in code, not by rewriting history here.
 
+### [T159.4] Let users choose profile preferences and resolve import conflicts
+
+- **Area:** Guest merge decisions
+- **Priority:** High
+- **Status:** Done
+- **Planning:** Required
+- **Description:** Add the explicit choice between guest and cloud profile/preferences plus per-record handling for same-ID/different-payload import conflicts, with no implicit last-write-wins fallback.
+- **Exit criteria:** Browser/state tests present complete profile/preference comparisons, persist the chosen source, resolve each conflicting record independently, allow unrelated records to continue, and prevent completion while an acknowledged required choice remains unresolved. Confirmed: durable profile and per-record conflict decisions are validated and round-trip through guest-import persistence; profile-choice and conflict planners preserve cloud revisions and keep trick-state merging separate; the existing-account runner continues accepted records independently without guest cleanup; the Profile-adjacent web surface renders accessible comparison/conflict choices with unresolved blocking; focused guest-import suites (76 tests), full lint, typecheck, and web export pass via `.claude/scripts/verify.mjs --json`. Native validation is deferred by active project scope.
+- **Notes:** From S036. Depends on T159.3. Reuses JSON-safe `ConflictSnapshot` validation and stable domain/record keys without coupling guest-import state to ordinary synchronization conflicts. T159.5 owns final acknowledgement auditing, cleanup, and namespace switching.
+
 ### [T160.2] Add per-record conflict resolution
 
 - **Area:** Synchronization conflicts

@@ -77,6 +77,14 @@ export interface GuestImportProfileComparison {
   readonly cloud: ConflictSnapshot | null;
 }
 
+export type GuestImportChoice = 'guest' | 'cloud';
+
+export interface GuestImportConflictResolution {
+  readonly domain: SyncDomain;
+  readonly recordId: string;
+  readonly choice: GuestImportChoice;
+}
+
 export interface GuestImportState {
   readonly status: GuestImportStatus;
   readonly importId: string | undefined;
@@ -84,7 +92,8 @@ export interface GuestImportState {
   readonly inventory: GuestImportDomainCounts | undefined;
   readonly targetKind: GuestImportTargetKind | undefined;
   readonly domainOutcomes: Readonly<Partial<Record<SyncDomain, GuestImportDomainOutcome>>>;
-  readonly profileChoice: 'guest' | 'cloud' | undefined;
+  readonly profileChoice: GuestImportChoice | undefined;
+  readonly conflictResolutions: readonly GuestImportConflictResolution[];
   readonly conflicts: readonly GuestImportConflict[];
   readonly deduplications: readonly GuestImportRecordReference[];
   readonly profileComparison: GuestImportProfileComparison | undefined;
@@ -102,6 +111,7 @@ export const INITIAL_GUEST_IMPORT_STATE: GuestImportState = {
   targetKind: undefined,
   domainOutcomes: {},
   profileChoice: undefined,
+  conflictResolutions: [],
   conflicts: [],
   deduplications: [],
   profileComparison: undefined,
@@ -142,9 +152,10 @@ export type GuestImportAction =
   | {
       readonly type: 'profileChoiceMade';
       readonly importId: string;
-      readonly choice: 'guest' | 'cloud';
+      readonly choice: GuestImportChoice;
       readonly now: number;
     }
+  | { readonly type: 'conflictResolved'; readonly importId: string; readonly domain: SyncDomain; readonly recordId: string; readonly choice: GuestImportChoice; readonly now: number }
   | { readonly type: 'conflictsResolved'; readonly importId: string; readonly now: number }
   | { readonly type: 'cancelPressed'; readonly importId: string; readonly now: number }
   | { readonly type: 'dismissPressed' }
@@ -170,6 +181,15 @@ function allDomainsSettled(domainOutcomes: Readonly<Partial<Record<SyncDomain, G
     const outcome = domainOutcomes[domain];
     return outcome !== undefined && outcome.status !== 'pending';
   });
+}
+
+function conflictKey(value: Pick<GuestImportConflictResolution, 'domain' | 'recordId'>): string {
+  return `${value.domain}:${value.recordId}`;
+}
+
+function allConflictsResolved(state: GuestImportState): boolean {
+  const resolved = new Set(state.conflictResolutions.map(conflictKey));
+  return state.conflicts.every((conflict) => resolved.has(conflictKey(conflict)));
 }
 
 export function guestImportReducer(state: GuestImportState, action: GuestImportAction): GuestImportState {
@@ -255,6 +275,8 @@ export function guestImportReducer(state: GuestImportState, action: GuestImportA
 
     case 'profileChoiceMade': {
       if (state.status !== 'awaitingProfileChoice' || state.importId !== action.importId) return state;
+      if (state.profileChoice !== undefined) return state;
+      if (action.choice === 'cloud' && state.profileComparison?.cloud === null) return state;
       return {
         ...state,
         status: state.conflicts.length > 0 ? 'conflicts' : 'completed',
@@ -263,8 +285,16 @@ export function guestImportReducer(state: GuestImportState, action: GuestImportA
       };
     }
 
+    case 'conflictResolved': {
+      if (state.status !== 'conflicts' || state.importId !== action.importId || state.conflictResolutions.some((item) => conflictKey(item) === `${action.domain}:${action.recordId}`)) return state;
+      if (!state.conflicts.some((item) => item.domain === action.domain && item.recordId === action.recordId)) return state;
+      const conflictResolutions = [...state.conflictResolutions, { domain: action.domain, recordId: action.recordId, choice: action.choice }];
+      return { ...state, conflictResolutions, updatedAt: action.now };
+    }
+
     case 'conflictsResolved': {
       if (state.status !== 'conflicts' || state.importId !== action.importId) return state;
+      if (state.profileChoice === undefined || !allConflictsResolved(state)) return state;
       return { ...state, status: 'completed', updatedAt: action.now };
     }
 

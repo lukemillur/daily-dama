@@ -194,7 +194,10 @@ describe('guestImportReducer: upload/profile-choice/conflicts', () => {
     expect(afterChoice.profileChoice).toBe('cloud');
 
     const completed = guestImportReducer(afterChoice, { type: 'conflictsResolved', importId: IMPORT_ID, now: NOW + 5 });
-    expect(completed.status).toBe('completed');
+    expect(completed.status).toBe('conflicts');
+    state = guestImportReducer(afterChoice, { type: 'conflictResolved', importId: IMPORT_ID, domain: 'goals', recordId: 'goal-1', choice: 'cloud', now: NOW + 5 });
+    state = guestImportReducer(state, { type: 'conflictsResolved', importId: IMPORT_ID, now: NOW + 6 });
+    expect(state.status).toBe('completed');
   });
 
   it('profileChoiceMade moves awaitingProfileChoice straight to completed when there are no conflicts', () => {

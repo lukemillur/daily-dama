@@ -145,16 +145,6 @@ _Phase 3 activation: T156–T160 come from S035–S038 and `BACKEND_ROADMAP.md` 
 - **Description:** Import guest data through explicit, resumable merge rules without clearing any local source record before server acknowledgement.
 - **Notes:** Umbrella from S036. Complete T159.1–T159.5. Depends on T157 and the identity isolation established by T156.
 
-### [T159.4] Let users choose profile preferences and resolve import conflicts
-
-- **Area:** Guest merge decisions
-- **Priority:** High
-- **Status:** Not started
-- **Planning:** Required
-- **Description:** Add the explicit choice between guest and cloud profile/preferences plus per-record handling for same-ID/different-payload import conflicts, with no implicit last-write-wins fallback.
-- **Exit criteria:** Browser/state tests present complete profile/preference comparisons, persist the chosen source, resolve each conflicting record independently, allow unrelated records to continue, and prevent completion while an acknowledged required choice remains unresolved.
-- **Notes:** From S036. Depends on T159.3. Reuse the conflict primitives planned for T160 where practical without coupling the two flows prematurely.
-
 ### [T159.5] Finalize guest import only after acknowledgements
 
 - **Area:** Guest import recovery

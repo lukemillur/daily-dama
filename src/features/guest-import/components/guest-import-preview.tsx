@@ -23,7 +23,7 @@ const DOMAIN_LABELS: Readonly<Record<SyncDomain, string>> = {
 
 export function GuestImportPreview() {
   const { identity } = useIdentityHandle();
-  const { state, confirmImport, cancelImport } = useGuestImport();
+  const { state, confirmImport, cancelImport, chooseProfile, resolveConflict, finishConflicts } = useGuestImport();
 
   if (identity.kind !== 'user') return null;
   if (state.status === 'idle' || state.status === 'cancelled' || state.status === 'completed') return null;
@@ -36,10 +36,42 @@ export function GuestImportPreview() {
     );
   }
 
-  if (state.status === 'uploading' || state.status === 'awaitingProfileChoice' || state.status === 'conflicts') {
+  if (state.status === 'uploading') {
     return (
       <Section accessibilityLabel="Import in progress">
         <BodyText>Import in progress...</BodyText>
+      </Section>
+    );
+  }
+
+  if (state.status === 'awaitingProfileChoice' || state.status === 'conflicts') {
+    const comparison = state.profileComparison;
+    const resolved = new Set(state.conflictResolutions.map((item) => `${item.domain}:${item.recordId}`));
+    return (
+      <Section accessibilityLabel="Import in progress">
+        <Title>{state.status === 'awaitingProfileChoice' ? 'Choose your profile preferences' : 'Resolve import conflicts'}</Title>
+        {comparison ? <>
+          <Copy>Choose which profile preferences to keep. Trick selections are merged separately.</Copy>
+          <ChoiceButton accessibilityLabel="Keep guest profile preferences" onPress={() => chooseProfile?.('guest')} variant={state.profileChoice === 'guest' ? 'primary' : 'secondary'}>Keep guest preferences</ChoiceButton>
+          <ChoiceButton accessibilityLabel="Keep cloud profile preferences" onPress={() => chooseProfile?.('cloud')} variant={state.profileChoice === 'cloud' ? 'primary' : 'secondary'} disabled={comparison.cloud === null}>Keep cloud preferences{comparison.cloud === null ? ' (not available)' : ''}</ChoiceButton>
+          <Snapshot accessibilityLabel="Guest profile preferences">Guest: {JSON.stringify(comparison.guest)}</Snapshot>
+          <Snapshot accessibilityLabel="Cloud profile preferences">Cloud: {comparison.cloud === null ? 'No cloud profile' : JSON.stringify(comparison.cloud)}</Snapshot>
+        </> : null}
+        {state.conflicts.length > 0 ? <>
+          <Copy>{state.conflicts.length - resolved.size} unresolved record conflict(s)</Copy>
+          {state.conflicts.map((conflict) => {
+            const key = `${conflict.domain}:${conflict.recordId}`;
+            const done = resolved.has(key);
+            return <ConflictRow key={key}>
+              <BodyText>{DOMAIN_LABELS[conflict.domain]} — {conflict.recordId}</BodyText>
+              <Snapshot>Guest: {JSON.stringify(conflict.guestSnapshot)}</Snapshot>
+              <Snapshot>Cloud: {JSON.stringify(conflict.cloudSnapshot)}</Snapshot>
+              <ChoiceButton accessibilityLabel={`Keep guest ${conflict.recordId}`} onPress={() => resolveConflict?.(conflict.domain, conflict.recordId, 'guest')} variant={done ? 'secondary' : 'primary'} disabled={done}>Keep guest</ChoiceButton>
+              <ChoiceButton accessibilityLabel={`Keep cloud ${conflict.recordId}`} onPress={() => resolveConflict?.(conflict.domain, conflict.recordId, 'cloud')} variant="secondary" disabled={done}>Keep cloud</ChoiceButton>
+            </ConflictRow>;
+          })}
+          <ChoiceButton accessibilityLabel="Finish conflict resolution" onPress={() => finishConflicts?.()} variant="primary" disabled={state.profileChoice === undefined || resolved.size !== state.conflicts.length}>Done</ChoiceButton>
+        </> : null}
       </Section>
     );
   }
@@ -104,4 +136,18 @@ const ImportButton = styled(Button).attrs({ size: 'medium' })`
 const NotNowButton = styled(Button).attrs({ size: 'medium' })`
   align-self: stretch;
   margin-top: 10px;
+`;
+const ChoiceButton = styled(Button).attrs({ size: 'medium' })`
+  align-self: stretch;
+  margin-top: 10px;
+`;
+const Snapshot = styled(BodyText)`
+  margin-top: 8px;
+  font-size: 12px;
+`;
+const ConflictRow = styled.View`
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top-width: 1px;
+  border-top-color: ${AppColors.inkSoft};
 `;
