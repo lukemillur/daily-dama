@@ -12,6 +12,29 @@
 // driver hook (and later tickets') job.
 
 import { SYNC_DOMAINS, type SyncDomain } from '@/shared/sync/domain';
+import type { OutboxOperationType } from '@/shared/sync/outbox-operation';
+
+export type GuestImportOperationStatus = 'pending' | 'acknowledged';
+
+export interface GuestImportOperationProgress {
+  readonly operationId: string;
+  readonly domain: SyncDomain;
+  readonly operationType: OutboxOperationType;
+  readonly recordId: string;
+  readonly payload: Record<string, unknown> | null;
+  readonly createdAt: number;
+  readonly attemptCount: number;
+  readonly lastAttemptedAt: number | null;
+  readonly lastErrorMessage: string | null;
+  readonly lastFailureKind?: 'retryable' | 'conflict' | null;
+  readonly status: GuestImportOperationStatus;
+}
+
+export interface GuestImportProgress {
+  readonly sourceIdentityNamespace: 'guest';
+  readonly destinationIdentityNamespace: string;
+  readonly operations: readonly GuestImportOperationProgress[];
+}
 
 export type GuestImportStatus =
   | 'idle'
@@ -51,6 +74,7 @@ export interface GuestImportState {
   readonly errorMessage: string | undefined;
   readonly startedAt: number | undefined;
   readonly updatedAt: number | undefined;
+  readonly progress?: GuestImportProgress;
 }
 
 export const INITIAL_GUEST_IMPORT_STATE: GuestImportState = {
@@ -65,6 +89,7 @@ export const INITIAL_GUEST_IMPORT_STATE: GuestImportState = {
   errorMessage: undefined,
   startedAt: undefined,
   updatedAt: undefined,
+  progress: undefined,
 };
 
 export type GuestImportAction =
@@ -77,6 +102,8 @@ export type GuestImportAction =
       readonly now: number;
     }
   | { readonly type: 'confirmPressed'; readonly importId: string; readonly now: number }
+  | { readonly type: 'progressPrepared'; readonly importId: string; readonly progress: GuestImportProgress; readonly now: number }
+  | { readonly type: 'progressUpdated'; readonly importId: string; readonly progress: GuestImportProgress; readonly now: number }
   | {
       readonly type: 'domainUploadSettled';
       readonly importId: string;
@@ -161,6 +188,12 @@ export function guestImportReducer(state: GuestImportState, action: GuestImportA
         domainOutcomes: initialDomainOutcomes(),
         updatedAt: action.now,
       };
+    }
+
+    case 'progressPrepared':
+    case 'progressUpdated': {
+      if (state.importId !== action.importId) return state;
+      return { ...state, progress: action.progress, updatedAt: action.now };
     }
 
     case 'domainUploadSettled': {

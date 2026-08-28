@@ -13,6 +13,7 @@ import {
   type GuestImportState,
   type GuestImportStatus,
   type GuestImportTargetKind,
+  type GuestImportProgress,
 } from '@/features/guest-import/model/guest-import';
 import { isSyncDomain, SYNC_DOMAINS } from '@/shared/sync/domain';
 import type {
@@ -97,6 +98,27 @@ function isConflictsArray(value: unknown): value is readonly GuestImportConflict
   return Array.isArray(value) && value.every(isGuestImportConflict);
 }
 
+function isGuestImportProgress(value: unknown): value is GuestImportProgress | undefined {
+  if (value === undefined) return true;
+  if (!isRecord(value) || value.sourceIdentityNamespace !== 'guest' || typeof value.destinationIdentityNamespace !== 'string') {
+    return false;
+  }
+  if (!Array.isArray(value.operations)) return false;
+  return value.operations.every((operation) => {
+    if (!isRecord(operation)) return false;
+    if (typeof operation.operationId !== 'string' || !isSyncDomain(operation.domain)) return false;
+    if (operation.operationType !== 'upsert' && operation.operationType !== 'delete') return false;
+    if (typeof operation.recordId !== 'string' || typeof operation.createdAt !== 'number' ||
+      typeof operation.attemptCount !== 'number' || !Number.isInteger(operation.attemptCount) || operation.attemptCount < 0 ||
+      (operation.lastAttemptedAt !== null && typeof operation.lastAttemptedAt !== 'number') ||
+      (operation.lastErrorMessage !== null && typeof operation.lastErrorMessage !== 'string') ||
+      (operation.lastFailureKind !== null && operation.lastFailureKind !== 'retryable' && operation.lastFailureKind !== 'conflict')) return false;
+    if (operation.operationType === 'delete' && operation.payload !== null) return false;
+    if (operation.operationType === 'upsert' && !isRecord(operation.payload)) return false;
+    return operation.status === 'pending' || operation.status === 'acknowledged';
+  });
+}
+
 export function isGuestImportState(value: unknown): value is GuestImportState {
   if (!isRecord(value)) return false;
 
@@ -112,6 +134,7 @@ export function isGuestImportState(value: unknown): value is GuestImportState {
     errorMessage,
     startedAt,
     updatedAt,
+    progress,
   } = value;
 
   if (!isGuestImportStatus(status)) return false;
@@ -125,6 +148,7 @@ export function isGuestImportState(value: unknown): value is GuestImportState {
   if (!isOptionalString(errorMessage)) return false;
   if (!isOptionalNumber(startedAt)) return false;
   if (!isOptionalNumber(updatedAt)) return false;
+  if (!isGuestImportProgress(progress)) return false;
 
   return true;
 }

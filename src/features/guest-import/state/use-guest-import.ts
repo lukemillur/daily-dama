@@ -37,6 +37,7 @@ import {
   type GuestImportDomainCounts,
   type GuestImportState,
 } from '@/features/guest-import/model/guest-import';
+import { prepareGuestImport, runEmptyGuestImport } from '@/features/guest-import/persistence/guest-import-empty-account';
 import { identityNamespace } from '@/shared/persistence/identity';
 import { useIdentityHandle } from '@/shared/persistence/identity-provider';
 import { useIdentityScopedDomain } from '@/shared/persistence/use-identity-scoped-domain';
@@ -64,7 +65,7 @@ function mergeCounts(
 export function useGuestImport(): UseGuestImportResult {
   const { identity, generation } = useIdentityHandle();
 
-  const { state, dispatch, hasHydrated } = useIdentityScopedDomain<GuestImportState, GuestImportAction>({
+  const { state, dispatch, hasHydrated, saveNow } = useIdentityScopedDomain<GuestImportState, GuestImportAction>({
     reducer: guestImportReducer,
     initialState: INITIAL_GUEST_IMPORT_STATE,
     load: loadGuestImportState,
@@ -77,10 +78,10 @@ export function useGuestImport(): UseGuestImportResult {
   // must always see the current state/identity, not whatever was captured
   // when the effect closure was created, and must never re-fire just
   // because a ref changed.
-  const latestRef = useRef({ state, dispatch, identity });
+  const latestRef = useRef({ state, dispatch, identity, saveNow });
   useLayoutEffect(() => {
-    latestRef.current = { state, dispatch, identity };
-  });
+    latestRef.current = { state, dispatch, identity, saveNow };
+  }, [state, dispatch, identity, saveNow]);
 
   // Identity-change guard: mirrors use-logout-guard.ts's armedGenerationRef
   // pattern, simplified -- this hook has no "was a flow armed" precondition,
@@ -193,6 +194,62 @@ export function useGuestImport(): UseGuestImportResult {
       cancelled = true;
     };
   }, [hasHydrated, identity, state.status, state.importId]);
+
+  const importStartedRef = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    if (!hasHydrated || identity.kind !== 'user' || state.status !== 'uploading' || state.targetKind !== 'empty') return;
+    const importId = state.importId;
+    if (importId === undefined || importStartedRef.current.has(importId)) return;
+    importStartedRef.current.add(importId);
+    let cancelled = false;
+    const destinationIdentity = identity;
+    void (async () => {
+      try {
+        let progress = latestRef.current.state.progress;
+        if (progress === undefined) {
+          const prepared = await prepareGuestImport({
+            storage: AsyncStorage,
+            destinationIdentity,
+            destinationUserId: destinationIdentity.userId,
+            importId,
+            createdAt: Date.now(),
+            createOperationId: (domain, recordId) => `guest-import-op-${importId}-${domain}-${recordId}`,
+          });
+          if (cancelled || latestRef.current.state.importId !== importId) return;
+          progress = prepared.progress;
+          latestRef.current.dispatch({ type: 'progressPrepared', importId, progress, now: Date.now() });
+          await latestRef.current.saveNow?.({ ...latestRef.current.state, progress });
+        }
+        const client = getSupabaseClient();
+        if (client === null) throw new Error('No cloud connection is available to import your guest data.');
+        const transports = buildGuestImportTransports(client, destinationIdentity.userId);
+        // The hook remains inert when a test/dry-run inventory supplies no
+        // mutation-capable transport; production adapters always expose push.
+        if (typeof transports.profile?.push !== 'function') return;
+        const result = await runEmptyGuestImport({
+          storage: AsyncStorage,
+          destinationIdentity,
+          destinationUserId: destinationIdentity.userId,
+          progress,
+          repositories: transports,
+          saveProgress: async (nextProgress) => {
+            if (cancelled || latestRef.current.state.importId !== importId) return;
+            latestRef.current.dispatch({ type: 'progressUpdated', importId, progress: nextProgress, now: Date.now() });
+            await latestRef.current.saveNow?.({ ...latestRef.current.state, progress: nextProgress });
+          },
+        });
+        if (cancelled || latestRef.current.state.importId !== importId || result.status !== 'completed') return;
+        for (const domain of SYNC_DOMAINS) {
+          latestRef.current.dispatch({ type: 'domainUploadSettled', importId, domain, outcome: { status: 'succeeded', errorMessage: undefined }, now: Date.now() });
+        }
+      } catch (error) {
+        if (cancelled || latestRef.current.state.importId !== importId) return;
+        const message = error instanceof Error ? error.message : 'Guest import could not be completed.';
+        latestRef.current.dispatch({ type: 'domainUploadSettled', importId, domain: 'profile', outcome: { status: 'failed', errorMessage: message }, now: Date.now() });
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [hasHydrated, identity, state.status, state.targetKind, state.importId]);
 
   const confirmImport = useCallback(() => {
     const latest = latestRef.current;

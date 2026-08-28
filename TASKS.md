@@ -145,16 +145,6 @@ _Phase 3 activation: T156–T160 come from S035–S038 and `BACKEND_ROADMAP.md` 
 - **Description:** Import guest data through explicit, resumable merge rules without clearing any local source record before server acknowledgement.
 - **Notes:** Umbrella from S036. Complete T159.1–T159.5. Depends on T157 and the identity isolation established by T156.
 
-### [T159.2] Import all guest data into a new empty account
-
-- **Area:** Guest-to-new-account import
-- **Priority:** High
-- **Status:** Not started
-- **Planning:** Required
-- **Description:** Implement the empty-account path using the standard outboxes/repositories, preserving operation IDs and source guest data until each domain's records are acknowledged.
-- **Exit criteria:** Integration tests import fixtures spanning all five local domains into an empty account, simulate interruption and lost acknowledgements at each domain boundary, resume without duplicates, rehydrate the complete result in another browser, and retain every unacknowledged guest record locally.
-- **Notes:** From S036. Depends on T159.1.
-
 ### [T159.3] Merge immutable records and trick state into an existing account
 
 - **Area:** Guest-to-existing-account merge
