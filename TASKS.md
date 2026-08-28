@@ -141,7 +141,7 @@ _Phase 3 activation: T156–T160 come from S035–S038 and `BACKEND_ROADMAP.md` 
 
 - **Area:** Guest conversion
 - **Priority:** High
-- **Status:** Not started
+- **Status:** In progress
 - **Description:** Import guest data through explicit, resumable merge rules without clearing any local source record before server acknowledgement.
 - **Notes:** Umbrella from S036. Complete T159.1–T159.5. Depends on T157 and the identity isolation established by T156.
 
