@@ -10,7 +10,7 @@ set -euo pipefail
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "$REPO_ROOT"
 
-SUPABASE="npx --yes supabase@2.115.0"
+SUPABASE="npx --yes supabase@2.116.0"
 
 echo "==> Starting local Supabase stack..."
 $SUPABASE start
@@ -51,5 +51,5 @@ echo
 echo "Next steps:"
 echo "  1. yarn expo start --web   (must run on port 8081 — the only registered auth callback origin)"
 echo "  2. Open Studio and Mailpit above alongside the app to watch rows / confirmation emails"
-echo "  3. When done: npx --yes supabase@2.115.0 stop"
-echo "  4. Between test passes: npx --yes supabase@2.115.0 db reset"
+echo "  3. When done: npx --yes supabase@2.116.0 stop"
+echo "  4. Between test passes: npx --yes supabase@2.116.0 db reset"

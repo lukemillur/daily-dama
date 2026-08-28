@@ -8,7 +8,7 @@
 
 import { spawnSync } from 'node:child_process';
 
-const SUPABASE_CLI = 'supabase@2.115.0';
+const SUPABASE_CLI = 'supabase@2.116.0';
 
 function run(args, options) {
   return spawnSync('npx', ['--yes', SUPABASE_CLI, ...args], {

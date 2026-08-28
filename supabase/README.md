@@ -7,7 +7,7 @@ application code does not consume it yet (see T153.4).
 ## Prerequisites
 
 - Docker Desktop (or a compatible engine: Colima, OrbStack) running locally.
-- Supabase CLI, pinned to `2.115.0`. Use it via `npx --yes supabase@2.115.0 <command>`
+- Supabase CLI, pinned to `2.116.0`. Use it via `npx --yes supabase@2.116.0 <command>`
   rather than a global install, so everyone on the team runs the exact same
   version this config was authored and tested against.
 
@@ -16,9 +16,9 @@ application code does not consume it yet (see T153.4).
 From the repository root:
 
 ```sh
-npx --yes supabase@2.115.0 start      # boots Postgres, GoTrue, Mailpit, Studio, etc.
-npx --yes supabase@2.115.0 db reset   # clean local database reset (re-applies migrations/seed)
-npx --yes supabase@2.115.0 status     # prints local API URL, anon key, service_role key, Studio/Mailpit URLs
+npx --yes supabase@2.116.0 start      # boots Postgres, GoTrue, Mailpit, Studio, etc.
+npx --yes supabase@2.116.0 db reset   # clean local database reset (re-applies migrations/seed)
+npx --yes supabase@2.116.0 status     # prints local API URL, anon key, service_role key, Studio/Mailpit URLs
 ```
 
 `supabase start` reads `supabase/config.toml` in this directory. Re-run
@@ -32,8 +32,8 @@ under `supabase/tests/` (one `.test.sql` file per ticket for now). Run them
 against a freshly reset local database:
 
 ```sh
-npx --yes supabase@2.115.0 db reset       # re-apply all migrations from clean
-npx --yes supabase@2.115.0 test db --local
+npx --yes supabase@2.116.0 db reset       # re-apply all migrations from clean
+npx --yes supabase@2.116.0 test db --local
 ```
 
 The first `test db --local` run pulls the `public.ecr.aws/supabase/pg_prove`
@@ -66,8 +66,8 @@ This suite needs a running local stack with a recent `db reset` (it exercises
 real rows against the live stack, not a rolled-back transaction):
 
 ```sh
-npx --yes supabase@2.115.0 start       # if not already running
-npx --yes supabase@2.115.0 db reset
+npx --yes supabase@2.116.0 start       # if not already running
+npx --yes supabase@2.116.0 db reset
 yarn test:data-api
 ```
 
@@ -75,7 +75,7 @@ Each test file creates and deletes its own confirmed test user via the
 `auth/v1/admin/users` API, so no manual signup/Mailpit step is needed (unlike
 the Auth-policy manual-verification steps below). Deleting that user cascades
 to every `api.*` row it owns, so no per-table teardown is needed either.
-Finish with `npx --yes supabase@2.115.0 db reset` afterward, the same way the
+Finish with `npx --yes supabase@2.116.0 db reset` afterward, the same way the
 pgTAP section above instructs, so no fixture rows linger for a subsequent run
 of either suite.
 
@@ -100,16 +100,35 @@ Data API suite above (the CLI serves any function under
 separate `supabase functions serve` step is needed):
 
 ```sh
-npx --yes supabase@2.115.0 start       # if not already running
-npx --yes supabase@2.115.0 db reset
+npx --yes supabase@2.116.0 start       # if not already running
+npx --yes supabase@2.116.0 db reset
 yarn test:functions
 ```
 
 It is folded into `yarn test:db` as a step after the Data API suite, and
 like that suite is not part of `node .claude/scripts/verify.mjs` (it needs a
 running Docker-backed local stack that the no-Docker verification sequence
-does not assume). Finish with `npx --yes supabase@2.115.0 db reset`
+does not assume). Finish with `npx --yes supabase@2.116.0 db reset`
 afterward for the same reason the sections above do.
+
+`t161_3_delete_account_acceptance.test.mjs` extends this real-stack boundary
+with a single clean-reset A/B fixture covering all six exposed resources. It
+proves complete Auth/FK cascade isolation, anonymous and genuinely signed
+expired-JWT denial, wrong-user and stale/pre-deletion behavior, old-token row
+recreation rejection, and a discarded successful response followed by an
+idempotent retry. It reads the local JWT signing secret from `supabase status
+-o json` only in memory to construct the expired token; it never hardcodes or
+prints that secret. Run the focused acceptance test with:
+
+```sh
+node --test supabase/tests/functions/t161_3_delete_account_acceptance.test.mjs
+```
+
+The consolidated `yarn test:db` command runs this through the existing
+`yarn test:functions` glob after a clean reset and always performs its final
+cleanup reset. A missing Docker/local Supabase stack or missing runtime JWT
+secret is a blocked acceptance prerequisite, not a reason to substitute the
+app Jest suite.
 
 `supabase/tests/data-api/` also carries T155.7's authorization suite
 (anonymous denial, cross-user isolation, ownership-change rejection, and each
@@ -134,7 +153,7 @@ every domain's cloud repository (`src/features/*/persistence/*-cloud-
 repository.ts`) is built from — never hand-edit it.
 
 ```sh
-npx --yes supabase@2.115.0 start      # if not already running
+npx --yes supabase@2.116.0 start      # if not already running
 yarn db:generate-types                # regenerate + overwrite the checked-in file
 ```
 
@@ -224,7 +243,7 @@ that is mirrored separately in T153.2.
 
 No frontend consumes Supabase Auth yet (that begins in T153.4), so drive
 GoTrue's REST API directly with curl. Get the local anon key from
-`npx --yes supabase@2.115.0 status` first.
+`npx --yes supabase@2.116.0 status` first.
 
 **Nine-character signup rejected:**
 

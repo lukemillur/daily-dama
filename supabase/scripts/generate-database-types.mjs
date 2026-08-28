@@ -22,7 +22,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const SUPABASE = ['npx', '--yes', 'supabase@2.115.0'];
+const SUPABASE = ['npx', '--yes', 'supabase@2.116.0'];
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, '..', '..');

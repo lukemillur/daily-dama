@@ -122,7 +122,10 @@ describe('T161.1 delete-account Edge Function', () => {
       const rawBody = JSON.stringify({ currentPassword: PASSWORD, confirmation: 'DELETE' });
       const result = await callDeleteAccount(config, 'Bearer not-a-real-token', rawBody);
       assert.equal(result.status, 401);
-      assert.equal(result.headers.get('cache-control'), 'no-store');
+      // Supabase's Edge gateway rejects a malformed JWT before invoking the
+      // function, so handler-owned response headers are not present on this
+      // gateway response. T161.2 separately proves no-store on every response
+      // that reaches the delete-account handler.
     });
   });
 
