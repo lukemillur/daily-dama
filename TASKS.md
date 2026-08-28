@@ -137,14 +137,6 @@ _Phase 2 activation: T155 comes from S034 and `BACKEND_ROADMAP.md` Phase 2. Its 
 
 _Phase 3 activation: T156–T160 come from S035–S038 and `BACKEND_ROADMAP.md` Phase 3. The dependency chain deliberately separates identity-partitioned persistence (T156), durable synchronization mechanics and ordered domain rollout (T157), outbox-aware logout (T158), resumable guest conversion (T159), and visible conflict recovery (T160). Each child owns one persistence, orchestration, domain, or UX boundary; Realtime remains deferred and synchronization may never alter the active Sesh state machine._
 
-### [T159] Merge guest data into new or existing accounts
-
-- **Area:** Guest conversion
-- **Priority:** High
-- **Status:** In progress
-- **Description:** Import guest data through explicit, resumable merge rules without clearing any local source record before server acknowledgement.
-- **Notes:** Umbrella from S036. Complete T159.1–T159.5. Depends on T157 and the identity isolation established by T156.
-
 ### [T160] Expose synchronization health and record-level conflict recovery
 
 - **Area:** Synchronization UX

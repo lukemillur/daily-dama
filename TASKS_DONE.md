@@ -4,6 +4,15 @@ Completed entries move here from `TASKS.md`'s `Backlog`, in the same commit that
 
 Entries keep their content as it was at completion. Don't retroactively edit a description or exit criteria after the fact; if something about a completed task turns out to be wrong or misleading, note that in a new entry or in code, not by rewriting history here.
 
+### [T159] Merge guest data into new or existing accounts
+
+- **Area:** Guest conversion
+- **Priority:** High
+- **Status:** Done
+- **Description:** Import guest data through explicit, resumable merge rules without clearing any local source record before server acknowledgement.
+- **Exit criteria:** Confirmed by completed T159.1–T159.5: explicit inventory and confirmation with a durable import identity; resumable empty-account import across all five domains with stable operation IDs, interruption/lost-acknowledgement recovery, and second-browser rehydration; deterministic existing-account merge rules with additive trick-state/immutable-record handling, deduplication, and durable same-ID conflicts; explicit profile and per-record conflict decisions that block completion until resolved; and acknowledgement-first, replayable selective cleanup that retains every unacknowledged or rejected guest source record. T156 and T157 dependencies are archived Done, and the full repository verifier passes all four steps (tests, lint, strict typecheck, web export). Native validation is deferred by active web-only project scope.
+- **Notes:** Umbrella from S036. Complete T159.1–T159.5. Depends on T157 and the identity isolation established by T156. Child completion evidence remains in this file under T159.1–T159.5; no additional product code is required for umbrella closure.
+
 ### [T159.5] Finalize guest import only after acknowledgements
 
 - **Area:** Guest import recovery
