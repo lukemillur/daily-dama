@@ -40,6 +40,7 @@ function createFakeClient(overrides?: { onAuthStateChangeImpl?: (cb: AuthCallbac
   const resetPasswordForEmail = jest.fn(async (): Promise<{ error: unknown }> => ({ error: null }));
   const signUp = jest.fn(async (): Promise<{ error: unknown }> => ({ error: null }));
   const resend = jest.fn(async (): Promise<{ error: unknown }> => ({ error: null }));
+  const invoke = jest.fn(async (): Promise<{ data: null; error: unknown }> => ({ data: null, error: null }));
 
   const client = {
     auth: {
@@ -52,6 +53,7 @@ function createFakeClient(overrides?: { onAuthStateChangeImpl?: (cb: AuthCallbac
       signUp,
       resend,
     },
+    functions: { invoke },
   } as unknown as SupabaseClient;
 
   return {
@@ -64,6 +66,7 @@ function createFakeClient(overrides?: { onAuthStateChangeImpl?: (cb: AuthCallbac
     resetPasswordForEmail,
     signUp,
     resend,
+    invoke,
     emit: (event: AuthChangeEvent, session: Session | null) => capturedCallback?.(event, session),
   };
 }
@@ -468,6 +471,43 @@ describe('AuthProvider', () => {
     act(() => {
       root.unmount();
     });
+  });
+
+  it('deleteAccount rejects unauthenticated calls without invoking the function', async () => {
+    const fake = createFakeClient();
+    mockGetSupabaseClient.mockReturnValue(fake.client);
+    const root = await mount();
+
+    let result: { error: unknown } | undefined;
+    await act(async () => {
+      result = await captured.actions!.deleteAccount('current-password', 'DELETE');
+    });
+
+    expect(fake.invoke).not.toHaveBeenCalled();
+    expect((result?.error as { code?: string } | undefined)?.code).toBe('session_not_found');
+    act(() => root.unmount());
+  });
+
+  it('deleteAccount forwards the exact body to the hardened function and returns its result', async () => {
+    const fake = createFakeClient();
+    mockGetSupabaseClient.mockReturnValue(fake.client);
+    const root = await mount();
+    act(() => {
+      fake.emit('SIGNED_IN', { access_token: 'token', user: { email: 'person@example.com' } } as unknown as Session);
+    });
+    const functionError = { status: 429, message: 'raw backend detail' };
+    fake.invoke.mockResolvedValueOnce({ data: null, error: functionError });
+
+    let result: { error: unknown } | undefined;
+    await act(async () => {
+      result = await captured.actions!.deleteAccount('current-password', 'DELETE');
+    });
+
+    expect(fake.invoke).toHaveBeenCalledWith('delete-account', {
+      body: { currentPassword: 'current-password', confirmation: 'DELETE' },
+    });
+    expect(result).toEqual({ error: functionError });
+    act(() => root.unmount());
   });
 
   it('changePassword signs in with the current password then updates, in that order, when authenticated', async () => {
