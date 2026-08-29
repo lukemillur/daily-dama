@@ -160,6 +160,17 @@ describe('SignUpScreen', () => {
     expect(mockReplace).toHaveBeenCalledWith('/app/home');
   });
 
+  it('navigates to /auth/sign-in when "Sign in" is pressed', async () => {
+    const root = await mount();
+    const button = findByLabel(root, 'Sign in');
+
+    await act(async () => {
+      button.props.onPress();
+    });
+
+    expect(mockPush).toHaveBeenCalledWith('/auth/sign-in');
+  });
+
   it('blocks submission and shows a field error for an empty email', async () => {
     const root = await mount();
 

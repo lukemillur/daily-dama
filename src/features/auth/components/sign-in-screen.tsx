@@ -145,6 +145,13 @@ export function SignInScreen() {
             onPress={() => router.replace('/app/home')}>
             Continue as guest
           </Button>
+          <Button
+            accessibilityLabel="Sign up"
+            variant="secondary"
+            fill
+            onPress={() => router.push('/auth/sign-up')}>
+            Need an account? Sign up
+          </Button>
         </FormActions>
       </FormContent>
     </FormScroll>

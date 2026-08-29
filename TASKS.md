@@ -220,16 +220,6 @@ _T163–T181 come from stories S042–S062 in [BACKLOG_STORIES.md](BACKLOG_STORI
 - **Exit criteria:** `yarn expo export --platform web --output-dir /tmp/daily-dama-web-export` succeeds and the exported HTML for each of the five section routes contains its expected `<title>` text; confirmed in-browser that navigating between sections updates the browser tab title.
 - **Notes:** From S053. Web-only by nature — no native/mobile conflict. Five small, identical additions rather than one shared mechanism, since each route already renders independently.
 
-### [T177] Let users move between sign-in and sign-up
-
-- **Area:** Authentication UI
-- **Priority:** Medium
-- **Status:** Not started
-- **Planning:** Implementer
-- **Description:** `sign-in-screen.tsx` links to forgot-password and guest continuation but not to sign-up; `sign-up-screen.tsx` has no link back to sign-in at all. Add a visible link each way.
-- **Exit criteria:** Component tests for both screens pass, including one asserting each screen's cross-link navigates to the other's route.
-- **Notes:** From S058. Small, low-risk addition — no existing behavior changes.
-
 ### [T178] Let Enter submit the sign-up and sign-in forms on web
 
 - **Area:** Authentication UI
