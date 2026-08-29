@@ -153,6 +153,13 @@ export function SignUpScreen() {
           <Button accessibilityLabel="Sign up" disabled={isSubmitting} fill onPress={handleSubmit}>
             {isSubmitting ? 'Creating account...' : 'Sign up'}
           </Button>
+          <Button
+            accessibilityLabel="Sign in"
+            variant="secondary"
+            fill
+            onPress={() => router.push('/auth/sign-in')}>
+            Already have an account? Sign in
+          </Button>
         </FormActions>
       </FormContent>
     </FormScroll>

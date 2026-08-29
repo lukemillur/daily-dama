@@ -171,6 +171,17 @@ describe('SignInScreen', () => {
     expect(mockPush).toHaveBeenCalledWith('/auth/forgot-password');
   });
 
+  it('navigates to /auth/sign-up when "Sign up" is pressed', async () => {
+    const root = await mount();
+    const button = findByLabel(root, 'Sign up');
+
+    await act(async () => {
+      button.props.onPress();
+    });
+
+    expect(mockPush).toHaveBeenCalledWith('/auth/sign-up');
+  });
+
   it('shows loading copy and no inputs while initializing', async () => {
     mockAuthState = { status: 'initializing' };
     const root = await mount();
