@@ -224,7 +224,7 @@ _T163–T181 come from stories S042–S062 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 - **Area:** Authentication
 - **Priority:** Medium
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Implementer
 - **Description:** `account-section.tsx`'s `handleLogOut` calls `signOut()` but performs no navigation today — the user stays wherever they were (typically Profile) once `AuthProvider`'s listener flips them to `guest`. Add an explicit `router.replace('/')` on successful sign-out.
 - **Exit criteria:** `account-section.test.tsx` passes, including a test asserting a successful sign-out navigates to `/`.
