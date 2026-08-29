@@ -254,7 +254,7 @@ _T163–T181 come from stories S042–S062 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 - **Area:** Authentication
 - **Priority:** High
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** `account-security-screen.tsx`'s change-email form only collects a new email today; `changeEmail` on `AuthProvider` takes `(newEmail: string)` with no password parameter. Add a current-password field to the same form, change `changeEmail`'s signature to accept and verify it, and block the change with a clear message on an incorrect password.
 - **Exit criteria:** `auth-provider.test.tsx` and `account-security-screen.test.tsx` pass, including tests asserting an incorrect current password blocks the email change with a clear error and never calls the underlying Supabase update, while a correct one proceeds as today.
