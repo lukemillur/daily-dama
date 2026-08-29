@@ -9,13 +9,13 @@ import { pathToFileURL } from 'node:url';
 import { createRunner } from './lib/exec.mjs';
 
 export function parseArgs(argv) {
-  if (argv.length !== 2 || argv[0] !== '--pr' || !argv[1]) {
-    throw new Error('usage: node .claude/scripts/pr-merge-status.mjs --pr <number-or-url>');
+  if (argv.length !== 2 || !['--pr', '--branch'].includes(argv[0]) || !argv[1]) {
+    throw new Error('usage: node .claude/scripts/pr-merge-status.mjs (--pr <number-or-url> | --branch <task-branch>)');
   }
-  return { pr: argv[1] };
+  return argv[0] === '--pr' ? { pr: argv[1] } : { branch: argv[1] };
 }
 
-/** @param {{state?: string, mergedAt?: string|null, mergeCommit?: {oid?: string}|null, url?: string}} payload */
+/** @param {{state?: string, mergedAt?: string|null, mergeCommit?: {oid?: string}|null, headRefOid?: string|null, url?: string}} payload */
 export function normalizeMergeStatus(payload) {
   if (payload.state === 'MERGED' && payload.mergedAt && payload.mergeCommit?.oid) {
     return {
@@ -23,6 +23,7 @@ export function normalizeMergeStatus(payload) {
       prUrl: payload.url ?? null,
       mergedAt: payload.mergedAt,
       mergeCommit: payload.mergeCommit.oid,
+      headRefOid: payload.headRefOid ?? null,
     };
   }
   return {
@@ -31,11 +32,12 @@ export function normalizeMergeStatus(payload) {
     state: payload.state ?? 'UNKNOWN',
     mergedAt: payload.mergedAt ?? null,
     mergeCommit: payload.mergeCommit?.oid ?? null,
+    headRefOid: payload.headRefOid ?? null,
   };
 }
 
 export function readMergeStatus({ run, pr }) {
-  const result = run(['gh', 'pr', 'view', pr, '--json', 'state,mergedAt,mergeCommit,url'], { allowFailure: true });
+  const result = run(['gh', 'pr', 'view', pr, '--json', 'state,mergedAt,mergeCommit,headRefOid,url'], { allowFailure: true });
   if (result.code !== 0) {
     return {
       status: 'unavailable',
@@ -54,6 +56,36 @@ export function readMergeStatus({ run, pr }) {
   }
 }
 
+export function readBranchMergeStatus({ run, branch }) {
+  const result = run(
+    ['gh', 'pr', 'list', '--head', branch, '--state', 'all', '--limit', '2', '--json', 'state,mergedAt,mergeCommit,headRefOid,url'],
+    { allowFailure: true },
+  );
+  if (result.code !== 0) {
+    return {
+      status: 'unavailable',
+      branch,
+      detail: result.stderr.trim() || `gh pr list exited ${result.code}`,
+    };
+  }
+  let payload;
+  try {
+    payload = JSON.parse(result.stdout);
+  } catch (error) {
+    return {
+      status: 'unavailable',
+      branch,
+      detail: `invalid gh pr list JSON: ${error instanceof Error ? error.message : String(error)}`,
+    };
+  }
+  if (!Array.isArray(payload)) {
+    return { status: 'unavailable', branch, detail: 'invalid gh pr list JSON: expected an array' };
+  }
+  if (payload.length === 0) return { status: 'no-pr', branch };
+  if (payload.length > 1) return { status: 'unavailable', branch, detail: 'multiple pull requests match this branch' };
+  return { ...normalizeMergeStatus(payload[0]), branch };
+}
+
 function main() {
   let args;
   try {
@@ -62,7 +94,9 @@ function main() {
     process.stderr.write(`${error.message}\n`);
     process.exit(2);
   }
-  process.stdout.write(`${JSON.stringify(readMergeStatus({ run: createRunner(), pr: args.pr }))}\n`);
+  const run = createRunner();
+  const result = args.pr ? readMergeStatus({ run, pr: args.pr }) : readBranchMergeStatus({ run, branch: args.branch });
+  process.stdout.write(`${JSON.stringify(result)}\n`);
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) main();

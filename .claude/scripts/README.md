@@ -11,6 +11,7 @@ Every stage the workflow can perform mechanically is performed mechanically. A m
 | `ticket-claim.mjs` | the former `ticket-claim` subagent (a fresh Sonnet context per cycle for a fixed sequence of git commands) |
 | `verify.mjs` | four separate `Bash` round trips per implementation |
 | `worktree-cleanup.mjs` | agents attempting to remove worktrees they cannot remove |
+| `pr-merge.mjs` | local worktree collisions and duplicate merge attempts during resume |
 | `pr-merge-status.mjs` | mistaking a post-merge local `gh` failure for a rejected remote merge |
 | `validate-agent-config.mjs` | discovering a broken agent definition at run time |
 
@@ -82,6 +83,7 @@ node .claude/scripts/worktree-cleanup.mjs --path <dir> [--path <dir> …]
 node .claude/scripts/worktree-cleanup.mjs --prefix newticket-claim-
 node .claude/scripts/worktree-cleanup.mjs --list
 node .claude/scripts/worktree-cleanup.mjs --release-codex-stage --task T035 --branch task/T035-short-slug
+node .claude/scripts/worktree-cleanup.mjs --release-codex-stage --task T035 --branch task/T035-short-slug --merged-pr <url>
 # add --dry-run to any of the above
 ```
 
@@ -111,16 +113,46 @@ and then applies the normal clean/pushed/unlocked/no-process checks before
 detaching and removing it. It exists solely to make a Codex resume safe; it is
 not a general cleanup sweep.
 
+After a squash merge has deleted the remote task branch, `--merged-pr` permits
+release only when GitHub canonically reports the PR merged and its recorded
+`headRefOid` exactly matches the worktree HEAD. That authoritative pushed-head
+evidence substitutes only for the vanished remote ref; dirty, lock, path,
+branch, process, and removal checks remain unchanged.
+
 ## `pr-merge-status.mjs`
 
 ```sh
 node .claude/scripts/pr-merge-status.mjs --pr <number-or-url>
+node .claude/scripts/pr-merge-status.mjs --branch <task-branch>
 ```
 
 Read GitHub's canonical PR state after exactly one merge attempt. A confirmed
 `merged` result wins over a non-zero `gh pr merge` exit, which can occur during
 local branch cleanup after GitHub has already completed the merge. The script is
-read-only and never retries or changes merge settings.
+read-only and never retries or changes merge settings. Branch mode supports
+safe resume: it distinguishes no PR, one canonical PR, multiple ambiguous PRs,
+and an unavailable GitHub query before an agent creates or reuses a PR.
+
+## `pr-merge.mjs`
+
+```sh
+node .claude/scripts/pr-merge.mjs --pr <pull-request-url>
+```
+
+Preflight canonical state, perform at most one ordinary squash merge, and
+reconcile canonical state afterward. An already-merged PR is idempotent success;
+an unavailable preflight performs no mutation. The merge command includes the
+explicit repository selector derived from the PR URL:
+
+```sh
+gh pr merge <url> --repo <host/owner/repo> --squash --delete-branch
+```
+
+GitHub CLI disables local branch deletion when `--repo` is explicitly supplied,
+while retaining remote branch deletion. This prevents its post-merge cleanup
+from trying to check out `development` inside an implementer worktree when the
+main checkout already owns that branch. The wrapper returns one JSON object with
+whether a merge was attempted, exact command evidence, and reconciliation.
 
 ## `validate-agent-config.mjs`
 

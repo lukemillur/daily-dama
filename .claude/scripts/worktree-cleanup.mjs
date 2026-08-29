@@ -14,7 +14,7 @@
 // Usage:
 //   node .claude/scripts/worktree-cleanup.mjs --path <dir> [--path <dir> …]
 //   node .claude/scripts/worktree-cleanup.mjs --prefix newticket-claim-
-//   node .claude/scripts/worktree-cleanup.mjs --release-codex-stage --task T035 --branch task/T035-short-slug
+//   node .claude/scripts/worktree-cleanup.mjs --release-codex-stage --task T035 --branch task/T035-short-slug [--merged-pr <url>]
 //   node .claude/scripts/worktree-cleanup.mjs --list
 //   …add --dry-run to report decisions without removing anything.
 
@@ -22,9 +22,10 @@ import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { createRunner } from './lib/exec.mjs';
 import { assessWorktree, listWorktrees, realPath, releaseAttachedWorktree, removeWorktree } from './lib/worktree.mjs';
+import { readMergeStatus } from './pr-merge-status.mjs';
 
 export function parseArgs(argv) {
-  const options = { paths: [], prefixes: [], dryRun: false, list: false, repoRoot: null, json: false, releaseCodexStage: false, task: null, branch: null };
+  const options = { paths: [], prefixes: [], dryRun: false, list: false, repoRoot: null, json: false, releaseCodexStage: false, task: null, branch: null, mergedPr: null };
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index];
     if (arg === '--path') options.paths.push(argv[++index]);
@@ -36,11 +37,13 @@ export function parseArgs(argv) {
     else if (arg === '--release-codex-stage') options.releaseCodexStage = true;
     else if (arg === '--task') options.task = argv[++index];
     else if (arg === '--branch') options.branch = argv[++index];
+    else if (arg === '--merged-pr') options.mergedPr = argv[++index];
     else throw new Error(`unrecognized argument: ${arg}`);
   }
   if (options.releaseCodexStage && (!/^T\d+(?:\.\d+)?$/.test(options.task ?? '') || !/^task\/T\d+(?:\.\d+)?-[a-z0-9-]+$/.test(options.branch ?? ''))) {
     throw new Error('--release-codex-stage requires a valid --task and --branch');
   }
+  if (options.mergedPr && !options.releaseCodexStage) throw new Error('--merged-pr requires --release-codex-stage');
   if (!options.list && options.paths.length === 0 && options.prefixes.length === 0 && !options.releaseCodexStage) {
     throw new Error('nothing to do: pass --path, --prefix, or --list');
   }
@@ -71,6 +74,25 @@ export function cleanup({ run, repoRoot, options }) {
 
   const targets = [];
   const results = [];
+  let mergedHead = null;
+  if (options.mergedPr) {
+    const status = readMergeStatus({ run, pr: options.mergedPr });
+    if (status.status !== 'merged' || !status.headRefOid) {
+      return {
+        status: 'remnants',
+        dryRun: options.dryRun,
+        removed: [],
+        remnants: [{
+          path: options.mergedPr,
+          action: 'refused',
+          reason: status.status === 'unavailable' ? 'pr-status-unavailable' : 'pr-not-authoritatively-merged',
+          detail: status.detail ?? `canonical PR status is ${status.status} with head ${status.headRefOid ?? 'unknown'}`,
+        }],
+        results: [],
+      };
+    }
+    mergedHead = status.headRefOid;
+  }
   if (options.releaseCodexStage) {
     const stagePrefix = `codex-ticket-${options.task.toLowerCase().replace('.', '-')}-`;
     for (const worktree of worktrees) {
@@ -78,10 +100,10 @@ export function cleanup({ run, repoRoot, options }) {
       if (path.dirname(realPath(worktree.path)) !== container) continue;
       if (!path.basename(worktree.path).startsWith(stagePrefix)) continue;
       if (worktree.detached) {
-        results.push(removeWorktree({ run, repoRoot, worktree, dryRun: options.dryRun }));
+        results.push(removeWorktree({ run, repoRoot, worktree, dryRun: options.dryRun, mergedHead }));
       } else {
         results.push(
-          releaseAttachedWorktree({ run, repoRoot, worktree, branch: options.branch, dryRun: options.dryRun }),
+          releaseAttachedWorktree({ run, repoRoot, worktree, branch: options.branch, dryRun: options.dryRun, mergedHead }),
         );
       }
     }
