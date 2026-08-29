@@ -2680,3 +2680,13 @@ Completed entries live in [TASKS_DONE.md](TASKS_DONE.md) — not part of the top
 - **Description:** `sign-in-screen.tsx` links to forgot-password and guest continuation but not to sign-up; `sign-up-screen.tsx` has no link back to sign-in at all. Add a visible link each way.
 - **Exit criteria:** Component tests for both screens pass, including one asserting each screen's cross-link navigates to the other's route. Met: added a "Sign up" secondary button on `sign-in-screen.tsx` (`router.push('/auth/sign-up')`) and a "Sign in" secondary button on `sign-up-screen.tsx` (`router.push('/auth/sign-in')`), mirroring the existing forgot-password/guest button pattern. Added one test per screen asserting the cross-link navigates to the other screen's route; both screens' full test suites pass, and full `yarn tsc --noEmit` passes.
 - **Notes:** From S058. Small, low-risk addition — no existing behavior changes.
+
+### [T180] Gate forgot-password inside the change-password flow behind a wrong current password
+
+- **Area:** Authentication UI
+- **Priority:** Medium
+- **Status:** Done
+- **Planning:** Implementer
+- **Description:** Account Security's change-password form has no forgot-password link today. Add one, but only shown after the user submits an incorrect current password (the `invalidCredentials` category is already captured at that call site) — with a visible warning that using it signs them out — and have it navigate directly to `/auth/forgot-password` (not sign-in first) while calling `signOut()`.
+- **Exit criteria:** `account-security-screen.test.tsx` passes, including tests asserting no forgot-password link renders by default, one appears with the sign-out warning after a wrong-password submission, and selecting it signs the user out and navigates to `/auth/forgot-password`. Met: added a "Forgot password?" secondary button and a sign-out warning notice to the change-password form's `FormActions`, both rendered only when `passwordSubmitCategory === 'invalidCredentials'`; its `onPress` calls `signOut()` then `router.push('/auth/forgot-password')`. Added three new tests (no link by default, link plus warning after a wrong-password submission, sign-out + navigation on selection) to `account-security-screen.test.tsx`, mocking `signOut` alongside the existing `changePassword`/`changeEmail` mocks; full suite passes, plus `yarn tsc --noEmit` and `yarn eslint` on the changed files.
+- **Notes:** From S061. Extends T154.1's change-password flow. Distinct from T174 (forgot-password's own visual layout). Implemented after T179 added a separate current-password field to the change-email form; this task's link/warning are scoped to the change-password form only, leaving T179's change-email work untouched.

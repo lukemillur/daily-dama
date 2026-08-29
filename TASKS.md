@@ -230,16 +230,6 @@ _T163–T181 come from stories S042–S062 in [BACKLOG_STORIES.md](BACKLOG_STORI
 - **Exit criteria:** Component tests for both screens pass, including one asserting an Enter keypress triggers the same submit handler as clicking the primary button.
 - **Notes:** From S059. Resolved during refinement: scoped to sign-up/sign-in only, not change-password/change-email/forgot-password — those are deliberately deferred, partly to avoid rework ahead of T179/T180 restructuring Account Security's forms.
 
-### [T180] Gate forgot-password inside the change-password flow behind a wrong current password
-
-- **Area:** Authentication UI
-- **Priority:** Medium
-- **Status:** Not started
-- **Planning:** Implementer
-- **Description:** Account Security's change-password form has no forgot-password link today. Add one, but only shown after the user submits an incorrect current password (the `invalidCredentials` category is already captured at that call site) — with a visible warning that using it signs them out — and have it navigate directly to `/auth/forgot-password` (not sign-in first) while calling `signOut()`.
-- **Exit criteria:** `account-security-screen.test.tsx` passes, including tests asserting no forgot-password link renders by default, one appears with the sign-out warning after a wrong-password submission, and selecting it signs the user out and navigates to `/auth/forgot-password`.
-- **Notes:** From S061. Extends T154.1's change-password flow. Distinct from T174 (forgot-password's own visual layout).
-
 ### [T181] Let users exit Account Security with an in-app back control
 
 - **Area:** Authentication UI
