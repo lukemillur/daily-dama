@@ -230,16 +230,6 @@ _T163–T181 come from stories S042–S062 in [BACKLOG_STORIES.md](BACKLOG_STORI
 - **Exit criteria:** `account-section.test.tsx` passes, including a test asserting a successful sign-out navigates to `/`.
 - **Notes:** From S055. Check this doesn't conflict with T158 (guarded logout prompt) once that lands — this ticket only concerns where a *completed* sign-out navigates.
 
-### [T176] Fix Profile's Account section not rendering until a manual refresh
-
-- **Area:** Authentication / Profile
-- **Priority:** High
-- **Status:** Not started
-- **Planning:** Required
-- **Description:** After signing in and navigating to Profile without a manual page refresh, `AccountSection` doesn't show the signed-in state — it only appears correctly after a refresh. Both `AccountSection` and `AuthProvider` read/expose state in the expected reactive shape on inspection (no obvious stale closure or missing dependency), so this needs a runtime investigation of the actual sign-in → navigate → render timing, not a known local fix.
-- **Exit criteria:** A test or reproducible in-browser walkthrough proves signing in and navigating directly to Profile (no refresh) shows the Account section in its signed-in state; the root cause found during investigation is documented in this entry's completion notes.
-- **Notes:** From S056. `Required` specifically because the cause isn't yet visible from static inspection — plan for an investigation step before a fix, not just an implementation pass.
-
 ### [T177] Let users move between sign-in and sign-up
 
 - **Area:** Authentication UI
