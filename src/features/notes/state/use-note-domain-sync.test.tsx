@@ -233,6 +233,7 @@ interface Captured {
   runSync?: ReturnType<typeof useNoteDomainSync>['runSync'];
   isSyncing?: boolean;
   pendingCount?: number;
+  conflictCount?: number;
   discardPending?: () => Promise<void>;
 }
 
@@ -258,6 +259,7 @@ function makeHarness(
       captured.runSync = sync.runSync;
       captured.isSyncing = sync.isSyncing;
       captured.pendingCount = sync.pendingCount;
+      captured.conflictCount = sync.conflictCount;
       captured.discardPending = sync.discardPending;
     });
 
@@ -826,6 +828,78 @@ describe('useNoteDomainSync', () => {
     expect(noteResult?.outcome).toEqual({ status: 'succeeded' });
     expect(goalResult?.outcome).toEqual({ status: 'succeeded' });
     expect(goalTransport.getRow('goal-1')?.target_count).toBe(3);
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  it('retrying the same operation after a lost acknowledgement is idempotent and does not block an unrelated note', async () => {
+    const transport = createFakeNoteSyncTransport();
+    const { root, captured } = await mountHarness(INITIAL_NOTES, () => transport, USER_IDENTITY);
+    await flush();
+
+    act(() => {
+      captured.setCollection?.({
+        notes: [{ id: 'note-1', trickId: 'big-cup', trickName: 'Big cup', body: 'Original body.', createdAt: 1, updatedAt: 1 }],
+      });
+    });
+    await flush();
+    await act(async () => {
+      await captured.runSync?.('manual');
+    });
+    await flush();
+    expect(transport.getRow('note-1')?.revision).toBe(1);
+
+    act(() => {
+      captured.setCollection?.({
+        notes: [
+          { id: 'note-1', trickId: 'big-cup', trickName: 'Big cup', body: 'Edited body.', createdAt: 1, updatedAt: 2 },
+          { id: 'note-2', trickId: 'stilt-flip', trickName: 'Stilt flip', body: 'Second note.', createdAt: 2, updatedAt: 2 },
+        ],
+      });
+    });
+    await flush();
+
+    await transport.push({
+      operationId: 'lost-ack-direct',
+      recordId: 'note-1',
+      operationType: 'upsert',
+      payload: {
+        user_id: USER_ID,
+        id: 'note-1',
+        trick_id: 'big-cup',
+        trick_name: 'Big cup',
+        body: 'Edited body.',
+        practice_session_id: null,
+      },
+      expectedRevision: 1,
+    });
+    expect(transport.getRow('note-1')?.revision).toBe(2);
+    expect(transport.getRow('note-1')?.body).toBe('Edited body.');
+
+    await act(async () => {
+      await captured.runSync?.('manual');
+    });
+    await flush();
+
+    expect(transport.getRow('note-1')?.revision).toBe(2);
+    expect(transport.getRow('note-1')?.body).toBe('Edited body.');
+    expect(captured.conflictCount).toBe(1);
+
+    expect(transport.getRow('note-2')?.body).toBe('Second note.');
+    expect(transport.getRow('note-2')?.revision).toBe(1);
+
+    const note2AttemptsAfterFirstRun = transport.getPushAttemptCount('note-2');
+    for (let i = 0; i < 2; i += 1) {
+      await act(async () => {
+        await captured.runSync?.('manual');
+      });
+      await flush();
+      expect(captured.conflictCount).toBe(1);
+    }
+    expect(transport.getRow('note-1')?.revision).toBe(2);
+    expect(transport.getPushAttemptCount('note-2')).toBe(note2AttemptsAfterFirstRun);
 
     act(() => {
       root.unmount();
