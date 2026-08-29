@@ -4,6 +4,25 @@ Completed entries move here from `TASKS.md`'s `Backlog`, in the same commit that
 
 Entries keep their content as it was at completion. Don't retroactively edit a description or exit criteria after the fact; if something about a completed task turns out to be wrong or misleading, note that in a new entry or in code, not by rewriting history here.
 
+### [T160] Expose synchronization health and record-level conflict recovery
+
+- **Area:** Synchronization UX
+- **Priority:** High
+- **Status:** Done
+- **Description:** Make pending work, failures, offline state, freshness, retry, and conflicts understandable without allowing one bad record to stop unrelated synchronization.
+- **Exit criteria:** Confirmed by completed T160.1-T160.3: a trustworthy serializable sync-status model with a Profile retry surface; per-record conflict resolution for profile, custom-trick, goal, and note domains scoped strictly to its own record; and a cross-domain fault-injection suite proving a stale-revision or tombstone conflict on one record never blocks or resurrects an unrelated record, retries stay idempotent after a lost acknowledgement, and two independently-mounted browser fixtures converge on identical domain state after a genuine conflict. The full repository verifier passes all four steps (tests, lint, strict typecheck, web export). Native validation is deferred by active web-only project scope.
+- **Notes:** Umbrella from S037. Complete T160.1-T160.3. Depends on T157. Child completion evidence remains in this file under T160.1-T160.3; no additional product code is required for umbrella closure.
+
+### [T160.3] Prove stale revisions and tombstones cannot block or resurrect unrelated data
+
+- **Area:** Synchronization conflict testing
+- **Priority:** High
+- **Status:** Done
+- **Planning:** Required
+- **Description:** Add a cross-domain fault-injection suite for concurrent edits, stale revisions, delete-vs-edit tombstones, lost acknowledgements, and conflicts interleaved with valid operations.
+- **Exit criteria:** The suite proves only the conflicting record pauses, accepted operations advance and apply server metadata, stale clients cannot resurrect tombstoned goals/notes/custom tricks, retries remain idempotent, and conflict resolution converges two browser fixtures on identical domain state. Confirmed: filled per-domain parity gaps (profile's existing sibling-conflict coverage, a goals/notes lost-acknowledgement idempotency test, and custom-tricks' hard-delete-vs-edit shape -- a retryable 'failed' outcome, never a resurrecting insert, unlike goals/notes' SyncConflictRecord tombstone-conflict shape); added a fully-wired cross-domain integration suite proving one conflicting record pauses while interleaved valid edits across every other domain apply in the same run and resolving it disturbs no sibling; and added a two-live-browser convergence suite sharing one simulated cloud per domain that proves concurrent edits, a genuine stale-revision conflict, 'keep-server' resolution, and an out-of-band lost-acknowledgement replay all converge to bit-for-bit identical domain state with zero remaining pending/conflicting operations. Focused sync suites and the full verifier pass all four steps (test, lint, typecheck, web export). Native validation is deferred by active project scope.
+- **Notes:** From S037. Depends on T160.2 and T155.8.
+
 ### [T159] Merge guest data into new or existing accounts
 
 - **Area:** Guest conversion
