@@ -109,6 +109,10 @@ export function AccountSecurityScreen() {
     trackAuthEvent('account_security_password_success');
   };
 
+  const handleBack = () => {
+    router.push('/app/profile');
+  };
+
   const handleForgotPassword = async () => {
     await signOut();
     router.push('/auth/forgot-password');
@@ -181,6 +185,12 @@ export function AccountSecurityScreen() {
         <FormContent>
         <Eyebrow>Account security</Eyebrow>
         <PageTitle>Manage your account.</PageTitle>
+
+        <FormActions>
+          <Button accessibilityLabel="Back to Profile" fill variant="secondary" onPress={handleBack}>
+            Back to Profile
+          </Button>
+        </FormActions>
 
         <SectionLabel>Change password</SectionLabel>
 
