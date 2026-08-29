@@ -1,4 +1,5 @@
 import { useRouter } from "expo-router";
+import { useEffect, useRef } from "react";
 import { styled } from "styled-components/native";
 
 import { Button } from "@/components/ui/button";
@@ -29,6 +30,21 @@ export function AccountSection() {
   const authState = useAuthState();
   const router = useRouter();
   const { state, pendingCount, handleLogOutPress, handleRetry, handleDiscard, handleCancel } = useLogoutGuard();
+
+  // T175: useLogoutGuard is deliberately UI-agnostic (see its own comments), so
+  // the completed-sign-out -> "/" redirect lives here instead. Watch for the
+  // signingOut -> idle transition with no error, which only happens once
+  // signOut() itself has actually succeeded (a failed signOut also returns to
+  // idle, but carries an errorCategory and must leave the user in place to see
+  // it and retry).
+  const previousStatusRef = useRef(state.status);
+  useEffect(() => {
+    const previousStatus = previousStatusRef.current;
+    previousStatusRef.current = state.status;
+    if (previousStatus === "signingOut" && state.status === "idle" && state.errorCategory === undefined) {
+      router.replace("/");
+    }
+  }, [state.status, state.errorCategory, router]);
 
   if (authState.status !== "authenticated") return null;
 
