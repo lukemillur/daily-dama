@@ -214,7 +214,7 @@ _T163–T181 come from stories S042–S062 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 - **Area:** Authentication UI
 - **Priority:** Low
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Implementer
 - **Description:** `account-security-screen.tsx` has no back/header affordance today, relying entirely on browser back. Add a secondary `Button` calling an `onBack` handler that returns to Profile, matching the existing pattern already used by `trick-goals-screen.tsx`, `all-trick-goals-screen.tsx`, `trick-notes-screen.tsx`, `all-notes-screen.tsx`, and `laced-tricks-screen.tsx` ("Back to Tricks"-style secondary button).
 - **Exit criteria:** `account-security-screen.test.tsx` passes, including a test asserting the back control navigates to Profile.
