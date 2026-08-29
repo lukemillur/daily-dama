@@ -4,7 +4,10 @@ import { AppState } from 'react-native';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 
 import HomeScreen from '@/app/app/home';
+import { AppColors } from '@/constants/theme';
 import { CustomTrickProvider } from '@/features/custom-tricks/state/custom-trick-provider';
+import { getCurrentAssessmentTrick } from '@/features/onboarding/model/kentei-assessment';
+import { RAINBOW_THEME_PRESETS } from '@/features/profile/model/theme-presets';
 import {
   serializeUserProfile,
   USER_PROFILE_STORAGE_KEY,
@@ -24,6 +27,17 @@ jest.mock('@react-native-async-storage/async-storage', () =>
   // eslint-disable-next-line @typescript-eslint/no-require-imports -- required by jest hoisting
   require('@react-native-async-storage/async-storage/jest/async-storage-mock'),
 );
+jest.mock('react-native-reanimated', () =>
+  // eslint-disable-next-line @typescript-eslint/no-require-imports -- required by jest hoisting
+  require('react-native-reanimated/mock'),
+);
+// KenteiOnboarding (rendered by HomeScreen pre-onboarding) calls router.replace on finish; the
+// rest of expo-router (e.g. the dev-only <Link> HomeScreen renders) stays real.
+const mockRouter = { replace: jest.fn() };
+jest.mock('expo-router', () => ({
+  ...(jest.requireActual('expo-router') as Record<string, unknown>),
+  useRouter: () => mockRouter,
+}));
 
 const STREAK_THRESHOLD_MS = 300_000; // matches DEFAULT_STREAK_THRESHOLD_MS
 
@@ -250,5 +264,91 @@ describe('HomeScreen live time-based summaries', () => {
       root.unmount();
     });
     jest.useRealTimers();
+  });
+});
+
+
+function findByAccessibilityLabel(root: ReactTestRenderer, label: string) {
+  return root.root.findAll((node) => node.props.accessibilityLabel === label);
+}
+
+function pressByAccessibilityLabel(root: ReactTestRenderer, label: string) {
+  const [match] = findByAccessibilityLabel(root, label).filter(
+    (node) => typeof node.props.onPress === 'function',
+  );
+  if (!match) throw new Error('No pressable found with accessibilityLabel: ' + label);
+  match.props.onPress();
+}
+
+function pressByVisibleText(root: ReactTestRenderer, text: string) {
+  const [textNode] = root.root.findAll((node) => node.props.children === text);
+  if (!textNode) throw new Error('No node found with text: ' + text);
+  let current: typeof textNode | null = textNode;
+  while (current && typeof current.props.onPress !== 'function') {
+    current = current.parent;
+  }
+  if (!current) throw new Error('No pressable ancestor found for text: ' + text);
+  current.props.onPress();
+}
+
+// Drives the onboarding flow (rendered by HomeScreen pre-onboarding) up to the theme-selection
+// step, mirroring kentei-onboarding.test.tsx's own helper -- HomeScreen has no separate onboarding
+// entry point of its own.
+async function driveToThemeSelect(root: ReactTestRenderer) {
+  act(() => pressByVisibleText(root, 'Get started'));
+  act(() =>
+    pressByAccessibilityLabel(
+      root,
+      'Basic. New to kendama or still building your cup and spike fundamentals.',
+    ),
+  );
+
+  const firstRank1Trick = getCurrentAssessmentTrick(1, 0);
+  act(() => pressByAccessibilityLabel(root, 'I cannot land ' + firstRank1Trick.name));
+
+  act(() => pressByVisibleText(root, 'Choose tricks'));
+
+  const rank1TrickIds = KENDAMA_KENTEI_TRICKS.filter((trick) => trick.kenteiRank === 1).map(
+    (trick) => trick.id,
+  );
+  const [firstTrickId] = rank1TrickIds;
+  const firstTrickName = KENDAMA_KENTEI_TRICKS.find((trick) => trick.id === firstTrickId)!.name;
+  act(() => pressByAccessibilityLabel(root, firstTrickName + ', not selected'));
+
+  act(() => pressByVisibleText(root, 'Start practicing'));
+  act(() => pressByAccessibilityLabel(root, 'Continue to theme selection'));
+}
+
+function findScreenBackgroundColor(root: ReactTestRenderer): unknown {
+  const [safeAreaView] = root.root.findAll((node) => (node.type as unknown) === 'RNCSafeAreaView');
+  return (safeAreaView?.props.style as { backgroundColor?: unknown } | undefined)?.backgroundColor;
+}
+
+describe('HomeScreen onboarding background preview', () => {
+  beforeEach(async () => {
+    await AsyncStorage.clear();
+    mockRouter.replace.mockClear();
+  });
+
+  it('reflects the live-previewed theme background instead of the fixed onboarding fallback', async () => {
+    const root = await mountHomeScreen();
+
+    // Before any preset selection, onboarding still shows the fixed mustard-yellow fallback.
+    expect(findScreenBackgroundColor(root)).toBe(AppColors.yellow);
+
+    await driveToThemeSelect(root);
+
+    const preset = RAINBOW_THEME_PRESETS[2];
+    act(() => pressByAccessibilityLabel(root, preset.label + ' theme preset'));
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(findScreenBackgroundColor(root)).toBe(preset.backgroundColor);
+    expect(findScreenBackgroundColor(root)).not.toBe(AppColors.yellow);
+
+    await act(async () => {
+      root.unmount();
+    });
   });
 });

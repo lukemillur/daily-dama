@@ -2247,6 +2247,16 @@ Entries keep their content as it was at completion. Don't retroactively edit a d
 
 Completed entries live in [TASKS_DONE.md](TASKS_DONE.md) — not part of the top-to-bottom read above; see step 5 under _Completing a task_.
 
+### [T164] Make the onboarding theme step's background actually preview
+
+- **Area:** Onboarding
+- **Priority:** High
+- **Status:** Done
+- **Planning:** Implementer
+- **Description:** `src/app/app/home.tsx` renders `<Screen background={profile.hasCompletedOnboarding ? undefined : AppColors.yellow} ...>` — hardcoding the mustard-yellow background for the entire duration of onboarding regardless of the theme preset the user just previewed via `setThemeColors` (T146). Make the background reflect the live-previewed `themeBackgroundColor` instead of this fixed fallback.
+- **Exit criteria:** `yarn test --runInBand` passes, including a test asserting that selecting a non-default preset during onboarding changes the rendered background color away from `AppColors.yellow`; confirmed in-browser via the Expo dev server that tapping a preset visibly changes the onboarding screen's background, not just its text/accent. Confirmed: `src/app/app/home.tsx` now reads `profile.themeBackgroundColor ?? AppColors.yellow` instead of the fixed fallback; a new `home.test.tsx` test drives the full onboarding flow through theme selection and asserts the rendered `Screen`'s background color changes from `AppColors.yellow` to the selected preset's background. `yarn test --runInBand`, `yarn tsc --noEmit`, and `yarn eslint` on the changed files all pass. Verified live in the Expo web dev server via a scripted Playwright walkthrough (no interactive browser preview available in this run): driving onboarding to the theme step showed the resolved background as `rgb(244, 201, 77)` (`AppColors.yellow`) before selecting a preset, and `rgb(216, 232, 247)` (the Blue preset's `#d8e8f7`) immediately after tapping it — a real, visible background change, not just text/accent.
+- **Notes:** From S043 — a regression against T146's own exit criteria ("background/accent visibly change"), not new scope. T165 (S044) was not yet claimed/implemented in this repo at the time of this task; only `home.tsx`/`home.test.tsx` were touched here.
+
 ### [T162.3] Add dependency, secret, and built-bundle scanning to CI
 
 - **Area:** CI security
