@@ -161,6 +161,14 @@ describe('AccountSecurityScreen', () => {
     expect(mockChangeEmail).not.toHaveBeenCalled();
   });
 
+  it('navigates back to Profile via the back control', async () => {
+    mockAuthState = authenticatedState();
+    const root = await mount();
+
+    await pressLabel(root, 'Back to Profile');
+    expect(mockPush).toHaveBeenCalledWith('/app/profile');
+  });
+
   it('shows a sign-in guard with no form when a guest', async () => {
     mockAuthState = { status: 'guest', reason: 'signedOut' };
     const root = await mount();

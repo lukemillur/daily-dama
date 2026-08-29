@@ -4,6 +4,16 @@ Completed entries move here from `TASKS.md`'s `Backlog`, in the same commit that
 
 Entries keep their content as it was at completion. Don't retroactively edit a description or exit criteria after the fact; if something about a completed task turns out to be wrong or misleading, note that in a new entry or in code, not by rewriting history here.
 
+### [T181] Let users exit Account Security with an in-app back control
+
+- **Area:** Authentication UI
+- **Priority:** Low
+- **Status:** Done
+- **Planning:** Implementer
+- **Description:** `account-security-screen.tsx` has no back/header affordance today, relying entirely on browser back. Add a secondary `Button` calling an `onBack` handler that returns to Profile, matching the existing pattern already used by `trick-goals-screen.tsx`, `all-trick-goals-screen.tsx`, `trick-notes-screen.tsx`, `all-notes-screen.tsx`, and `laced-tricks-screen.tsx` ("Back to Tricks"-style secondary button).
+- **Exit criteria:** `account-security-screen.test.tsx` passes, including a test asserting the back control navigates to Profile. Met: added a "Back to Profile" secondary `Button` at the top of the authenticated form, above "Change password", calling a local `handleBack` that runs `router.push('/app/profile')` (matching this screen's existing internal convention of calling `router` directly rather than an injected `onBack` prop, since its route wrapper renders it with no props today). Added a test asserting the button press calls `mockPush` with `/app/profile`; full `account-security-screen.test.tsx` suite (17 tests) passes, plus `yarn tsc --noEmit` and scoped `yarn eslint` on both changed files.
+- **Notes:** From S062. Small, low-risk navigation addition reusing an existing pattern. Implemented on top of T179's current-password change-email field and T180's gated forgot-password link, both already present on this screen.
+
 ### [T175] Send the user to the landing page after logout
 
 - **Area:** Authentication
