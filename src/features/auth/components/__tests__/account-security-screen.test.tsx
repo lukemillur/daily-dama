@@ -13,11 +13,16 @@ jest.mock('expo-router', () => ({ useRouter: () => ({ push: mockPush }) }));
 
 const mockChangePassword = jest.fn<() => Promise<{ error: unknown }>>();
 const mockChangeEmail = jest.fn<() => Promise<{ error: unknown }>>();
+const mockSignOut = jest.fn<() => Promise<{ error: unknown }>>();
 let mockAuthState: AuthState = { status: 'initializing' };
 
 jest.mock('@/features/auth/state/auth-provider', () => ({
   useAuthState: () => mockAuthState,
-  useAuthActions: () => ({ changePassword: mockChangePassword, changeEmail: mockChangeEmail }),
+  useAuthActions: () => ({
+    changePassword: mockChangePassword,
+    changeEmail: mockChangeEmail,
+    signOut: mockSignOut,
+  }),
 }));
 
 const mockTrackAuthEvent = jest.fn();
@@ -139,6 +144,8 @@ describe('AccountSecurityScreen', () => {
   beforeEach(() => {
     mockChangePassword.mockReset();
     mockChangeEmail.mockReset();
+    mockSignOut.mockReset();
+    mockSignOut.mockResolvedValue({ error: null });
     mockTrackAuthEvent.mockReset();
     mockLogAuthWarning.mockReset();
     mockPush.mockReset();
@@ -254,6 +261,42 @@ describe('AccountSecurityScreen', () => {
 
     expect(containsText(root, 'Your current password is incorrect.')).toBe(true);
     expect(findByLabel(root, 'New email')).toBeTruthy();
+  });
+
+  it('does not render a forgot-password link by default', async () => {
+    mockAuthState = authenticatedState();
+    const root = await mount();
+
+    expect(findAllByLabel(root, 'Forgot password?').length).toBe(0);
+  });
+
+  it('shows a forgot-password link with a sign-out warning after a wrong current password', async () => {
+    mockAuthState = authenticatedState();
+    mockChangePassword.mockResolvedValue({
+      error: { message: 'invalid credentials', code: 'invalid_credentials' },
+    });
+    const root = await mount();
+
+    await fillValidPasswordForm(root);
+    await pressLabel(root, 'Update password');
+
+    expect(findByLabel(root, 'Forgot password?')).toBeTruthy();
+    expect(containsText(root, /using the link below will sign you out/i)).toBe(true);
+  });
+
+  it('signs the user out and navigates to /auth/forgot-password when the gated link is selected', async () => {
+    mockAuthState = authenticatedState();
+    mockChangePassword.mockResolvedValue({
+      error: { message: 'invalid credentials', code: 'invalid_credentials' },
+    });
+    const root = await mount();
+
+    await fillValidPasswordForm(root);
+    await pressLabel(root, 'Update password');
+    await pressLabel(root, 'Forgot password?');
+
+    expect(mockSignOut).toHaveBeenCalledTimes(1);
+    expect(mockPush).toHaveBeenCalledWith('/auth/forgot-password');
   });
 
   it('blocks submit and calls neither current-password check message nor changePassword for an empty current password', async () => {

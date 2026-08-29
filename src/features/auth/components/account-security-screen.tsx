@@ -43,7 +43,7 @@ const EMAIL_CHANGE_PENDING_COPY =
 
 export function AccountSecurityScreen() {
   const authState = useAuthState();
-  const { changePassword, changeEmail } = useAuthActions();
+  const { changePassword, changeEmail, signOut } = useAuthActions();
   const router = useRouter();
 
   const [currentPassword, setCurrentPassword] = useState('');
@@ -107,6 +107,11 @@ export function AccountSecurityScreen() {
     setPasswordHasSubmitted(false);
     setPasswordChangeSucceeded(true);
     trackAuthEvent('account_security_password_success');
+  };
+
+  const handleForgotPassword = async () => {
+    await signOut();
+    router.push('/auth/forgot-password');
   };
 
   const handleEmailSubmit = async () => {
@@ -208,6 +213,12 @@ export function AccountSecurityScreen() {
         ) : null}
         {passwordChangeSucceeded ? <SuccessText>Your password has been updated.</SuccessText> : null}
 
+        {passwordSubmitCategory === 'invalidCredentials' ? (
+          <ForgotPasswordNotice>
+            Forgetting your current password? Using the link below will sign you out.
+          </ForgotPasswordNotice>
+        ) : null}
+
         <FormActions>
           <Button
             accessibilityLabel="Update password"
@@ -217,6 +228,15 @@ export function AccountSecurityScreen() {
             onPress={handlePasswordSubmit}>
             {isSubmittingPassword ? 'Updating...' : 'Update password'}
           </Button>
+          {passwordSubmitCategory === 'invalidCredentials' ? (
+            <Button
+              accessibilityLabel="Forgot password?"
+              fill
+              variant="secondary"
+              onPress={handleForgotPassword}>
+              Forgot password?
+            </Button>
+          ) : null}
         </FormActions>
 
         <Divider />
@@ -338,6 +358,12 @@ const ErrorText = styled.Text`
   font-size: 12px;
   font-weight: 800;
   margin-top: 7px;
+`;
+const ForgotPasswordNotice = styled.Text`
+  color: ${({ theme }) => theme.text};
+  font-size: 12px;
+  font-weight: 800;
+  margin-top: 10px;
 `;
 const SuccessText = styled.Text`
   color: ${({ theme }) => theme.text};
