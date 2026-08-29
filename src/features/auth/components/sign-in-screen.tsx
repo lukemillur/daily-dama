@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'expo-router';
-import { ScrollView, TextInput } from 'react-native';
+import { Platform, ScrollView, TextInput } from 'react-native';
 import { styled } from 'styled-components/native';
 
 import { Button } from '@/components/ui/button';
@@ -44,6 +44,7 @@ export function SignInScreen() {
   // synchronous onPress can read the stale `isSubmitting` closure value, so the state alone
   // (used to drive the button's disabled/label UI) can't stop a same-tick double submit.
   const isSubmittingRef = useRef(false);
+  const passwordInputRef = useRef<TextInput>(null);
 
   const validation = validateSignInFields(email, password);
   const errors = hasSubmitted && validation.status === 'invalid' ? validation.errors : {};
@@ -81,6 +82,26 @@ export function SignInScreen() {
     router.replace('/app/home');
   };
 
+  // Web-only: let Enter submit the form from anywhere in it, the same way clicking the primary
+  // button would. handleSubmit already re-validates and guards re-entrancy via isSubmittingRef,
+  // matching the button's own disabled-while-submitting gate, so this listener does not duplicate
+  // that check.
+  useEffect(() => {
+    if (Platform.OS !== 'web' || typeof window?.addEventListener !== 'function') return;
+
+    const handleKeyDown = (event: { key?: string; preventDefault?: () => void }) => {
+      if (event.key !== 'Enter') return;
+      event.preventDefault?.();
+      void handleSubmit();
+    };
+
+    // Capture phase: react-native-web's TextInput calls stopPropagation() on every keydown
+    // (to avoid duplicate handling of its own onKeyPress/onSubmitEditing), which would otherwise
+    // stop this from ever seeing Enter presses made from inside a field during the bubble phase.
+    window.addEventListener('keydown', handleKeyDown, true);
+    return () => window.removeEventListener('keydown', handleKeyDown, true);
+  });
+
   if (authState.status === 'initializing' || authState.status === 'authenticated') {
     return (
       <Screen align="center">
@@ -109,19 +130,25 @@ export function SignInScreen() {
             autoCorrect={false}
             keyboardType="email-address"
             textContentType="username"
+            blurOnSubmit={false}
             onChangeText={setEmail}
+            onSubmitEditing={() => passwordInputRef.current?.focus()}
             placeholder="Email"
             placeholderTextColor={AppColors.textSubtle}
+            returnKeyType="next"
             value={email}
           />
           {errors.email ? <ErrorText>{errors.email}</ErrorText> : null}
         </Field>
 
         <PasswordInput
+          ref={passwordInputRef}
           error={errors.password}
           label="Password"
           textContentType="password"
           onChangeText={setPassword}
+          onSubmitEditing={() => void handleSubmit()}
+          returnKeyType="done"
           value={password}
         />
 

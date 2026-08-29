@@ -351,6 +351,82 @@ describe('SignInScreen', () => {
     expect(mockTrackAuthEvent).toHaveBeenCalledWith('sign_in_error', 'invalidCredentials');
   });
 
+  it('advances focus from email to password via onSubmitEditing without submitting', async () => {
+    const root = await mount();
+    const emailInput = findByLabel(root, 'Email');
+
+    await act(async () => {
+      emailInput.props.onSubmitEditing();
+    });
+
+    expect(mockSignInWithPassword).not.toHaveBeenCalled();
+  });
+
+  it('submits on Password onSubmitEditing (RN "done" key), same as clicking Sign in', async () => {
+    mockSignInWithPassword.mockResolvedValue({ error: null });
+    const root = await mount();
+    await fillValidForm(root);
+
+    await act(async () => {
+      await findByLabel(root, 'Password').props.onSubmitEditing();
+    });
+
+    expect(mockSignInWithPassword).toHaveBeenCalledTimes(1);
+    expect(mockSignInWithPassword).toHaveBeenCalledWith(EMAIL, PASSWORD);
+  });
+
+  it('submits on Enter anywhere in the form on web, the same as clicking Sign in', async () => {
+    ReactNative.Platform.OS = 'web';
+    const addEventListener = jest.fn();
+    const removeEventListener = jest.fn();
+    (globalThis as { window?: unknown }).window = { addEventListener, removeEventListener };
+    try {
+      mockSignInWithPassword.mockResolvedValue({ error: null });
+      const root = await mount();
+      await fillValidForm(root);
+
+      expect(addEventListener).toHaveBeenCalledWith('keydown', expect.any(Function), true);
+      const handleKeyDown = addEventListener.mock.calls[addEventListener.mock.calls.length - 1][1] as (event: {
+        key: string;
+        preventDefault: () => void;
+      }) => void;
+
+      const preventDefault = jest.fn();
+      await act(async () => {
+        handleKeyDown({ key: 'Enter', preventDefault });
+      });
+
+      expect(mockSignInWithPassword).toHaveBeenCalledTimes(1);
+      expect(mockSignInWithPassword).toHaveBeenCalledWith(EMAIL, PASSWORD);
+    } finally {
+      restorePlatform();
+    }
+  });
+
+  it('ignores non-Enter keydowns on web and never calls signInWithPassword', async () => {
+    ReactNative.Platform.OS = 'web';
+    const addEventListener = jest.fn();
+    const removeEventListener = jest.fn();
+    (globalThis as { window?: unknown }).window = { addEventListener, removeEventListener };
+    try {
+      const root = await mount();
+      await fillValidForm(root);
+
+      const handleKeyDown = addEventListener.mock.calls[addEventListener.mock.calls.length - 1][1] as (event: {
+        key: string;
+        preventDefault: () => void;
+      }) => void;
+
+      await act(async () => {
+        handleKeyDown({ key: 'Tab', preventDefault: jest.fn() });
+      });
+
+      expect(mockSignInWithPassword).not.toHaveBeenCalled();
+    } finally {
+      restorePlatform();
+    }
+  });
+
   it('renders the default palette (guest, no cached theme) via CachedAppThemeProvider', async () => {
     useWebLocalStorage(() => null);
     try {
