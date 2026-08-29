@@ -9,10 +9,13 @@ import {
   useState,
 } from 'react';
 
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AuthError } from '@supabase/supabase-js';
 
 import { deriveAuthState, INITIALIZING_AUTH_STATE, type AuthState } from '@/features/auth/model/auth-state';
 import { logAuthWarning } from '@/features/auth/observability/auth-observability';
+import { purgeIdentityNamespace } from '@/shared/persistence/account-purge';
+import { createUserIdentity } from '@/shared/persistence/identity';
 import { getSupabaseClient } from '@/shared/supabase/supabase-client';
 
 interface AuthActions {
@@ -33,6 +36,10 @@ interface AuthActions {
     newPassword: string,
   ) => Promise<{ error: AuthError | null }>;
   readonly changeEmail: (newEmail: string) => Promise<{ error: AuthError | null }>;
+  readonly deleteAccount: (
+    currentPassword: string,
+    confirmation: string,
+  ) => Promise<{ error: unknown }>;
 }
 
 const AuthStateContext = createContext<AuthState | undefined>(undefined);
@@ -248,6 +255,51 @@ export function AuthProvider({ children }: PropsWithChildren) {
     return { error };
   }, []);
 
+  const deleteAccount = useCallback(async (currentPassword: string, confirmation: string) => {
+    if (stateRef.current.status !== 'authenticated') {
+      return { error: new AuthError('No active session.', 401, 'session_not_found') };
+    }
+
+    // Captured now, while still inside the authenticated guard above, so it
+    // stays defined through the rest of this call regardless of what Auth
+    // reports afterward (including the local sign-out this function itself
+    // triggers on success below).
+    const userId = stateRef.current.session.user.id;
+
+    const client = getSupabaseClient();
+    if (!client) {
+      return { error: new AuthError('Supabase is not configured.') };
+    }
+
+    const { error } = await client.functions.invoke('delete-account', {
+      body: { currentPassword, confirmation },
+    });
+
+    if (error) {
+      // Response loss with the user still present, and offline retry, both
+      // surface here -- no purge, no sign-out, nothing destructive.
+      return { error };
+    }
+
+    // A null error covers both a genuinely fresh success and a reconciled
+    // lost-response retry: the delete-account Edge Function is idempotent
+    // and returns success (no error) if Auth verification shows the user is
+    // already gone. The two are indistinguishable to this client code, and
+    // both get the same purge-then-sign-out treatment.
+    const identity = createUserIdentity(userId);
+    if (identity) {
+      await purgeIdentityNamespace(AsyncStorage, identity);
+    }
+
+    // Purge before sign-out, so the purge always runs while the SDK still
+    // considers the session nominally valid. Signing out locally is what
+    // starts the already-tested reactive identity-generation invalidation
+    // (IdentityProvider derives a fresh guest identity on SIGNED_OUT).
+    await client.auth.signOut({ scope: 'local' });
+
+    return { error: null };
+  }, []);
+
   const actions = useMemo(
     () => ({
       signInWithPassword,
@@ -259,6 +311,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
       resendSignupConfirmation,
       changePassword,
       changeEmail,
+      deleteAccount,
     }),
     [
       signInWithPassword,
@@ -270,6 +323,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
       resendSignupConfirmation,
       changePassword,
       changeEmail,
+      deleteAccount,
     ],
   );
 

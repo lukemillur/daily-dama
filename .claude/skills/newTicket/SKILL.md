@@ -35,7 +35,7 @@ Read what the user actually said; there's no argument syntax to parse.
 | `/newTicket` (nothing named) | continuous mode: cycles back to back, file order |
 | `/newTicket ranked` | continuous mode: cycles back to back, highest-unblock-value order |
 | `/newTicket T035`, "work on the laced count task" | one cycle for that task |
-| `/newTicket resume T034`, `/newTicket T034 --resume` | one cycle resuming that task's existing claim branch |
+| `/newTicket resume T034`, `/newTicket T034 --resume` | one cycle resuming that task's existing claim branch and reusing any canonical open/merged PR |
 
 `ranked` only changes *which* actionable task continuous mode reaches first each cycle — every other rule on this page (skip/stop conditions, one task per cycle, fresh subagents) is identical. It cannot combine with a task ID or `resume`; both of those already pick one task directly, so `ticket-claim.mjs` rejects the combination as a usage error rather than guessing which one wins.
 
@@ -107,6 +107,16 @@ is the only route to `blocked-at-merge`. Do not make another merge attempt.
 Before accepting `success`, confirm every `exitCriteria` record is `passed`;
 otherwise report the evidence gap as `blocked` rather than claiming full
 verification.
+
+Treat a missing or malformed `RESULT` object, a mismatched/missing `taskId` or
+`worktree`, absent merge reconciliation, or missing per-criterion evidence as
+`blocked`. Never infer success from prose, a pushed commit, or an open PR.
+
+The implementer must use `.claude/scripts/pr-merge.mjs`, not invoke `gh pr
+merge` directly. The wrapper supplies an explicit repository context, which
+prevents GitHub CLI's `--delete-branch` cleanup from trying to check out
+`development` in a task worktree. It also preflights canonical state, so an
+explicit resume reuses an existing PR and never repeats a completed merge.
 
 ### 4. Clean up the stage worktree
 

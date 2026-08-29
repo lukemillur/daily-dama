@@ -107,6 +107,33 @@ test('newTicket continuous mode explicitly continues after recoverable blocks', 
   assert.match(skill, /failure must not terminate continuous mode/);
 });
 
+test('ticket merging is remote-context, resumable, and never delegated to raw gh merge instructions', () => {
+  const implementer = fs.readFileSync(path.join(repoRoot, '.claude/agents/ticket-implementer.md'), 'utf8');
+  const skill = fs.readFileSync(path.join(repoRoot, '.claude/skills/newTicket/SKILL.md'), 'utf8');
+  const settings = JSON.parse(fs.readFileSync(path.join(repoRoot, '.claude/settings.json'), 'utf8'));
+
+  assert.match(implementer, /pr-merge-status\.mjs --branch/);
+  assert.match(implementer, /reuse `prUrl` in step 7/);
+  assert.match(implementer, /Never create a\s+duplicate PR/);
+  assert.match(implementer, /pr-merge\.mjs --pr/);
+  assert.ok(
+    implementer.indexOf('pr-merge-status.mjs --branch') < implementer.indexOf('## 2. Discover'),
+    'canonical PR recovery must be resolved before implementation begins',
+  );
+  assert.match(skill, /prevents GitHub CLI's `--delete-branch` cleanup/);
+  assert.equal(implementer.includes('gh pr merge --squash --delete-branch'), false);
+  assert.ok(settings.permissions.allow.includes('Bash(node .claude/scripts/pr-merge.mjs:*)'));
+  assert.equal(settings.permissions.allow.some((permission) => permission.startsWith('Bash(gh pr merge')), false);
+});
+
+test('malformed or incomplete implementer results are explicitly blocking', () => {
+  const skill = fs.readFileSync(path.join(repoRoot, '.claude/skills/newTicket/SKILL.md'), 'utf8');
+  assert.match(skill, /missing or malformed `RESULT` object/);
+  assert.match(skill, /mismatched\/missing `taskId` or\s+`worktree`/);
+  assert.match(skill, /absent merge reconciliation/);
+  assert.match(skill, /missing per-criterion evidence/);
+});
+
 test('no subagent can spawn subagents', () => {
   const agentsDir = path.join(repoRoot, '.claude/agents');
   const agents = fs.readdirSync(agentsDir).filter((name) => name.endsWith('.md'));

@@ -127,6 +127,39 @@ test('refuses a worktree holding commits that exist nowhere else', () => {
   assert.equal(assessment.reason, 'unpushed-commits');
 });
 
+test('canonical merged PR head permits release after its remote branch was deleted', () => {
+  const stage = find('agent-onbranch');
+  const detached = PORCELAIN.replace('branch refs/heads/task/T100-something', 'detached');
+  const run = createFakeRunner([
+    ...cleanResponses,
+    [/rev-list --count/, { stdout: '1\n' }],
+    [/checkout --detach HEAD/, { stdout: '' }],
+    [/worktree list --porcelain/, { stdout: detached }],
+  ]);
+  const result = releaseAttachedWorktree({
+    run,
+    repoRoot: REPO,
+    worktree: stage,
+    branch: 'task/T100-something',
+    mergedHead: stage.head,
+  });
+  assert.equal(result.action, 'removed', JSON.stringify(result));
+  assert.match(result.detail, /canonical merged PR/);
+});
+
+test('canonical merged PR evidence refuses a mismatched worktree head', () => {
+  const run = createFakeRunner([...cleanResponses, [/rev-list --count/, { stdout: '1\n' }]]);
+  const result = releaseAttachedWorktree({
+    run,
+    repoRoot: REPO,
+    worktree: find('agent-onbranch'),
+    branch: 'task/T100-something',
+    mergedHead: 'different-head',
+  });
+  assert.equal(result.action, 'refused');
+  assert.equal(result.reason, 'unpushed-commits');
+});
+
 test('refuses a worktree with a live process inside it', () => {
   const run = createFakeRunner([
     ...cleanResponses,
@@ -187,6 +220,9 @@ test('CLI argument parsing', () => {
   const release = parseArgs(['--release-codex-stage', '--task', 'T100.1', '--branch', 'task/T100.1-safe-release']);
   assert.equal(release.releaseCodexStage, true);
   assert.equal(release.task, 'T100.1');
+  const mergedRelease = parseArgs(['--release-codex-stage', '--task', 'T100', '--branch', 'task/T100-safe-release', '--merged-pr', 'https://github.com/example/repo/pull/1']);
+  assert.equal(mergedRelease.mergedPr, 'https://github.com/example/repo/pull/1');
+  assert.throws(() => parseArgs(['--merged-pr', 'https://github.com/example/repo/pull/1', '--path', WT]), /requires --release/);
   assert.throws(() => parseArgs(['--release-codex-stage', '--task', 'T100']), /requires a valid/);
   assert.throws(() => parseArgs([]), /nothing to do/);
 });
@@ -257,6 +293,48 @@ test('release-codex-stage ignores non-Codex worktrees and removes only the match
   });
   assert.deepEqual(result.removed, [codex]);
   assert.equal(run.calls.some((argv) => argv.join(' ').includes('agent-onbranch checkout --detach')), false);
+});
+
+test('release-codex-stage accepts only matching canonical merged PR head after remote deletion', () => {
+  const codex = '/repo/.claude/worktrees/codex-ticket-t100-implementer-merged';
+  const codexRecord = [
+    `worktree ${codex}`,
+    'HEAD 7777777777777777777777777777777777777777',
+    'branch refs/heads/task/T100-something',
+    '',
+  ].join('\n');
+  const porcelain = `${PORCELAIN}\n${codexRecord}`;
+  const detached = porcelain.replace(codexRecord, codexRecord.replace('branch refs/heads/task/T100-something', 'detached'));
+  const run = createFakeRunner([
+    ...cleanResponses,
+    [/gh pr view/, { stdout: JSON.stringify({
+      state: 'MERGED',
+      mergedAt: '2026-08-28T19:00:13Z',
+      mergeCommit: { oid: 'merge-sha' },
+      headRefOid: '7777777777777777777777777777777777777777',
+      url: 'https://github.com/example/repo/pull/1',
+    }) }],
+    [/rev-list --count/, { stdout: '1\n' }],
+    [/checkout --detach HEAD/, { stdout: '' }],
+    [/worktree list --porcelain/, () => ({
+      stdout: run.calls.filter((argv) => argv.includes('worktree') && argv.includes('list')).length > 1 ? detached : porcelain,
+    })],
+  ]);
+  const result = cleanup({
+    run,
+    repoRoot: REPO,
+    options: parseArgs([
+      '--release-codex-stage',
+      '--task',
+      'T100',
+      '--branch',
+      'task/T100-something',
+      '--merged-pr',
+      'https://github.com/example/repo/pull/1',
+    ]),
+  });
+  assert.deepEqual(result.removed, [codex]);
+  assert.match(result.results[0].detail, /canonical merged PR/);
 });
 
 test('list mode inspects without removing anything', () => {

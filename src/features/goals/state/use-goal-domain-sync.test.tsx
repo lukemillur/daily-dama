@@ -184,6 +184,7 @@ interface Captured {
   runSync?: ReturnType<typeof useGoalDomainSync>['runSync'];
   isSyncing?: boolean;
   pendingCount?: number;
+  conflictCount?: number;
   discardPending?: () => Promise<void>;
 }
 
@@ -209,6 +210,7 @@ function makeHarness(
       captured.runSync = sync.runSync;
       captured.isSyncing = sync.isSyncing;
       captured.pendingCount = sync.pendingCount;
+      captured.conflictCount = sync.conflictCount;
       captured.discardPending = sync.discardPending;
     });
 
@@ -652,6 +654,79 @@ describe('useGoalDomainSync', () => {
     await flush();
     // Still pending -- retried on the next run (never silently acknowledged).
     expect(transport.getPushAttemptCount('goal-tombstoned')).toBeGreaterThan(attemptsBeforeSecondRun);
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  it('retrying the same operation after a lost acknowledgement is idempotent and does not block an unrelated goal', async () => {
+    const transport = createFakeGoalSyncTransport();
+    const { root, captured } = await mountHarness(INITIAL_GOALS, () => transport, USER_IDENTITY);
+    await flush();
+
+    act(() => {
+      captured.setCollection?.({
+        goals: [{ id: 'goal-1', trickId: 'big-cup', trickName: 'Big cup', kind: 'count', targetCount: 10, createdAt: 1 }],
+      });
+    });
+    await flush();
+    await act(async () => {
+      await captured.runSync?.('manual');
+    });
+    await flush();
+    expect(transport.getRow('goal-1')?.revision).toBe(1);
+
+    act(() => {
+      captured.setCollection?.({
+        goals: [
+          { id: 'goal-1', trickId: 'big-cup', trickName: 'Big cup', kind: 'count', targetCount: 42, createdAt: 1 },
+          { id: 'goal-2', trickId: 'stilt-flip', trickName: 'Stilt flip', kind: 'count', targetCount: 5, createdAt: 2 },
+        ],
+      });
+    });
+    await flush();
+
+    await transport.push({
+      operationId: 'lost-ack-direct',
+      recordId: 'goal-1',
+      operationType: 'upsert',
+      payload: {
+        user_id: USER_ID,
+        id: 'goal-1',
+        trick_id: 'big-cup',
+        trick_name: 'Big cup',
+        kind: 'count',
+        target_count: 42,
+        target_ms: null,
+      },
+      expectedRevision: 1,
+    });
+    expect(transport.getRow('goal-1')?.revision).toBe(2);
+    expect(transport.getRow('goal-1')?.target_count).toBe(42);
+
+    await act(async () => {
+      await captured.runSync?.('manual');
+    });
+    await flush();
+
+    expect(transport.getRow('goal-1')?.revision).toBe(2);
+    expect(transport.getRow('goal-1')?.target_count).toBe(42);
+    expect(captured.conflictCount).toBe(1);
+
+    expect(transport.getRow('goal-2')?.target_count).toBe(5);
+    expect(transport.getRow('goal-2')?.revision).toBe(1);
+
+    const goal2AttemptsAfterFirstRun = transport.getPushAttemptCount('goal-2');
+    for (let i = 0; i < 2; i += 1) {
+      await act(async () => {
+        await captured.runSync?.('manual');
+      });
+      await flush();
+      expect(captured.conflictCount).toBe(1);
+    }
+    expect(transport.getRow('goal-1')?.revision).toBe(2);
+    expect(transport.getPushAttemptCount('goal-2')).toBe(goal2AttemptsAfterFirstRun);
 
     act(() => {
       root.unmount();

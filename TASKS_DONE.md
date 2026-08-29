@@ -4,6 +4,25 @@ Completed entries move here from `TASKS.md`'s `Backlog`, in the same commit that
 
 Entries keep their content as it was at completion. Don't retroactively edit a description or exit criteria after the fact; if something about a completed task turns out to be wrong or misleading, note that in a new entry or in code, not by rewriting history here.
 
+### [T160] Expose synchronization health and record-level conflict recovery
+
+- **Area:** Synchronization UX
+- **Priority:** High
+- **Status:** Done
+- **Description:** Make pending work, failures, offline state, freshness, retry, and conflicts understandable without allowing one bad record to stop unrelated synchronization.
+- **Exit criteria:** Confirmed by completed T160.1-T160.3: a trustworthy serializable sync-status model with a Profile retry surface; per-record conflict resolution for profile, custom-trick, goal, and note domains scoped strictly to its own record; and a cross-domain fault-injection suite proving a stale-revision or tombstone conflict on one record never blocks or resurrects an unrelated record, retries stay idempotent after a lost acknowledgement, and two independently-mounted browser fixtures converge on identical domain state after a genuine conflict. The full repository verifier passes all four steps (tests, lint, strict typecheck, web export). Native validation is deferred by active web-only project scope.
+- **Notes:** Umbrella from S037. Complete T160.1-T160.3. Depends on T157. Child completion evidence remains in this file under T160.1-T160.3; no additional product code is required for umbrella closure.
+
+### [T160.3] Prove stale revisions and tombstones cannot block or resurrect unrelated data
+
+- **Area:** Synchronization conflict testing
+- **Priority:** High
+- **Status:** Done
+- **Planning:** Required
+- **Description:** Add a cross-domain fault-injection suite for concurrent edits, stale revisions, delete-vs-edit tombstones, lost acknowledgements, and conflicts interleaved with valid operations.
+- **Exit criteria:** The suite proves only the conflicting record pauses, accepted operations advance and apply server metadata, stale clients cannot resurrect tombstoned goals/notes/custom tricks, retries remain idempotent, and conflict resolution converges two browser fixtures on identical domain state. Confirmed: filled per-domain parity gaps (profile's existing sibling-conflict coverage, a goals/notes lost-acknowledgement idempotency test, and custom-tricks' hard-delete-vs-edit shape -- a retryable 'failed' outcome, never a resurrecting insert, unlike goals/notes' SyncConflictRecord tombstone-conflict shape); added a fully-wired cross-domain integration suite proving one conflicting record pauses while interleaved valid edits across every other domain apply in the same run and resolving it disturbs no sibling; and added a two-live-browser convergence suite sharing one simulated cloud per domain that proves concurrent edits, a genuine stale-revision conflict, 'keep-server' resolution, and an out-of-band lost-acknowledgement replay all converge to bit-for-bit identical domain state with zero remaining pending/conflicting operations. Focused sync suites and the full verifier pass all four steps (test, lint, typecheck, web export). Native validation is deferred by active project scope.
+- **Notes:** From S037. Depends on T160.2 and T155.8.
+
 ### [T159] Merge guest data into new or existing accounts
 
 - **Area:** Guest conversion
@@ -2228,6 +2247,16 @@ Entries keep their content as it was at completion. Don't retroactively edit a d
 
 Completed entries live in [TASKS_DONE.md](TASKS_DONE.md) — not part of the top-to-bottom read above; see step 5 under _Completing a task_.
 
+### [T164] Make the onboarding theme step's background actually preview
+
+- **Area:** Onboarding
+- **Priority:** High
+- **Status:** Done
+- **Planning:** Implementer
+- **Description:** `src/app/app/home.tsx` renders `<Screen background={profile.hasCompletedOnboarding ? undefined : AppColors.yellow} ...>` — hardcoding the mustard-yellow background for the entire duration of onboarding regardless of the theme preset the user just previewed via `setThemeColors` (T146). Make the background reflect the live-previewed `themeBackgroundColor` instead of this fixed fallback.
+- **Exit criteria:** `yarn test --runInBand` passes, including a test asserting that selecting a non-default preset during onboarding changes the rendered background color away from `AppColors.yellow`; confirmed in-browser via the Expo dev server that tapping a preset visibly changes the onboarding screen's background, not just its text/accent. Confirmed: `src/app/app/home.tsx` now reads `profile.themeBackgroundColor ?? AppColors.yellow` instead of the fixed fallback; a new `home.test.tsx` test drives the full onboarding flow through theme selection and asserts the rendered `Screen`'s background color changes from `AppColors.yellow` to the selected preset's background. `yarn test --runInBand`, `yarn tsc --noEmit`, and `yarn eslint` on the changed files all pass. Verified live in the Expo web dev server via a scripted Playwright walkthrough (no interactive browser preview available in this run): driving onboarding to the theme step showed the resolved background as `rgb(244, 201, 77)` (`AppColors.yellow`) before selecting a preset, and `rgb(216, 232, 247)` (the Blue preset's `#d8e8f7`) immediately after tapping it — a real, visible background change, not just text/accent.
+- **Notes:** From S043 — a regression against T146's own exit criteria ("background/accent visibly change"), not new scope. T165 (S044) was not yet claimed/implemented in this repo at the time of this task; only `home.tsx`/`home.test.tsx` were touched here.
+
 ### [T162.3] Add dependency, secret, and built-bundle scanning to CI
 
 - **Area:** CI security
@@ -2585,7 +2614,33 @@ Completed entries live in [TASKS_DONE.md](TASKS_DONE.md) — not part of the top
 - **Description:** Add backend acceptance tests for complete cascade cleanup and calls from anonymous, expired, wrong-user, stale, and pre-deletion sessions, including attempts to recreate rows with an old JWT.
 - **Exit criteria:** Against a clean local reset, fixtures populate all six resources for two users; deleting user A removes only A, user B remains intact, every old user-A token is denied, foreign keys/policies prevent row recreation, and simulated response loss followed by retry converges on the same empty result. Confirmed against a clean local Supabase stack: `t161_3_delete_account_acceptance.test.mjs` passes all three real-stack cases, covering all six resources, Auth cascade isolation, anonymous/signed-expired/wrong-user/stale/pre-deletion denial, old-token recreation rejection, and lost-response retry convergence. The consolidated `yarn test:db` passes all 7 steps (including pgTAP, Data API, Edge Functions, and cleanup reset); full `node .claude/scripts/verify.mjs --json` passes Jest, lint, typecheck, and web export. HTTP test files run sequentially and the stack is re-started before Edge Function tests to avoid local Docker/Edge Runtime contention.
 - **Notes:** From S039. Depends on T161.2 and T155.8.
+### [T161.4] Add the permanent account-deletion route
 
+- **Area:** Account deletion UI
+- **Priority:** High
+- **Status:** Done
+- **Planning:** Required
+- **Description:** Add `/app/profile/account/delete` with an explicit immediate/permanent warning, current-password field, exact typed `DELETE` confirmation, safe disabled/loading/error states, and invocation of the hardened Edge Function.
+- **Exit criteria:** Route tests and a browser walkthrough confirm the action cannot submit without both confirmations, wrong/offline/rate-limited/expired states are actionable without leaking account facts, success cannot be double-submitted, and no password or token reaches logs, analytics, or the URL.
+- **Notes:** From S039. Depends on T161.2 and T154.1. Do not add export or delayed-deletion semantics. Confirmed: added the onboarding-gated `/app/profile/account/delete` route, a destructive screen with immediate/permanent warning, current-password and exact `DELETE` fields, disabled/loading/success states, synchronous duplicate-submit protection, closed-set actionable error mapping for unauthorized/offline/rate-limited/expired/unknown failures, and no credential-bearing logs, analytics, navigation, or persistent state. `AuthProvider.deleteAccount` invokes the hardened `delete-account` Edge Function with the exact request body only after authentication. Added route, provider, model, screen, and account-entry tests; focused Auth tests pass (62 tests), and `node .claude/scripts/verify.mjs --json` passes all four steps (Jest, lint, typecheck, web export). Browser walkthrough was attempted through `run-auth-e2e.mjs` but blocked while checking local Supabase status in this environment; native validation is deferred by active platform scope. T161.5 owns local purge and lost-response reconciliation.
+
+### [T161] Add immediate, recoverable account deletion
+
+- **Area:** Account deletion
+- **Priority:** High
+- **Status:** Done
+- **Description:** Let an authenticated user permanently remove the Auth identity and every application row, then return to a clean guest workspace even when the success response is lost.
+- **Notes:** Umbrella from S039. Complete T161.1-T161.5. User-facing data export is excluded. All five children (Edge Function, hardening, cascade/session acceptance tests, deletion route, local purge/reconciliation) are Done.
+
+### [T161.5] Purge account state and reconcile deletion response loss
+
+- **Area:** Account lifecycle / local persistence
+- **Priority:** High
+- **Status:** Done
+- **Planning:** Required
+- **Description:** On deletion success-or after a lost response when Auth verification proves the user no longer exists-remove credentials, account cache, outboxes, conflicts, import progress, and sync metadata, invalidate the identity generation, and enter a fresh guest namespace.
+- **Exit criteria:** Integration tests cover normal success, response loss with missing user, response loss with user still present, offline retry, and a late in-flight sync result; completed deletion exposes no former account data to the new guest, does not erase unrelated guest/other-user namespaces, and cannot be reversed by stale work.
+- **Notes:** From S039. Depends on T156.3, T158, T159.5, T160.2, and T161.4. AsyncStorage purge is accepted prototype cleanup, not claimed forensic erasure. Confirmed: `AuthProvider.deleteAccount` now purges the entire `user:<uuid>:` AsyncStorage namespace (new `purgeIdentityNamespace` in `src/shared/persistence/account-purge.ts`, typed to reject `GUEST_IDENTITY` at compile time) and signs out locally (`scope: 'local'`) on any null-error response from the `delete-account` Edge Function -- which the function's own idempotent `isNotFound` check makes indistinguishable between a fresh success and a reconciled lost-response retry, so both get identical treatment; a non-null error (user still present, or offline) leaves storage and the session untouched. Local sign-out reuses the already-tested `IdentityProvider` reactive generation-invalidation on `SIGNED_OUT`. `AccountDeletionScreen` now checks its `succeeded` flag before any `authState`-derived branch, so the success view survives `authState` flipping to guest moments later, with corrected non-transient copy. Five exit-criteria scenarios are covered: unit tests in `auth-provider.test.tsx` for normal success, reconciled response-loss-with-missing-user, response-loss-with-user-present, and offline retry; a new fully-wired integration test (`src/shared/sync/account-deletion-purge.integration.test.tsx`, modeled on `logout-guard.discard-isolation.test.tsx`) drives a real `SyncCoordinatorProvider` sync run with a deliberately deferred push, purges and switches to guest while it is still in flight, then resolves it late -- proving the late ack cannot land in the live guest namespace, cannot resurrect the purged namespace, and a seeded guest key plus a seeded unrelated second-user key both survive untouched. `node .claude/scripts/verify.mjs --json` passes all four steps (1,749 Jest tests, lint, strict typecheck, web export). The account-deletion e2e suite (`e2e/auth/08-account-deletion.spec.ts`) was updated for the corrected copy and to assert the seeded `user:<uuid>:daily-dama:user-profile` localStorage key is gone after a real 204 success, but could not be run to completion in this environment: `run-auth-e2e.mjs`'s fixed `localhost:8081` Playwright web server port was already occupied by another process in this shared sandbox, and the app's local Auth policy fixes the callback origin at that port (see `supabase/README.md`), so no alternate port could be substituted. This mirrors the same environment-level e2e blocker recorded on T161.4's closing note; native/browser validation is deferred by active platform scope regardless.
 ### [T176] Fix Profile's Account section not rendering until a manual refresh
 
 - **Area:** Authentication / Profile

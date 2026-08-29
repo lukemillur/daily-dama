@@ -94,6 +94,12 @@ function createFakeCustomTrickSyncTransport(options: FakeTransportOptions = {}):
           },
         };
       }
+      if (request.expectedRevision !== null && existing === undefined) {
+        return {
+          status: 'failed',
+          error: { kind: 'unknown', message: 'Custom-trick row disappeared during conflict resolution.' },
+        };
+      }
       const payload = request.payload as Record<string, unknown>;
       const row: CustomTrickRow = {
         id: trickId,
@@ -158,6 +164,8 @@ interface Captured {
   runSync?: ReturnType<typeof useCustomTrickDomainSync>['runSync'];
   isSyncing?: boolean;
   pendingCount?: number;
+  conflictCount?: number;
+  retryableFailureCount?: number;
   discardPending?: () => Promise<void>;
 }
 
@@ -183,6 +191,8 @@ function makeHarness(
       captured.runSync = sync.runSync;
       captured.isSyncing = sync.isSyncing;
       captured.pendingCount = sync.pendingCount;
+      captured.conflictCount = sync.conflictCount;
+      captured.retryableFailureCount = sync.retryableFailureCount;
       captured.discardPending = sync.discardPending;
     });
 
@@ -559,6 +569,78 @@ describe('useCustomTrickDomainSync', () => {
     await flush();
     expect(transport.getPushAttemptCount('custom-1')).toBeGreaterThan(custom1AttemptsBeforeSecondRun);
     expect(transport.getPushAttemptCount('custom-2')).toBe(custom2AttemptsAfterFirstRun);
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  it('an edit against an already-hard-deleted trick surfaces as a retryable failure and never resurrects the row', async () => {
+    const transport = createFakeCustomTrickSyncTransport();
+    const { root, captured } = await mountHarness(INITIAL_CUSTOM_TRICKS, () => transport, USER_IDENTITY);
+    await flush();
+
+    act(() => {
+      captured.setCollection?.({ tricks: [{ id: 'custom-deleted', kind: 'standalone', name: 'Original' }] });
+    });
+    await flush();
+    await act(async () => {
+      await captured.runSync?.('manual');
+    });
+    await flush();
+    expect(transport.getRow('custom-deleted')?.revision).toBe(1);
+
+    transport.setFailPush(true);
+    act(() => {
+      captured.setCollection?.({
+        tricks: [
+          { id: 'custom-deleted', kind: 'standalone', name: 'Resurrection attempt' },
+          { id: 'custom-unrelated', kind: 'standalone', name: 'Unrelated' },
+        ],
+      });
+    });
+    await flush();
+
+    transport.setFailPush(false);
+    await transport.push({
+      operationId: 'seed-hard-delete',
+      recordId: 'custom-deleted',
+      operationType: 'delete',
+      payload: null,
+      expectedRevision: 1,
+    });
+    expect(transport.getRow('custom-deleted')).toBeUndefined();
+    // Baseline: exactly the one create call from before the hard delete --
+    // any further increment would mean the resurrection attempt actually
+    // re-created the row.
+    const upsertCallsBeforeResurrectionAttempt = transport.getUpsertCallCount('custom-deleted');
+    expect(upsertCallsBeforeResurrectionAttempt).toBe(1);
+
+    let result: Awaited<ReturnType<NonNullable<Captured['runSync']>>> | undefined;
+    await act(async () => {
+      result = await captured.runSync?.('manual');
+    });
+    await flush();
+
+    expect(result?.outcome).toEqual({ status: 'succeeded' });
+
+    expect(transport.getRow('custom-unrelated')?.name).toBe('Unrelated');
+
+    expect(transport.getRow('custom-deleted')).toBeUndefined();
+    expect(transport.getUpsertCallCount('custom-deleted')).toBe(upsertCallsBeforeResurrectionAttempt);
+
+    expect(captured.conflictCount).toBe(0);
+    expect(captured.retryableFailureCount).toBeGreaterThan(0);
+
+    const attemptsBeforeSecondRun = transport.getPushAttemptCount('custom-deleted');
+    await act(async () => {
+      await captured.runSync?.('manual');
+    });
+    await flush();
+    expect(transport.getPushAttemptCount('custom-deleted')).toBeGreaterThan(attemptsBeforeSecondRun);
+    expect(transport.getRow('custom-deleted')).toBeUndefined();
+    expect(transport.getUpsertCallCount('custom-deleted')).toBe(upsertCallsBeforeResurrectionAttempt);
+    expect(captured.conflictCount).toBe(0);
 
     act(() => {
       root.unmount();
