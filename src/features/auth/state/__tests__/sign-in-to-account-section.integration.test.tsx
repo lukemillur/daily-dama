@@ -30,6 +30,11 @@ import { AccountSection } from '@/features/auth/components/account-section';
 import { SignInScreen } from '@/features/auth/components/sign-in-screen';
 import { AuthProvider } from '@/features/auth/state/auth-provider';
 
+jest.mock('@react-native-async-storage/async-storage', () =>
+  // eslint-disable-next-line @typescript-eslint/no-require-imports -- required by jest hoisting
+  require('@react-native-async-storage/async-storage/jest/async-storage-mock'),
+);
+
 const mockGetSupabaseClient = jest.fn();
 jest.mock('@/shared/supabase/supabase-client', () => ({
   getSupabaseClient: () => mockGetSupabaseClient(),
