@@ -17,8 +17,13 @@ export function isValidVerifiedUserId(value: unknown): value is string {
 
 // The only sanctioned way to construct a `user:` identity. Returns undefined
 // ("rejected") for anything that isn't a validly-shaped id — callers must not
-// have any other path to producing a `{ kind: 'user' }` value.
-export function createUserIdentity(userId: unknown): Identity | undefined {
+// have any other path to producing a `{ kind: 'user' }` value. Narrowed to the
+// `user`-kind branch of `Identity` (not the wider `Identity | undefined`) so
+// callers that require a verified-user identity — e.g. `purgeIdentityNamespace`,
+// which is typed to reject `GUEST_IDENTITY` at compile time — can pass this
+// straight through after a truthiness check, with no separate cast or runtime
+// discriminant check needed.
+export function createUserIdentity(userId: unknown): (Identity & { kind: 'user' }) | undefined {
   return isValidVerifiedUserId(userId) ? { kind: 'user', userId } : undefined;
 }
 

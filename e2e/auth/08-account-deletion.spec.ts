@@ -15,7 +15,7 @@ function config(): LocalSupabaseConfig {
   return { url, serviceRoleKey };
 }
 
-async function signedInDeletionPage(page: Page): Promise<{ password: string }> {
+async function signedInDeletionPage(page: Page): Promise<{ password: string; userId: string }> {
   const email = `account-deletion-${Date.now()}-${Math.random().toString(36).slice(2)}@example.com`;
   const password = 'the-original-password-1';
   const userId = await seedConfirmedUser(config(), email, password);
@@ -29,7 +29,7 @@ async function signedInDeletionPage(page: Page): Promise<{ password: string }> {
   await page.getByLabel('Sign in').click();
   await page.waitForURL('**/app/home');
   await page.goto('/app/profile/account/delete');
-  return { password };
+  return { password, userId };
 }
 
 async function fillValidForm(page: Page, password: string): Promise<void> {
@@ -65,7 +65,7 @@ test.describe('account deletion', () => {
   });
 
   test('rate-limited and successful responses use safe copy and submit success once', async ({ page }) => {
-    const { password } = await signedInDeletionPage(page);
+    const { password, userId } = await signedInDeletionPage(page);
     await page.route('**/functions/v1/delete-account', async (route) => {
       await route.fulfill({ status: 429, body: JSON.stringify({ message: 'raw backend detail' }) });
     });
@@ -83,9 +83,17 @@ test.describe('account deletion', () => {
     const button = page.getByLabel('Delete account permanently');
     await button.click();
     await button.click();
-    await expect(page.getByText(/deletion is proceeding/i)).toBeVisible();
+    await expect(page.getByText(/permanently deleted/i)).toBeVisible();
     expect(calls).toBe(1);
-    await expect(button).toBeDisabled();
     expect(page.url()).not.toContain(password);
+
+    // Concrete end-to-end proof that completed deletion exposes no former
+    // account data: the seeded profile key is gone from real localStorage,
+    // purged by the local AsyncStorage purge this ticket adds.
+    const remainingProfileValue = await page.evaluate(
+      (key) => window.localStorage.getItem(key),
+      `user:${userId}:daily-dama:user-profile`,
+    );
+    expect(remainingProfileValue).toBeNull();
   });
 });

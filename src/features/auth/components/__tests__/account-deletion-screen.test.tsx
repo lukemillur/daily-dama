@@ -68,8 +68,29 @@ describe('AccountDeletionScreen', () => {
     expect(mockDeleteAccount).toHaveBeenCalledWith('correct-password', 'DELETE');
     expect(findByLabel(root, 'Delete account permanently').props.disabled).toBe(true);
     await act(async () => resolve({ error: null }));
-    expect(containsText(root, /deletion is proceeding/i)).toBe(true);
-    expect(findByLabel(root, 'Delete account permanently').props.disabled).toBe(true);
+    expect(containsText(root, /permanently deleted/i)).toBe(true);
+    expect(() => findByLabel(root, 'Delete account permanently')).toThrow();
+  });
+
+  it('keeps rendering the success view even if authState has already flipped to guest by the time this renders', async () => {
+    let resolve!: (value: { error: null }) => void;
+    mockDeleteAccount.mockImplementation(() => new Promise((nextResolve) => { resolve = nextResolve; }));
+    let root!: ReactTestRenderer;
+    await act(async () => { root = create(<AccountDeletionScreen />); });
+    act(() => {
+      findByLabel(root, 'Current password').props.onChangeText('correct-password');
+      findByLabel(root, 'Type DELETE to confirm').props.onChangeText('DELETE');
+    });
+    act(() => { findByLabel(root, 'Delete account permanently').props.onPress(); });
+
+    // Simulate the real production race: by the time deleteAccount's
+    // promise resolves, IdentityProvider's reactive SIGNED_OUT handling has
+    // already flipped authState to guest.
+    mockAuthState = { status: 'guest' };
+    await act(async () => resolve({ error: null }));
+
+    expect(containsText(root, /permanently deleted/i)).toBe(true);
+    expect(() => findByLabel(root, 'Go to sign in')).toThrow();
   });
 
   it('renders closed-set actionable errors without raw backend detail or credentials', async () => {

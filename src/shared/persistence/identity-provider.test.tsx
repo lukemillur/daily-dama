@@ -4,6 +4,14 @@ import { useEffect } from 'react';
 import { Text } from 'react-native';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 
+// auth-provider.tsx (imported transitively below via AuthProvider) now
+// imports the AsyncStorage native module directly for T161.5's account
+// purge -- mocked here so this test doesn't need a native module.
+jest.mock('@react-native-async-storage/async-storage', () =>
+  // eslint-disable-next-line @typescript-eslint/no-require-imports -- required by jest hoisting
+  require('@react-native-async-storage/async-storage/jest/async-storage-mock'),
+);
+
 import { AuthProvider } from '@/features/auth/state/auth-provider';
 import { IdentityProvider, useIdentityHandle } from '@/shared/persistence/identity-provider';
 
