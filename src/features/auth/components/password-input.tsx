@@ -1,4 +1,4 @@
-import { useState, type ComponentProps, type ReactNode } from 'react';
+import { forwardRef, useState, type ComponentProps, type ReactNode } from 'react';
 import { Pressable, TextInput } from 'react-native';
 import { styled } from 'styled-components/native';
 
@@ -13,16 +13,25 @@ export interface PasswordInputProps {
   readonly error?: string;
   readonly hint?: ReactNode;
   readonly textContentType?: NativeTextInputProps['textContentType'];
+  readonly returnKeyType?: NativeTextInputProps['returnKeyType'];
+  readonly blurOnSubmit?: NativeTextInputProps['blurOnSubmit'];
+  readonly onSubmitEditing?: NativeTextInputProps['onSubmitEditing'];
 }
 
-export function PasswordInput({
-  label,
-  value,
-  onChangeText,
-  error,
-  hint,
-  textContentType = 'password',
-}: PasswordInputProps) {
+export const PasswordInput = forwardRef<TextInput, PasswordInputProps>(function PasswordInput(
+  {
+    label,
+    value,
+    onChangeText,
+    error,
+    hint,
+    textContentType = 'password',
+    returnKeyType,
+    blurOnSubmit,
+    onSubmitEditing,
+  },
+  ref,
+) {
   const [isVisible, setIsVisible] = useState(false);
   const toggleLabel = `${isVisible ? 'Hide' : 'Show'} ${label}`;
 
@@ -32,12 +41,16 @@ export function PasswordInput({
       {hint ? <FieldHint>{hint}</FieldHint> : null}
       <InputRow>
         <Input
+          ref={ref}
           accessibilityLabel={label}
           autoCapitalize="none"
           autoCorrect={false}
+          blurOnSubmit={blurOnSubmit}
           onChangeText={onChangeText}
+          onSubmitEditing={onSubmitEditing}
           placeholder={label}
           placeholderTextColor={AppColors.textSubtle}
+          returnKeyType={returnKeyType}
           secureTextEntry={!isVisible}
           textContentType={textContentType}
           value={value}
@@ -52,7 +65,7 @@ export function PasswordInput({
       {error ? <ErrorText>{error}</ErrorText> : null}
     </Field>
   );
-}
+});
 
 const Field = styled.View`
   margin-top: 28px;

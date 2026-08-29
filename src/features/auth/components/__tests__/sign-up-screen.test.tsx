@@ -358,6 +358,102 @@ describe('SignUpScreen', () => {
     }
   });
 
+  it('advances focus from email to password via onSubmitEditing without submitting', async () => {
+    const root = await mount();
+
+    await act(async () => {
+      findByLabel(root, 'Email').props.onSubmitEditing();
+    });
+
+    expect(mockSignUp).not.toHaveBeenCalled();
+  });
+
+  it('advances focus from password to confirm password via onSubmitEditing without submitting', async () => {
+    const root = await mount();
+
+    await act(async () => {
+      findByLabel(root, 'Password').props.onSubmitEditing();
+    });
+
+    expect(mockSignUp).not.toHaveBeenCalled();
+  });
+
+  it('submits on Confirm password onSubmitEditing (RN "done" key), same as clicking Sign up', async () => {
+    mockSignUp.mockResolvedValue({ error: null });
+    const root = await mount();
+    await act(async () => {
+      findByLabel(root, 'Email').props.onChangeText('person@example.com');
+      findByLabel(root, 'Password').props.onChangeText('a-long-enough-password');
+      findByLabel(root, 'Confirm password').props.onChangeText('a-long-enough-password');
+    });
+
+    await act(async () => {
+      await findByLabel(root, 'Confirm password').props.onSubmitEditing();
+    });
+
+    expect(mockSignUp).toHaveBeenCalledTimes(1);
+    expect(mockSignUp).toHaveBeenCalledWith('person@example.com', 'a-long-enough-password');
+  });
+
+  it('submits on Enter anywhere in the form on web, the same as clicking Sign up', async () => {
+    ReactNative.Platform.OS = 'web';
+    const addEventListener = jest.fn();
+    const removeEventListener = jest.fn();
+    (globalThis as { window?: unknown }).window = { addEventListener, removeEventListener };
+    try {
+      mockSignUp.mockResolvedValue({ error: null });
+      const root = await mount();
+      await act(async () => {
+        findByLabel(root, 'Email').props.onChangeText('person@example.com');
+        findByLabel(root, 'Password').props.onChangeText('a-long-enough-password');
+        findByLabel(root, 'Confirm password').props.onChangeText('a-long-enough-password');
+      });
+
+      expect(addEventListener).toHaveBeenCalledWith('keydown', expect.any(Function), true);
+      const handleKeyDown = addEventListener.mock.calls[addEventListener.mock.calls.length - 1][1] as (event: {
+        key: string;
+        preventDefault: () => void;
+      }) => void;
+
+      await act(async () => {
+        handleKeyDown({ key: 'Enter', preventDefault: jest.fn() });
+      });
+
+      expect(mockSignUp).toHaveBeenCalledTimes(1);
+      expect(mockSignUp).toHaveBeenCalledWith('person@example.com', 'a-long-enough-password');
+    } finally {
+      restorePlatform();
+    }
+  });
+
+  it('ignores non-Enter keydowns on web and never calls signUp', async () => {
+    ReactNative.Platform.OS = 'web';
+    const addEventListener = jest.fn();
+    const removeEventListener = jest.fn();
+    (globalThis as { window?: unknown }).window = { addEventListener, removeEventListener };
+    try {
+      const root = await mount();
+      await act(async () => {
+        findByLabel(root, 'Email').props.onChangeText('person@example.com');
+        findByLabel(root, 'Password').props.onChangeText('a-long-enough-password');
+        findByLabel(root, 'Confirm password').props.onChangeText('a-long-enough-password');
+      });
+
+      const handleKeyDown = addEventListener.mock.calls[addEventListener.mock.calls.length - 1][1] as (event: {
+        key: string;
+        preventDefault: () => void;
+      }) => void;
+
+      await act(async () => {
+        handleKeyDown({ key: 'Tab', preventDefault: jest.fn() });
+      });
+
+      expect(mockSignUp).not.toHaveBeenCalled();
+    } finally {
+      restorePlatform();
+    }
+  });
+
   it('renders the default palette (guest, no cached theme) via CachedAppThemeProvider', async () => {
     useWebLocalStorage(() => null);
     try {
