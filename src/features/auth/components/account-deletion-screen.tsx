@@ -61,6 +61,18 @@ export function AccountDeletionScreen() {
     setSucceeded(true);
   };
 
+  // Checked before any authState branch below: deleteAccount now
+  // completes the local purge and sign-out synchronously within the
+  // awaited call, so authState.status flips away from 'authenticated'
+  // shortly after success. Without this ordering, that flip would silently
+  // swap this success view for the guest/sign-in prompt below -- factually
+  // confusing copy right after the account has actually been deleted.
+  if (succeeded) {
+    return (
+      <CenteredState title="Account deletion" message="Your account has been permanently deleted." />
+    );
+  }
+
   if (authState.status === 'initializing') {
     return <CenteredState title="Account deletion" message="Checking your session..." />;
   }
@@ -107,10 +119,6 @@ export function AccountDeletionScreen() {
           </Field>
 
           {errorCategory ? <ErrorText>{ERROR_COPY[errorCategory]}</ErrorText> : null}
-          {succeeded ? (
-            <SuccessText>Account deletion is proceeding. You can close this page.</SuccessText>
-          ) : null}
-
           <Actions>
             <Button
               accessibilityLabel="Delete account permanently"
@@ -152,5 +160,4 @@ const FieldInput = styled(TextInput).attrs(({ theme }) => ({ placeholderTextColo
   color: ${({ theme }) => theme.text}; font-size: 18px; font-weight: 800; margin-top: 8px; padding: 12px 14px;
 `;
 const ErrorText = styled.Text`color: ${AppColors.red}; font-size: 12px; font-weight: 800; margin-top: 10px;`;
-const SuccessText = styled.Text`color: ${({ theme }) => theme.text}; font-size: 14px; font-weight: 900; margin-top: 18px;`;
 const Actions = styled.View`width: 100%; margin-top: 24px;`;

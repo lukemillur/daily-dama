@@ -4,6 +4,13 @@ import { useEffect } from 'react';
 import { Text } from 'react-native';
 import { act, create } from 'react-test-renderer';
 
+jest.mock('@react-native-async-storage/async-storage', () =>
+  // eslint-disable-next-line @typescript-eslint/no-require-imports -- required by jest hoisting
+  require('@react-native-async-storage/async-storage/jest/async-storage-mock'),
+);
+
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
 import {
   AuthProvider,
   useAuthActions,
@@ -14,6 +21,9 @@ const mockGetSupabaseClient = jest.fn();
 jest.mock('@/shared/supabase/supabase-client', () => ({
   getSupabaseClient: () => mockGetSupabaseClient(),
 }));
+
+const DELETION_USER_ID = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa';
+const DELETION_PROFILE_KEY = 'user:' + DELETION_USER_ID + ':daily-dama:user-profile';
 
 type AuthCallback = (event: AuthChangeEvent, session: Session | null) => void;
 
@@ -101,10 +111,11 @@ async function mount() {
 }
 
 describe('AuthProvider', () => {
-  afterEach(() => {
+  afterEach(async () => {
     mockGetSupabaseClient.mockReset();
     captured.state = undefined;
     captured.actions = undefined;
+    await AsyncStorage.clear();
   });
 
   it('renders children immediately while Auth is still initializing, with no hydration-gate fallback', async () => {
@@ -507,6 +518,129 @@ describe('AuthProvider', () => {
       body: { currentPassword: 'current-password', confirmation: 'DELETE' },
     });
     expect(result).toEqual({ error: functionError });
+    act(() => root.unmount());
+  });
+
+  it('deleteAccount, on normal success, purges the deleted account namespace and signs out locally', async () => {
+    const fake = createFakeClient();
+    mockGetSupabaseClient.mockReturnValue(fake.client);
+    const root = await mount();
+    act(() => {
+      fake.emit('SIGNED_IN', {
+        access_token: 'token',
+        user: { id: DELETION_USER_ID, email: 'person@example.com' },
+      } as unknown as Session);
+    });
+    await AsyncStorage.setItem(DELETION_PROFILE_KEY, 'seeded-account-data');
+    fake.invoke.mockResolvedValueOnce({ data: null, error: null });
+
+    let result: { error: unknown } | undefined;
+    await act(async () => {
+      result = await captured.actions!.deleteAccount('current-password', 'DELETE');
+    });
+
+    expect(await AsyncStorage.getItem(DELETION_PROFILE_KEY)).toBeNull();
+    expect(fake.signOut).toHaveBeenCalledWith({ scope: 'local' });
+    expect(result).toEqual({ error: null });
+    act(() => root.unmount());
+  });
+
+  it('deleteAccount, on a reconciled response-loss retry where Auth verification shows the user already gone, purges and signs out identically to a fresh success', async () => {
+    // The delete-account Edge Function's own isNotFound check makes this
+    // indistinguishable from a fresh success at the client (both resolve
+    // functions.invoke with { error: null }) -- exercised as a separate
+    // test anyway, per the exit criteria, so a future refactor cannot
+    // accidentally split the two branches without this test catching it.
+    const fake = createFakeClient();
+    mockGetSupabaseClient.mockReturnValue(fake.client);
+    const root = await mount();
+    act(() => {
+      fake.emit('SIGNED_IN', {
+        access_token: 'token',
+        user: { id: DELETION_USER_ID, email: 'person@example.com' },
+      } as unknown as Session);
+    });
+    await AsyncStorage.setItem(DELETION_PROFILE_KEY, 'seeded-account-data');
+    fake.invoke.mockResolvedValueOnce({ data: null, error: null });
+
+    let result: { error: unknown } | undefined;
+    await act(async () => {
+      result = await captured.actions!.deleteAccount('current-password', 'DELETE');
+    });
+
+    expect(await AsyncStorage.getItem(DELETION_PROFILE_KEY)).toBeNull();
+    expect(fake.signOut).toHaveBeenCalledWith({ scope: 'local' });
+    expect(result).toEqual({ error: null });
+    act(() => root.unmount());
+  });
+
+  it('deleteAccount, on a response-loss retry where the user is still present, leaves storage and session untouched', async () => {
+    const fake = createFakeClient();
+    mockGetSupabaseClient.mockReturnValue(fake.client);
+    const root = await mount();
+    act(() => {
+      fake.emit('SIGNED_IN', {
+        access_token: 'token',
+        user: { id: DELETION_USER_ID, email: 'person@example.com' },
+      } as unknown as Session);
+    });
+    await AsyncStorage.setItem(DELETION_PROFILE_KEY, 'seeded-account-data');
+    fake.invoke.mockResolvedValueOnce({ data: null, error: { status: 401 } });
+
+    let result: { error: unknown } | undefined;
+    await act(async () => {
+      result = await captured.actions!.deleteAccount('current-password', 'DELETE');
+    });
+
+    expect(await AsyncStorage.getItem(DELETION_PROFILE_KEY)).toBe('seeded-account-data');
+    expect(fake.signOut).not.toHaveBeenCalled();
+    expect(result).toEqual({ error: { status: 401 } });
+    act(() => root.unmount());
+  });
+
+  it('deleteAccount, on an offline retry, leaves storage and session untouched', async () => {
+    const fake = createFakeClient();
+    mockGetSupabaseClient.mockReturnValue(fake.client);
+    const root = await mount();
+    act(() => {
+      fake.emit('SIGNED_IN', {
+        access_token: 'token',
+        user: { id: DELETION_USER_ID, email: 'person@example.com' },
+      } as unknown as Session);
+    });
+    await AsyncStorage.setItem(DELETION_PROFILE_KEY, 'seeded-account-data');
+    fake.invoke.mockResolvedValueOnce({ data: null, error: { name: 'FunctionsFetchError' } });
+
+    let result: { error: unknown } | undefined;
+    await act(async () => {
+      result = await captured.actions!.deleteAccount('current-password', 'DELETE');
+    });
+
+    expect(await AsyncStorage.getItem(DELETION_PROFILE_KEY)).toBe('seeded-account-data');
+    expect(fake.signOut).not.toHaveBeenCalled();
+    expect(result).toEqual({ error: { name: 'FunctionsFetchError' } });
+    act(() => root.unmount());
+  });
+
+  it('deleteAccount still signs out on success when the session user id is malformed, without attempting a purge', async () => {
+    const fake = createFakeClient();
+    mockGetSupabaseClient.mockReturnValue(fake.client);
+    const root = await mount();
+    act(() => {
+      fake.emit('SIGNED_IN', {
+        access_token: 'token',
+        user: { id: 'not-a-uuid', email: 'person@example.com' },
+      } as unknown as Session);
+    });
+    fake.invoke.mockResolvedValueOnce({ data: null, error: null });
+
+    let result: { error: unknown } | undefined;
+    await act(async () => {
+      result = await captured.actions!.deleteAccount('current-password', 'DELETE');
+    });
+
+    expect(fake.signOut).toHaveBeenCalledWith({ scope: 'local' });
+    expect(result).toEqual({ error: null });
     act(() => root.unmount());
   });
 
