@@ -214,7 +214,7 @@ _T163–T181 come from stories S042–S062 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 - **Area:** Navigation / web
 - **Priority:** Low
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Implementer
 - **Description:** No per-route title mechanism exists today (only the static "Daily Dama" from `app.json`). Add `expo-router/head`'s `<Head><title>...</title></Head>` to each of the five primary section routes (Home, Sesh, Tricks, Stats, Profile), rendering "Daily Dama: <Section>".
 - **Exit criteria:** `yarn expo export --platform web --output-dir /tmp/daily-dama-web-export` succeeds and the exported HTML for each of the five section routes contains its expected `<title>` text; confirmed in-browser that navigating between sections updates the browser tab title.
