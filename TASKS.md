@@ -250,16 +250,6 @@ _T163–T181 come from stories S042–S062 in [BACKLOG_STORIES.md](BACKLOG_STORI
 - **Exit criteria:** Component tests for both screens pass, including one asserting an Enter keypress triggers the same submit handler as clicking the primary button.
 - **Notes:** From S059. Resolved during refinement: scoped to sign-up/sign-in only, not change-password/change-email/forgot-password — those are deliberately deferred, partly to avoid rework ahead of T179/T180 restructuring Account Security's forms.
 
-### [T179] Require current-password confirmation before changing email
-
-- **Area:** Authentication
-- **Priority:** High
-- **Status:** In progress
-- **Planning:** Required
-- **Description:** `account-security-screen.tsx`'s change-email form only collects a new email today; `changeEmail` on `AuthProvider` takes `(newEmail: string)` with no password parameter. Add a current-password field to the same form, change `changeEmail`'s signature to accept and verify it, and block the change with a clear message on an incorrect password.
-- **Exit criteria:** `auth-provider.test.tsx` and `account-security-screen.test.tsx` pass, including tests asserting an incorrect current password blocks the email change with a clear error and never calls the underlying Supabase update, while a correct one proceeds as today.
-- **Notes:** From S060. Resolved during refinement: one combined form (password + new email submitted together), not a two-step re-auth-then-change flow. `Required` because it changes `AuthProvider`'s shared `changeEmail` action signature. Extends T154.1.
-
 ### [T180] Gate forgot-password inside the change-password flow behind a wrong current password
 
 - **Area:** Authentication UI

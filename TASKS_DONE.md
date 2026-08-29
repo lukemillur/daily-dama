@@ -4,6 +4,16 @@ Completed entries move here from `TASKS.md`'s `Backlog`, in the same commit that
 
 Entries keep their content as it was at completion. Don't retroactively edit a description or exit criteria after the fact; if something about a completed task turns out to be wrong or misleading, note that in a new entry or in code, not by rewriting history here.
 
+### [T179] Require current-password confirmation before changing email
+
+- **Area:** Authentication
+- **Priority:** High
+- **Status:** Done
+- **Planning:** Required
+- **Description:** `account-security-screen.tsx`'s change-email form only collects a new email today; `changeEmail` on `AuthProvider` takes `(newEmail: string)` with no password parameter. Add a current-password field to the same form, change `changeEmail`'s signature to accept and verify it, and block the change with a clear message on an incorrect password.
+- **Exit criteria:** `auth-provider.test.tsx` and `account-security-screen.test.tsx` pass, including tests asserting an incorrect current password blocks the email change with a clear error and never calls the underlying Supabase update, while a correct one proceeds as today. Confirmed: both files pass, including three new `changeEmail` provider tests mirroring `changePassword`'s sign-in-then-update ordering, wrong-password, and offline-sign-in-step cases, plus new component tests for an empty current password and a wrong current password on the email form. All 293 auth-domain tests and full `yarn tsc --noEmit` pass.
+- **Notes:** From S060. Resolved during refinement: one combined form (password + new email submitted together), not a two-step re-auth-then-change flow. `Required` because it changes `AuthProvider`'s shared `changeEmail` action signature. Extends T154.1. `changeEmail` now re-signs-in with the account's own email and the submitted current password (mirroring `changePassword`'s existing pattern) before calling `updateUser`, short-circuiting with the sign-in error on a wrong password. The new password field is labeled "Password" (not "Current password") in the Change-email section, to avoid an `accessibilityLabel` collision with the Change-password section's own "Current password" field, since both are visible in the DOM at once.
+
 ### [T160] Expose synchronization health and record-level conflict recovery
 
 - **Area:** Synchronization UX

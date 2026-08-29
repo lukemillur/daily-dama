@@ -29,6 +29,7 @@ jest.mock('@/features/auth/observability/auth-observability', () => ({
 
 const EMAIL = 'someone@example.com';
 const CURRENT_PASSWORD = 'currentpassword1';
+const EMAIL_CURRENT_PASSWORD = 'emailcurrentpassword1';
 const NEW_PASSWORD = 'S3curePassw0rd!';
 const customTheme: DefaultTheme = {
   background: '#123456',
@@ -120,6 +121,11 @@ async function fillValidPasswordForm(root: ReactTestRenderer) {
   await setInput(root, 'Current password', CURRENT_PASSWORD);
   await setInput(root, 'New password', NEW_PASSWORD);
   await setInput(root, 'Confirm new password', NEW_PASSWORD);
+}
+
+async function fillValidEmailForm(root: ReactTestRenderer, email: string) {
+  await setInput(root, 'Password', EMAIL_CURRENT_PASSWORD);
+  await setInput(root, 'New email', email);
 }
 
 async function pressLabel(root: ReactTestRenderer, label: string) {
@@ -342,10 +348,10 @@ describe('AccountSecurityScreen', () => {
     mockChangeEmail.mockResolvedValue({ error: null });
     const root = await mount();
 
-    await setInput(root, 'New email', 'new-address@example.com');
+    await fillValidEmailForm(root, 'new-address@example.com');
     await pressLabel(root, 'Update email');
 
-    expect(mockChangeEmail).toHaveBeenCalledWith('new-address@example.com');
+    expect(mockChangeEmail).toHaveBeenCalledWith('new-address@example.com', EMAIL_CURRENT_PASSWORD);
     expect(containsText(root, /check both your current and new email inboxes/i)).toBe(true);
     expect(mockPush).not.toHaveBeenCalled();
     expect(mockTrackAuthEvent).toHaveBeenCalledWith('account_security_email_requested');
@@ -355,6 +361,7 @@ describe('AccountSecurityScreen', () => {
     mockAuthState = authenticatedState();
     const root = await mount();
 
+    await setInput(root, 'Password', EMAIL_CURRENT_PASSWORD);
     await setInput(root, 'New email', 'not-an-email');
     await pressLabel(root, 'Update email');
 
@@ -362,12 +369,39 @@ describe('AccountSecurityScreen', () => {
     expect(containsText(root, 'Enter a valid email address.')).toBe(true);
   });
 
+  it('blocks submit and calls neither the current-password message nor changeEmail for an empty current password', async () => {
+    mockAuthState = authenticatedState();
+    const root = await mount();
+
+    await setInput(root, 'New email', 'new-address@example.com');
+    await pressLabel(root, 'Update email');
+
+    expect(mockChangeEmail).not.toHaveBeenCalled();
+    expect(containsText(root, 'Enter your current password.')).toBe(true);
+  });
+
+  it('shows a specific, non-generic error for a wrong current password on the email form, without disturbing the password section', async () => {
+    mockAuthState = authenticatedState();
+    mockChangeEmail.mockResolvedValue({
+      error: { message: 'invalid credentials', code: 'invalid_credentials' },
+    });
+    const root = await mount();
+
+    await fillValidEmailForm(root, 'new-address@example.com');
+    await pressLabel(root, 'Update email');
+
+    expect(containsText(root, 'Your current password is incorrect.')).toBe(true);
+    expect(findByLabel(root, 'Current password')).toBeTruthy();
+    expect(findByLabel(root, 'New password')).toBeTruthy();
+    expect(findByLabel(root, 'Confirm new password')).toBeTruthy();
+  });
+
   it('shows offline copy for an offline email-change failure', async () => {
     mockAuthState = authenticatedState();
     mockChangeEmail.mockResolvedValue({ error: networkFailure() });
     const root = await mount();
 
-    await setInput(root, 'New email', 'new-address@example.com');
+    await fillValidEmailForm(root, 'new-address@example.com');
     await pressLabel(root, 'Update email');
 
     expect(containsText(root, /offline/i)).toBe(true);
@@ -380,7 +414,7 @@ describe('AccountSecurityScreen', () => {
     });
     const root = await mount();
 
-    await setInput(root, 'New email', 'new-address@example.com');
+    await fillValidEmailForm(root, 'new-address@example.com');
     await pressLabel(root, 'Update email');
 
     expect(containsText(root, /too many attempts/i)).toBe(true);
@@ -396,7 +430,7 @@ describe('AccountSecurityScreen', () => {
         }),
     );
     const root = await mount();
-    await setInput(root, 'New email', 'new-address@example.com');
+    await fillValidEmailForm(root, 'new-address@example.com');
 
     const button = findByLabel(root, 'Update email');
     await act(async () => {
