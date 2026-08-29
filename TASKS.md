@@ -153,7 +153,7 @@ _Phase 4 activation: T161 comes from S039 and `BACKEND_ROADMAP.md` Phase 4. Its 
 
 - **Area:** Account lifecycle / local persistence
 - **Priority:** High
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** On deletion success—or after a lost response when Auth verification proves the user no longer exists—remove credentials, account cache, outboxes, conflicts, import progress, and sync metadata, invalidate the identity generation, and enter a fresh guest namespace.
 - **Exit criteria:** Integration tests cover normal success, response loss with missing user, response loss with user still present, offline retry, and a late in-flight sync result; completed deletion exposes no former account data to the new guest, does not erase unrelated guest/other-user namespaces, and cannot be reversed by stale work.
