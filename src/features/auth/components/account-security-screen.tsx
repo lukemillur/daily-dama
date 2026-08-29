@@ -28,7 +28,7 @@ const PASSWORD_ERROR_COPY: Record<AuthErrorCategory, string> = {
 const EMAIL_ERROR_COPY: Record<AuthErrorCategory, string> = {
   offline: "You're offline. Check your connection and try again.",
   rateLimited: 'Too many attempts. Wait a moment and try again.',
-  invalidCredentials: 'Something went wrong. Please try again.',
+  invalidCredentials: 'Your current password is incorrect.',
   weakPassword: 'Something went wrong. Please try again.',
   expiredOrInvalidLink: 'Something went wrong. Please try again.',
   missingVerifier: 'Something went wrong. Please try again.',
@@ -57,6 +57,7 @@ export function AccountSecurityScreen() {
   const [passwordChangeSucceeded, setPasswordChangeSucceeded] = useState(false);
   const isSubmittingPasswordRef = useRef(false);
 
+  const [emailCurrentPassword, setEmailCurrentPassword] = useState('');
   const [newEmail, setNewEmail] = useState('');
   const [emailHasSubmitted, setEmailHasSubmitted] = useState(false);
   const [isSubmittingEmail, setIsSubmittingEmail] = useState(false);
@@ -70,6 +71,8 @@ export function AccountSecurityScreen() {
   const passwordErrors =
     passwordHasSubmitted && passwordValidation.status === 'invalid' ? passwordValidation.errors : {};
 
+  const emailCurrentPasswordError =
+    emailHasSubmitted && emailCurrentPassword.length === 0 ? 'Enter your current password.' : undefined;
   const emailValidation = validateForgotPasswordEmail(newEmail);
   const emailErrors = emailHasSubmitted && emailValidation.status === 'invalid' ? emailValidation.errors : {};
 
@@ -112,12 +115,13 @@ export function AccountSecurityScreen() {
     setEmailHasSubmitted(true);
     setEmailSubmitCategory(undefined);
 
+    if (emailCurrentPassword.length === 0) return;
     const nextValidation = validateForgotPasswordEmail(newEmail);
     if (nextValidation.status === 'invalid') return;
 
     isSubmittingEmailRef.current = true;
     setIsSubmittingEmail(true);
-    const { error } = await changeEmail(newEmail.trim());
+    const { error } = await changeEmail(newEmail.trim(), emailCurrentPassword);
     isSubmittingEmailRef.current = false;
     setIsSubmittingEmail(false);
 
@@ -129,6 +133,7 @@ export function AccountSecurityScreen() {
       return;
     }
 
+    setEmailCurrentPassword('');
     setEmailChangeRequested(true);
     trackAuthEvent('account_security_email_requested');
   };
@@ -225,6 +230,14 @@ export function AccountSecurityScreen() {
           <SuccessText>{EMAIL_CHANGE_PENDING_COPY}</SuccessText>
         ) : (
           <>
+            <PasswordInput
+              error={emailCurrentPasswordError}
+              label="Password"
+              onChangeText={setEmailCurrentPassword}
+              textContentType="password"
+              value={emailCurrentPassword}
+            />
+
             <Field>
               <FieldLabel>New email</FieldLabel>
               <FieldInput

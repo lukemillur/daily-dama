@@ -35,7 +35,10 @@ interface AuthActions {
     currentPassword: string,
     newPassword: string,
   ) => Promise<{ error: AuthError | null }>;
-  readonly changeEmail: (newEmail: string) => Promise<{ error: AuthError | null }>;
+  readonly changeEmail: (
+    newEmail: string,
+    currentPassword: string,
+  ) => Promise<{ error: AuthError | null }>;
   readonly deleteAccount: (
     currentPassword: string,
     confirmation: string,
@@ -227,7 +230,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
     return { error };
   }, []);
 
-  const changeEmail = useCallback(async (newEmail: string) => {
+  const changeEmail = useCallback(async (newEmail: string, currentPassword: string) => {
     if (stateRef.current.status !== 'authenticated') {
       return { error: new AuthError('No active session.', 401, 'session_not_found') };
     }
@@ -240,6 +243,23 @@ export function AuthProvider({ children }: PropsWithChildren) {
 
     if (typeof window === 'undefined') {
       return { error: new AuthError('Unable to resolve the callback URL.') };
+    }
+
+    const email = stateRef.current.session.user.email;
+    if (!email) {
+      // Defensive only -- this app is email/password-only, so an authenticated user should
+      // always have an email. Kept as a generic session error rather than a crash.
+      return { error: new AuthError('No account email on the current session.', 401, 'session_not_found') };
+    }
+
+    // Same current-password re-sign-in verification as changePassword above; see its comment
+    // for why.
+    const { error: signInError } = await client.auth.signInWithPassword({
+      email,
+      password: currentPassword,
+    });
+    if (signInError) {
+      return { error: signInError };
     }
 
     // Fixed, non-attacker-influenceable redirect, same pattern as requestPasswordReset/signUp
