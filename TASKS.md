@@ -224,7 +224,7 @@ _T163–T181 come from stories S042–S062 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 - **Area:** Authentication UI
 - **Priority:** Medium
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Implementer
 - **Description:** `sign-in-screen.tsx` links to forgot-password and guest continuation but not to sign-up; `sign-up-screen.tsx` has no link back to sign-in at all. Add a visible link each way.
 - **Exit criteria:** Component tests for both screens pass, including one asserting each screen's cross-link navigates to the other's route.
