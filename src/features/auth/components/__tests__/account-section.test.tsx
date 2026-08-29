@@ -183,6 +183,18 @@ describe("AccountSection", () => {
     expect(mockPush).toHaveBeenCalledWith("/app/profile/account/security");
   });
 
+  it("renders a Delete account link when authenticated, and navigates to the permanent deletion route", async () => {
+    mockAuthState = authenticatedState();
+    const root = await mount();
+
+    const link = findByLabel(root, "Delete account");
+    await act(async () => {
+      link.props.onPress();
+    });
+
+    expect(mockPush).toHaveBeenCalledWith("/app/profile/account/delete");
+  });
+
   it("has no Manage account security link when not authenticated", async () => {
     mockAuthState = { status: "guest", reason: "signedOut" };
     const root = await mount();

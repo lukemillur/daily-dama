@@ -33,6 +33,10 @@ interface AuthActions {
     newPassword: string,
   ) => Promise<{ error: AuthError | null }>;
   readonly changeEmail: (newEmail: string) => Promise<{ error: AuthError | null }>;
+  readonly deleteAccount: (
+    currentPassword: string,
+    confirmation: string,
+  ) => Promise<{ error: unknown }>;
 }
 
 const AuthStateContext = createContext<AuthState | undefined>(undefined);
@@ -248,6 +252,22 @@ export function AuthProvider({ children }: PropsWithChildren) {
     return { error };
   }, []);
 
+  const deleteAccount = useCallback(async (currentPassword: string, confirmation: string) => {
+    if (stateRef.current.status !== 'authenticated') {
+      return { error: new AuthError('No active session.', 401, 'session_not_found') };
+    }
+
+    const client = getSupabaseClient();
+    if (!client) {
+      return { error: new AuthError('Supabase is not configured.') };
+    }
+
+    const { error } = await client.functions.invoke('delete-account', {
+      body: { currentPassword, confirmation },
+    });
+    return { error };
+  }, []);
+
   const actions = useMemo(
     () => ({
       signInWithPassword,
@@ -259,6 +279,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
       resendSignupConfirmation,
       changePassword,
       changeEmail,
+      deleteAccount,
     }),
     [
       signInWithPassword,
@@ -270,6 +291,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
       resendSignupConfirmation,
       changePassword,
       changeEmail,
+      deleteAccount,
     ],
   );
 

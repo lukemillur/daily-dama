@@ -167,16 +167,6 @@ _Phase 4 activation: T161 comes from S039 and `BACKEND_ROADMAP.md` Phase 4. Its 
 - **Description:** Let an authenticated user permanently remove the Auth identity and every application row, then return to a clean guest workspace even when the success response is lost.
 - **Notes:** Umbrella from S039. Complete T161.1–T161.5. User-facing data export is excluded.
 
-### [T161.4] Add the permanent account-deletion route
-
-- **Area:** Account deletion UI
-- **Priority:** High
-- **Status:** Not started
-- **Planning:** Required
-- **Description:** Add `/app/profile/account/delete` with an explicit immediate/permanent warning, current-password field, exact typed `DELETE` confirmation, safe disabled/loading/error states, and invocation of the hardened Edge Function.
-- **Exit criteria:** Route tests and a browser walkthrough confirm the action cannot submit without both confirmations, wrong/offline/rate-limited/expired states are actionable without leaking account facts, success cannot be double-submitted, and no password or token reaches logs, analytics, or the URL.
-- **Notes:** From S039. Depends on T161.2 and T154.1. Do not add export or delayed-deletion semantics.
-
 ### [T161.5] Purge account state and reconcile deletion response loss
 
 - **Area:** Account lifecycle / local persistence
