@@ -214,7 +214,7 @@ _T163–T181 come from stories S042–S062 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 - **Area:** Onboarding
 - **Priority:** High
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Implementer
 - **Description:** `src/app/app/home.tsx` renders `<Screen background={profile.hasCompletedOnboarding ? undefined : AppColors.yellow} ...>` — hardcoding the mustard-yellow background for the entire duration of onboarding regardless of the theme preset the user just previewed via `setThemeColors` (T146). Make the background reflect the live-previewed `themeBackgroundColor` instead of this fixed fallback.
 - **Exit criteria:** `yarn test --runInBand` passes, including a test asserting that selecting a non-default preset during onboarding changes the rendered background color away from `AppColors.yellow`; confirmed in-browser via the Expo dev server that tapping a preset visibly changes the onboarding screen's background, not just its text/accent.
