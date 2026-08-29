@@ -4,6 +4,16 @@ Completed entries move here from `TASKS.md`'s `Backlog`, in the same commit that
 
 Entries keep their content as it was at completion. Don't retroactively edit a description or exit criteria after the fact; if something about a completed task turns out to be wrong or misleading, note that in a new entry or in code, not by rewriting history here.
 
+### [T175] Send the user to the landing page after logout
+
+- **Area:** Authentication
+- **Priority:** Medium
+- **Status:** Done
+- **Planning:** Implementer
+- **Description:** `account-section.tsx`'s `handleLogOut` calls `signOut()` but performs no navigation today — the user stays wherever they were (typically Profile) once `AuthProvider`'s listener flips them to `guest`. Add an explicit `router.replace('/')` on successful sign-out.
+- **Exit criteria:** `account-section.test.tsx` passes, including a test asserting a successful sign-out navigates to `/`. Confirmed: `account-section.test.tsx` passes (24 tests), including a new test asserting `router.replace("/")` is called once sign-out completes successfully, and two new tests confirming it is not called on a failed sign-out or a cancelled logout prompt. Full `yarn tsc --noEmit` and scoped `eslint` also pass.
+- **Notes:** From S055. T158 (guarded logout prompt) landed first and moved the actual `signOut()` call out of `account-section.tsx`'s own `handleLogOut` into the UI-agnostic `useLogoutGuard` hook (`use-logout-guard.ts`). Rather than adding `expo-router` to that hook (which would require mocking it in `use-logout-guard.test.tsx` too and couples a deliberately UI-agnostic hook to navigation), the redirect is implemented in `account-section.tsx` itself: a `useEffect` watches the guard's `state.status` for the `signingOut -> idle` transition with `errorCategory` still `undefined`, which only happens once `signOut()` has actually succeeded, and calls `router.replace("/")` there. A failed sign-out also returns to `idle` but carries an `errorCategory`, so the effect correctly leaves the user in place to see the error and retry.
+
 ### [T179] Require current-password confirmation before changing email
 
 - **Area:** Authentication

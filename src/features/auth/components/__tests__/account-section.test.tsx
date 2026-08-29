@@ -44,8 +44,9 @@ jest.mock("@/shared/sync/sync-coordinator-provider", () => ({
 }));
 
 const mockPush = jest.fn();
+const mockReplace = jest.fn();
 jest.mock("expo-router", () => ({
-  useRouter: () => ({ push: mockPush }),
+  useRouter: () => ({ push: mockPush, replace: mockReplace }),
 }));
 
 const mockTrackAuthEvent = jest.fn();
@@ -132,6 +133,7 @@ describe("AccountSection", () => {
     mockTrackAuthEvent.mockReset();
     mockLogAuthWarning.mockReset();
     mockPush.mockReset();
+    mockReplace.mockReset();
     mockRequestManualSync.mockReset();
     mockDiscardAllPending.mockReset();
     mockDiscardAllPending.mockResolvedValue(undefined);
@@ -226,6 +228,44 @@ describe("AccountSection", () => {
     const button = findByLabel(root, "Log out");
     expect(button.props.disabled).toBe(false);
     expect(button.props.children).toBe("Log out");
+  });
+
+  it("navigates to / once sign-out completes successfully", async () => {
+    mockAuthState = authenticatedState();
+    mockPendingCount = 0;
+    mockSignOut.mockResolvedValue({ error: null });
+    const root = await mount();
+
+    await pressLogOut(root);
+
+    expect(mockReplace).toHaveBeenCalledWith("/");
+  });
+
+  it("does not navigate when a completed sign-out attempt fails", async () => {
+    mockAuthState = authenticatedState();
+    mockPendingCount = 0;
+    mockSignOut.mockResolvedValue({ error: networkFailure() });
+    const root = await mount();
+
+    await pressLogOut(root);
+
+    expect(mockReplace).not.toHaveBeenCalled();
+  });
+
+  it("does not navigate when the logout prompt is cancelled", async () => {
+    mockAuthState = authenticatedState();
+    mockPendingCount = 3;
+    const root = await mount();
+
+    await pressLogOut(root);
+    const cancelButton = findByLabel(root, "Cancel logout");
+    act(() => {
+      cancelButton.props.onPress();
+    });
+    await flush();
+
+    expect(mockSignOut).not.toHaveBeenCalled();
+    expect(mockReplace).not.toHaveBeenCalled();
   });
 
   it("no pending outbox: surfaces a retryable offline error and does not fake a guest transition", async () => {
