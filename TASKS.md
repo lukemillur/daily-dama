@@ -214,7 +214,7 @@ _T163–T181 come from stories S042–S062 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 - **Area:** Authentication UI
 - **Priority:** Low
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Implementer
 - **Description:** Neither `sign-up-screen.tsx` nor `sign-in-screen.tsx` has any `onSubmitEditing`/web-Enter handling today. Add both: RN `onSubmitEditing` on each field advancing to the next field or submitting on the last, and a web keydown handler so pressing Enter anywhere in the form submits it the same way clicking the primary button would (only when validation would allow an attempt).
 - **Exit criteria:** Component tests for both screens pass, including one asserting an Enter keypress triggers the same submit handler as clicking the primary button.
