@@ -61,6 +61,7 @@ function createFakeCustomTrickSyncTransport(options: FakeTransportOptions = {}):
               recordId: trickId,
               expectedRevision: request.expectedRevision,
               serverRevision: existing.revision,
+              serverRow: existing,
             },
           };
         }
@@ -91,6 +92,7 @@ function createFakeCustomTrickSyncTransport(options: FakeTransportOptions = {}):
             recordId: trickId,
             expectedRevision: request.expectedRevision,
             serverRevision: existing.revision,
+            serverRow: existing,
           },
         };
       }
@@ -164,7 +166,6 @@ interface Captured {
   runSync?: ReturnType<typeof useCustomTrickDomainSync>['runSync'];
   isSyncing?: boolean;
   pendingCount?: number;
-  conflictCount?: number;
   retryableFailureCount?: number;
   discardPending?: () => Promise<void>;
 }
@@ -191,7 +192,6 @@ function makeHarness(
       captured.runSync = sync.runSync;
       captured.isSyncing = sync.isSyncing;
       captured.pendingCount = sync.pendingCount;
-      captured.conflictCount = sync.conflictCount;
       captured.retryableFailureCount = sync.retryableFailureCount;
       captured.discardPending = sync.discardPending;
     });
@@ -502,7 +502,7 @@ describe('useCustomTrickDomainSync', () => {
     });
   });
 
-  it('a stale-revision conflict on one trick does not block an unrelated trick, and the conflicted op stays pending', async () => {
+  it('a stale-revision conflict resolves automatically to the server snapshot (server updatedAt is later), and does not block an unrelated trick', async () => {
     const transport = createFakeCustomTrickSyncTransport();
     const { root, captured } = await mountHarness(INITIAL_CUSTOM_TRICKS, () => transport, USER_IDENTITY);
     await flush();
@@ -534,8 +534,11 @@ describe('useCustomTrickDomainSync', () => {
 
     // A concurrent write from another device lands on custom-1 server-side,
     // bumping its revision to 2 -- this device's still-pending custom-1 op
-    // (cached expectedRevision 1) will now genuinely conflict on push.
-    // Bypasses this run's `failPush` flag (it models a write from a
+    // (cached expectedRevision 1) will now genuinely conflict on push. The
+    // fake transport stamps `TIMESTAMP` as this row's updated_at,
+    // deliberately far later than this device's tiny local `updatedAt`
+    // fixtures above, so automatic resolution must keep the server's
+    // value. Bypasses this run's `failPush` flag (it models a write from a
     // different, online device, not this device's own queued push).
     transport.setFailPush(false);
     await transport.push({
@@ -554,23 +557,133 @@ describe('useCustomTrickDomainSync', () => {
 
     // custom-2 (unrelated) succeeded regardless of custom-1's conflict.
     expect(transport.getRow('custom-2')?.name).toBe('Second');
-    const custom2AttemptsAfterFirstRun = transport.getPushAttemptCount('custom-2');
 
     // custom-1's conflicted push never overwrote the server row.
     expect(transport.getRow('custom-1')?.name).toBe('Concurrent edit');
     expect(transport.getRow('custom-1')?.revision).toBe(2);
 
-    // The conflicted op is still pending (unacknowledged), proven by a
-    // second sync run re-attempting a push for custom-1 -- an acknowledged
-    // operation would never be retried. custom-2, already acknowledged and
-    // removed from the outbox, is not re-attempted.
+    // Automatic server-wins resolution: the primary reducer now reflects
+    // the server's value, and custom-1's operation is fully resolved (no
+    // longer pending) -- a second run never re-pushes it.
+    expect(captured.collection?.tricks.find((trick) => trick.id === 'custom-1')?.name).toBe('Concurrent edit');
+    expect(captured.pendingCount).toBe(0);
+
     const custom1AttemptsBeforeSecondRun = transport.getPushAttemptCount('custom-1');
+    const custom2AttemptsAfterFirstRun = transport.getPushAttemptCount('custom-2');
     await act(async () => {
       await captured.runSync?.('manual');
     });
     await flush();
-    expect(transport.getPushAttemptCount('custom-1')).toBeGreaterThan(custom1AttemptsBeforeSecondRun);
+    expect(transport.getPushAttemptCount('custom-1')).toBe(custom1AttemptsBeforeSecondRun);
     expect(transport.getPushAttemptCount('custom-2')).toBe(custom2AttemptsAfterFirstRun);
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  it('a local edit strictly newer than the server row wins automatically and is re-pushed as the resolved value', async () => {
+    const transport = createFakeCustomTrickSyncTransport();
+    const { root, captured } = await mountHarness(INITIAL_CUSTOM_TRICKS, () => transport, USER_IDENTITY);
+    await flush();
+
+    act(() => {
+      captured.setCollection?.({ tricks: [{ id: 'custom-1', kind: 'standalone', name: 'First', updatedAt: 1 }] });
+    });
+    await flush();
+    await act(async () => {
+      await captured.runSync?.('manual');
+    });
+    await flush();
+    expect(transport.getRow('custom-1')?.revision).toBe(1);
+
+    transport.setFailPush(true);
+    // Deliberately later than the fake transport's fixed `TIMESTAMP` (used
+    // for the concurrent server write below) -- this local edit must win.
+    const localUpdatedAt = Date.parse(TIMESTAMP) + 1000;
+    act(() => {
+      captured.setCollection?.({
+        tricks: [{ id: 'custom-1', kind: 'standalone', name: 'Edited locally', updatedAt: localUpdatedAt }],
+      });
+    });
+    await flush();
+
+    transport.setFailPush(false);
+    await transport.push({
+      operationId: 'seed-conflict',
+      recordId: 'custom-1',
+      operationType: 'upsert',
+      payload: { user_id: USER_ID, id: 'custom-1', kind: 'standalone', name: 'Concurrent edit', kentei_rank: null, steps: null },
+      expectedRevision: 1,
+    });
+    expect(transport.getRow('custom-1')?.revision).toBe(2);
+
+    await act(async () => {
+      await captured.runSync?.('manual');
+    });
+    await flush();
+
+    // Local wins: the driver re-pushes the local value as a fresh
+    // operation against the server's new revision instead of parking it.
+    expect(captured.collection?.tricks.find((trick) => trick.id === 'custom-1')?.name).toBe('Edited locally');
+    expect(captured.pendingCount).toBe(1);
+
+    await act(async () => {
+      await captured.runSync?.('manual');
+    });
+    await flush();
+
+    expect(transport.getRow('custom-1')?.name).toBe('Edited locally');
+    expect(captured.pendingCount).toBe(0);
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  it('an exact updatedAt tie between local and server keeps the server row (documented deterministic tiebreak)', async () => {
+    const transport = createFakeCustomTrickSyncTransport();
+    const { root, captured } = await mountHarness(INITIAL_CUSTOM_TRICKS, () => transport, USER_IDENTITY);
+    await flush();
+
+    act(() => {
+      captured.setCollection?.({ tricks: [{ id: 'custom-1', kind: 'standalone', name: 'First', updatedAt: 1 }] });
+    });
+    await flush();
+    await act(async () => {
+      await captured.runSync?.('manual');
+    });
+    await flush();
+    expect(transport.getRow('custom-1')?.revision).toBe(1);
+
+    transport.setFailPush(true);
+    // Exactly matches the fake transport's fixed `TIMESTAMP` (used for the
+    // concurrent server write below) -- an exact tie must keep the server.
+    const tiedUpdatedAt = Date.parse(TIMESTAMP);
+    act(() => {
+      captured.setCollection?.({
+        tricks: [{ id: 'custom-1', kind: 'standalone', name: 'Edited locally', updatedAt: tiedUpdatedAt }],
+      });
+    });
+    await flush();
+
+    transport.setFailPush(false);
+    await transport.push({
+      operationId: 'seed-conflict',
+      recordId: 'custom-1',
+      operationType: 'upsert',
+      payload: { user_id: USER_ID, id: 'custom-1', kind: 'standalone', name: 'Concurrent edit', kentei_rank: null, steps: null },
+      expectedRevision: 1,
+    });
+    expect(transport.getRow('custom-1')?.revision).toBe(2);
+
+    await act(async () => {
+      await captured.runSync?.('manual');
+    });
+    await flush();
+
+    expect(captured.collection?.tricks.find((trick) => trick.id === 'custom-1')?.name).toBe('Concurrent edit');
+    expect(captured.pendingCount).toBe(0);
 
     act(() => {
       root.unmount();
@@ -631,7 +744,6 @@ describe('useCustomTrickDomainSync', () => {
     expect(transport.getRow('custom-deleted')).toBeUndefined();
     expect(transport.getUpsertCallCount('custom-deleted')).toBe(upsertCallsBeforeResurrectionAttempt);
 
-    expect(captured.conflictCount).toBe(0);
     expect(captured.retryableFailureCount).toBeGreaterThan(0);
 
     const attemptsBeforeSecondRun = transport.getPushAttemptCount('custom-deleted');
@@ -642,7 +754,6 @@ describe('useCustomTrickDomainSync', () => {
     expect(transport.getPushAttemptCount('custom-deleted')).toBeGreaterThan(attemptsBeforeSecondRun);
     expect(transport.getRow('custom-deleted')).toBeUndefined();
     expect(transport.getUpsertCallCount('custom-deleted')).toBe(upsertCallsBeforeResurrectionAttempt);
-    expect(captured.conflictCount).toBe(0);
 
     act(() => {
       root.unmount();

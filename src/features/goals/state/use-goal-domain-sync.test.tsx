@@ -85,6 +85,7 @@ function createFakeGoalSyncTransport(options: FakeTransportOptions = {}): FakeTr
               recordId: goalId,
               expectedRevision: request.expectedRevision,
               serverRevision: existing.revision,
+              serverRow: existing,
             },
           };
         }
@@ -105,6 +106,7 @@ function createFakeGoalSyncTransport(options: FakeTransportOptions = {}): FakeTr
             recordId: goalId,
             expectedRevision: request.expectedRevision,
             serverRevision: existing.revision,
+            serverRow: existing,
           },
         };
       }
@@ -116,6 +118,7 @@ function createFakeGoalSyncTransport(options: FakeTransportOptions = {}): FakeTr
             recordId: goalId,
             expectedRevision: request.expectedRevision,
             serverRevision: existing.revision,
+            serverRow: existing,
           },
         };
       }
@@ -184,7 +187,6 @@ interface Captured {
   runSync?: ReturnType<typeof useGoalDomainSync>['runSync'];
   isSyncing?: boolean;
   pendingCount?: number;
-  conflictCount?: number;
   discardPending?: () => Promise<void>;
 }
 
@@ -210,7 +212,6 @@ function makeHarness(
       captured.runSync = sync.runSync;
       captured.isSyncing = sync.isSyncing;
       captured.pendingCount = sync.pendingCount;
-      captured.conflictCount = sync.conflictCount;
       captured.discardPending = sync.discardPending;
     });
 
@@ -431,7 +432,7 @@ describe('useGoalDomainSync', () => {
     });
   });
 
-  it('a stale-revision conflict on one goal does not block an unrelated goal, and the conflicted op stays pending', async () => {
+  it('a stale-revision conflict resolves automatically to the server snapshot (server updatedAt is later), and does not block an unrelated goal', async () => {
     const transport = createFakeGoalSyncTransport();
     const { root, captured } = await mountHarness(INITIAL_GOALS, () => transport, USER_IDENTITY);
     await flush();
@@ -460,6 +461,10 @@ describe('useGoalDomainSync', () => {
     await flush();
 
     transport.setFailPush(false);
+    // A concurrent write from another device, stamped with the fake
+    // transport's fixed `TIMESTAMP` -- deliberately far later than this
+    // device's tiny local `updatedAt` fixtures above, so automatic
+    // resolution below must keep the server's value.
     await transport.push({
       operationId: 'seed-conflict',
       recordId: 'goal-1',
@@ -483,18 +488,151 @@ describe('useGoalDomainSync', () => {
     await flush();
 
     expect(transport.getRow('goal-2')?.target_count).toBe(5);
-    const goal2AttemptsAfterFirstRun = transport.getPushAttemptCount('goal-2');
-
     expect(transport.getRow('goal-1')?.target_count).toBe(50);
     expect(transport.getRow('goal-1')?.revision).toBe(2);
 
+    // Automatic server-wins resolution: the primary reducer now reflects
+    // the server's value, and goal-1's operation is fully resolved (no
+    // longer pending) -- a second run never re-pushes it.
+    expect((captured.collection?.goals.find((goal) => goal.id === 'goal-1') as { targetCount?: number } | undefined)?.targetCount).toBe(50);
+    expect(captured.pendingCount).toBe(0);
+
     const goal1AttemptsBeforeSecondRun = transport.getPushAttemptCount('goal-1');
+    const goal2AttemptsAfterFirstRun = transport.getPushAttemptCount('goal-2');
     await act(async () => {
       await captured.runSync?.('manual');
     });
     await flush();
-    expect(transport.getPushAttemptCount('goal-1')).toBeGreaterThan(goal1AttemptsBeforeSecondRun);
+    expect(transport.getPushAttemptCount('goal-1')).toBe(goal1AttemptsBeforeSecondRun);
     expect(transport.getPushAttemptCount('goal-2')).toBe(goal2AttemptsAfterFirstRun);
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  it('a local edit strictly newer than the server row wins automatically and is re-pushed as the resolved value', async () => {
+    const transport = createFakeGoalSyncTransport();
+    const { root, captured } = await mountHarness(INITIAL_GOALS, () => transport, USER_IDENTITY);
+    await flush();
+
+    act(() => {
+      captured.setCollection?.({
+        goals: [{ id: 'goal-1', trickId: 'big-cup', trickName: 'Big cup', kind: 'count', targetCount: 10, createdAt: 1, updatedAt: 1 }],
+      });
+    });
+    await flush();
+    await act(async () => {
+      await captured.runSync?.('manual');
+    });
+    await flush();
+    expect(transport.getRow('goal-1')?.revision).toBe(1);
+
+    transport.setFailPush(true);
+    // Deliberately later than the fake transport's fixed `TIMESTAMP` (used
+    // for the concurrent server write below) -- this local edit must win.
+    const localUpdatedAt = Date.parse(TIMESTAMP) + 1000;
+    act(() => {
+      captured.setCollection?.({
+        goals: [{ id: 'goal-1', trickId: 'big-cup', trickName: 'Big cup', kind: 'count', targetCount: 99, createdAt: 1, updatedAt: localUpdatedAt }],
+      });
+    });
+    await flush();
+
+    transport.setFailPush(false);
+    await transport.push({
+      operationId: 'seed-conflict',
+      recordId: 'goal-1',
+      operationType: 'upsert',
+      payload: {
+        user_id: USER_ID,
+        id: 'goal-1',
+        trick_id: 'big-cup',
+        trick_name: 'Big cup',
+        kind: 'count',
+        target_count: 50,
+        target_ms: null,
+      },
+      expectedRevision: 1,
+    });
+    expect(transport.getRow('goal-1')?.revision).toBe(2);
+
+    await act(async () => {
+      await captured.runSync?.('manual');
+    });
+    await flush();
+
+    // Local wins: the driver re-pushes the local value as a fresh
+    // operation against the server's new revision instead of parking it.
+    expect((captured.collection?.goals.find((goal) => goal.id === 'goal-1') as { targetCount?: number } | undefined)?.targetCount).toBe(99);
+    expect(captured.pendingCount).toBe(1);
+
+    await act(async () => {
+      await captured.runSync?.('manual');
+    });
+    await flush();
+
+    expect(transport.getRow('goal-1')?.target_count).toBe(99);
+    expect(captured.pendingCount).toBe(0);
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  it('an exact updatedAt tie between local and server keeps the server row (documented deterministic tiebreak)', async () => {
+    const transport = createFakeGoalSyncTransport();
+    const { root, captured } = await mountHarness(INITIAL_GOALS, () => transport, USER_IDENTITY);
+    await flush();
+
+    act(() => {
+      captured.setCollection?.({
+        goals: [{ id: 'goal-1', trickId: 'big-cup', trickName: 'Big cup', kind: 'count', targetCount: 10, createdAt: 1, updatedAt: 1 }],
+      });
+    });
+    await flush();
+    await act(async () => {
+      await captured.runSync?.('manual');
+    });
+    await flush();
+    expect(transport.getRow('goal-1')?.revision).toBe(1);
+
+    transport.setFailPush(true);
+    // Exactly matches the fake transport's fixed `TIMESTAMP` (used for the
+    // concurrent server write below) -- an exact tie must keep the server.
+    const tiedUpdatedAt = Date.parse(TIMESTAMP);
+    act(() => {
+      captured.setCollection?.({
+        goals: [{ id: 'goal-1', trickId: 'big-cup', trickName: 'Big cup', kind: 'count', targetCount: 99, createdAt: 1, updatedAt: tiedUpdatedAt }],
+      });
+    });
+    await flush();
+
+    transport.setFailPush(false);
+    await transport.push({
+      operationId: 'seed-conflict',
+      recordId: 'goal-1',
+      operationType: 'upsert',
+      payload: {
+        user_id: USER_ID,
+        id: 'goal-1',
+        trick_id: 'big-cup',
+        trick_name: 'Big cup',
+        kind: 'count',
+        target_count: 50,
+        target_ms: null,
+      },
+      expectedRevision: 1,
+    });
+    expect(transport.getRow('goal-1')?.revision).toBe(2);
+
+    await act(async () => {
+      await captured.runSync?.('manual');
+    });
+    await flush();
+
+    expect((captured.collection?.goals.find((goal) => goal.id === 'goal-1') as { targetCount?: number } | undefined)?.targetCount).toBe(50);
+    expect(captured.pendingCount).toBe(0);
 
     act(() => {
       root.unmount();
@@ -601,7 +739,7 @@ describe('useGoalDomainSync', () => {
   // other pending operation, and the domain-level outcome is still
   // 'succeeded' (a conflict alone never makes the whole domain outcome
   // 'failed').
-  it('an edit against a since-tombstoned goal parks that goal only; the run still reports succeeded', async () => {
+  it('an edit against a since-tombstoned goal resolves automatically to the server (tombstoned); the run still reports succeeded', async () => {
     const tombstoned: GoalRow = {
       id: 'goal-tombstoned',
       user_id: USER_ID,
@@ -645,16 +783,20 @@ describe('useGoalDomainSync', () => {
 
     expect(result?.outcome).toEqual({ status: 'succeeded' });
     expect(transport.getRow('goal-unrelated')?.target_count).toBe(3);
-    // The tombstoned goal's edit was rejected as a conflict, never applied.
+    // The tombstoned goal's edit lost automatic resolution: its local
+    // updatedAt (1) is far earlier than the server tombstone's fixed
+    // TIMESTAMP, so the server (tombstoned) wins and the edit is dropped.
     expect(transport.getRow('goal-tombstoned')?.target_count).toBe(10);
+    expect(captured.collection?.goals.some((goal) => goal.id === 'goal-tombstoned')).toBe(false);
+    expect(captured.pendingCount).toBe(0);
 
     const attemptsBeforeSecondRun = transport.getPushAttemptCount('goal-tombstoned');
     await act(async () => {
       await captured.runSync?.('manual');
     });
     await flush();
-    // Still pending -- retried on the next run (never silently acknowledged).
-    expect(transport.getPushAttemptCount('goal-tombstoned')).toBeGreaterThan(attemptsBeforeSecondRun);
+    // Fully resolved after the first run -- never retried.
+    expect(transport.getPushAttemptCount('goal-tombstoned')).toBe(attemptsBeforeSecondRun);
 
     act(() => {
       root.unmount();
@@ -713,20 +855,26 @@ describe('useGoalDomainSync', () => {
 
     expect(transport.getRow('goal-1')?.revision).toBe(2);
     expect(transport.getRow('goal-1')?.target_count).toBe(42);
-    expect(captured.conflictCount).toBe(1);
+    // Automatic resolution (server updatedAt is later) restores local
+    // state to the server's already-matching value and clears the
+    // resolved operation instead of leaving it parked.
+    expect((captured.collection?.goals.find((goal) => goal.id === 'goal-1') as { targetCount?: number } | undefined)?.targetCount).toBe(42);
+    expect(captured.pendingCount).toBe(0);
 
     expect(transport.getRow('goal-2')?.target_count).toBe(5);
     expect(transport.getRow('goal-2')?.revision).toBe(1);
 
     const goal2AttemptsAfterFirstRun = transport.getPushAttemptCount('goal-2');
+    const goal1AttemptsAfterFirstRun = transport.getPushAttemptCount('goal-1');
     for (let i = 0; i < 2; i += 1) {
       await act(async () => {
         await captured.runSync?.('manual');
       });
       await flush();
-      expect(captured.conflictCount).toBe(1);
+      expect(captured.pendingCount).toBe(0);
     }
     expect(transport.getRow('goal-1')?.revision).toBe(2);
+    expect(transport.getPushAttemptCount('goal-1')).toBe(goal1AttemptsAfterFirstRun);
     expect(transport.getPushAttemptCount('goal-2')).toBe(goal2AttemptsAfterFirstRun);
 
     act(() => {

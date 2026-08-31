@@ -20,7 +20,7 @@ import type {
   GuestImportProfileComparison,
   GuestImportRecordReference,
 } from '@/features/guest-import/model/guest-import';
-import type { ConflictSnapshot } from '@/shared/sync/conflict';
+import type { ConflictSnapshot } from '@/shared/sync/json-snapshot';
 import { SYNC_DOMAINS, type SyncDomain } from '@/shared/sync/domain';
 import { createOutboxOperation, type NewOutboxOperationInput } from '@/shared/sync/outbox-operation';
 import type { GuestImportTransports } from '@/features/guest-import/persistence/guest-import-inventory';

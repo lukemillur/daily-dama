@@ -32,9 +32,9 @@ import {
 } from '@/features/notes/persistence/note-sync-envelope';
 import { useIdentityHandle } from '@/shared/persistence/identity-provider';
 import { useIdentityScopedDomain } from '@/shared/persistence/use-identity-scoped-domain';
-import { createOutboxOperation, createOutboxOperationId, type OutboxOperation } from '@/shared/sync/outbox-operation';
+import { createOutboxOperationId, type OutboxOperation } from '@/shared/sync/outbox-operation';
 import type { DomainSyncOutcome, DomainSyncRecord, SyncTrigger } from '@/shared/sync/coordinator';
-import type { SyncConflictRecord } from '@/shared/sync/conflict';
+import { parseServerRowUpdatedAt, resolveUpdatedAtConflict } from '@/shared/sync/conflict-resolution';
 import { createInitialSyncEnvelope, discardPendingOperations, type SyncEnvelope } from '@/shared/sync/sync-envelope';
 import { pullAllPages, pushOutboxOperations, type SyncTransportRepository } from '@/shared/sync/transport';
 
@@ -57,9 +57,6 @@ export interface UseNoteDomainSyncResult {
   // design. See sync-envelope.ts discardPendingOperations doc comment.
   readonly pendingCount: number;
   readonly retryableFailureCount: number;
-  readonly conflictCount: number;
-  readonly conflicts: readonly SyncConflictRecord[];
-  readonly resolveConflict: (recordId: string, choice: 'local' | 'server') => Promise<void>;
   // Durably clears this domains outbox (via the shared write queue, never
   // a second independent writer) without touching the primary NoteCollection
   // reducer state -- T158. A safe no-op when already empty or when the
@@ -217,41 +214,72 @@ export function useNoteDomainSync(options: UseNoteDomainSyncOptions): UseNoteDom
           continue;
         }
 
-        // 'conflict' and 'failed' are both parked, not acknowledged, not
-        // retried automatically this run -- unrelated records' outcomes are
-        // unaffected (pushOutboxOperations' own "continue after one
-        // conflict/failure" guarantee). Neither makes the whole domain
-        // outcome 'failed' -- that's reserved for a pull failure or an
-        // unrecoverable adapter exception, caught below. In particular, a
-        // tombstone-conflict on one note (stale-device resurrection
-        // attempt) parks just that note's operation, never the whole run.
-        const errorMessage =
-          outcome.result.status === 'conflict'
-            ? `stale revision: expected ${outcome.result.conflict.expectedRevision}, server has ${outcome.result.conflict.serverRevision}`
-            : outcome.result.error.message;
+        // 'conflict' resolves automatically, in this same run, by keeping
+        // whichever snapshot has the later `updatedAt` (T187.2). 'failed'
+        // is still parked (not acknowledged, not retried automatically
+        // this run) -- unrelated records' outcomes are unaffected
+        // (pushOutboxOperations' own "continue after one conflict/failure"
+        // guarantee). Neither makes the whole domain outcome 'failed' --
+        // that's reserved for a pull failure or an unrecoverable adapter
+        // exception, caught below. In particular, a tombstone-conflict on
+        // one note (stale-device resurrection attempt) resolves just that
+        // note's operation, never the whole run.
+        if (outcome.result.status === 'conflict') {
+          if (!op) continue;
+          const conflict = outcome.result.conflict;
+          const serverRow = conflict.serverRow ?? null;
+          const serverUpdatedAt = parseServerRowUpdatedAt(serverRow);
+          const localRecord = collectionMirror.notes.find((note) => note.id === outcome.recordId);
+          const localUpdatedAt = op.operationType === 'upsert' && localRecord ? localRecord.updatedAt : op.createdAt;
+          const winner = resolveUpdatedAtConflict(localUpdatedAt, serverUpdatedAt);
+
+          if (winner === 'local') {
+            noteRevisionsCache[outcome.recordId] = conflict.serverRevision;
+            envelopeDispatch({
+              type: 'localMutationApplied',
+              identity: currentIdentity,
+              now,
+              nextSnapshot: { collection: collectionMirror, noteRevisions: { ...noteRevisionsCache } },
+              operationInputs: [{ domain: 'notes', operationType: op.operationType, recordId: outcome.recordId, payload: op.payload }],
+              operationIds: [createOutboxOperationId(now, Math.random())],
+            });
+            continue;
+          }
+
+          const mapped = serverRow === null ? undefined : mapNoteRowToDomainEntry(serverRow as NoteRow, userId);
+          if (mapped !== undefined && mapped.status === 'invalid') continue;
+
+          suppressNextDiffRef.current = true;
+          dispatchCollection({
+            type: 'notesRestored',
+            collection: {
+              notes: [
+                ...latestRef.current.collection.notes.filter((note) => note.id !== outcome.recordId),
+                ...(mapped?.status === 'valid' && mapped.entry.status === 'active' ? [mapped.entry.note] : []),
+              ],
+            },
+          });
+          if (mapped?.status === 'valid' && mapped.entry.status === 'active') {
+            noteRevisionsCache[outcome.recordId] = conflict.serverRevision;
+          } else {
+            delete noteRevisionsCache[outcome.recordId];
+          }
+          envelopeDispatch({ type: 'operationAcknowledged', identity: currentIdentity, operationId: outcome.operationId });
+          envelopeDispatch({
+            type: 'revisionRecorded',
+            snapshot: { collection: collectionMirror, noteRevisions: { ...noteRevisionsCache } },
+          });
+          continue;
+        }
 
         envelopeDispatch({
           type: 'operationAttemptRecorded',
           identity: currentIdentity,
           operationId: outcome.operationId,
           attemptedAt: now,
-          errorMessage,
-          failureKind: outcome.result.status === 'conflict' ? 'conflict' : 'retryable',
+          errorMessage: outcome.result.error.message,
+          failureKind: 'retryable',
         });
-        if (outcome.result.status === 'conflict' && op) {
-          const conflict: SyncConflictRecord = {
-            domain: 'notes',
-            recordId: outcome.recordId,
-            operationId: op.operationId,
-            operationType: op.operationType,
-            expectedRevision: outcome.result.conflict.expectedRevision,
-            serverRevision: outcome.result.conflict.serverRevision,
-            localSnapshot: (op.payload ?? null) as unknown as SyncConflictRecord['localSnapshot'],
-            serverSnapshot: (outcome.result.conflict.serverRow ?? null) as unknown as SyncConflictRecord['serverSnapshot'],
-            createdAt: now,
-          };
-          envelopeDispatch({ type: 'conflictRecorded', identity: currentIdentity, conflict });
-        }
       }
 
       return settle({ status: 'succeeded' });
@@ -348,34 +376,6 @@ export function useNoteDomainSync(options: UseNoteDomainSyncOptions): UseNoteDom
 
   const pendingCount = envelope.state.outbox.length;
   const retryableFailureCount = envelope.state.outbox.filter((operation) => operation.lastFailureKind === 'retryable').length;
-  const conflictCount = envelope.state.conflicts.length;
-  const resolveConflict = useCallback(async (recordId: string, choice: 'local' | 'server') => {
-    const current = latestRef.current;
-    const conflict = current.envelopeState.conflicts.find((item) => item.recordId === recordId);
-    if (!conflict || conflict.domain !== 'notes' || current.identity.kind !== 'user') return;
-    if (current.generation !== generation || conflict.operationId !== current.envelopeState.outbox.find((op) => op.recordId === recordId)?.operationId) return;
-    const now = Date.now();
-    let revisionSnapshot = current.envelopeState.state;
-    if (choice === 'server') {
-      const mapped = conflict.serverSnapshot === null ? undefined : mapNoteRowToDomainEntry(conflict.serverSnapshot as NoteRow, current.identity.userId);
-      if (mapped !== undefined && mapped.status === 'invalid') return;
-      suppressNextDiffRef.current = true;
-      current.dispatchCollection({ type: 'notesRestored', collection: { notes: [...current.collection.notes.filter((note) => note.id !== recordId), ...(mapped?.status === 'valid' && mapped.entry.status === 'active' ? [mapped.entry.note] : [])] } });
-      const revisions = { ...revisionSnapshot.noteRevisions };
-      if (mapped?.status === 'valid' && mapped.entry.status === 'active') revisions[recordId] = conflict.serverRevision;
-      else delete revisions[recordId];
-      revisionSnapshot = { ...revisionSnapshot, noteRevisions: revisions };
-    } else {
-      revisionSnapshot = { ...revisionSnapshot, noteRevisions: { ...revisionSnapshot.noteRevisions, [recordId]: conflict.serverRevision } };
-    }
-    const replacement = choice === 'local'
-      ? createOutboxOperation(createOutboxOperationId(now, Math.random()), {
-          domain: 'notes', operationType: conflict.operationType, recordId: conflict.recordId,
-          payload: conflict.localSnapshot as Record<string, unknown> | null,
-        }, now)
-      : undefined;
-    current.envelopeDispatch({ type: 'conflictResolved', identity: current.identity, domain: 'notes', recordId, operationId: conflict.operationId, replacement, revisionSnapshot });
-  }, [generation]);
 
   const discardPending = useCallback(async () => {
     const { identity: currentIdentity, envelopeState, envelopeDispatch } = latestRef.current;
@@ -397,11 +397,8 @@ export function useNoteDomainSync(options: UseNoteDomainSyncOptions): UseNoteDom
       localMutationTick,
       pendingCount,
       retryableFailureCount,
-      conflictCount,
-      conflicts: envelope.state.conflicts,
-      resolveConflict,
       discardPending,
     }),
-    [runSync, isSyncing, lastResult, bothHydrated, localMutationTick, pendingCount, retryableFailureCount, conflictCount, discardPending, resolveConflict, envelope.state.conflicts],
+    [runSync, isSyncing, lastResult, bothHydrated, localMutationTick, pendingCount, retryableFailureCount, discardPending],
   );
 }
