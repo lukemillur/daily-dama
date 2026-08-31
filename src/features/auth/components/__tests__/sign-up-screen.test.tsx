@@ -185,16 +185,23 @@ describe('SignUpScreen', () => {
     expect(mockSignUp).not.toHaveBeenCalled();
   });
 
-  it('renders working visibility toggles for both password fields', async () => {
+  it('shares the visibility toggle between both password fields, rendered as an icon', async () => {
     const root = await mount();
 
     expect(findByLabel(root, 'Show Password')).toBeTruthy();
     expect(findByLabel(root, 'Show Confirm password')).toBeTruthy();
+    expect(root.root.findAll((node) => node.props.children === 'Show')).toHaveLength(0);
+    expect(root.root.findAll((node) => node.props.children === 'Hide')).toHaveLength(0);
+
     await act(async () => {
       findByLabel(root, 'Show Confirm password').props.onPress();
     });
 
+    // Toggling the confirm-password field reveals the password field too -- they share one
+    // PasswordVisibilityProvider.
+    expect(findByLabel(root, 'Password').props.secureTextEntry).toBe(false);
     expect(findByLabel(root, 'Confirm password').props.secureTextEntry).toBe(false);
+    expect(findByLabel(root, 'Hide Password')).toBeTruthy();
     expect(findByLabel(root, 'Hide Confirm password')).toBeTruthy();
   });
 

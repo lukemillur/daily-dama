@@ -10,6 +10,7 @@ import { AppColors } from '@/constants/theme';
 import { categorizeAuthError, type AuthErrorCategory } from '@/features/auth/model/auth-errors';
 import { validateNewPassword } from '@/features/auth/model/password-policy';
 import { PasswordInput } from '@/features/auth/components/password-input';
+import { PasswordVisibilityProvider } from '@/features/auth/components/password-visibility-context';
 import { useAuthActions, useAuthState } from '@/features/auth/state/auth-provider';
 
 const SUBMIT_ERROR_COPY: Record<AuthErrorCategory, string> = {
@@ -115,21 +116,23 @@ export function ResetPasswordScreen() {
           <PageTitle>Choose a new password.</PageTitle>
           <Introduction>Enter and confirm a new password for your account.</Introduction>
 
-          <PasswordInput
-            error={errors.password}
-            label="New password"
-            onChangeText={setPassword}
-            textContentType="newPassword"
-            value={password}
-          />
+          <PasswordVisibilityProvider>
+            <PasswordInput
+              error={errors.password}
+              label="New password"
+              onChangeText={setPassword}
+              textContentType="newPassword"
+              value={password}
+            />
 
-          <PasswordInput
-            error={errors.confirmPassword}
-            label="Confirm new password"
-            onChangeText={setConfirmPassword}
-            textContentType="newPassword"
-            value={confirmPassword}
-          />
+            <PasswordInput
+              error={errors.confirmPassword}
+              label="Confirm new password"
+              onChangeText={setConfirmPassword}
+              textContentType="newPassword"
+              value={confirmPassword}
+            />
+          </PasswordVisibilityProvider>
 
           {submitCategory ? <ErrorText>{SUBMIT_ERROR_COPY[submitCategory]}</ErrorText> : null}
 

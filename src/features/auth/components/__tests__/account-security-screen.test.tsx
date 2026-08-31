@@ -244,17 +244,27 @@ describe('AccountSecurityScreen', () => {
     expect(mockTrackAuthEvent).toHaveBeenCalledWith('account_security_password_success');
   });
 
-  it('renders working visibility toggles for every password field', async () => {
+  it('shares the visibility toggle across the change-password fields, rendered as an icon', async () => {
     mockAuthState = authenticatedState();
     const root = await mount();
 
     expect(findByLabel(root, 'Show Current password')).toBeTruthy();
     expect(findByLabel(root, 'Show New password')).toBeTruthy();
     expect(findByLabel(root, 'Show Confirm new password')).toBeTruthy();
+    expect(root.root.findAll((node) => node.props.children === 'Show')).toHaveLength(0);
+    expect(root.root.findAll((node) => node.props.children === 'Hide')).toHaveLength(0);
+
     await pressLabel(root, 'Show Current password');
 
+    // Toggling the current-password field reveals the new/confirm fields too -- they share one
+    // PasswordVisibilityProvider. The unrelated change-email "Password" field is not affected.
     expect(findByLabel(root, 'Current password').props.secureTextEntry).toBe(false);
+    expect(findByLabel(root, 'New password').props.secureTextEntry).toBe(false);
+    expect(findByLabel(root, 'Confirm new password').props.secureTextEntry).toBe(false);
     expect(findByLabel(root, 'Hide Current password')).toBeTruthy();
+    expect(findByLabel(root, 'Hide New password')).toBeTruthy();
+    expect(findByLabel(root, 'Hide Confirm new password')).toBeTruthy();
+    expect(findByLabel(root, 'Show Password')).toBeTruthy();
   });
 
   it('shows a specific, non-generic error for a wrong current password, without disturbing the email section', async () => {

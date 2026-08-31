@@ -193,17 +193,24 @@ describe('ResetPasswordScreen', () => {
       expect(mockCompletePasswordRecovery).not.toHaveBeenCalled();
     });
 
-    it('renders working visibility toggles for both new-password fields', async () => {
+    it('shares the visibility toggle between both new-password fields, rendered as an icon', async () => {
       const root = await mount();
 
       expect(findByLabel(root, 'Show New password')).toBeTruthy();
       expect(findByLabel(root, 'Show Confirm new password')).toBeTruthy();
+      expect(root.root.findAll((node) => node.props.children === 'Show')).toHaveLength(0);
+      expect(root.root.findAll((node) => node.props.children === 'Hide')).toHaveLength(0);
+
       await act(async () => {
         findByLabel(root, 'Show New password').props.onPress();
       });
 
+      // Toggling the new-password field reveals the confirm field too -- they share one
+      // PasswordVisibilityProvider.
       expect(findByLabel(root, 'New password').props.secureTextEntry).toBe(false);
+      expect(findByLabel(root, 'Confirm new password').props.secureTextEntry).toBe(false);
       expect(findByLabel(root, 'Hide New password')).toBeTruthy();
+      expect(findByLabel(root, 'Hide Confirm new password')).toBeTruthy();
     });
 
     it('shows a weak-password error on submit and never calls completePasswordRecovery', async () => {
