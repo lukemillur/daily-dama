@@ -10,6 +10,7 @@ import { categorizeAuthError, type AuthErrorCategory } from '@/features/auth/mod
 import { validateForgotPasswordEmail } from '@/features/auth/model/forgot-password-validation';
 import { validateNewPassword } from '@/features/auth/model/password-policy';
 import { PasswordInput } from '@/features/auth/components/password-input';
+import { PasswordVisibilityProvider } from '@/features/auth/components/password-visibility-context';
 import { logAuthWarning, trackAuthEvent } from '@/features/auth/observability/auth-observability';
 import { useAuthActions, useAuthState } from '@/features/auth/state/auth-provider';
 
@@ -194,29 +195,31 @@ export function AccountSecurityScreen() {
 
         <SectionLabel>Change password</SectionLabel>
 
-        <PasswordInput
-          error={currentPasswordError}
-          label="Current password"
-          onChangeText={setCurrentPassword}
-          textContentType="password"
-          value={currentPassword}
-        />
+        <PasswordVisibilityProvider>
+          <PasswordInput
+            error={currentPasswordError}
+            label="Current password"
+            onChangeText={setCurrentPassword}
+            textContentType="password"
+            value={currentPassword}
+          />
 
-        <PasswordInput
-          error={passwordErrors.password}
-          label="New password"
-          onChangeText={setNewPassword}
-          textContentType="newPassword"
-          value={newPassword}
-        />
+          <PasswordInput
+            error={passwordErrors.password}
+            label="New password"
+            onChangeText={setNewPassword}
+            textContentType="newPassword"
+            value={newPassword}
+          />
 
-        <PasswordInput
-          error={passwordErrors.confirmPassword}
-          label="Confirm new password"
-          onChangeText={setConfirmNewPassword}
-          textContentType="newPassword"
-          value={confirmNewPassword}
-        />
+          <PasswordInput
+            error={passwordErrors.confirmPassword}
+            label="Confirm new password"
+            onChangeText={setConfirmNewPassword}
+            textContentType="newPassword"
+            value={confirmNewPassword}
+          />
+        </PasswordVisibilityProvider>
 
         {passwordSubmitCategory ? (
           <ErrorText>{PASSWORD_ERROR_COPY[passwordSubmitCategory]}</ErrorText>

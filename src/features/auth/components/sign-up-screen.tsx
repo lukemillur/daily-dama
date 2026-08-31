@@ -10,6 +10,7 @@ import { AppColors } from '@/constants/theme';
 import { categorizeAuthError, type AuthErrorCategory } from '@/features/auth/model/auth-errors';
 import { MIN_PASSWORD_LENGTH } from '@/features/auth/model/password-policy';
 import { PasswordInput } from '@/features/auth/components/password-input';
+import { PasswordVisibilityProvider } from '@/features/auth/components/password-visibility-context';
 import { validateSignUpFields } from '@/features/auth/model/signup-validation';
 import { logAuthWarning, trackAuthEvent } from '@/features/auth/observability/auth-observability';
 import { useAuthActions, useAuthState } from '@/features/auth/state/auth-provider';
@@ -155,29 +156,31 @@ export function SignUpScreen() {
             {errors.email ? <ErrorText>{errors.email}</ErrorText> : null}
           </Field>
 
-          <PasswordInput
-            ref={passwordInputRef}
-            blurOnSubmit={false}
-            error={errors.password}
-            hint={<>Use at least {MIN_PASSWORD_LENGTH} characters.</>}
-            label="Password"
-            textContentType="newPassword"
-            onChangeText={setPassword}
-            onSubmitEditing={() => confirmPasswordInputRef.current?.focus()}
-            returnKeyType="next"
-            value={password}
-          />
+          <PasswordVisibilityProvider>
+            <PasswordInput
+              ref={passwordInputRef}
+              blurOnSubmit={false}
+              error={errors.password}
+              hint={<>Use at least {MIN_PASSWORD_LENGTH} characters.</>}
+              label="Password"
+              textContentType="newPassword"
+              onChangeText={setPassword}
+              onSubmitEditing={() => confirmPasswordInputRef.current?.focus()}
+              returnKeyType="next"
+              value={password}
+            />
 
-          <PasswordInput
-            ref={confirmPasswordInputRef}
-            error={errors.confirmPassword}
-            label="Confirm password"
-            textContentType="newPassword"
-            onChangeText={setConfirmPassword}
-            onSubmitEditing={() => void handleSubmit()}
-            returnKeyType="done"
-            value={confirmPassword}
-          />
+            <PasswordInput
+              ref={confirmPasswordInputRef}
+              error={errors.confirmPassword}
+              label="Confirm password"
+              textContentType="newPassword"
+              onChangeText={setConfirmPassword}
+              onSubmitEditing={() => void handleSubmit()}
+              returnKeyType="done"
+              value={confirmPassword}
+            />
+          </PasswordVisibilityProvider>
 
           {submitCategory ? <ErrorText>{SUBMIT_ERROR_COPY[submitCategory]}</ErrorText> : null}
 

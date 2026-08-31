@@ -4,6 +4,16 @@ Completed entries move here from `TASKS.md`'s `Backlog`, in the same commit that
 
 Entries keep their content as it was at completion. Don't retroactively edit a description or exit criteria after the fact; if something about a completed task turns out to be wrong or misleading, note that in a new entry or in code, not by rewriting history here.
 
+### [T185] Synchronize password-visibility toggles and use an icon instead of text
+
+- **Area:** Authentication UI
+- **Priority:** Medium
+- **Status:** Done
+- **Planning:** Implementer
+- **Description:** `password-input.tsx` currently owns its own `isVisible` state per instance, so sign-up's password/confirm-password toggles operate independently, and the toggle renders as `ToggleText` ("Show"/"Hide"). Lift visibility into shared state across all `PasswordInput` instances rendered together on one form (sign-up's password+confirm, reset-password's new+confirm, Account Security's current/new/confirm), and replace the text toggle with an eye-open/eye-closed icon.
+- **Exit criteria:** `password-input.test.tsx` passes, including a test asserting that toggling visibility on one `PasswordInput` updates a sibling `PasswordInput`'s visibility when both share the new visibility context/state; updated tests on sign-up, reset-password, and Account Security confirm the shared toggle behavior end-to-end and that the control renders as an icon with an accessible label (not "Show"/"Hide" text). Met: `password-input.test.tsx` (6/6, including the new sibling-sync test and a not-shared-outside-a-provider control test) and the updated sign-up, reset-password, and account-security screen tests all pass; full auth suite 320/320; `yarn tsc --noEmit` clean.
+- **Notes:** From S066, follow-up on T171. Sign-in only has a single password field, so shared-visibility state there is a no-op — no behavior change on that screen (its own test file re-verified unchanged). Implementation: new `password-visibility-context.tsx` exports `PasswordVisibilityProvider` and `usePasswordVisibilityContext`; `PasswordInput` reads the context when present and otherwise falls back to its own local `useState`, so unwrapped fields (sign-in, account-deletion) keep prior per-instance behavior with no screen changes needed there. Sign-up wraps its password+confirm pair, reset-password wraps new+confirm, and Account Security wraps only its current/new/confirm change-password group — its separate change-email "Password" field is intentionally left unwrapped (single field, no sibling to sync with). `ToggleText` is replaced with an `EyeIcon` (`react-native-svg` `Path`/`Circle`/`Line`, open eye vs. slashed eye reflecting current visibility) whose stroke color resolves via `useContext(ThemeContext)` with an `AppColors.ink` fallback (not the `useTheme` hook, which throws outside a `ThemeProvider`) — same theming precedent T184 established for the surrounding field chrome. `accessibilityLabel`/`accessibilityRole` on the toggle are unchanged ("Show \<label\>"/"Hide \<label\>", role `button`), so the accessible-label exit criterion is met without new UI copy.
+
 ### [T184] Make auth-screen text and background theme-responsive, not just the button
 
 - **Area:** Authentication UI

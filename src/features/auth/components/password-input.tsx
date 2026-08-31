@@ -1,8 +1,10 @@
-import { forwardRef, useState, type ComponentProps, type ReactNode } from 'react';
+import { forwardRef, useContext, useState, type ComponentProps, type ReactNode } from 'react';
 import { Pressable, TextInput } from 'react-native';
-import { styled } from 'styled-components/native';
+import { styled, ThemeContext } from 'styled-components/native';
+import Svg, { Circle, Line, Path } from 'react-native-svg';
 
 import { AppColors } from '@/constants/theme';
+import { usePasswordVisibilityContext } from '@/features/auth/components/password-visibility-context';
 
 type NativeTextInputProps = ComponentProps<typeof TextInput>;
 
@@ -16,6 +18,29 @@ export interface PasswordInputProps {
   readonly returnKeyType?: NativeTextInputProps['returnKeyType'];
   readonly blurOnSubmit?: NativeTextInputProps['blurOnSubmit'];
   readonly onSubmitEditing?: NativeTextInputProps['onSubmitEditing'];
+}
+
+interface EyeIconProps {
+  readonly isVisible: boolean;
+  readonly color: string;
+}
+
+function EyeIcon({ isVisible, color }: EyeIconProps) {
+  return (
+    <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M1.5 12S5.5 5 12 5s10.5 7 10.5 7-4 7-10.5 7-10.5-7-10.5-7Z"
+        stroke={color}
+        strokeWidth={2}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <Circle cx="12" cy="12" r="3" stroke={color} strokeWidth={2} />
+      {!isVisible ? (
+        <Line x1="2.5" y1="21.5" x2="21.5" y2="2.5" stroke={color} strokeWidth={2} strokeLinecap="round" />
+      ) : null}
+    </Svg>
+  );
 }
 
 export const PasswordInput = forwardRef<TextInput, PasswordInputProps>(function PasswordInput(
@@ -32,7 +57,18 @@ export const PasswordInput = forwardRef<TextInput, PasswordInputProps>(function 
   },
   ref,
 ) {
-  const [isVisible, setIsVisible] = useState(false);
+  const sharedVisibility = usePasswordVisibilityContext();
+  const [localIsVisible, setLocalIsVisible] = useState(false);
+  // useContext (not the useTheme hook) so an unthemed render -- e.g. a screen or test that
+  // doesn't wrap in a styled-components ThemeProvider -- falls back rather than throwing.
+  const theme = useContext(ThemeContext);
+  const iconColor = theme?.text ?? AppColors.ink;
+
+  const isVisible = sharedVisibility ? sharedVisibility.isVisible : localIsVisible;
+  const toggleVisibility = sharedVisibility
+    ? sharedVisibility.toggle
+    : () => setLocalIsVisible((visible) => !visible);
+
   const toggleLabel = `${isVisible ? 'Hide' : 'Show'} ${label}`;
 
   return (
@@ -55,11 +91,8 @@ export const PasswordInput = forwardRef<TextInput, PasswordInputProps>(function 
           textContentType={textContentType}
           value={value}
         />
-        <VisibilityToggle
-          accessibilityLabel={toggleLabel}
-          accessibilityRole="button"
-          onPress={() => setIsVisible((visible) => !visible)}>
-          <ToggleText>{isVisible ? 'Hide' : 'Show'}</ToggleText>
+        <VisibilityToggle accessibilityLabel={toggleLabel} accessibilityRole="button" onPress={toggleVisibility}>
+          <EyeIcon color={iconColor} isVisible={isVisible} />
         </VisibilityToggle>
       </InputRow>
       {error ? <ErrorText>{error}</ErrorText> : null}
@@ -103,12 +136,6 @@ const VisibilityToggle = styled(Pressable)`
   align-items: center;
   justify-content: center;
   padding: 12px 14px;
-`;
-const ToggleText = styled.Text`
-  color: ${({ theme }) => theme.text};
-  font-size: 13px;
-  font-weight: 900;
-  text-transform: uppercase;
 `;
 const ErrorText = styled.Text`
   color: ${AppColors.red};
