@@ -10,6 +10,8 @@ _S032–S041 were refined from [BACKEND_ROADMAP.md](BACKEND_ROADMAP.md) on 2026-
 
 _S042–S062 came from the user's 2026-08-25 QA pass on the Full-Batch of PR #158–223 (three items were follow-up gaps on already-`Done` tickets T144/T146/T153.12; the rest were general feedback, mostly Auth/Account UI). 19 were scoped into T163–T181 (see `TASKS.md`) and removed from this file. S051 and S006 were confirmed working in the live app by the user on 2026-08-26 and removed per the usual promotion cleanup. S057 was rejected by the user on 2026-08-26 — see [V1_LAUNCH_PLAN.md](V1_LAUNCH_PLAN.md) Stage 1._
 
+_S063–S074 came from the user's 2026-08-31 QA pass on PRs #224–256 — the batch that closed T163–T181. Every reviewed T163–T181 item came back with a follow-up gap (the implementation shipped but didn't fully satisfy the QA scenario), plus six items of general feedback not tied to a specific ticket. All twelve are refinements/corrections to already-`Done` work, not new features. All twelve were scoped into T182–T193 (see `TASKS.md`) and removed from this file: S063→T182, S064→T183, S065→T184, S066→T185, S067→T186 (T186.1–T186.2), S068→T187 (T187.1–T187.2), S069→T188, S070→T189, S071→T190, S072→T191, S073→T192, S074→T193._
+
 ### [S057] Enforce email uniqueness at signup with a clear message — REJECTED
 
 - **Status:** Rejected (2026-08-26)

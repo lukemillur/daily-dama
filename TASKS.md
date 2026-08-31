@@ -145,69 +145,166 @@ _Phase 4 activation: T161 comes from S039 and `BACKEND_ROADMAP.md` Phase 4. Its 
 
 _Phase 5 consideration: no cross-platform account-hardening ticket is activated. S040 remains `Proposed` in [BACKLOG_STORIES.md](BACKLOG_STORIES.md) because [AGENTS.md](AGENTS.md) makes web the only active platform until mobile hardening is explicitly resumed. Native PKCE callbacks, SecureStore Auth storage, and iOS/Android verification therefore remain deliberately deferred rather than being disguised as actionable web work._
 
+
+
 ---
 
-_Phase 6 activation: T162 comes from S041 and `BACKEND_ROADMAP.md` Phase 6. Its eight S-sized children turn “ready for first external account” into an inspectable hard gate: report-only then enforced CSP, CI scanning, hosted authorization/abuse review, production-environment reproduction, synthetic capacity evidence, a tested recovery decision, and explicit launch approval. It depends on completed Phase 1–4 evidence and does not claim that usage metrics exist before signup._
+_T182–T193 come from stories S063–S074 in [BACKLOG_STORIES.md](BACKLOG_STORIES.md) (the user's 2026-08-31 QA pass on PRs #224–256 — every T163–T181 item came back with a follow-up gap on the same already-`Done` ticket, plus six items of general feedback). T182 (S063, goal-card trick title), T183 (S064, signup-invite modal), T185 (S066, synced password-visibility icon), T190 (S071, hide sync status for guests), T191 (S072, auth-screen back buttons), T192 (S073, verification-email branding), and T193 (S074, forgot-password left-align) are `Implementer` — local, known-pattern changes, several reusing an existing precedent in this same codebase (T158's `logout-prompt.tsx` absolute-fill modal for T183; T181's "Back to Profile" button for T191). T184 (S065) is `Required`: tracing all four `/auth/*` screens confirmed each renders its primary form via `FormScroll` directly, never wrapped in `<Screen>` (T170's own Notes already flagged this gap) — `PageTitle`/`Introduction`/`Eyebrow` already resolve from `theme.text`/`theme.textMuted` via `typography.tsx`, but with no themed `Screen` background underneath them the only visible surface is `+html.tsx`'s static CSS, and `FieldInput`/`PasswordInput`'s field chrome use hardcoded `AppColors` instead of theme tokens. Wrapping the primary form in `<Screen>` on four screens without reintroducing T145's hydration-flicker fix is exactly the kind of provider/boundary risk this project's Planning rules reserve for `Required`. T189 (S070) is `Required` for the same class of reason: tracing `router.replace('/')`'s target confirmed `/`'s own `useRedirectOnboardedVisitorHome` reads `use-cached-onboarding-status.ts`, which — like `read-cached-theme-background.ts` — still reads only the legacy bare `USER_PROFILE_STORAGE_KEY` rather than the identity-scoped guest key T156.2 introduced; T170's Notes already flagged this exact gap as an "undiscovered gap flagged as a follow-up candidate," and both post-logout symptoms (wrong destination, un-reset theme) trace to it. T188 (S069) is `Required` because the `delete-account` Edge Function's 503 could not be attributed to an app-code defect from static tracing alone — `supabase/README.md` documents that the function needs a running local Supabase stack (`supabase start` + `db reset`), so this needs a runtime diagnosis pass, not a known fix applied locally. T186 (S067) and T187 (S068) are both `Required` M-chains: tracing `goal.ts`, `custom-trick.ts`, and `user-profile-persistence.ts` found no per-record `updatedAt` field in the profile, custom-trick, or goal domains (only `note.ts` already has one), so S068's "resolve by timestamp" premise needs that field added first — T187.1 adds it, T187.2 wires the automatic most-recent-wins resolution and removes `/app/profile/sync-conflicts` and `sync-conflict-list.tsx`. T186.1 covers the common empty-account signup path (`GuestImportPreview`'s own state-machine trace confirmed a brand-new account has no cloud data yet, so `uploading -> completed` never touches `awaitingProfileChoice`/`conflicts`), auto-triggering `confirmImport()`, deleting the preview UI, and gating onboarding on existing local data. T186.2 (existing-account guest imports that do reach a profile-choice or conflict state) depends on T187.2's automatic-resolution primitive and is ordered after it.
 
-### [T162] Enforce the first-external-user launch gate
+### [T182] Make the trick title prominent and right-aligned on goal cards
 
-- **Area:** Security / operations
-- **Priority:** High
+- **Area:** Goals
+- **Priority:** Medium
 - **Status:** Not started
-- **Description:** Keep external signup disabled until web security, abuse controls, production isolation, deliverability, capacity, recovery, and the complete acceptance suite have recorded evidence.
-- **Notes:** Umbrella from S041. Complete T162.1–T162.8 after the applicable T153–T161 work. This is a hard gate, not a speculative scale-up project.
+- **Planning:** Implementer
+- **Description:** `GoalRow` (`trick-goals-screen.tsx`) currently renders `GoalTrickName` as a small 13px eyebrow-style label above `GoalMetaRow`. Restructure the card so the goal's progress info (`GoalMeta`/`ProgressText`, i.e. "Lace count goal, 50 laces, 0/50 laces") renders as the first, left element of a horizontal row, with the trick's title as the second element, in large `DisplayTitle`-scale text, right-aligned so all cards' titles line up on the same vertical edge.
+- **Exit criteria:** `trick-goals-screen.test.tsx` and `all-trick-goals-screen.test.tsx` pass, including an assertion that the trick-name text renders at a materially larger font size than today's 13px eyebrow treatment and sits in the same row as the progress info.
+- **Notes:** From S063. `goal.trickName` is already in scope (unchanged from T163) — this is a layout restructure of `GoalRow`'s existing card content, not a new data dependency.
 
-### [T162.4] Audit deployed Supabase authorization and Auth abuse controls
+### [T183] Present the signup re-invite as a dismissible modal
 
-- **Area:** Supabase launch security
-- **Priority:** High
+- **Area:** Sesh / guest invitation
+- **Priority:** Medium
 - **Status:** Not started
-- **Planning:** Required
-- **Description:** Run Security Advisor, manually review exposed schemas/functions/grants/RLS, enable CAPTCHA, and verify Auth plus Edge Function rate limits before any external account is allowed.
-- **Exit criteria:** A dated, secret-free launch record contains Security Advisor results, an operation-by-operation grants/RLS/function review, successful CAPTCHA challenge tests, measured Auth/delete-account rate-limit behavior, and zero unresolved High/Critical findings; raw cross-user negative tests pass against the hosted environment.
-- **Notes:** From S041. Depends on T155.8, T153.13, and T161.3. Paid leaked-password protection remains unavailable under the free constraint.
+- **Planning:** Implementer
+- **Description:** `PostSeshSignupInvite` (`sesh.tsx`) currently renders inline as the last item in the wrap-up screen's column. Convert it to a modal overlay the user must dismiss or act on, reusing the absolute-fill `View` overlay pattern `rank-up-celebration-modal.tsx` and `logout-prompt.tsx` already establish in this codebase (no RN `Modal` precedent here) rather than introducing a new modal mechanism.
+- **Exit criteria:** `sesh.test.tsx` passes, including an assertion that `showSignupInvite` renders the invite as an overlay (not inline wrap-up content) and that both "Sign up" and "Dismiss" close it, for both the first-ever-Sesh case and the every-5th-session case.
+- **Notes:** From S064. Pure presentation change — `isRegularSessionInviteEligible`'s eligibility logic (T166) and its dismiss/sign-up handlers are unchanged.
 
-### [T162.5] Reproduce the tested backend in the reserved production environment
+### [T184] Make auth-screen text and background theme-responsive, not just the button
 
-- **Area:** Production backend / email
-- **Priority:** High
-- **Status:** Not started
-- **Planning:** Required
-- **Description:** Create the reserved production Supabase project from the tested migrations, configure only exact production redirects and secrets, reproduce Resend SMTP/DNS settings without seeding user data, and verify environment separation from development.
-- **Exit criteria:** Production migration hashes/types match the tested source, only structural/static reference data exists, development credentials cannot access production and vice versa, SPF/DKIM/DMARC and no-link-tracking checks pass, and a controlled production signup/recovery/delete smoke test completes without exposing secrets.
-- **Notes:** From S041. Depends on T153–T161 and T162.4. Creating this project is deliberately deferred until the schema and security suite are stable.
-
-### [T162.6] Exercise representative multi-year capacity and pagination
-
-- **Area:** Backend capacity validation
+- **Area:** Authentication UI
 - **Priority:** High
 - **Status:** Not started
 - **Planning:** Required
-- **Description:** Generate a representative synthetic account containing multi-year practice history plus realistic custom tricks, goals, notes, tombstones, and outbox churn; measure storage, query pagination, sync convergence, and Edge usage without real user data.
-- **Exit criteria:** A reproducible script/report records fixture size, database bytes, request/egress counts, page counts, full and incremental sync duration, and deletion duration; all queries return deterministically beyond 1,000 rows and results identify any free-tier limit that would block the first 25 accounts.
-- **Notes:** From S041 and roadmap Phase 6. Depends on T157–T161. This is a synthetic check, not speculative production optimization.
+- **Description:** Sign-up, sign-in, forgot-password, and reset-password all render their primary form via `FormScroll` directly, bypassing `<Screen>` (which already resolves `theme.background`) — only their initializing/redirecting placeholder branches use `<Screen>`. Wrap each screen's primary-form render in `<Screen>` (or otherwise apply the resolved theme background to `FormScroll`) without reintroducing T145's hydration-flicker regression, and move `FieldInput` (duplicated across all four screens) and `password-input.tsx`'s `InputRow`/`Input`/`ToggleText` off hardcoded `AppColors.paper`/`AppColors.ink` onto theme tokens, matching the pattern `account-security-screen.tsx` (T172) already uses.
+- **Exit criteria:** Component tests for all four `/auth/*` screens and `password-input.test.tsx` pass, including an assertion that each screen's rendered background and field colors resolve from a non-default theme when one is set; confirmed in-browser with a seeded custom theme that sign-up, sign-in, forgot-password, and reset-password all show themed background and field colors, not only the button.
+- **Notes:** From S065, follow-up on T170. `CachedAppThemeProvider` (T170) already supplies the resolved theme to this route group — this ticket is about screens actually consuming it, not a provider change. Reuse T170's `useCachedGuestTheme`/hydration-mismatch guard reasoning rather than inventing a new pre-hydration path. Also updates `password-input.tsx`, which S066/T185 also touches (visibility-toggle behavior only, not color) — sequence so the two don't collide on the same lines in-flight.
 
-### [T162.7] Make and test the free-tier recovery decision
+### [T185] Synchronize password-visibility toggles and use an icon instead of text
 
-- **Area:** Data recovery operations
+- **Area:** Authentication UI
+- **Priority:** Medium
+- **Status:** Not started
+- **Planning:** Implementer
+- **Description:** `password-input.tsx` currently owns its own `isVisible` state per instance, so sign-up's password/confirm-password toggles operate independently, and the toggle renders as `ToggleText` ("Show"/"Hide"). Lift visibility into shared state across all `PasswordInput` instances rendered together on one form (sign-up's password+confirm, reset-password's new+confirm, Account Security's current/new/confirm), and replace the text toggle with an eye-open/eye-closed icon.
+- **Exit criteria:** `password-input.test.tsx` passes, including a test asserting that toggling visibility on one `PasswordInput` updates a sibling `PasswordInput`'s visibility when both share the new visibility context/state; updated tests on sign-up, reset-password, and Account Security confirm the shared toggle behavior end-to-end and that the control renders as an icon with an accessible label (not "Show"/"Hide" text).
+- **Notes:** From S066, follow-up on T171. Sign-in only has a single password field, so shared-visibility state there is a no-op — no behavior change on that screen. Needs a shared visibility source (context or lifted state) passed down from each form's own component, since `PasswordInput` instances on one screen aren't otherwise related.
+
+### [T187] Resolve sync conflicts automatically by recency, removing the manual conflict screen
+
+- **Area:** Synchronization
+- **Priority:** High
+- **Status:** Not started
+- **Description:** Replace T160.2's manual per-record conflict UI with automatic most-recent-wins resolution across the four mutable sync domains (profile, custom tricks, goals, notes), which first requires a last-modified timestamp on domains that don't yet carry one.
+- **Notes:** Umbrella from S068. Complete T187.1–T187.2. `T186.2` (guest-import's own conflict/profile-choice states) depends on `T187.2`.
+
+### [T187.1] Add a last-modified timestamp to profile, custom-trick, and goal records
+
+- **Area:** Persistence / synchronization
 - **Priority:** High
 - **Status:** Not started
 - **Planning:** Required
-- **Description:** Choose and document the acceptable pre-launch recovery procedure for Supabase Free, including off-site logical dumps, frequency, storage location, restoration ownership, and the explicit data-loss window; do not silently assume inaccessible automatic backups are sufficient.
-- **Exit criteria:** A sanitized production-like logical dump is created off-site, restored into a fresh temporary project from documented commands, schema and row-count/checksum checks pass, measured recovery time and recovery-point objective are recorded, and the product owner explicitly accepts or rejects the resulting risk before signup is enabled.
-- **Notes:** From S041. Depends on T162.5–T162.6. Backup automation remains optional until this decision shows it is necessary.
+- **Description:** `note.ts` already carries `updatedAt`; `goal.ts` (`GoalBase`) has only `createdAt`, and neither `custom-trick.ts` nor `user-profile-persistence.ts` has any last-modified field at all. Add an `updatedAt: number` to each, set on every create and edit, threaded through each domain's local reducer, persistence envelope, and cloud mapping/repository contract.
+- **Exit criteria:** Domain model, persistence round-trip, and cloud-mapping tests for profile, custom-tricks, and goals confirm `updatedAt` is set on creation, advances on every edit, and survives serialization and the existing sync transport's revision-guarded update path.
+- **Notes:** From S068 (prerequisite). Per `AGENTS.md`, the custom-trick document's `version: 1` schema is explicitly provisional and may change in place — this is exactly that kind of sanctioned in-place change, not a v2 migration. Goals/profile have no comparable "this is provisional" note, so confirm neither's persisted shape is treated as frozen elsewhere before landing.
 
-### [T162.8] Record launch approval and the first infrastructure-review trigger
+### [T187.2] Wire automatic most-recent-wins conflict resolution and remove the manual conflict screen
 
-- **Area:** Launch operations
+- **Area:** Synchronization
 - **Priority:** High
 - **Status:** Not started
 - **Planning:** Required
-- **Description:** Assemble evidence from the complete backend/frontend/security verification matrix, keep external signup disabled until every hard gate is signed off, and define how the first review is triggered at 25 authenticated accounts or 30 days after first signup.
-- **Exit criteria:** A dated launch checklist links passing evidence for Auth states, generic responses, offline/outbox recovery, sync races, cross-account isolation, merges, conflicts, deletion, grants/RLS, headers, deliverability, capacity, secret scans, and recovery; signup enablement is recorded only after all gates pass, and the earlier-of-25-accounts/30-days review has an owner and measurable inputs.
-- **Notes:** From S041. Depends on T162.1–T162.7 and all applicable T153–T161 children. Metrics are operational counts only; no unsupported claim of existing-user behavior is permitted.
+- **Description:** Using T187.1's new `updatedAt` field (and `note.ts`'s existing one), change each of the four mutable domains' sync drivers to resolve a detected conflict automatically by keeping the snapshot with the later `updatedAt`, instead of recording a `SyncConflictRecord` for manual choice. Remove `/app/profile/sync-conflicts.tsx`, `sync-conflict-list.tsx`, and `SyncStatusSection`'s "Review conflicts" link.
+- **Exit criteria:** The existing per-domain conflict fault-injection suites (from T160.2/T160.3) are updated to assert automatic resolution by `updatedAt` instead of asserting a pending `SyncConflictRecord`, and pass; `sync-status.ts`'s conflict-count fact either resolves to zero permanently or is removed if no longer reachable; full app verification sequence passes (test, lint, typecheck, web export).
+- **Notes:** From S068. Depends on T187.1. This reverses UI T160.2 shipped (the conflict-review route and comparison UI), not just polishes it — flagged in S068's Notes. A same-`updatedAt` tie (e.g. two offline edits with clock skew) needs a documented deterministic tiebreak (e.g. keep-server) so resolution never becomes nondeterministic; pick and document one rather than leaving it implicit.
 
+### [T186] Make guest-to-account data carryover fully automatic and internally invisible
 
-_T163–T181 come from stories S042–S062 in [BACKLOG_STORIES.md](BACKLOG_STORIES.md) (the user's 2026-08-25 QA pass on the Full-Batch of PR #158–223 — four follow-up gaps on already-`Done` T144/T146/T153.12, plus general feedback mostly on onboarding and Auth/Account UI), refined by `product-manager` and scoped in this pass. Two stories were not scoped: **S051** (email-format validation at signup) traces to `validateSignUpFields`/`getEmailValidationError`, already wired into `sign-up-screen.tsx` and shown as field-level error text — the story's premise already holds, flagged back the same way S006 was. **S057** (enforce email uniqueness with a distinguishing message) was sent back, not scoped: `sign-up-screen.tsx` deliberately routes a duplicate-account signup through the *identical* success path as a real signup, by design, specifically to avoid becoming an email-enumeration oracle — the story's acceptance criteria asks for exactly the distinguishable response that design avoids. See both stories' Notes in `BACKLOG_STORIES.md`.  No umbrella tasks were needed — every scoped story reduced to one independent S-sized ticket. T164 (S043, onboarding background), T166 (S045, recurring guest invite), T169 (S048, checkmark alignment), T172 (S052, Account Security theming), T173 (S053, tab titles), T174 (S054, forgot-password layout), T175 (S055, logout destination), T177 (S058, sign-in/sign-up cross-links), T178 (S059, Enter-to-submit), T180 (S061, conditional forgot-password), and T181 (S062, Account Security back control) are `Implementer` — genuinely local, one- or two-file changes with a known pattern already used elsewhere in the app. T163 (S042), T165 (S044), T167 (S046), T171 (S050), and T176 (S056) are also `Implementer`-sized in isolation but are noted individually below where a nuance is worth flagging. T168 (S047), T170 (S049), and T179 (S060) are `Required`: T168 because `trick-directory.tsx`'s row is a shared, multi-consumer component with several mutually exclusive nested interactive children across its call sites, not a narrow single-purpose card like `GoalRow`; T170 because it's an architectural fix to which theme provider the `/auth/*` route group mounts under, not a local screen change; T179 because it changes `AuthProvider`'s `changeEmail` action signature, a shared Auth-actions surface. T167 (S046) is additionally `Required` because — like T146 before it — it changes onboarding's own step sequence, which this project's Planning rules call out for a separate pass regardless of size. T176 (S056) is `Required` because tracing the code surfaced no obvious defect (no stale closure, no missing dependency) — it needs a runtime timing investigation, not a known fix applied locally. T170 (S049) is the shared root cause behind the sign-up/sign-in/forgot-password/reset-password background problem QA reported only on sign-up; its Notes explain why all four are fixed together. T174 (S054, forgot-password layout) depends on T170 for its background half; T174 itself only covers spacing/alignment. T164 and T165 both touch `onboarding-theme-step.tsx`/`kentei-onboarding.tsx` and are independent but worth doing together to avoid re-testing the same screen twice, mirroring the T147/T148 precedent. T166 (S045) extends T153.12's existing `isFirstEverRegularSession`/`selectRegularSessions` model rather than adding new counting infrastructure._
+- **Area:** Guest conversion / onboarding
+- **Priority:** High
+- **Status:** Not started
+- **Description:** Remove the user-visible guest-import preview/confirmation step and the forced repeat of onboarding, so signing up or signing into an account with existing local data migrates it automatically and never exposes "guest"/"cloud" framing or raw data to the user.
+- **Notes:** Umbrella from S067. Complete T186.1–T186.2. T186.2 depends on T187.2.
+
+### [T186.1] Auto-trigger guest-to-account import and skip repeat onboarding when local data exists
+
+- **Area:** Guest conversion / onboarding
+- **Priority:** High
+- **Status:** Not started
+- **Planning:** Required
+- **Description:** `use-guest-import.ts` currently stops at `awaitingConfirmation` until a user presses "Import my practice data" on `GuestImportPreview` (rendered on `/app/profile`), and `home.tsx`'s onboarding gate (`profile.hasCompletedOnboarding && profile.kenteiRank`) runs before that import ever happens, so a guest with local data is sent through onboarding again. Auto-call `confirmImport()` as soon as `awaitingConfirmation` is reached with any local data present (skipping the confirm/"Not now" choice), delete `GuestImportPreview`'s user-visible rendering, and make the onboarding gate aware of an in-progress or completed auto-import so a user with existing local data is never shown onboarding a second time.
+- **Exit criteria:** `use-guest-import.test.tsx` passes, including a test asserting `awaitingConfirmation` with local data transitions to `uploading` without any `confirmImport()` caller action; a new `home.tsx`/onboarding integration test asserts a freshly-signed-up identity with existing local guest data skips onboarding, while one with no local data still sees it.
+- **Notes:** From S067. Covers the common case: a brand-new account has no existing cloud data, so `GuestImportPreview`'s own trace shows the state machine goes `uploading → completed` directly, never reaching `awaitingProfileChoice`/`conflicts` — this ticket's exit criteria doesn't need those states resolved. `cancelImport`'s "Not now" path becomes unreachable UI and should be removed, not just hidden, unless another reachable caller is found.
+
+### [T186.2] Resolve guest-import's own profile-preference and record conflicts automatically
+
+- **Area:** Guest conversion
+- **Priority:** Medium
+- **Status:** Not started
+- **Planning:** Required
+- **Description:** When an existing account (with its own cloud data) reaches `awaitingProfileChoice` or `conflicts` during guest import, `guest-import-preview.tsx` today blocks on a manual guest-vs-cloud choice and prints raw JSON snapshots. Resolve both automatically using T187.2's most-recent-wins primitive, and delete the manual choice/JSON-snapshot UI entirely.
+- **Exit criteria:** `use-guest-import.test.tsx` and `guest-import-existing-account.test.ts` pass, including a test asserting a profile-preference comparison and a record conflict both resolve automatically by `updatedAt` with no `chooseProfile`/`resolveConflict` caller action, and that no raw record data reaches any rendered UI.
+- **Notes:** From S067. Depends on T187.2 (reuses its resolution primitive rather than building a second one). Ordered after T186.1, which already covers the common empty-account path independently.
+
+### [T188] Fix account deletion returning a 503
+
+- **Area:** Authentication / Supabase
+- **Priority:** High
+- **Status:** Not started
+- **Planning:** Required
+- **Description:** The `delete-account` Edge Function currently returns a 503 when invoked from the app, blocking T161.4's already-shipped deletion flow entirely. Diagnose whether this is a local-environment issue (per `supabase/README.md`, the function needs a running local stack via `supabase start`/`db reset`) or an actual handler/deployment defect, and fix it.
+- **Exit criteria:** A real account created for this purpose is deleted successfully end-to-end through the app UI (204 from the function, Auth user and application rows removed), and the deletion control cannot be resubmitted after success; if the root cause is environmental, document the required running-stack precondition where a developer would look for it (`supabase/README.md` or `DEPLOYMENT_HANDOFF.md`).
+- **Notes:** From S069, follow-up on T161.4. `t161_3_delete_account_acceptance.test.mjs` and the function's own test suite (`yarn test:functions`) already pass against a running local stack per T161.4's closing notes — start there to see whether the 503 reproduces against a freshly started stack before assuming app/handler code is wrong.
+
+### [T189] Fix logout destination and reset session-scoped app state
+
+- **Area:** Authentication / Landing
+- **Priority:** High
+- **Status:** Not started
+- **Planning:** Required
+- **Description:** `account-section.tsx` already calls `router.replace('/')` on successful logout (T175), but `/`'s `useRedirectOnboardedVisitorHome` immediately redirects back to `/app/home` via `use-cached-onboarding-status.ts`, which — like `read-cached-theme-background.ts` — still reads the legacy bare `USER_PROFILE_STORAGE_KEY` instead of the identity-scoped guest key T156.2 introduced, so both helpers see a stale/wrong-identity snapshot after logout. Update both helpers to read the identity-scoped guest key first with a bare-key fallback, mirroring `CachedAppThemeProvider`'s `readCachedGuestTheme`/`useCachedGuestTheme` (T170).
+- **Exit criteria:** `use-cached-onboarding-status.test.ts` and `read-cached-theme-background.test.ts` (or equivalents) pass, including a test asserting a post-logout guest identity with no completed guest onboarding reads `hasCompletedOnboarding: false` and the default theme even when a stale bare-key snapshot exists; confirmed in-browser that logging out from an account with a custom theme lands on the landing page showing the default theme.
+- **Notes:** From S070, follow-up on T175. Must preserve T145's hydration-flicker-free first paint on `/` — reuse the existing `useSyncExternalStore` hydration-mismatch guard rather than adding a blocking read. This is the same "stale bare-key read" gap T170's own Notes already flagged as an undiscovered follow-up candidate.
+
+### [T190] Hide the synchronization status component for guests
+
+- **Area:** Profile
+- **Priority:** Medium
+- **Status:** Not started
+- **Planning:** Implementer
+- **Description:** `profile/index.tsx` renders `<SyncStatusSection />` unconditionally. Guard it the same way `GuestAccountSection`/`AccountSection` already self-guard on `useAuthState().status`, so it renders only for an authenticated user.
+- **Exit criteria:** `sync-status-section.test.tsx` (or a new `profile/index.test.tsx` case) passes, asserting `SyncStatusSection` renders nothing while `authState.status === 'guest'` and renders normally when authenticated.
+- **Notes:** From S071. `SyncStatusSection`'s "Review conflicts" link (to `/app/profile/sync-conflicts`) is removed separately by T187.2 — no coordination needed since that's a different part of the same file.
+
+### [T191] Add back navigation on auth screens reached from Profile
+
+- **Area:** Authentication UI
+- **Priority:** Medium
+- **Status:** Not started
+- **Planning:** Implementer
+- **Description:** `forgot-password-screen.tsx` (reached from `account-security-screen.tsx`'s gated link, T180) and `account-deletion-screen.tsx` (reached from Profile) currently offer no way back to Profile, only "Sign in"-style links — unlike `account-security-screen.tsx` itself, which already has a "Back to Profile" button (T181). Add the same "Back to Profile" control to both, shown only when reached from the authenticated Profile context (forgot-password is also reachable pre-auth from sign-in, where there is no Profile to return to).
+- **Exit criteria:** `forgot-password-screen.test.tsx` and `account-deletion-screen.test.tsx` pass, including a test asserting the back-to-Profile control appears when reached from the authenticated context and forgot-password's control is absent for a guest reaching it from sign-in.
+- **Notes:** From S072. Reuses T180's existing pattern for making forgot-password's link/behavior conditional on how it was reached — check that mechanism (query param or navigation state) before inventing a new one.
+
+### [T192] Restyle the account verification email to match app branding
+
+- **Area:** Authentication / Supabase email
+- **Priority:** Low
+- **Status:** Not started
+- **Planning:** Implementer
+- **Description:** `supabase/templates/confirmation.html` is already a repository-owned template (not Supabase's generic default) but uses a generic rounded-corner SaaS style — unlike the app's own bold ink-bordered, hard-shadow "sticker" visual language (`AppColors`, `boxShadow: 8px 8px 0 ink`, uppercase eyebrow labels). Restyle it to match.
+- **Exit criteria:** `supabase/tests/` (or a manual Mailpit check per `supabase/README.md`'s documented verification flow) confirms the template still renders and the confirmation link still resolves; visually reviewed against the app's landing/auth screens for a consistent look.
+- **Notes:** From S073. Scope is `confirmation.html` only, matching the QA comment's literal target ("Confirm your email address" is this template's subject). `recovery.html` shares the same generic style and is a natural follow-up, not included here to avoid silently expanding scope.
+
+### [T193] Left-align the forgot-password screen's header text
+
+- **Area:** Authentication UI
+- **Priority:** Low
+- **Status:** Not started
+- **Planning:** Implementer
+- **Description:** `forgot-password-screen.tsx`'s `PageTitle`/`Introduction` (and any sibling header text) are styled with `text-align: center`, unlike sign-up/sign-in's left-aligned (unstyled-alignment) headers. Remove the center-alignment overrides to match.
+- **Exit criteria:** `forgot-password-screen.test.tsx` passes; confirmed in-browser or via snapshot that the screen's header text is left-aligned, matching sign-up/sign-in.
+- **Notes:** From S074. Distinct from T184/S065 (color/theme) and T174 (margins, already `Done`) — alignment only, flagged as still messy after those two.
 
 ---
