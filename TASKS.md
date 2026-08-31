@@ -164,7 +164,7 @@ _T182–T193 come from stories S063–S074 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 - **Area:** Guest conversion / onboarding
 - **Priority:** High
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** `use-guest-import.ts` currently stops at `awaitingConfirmation` until a user presses "Import my practice data" on `GuestImportPreview` (rendered on `/app/profile`), and `home.tsx`'s onboarding gate (`profile.hasCompletedOnboarding && profile.kenteiRank`) runs before that import ever happens, so a guest with local data is sent through onboarding again. Auto-call `confirmImport()` as soon as `awaitingConfirmation` is reached with any local data present (skipping the confirm/"Not now" choice), delete `GuestImportPreview`'s user-visible rendering, and make the onboarding gate aware of an in-progress or completed auto-import so a user with existing local data is never shown onboarding a second time.
 - **Exit criteria:** `use-guest-import.test.tsx` passes, including a test asserting `awaitingConfirmation` with local data transitions to `uploading` without any `confirmImport()` caller action; a new `home.tsx`/onboarding integration test asserts a freshly-signed-up identity with existing local guest data skips onboarding, while one with no local data still sees it.
