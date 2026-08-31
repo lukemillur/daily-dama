@@ -156,7 +156,7 @@ _T182–T193 come from stories S063–S074 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 - **Area:** Authentication / Landing
 - **Priority:** High
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** `account-section.tsx` already calls `router.replace('/')` on successful logout (T175), but `/`'s `useRedirectOnboardedVisitorHome` immediately redirects back to `/app/home` via `use-cached-onboarding-status.ts`, which — like `read-cached-theme-background.ts` — still reads the legacy bare `USER_PROFILE_STORAGE_KEY` instead of the identity-scoped guest key T156.2 introduced, so both helpers see a stale/wrong-identity snapshot after logout. Update both helpers to read the identity-scoped guest key first with a bare-key fallback, mirroring `CachedAppThemeProvider`'s `readCachedGuestTheme`/`useCachedGuestTheme` (T170).
 - **Exit criteria:** `use-cached-onboarding-status.test.ts` and `read-cached-theme-background.test.ts` (or equivalents) pass, including a test asserting a post-logout guest identity with no completed guest onboarding reads `hasCompletedOnboarding: false` and the default theme even when a stale bare-key snapshot exists; confirmed in-browser that logging out from an account with a custom theme lands on the landing page showing the default theme.
