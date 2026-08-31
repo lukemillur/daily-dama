@@ -4,6 +4,16 @@ Completed entries move here from `TASKS.md`'s `Backlog`, in the same commit that
 
 Entries keep their content as it was at completion. Don't retroactively edit a description or exit criteria after the fact; if something about a completed task turns out to be wrong or misleading, note that in a new entry or in code, not by rewriting history here.
 
+### [T182] Make the trick title prominent and right-aligned on goal cards
+
+- **Area:** Goals
+- **Priority:** Medium
+- **Status:** Done
+- **Planning:** Implementer
+- **Description:** `GoalRow` (`trick-goals-screen.tsx`) currently renders `GoalTrickName` as a small 13px eyebrow-style label above `GoalMetaRow`. Restructure the card so the goal's progress info (`GoalMeta`/`ProgressText`, i.e. "Lace count goal, 50 laces, 0/50 laces") renders as the first, left element of a horizontal row, with the trick's title as the second element, in large `DisplayTitle`-scale text, right-aligned so all cards' titles line up on the same vertical edge.
+- **Exit criteria:** `trick-goals-screen.test.tsx` and `all-trick-goals-screen.test.tsx` pass, including an assertion that the trick-name text renders at a materially larger font size than today's 13px eyebrow treatment and sits in the same row as the progress info. Met: `GoalRow` now renders a `GoalHeaderRow` (`flex-direction: row`) with a `GoalInfoColumn` (kind label, target, progress) on the left and `GoalTrickName` (`styled(DisplayTitle)`, 28px, right-aligned) on the right, in both `trick-goals-screen.tsx` and the shared `all-trick-goals-screen.tsx` usage. Added assertions to both test files confirming the trick-name text's resolved `fontSize` is greater than 20 (vs. the prior 13px eyebrow) with `textAlign: 'right'`, and that it shares a `flexDirection: 'row'` ancestor with the progress text. Both suites pass, plus the rest of the `goals` feature suite, full `yarn tsc --noEmit`, and `yarn eslint` on the changed files.
+- **Notes:** From S063. `goal.trickName` is already in scope (unchanged from T163) — this is a layout restructure of `GoalRow`'s existing card content, not a new data dependency.
+
 ### [T181] Let users exit Account Security with an in-app back control
 
 - **Area:** Authentication UI

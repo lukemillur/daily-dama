@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
+import { StyleSheet } from 'react-native';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 
 import { TrickGoalsScreen } from '@/features/goals/components/trick-goals-screen';
@@ -169,5 +170,37 @@ describe('TrickGoalsScreen', () => {
 
     expect(mockRouter.push).not.toHaveBeenCalled();
     expect(root.root.findByProps({ accessibilityLabel: 'Confirm delete goal' })).toBeDefined();
+  });
+
+  it('renders the goal card trick title large and right-aligned in the same row as the progress info', () => {
+    mockGoals = [
+      { id: 'goal-1', trickId: 'big-cup', trickName: 'Big Cup', kind: 'count', targetCount: 10, createdAt: 0 },
+    ];
+    let root!: ReactTestRenderer;
+    act(() => {
+      root = create(<TrickGoalsScreen trickId="big-cup" trickName="Big Cup" onBack={() => {}} />);
+    });
+
+    const card = root.root.findByProps({ accessibilityLabel: 'Practice Big Cup' });
+    const [titleNode] = card.findAll(
+      (node) => typeof node.type === 'string' && node.props.children === 'Big Cup',
+    );
+    const titleStyle = StyleSheet.flatten(titleNode!.props.style) as { fontSize?: number; textAlign?: string };
+    // Materially larger than the previous 13px eyebrow treatment.
+    expect(titleStyle.fontSize).toBeGreaterThan(20);
+    expect(titleStyle.textAlign).toBe('right');
+
+    const [progressNode] = card.findAll(
+      (node) => typeof node.type === 'string' && node.props.children === '0 / 10 laces',
+    );
+    expect(progressNode).toBeDefined();
+
+    let ancestor = progressNode!.parent;
+    while (ancestor && ancestor.findAll((node) => node === titleNode).length === 0) {
+      ancestor = ancestor.parent;
+    }
+    expect(ancestor).not.toBeNull();
+    const rowStyle = StyleSheet.flatten(ancestor!.props.style) as { flexDirection?: string };
+    expect(rowStyle.flexDirection).toBe('row');
   });
 });

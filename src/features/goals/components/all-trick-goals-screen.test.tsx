@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Pressable } from 'react-native';
+import { Pressable, StyleSheet } from 'react-native';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 
 import { AllTrickGoalsScreen } from '@/features/goals/components/all-trick-goals-screen';
@@ -176,6 +176,34 @@ describe('AllTrickGoalsScreen', () => {
     expect(findText(root, 'Big Cup').length).toBeGreaterThanOrEqual(2);
     expect(findText(root, 'Stall goals')).toHaveLength(0);
     expect(findText(root, 'Stall').length).toBeGreaterThan(0);
+  });
+
+  it('renders the goal card trick title large and right-aligned in the same row as the progress info', async () => {
+    const root = await mountHarness();
+
+    press(root, 'add-goal-b');
+
+    const card = root.root.findByProps({ accessibilityLabel: 'Practice Stall' });
+    const [titleNode] = card.findAll(
+      (node) => typeof node.type === 'string' && node.props.children === 'Stall',
+    );
+    const titleStyle = StyleSheet.flatten(titleNode!.props.style) as { fontSize?: number; textAlign?: string };
+    // Materially larger than the previous 13px eyebrow treatment.
+    expect(titleStyle.fontSize).toBeGreaterThan(20);
+    expect(titleStyle.textAlign).toBe('right');
+
+    const [progressNode] = card.findAll(
+      (node) => typeof node.type === 'string' && node.props.children === '0 / 5 laces',
+    );
+    expect(progressNode).toBeDefined();
+
+    let ancestor = progressNode!.parent;
+    while (ancestor && ancestor.findAll((node) => node === titleNode).length === 0) {
+      ancestor = ancestor.parent;
+    }
+    expect(ancestor).not.toBeNull();
+    const rowStyle = StyleSheet.flatten(ancestor!.props.style) as { flexDirection?: string };
+    expect(rowStyle.flexDirection).toBe('row');
   });
 
   it('navigates to /sesh with the correct trickId param when a goal card is pressed', async () => {
