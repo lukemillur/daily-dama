@@ -14,6 +14,7 @@ import {
 const USER_ID = '11111111-1111-4111-8111-111111111111';
 const OTHER_USER_ID = '22222222-2222-4222-8222-222222222222';
 const TIMESTAMP = '2026-01-01T00:00:00.000Z';
+const TIMESTAMP_MS = Date.parse(TIMESTAMP);
 
 function makeProfileRow(overrides: Partial<ProfileRow> = {}): ProfileRow {
   return {
@@ -99,6 +100,7 @@ function expectRoundTrip(profile: UserProfile) {
     profile: {
       ...profile,
       manuallyUnlockedTrickIds: profile.manuallyUnlockedTrickIds ?? [],
+      updatedAt: TIMESTAMP_MS,
     },
   });
 }

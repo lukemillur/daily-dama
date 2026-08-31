@@ -160,16 +160,6 @@ _T182–T193 come from stories S063–S074 in [BACKLOG_STORIES.md](BACKLOG_STORI
 - **Description:** Replace T160.2's manual per-record conflict UI with automatic most-recent-wins resolution across the four mutable sync domains (profile, custom tricks, goals, notes), which first requires a last-modified timestamp on domains that don't yet carry one.
 - **Notes:** Umbrella from S068. Complete T187.1–T187.2. `T186.2` (guest-import's own conflict/profile-choice states) depends on `T187.2`.
 
-### [T187.1] Add a last-modified timestamp to profile, custom-trick, and goal records
-
-- **Area:** Persistence / synchronization
-- **Priority:** High
-- **Status:** Not started
-- **Planning:** Required
-- **Description:** `note.ts` already carries `updatedAt`; `goal.ts` (`GoalBase`) has only `createdAt`, and neither `custom-trick.ts` nor `user-profile-persistence.ts` has any last-modified field at all. Add an `updatedAt: number` to each, set on every create and edit, threaded through each domain's local reducer, persistence envelope, and cloud mapping/repository contract.
-- **Exit criteria:** Domain model, persistence round-trip, and cloud-mapping tests for profile, custom-tricks, and goals confirm `updatedAt` is set on creation, advances on every edit, and survives serialization and the existing sync transport's revision-guarded update path.
-- **Notes:** From S068 (prerequisite). Per `AGENTS.md`, the custom-trick document's `version: 1` schema is explicitly provisional and may change in place — this is exactly that kind of sanctioned in-place change, not a v2 migration. Goals/profile have no comparable "this is provisional" note, so confirm neither's persisted shape is treated as frozen elsewhere before landing.
-
 ### [T187.2] Wire automatic most-recent-wins conflict resolution and remove the manual conflict screen
 
 - **Area:** Synchronization

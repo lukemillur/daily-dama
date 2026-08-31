@@ -36,9 +36,9 @@ function repositories({ dropAck = false }: { dropAck?: boolean } = {}) {
 async function seedAll(source: KeyValueStorage) {
   const guest = guestView(source);
   await saveUserProfile(guest, { ...INITIAL_USER_PROFILE, hasCompletedOnboarding: true, kenteiRank: 1, selectedTrickIds: ['trick-1'] });
-  await saveCustomTricks(guest, { tricks: [{ id: 'custom-1', kind: 'standalone', name: 'Custom', kenteiRank: 1 }] });
+  await saveCustomTricks(guest, { tricks: [{ id: 'custom-1', kind: 'standalone', name: 'Custom', kenteiRank: 1, updatedAt: 0 }] });
   await savePracticeHistory(guest, { sessions: [{ id: 'session-1', trickId: 'trick-1', trickName: 'Trick', startedAt: 0, completedAt: 1000, durationMs: 1000, laceCount: 1 }] });
-  await saveGoals(guest, { goals: [{ id: 'goal-1', trickId: 'trick-1', trickName: 'Trick', kind: 'count', targetCount: 3, createdAt: 0 }] });
+  await saveGoals(guest, { goals: [{ id: 'goal-1', trickId: 'trick-1', trickName: 'Trick', kind: 'count', targetCount: 3, createdAt: 0, updatedAt: 0 }] });
   await saveNotes(guest, { notes: [{ id: 'note-1', trickId: 'trick-1', trickName: 'Trick', body: 'Keep it loose', createdAt: 0, updatedAt: 0 }] });
 }
 

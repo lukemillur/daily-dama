@@ -85,7 +85,7 @@ describe('TrickGoalsScreen', () => {
 
   it('shows no trick-goals heading when the trick has exactly one goal', () => {
     mockGoals = [
-      { id: 'goal-1', trickId: 'big-cup', trickName: 'Big Cup', kind: 'count', targetCount: 10, createdAt: 0 },
+      { id: 'goal-1', trickId: 'big-cup', trickName: 'Big Cup', kind: 'count', targetCount: 10, createdAt: 0, updatedAt: 0 },
     ];
     let root!: ReactTestRenderer;
     act(() => {
@@ -97,8 +97,8 @@ describe('TrickGoalsScreen', () => {
 
   it('shows a trick-goals heading when the trick has more than one goal', () => {
     mockGoals = [
-      { id: 'goal-1', trickId: 'big-cup', trickName: 'Big Cup', kind: 'count', targetCount: 10, createdAt: 0 },
-      { id: 'goal-2', trickId: 'big-cup', trickName: 'Big Cup', kind: 'time', targetMs: 60_000, createdAt: 0 },
+      { id: 'goal-1', trickId: 'big-cup', trickName: 'Big Cup', kind: 'count', targetCount: 10, createdAt: 0, updatedAt: 0 },
+      { id: 'goal-2', trickId: 'big-cup', trickName: 'Big Cup', kind: 'time', targetMs: 60_000, createdAt: 0, updatedAt: 0 },
     ];
     let root!: ReactTestRenderer;
     act(() => {
@@ -110,7 +110,7 @@ describe('TrickGoalsScreen', () => {
 
   it('renders the goal card trick name whether or not the trick-goals heading is also present', () => {
     mockGoals = [
-      { id: 'goal-1', trickId: 'big-cup', trickName: 'Big Cup', kind: 'count', targetCount: 10, createdAt: 0 },
+      { id: 'goal-1', trickId: 'big-cup', trickName: 'Big Cup', kind: 'count', targetCount: 10, createdAt: 0, updatedAt: 0 },
     ];
     let root!: ReactTestRenderer;
     act(() => {
@@ -122,8 +122,8 @@ describe('TrickGoalsScreen', () => {
     expect(findText(root, 'Big Cup').length).toBeGreaterThan(0);
 
     mockGoals = [
-      { id: 'goal-1', trickId: 'big-cup', trickName: 'Big Cup', kind: 'count', targetCount: 10, createdAt: 0 },
-      { id: 'goal-2', trickId: 'big-cup', trickName: 'Big Cup', kind: 'time', targetMs: 60_000, createdAt: 0 },
+      { id: 'goal-1', trickId: 'big-cup', trickName: 'Big Cup', kind: 'count', targetCount: 10, createdAt: 0, updatedAt: 0 },
+      { id: 'goal-2', trickId: 'big-cup', trickName: 'Big Cup', kind: 'time', targetMs: 60_000, createdAt: 0, updatedAt: 0 },
     ];
     act(() => {
       root = create(<TrickGoalsScreen trickId="big-cup" trickName="Big Cup" onBack={() => {}} />);
@@ -136,7 +136,7 @@ describe('TrickGoalsScreen', () => {
 
   it('navigates to practice when the goal card is pressed anywhere other than Delete', () => {
     mockGoals = [
-      { id: 'goal-1', trickId: 'big-cup', trickName: 'Big Cup', kind: 'count', targetCount: 10, createdAt: 0 },
+      { id: 'goal-1', trickId: 'big-cup', trickName: 'Big Cup', kind: 'count', targetCount: 10, createdAt: 0, updatedAt: 0 },
     ];
     let root!: ReactTestRenderer;
     act(() => {
@@ -155,7 +155,7 @@ describe('TrickGoalsScreen', () => {
 
   it('does not navigate when Delete is pressed on a goal card', () => {
     mockGoals = [
-      { id: 'goal-1', trickId: 'big-cup', trickName: 'Big Cup', kind: 'count', targetCount: 10, createdAt: 0 },
+      { id: 'goal-1', trickId: 'big-cup', trickName: 'Big Cup', kind: 'count', targetCount: 10, createdAt: 0, updatedAt: 0 },
     ];
     let root!: ReactTestRenderer;
     act(() => {
@@ -174,7 +174,7 @@ describe('TrickGoalsScreen', () => {
 
   it('renders the goal card trick title large and right-aligned in the same row as the progress info', () => {
     mockGoals = [
-      { id: 'goal-1', trickId: 'big-cup', trickName: 'Big Cup', kind: 'count', targetCount: 10, createdAt: 0 },
+      { id: 'goal-1', trickId: 'big-cup', trickName: 'Big Cup', kind: 'count', targetCount: 10, createdAt: 0, updatedAt: 0 },
     ];
     let root!: ReactTestRenderer;
     act(() => {

@@ -10,6 +10,7 @@ export interface GoalBase {
   readonly trickId: string;
   readonly trickName: string;
   readonly createdAt: number;
+  readonly updatedAt: number;
 }
 
 export type Goal =
@@ -98,6 +99,7 @@ export function createGoal(id: string, value: GoalCreationValidValue, createdAt:
         kind: 'count',
         targetCount: value.targetCount,
         createdAt,
+        updatedAt: createdAt,
       }
     : {
         id,
@@ -106,6 +108,7 @@ export function createGoal(id: string, value: GoalCreationValidValue, createdAt:
         kind: 'time',
         targetMs: value.targetMs,
         createdAt,
+        updatedAt: createdAt,
       };
 }
 
@@ -151,10 +154,14 @@ export function validateGoalTargetEdit(input: GoalTargetEditInput): GoalTargetEd
 }
 
 /** Applies an already-validated target edit to an existing goal, preserving id/trick/kind/createdAt. */
-export function applyGoalTargetEdit(goal: Goal, value: GoalTargetEditValidValue): Goal {
+export function applyGoalTargetEdit(
+  goal: Goal,
+  value: GoalTargetEditValidValue,
+  updatedAt: number = Date.now(),
+): Goal {
   return value.kind === 'count'
-    ? { id: goal.id, trickId: goal.trickId, trickName: goal.trickName, kind: 'count', targetCount: value.targetCount, createdAt: goal.createdAt }
-    : { id: goal.id, trickId: goal.trickId, trickName: goal.trickName, kind: 'time', targetMs: value.targetMs, createdAt: goal.createdAt };
+    ? { id: goal.id, trickId: goal.trickId, trickName: goal.trickName, kind: 'count', targetCount: value.targetCount, createdAt: goal.createdAt, updatedAt }
+    : { id: goal.id, trickId: goal.trickId, trickName: goal.trickName, kind: 'time', targetMs: value.targetMs, createdAt: goal.createdAt, updatedAt };
 }
 
 export type GoalAction =

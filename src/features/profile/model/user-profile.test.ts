@@ -12,10 +12,12 @@ describe('user profile trick selection', () => {
   it('selects and deselects a custom trick by its stable identifier', () => {
     const selected = userProfileReducer(INITIAL_USER_PROFILE, {
       type: 'selectedTrickToggled',
+      updatedAt: 1,
       trickId: 'custom-stable-id',
     });
     const deselected = userProfileReducer(selected, {
       type: 'selectedTrickToggled',
+      updatedAt: 1,
       trickId: 'custom-stable-id',
     });
 
@@ -32,6 +34,7 @@ describe('user profile trick selection', () => {
     expect(
       userProfileReducer(state, {
         type: 'selectedTrickRemoved',
+      updatedAt: 1,
         trickId: 'custom-delete',
       }).selectedTrickIds,
     ).toEqual(['big-cup', 'airplane']);
@@ -42,6 +45,7 @@ describe('user profile trick selection', () => {
 
     const next = userProfileReducer(state, {
       type: 'selectedTrickAdded',
+      updatedAt: 1,
       trickId: 'airplane',
     });
 
@@ -53,6 +57,7 @@ describe('user profile trick selection', () => {
 
     const next = userProfileReducer(state, {
       type: 'selectedTrickAdded',
+      updatedAt: 1,
       trickId: 'airplane',
     });
 
@@ -62,6 +67,7 @@ describe('user profile trick selection', () => {
   it('caches and overwrites the last specified sesh', () => {
     const firstSesh = userProfileReducer(INITIAL_USER_PROFILE, {
       type: 'lastSeshUpdated',
+      updatedAt: 1,
       lastSesh: { trickId: 'big-cup', plan: { kind: 'timed', durationMinutes: 5 } },
     });
     expect(firstSesh.lastSesh).toEqual({
@@ -71,6 +77,7 @@ describe('user profile trick selection', () => {
 
     const secondSesh = userProfileReducer(firstSesh, {
       type: 'lastSeshUpdated',
+      updatedAt: 1,
       lastSesh: { trickId: 'airplane', plan: { kind: 'openEnded' } },
     });
     expect(secondSesh.lastSesh).toEqual({ trickId: 'airplane', plan: { kind: 'openEnded' } });
@@ -79,12 +86,14 @@ describe('user profile trick selection', () => {
   it('overwrites the streak threshold on update', () => {
     const updated = userProfileReducer(INITIAL_USER_PROFILE, {
       type: 'streakThresholdUpdated',
+      updatedAt: 1,
       thresholdMs: 300_000,
     });
     expect(updated.streakThresholdMs).toBe(300_000);
 
     const overwritten = userProfileReducer(updated, {
       type: 'streakThresholdUpdated',
+      updatedAt: 1,
       thresholdMs: 60_000,
     });
     expect(overwritten.streakThresholdMs).toBe(60_000);
@@ -93,12 +102,14 @@ describe('user profile trick selection', () => {
   it('toggles a manual unlock flag on and off', () => {
     const set = userProfileReducer(INITIAL_USER_PROFILE, {
       type: 'manualUnlockToggled',
+      updatedAt: 1,
       trickId: 'big-cup',
     });
     expect(set.manuallyUnlockedTrickIds).toEqual(['big-cup']);
 
     const cleared = userProfileReducer(set, {
       type: 'manualUnlockToggled',
+      updatedAt: 1,
       trickId: 'big-cup',
     });
     expect(cleared.manuallyUnlockedTrickIds).toEqual([]);
@@ -113,6 +124,7 @@ describe('user profile trick selection', () => {
     expect(
       userProfileReducer(state, {
         type: 'manualUnlockRemoved',
+      updatedAt: 1,
         trickId: 'custom-delete',
       }).manuallyUnlockedTrickIds,
     ).toEqual(['big-cup', 'airplane']);
@@ -121,6 +133,7 @@ describe('user profile trick selection', () => {
   it('seeds manuallyUnlockedTrickIds from lacedTrickIds when none existed before', () => {
     const result = userProfileReducer(INITIAL_USER_PROFILE, {
       type: 'onboardingCompleted',
+      updatedAt: 1,
       kenteiRank: 4,
       selectedTrickIds: ['big-cup'],
       lacedTrickIds: ['trick-a', 'trick-b'],
@@ -134,6 +147,7 @@ describe('user profile trick selection', () => {
 
     const result = userProfileReducer(state, {
       type: 'onboardingCompleted',
+      updatedAt: 1,
       kenteiRank: 4,
       selectedTrickIds: ['big-cup'],
       lacedTrickIds: ['trick-a'],
@@ -147,6 +161,7 @@ describe('user profile trick selection', () => {
 
     const result = userProfileReducer(state, {
       type: 'onboardingCompleted',
+      updatedAt: 1,
       kenteiRank: 4,
       selectedTrickIds: ['big-cup'],
       lacedTrickIds: ['trick-a', 'trick-b'],
@@ -163,17 +178,19 @@ describe('user profile trick selection', () => {
     } as const;
 
     expect(
-      userProfileReducer(completedProfile, { type: 'onboardingRestarted' }),
+      userProfileReducer(completedProfile, { type: 'onboardingRestarted', updatedAt: 1 }),
     ).toEqual({
       hasCompletedOnboarding: false,
       kenteiRank: undefined,
       selectedTrickIds: ['big-cup', 'custom-morning-line'],
+      updatedAt: 1,
     });
   });
 
   it('sets both theme colors and allows clearing one independently', () => {
     const withBoth = userProfileReducer(INITIAL_USER_PROFILE, {
       type: 'themeColorsUpdated',
+      updatedAt: 1,
       themeBackgroundColor: '#abcdef',
       themeAccentColor: '#123456',
     });
@@ -182,6 +199,7 @@ describe('user profile trick selection', () => {
 
     const clearedBackground = userProfileReducer(withBoth, {
       type: 'themeColorsUpdated',
+      updatedAt: 1,
       themeBackgroundColor: undefined,
       themeAccentColor: '#123456',
     });
@@ -192,12 +210,14 @@ describe('user profile trick selection', () => {
   it('clears a custom text color when a preset theme is applied', () => {
     const withTextColor = userProfileReducer(INITIAL_USER_PROFILE, {
       type: 'themeTextColorUpdated',
+      updatedAt: 1,
       themeTextColor: '#abcdef',
     });
     expect(withTextColor.themeTextColor).toBe('#abcdef');
 
     const result = userProfileReducer(withTextColor, {
       type: 'themeColorsUpdated',
+      updatedAt: 1,
       themeBackgroundColor: '#111111',
       themeAccentColor: '#222222',
     });
@@ -212,6 +232,7 @@ describe('user profile trick selection', () => {
 
     const result = userProfileReducer(state, {
       type: 'themeColorsUpdated',
+      updatedAt: 1,
       themeBackgroundColor: '#abcdef',
       themeAccentColor: undefined,
     });
@@ -228,6 +249,7 @@ describe('user profile trick selection', () => {
 
     const result = userProfileReducer(state, {
       type: 'selectedTrickToggled',
+      updatedAt: 1,
       trickId: 'big-cup',
     });
 
@@ -238,12 +260,14 @@ describe('user profile trick selection', () => {
   it('sets and clears the custom text color', () => {
     const withColor = userProfileReducer(INITIAL_USER_PROFILE, {
       type: 'themeTextColorUpdated',
+      updatedAt: 1,
       themeTextColor: '#abcdef',
     });
     expect(withColor.themeTextColor).toBe('#abcdef');
 
     const cleared = userProfileReducer(withColor, {
       type: 'themeTextColorUpdated',
+      updatedAt: 1,
       themeTextColor: undefined,
     });
     expect(cleared.themeTextColor).toBeUndefined();
@@ -254,6 +278,7 @@ describe('user profile trick selection', () => {
 
     const result = userProfileReducer(state, {
       type: 'themeTextColorUpdated',
+      updatedAt: 1,
       themeTextColor: '#abcdef',
     });
 
@@ -265,6 +290,7 @@ describe('user profile trick selection', () => {
 
     const result = userProfileReducer(state, {
       type: 'selectedTrickToggled',
+      updatedAt: 1,
       trickId: 'big-cup',
     });
 
@@ -275,13 +301,13 @@ describe('user profile trick selection', () => {
     const state = { ...INITIAL_USER_PROFILE, kenteiRank: 1 };
 
     expect(
-      userProfileReducer(state, { type: 'kenteiRankAdvanced', rank: 2 }).kenteiRank,
+      userProfileReducer(state, { type: 'kenteiRankAdvanced', rank: 2, updatedAt: 1 }).kenteiRank,
     ).toBe(2);
   });
 
   it('is a no-op when advancing to the already-current rank', () => {
     const state = { ...INITIAL_USER_PROFILE, kenteiRank: 3 };
-    const result = userProfileReducer(state, { type: 'kenteiRankAdvanced', rank: 3 });
+    const result = userProfileReducer(state, { type: 'kenteiRankAdvanced', rank: 3, updatedAt: 1 });
 
     expect(result).toBe(state);
   });

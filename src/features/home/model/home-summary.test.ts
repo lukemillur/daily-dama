@@ -31,6 +31,7 @@ const MORNING_LINE: CustomTrick = {
     { kind: 'existingTrick', sourceTrickId: 'big-cup', name: 'Big cup' },
     { kind: 'customText', name: 'Kenflip' },
   ],
+  updatedAt: 1,
 };
 const PROFILE: UserProfile = {
   hasCompletedOnboarding: true,

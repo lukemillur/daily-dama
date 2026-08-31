@@ -168,7 +168,7 @@ export function useProfileDomainSync(options: UseProfileDomainSyncOptions): UseP
         const composed = composeUserProfileFromCloudRows(pulledProfileRow, trickPull.rows, userId);
         if (composed.status === 'valid') {
           suppressNextDiffRef.current = true;
-          dispatchProfile({ type: 'profileRestored', profile: composed.profile });
+          dispatchProfile({ type: 'profileRestored', profile: composed.profile, updatedAt: 0 });
           profileRevisionCache = pulledProfileRow ? pulledProfileRow.revision : null;
           trickStateRevisionsCache = {};
           for (const row of trickPull.rows) {
@@ -376,7 +376,7 @@ export function useProfileDomainSync(options: UseProfileDomainSyncOptions): UseP
         const mapped = mapProfileRowToDomainFields(serverRow as ProfileRow | null, current.identity.userId);
         if (mapped.status !== 'valid') return;
         suppressNextDiffRef.current = true;
-        current.dispatchProfile({ type: 'profileRestored', profile: { ...current.profile, ...mapped.fields } });
+        current.dispatchProfile({ type: 'profileRestored', profile: { ...current.profile, ...mapped.fields }, updatedAt: 0 });
         revisionSnapshot = { ...revisionSnapshot, profileRevision: conflict.serverRevision };
       } else if (serverRow === null) {
         const profile = {
@@ -385,7 +385,7 @@ export function useProfileDomainSync(options: UseProfileDomainSyncOptions): UseP
           manuallyUnlockedTrickIds: (current.profile.manuallyUnlockedTrickIds ?? []).filter((id) => id !== recordId),
         };
         suppressNextDiffRef.current = true;
-        current.dispatchProfile({ type: 'profileRestored', profile });
+        current.dispatchProfile({ type: 'profileRestored', profile, updatedAt: 0 });
         const trickStateRevisions = { ...revisionSnapshot.trickStateRevisions };
         delete trickStateRevisions[recordId];
         revisionSnapshot = { ...revisionSnapshot, trickStateRevisions };
@@ -397,7 +397,7 @@ export function useProfileDomainSync(options: UseProfileDomainSyncOptions): UseP
         if (mapped.fields.selectedTrickIds.includes(recordId)) selected.add(recordId);
         if ((mapped.fields.manuallyUnlockedTrickIds ?? []).includes(recordId)) unlocked.add(recordId);
         suppressNextDiffRef.current = true;
-        current.dispatchProfile({ type: 'profileRestored', profile: { ...current.profile, selectedTrickIds: [...selected], manuallyUnlockedTrickIds: [...unlocked] } });
+        current.dispatchProfile({ type: 'profileRestored', profile: { ...current.profile, selectedTrickIds: [...selected], manuallyUnlockedTrickIds: [...unlocked] }, updatedAt: 0 });
         revisionSnapshot = { ...revisionSnapshot, trickStateRevisions: { ...revisionSnapshot.trickStateRevisions, [recordId]: conflict.serverRevision } };
       }
     } else {

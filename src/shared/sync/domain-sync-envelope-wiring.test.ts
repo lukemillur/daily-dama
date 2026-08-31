@@ -71,7 +71,7 @@ async function expectDomainWrapperRoundTrip<State>(
 describe('domain sync snapshot validators', () => {
   it('validates custom-trick collection and positive revisions', () => {
     const valid: CustomTrickSyncSnapshot = {
-      collection: { tricks: [{ id: 'custom-1', kind: 'standalone', name: 'Around the World' }] },
+      collection: { tricks: [{ id: 'custom-1', kind: 'standalone', name: 'Around the World', updatedAt: 1 }] },
       trickRevisions: { 'custom-1': 1 },
     };
     expect(isCustomTrickSyncSnapshot(valid)).toBe(true);
@@ -83,7 +83,7 @@ describe('domain sync snapshot validators', () => {
   it('validates goal collection and positive revisions', () => {
     const valid: GoalSyncSnapshot = {
       collection: {
-        goals: [{ id: 'goal-1', trickId: 'big-cup', trickName: 'Big cup', kind: 'count', targetCount: 5, createdAt: 1 }],
+        goals: [{ id: 'goal-1', trickId: 'big-cup', trickName: 'Big cup', kind: 'count', targetCount: 5, createdAt: 1, updatedAt: 1 }],
       },
       goalRevisions: { 'goal-1': 1 },
     };

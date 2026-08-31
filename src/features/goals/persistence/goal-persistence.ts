@@ -32,9 +32,10 @@ export function isPositiveInteger(value: unknown): value is number {
 export function isGoal(value: unknown): value is Goal {
   if (!isRecord(value)) return false;
 
-  const { id, trickId, trickName, kind, targetCount, targetMs, createdAt } = value;
+  const { id, trickId, trickName, kind, targetCount, targetMs, createdAt, updatedAt } = value;
   if (!isNormalizedText(id) || !isNormalizedText(trickId) || !isNormalizedText(trickName)) return false;
-  if (!isFiniteNonNegative(createdAt)) return false;
+  if (!isFiniteNonNegative(createdAt) || !isFiniteNonNegative(updatedAt)) return false;
+  if (updatedAt < createdAt) return false;
 
   if (kind === 'count') {
     if (targetMs !== undefined) return false;

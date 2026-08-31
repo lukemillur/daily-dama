@@ -19,7 +19,7 @@ import {
 } from '@/features/tricks/model/trick-directory';
 
 const CUSTOM_TRICKS: readonly CustomTrick[] = [
-  { id: 'custom-ranked', kind: 'standalone', name: 'Rank one custom', kenteiRank: 1 },
+  { id: 'custom-ranked', kind: 'standalone', name: 'Rank one custom', kenteiRank: 1, updatedAt: 1 },
   {
     id: 'custom-sequence',
     kind: 'sequence',
@@ -28,6 +28,7 @@ const CUSTOM_TRICKS: readonly CustomTrick[] = [
       { kind: 'existingTrick', sourceTrickId: 'big-cup', name: 'Big cup' },
       { kind: 'customText', name: 'Spike variation' },
     ],
+    updatedAt: 1,
   },
 ];
 
@@ -188,6 +189,7 @@ function goal(overrides: { readonly id?: string; readonly trickId: string }): Go
     kind: 'count',
     targetCount: 10,
     createdAt: 1_000,
+    updatedAt: 1_000,
   };
 }
 

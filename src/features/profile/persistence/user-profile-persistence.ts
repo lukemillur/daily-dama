@@ -31,6 +31,10 @@ export function isKenteiRank(value: unknown): value is number {
   return Number.isInteger(value) && Number(value) >= 1 && Number(value) <= 12;
 }
 
+export function isFiniteNonNegative(value: unknown): value is number {
+  return typeof value === 'number' && Number.isFinite(value) && value >= 0;
+}
+
 export function isLastSesh(value: unknown): value is LastSesh {
   if (!isRecord(value)) return false;
 
@@ -78,10 +82,12 @@ export function parseUserProfile(value: unknown): UserProfile | undefined {
     themeBackgroundColor,
     themeAccentColor,
     themeTextColor,
+    updatedAt,
   } = value;
   if (typeof hasCompletedOnboarding !== 'boolean' || !isStringArray(selectedTrickIds)) {
     return undefined;
   }
+  if (updatedAt !== undefined && !isFiniteNonNegative(updatedAt)) return undefined;
   if (lastSesh !== undefined && !isLastSesh(lastSesh)) return undefined;
   if (streakThresholdMs !== undefined && !isStreakThresholdMs(streakThresholdMs)) return undefined;
   if (manuallyUnlockedTrickIds !== undefined && !isStringArray(manuallyUnlockedTrickIds)) {
@@ -104,6 +110,7 @@ export function parseUserProfile(value: unknown): UserProfile | undefined {
     themeAccentColor === undefined ? {} : { themeAccentColor: themeAccentColor as string };
   const themeTextColorField =
     themeTextColor === undefined ? {} : { themeTextColor: themeTextColor as string };
+  const updatedAtField = updatedAt === undefined ? {} : { updatedAt: updatedAt as number };
 
   if (hasCompletedOnboarding) {
     if (!isKenteiRank(kenteiRank)) return undefined;
@@ -117,6 +124,7 @@ export function parseUserProfile(value: unknown): UserProfile | undefined {
       ...themeBackgroundColorField,
       ...themeAccentColorField,
       ...themeTextColorField,
+      ...updatedAtField,
     };
   }
 
@@ -130,6 +138,7 @@ export function parseUserProfile(value: unknown): UserProfile | undefined {
     ...themeBackgroundColorField,
     ...themeAccentColorField,
     ...themeTextColorField,
+    ...updatedAtField,
   };
 }
 

@@ -49,7 +49,8 @@ export type GoalMappingIssueReason =
   | 'foreignUser'
   | 'duplicateId'
   | 'ambiguousVariant'
-  | 'invalidRevision';
+  | 'invalidRevision'
+  | 'invariantViolation';
 
 export interface GoalMappingIssue {
   readonly path: string;
@@ -196,6 +197,19 @@ export function mapGoalRowToDomainEntry(row: GoalRow, expectedUserId: string): G
     issues.push({ path: 'created_at', reason: 'wrongType', message: 'created_at must be a parseable timestamp.' });
   }
 
+  const updatedAtRaw = parseTimestampMs(raw.updated_at);
+  if (updatedAtRaw === undefined) {
+    issues.push({ path: 'updated_at', reason: 'wrongType', message: 'updated_at must be a parseable timestamp.' });
+  }
+
+  if (createdAtRaw !== undefined && updatedAtRaw !== undefined && updatedAtRaw < createdAtRaw) {
+    issues.push({
+      path: 'updated_at',
+      reason: 'invariantViolation',
+      message: 'updated_at must not be earlier than created_at.',
+    });
+  }
+
   const revisionRaw = raw.revision;
   if (!isSaneRevision(revisionRaw)) {
     issues.push({ path: 'revision', reason: 'invalidRevision', message: 'revision must be a positive integer.' });
@@ -221,6 +235,7 @@ export function mapGoalRowToDomainEntry(row: GoalRow, expectedUserId: string): G
           kind: 'count',
           targetCount: targetCount as number,
           createdAt: createdAtRaw as number,
+          updatedAt: updatedAtRaw as number,
         }
       : {
           id: idRaw as string,
@@ -229,6 +244,7 @@ export function mapGoalRowToDomainEntry(row: GoalRow, expectedUserId: string): G
           kind: 'time',
           targetMs: targetMs as number,
           createdAt: createdAtRaw as number,
+          updatedAt: updatedAtRaw as number,
         };
 
   const meta: GoalCloudMeta = { revision: revisionRaw as number };

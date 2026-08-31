@@ -269,7 +269,7 @@ describe('useGoalDomainSync', () => {
     transport.setFailPush(true);
 
     const created: GoalCollection = {
-      goals: [{ id: 'goal-1', trickId: 'big-cup', trickName: 'Big cup', kind: 'count', targetCount: 10, createdAt: 1 }],
+      goals: [{ id: 'goal-1', trickId: 'big-cup', trickName: 'Big cup', kind: 'count', targetCount: 10, createdAt: 1, updatedAt: 1 }],
     };
 
     const { root, captured } = await mountHarness(INITIAL_GOALS, () => transport, USER_IDENTITY);
@@ -311,7 +311,7 @@ describe('useGoalDomainSync', () => {
 
     act(() => {
       captured.setCollection?.({
-        goals: [{ id: 'goal-1', trickId: 'big-cup', trickName: 'Big cup', kind: 'count', targetCount: 10, createdAt: 1 }],
+        goals: [{ id: 'goal-1', trickId: 'big-cup', trickName: 'Big cup', kind: 'count', targetCount: 10, createdAt: 1, updatedAt: 1 }],
       });
     });
     await flush();
@@ -374,6 +374,7 @@ describe('useGoalDomainSync', () => {
           kind: 'count',
           targetCount: 25,
           createdAt: Date.parse(TIMESTAMP),
+          updatedAt: Date.parse(TIMESTAMP),
         },
       ],
     });
@@ -437,7 +438,7 @@ describe('useGoalDomainSync', () => {
 
     act(() => {
       captured.setCollection?.({
-        goals: [{ id: 'goal-1', trickId: 'big-cup', trickName: 'Big cup', kind: 'count', targetCount: 10, createdAt: 1 }],
+        goals: [{ id: 'goal-1', trickId: 'big-cup', trickName: 'Big cup', kind: 'count', targetCount: 10, createdAt: 1, updatedAt: 1 }],
       });
     });
     await flush();
@@ -451,8 +452,8 @@ describe('useGoalDomainSync', () => {
     act(() => {
       captured.setCollection?.({
         goals: [
-          { id: 'goal-1', trickId: 'big-cup', trickName: 'Big cup', kind: 'count', targetCount: 99, createdAt: 1 },
-          { id: 'goal-2', trickId: 'stilt-flip', trickName: 'Stilt flip', kind: 'count', targetCount: 5, createdAt: 2 },
+          { id: 'goal-1', trickId: 'big-cup', trickName: 'Big cup', kind: 'count', targetCount: 99, createdAt: 1, updatedAt: 1 },
+          { id: 'goal-2', trickId: 'stilt-flip', trickName: 'Stilt flip', kind: 'count', targetCount: 5, createdAt: 2, updatedAt: 2 },
         ],
       });
     });
@@ -510,7 +511,7 @@ describe('useGoalDomainSync', () => {
     for (const targetCount of [1, 2, 3, 4, 5]) {
       act(() => {
         captured.setCollection?.({
-          goals: [{ id: 'goal-1', trickId: 'big-cup', trickName: 'Big cup', kind: 'count', targetCount, createdAt: 1 }],
+          goals: [{ id: 'goal-1', trickId: 'big-cup', trickName: 'Big cup', kind: 'count', targetCount, createdAt: 1, updatedAt: 1 }],
         });
       });
       await flush(1);
@@ -539,7 +540,7 @@ describe('useGoalDomainSync', () => {
 
     act(() => {
       captured.setCollection?.({
-        goals: [{ id: 'goal-1', trickId: 'big-cup', trickName: 'Big cup', kind: 'count', targetCount: 10, createdAt: 1 }],
+        goals: [{ id: 'goal-1', trickId: 'big-cup', trickName: 'Big cup', kind: 'count', targetCount: 10, createdAt: 1, updatedAt: 1 }],
       });
     });
     await flush();
@@ -564,7 +565,7 @@ describe('useGoalDomainSync', () => {
 
     act(() => {
       captured.setCollection?.({
-        goals: [{ id: 'goal-1', trickId: 'big-cup', trickName: 'Big cup', kind: 'count', targetCount: 10, createdAt: 1 }],
+        goals: [{ id: 'goal-1', trickId: 'big-cup', trickName: 'Big cup', kind: 'count', targetCount: 10, createdAt: 1, updatedAt: 1 }],
       });
     });
     await flush();
@@ -577,7 +578,7 @@ describe('useGoalDomainSync', () => {
     transport.setFailPush(true);
     act(() => {
       captured.setCollection?.({
-        goals: [{ id: 'goal-1', trickId: 'big-cup', trickName: 'Big cup', kind: 'count', targetCount: 42, createdAt: 1 }],
+        goals: [{ id: 'goal-1', trickId: 'big-cup', trickName: 'Big cup', kind: 'count', targetCount: 42, createdAt: 1, updatedAt: 1 }],
       });
     });
     await flush();
@@ -629,8 +630,8 @@ describe('useGoalDomainSync', () => {
     act(() => {
       captured.setCollection?.({
         goals: [
-          { id: 'goal-tombstoned', trickId: 'big-cup', trickName: 'Big cup', kind: 'count', targetCount: 99, createdAt: 1 },
-          { id: 'goal-unrelated', trickId: 'stilt-flip', trickName: 'Stilt flip', kind: 'count', targetCount: 3, createdAt: 2 },
+          { id: 'goal-tombstoned', trickId: 'big-cup', trickName: 'Big cup', kind: 'count', targetCount: 99, createdAt: 1, updatedAt: 1 },
+          { id: 'goal-unrelated', trickId: 'stilt-flip', trickName: 'Stilt flip', kind: 'count', targetCount: 3, createdAt: 2, updatedAt: 2 },
         ],
       });
     });
@@ -667,7 +668,7 @@ describe('useGoalDomainSync', () => {
 
     act(() => {
       captured.setCollection?.({
-        goals: [{ id: 'goal-1', trickId: 'big-cup', trickName: 'Big cup', kind: 'count', targetCount: 10, createdAt: 1 }],
+        goals: [{ id: 'goal-1', trickId: 'big-cup', trickName: 'Big cup', kind: 'count', targetCount: 10, createdAt: 1, updatedAt: 1 }],
       });
     });
     await flush();
@@ -680,8 +681,8 @@ describe('useGoalDomainSync', () => {
     act(() => {
       captured.setCollection?.({
         goals: [
-          { id: 'goal-1', trickId: 'big-cup', trickName: 'Big cup', kind: 'count', targetCount: 42, createdAt: 1 },
-          { id: 'goal-2', trickId: 'stilt-flip', trickName: 'Stilt flip', kind: 'count', targetCount: 5, createdAt: 2 },
+          { id: 'goal-1', trickId: 'big-cup', trickName: 'Big cup', kind: 'count', targetCount: 42, createdAt: 1, updatedAt: 1 },
+          { id: 'goal-2', trickId: 'stilt-flip', trickName: 'Stilt flip', kind: 'count', targetCount: 5, createdAt: 2, updatedAt: 2 },
         ],
       });
     });
@@ -742,7 +743,7 @@ describe('useGoalDomainSync', () => {
 
     act(() => {
       captured.setCollection?.({
-        goals: [{ id: 'goal-1', trickId: 'big-cup', trickName: 'Big cup', kind: 'count', targetCount: 10, createdAt: 1 }],
+        goals: [{ id: 'goal-1', trickId: 'big-cup', trickName: 'Big cup', kind: 'count', targetCount: 10, createdAt: 1, updatedAt: 1 }],
       });
     });
     await flush();
@@ -769,7 +770,7 @@ describe('useGoalDomainSync', () => {
 
     act(() => {
       captured.setCollection?.({
-        goals: [{ id: 'goal-1', trickId: 'big-cup', trickName: 'Big cup', kind: 'count', targetCount: 10, createdAt: 1 }],
+        goals: [{ id: 'goal-1', trickId: 'big-cup', trickName: 'Big cup', kind: 'count', targetCount: 10, createdAt: 1, updatedAt: 1 }],
       });
     });
     await flush();
@@ -823,7 +824,7 @@ describe('useGoalDomainSync', () => {
 
     act(() => {
       captured.setCollection?.({
-        goals: [{ id: 'goal-1', trickId: 'big-cup', trickName: 'Big cup', kind: 'count', targetCount: 10, createdAt: 1 }],
+        goals: [{ id: 'goal-1', trickId: 'big-cup', trickName: 'Big cup', kind: 'count', targetCount: 10, createdAt: 1, updatedAt: 1 }],
       });
     });
     await flush();

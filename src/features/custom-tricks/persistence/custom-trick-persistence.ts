@@ -30,6 +30,10 @@ export function isOptionalKenteiRank(value: unknown) {
   return value === undefined || (Number.isInteger(value) && Number(value) >= 1 && Number(value) <= 12);
 }
 
+export function isFiniteNonNegative(value: unknown): value is number {
+  return typeof value === 'number' && Number.isFinite(value) && value >= 0;
+}
+
 export function isSequenceStep(value: unknown): value is SequenceStep {
   if (!isRecord(value) || !isNormalizedText(value.name)) return false;
   if (value.kind === 'customText') return value.sourceTrickId === undefined;
@@ -39,10 +43,11 @@ export function isSequenceStep(value: unknown): value is SequenceStep {
 export function isCustomTrick(value: unknown): value is CustomTrick {
   if (!isRecord(value)) return false;
 
-  const { id, kind, name, kenteiRank, steps } = value;
+  const { id, kind, name, kenteiRank, steps, updatedAt } = value;
   if (!isNormalizedText(id) || !isNormalizedText(name) || !isOptionalKenteiRank(kenteiRank)) {
     return false;
   }
+  if (!isFiniteNonNegative(updatedAt)) return false;
 
   if (kind === 'standalone') return steps === undefined;
   if (kind !== 'sequence' || !Array.isArray(steps) || steps.length < 2) return false;

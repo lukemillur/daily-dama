@@ -807,7 +807,7 @@ describe('useNoteDomainSync', () => {
         notes: [{ id: 'note-tombstoned', trickId: 'big-cup', trickName: 'Big cup', body: 'Resurrection attempt.', createdAt: 1, updatedAt: 3 }],
       });
       captured.setGoalCollection?.({
-        goals: [{ id: 'goal-1', trickId: 'stilt-flip', trickName: 'Stilt flip', kind: 'count', targetCount: 3, createdAt: 2 }],
+        goals: [{ id: 'goal-1', trickId: 'stilt-flip', trickName: 'Stilt flip', kind: 'count', targetCount: 3, createdAt: 2, updatedAt: 2 }],
       });
     });
     await flush();
