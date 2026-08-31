@@ -1,6 +1,6 @@
 import { useAudioPlayer } from 'expo-audio';
 import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
-import { Link } from 'expo-router';
+import { Link, useRouter } from 'expo-router';
 import { useEffect, useLayoutEffect, useMemo, useReducer, useRef, useState, type ReactNode } from 'react';
 import { Animated, Pressable, ScrollView, TextInput } from 'react-native';
 import { styled } from 'styled-components/native';
@@ -1006,57 +1006,70 @@ export function CompletedSesh({
           : { $beaten: false as const, text: `${personalBest - laceCount} short of your best of ${personalBest}.` };
 
   return (
-    <ScrollArea contentContainerStyle={{ padding: 24 }}>
-      <ActiveContent>
-        {isFirstLace ? <FirstLaceBanner trickName={summary.trick.name} tense="wrapUp" /> : null}
-        {justAchievedGoals.map((goal) => (
-          <GoalCelebrationBanner key={goal.id} goal={goal} tense="wrapUp" />
-        ))}
-        <Eyebrow>Sesh complete</Eyebrow>
-        <DisplayTitle>{summary.trick.name}</DisplayTitle>
-        <SequenceSteps trick={summary.trick} />
-        {challengeResult ? (
-          <ResultBanner $beaten={challengeResult.$beaten}>{challengeResult.text}</ResultBanner>
-        ) : null}
-        <SummaryGrid>
-          <Metric><MetricValue>{formatDuration(summary.durationMs)}</MetricValue><MetricLabel>Total time</MetricLabel></Metric>
-          <Metric><MetricValue>{summary.landings.length}</MetricValue><MetricLabel>Laces</MetricLabel></Metric>
-          <Metric><MetricValue>{average === undefined ? '—' : formatDuration(average)}</MetricValue><MetricLabel>Average pace</MetricLabel></Metric>
-          <Metric><MetricValue>{fastest === undefined ? '—' : formatDuration(fastest)}</MetricValue><MetricLabel>Fastest lace</MetricLabel></Metric>
-        </SummaryGrid>
-        <LandingHistory landings={summary.landings} />
-        {goalProgressList.length > 0 ? <SeshGoalsPanel goalProgressList={goalProgressList} /> : null}
-        {promptForNote ? <SeshNotePrompt summary={summary} /> : null}
-        {showSignupInvite ? <PostSeshSignupInvite /> : null}
-        <PrimaryButton onPress={onRepeat}>Repeat sesh</PrimaryButton>
-        <SecondaryButton variant="secondary" onPress={onReset}>Start another sesh</SecondaryButton>
-      </ActiveContent>
-    </ScrollArea>
+    <>
+      <ScrollArea contentContainerStyle={{ padding: 24 }}>
+        <ActiveContent>
+          {isFirstLace ? <FirstLaceBanner trickName={summary.trick.name} tense="wrapUp" /> : null}
+          {justAchievedGoals.map((goal) => (
+            <GoalCelebrationBanner key={goal.id} goal={goal} tense="wrapUp" />
+          ))}
+          <Eyebrow>Sesh complete</Eyebrow>
+          <DisplayTitle>{summary.trick.name}</DisplayTitle>
+          <SequenceSteps trick={summary.trick} />
+          {challengeResult ? (
+            <ResultBanner $beaten={challengeResult.$beaten}>{challengeResult.text}</ResultBanner>
+          ) : null}
+          <SummaryGrid>
+            <Metric><MetricValue>{formatDuration(summary.durationMs)}</MetricValue><MetricLabel>Total time</MetricLabel></Metric>
+            <Metric><MetricValue>{summary.landings.length}</MetricValue><MetricLabel>Laces</MetricLabel></Metric>
+            <Metric><MetricValue>{average === undefined ? '—' : formatDuration(average)}</MetricValue><MetricLabel>Average pace</MetricLabel></Metric>
+            <Metric><MetricValue>{fastest === undefined ? '—' : formatDuration(fastest)}</MetricValue><MetricLabel>Fastest lace</MetricLabel></Metric>
+          </SummaryGrid>
+          <LandingHistory landings={summary.landings} />
+          {goalProgressList.length > 0 ? <SeshGoalsPanel goalProgressList={goalProgressList} /> : null}
+          {promptForNote ? <SeshNotePrompt summary={summary} /> : null}
+          <PrimaryButton onPress={onRepeat}>Repeat sesh</PrimaryButton>
+          <SecondaryButton variant="secondary" onPress={onReset}>Start another sesh</SecondaryButton>
+        </ActiveContent>
+      </ScrollArea>
+      {showSignupInvite ? <PostSeshSignupInvite /> : null}
+    </>
   );
 }
 
+// T183: dismissible modal overlay, not inline wrap-up content. Follows RankUpCelebrationModal and
+// LogoutPrompt's precedent (no React Native <Modal> in this codebase) -- an absolute-fill <View>
+// covering the wrap-up screen until the guest signs up or dismisses it.
 function PostSeshSignupInvite() {
   const [dismissed, setDismissed] = useState(false);
+  const router = useRouter();
   if (dismissed) return null;
 
   return (
-    <InviteCard accessibilityLabel="Guest signup invitation">
-      <InviteTitle>Save this sesh for good.</InviteTitle>
-      <InviteCopy>
-        Right now your practice history only lives on this device. Sign up free to keep it if you
-        switch devices or clear your browser.
-      </InviteCopy>
-      <InviteActions>
-        <Link href="/auth/sign-up" asChild>
-          <InviteSignUpButton accessibilityRole="link">Sign up</InviteSignUpButton>
-        </Link>
-        <InviteDismissButton
-          accessibilityLabel="Dismiss signup invitation"
-          onPress={() => setDismissed(true)}>
-          Not now
-        </InviteDismissButton>
-      </InviteActions>
-    </InviteCard>
+    <InviteOverlay accessibilityLabel="Guest signup invitation">
+      <InviteCard>
+        <InviteTitle>Save this sesh for good.</InviteTitle>
+        <InviteCopy>
+          Right now your practice history only lives on this device. Sign up free to keep it if you
+          switch devices or clear your browser.
+        </InviteCopy>
+        <InviteActions>
+          <InviteSignUpButton
+            accessibilityRole="link"
+            onPress={() => {
+              setDismissed(true);
+              router.push('/auth/sign-up');
+            }}>
+            Sign up
+          </InviteSignUpButton>
+          <InviteDismissButton
+            accessibilityLabel="Dismiss signup invitation"
+            onPress={() => setDismissed(true)}>
+            Not now
+          </InviteDismissButton>
+        </InviteActions>
+      </InviteCard>
+    </InviteOverlay>
   );
 }
 
@@ -1314,7 +1327,8 @@ const NotePromptButton = styled(Pressable)<{ $disabled?: boolean }>`min-height: 
 const NotePromptButtonText = styled.Text`color: ${({ theme }) => theme.accent}; font-size: 14px; font-weight: 900;`;
 const NotePromptSecondaryButton = styled(Pressable)`min-height: 44px; flex: 1; align-items: center; justify-content: center; padding: 10px 18px; border: 2px solid ${AppColors.ink}; border-radius: 5px;`;
 const NotePromptSecondaryButtonText = styled.Text`color: ${({ theme }) => theme.text}; font-size: 14px; font-weight: 900;`;
-const InviteCard = styled.View`width: 100%; max-width: 500px; background-color: #f8f1dd; border: 2px solid ${AppColors.ink}; padding: 18px; margin-top: 20px;`;
+const InviteOverlay = styled.View`position: absolute; top: 0; right: 0; bottom: 0; left: 0; background-color: ${AppColors.yellow}; align-items: center; justify-content: center; padding: 24px; z-index: 1000;`;
+const InviteCard = styled.View`width: 100%; max-width: 500px; background-color: #f8f1dd; border: 2px solid ${AppColors.ink}; padding: 18px;`;
 const InviteTitle = styled.Text`color: ${({ theme }) => theme.text}; font-size: 17px; font-weight: 900;`;
 const InviteCopy = styled.Text`color: ${({ theme }) => theme.text}; font-size: 13px; font-weight: 650; line-height: 19px; margin-top: 6px;`;
 const InviteActions = styled.View`flex-direction: row; gap: 10px; margin-top: 14px;`;
