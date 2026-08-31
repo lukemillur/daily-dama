@@ -156,7 +156,7 @@ _T182–T193 come from stories S063–S074 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 - **Area:** Authentication UI
 - **Priority:** High
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** Sign-up, sign-in, forgot-password, and reset-password all render their primary form via `FormScroll` directly, bypassing `<Screen>` (which already resolves `theme.background`) — only their initializing/redirecting placeholder branches use `<Screen>`. Wrap each screen's primary-form render in `<Screen>` (or otherwise apply the resolved theme background to `FormScroll`) without reintroducing T145's hydration-flicker regression, and move `FieldInput` (duplicated across all four screens) and `password-input.tsx`'s `InputRow`/`Input`/`ToggleText` off hardcoded `AppColors.paper`/`AppColors.ink` onto theme tokens, matching the pattern `account-security-screen.tsx` (T172) already uses.
 - **Exit criteria:** Component tests for all four `/auth/*` screens and `password-input.test.tsx` pass, including an assertion that each screen's rendered background and field colors resolve from a non-default theme when one is set; confirmed in-browser with a seeded custom theme that sign-up, sign-in, forgot-password, and reset-password all show themed background and field colors, not only the button.
