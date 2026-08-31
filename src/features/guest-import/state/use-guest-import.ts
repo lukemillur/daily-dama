@@ -32,6 +32,7 @@ import {
 import {
   createGuestImportId,
   guestImportReducer,
+  hasAnyLocalGuestData,
   INITIAL_GUEST_IMPORT_STATE,
   type GuestImportAction,
   type GuestImportDomainCounts,
@@ -50,7 +51,6 @@ import { SYNC_DOMAINS } from '@/shared/sync/domain';
 export interface UseGuestImportResult {
   readonly state: GuestImportState;
   readonly confirmImport: () => void;
-  readonly cancelImport: () => void;
   readonly dismiss: () => void;
   readonly chooseProfile?: (choice: GuestImportChoice) => void;
   readonly resolveConflict?: (domain: import('@/shared/sync/domain').SyncDomain, recordId: string, choice: GuestImportChoice) => void;
@@ -201,6 +201,34 @@ export function useGuestImport(): UseGuestImportResult {
     };
   }, [hasHydrated, identity, state.status, state.importId]);
 
+  // T186.1: auto-confirm as soon as awaitingConfirmation is reached with
+  // any local data present -- no user decision required. Gated per
+  // importId (mirrors inventoryStartedRef/importStartedRef above) so a
+  // completed/rejected dispatch doesn't re-fire on every render, and
+  // driven off state.status/state.importId/state.inventory rather than
+  // which action produced them, so a resumed (remounted) awaitingConfirmation
+  // record continues automatically too -- see .claude/plans/T186.1.md step 2.
+  // An all-zero inventory is intentionally left parked; see
+  // isGuestImportPendingResolution's own doc comment for why the caller
+  // (home.tsx) treats that case as non-blocking instead.
+  const autoConfirmedRef = useRef<Set<string>>(new Set());
+
+  useEffect(() => {
+    if (!hasHydrated) return;
+    if (identity.kind !== 'user') return;
+    if (state.status !== 'awaitingConfirmation') return;
+
+    const importId = state.importId;
+    if (importId === undefined) return;
+    if (state.inventory === undefined) return;
+    if (autoConfirmedRef.current.has(importId)) return;
+    autoConfirmedRef.current.add(importId);
+
+    if (!hasAnyLocalGuestData(state.inventory)) return;
+
+    latestRef.current.dispatch({ type: 'confirmPressed', importId, now: Date.now() });
+  }, [hasHydrated, identity, state.status, state.importId, state.inventory]);
+
   const importStartedRef = useRef<Set<string>>(new Set());
   useEffect(() => {
     if (!hasHydrated || identity.kind !== 'user' || state.status !== 'uploading' || state.targetKind === undefined) return;
@@ -300,12 +328,6 @@ export function useGuestImport(): UseGuestImportResult {
     latest.dispatch({ type: 'confirmPressed', importId: latest.state.importId, now: Date.now() });
   }, []);
 
-  const cancelImport = useCallback(() => {
-    const latest = latestRef.current;
-    if (latest.state.importId === undefined) return;
-    latest.dispatch({ type: 'cancelPressed', importId: latest.state.importId, now: Date.now() });
-  }, []);
-
   const dismiss = useCallback(() => {
     dispatch({ type: 'dismissPressed' });
   }, [dispatch]);
@@ -328,5 +350,5 @@ export function useGuestImport(): UseGuestImportResult {
     if (latest.state.importId !== undefined) latest.dispatch({ type: 'conflictsResolved', importId: latest.state.importId, now: Date.now() });
   }, []);
 
-  return { state, confirmImport, cancelImport, dismiss, chooseProfile, resolveConflict, finishConflicts };
+  return { state, confirmImport, dismiss, chooseProfile, resolveConflict, finishConflicts };
 }

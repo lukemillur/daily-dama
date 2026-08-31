@@ -164,7 +164,10 @@ describe('useGuestImport', () => {
 
     expect(mockCountLocalGuestRecords).toHaveBeenCalledTimes(1);
     expect(mockCountCloudRecords).toHaveBeenCalledTimes(1);
-    expect(captured.result?.state.status).toBe('awaitingConfirmation');
+    // T186.1: awaitingConfirmation with local data auto-confirms without any
+    // confirmImport() caller action, so by the time flush() settles this has
+    // already progressed to uploading.
+    expect(captured.result?.state.status).toBe('uploading');
     expect(captured.result?.state.targetKind).toBe('empty');
     expect(captured.result?.state.inventory).toEqual(localOnlyCounts());
   });
@@ -176,27 +179,34 @@ describe('useGuestImport', () => {
     const { captured } = await mountHarness(USER_IDENTITY);
     await flush();
 
-    expect(captured.result?.state.status).toBe('awaitingConfirmation');
+    expect(captured.result?.state.status).toBe('uploading');
     expect(captured.result?.state.targetKind).toBe('existing');
   });
 
-  it('confirmImport() moves to uploading and settles no domain by itself', async () => {
+  it('awaitingConfirmation with local data transitions to uploading without any confirmImport() caller action (T186.1)', async () => {
     mockCountLocalGuestRecords.mockResolvedValue(localOnlyCounts());
     mockCountCloudRecords.mockResolvedValue({ status: 'succeeded', counts: { profile: 0, customTricks: 0, practiceHistory: 0, goals: 0, notes: 0 } });
 
     const { captured } = await mountHarness(USER_IDENTITY);
     await flush();
-    expect(captured.result?.state.status).toBe('awaitingConfirmation');
 
-    act(() => {
-      captured.result?.confirmImport();
-    });
-    await flush();
-
+    // No confirmImport() call anywhere in this test -- the hook's own
+    // effect must dispatch confirmPressed as soon as awaitingConfirmation
+    // is reached with local data.
     expect(captured.result?.state.status).toBe('uploading');
     expect(Object.values(captured.result?.state.domainOutcomes ?? { }).every((o) => o?.status === 'pending')).toBe(
       true,
     );
+  });
+
+  it('awaitingConfirmation with an all-zero inventory stays parked and never auto-dispatches confirmPressed', async () => {
+    mockCountLocalGuestRecords.mockResolvedValue(zeroCounts());
+    mockCountCloudRecords.mockResolvedValue({ status: 'succeeded', counts: { profile: 0, customTricks: 0, practiceHistory: 0, goals: 0, notes: 0 } });
+
+    const { captured } = await mountHarness(USER_IDENTITY);
+    await flush();
+
+    expect(captured.result?.state.status).toBe('awaitingConfirmation');
   });
 
   it('a client/transport failure lands in idle with errorMessage set instead of hanging in inventorying', async () => {
@@ -239,7 +249,11 @@ describe('useGuestImport: remount/resume and identity change', () => {
   });
 
   it('remounting with a persisted awaitingConfirmation record resumes without re-inventorying', async () => {
-    mockCountLocalGuestRecords.mockResolvedValue(localOnlyCounts());
+    // Uses zeroCounts() (not localOnlyCounts()) so the T186.1 auto-confirm
+    // effect doesn't fire on the very first mount, before the record can
+    // even be unmounted/persisted at awaitingConfirmation -- this test is
+    // about resume-without-re-inventorying, not about auto-confirm.
+    mockCountLocalGuestRecords.mockResolvedValue(zeroCounts());
     mockCountCloudRecords.mockResolvedValue({ status: 'succeeded', counts: { profile: 0, customTricks: 0, practiceHistory: 0, goals: 0, notes: 0 } });
 
     const first = await mountHarness(USER_IDENTITY);
@@ -287,11 +301,18 @@ describe('useGuestImport: remount/resume and identity change', () => {
     await flush();
 
     expect(mockCountLocalGuestRecords).toHaveBeenCalledTimes(1);
-    expect(second.captured.result?.state.status).toBe('awaitingConfirmation');
+    // T186.1: localOnlyCounts() has local data, so the resumed
+    // awaitingConfirmation auto-confirms past to uploading by the time
+    // flush() settles -- the re-inventorying assertion above is this
+    // test's actual subject.
+    expect(second.captured.result?.state.status).toBe('uploading');
   });
 
   it('an identity change while awaitingConfirmation resets to idle, and the new identity hydrates its own independent record', async () => {
-    mockCountLocalGuestRecords.mockResolvedValue(localOnlyCounts());
+    // Uses zeroCounts() (not localOnlyCounts()) so the T186.1 auto-confirm
+    // effect doesn't move the first identity's record past
+    // awaitingConfirmation before the identity switch this test exercises.
+    mockCountLocalGuestRecords.mockResolvedValue(zeroCounts());
     mockCountCloudRecords.mockResolvedValue({ status: 'succeeded', counts: { profile: 0, customTricks: 0, practiceHistory: 0, goals: 0, notes: 0 } });
 
     const { captured, setIdentity } = await mountHarness(USER_IDENTITY);
