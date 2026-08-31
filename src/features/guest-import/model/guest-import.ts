@@ -13,7 +13,7 @@
 
 import { SYNC_DOMAINS, type SyncDomain } from '@/shared/sync/domain';
 import type { OutboxOperationType } from '@/shared/sync/outbox-operation';
-import type { ConflictSnapshot } from '@/shared/sync/conflict';
+import type { ConflictSnapshot } from '@/shared/sync/json-snapshot';
 
 export type GuestImportOperationStatus = 'pending' | 'acknowledged' | 'rejected';
 export type GuestImportSourceCleanupStatus = 'pending' | 'completed' | 'retained';

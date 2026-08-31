@@ -90,7 +90,7 @@ function createFakeGoalTransport(seedRows: readonly GoalRow[] = []): SyncTranspo
         return { status: 'succeeded', row: existing ?? ({ id: goalId, user_id: USER_ID, trick_id: 'deleted', trick_name: 'deleted', kind: 'count', target_count: 1, target_ms: null, revision: 0, created_at: TIMESTAMP, updated_at: TIMESTAMP, deleted_at: TIMESTAMP } as GoalRow) };
       }
       if (request.expectedRevision !== null && existing && existing.revision !== request.expectedRevision) {
-        return { status: 'conflict', conflict: { operationId: request.operationId, recordId: goalId, expectedRevision: request.expectedRevision, serverRevision: existing.revision } };
+        return { status: 'conflict', conflict: { operationId: request.operationId, recordId: goalId, expectedRevision: request.expectedRevision, serverRevision: existing.revision, serverRow: existing } };
       }
       const payload = request.payload as Record<string, unknown>;
       const row: GoalRow = {
@@ -102,7 +102,13 @@ function createFakeGoalTransport(seedRows: readonly GoalRow[] = []): SyncTranspo
         target_count: (payload.target_count as number | null) ?? null,
         target_ms: (payload.target_ms as number | null) ?? null,
         created_at: existing?.created_at ?? TIMESTAMP,
-        updated_at: TIMESTAMP,
+        // A real push-time timestamp (not the fixed `TIMESTAMP` constant
+        // used elsewhere in this file) -- this file's own two-browser
+        // convergence scenario deliberately relies on server writes being
+        // stamped with a genuinely later real-time `updated_at` than either
+        // browser's local edit, so automatic conflict resolution (T187.2)
+        // has a real signal to compare against.
+        updated_at: new Date().toISOString(),
         deleted_at: null,
         revision: (existing?.revision ?? 0) + 1,
       };
@@ -128,17 +134,17 @@ function createFakeNoteTransport(seedRows: readonly NoteRow[] = []): SyncTranspo
         }
         if (existing.deleted_at !== null) return { status: 'succeeded', row: existing };
         if (request.expectedRevision !== null && existing.revision !== request.expectedRevision) {
-          return { status: 'conflict', conflict: { operationId: request.operationId, recordId: noteId, expectedRevision: request.expectedRevision, serverRevision: existing.revision } };
+          return { status: 'conflict', conflict: { operationId: request.operationId, recordId: noteId, expectedRevision: request.expectedRevision, serverRevision: existing.revision, serverRow: existing } };
         }
         const tombstoned: NoteRow = { ...existing, deleted_at: TIMESTAMP, revision: existing.revision + 1 };
         rows.set(noteId, tombstoned);
         return { status: 'succeeded', row: tombstoned };
       }
       if (existing?.deleted_at) {
-        return { status: 'conflict', conflict: { operationId: request.operationId, recordId: noteId, expectedRevision: request.expectedRevision, serverRevision: existing.revision } };
+        return { status: 'conflict', conflict: { operationId: request.operationId, recordId: noteId, expectedRevision: request.expectedRevision, serverRevision: existing.revision, serverRow: existing } };
       }
       if (request.expectedRevision !== null && existing && existing.revision !== request.expectedRevision) {
-        return { status: 'conflict', conflict: { operationId: request.operationId, recordId: noteId, expectedRevision: request.expectedRevision, serverRevision: existing.revision } };
+        return { status: 'conflict', conflict: { operationId: request.operationId, recordId: noteId, expectedRevision: request.expectedRevision, serverRevision: existing.revision, serverRow: existing } };
       }
       const payload = request.payload as Record<string, unknown>;
       const row: NoteRow = {
@@ -175,7 +181,7 @@ function createFakeCustomTrickTransport(seedRows: readonly CustomTrickRow[] = []
         return { status: 'succeeded', row: existing ?? ({ id: trickId, user_id: USER_ID, kind: 'standalone', name: 'deleted', kentei_rank: null, steps: null, revision: 0, created_at: TIMESTAMP, updated_at: TIMESTAMP } as CustomTrickRow) };
       }
       if (request.expectedRevision !== null && existing && existing.revision !== request.expectedRevision) {
-        return { status: 'conflict', conflict: { operationId: request.operationId, recordId: trickId, expectedRevision: request.expectedRevision, serverRevision: existing.revision } };
+        return { status: 'conflict', conflict: { operationId: request.operationId, recordId: trickId, expectedRevision: request.expectedRevision, serverRevision: existing.revision, serverRow: existing } };
       }
       const payload = request.payload as Record<string, unknown>;
       const row: CustomTrickRow = {
@@ -209,7 +215,7 @@ function createFakeProfileTransport(seedProfile: ProfileRow, seedTrickStates: re
     async push(request) {
       if (request.recordId === USER_ID) {
         if (request.expectedRevision !== null && profileRow.revision !== request.expectedRevision) {
-          return { status: 'conflict', conflict: { operationId: request.operationId, recordId: request.recordId, expectedRevision: request.expectedRevision, serverRevision: profileRow.revision } };
+          return { status: 'conflict', conflict: { operationId: request.operationId, recordId: request.recordId, expectedRevision: request.expectedRevision, serverRevision: profileRow.revision, serverRow: profileRow } };
         }
         const payload = request.payload as Record<string, unknown>;
         profileRow = {
@@ -234,7 +240,7 @@ function createFakeProfileTransport(seedProfile: ProfileRow, seedTrickStates: re
         return { status: 'succeeded', row: existing ?? { id: trickId, user_id: USER_ID, trick_id: trickId, is_selected: false, is_manually_unlocked: false, revision: 0, created_at: TIMESTAMP, updated_at: TIMESTAMP } };
       }
       if (request.expectedRevision !== null && existing && existing.revision !== request.expectedRevision) {
-        return { status: 'conflict', conflict: { operationId: request.operationId, recordId: trickId, expectedRevision: request.expectedRevision, serverRevision: existing.revision } };
+        return { status: 'conflict', conflict: { operationId: request.operationId, recordId: trickId, expectedRevision: request.expectedRevision, serverRevision: existing.revision, serverRow: existing } };
       }
       const payload = request.payload as Record<string, unknown>;
       const row: UserTrickStateRow = {
@@ -474,30 +480,22 @@ describe('Two-browser convergence (fully wired, shared simulated cloud)', () => 
 
     // 5. Sync B: its goal edit now conflicts (stale revision against A's
     // just-applied write) -- while B's new custom trick still pushes
-    // successfully (unrelated record, unrelated domain).
+    // successfully (unrelated record, unrelated domain). Resolution is now
+    // automatic (T187.2): the fake goal transport stamps a genuine
+    // push-time `updated_at` on A's just-applied write above, strictly
+    // later than B's local edit's own `updatedAt` (captured earlier, at
+    // step 3) -- so the server (A's value) wins deterministically, exactly
+    // the "keep-server, discard local" branch the old manual flow used to
+    // require an explicit `resolveConflict(..., 'server')` call for.
     await act(async () => {
       browserB.status?.retry();
-    });
-    await flush();
-    expect(browserB.status?.conflictCount).toBe(1);
-    expect(browserB.status?.conflicts[0]?.domain).toBe('goals');
-    expect(browserB.status?.conflicts[0]?.recordId).toBe(goalId);
-    const bNewTrick = browserB.customTricks?.tricks.find((trick) => trick.name === "B's new trick");
-    expect(bNewTrick).toBeDefined();
-    expect(sharedCustomTrickTransport.getRow(bNewTrick!.id)).toBeDefined();
-
-    // 6. Resolve B's conflict with 'server' (adopt A's value) -- the
-    // less-covered "keep-server, discard local" branch. Sync B again.
-    await act(async () => {
-      await browserB.status?.resolveConflict('goals', goalId, 'server');
     });
     await flush();
     expect(browserB.status?.conflictCount).toBe(0);
-    await act(async () => {
-      browserB.status?.retry();
-    });
-    await flush();
     expect(browserB.status?.pendingCount).toBe(0);
+    const bNewTrick = browserB.customTricks?.tricks.find((trick) => trick.name === "B's new trick");
+    expect(bNewTrick).toBeDefined();
+    expect(sharedCustomTrickTransport.getRow(bNewTrick!.id)).toBeDefined();
     const bGoalAfterResolve = browserB.goals?.goals.find((goal) => goal.id === goalId);
     expect(bGoalAfterResolve?.kind === 'count' ? bGoalAfterResolve.targetCount : undefined).toBe(100);
     expect(browserB.notes?.notes.some((note) => note.id === newNoteAId)).toBe(true);

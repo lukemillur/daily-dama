@@ -16,7 +16,7 @@ import {
   type GuestImportProgress,
   type GuestImportConflictResolution,
 } from '@/features/guest-import/model/guest-import';
-import { isConflictSnapshot } from '@/shared/sync/conflict';
+import { isConflictSnapshot } from '@/shared/sync/json-snapshot';
 import { isSyncDomain, SYNC_DOMAINS } from '@/shared/sync/domain';
 import type {
   KeyValueStorage,

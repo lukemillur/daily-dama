@@ -86,6 +86,7 @@ function createFakeNoteSyncTransport(options: FakeTransportOptions = {}): FakeTr
               recordId: noteId,
               expectedRevision: request.expectedRevision,
               serverRevision: existing.revision,
+              serverRow: existing,
             },
           };
         }
@@ -106,6 +107,7 @@ function createFakeNoteSyncTransport(options: FakeTransportOptions = {}): FakeTr
             recordId: noteId,
             expectedRevision: request.expectedRevision,
             serverRevision: existing.revision,
+            serverRow: existing,
           },
         };
       }
@@ -117,6 +119,7 @@ function createFakeNoteSyncTransport(options: FakeTransportOptions = {}): FakeTr
             recordId: noteId,
             expectedRevision: request.expectedRevision,
             serverRevision: existing.revision,
+            serverRow: existing,
           },
         };
       }
@@ -233,7 +236,6 @@ interface Captured {
   runSync?: ReturnType<typeof useNoteDomainSync>['runSync'];
   isSyncing?: boolean;
   pendingCount?: number;
-  conflictCount?: number;
   discardPending?: () => Promise<void>;
 }
 
@@ -259,7 +261,6 @@ function makeHarness(
       captured.runSync = sync.runSync;
       captured.isSyncing = sync.isSyncing;
       captured.pendingCount = sync.pendingCount;
-      captured.conflictCount = sync.conflictCount;
       captured.discardPending = sync.discardPending;
     });
 
@@ -485,7 +486,7 @@ describe('useNoteDomainSync', () => {
     });
   });
 
-  it('a stale-revision conflict on one note does not block an unrelated note, and the conflicted op stays pending', async () => {
+  it('a stale-revision conflict resolves automatically to the server snapshot (server updatedAt is later), and does not block an unrelated note', async () => {
     const transport = createFakeNoteSyncTransport();
     const { root, captured } = await mountHarness(INITIAL_NOTES, () => transport, USER_IDENTITY);
     await flush();
@@ -514,6 +515,10 @@ describe('useNoteDomainSync', () => {
     await flush();
 
     transport.setFailPush(false);
+    // A concurrent write from another device, stamped with the fake
+    // transport's fixed `TIMESTAMP` -- deliberately far later than this
+    // device's tiny local `updatedAt` fixtures above, so automatic
+    // resolution below must keep the server's value.
     await transport.push({
       operationId: 'seed-conflict',
       recordId: 'note-1',
@@ -536,18 +541,149 @@ describe('useNoteDomainSync', () => {
     await flush();
 
     expect(transport.getRow('note-2')?.body).toBe('Second note.');
-    const note2AttemptsAfterFirstRun = transport.getPushAttemptCount('note-2');
-
     expect(transport.getRow('note-1')?.body).toBe('Concurrent edit.');
     expect(transport.getRow('note-1')?.revision).toBe(2);
 
+    // Automatic server-wins resolution: the primary reducer now reflects
+    // the server's value, and note-1's operation is fully resolved (no
+    // longer pending) -- a second run never re-pushes it.
+    expect(captured.collection?.notes.find((note) => note.id === 'note-1')?.body).toBe('Concurrent edit.');
+    expect(captured.pendingCount).toBe(0);
+
     const note1AttemptsBeforeSecondRun = transport.getPushAttemptCount('note-1');
+    const note2AttemptsAfterFirstRun = transport.getPushAttemptCount('note-2');
     await act(async () => {
       await captured.runSync?.('manual');
     });
     await flush();
-    expect(transport.getPushAttemptCount('note-1')).toBeGreaterThan(note1AttemptsBeforeSecondRun);
+    expect(transport.getPushAttemptCount('note-1')).toBe(note1AttemptsBeforeSecondRun);
     expect(transport.getPushAttemptCount('note-2')).toBe(note2AttemptsAfterFirstRun);
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  it('a local edit strictly newer than the server row wins automatically and is re-pushed as the resolved value', async () => {
+    const transport = createFakeNoteSyncTransport();
+    const { root, captured } = await mountHarness(INITIAL_NOTES, () => transport, USER_IDENTITY);
+    await flush();
+
+    act(() => {
+      captured.setCollection?.({
+        notes: [{ id: 'note-1', trickId: 'big-cup', trickName: 'Big cup', body: 'First body.', createdAt: 1, updatedAt: 1 }],
+      });
+    });
+    await flush();
+    await act(async () => {
+      await captured.runSync?.('manual');
+    });
+    await flush();
+    expect(transport.getRow('note-1')?.revision).toBe(1);
+
+    transport.setFailPush(true);
+    // Deliberately later than the fake transport's fixed `TIMESTAMP` (used
+    // for the concurrent server write below) -- this local edit must win.
+    const localUpdatedAt = Date.parse(TIMESTAMP) + 1000;
+    act(() => {
+      captured.setCollection?.({
+        notes: [{ id: 'note-1', trickId: 'big-cup', trickName: 'Big cup', body: 'Edited body.', createdAt: 1, updatedAt: localUpdatedAt }],
+      });
+    });
+    await flush();
+
+    transport.setFailPush(false);
+    await transport.push({
+      operationId: 'seed-conflict',
+      recordId: 'note-1',
+      operationType: 'upsert',
+      payload: {
+        user_id: USER_ID,
+        id: 'note-1',
+        trick_id: 'big-cup',
+        trick_name: 'Big cup',
+        body: 'Concurrent edit.',
+        practice_session_id: null,
+      },
+      expectedRevision: 1,
+    });
+    expect(transport.getRow('note-1')?.revision).toBe(2);
+
+    await act(async () => {
+      await captured.runSync?.('manual');
+    });
+    await flush();
+
+    // Local wins: the driver re-pushes the local value as a fresh
+    // operation against the server's new revision instead of parking it.
+    expect(captured.collection?.notes.find((note) => note.id === 'note-1')?.body).toBe('Edited body.');
+    expect(captured.pendingCount).toBe(1);
+
+    await act(async () => {
+      await captured.runSync?.('manual');
+    });
+    await flush();
+
+    expect(transport.getRow('note-1')?.body).toBe('Edited body.');
+    expect(captured.pendingCount).toBe(0);
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  it('an exact updatedAt tie between local and server keeps the server row (documented deterministic tiebreak)', async () => {
+    const transport = createFakeNoteSyncTransport();
+    const { root, captured } = await mountHarness(INITIAL_NOTES, () => transport, USER_IDENTITY);
+    await flush();
+
+    act(() => {
+      captured.setCollection?.({
+        notes: [{ id: 'note-1', trickId: 'big-cup', trickName: 'Big cup', body: 'First body.', createdAt: 1, updatedAt: 1 }],
+      });
+    });
+    await flush();
+    await act(async () => {
+      await captured.runSync?.('manual');
+    });
+    await flush();
+    expect(transport.getRow('note-1')?.revision).toBe(1);
+
+    transport.setFailPush(true);
+    // Exactly matches the fake transport's fixed `TIMESTAMP` (used for the
+    // concurrent server write below) -- an exact tie must keep the server.
+    const tiedUpdatedAt = Date.parse(TIMESTAMP);
+    act(() => {
+      captured.setCollection?.({
+        notes: [{ id: 'note-1', trickId: 'big-cup', trickName: 'Big cup', body: 'Edited body.', createdAt: 1, updatedAt: tiedUpdatedAt }],
+      });
+    });
+    await flush();
+
+    transport.setFailPush(false);
+    await transport.push({
+      operationId: 'seed-conflict',
+      recordId: 'note-1',
+      operationType: 'upsert',
+      payload: {
+        user_id: USER_ID,
+        id: 'note-1',
+        trick_id: 'big-cup',
+        trick_name: 'Big cup',
+        body: 'Concurrent edit.',
+        practice_session_id: null,
+      },
+      expectedRevision: 1,
+    });
+    expect(transport.getRow('note-1')?.revision).toBe(2);
+
+    await act(async () => {
+      await captured.runSync?.('manual');
+    });
+    await flush();
+
+    expect(captured.collection?.notes.find((note) => note.id === 'note-1')?.body).toBe('Concurrent edit.');
+    expect(captured.pendingCount).toBe(0);
 
     act(() => {
       root.unmount();
@@ -654,7 +790,7 @@ describe('useNoteDomainSync', () => {
   // operation without touching any other pending operation, and the
   // domain-level outcome is still 'succeeded' (a conflict alone never makes
   // the whole domain outcome 'failed').
-  it('an edit against a since-tombstoned note parks that note only; the run still reports succeeded', async () => {
+  it('an edit against a since-tombstoned note resolves automatically to the server (tombstoned); the run still reports succeeded', async () => {
     const tombstoned: NoteRow = {
       id: 'note-tombstoned',
       user_id: USER_ID,
@@ -697,16 +833,20 @@ describe('useNoteDomainSync', () => {
 
     expect(result?.outcome).toEqual({ status: 'succeeded' });
     expect(transport.getRow('note-unrelated')?.body).toBe('Unrelated.');
-    // The tombstoned note's edit was rejected as a conflict, never applied.
+    // The tombstoned note's edit lost automatic resolution: its local
+    // updatedAt (3) is far earlier than the server tombstone's fixed
+    // TIMESTAMP, so the server (tombstoned) wins and the edit is dropped.
     expect(transport.getRow('note-tombstoned')?.body).toBe('Was active.');
+    expect(captured.collection?.notes.some((note) => note.id === 'note-tombstoned')).toBe(false);
+    expect(captured.pendingCount).toBe(0);
 
     const attemptsBeforeSecondRun = transport.getPushAttemptCount('note-tombstoned');
     await act(async () => {
       await captured.runSync?.('manual');
     });
     await flush();
-    // Still pending -- retried on the next run (never silently acknowledged).
-    expect(transport.getPushAttemptCount('note-tombstoned')).toBeGreaterThan(attemptsBeforeSecondRun);
+    // Fully resolved after the first run -- never retried.
+    expect(transport.getPushAttemptCount('note-tombstoned')).toBe(attemptsBeforeSecondRun);
 
     act(() => {
       root.unmount();
@@ -885,20 +1025,26 @@ describe('useNoteDomainSync', () => {
 
     expect(transport.getRow('note-1')?.revision).toBe(2);
     expect(transport.getRow('note-1')?.body).toBe('Edited body.');
-    expect(captured.conflictCount).toBe(1);
+    // Automatic resolution (server updatedAt is later) restores local
+    // state to the server's already-matching value and clears the
+    // resolved operation instead of leaving it parked.
+    expect(captured.collection?.notes.find((note) => note.id === 'note-1')?.body).toBe('Edited body.');
+    expect(captured.pendingCount).toBe(0);
 
     expect(transport.getRow('note-2')?.body).toBe('Second note.');
     expect(transport.getRow('note-2')?.revision).toBe(1);
 
     const note2AttemptsAfterFirstRun = transport.getPushAttemptCount('note-2');
+    const note1AttemptsAfterFirstRun = transport.getPushAttemptCount('note-1');
     for (let i = 0; i < 2; i += 1) {
       await act(async () => {
         await captured.runSync?.('manual');
       });
       await flush();
-      expect(captured.conflictCount).toBe(1);
+      expect(captured.pendingCount).toBe(0);
     }
     expect(transport.getRow('note-1')?.revision).toBe(2);
+    expect(transport.getPushAttemptCount('note-1')).toBe(note1AttemptsAfterFirstRun);
     expect(transport.getPushAttemptCount('note-2')).toBe(note2AttemptsAfterFirstRun);
 
     act(() => {

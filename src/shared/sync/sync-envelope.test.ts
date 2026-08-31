@@ -725,31 +725,4 @@ describe('discardPendingOperations', () => {
     });
     expect(rejected).toBe(withOperation.envelope); // rejected mutation returns the same reference
   });
-
-  it('removes one conflict without touching sibling outbox work', () => {
-    const initial = createInitialSyncEnvelope('goals', USER_A_IDENTITY, INITIAL_STATE);
-    const withConflict = syncEnvelopeReducer(initial, {
-      type: 'conflictRecorded', identity: USER_A_IDENTITY,
-      conflict: { domain: 'goals', recordId: 'goal-1', operationId: 'op-1', operationType: 'upsert', expectedRevision: 1, serverRevision: 2, localSnapshot: { value: 1 }, serverSnapshot: { value: 2 }, createdAt: 10 },
-    });
-    const withSibling = { ...withConflict, outbox: [{ operationId: 'sibling', domain: 'goals' as const, operationType: 'upsert' as const, recordId: 'goal-2', payload: {}, createdAt: 1, attemptCount: 0, lastAttemptedAt: null, lastErrorMessage: null, lastFailureKind: null }] };
-    const resolved = syncEnvelopeReducer(withSibling, { type: 'conflictResolved', identity: USER_A_IDENTITY, domain: 'goals', recordId: 'goal-1', operationId: 'op-1' });
-    expect(resolved.conflicts).toHaveLength(0);
-    expect(resolved.outbox.map((op) => op.operationId)).toEqual(['sibling']);
-  });
-
-  it('requires the conflicted operation identity and preserves a revision-aware replacement', () => {
-    const initial = createInitialSyncEnvelope('goals', USER_A_IDENTITY, { value: 1 });
-    const conflicted = syncEnvelopeReducer(initial, {
-      type: 'conflictRecorded', identity: USER_A_IDENTITY,
-      conflict: { domain: 'goals', recordId: 'goal-1', operationId: 'op-1', operationType: 'upsert', expectedRevision: 1, serverRevision: 2, localSnapshot: { value: 1 }, serverSnapshot: { value: 2 }, createdAt: 10 },
-    });
-    const stale = syncEnvelopeReducer(conflicted, { type: 'conflictResolved', identity: USER_A_IDENTITY, domain: 'goals', recordId: 'goal-1', operationId: 'wrong' });
-    expect(stale).toBe(conflicted);
-    const replacement = { operationId: 'op-2', domain: 'goals' as const, operationType: 'upsert' as const, recordId: 'goal-1', payload: { value: 1 }, createdAt: 11, attemptCount: 0, lastAttemptedAt: null, lastErrorMessage: null, lastFailureKind: null };
-    const resolved = syncEnvelopeReducer(conflicted, { type: 'conflictResolved', identity: USER_A_IDENTITY, domain: 'goals', recordId: 'goal-1', operationId: 'op-1', replacement, revisionSnapshot: { value: 2 } });
-    expect(resolved.conflicts).toEqual([]);
-    expect(resolved.state).toEqual({ value: 2 });
-    expect(resolved.outbox).toEqual([replacement]);
-  });
 });

@@ -7,7 +7,6 @@ import {
   type OutboxFailureKind,
 } from '@/shared/sync/outbox-operation';
 import type { SyncDomain } from '@/shared/sync/domain';
-import { isSyncConflictRecord, type SyncConflictRecord } from '@/shared/sync/conflict';
 import { identityNamespace, type Identity } from '@/shared/persistence/identity';
 import type {
   KeyValueStorage,
@@ -32,7 +31,6 @@ export interface SyncEnvelope<State> {
   readonly outbox: readonly OutboxOperation[]; // FIFO: index 0 is oldest/next-to-send
   readonly cursor: string | null;
   readonly cursorUpdatedAt: number | null;
-  readonly conflicts: readonly SyncConflictRecord[];
 }
 
 export interface SyncEnvelopeCodec<State> {
@@ -62,7 +60,6 @@ export function createInitialSyncEnvelope<State>(
     outbox: [],
     cursor: null,
     cursorUpdatedAt: null,
-    conflicts: [],
   };
 }
 
@@ -211,17 +208,6 @@ export type SyncEnvelopeAction<State> =
       readonly failureKind?: OutboxFailureKind | null;
     }
   | { readonly type: 'revisionRecorded'; readonly snapshot: State }
-  | { readonly type: 'conflictRecorded'; readonly identity: Identity; readonly conflict: SyncConflictRecord }
-  | { readonly type: 'conflictRemoved'; readonly identity: Identity; readonly domain: SyncConflictRecord['domain']; readonly recordId: string }
-  | {
-      readonly type: 'conflictResolved';
-      readonly identity: Identity;
-      readonly domain: SyncConflictRecord['domain'];
-      readonly recordId: string;
-      readonly operationId: string;
-      readonly replacement?: OutboxOperation;
-      readonly revisionSnapshot?: State;
-    }
   | {
       readonly type: 'cursorUpdated';
       readonly identity: Identity;
@@ -282,30 +268,6 @@ export function syncEnvelopeReducer<State>(
     case 'revisionRecorded':
       return { ...state, state: action.snapshot };
 
-    case 'conflictRecorded': {
-      if (!checkIdentity(state, action.identity) || action.conflict.domain !== state.domain) return state;
-      const conflicts = state.conflicts.filter((item) => !(item.domain === action.conflict.domain && item.recordId === action.conflict.recordId));
-      return { ...state, conflicts: [...conflicts, action.conflict] };
-    }
-
-    case 'conflictRemoved': {
-      if (!checkIdentity(state, action.identity) || action.domain !== state.domain) return state;
-      return { ...state, conflicts: state.conflicts.filter((item) => !(item.domain === action.domain && item.recordId === action.recordId)) };
-    }
-
-    case 'conflictResolved': {
-      if (!checkIdentity(state, action.identity) || action.domain !== state.domain) return state;
-      const conflict = state.conflicts.find((item) => item.domain === action.domain && item.recordId === action.recordId);
-      if (!conflict || conflict.operationId !== action.operationId) return state;
-      const outbox = state.outbox.filter((op) => op.operationId !== conflict.operationId);
-      return {
-        ...state,
-        state: action.revisionSnapshot ?? state.state,
-        conflicts: state.conflicts.filter((item) => !(item.domain === action.domain && item.recordId === action.recordId)),
-        outbox: action.replacement ? [...outbox, action.replacement] : outbox,
-      };
-    }
-
     case 'cursorUpdated': {
       const result = updateSyncCursor(state, action.identity, action.cursor, action.updatedAt);
       return result.status === 'applied' ? result.envelope : state;
@@ -333,7 +295,6 @@ function isValidSyncEnvelopeShape<State>(
   if (typeof value.identityNamespace !== 'string' || value.identityNamespace.length === 0) return false;
   if (!codec.isState(value.state)) return false;
   if (!Array.isArray(value.outbox) || !value.outbox.every(isOutboxOperation)) return false;
-  if (value.conflicts !== undefined && (!Array.isArray(value.conflicts) || !value.conflicts.every(isSyncConflictRecord))) return false;
 
   const outbox = value.outbox as OutboxOperation[];
   if (!outbox.every((op) => op.domain === domain)) return false;
@@ -361,7 +322,7 @@ export function deserializeSyncEnvelope<State>(
     return undefined;
   }
   if (!isValidSyncEnvelopeShape(parsed, domain, codec)) return undefined;
-  return { ...parsed, conflicts: parsed.conflicts ?? [] };
+  return parsed;
 }
 
 export async function loadSyncEnvelope<State>(

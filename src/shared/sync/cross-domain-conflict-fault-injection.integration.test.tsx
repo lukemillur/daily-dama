@@ -88,7 +88,7 @@ function createFakeGoalTransport(seedRows: readonly GoalRow[] = []): SyncTranspo
         return { status: 'succeeded', row: existing ?? ({ id: goalId, user_id: USER_ID, trick_id: 'deleted', trick_name: 'deleted', kind: 'count', target_count: 1, target_ms: null, revision: 0, created_at: TIMESTAMP, updated_at: TIMESTAMP, deleted_at: TIMESTAMP } as GoalRow) };
       }
       if (request.expectedRevision !== null && existing && existing.revision !== request.expectedRevision) {
-        return { status: 'conflict', conflict: { operationId: request.operationId, recordId: goalId, expectedRevision: request.expectedRevision, serverRevision: existing.revision } };
+        return { status: 'conflict', conflict: { operationId: request.operationId, recordId: goalId, expectedRevision: request.expectedRevision, serverRevision: existing.revision, serverRow: existing } };
       }
       const payload = request.payload as Record<string, unknown>;
       const row: GoalRow = {
@@ -126,17 +126,17 @@ function createFakeNoteTransport(seedRows: readonly NoteRow[] = []): SyncTranspo
         }
         if (existing.deleted_at !== null) return { status: 'succeeded', row: existing };
         if (request.expectedRevision !== null && existing.revision !== request.expectedRevision) {
-          return { status: 'conflict', conflict: { operationId: request.operationId, recordId: noteId, expectedRevision: request.expectedRevision, serverRevision: existing.revision } };
+          return { status: 'conflict', conflict: { operationId: request.operationId, recordId: noteId, expectedRevision: request.expectedRevision, serverRevision: existing.revision, serverRow: existing } };
         }
         const tombstoned: NoteRow = { ...existing, deleted_at: TIMESTAMP, revision: existing.revision + 1 };
         rows.set(noteId, tombstoned);
         return { status: 'succeeded', row: tombstoned };
       }
       if (existing?.deleted_at) {
-        return { status: 'conflict', conflict: { operationId: request.operationId, recordId: noteId, expectedRevision: request.expectedRevision, serverRevision: existing.revision } };
+        return { status: 'conflict', conflict: { operationId: request.operationId, recordId: noteId, expectedRevision: request.expectedRevision, serverRevision: existing.revision, serverRow: existing } };
       }
       if (request.expectedRevision !== null && existing && existing.revision !== request.expectedRevision) {
-        return { status: 'conflict', conflict: { operationId: request.operationId, recordId: noteId, expectedRevision: request.expectedRevision, serverRevision: existing.revision } };
+        return { status: 'conflict', conflict: { operationId: request.operationId, recordId: noteId, expectedRevision: request.expectedRevision, serverRevision: existing.revision, serverRow: existing } };
       }
       const payload = request.payload as Record<string, unknown>;
       const row: NoteRow = {
@@ -427,11 +427,14 @@ describe('Cross-domain sync fault injection (fully wired)', () => {
     });
     await flush();
 
-    // Only the goal record conflicts; naming it exactly.
-    expect(captured.status?.conflictCount).toBe(1);
-    expect(captured.status?.conflicts).toHaveLength(1);
-    expect(captured.status?.conflicts[0]?.domain).toBe('goals');
-    expect(captured.status?.conflicts[0]?.recordId).toBe('goal-seed');
+    // The goal record's conflict resolves automatically (T187.2): this
+    // device's local edit was made via the real `editGoal` action just
+    // now (real-time `updatedAt`), strictly later than the concurrent
+    // write's fixed `TIMESTAMP` above, so local wins and is re-queued as a
+    // fresh pending operation instead of being parked. Conflicts are never
+    // surfaced at the coordinator level any more.
+    expect(captured.status?.conflictCount).toBe(0);
+    expect(captured.goalSync?.pendingCount).toBe(1);
 
     // Every other domain's edit pushed and was acknowledged: zero pending
     // in that domain specifically.
@@ -447,36 +450,25 @@ describe('Cross-domain sync fault injection (fully wired)', () => {
     // the proof this unrelated edit landed.
     expect(profileTransport.getTrickState('big-cup')).toBeUndefined();
 
-    // The goal collection still shows the local (unresolved) edit, not the
-    // conflicting server value.
+    // The goal collection still shows the local (winning) edit, not the
+    // conflicting server value -- it just hasn't been re-pushed yet.
     const goalAfterConflict = captured.goals?.goals.find((goal) => goal.id === 'goal-seed');
     expect(goalAfterConflict?.kind === 'count' ? goalAfterConflict.targetCount : undefined).toBe(42);
     expect(goalTransport.getRow('goal-seed')?.target_count).toBe(999);
 
-    // Resolving the one conflict must not disturb any other domain's
-    // already-settled state.
-    const noteStateBeforeResolve = captured.notes;
-    const customTricksStateBeforeResolve = captured.customTricks;
-    const profileStateBeforeResolve = captured.profile;
-    const noteConflictsBeforeResolve = captured.noteSync?.conflicts;
-    const customTrickConflictsBeforeResolve = captured.customTrickSync?.conflicts;
-    const profileConflictsBeforeResolve = captured.profileSync?.conflicts;
+    // Automatic resolution of the goal record must not disturb any other
+    // domain's already-settled state. (A follow-up `retry()` legitimately
+    // re-pulls and re-adopts every domain with an empty outbox -- so this
+    // checks the settled *facts* -- pending count, and the values that
+    // matter -- rather than exact object identity, which a routine
+    // pull-adopt is expected to change regardless of any conflict.)
+    expect(captured.noteSync?.pendingCount).toBe(0);
+    expect(captured.customTrickSync?.pendingCount).toBe(0);
+    expect(captured.profileSync?.pendingCount).toBe(0);
 
-    await act(async () => {
-      await captured.status?.resolveConflict('goals', 'goal-seed', 'local');
-    });
-    await flush();
-
-    expect(captured.status?.conflictCount).toBe(0);
-    expect(captured.notes).toBe(noteStateBeforeResolve);
-    expect(captured.customTricks).toBe(customTricksStateBeforeResolve);
-    expect(captured.profile).toBe(profileStateBeforeResolve);
-    expect(captured.noteSync?.conflicts).toEqual(noteConflictsBeforeResolve);
-    expect(captured.customTrickSync?.conflicts).toEqual(customTrickConflictsBeforeResolve);
-    expect(captured.profileSync?.conflicts).toEqual(profileConflictsBeforeResolve);
-
-    // A follow-up retry fully converges: the local goal edit (chosen by
-    // 'local') now pushes cleanly against the server's advanced revision.
+    // A follow-up retry fully converges: the local goal edit (the
+    // automatically-chosen winner) now pushes cleanly against the
+    // server's advanced revision.
     await act(async () => {
       captured.status?.retry();
     });
@@ -486,6 +478,13 @@ describe('Cross-domain sync fault injection (fully wired)', () => {
     expect(captured.status?.conflictCount).toBe(0);
     expect(captured.status?.syncStatus.kind).toBe('synced');
     expect(goalTransport.getRow('goal-seed')?.target_count).toBe(42);
+
+    expect(captured.notes?.notes.find((note) => note.id === 'note-seed')?.body).toBe('Edited note.');
+    expect(captured.customTricks?.tricks.find((trick) => trick.id === 'custom-seed')?.name).toBe('Edited trick');
+    expect(captured.profile?.selectedTrickIds).not.toContain('big-cup');
+    expect(captured.noteSync?.pendingCount).toBe(0);
+    expect(captured.customTrickSync?.pendingCount).toBe(0);
+    expect(captured.profileSync?.pendingCount).toBe(0);
 
     act(() => {
       root.unmount();
@@ -559,12 +558,18 @@ describe('Cross-domain sync fault injection (fully wired)', () => {
     // The tombstone-vs-edit race surfaces as a real conflict, per
     // `use-note-domain-sync.ts` (confirmed above: notes classify a
     // tombstone-vs-edit push outcome as `'conflict'`, unlike custom-tricks'
-    // hard-delete `'failed'` shape) -- but it parks only that one note, and
-    // never resurrects its body server-side.
-    expect(captured.status?.conflictCount).toBe(1);
-    expect(captured.status?.conflicts).toHaveLength(1);
-    expect(captured.status?.conflicts[0]?.domain).toBe('notes');
-    expect(captured.status?.conflicts[0]?.recordId).toBe('note-tombstoned');
+    // hard-delete `'failed'` shape). It resolves automatically (T187.2):
+    // this device's local edit was made via the real `updateNote` action
+    // just now (real-time `updatedAt`), strictly later than the
+    // tombstoning write's fixed `TIMESTAMP`, so local wins and is
+    // re-queued instead of being parked -- but it parks only that one
+    // note's resolution (a fresh pending op), never resurrecting the row
+    // server-side (the transport's own tombstone-rejection posture
+    // rejects any upsert against an already-tombstoned row regardless of
+    // revision, so the re-queued local edit stays pending rather than
+    // ever landing).
+    expect(captured.status?.conflictCount).toBe(0);
+    expect(captured.noteSync?.pendingCount).toBe(1);
     // The server-side row was never resurrected -- it stays exactly as the
     // tombstoning device left it, regardless of what this device's local
     // (still-unresolved) collection shows for its own pending edit.

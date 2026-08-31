@@ -66,6 +66,7 @@ function createFakeProfileSyncTransport(options: FakeTransportOptions = {}): Fak
               recordId: request.recordId,
               expectedRevision: request.expectedRevision,
               serverRevision: profileRow?.revision ?? 0,
+              serverRow: profileRow,
             },
           };
         }
@@ -98,6 +99,7 @@ function createFakeProfileSyncTransport(options: FakeTransportOptions = {}): Fak
               recordId: trickId,
               expectedRevision: request.expectedRevision,
               serverRevision: existing.revision,
+              serverRow: existing,
             },
           };
         }
@@ -125,6 +127,7 @@ function createFakeProfileSyncTransport(options: FakeTransportOptions = {}): Fak
             recordId: trickId,
             expectedRevision: request.expectedRevision,
             serverRevision: existing.revision,
+            serverRow: existing,
           },
         };
       }
@@ -397,42 +400,168 @@ describe('useProfileDomainSync', () => {
     });
   });
 
-  it('a conflict on one trick id does not block an unrelated trick id, and the conflicted op stays pending', async () => {
+  it('a conflict on one trick id resolves automatically to the local snapshot (local updatedAt is later, the default fallback to the outbox operations own real-time createdAt), and does not block an unrelated trick id', async () => {
     const transport = createFakeProfileSyncTransport();
     const { root, captured } = await mountHarness(INITIAL_USER_PROFILE, () => transport, USER_IDENTITY);
     await flush();
 
-    // Seed trick-1 offline while push always fails, so both trick-1 and
-    // trick-2 end up in the outbox with expectedRevision === null.
-    transport.setFailPush(true);
+    // Prime a real server revision (1) for trick-1 so a later push against
+    // a stale cached revision genuinely conflicts.
     act(() => {
       captured.setProfile?.({ ...INITIAL_USER_PROFILE, selectedTrickIds: ['trick-1'] });
     });
     await flush();
+    await act(async () => {
+      await captured.runSync?.('manual');
+    });
+    await flush();
+    expect(transport.getTrickState('trick-1')?.revision).toBe(1);
+
+    // Offline: deselect trick-1 and select an unrelated trick-2. Neither
+    // local profile snapshot sets `updatedAt` explicitly, so the driver
+    // falls back to each outbox operation's own real-time `createdAt` --
+    // strictly later than the fake transport's fixed `TIMESTAMP` below.
+    transport.setFailPush(true);
     act(() => {
-      captured.setProfile?.({ ...INITIAL_USER_PROFILE, selectedTrickIds: ['trick-1', 'trick-2'] });
+      captured.setProfile?.({ ...INITIAL_USER_PROFILE, selectedTrickIds: ['trick-2'] });
     });
     await flush();
 
-    // A concurrent write lands on trick-1 server-side, so this device's
-    // still-pending trick-1 op will conflict on its next push (its cached
-    // expectedRevision stays null while a real row now exists).
+    // A concurrent write from another device keeps trick-1 selected and
+    // bumps its server revision to 2 -- this device's still-pending
+    // trick-1 op (cached expectedRevision 1) will now genuinely conflict.
+    transport.setFailPush(false);
     await transport.push({
       operationId: 'seed-conflict',
       recordId: 'trick-1',
       operationType: 'upsert',
       payload: { user_id: USER_ID, trick_id: 'trick-1', is_selected: true, is_manually_unlocked: false },
-      expectedRevision: null,
+      expectedRevision: 1,
     });
+    expect(transport.getTrickState('trick-1')?.revision).toBe(2);
 
-    transport.setFailPush(false);
     await act(async () => {
       await captured.runSync?.('manual');
     });
     await flush();
 
     // trick-2 (unrelated) should have succeeded regardless of trick-1's outcome.
-    expect(transport.getTrickState('trick-2')).toBeDefined();
+    expect(transport.getTrickState('trick-2')?.is_selected).toBe(true);
+
+    // Local wins: trick-1 stays deselected locally, and the driver
+    // re-pushes it as a fresh operation against the server's new revision
+    // instead of parking it.
+    expect(captured.profile?.selectedTrickIds).not.toContain('trick-1');
+    expect(captured.pendingCount).toBe(1);
+
+    await act(async () => {
+      await captured.runSync?.('manual');
+    });
+    await flush();
+    // Deselecting a trick enqueues a `delete` op (its row only exists
+    // while selected/unlocked) -- the re-pushed replacement removes it.
+    expect(transport.getTrickState('trick-1')).toBeUndefined();
+    expect(captured.pendingCount).toBe(0);
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  it('a conflict resolves automatically to the server snapshot when the local profile updatedAt is explicitly earlier', async () => {
+    const transport = createFakeProfileSyncTransport();
+    const { root, captured } = await mountHarness(INITIAL_USER_PROFILE, () => transport, USER_IDENTITY);
+    await flush();
+
+    act(() => {
+      captured.setProfile?.({ ...INITIAL_USER_PROFILE, selectedTrickIds: ['trick-1'], updatedAt: 1 });
+    });
+    await flush();
+    await act(async () => {
+      await captured.runSync?.('manual');
+    });
+    await flush();
+    expect(transport.getTrickState('trick-1')?.revision).toBe(1);
+
+    transport.setFailPush(true);
+    act(() => {
+      captured.setProfile?.({ ...INITIAL_USER_PROFILE, selectedTrickIds: ['trick-2'], updatedAt: 1 });
+    });
+    await flush();
+
+    // A concurrent write, stamped with the fake transport's fixed
+    // `TIMESTAMP` -- deliberately far later than this device's explicit
+    // `updatedAt: 1` above, so automatic resolution must keep the
+    // server's (still-selected) value.
+    transport.setFailPush(false);
+    await transport.push({
+      operationId: 'seed-conflict',
+      recordId: 'trick-1',
+      operationType: 'upsert',
+      payload: { user_id: USER_ID, trick_id: 'trick-1', is_selected: true, is_manually_unlocked: false },
+      expectedRevision: 1,
+    });
+    expect(transport.getTrickState('trick-1')?.revision).toBe(2);
+
+    await act(async () => {
+      await captured.runSync?.('manual');
+    });
+    await flush();
+
+    expect(transport.getTrickState('trick-2')?.is_selected).toBe(true);
+
+    // Server wins: trick-1 is restored to selected locally, and its
+    // operation is fully resolved (no longer pending).
+    expect(captured.profile?.selectedTrickIds).toContain('trick-1');
+    expect(captured.pendingCount).toBe(0);
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  it('an exact updatedAt tie between local and server keeps the server row (documented deterministic tiebreak)', async () => {
+    const transport = createFakeProfileSyncTransport();
+    const { root, captured } = await mountHarness(INITIAL_USER_PROFILE, () => transport, USER_IDENTITY);
+    await flush();
+
+    act(() => {
+      captured.setProfile?.({ ...INITIAL_USER_PROFILE, selectedTrickIds: ['trick-1'], updatedAt: 1 });
+    });
+    await flush();
+    await act(async () => {
+      await captured.runSync?.('manual');
+    });
+    await flush();
+    expect(transport.getTrickState('trick-1')?.revision).toBe(1);
+
+    // Exactly matches the fake transport's fixed `TIMESTAMP` (used for the
+    // concurrent server write below) -- an exact tie must keep the server.
+    const tiedUpdatedAt = TIMESTAMP_MS;
+
+    transport.setFailPush(true);
+    act(() => {
+      captured.setProfile?.({ ...INITIAL_USER_PROFILE, selectedTrickIds: [], updatedAt: tiedUpdatedAt });
+    });
+    await flush();
+
+    transport.setFailPush(false);
+    await transport.push({
+      operationId: 'seed-conflict',
+      recordId: 'trick-1',
+      operationType: 'upsert',
+      payload: { user_id: USER_ID, trick_id: 'trick-1', is_selected: true, is_manually_unlocked: false },
+      expectedRevision: 1,
+    });
+    expect(transport.getTrickState('trick-1')?.revision).toBe(2);
+
+    await act(async () => {
+      await captured.runSync?.('manual');
+    });
+    await flush();
+
+    expect(captured.profile?.selectedTrickIds).toContain('trick-1');
+    expect(captured.pendingCount).toBe(0);
 
     act(() => {
       root.unmount();

@@ -11,7 +11,6 @@ import { identityNamespace } from '@/shared/persistence/identity';
 import { createWriteQueue } from '@/shared/persistence/storage';
 import { useSyncCoordinator, type SyncDomainHandles, type UseSyncCoordinatorResult } from '@/shared/sync/use-sync-coordinator';
 import { deriveSyncStatus, type SyncStatus } from '@/shared/sync/sync-status';
-import type { MutableConflictDomain, SyncConflictRecord } from '@/shared/sync/conflict';
 
 const STATUS_KEY = 'daily-dama-sync-status-v1';
 const statusStorageKey = (identity: ReturnType<typeof useIdentityHandle>['identity']) => `${identityNamespace(identity)}:${STATUS_KEY}`;
@@ -19,8 +18,6 @@ export interface SyncCoordinatorStatus extends UseSyncCoordinatorResult {
   readonly hasHydrated: boolean;
   readonly pendingCount: number; readonly conflictCount: number; readonly retryableFailureCount: number;
   readonly syncStatus: SyncStatus; readonly retry: () => void; readonly discardAllPending: () => Promise<void>;
-  readonly conflicts: readonly SyncConflictRecord[];
-  readonly resolveConflict: (domain: MutableConflictDomain, recordId: string, choice: 'local' | 'server') => Promise<void>;
 }
 const SyncCoordinatorContext = createContext<SyncCoordinatorStatus | undefined>(undefined);
 
@@ -65,18 +62,15 @@ export function SyncCoordinatorProvider({ children }: PropsWithChildren) {
   }, [context, coordinator.state, generation, writeStatus]);
   const pendingCount = profile.pendingCount + customTricks.pendingCount + practiceHistory.pendingCount + goals.pendingCount + notes.pendingCount;
   const hasHydrated = profile.hasHydrated && customTricks.hasHydrated && practiceHistory.hasHydrated && goals.hasHydrated && notes.hasHydrated;
-  const conflictCount = (profile.conflictCount ?? 0) + (customTricks.conflictCount ?? 0) + (practiceHistory.conflictCount ?? 0) + (goals.conflictCount ?? 0) + (notes.conflictCount ?? 0);
+  // Conflicts are now resolved automatically inside each domain's own push
+  // loop (T187.2) and never surface here -- this fact is kept as a literal
+  // zero (rather than removed) so deriveSyncStatus/SyncStatus stay
+  // structurally unchanged.
+  const conflictCount = 0;
   const retryableFailureCount = (profile.retryableFailureCount ?? 0) + (customTricks.retryableFailureCount ?? 0) + (practiceHistory.retryableFailureCount ?? 0) + (goals.retryableFailureCount ?? 0) + (notes.retryableFailureCount ?? 0);
   const syncStatus = useMemo(() => deriveSyncStatus({ coordinator: coordinator.state.status, pendingCount, conflictCount, retryableFailureCount, online, lastSuccessfulSyncAt }), [coordinator.state.status, pendingCount, conflictCount, retryableFailureCount, online, lastSuccessfulSyncAt]);
   const discardAllPending = useCallback(async () => { await Promise.all([profile.discardPending(), customTricks.discardPending(), practiceHistory.discardPending(), goals.discardPending(), notes.discardPending()]); }, [profile, customTricks, practiceHistory, goals, notes]);
-  const conflicts = useMemo(() => [...profile.conflicts, ...customTricks.conflicts, ...goals.conflicts, ...notes.conflicts].sort((a, b) => a.domain.localeCompare(b.domain) || a.recordId.localeCompare(b.recordId)), [profile.conflicts, customTricks.conflicts, goals.conflicts, notes.conflicts]);
-  const resolveConflict = useCallback(async (domain: MutableConflictDomain, recordId: string, choice: 'local' | 'server') => {
-    if (domain === 'profile') return profile.resolveConflict(recordId, choice);
-    if (domain === 'customTricks') return customTricks.resolveConflict(recordId, choice);
-    if (domain === 'goals') return goals.resolveConflict(recordId, choice);
-    return notes.resolveConflict(recordId, choice);
-  }, [profile, customTricks, goals, notes]);
-  const value = useMemo(() => ({ ...coordinator, hasHydrated, pendingCount, conflictCount, retryableFailureCount, syncStatus, retry: coordinator.requestManualSync, discardAllPending, conflicts, resolveConflict }), [coordinator, hasHydrated, pendingCount, conflictCount, retryableFailureCount, syncStatus, discardAllPending, conflicts, resolveConflict]);
+  const value = useMemo(() => ({ ...coordinator, hasHydrated, pendingCount, conflictCount, retryableFailureCount, syncStatus, retry: coordinator.requestManualSync, discardAllPending }), [coordinator, hasHydrated, pendingCount, conflictCount, retryableFailureCount, syncStatus, discardAllPending]);
   return <SyncCoordinatorContext.Provider value={value}>{children}</SyncCoordinatorContext.Provider>;
 }
 export function useSyncCoordinatorStatus(): SyncCoordinatorStatus { const status = useContext(SyncCoordinatorContext); if (!status) throw new Error('useSyncCoordinatorStatus must be used within SyncCoordinatorProvider.'); return status; }
