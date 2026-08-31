@@ -25,6 +25,43 @@ npx --yes supabase@2.116.0 status     # prints local API URL, anon key, service_
 `db reset` any time you want a clean local database without tearing down the
 whole stack.
 
+### Troubleshooting: Edge Functions return 503 after a stale local stack
+
+**Symptom:** any Edge Function call -- including `delete-account` invoked
+from the app -- returns `503` even though `supabase start` reported success
+(sometimes with its own `Stopped services: [...]` line naming the affected
+container; sometimes with no visible warning at all).
+
+**Cause (two variants seen in practice, same fix for both):**
+
+1. `supabase start` does not reliably restart an individual container (most
+   commonly `supabase_edge_runtime_<project_id>`) that is already `Exited`
+   while the rest of the stack is `Up`/healthy -- it silently leaves it down
+   and still returns success. Kong (the local API gateway) then has no live
+   upstream for `/functions/v1/<name>` and returns `503` to every caller.
+2. If the stack was previously started from a *different* working directory
+   -- e.g. another git worktree, or a prior agent/session's checkout --
+   `supabase_edge_runtime_<project_id>`'s bind mount for `supabase/functions`
+   still points at that old path. A caller in the current directory then hits
+   `worker boot error: failed to bootstrap runtime: failed to determine
+   entrypoint` in `docker logs supabase_edge_runtime_<project_id>`, which also
+   surfaces to callers as `503`. `docker inspect
+   supabase_edge_runtime_<project_id> --format '{{json .Mounts}}'` confirms
+   this: the bind `Source` won't match your current `pwd`.
+
+**Fix:** `npx --yes supabase@2.116.0 stop` then `npx --yes supabase@2.116.0
+start` from the directory you're actually working in (a full stop/start
+cycle, not another `start` alone -- `start` alone does not rebind an
+already-running container to a new directory or reliably revive an `Exited`
+one). Verify afterward with `docker ps -a --filter name=supabase` that every
+listed container is `Up`, and, if variant 2 was suspected, re-check the mount
+`Source` with `docker inspect` as above.
+
+This is a local Docker/session-state issue, not an app or handler defect --
+see the "Running the delete-account Edge Function tests" section below for
+the suite that first surfaces a 503 like this and the commands to confirm the
+stack is genuinely clean afterward.
+
 ### Running migration tests (pgTAP)
 
 Schema migrations under `supabase/migrations/` are covered by pgTAP tests
@@ -87,6 +124,11 @@ correct password and exact `DELETE` confirmation returns `204` and cascades
 every application row plus the Auth user itself; missing/invalid JWTs,
 malformed bodies, wrong confirmation text, wrong passwords, and a body that
 tries to name another user's id are all rejected.
+
+If this suite (or the app) sees a `503` instead, see "Troubleshooting: Edge
+Functions return 503 after a stale local stack" above (T188) before assuming
+a handler/app defect -- it's almost always a local Docker/session-state issue
+that a full `stop`/`start` cycle resolves.
 
 The handler applies a 30-attempt limit per trusted Auth user and per trusted
 edge-proxy client IP in a 15-minute window. The prototype limiter is bounded

@@ -59,14 +59,22 @@ export function AccountDeletionScreen() {
     }
 
     setSucceeded(true);
+    // T188: navigate out of the `/app/*` tabs tree immediately rather than
+    // relying on staying mounted here. The post-sign-out guest identity's
+    // own (unrelated) onboarding status flips AppTabs/AppTabs.web's tab
+    // visibility, which unregisters every non-Home tab -- including this
+    // route's own "profile" tab -- and resets the active tab back to Home
+    // before a user could ever see the terminal message rendered in place.
+    // `/account-deleted` lives outside that tree entirely, so it can't be
+    // swept away by that reset. `succeeded` above still blocks resubmission
+    // for the brief window before this navigation completes.
+    router.replace('/account-deleted');
   };
 
-  // Checked before any authState branch below: deleteAccount now
-  // completes the local purge and sign-out synchronously within the
-  // awaited call, so authState.status flips away from 'authenticated'
-  // shortly after success. Without this ordering, that flip would silently
-  // swap this success view for the guest/sign-in prompt below -- factually
-  // confusing copy right after the account has actually been deleted.
+  // Defensive fallback only: normally the `router.replace` above navigates
+  // away before another render of this screen happens. Kept so a delayed
+  // navigation, or any other reason this component stays mounted after
+  // success, still can't show the form again or leak former-account state.
   if (succeeded) {
     return (
       <CenteredState title="Account deletion" message="Your account has been permanently deleted." />
