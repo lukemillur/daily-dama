@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import type { Session } from '@supabase/supabase-js';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
+import { ThemeProvider as StyledThemeProvider, type DefaultTheme } from 'styled-components/native';
 
 import { MIN_PASSWORD_LENGTH } from '@/features/auth/model/password-policy';
 import type { AuthState } from '@/features/auth/model/auth-state';
@@ -325,5 +326,60 @@ describe('ResetPasswordScreen', () => {
     } finally {
       restorePlatform();
     }
+  });
+  it('resolves the primary-form background and password field colors from the active theme', async () => {
+    const customTheme: DefaultTheme = {
+      background: '#123456',
+      accent: '#abcdef',
+      text: '#fedcba',
+      textMuted: '#997755',
+      buttonBackground: '#111111',
+      buttonBackgroundSecondary: '#222222',
+    };
+    mockAuthState = { status: 'passwordRecovery', session: recoverySession };
+    let root!: ReactTestRenderer;
+    await act(async () => {
+      root = create(
+        <StyledThemeProvider theme={customTheme}>
+          <ResetPasswordScreen />
+        </StyledThemeProvider>,
+      );
+    });
+
+    const screenStyle = root.root.findAll(
+      (node) =>
+        typeof node.props.style === 'object' &&
+        node.props.style !== null &&
+        !Array.isArray(node.props.style) &&
+        node.props.style.backgroundColor === customTheme.background,
+    );
+    expect(screenStyle.length).toBeGreaterThan(0);
+
+    const newPasswordInputs = root.root.findAll(
+      (node) => node.props.accessibilityLabel === 'New password',
+    );
+    const newPasswordStyle = newPasswordInputs.find(
+      (node) =>
+        typeof node.props.style === 'object' &&
+        node.props.style !== null &&
+        !Array.isArray(node.props.style),
+    )?.props.style as Record<string, string> | undefined;
+    expect(newPasswordStyle).toMatchObject({ color: customTheme.text });
+
+    const rowStyle = root.root.findAll(
+      (node) =>
+        typeof node.props.style === 'object' &&
+        node.props.style !== null &&
+        !Array.isArray(node.props.style) &&
+        node.props.style.minHeight === 56 &&
+        node.props.style.flexDirection === 'row',
+    );
+    for (const row of rowStyle) {
+      expect(row.props.style).toMatchObject({
+        backgroundColor: customTheme.background,
+        borderColor: customTheme.text,
+      });
+    }
+    expect(rowStyle.length).toBeGreaterThan(0);
   });
 });

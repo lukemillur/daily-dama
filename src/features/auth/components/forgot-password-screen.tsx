@@ -126,47 +126,48 @@ export function ForgotPasswordScreen() {
   }
 
   return (
-    <FormScroll keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: 24 }}>
-      <FormContent>
-        <Eyebrow>Forgot password</Eyebrow>
-        <PageTitle>Reset your password.</PageTitle>
-        <Introduction>
-          Enter the email on your account and we&apos;ll send you a link to reset your password.
-        </Introduction>
-        <Guidance>{SAME_BROWSER_GUIDANCE}</Guidance>
+    <Screen>
+      <FormScroll keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: 24 }}>
+        <FormContent>
+          <Eyebrow>Forgot password</Eyebrow>
+          <PageTitle>Reset your password.</PageTitle>
+          <Introduction>
+            Enter the email on your account and we&apos;ll send you a link to reset your password.
+          </Introduction>
+          <Guidance>{SAME_BROWSER_GUIDANCE}</Guidance>
 
-        <Field>
-          <FieldLabel>Email</FieldLabel>
-          <FieldInput
-            accessibilityLabel="Email"
-            autoCapitalize="none"
-            autoCorrect={false}
-            keyboardType="email-address"
-            textContentType="username"
-            onChangeText={setEmail}
-            placeholder="Email"
-            placeholderTextColor={AppColors.textSubtle}
-            value={email}
-          />
-          {errors.email ? <ErrorText>{errors.email}</ErrorText> : null}
-        </Field>
+          <Field>
+            <FieldLabel>Email</FieldLabel>
+            <FieldInput
+              accessibilityLabel="Email"
+              autoCapitalize="none"
+              autoCorrect={false}
+              keyboardType="email-address"
+              textContentType="username"
+              onChangeText={setEmail}
+              placeholder="Email"
+              value={email}
+            />
+            {errors.email ? <ErrorText>{errors.email}</ErrorText> : null}
+          </Field>
 
-        {submitCategory ? <ErrorText>{SUBMIT_ERROR_COPY[submitCategory]}</ErrorText> : null}
+          {submitCategory ? <ErrorText>{SUBMIT_ERROR_COPY[submitCategory]}</ErrorText> : null}
 
-        <FormActions>
-          <Button accessibilityLabel="Send reset link" disabled={isSubmitting} fill onPress={submit}>
-            {isSubmitting ? 'Sending...' : 'Send reset link'}
-          </Button>
-          <Button
-            accessibilityLabel="Back to sign in"
-            variant="secondary"
-            fill
-            onPress={() => router.push('/auth/sign-in')}>
-            Back to sign in
-          </Button>
-        </FormActions>
-      </FormContent>
-    </FormScroll>
+          <FormActions>
+            <Button accessibilityLabel="Send reset link" disabled={isSubmitting} fill onPress={submit}>
+              {isSubmitting ? 'Sending...' : 'Send reset link'}
+            </Button>
+            <Button
+              accessibilityLabel="Back to sign in"
+              variant="secondary"
+              fill
+              onPress={() => router.push('/auth/sign-in')}>
+              Back to sign in
+            </Button>
+          </FormActions>
+        </FormContent>
+      </FormScroll>
+    </Screen>
   );
 }
 
@@ -210,11 +211,13 @@ const FieldLabel = styled.Text`
   letter-spacing: 1px;
   text-transform: uppercase;
 `;
-const FieldInput = styled(TextInput)`
+const FieldInput = styled(TextInput).attrs(({ theme }) => ({
+  placeholderTextColor: theme.textMuted,
+}))`
   min-height: 56px;
-  background-color: ${AppColors.paper};
-  border: 2px solid ${AppColors.ink};
-  color: ${AppColors.ink};
+  background-color: ${({ theme }) => theme.background};
+  border: 2px solid ${({ theme }) => theme.text};
+  color: ${({ theme }) => theme.text};
   font-size: 18px;
   font-weight: 800;
   margin-top: 8px;
