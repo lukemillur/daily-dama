@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
+import { ThemeProvider as StyledThemeProvider, type DefaultTheme } from 'styled-components/native';
 
 import type { AuthState } from '@/features/auth/model/auth-state';
 
@@ -487,5 +488,49 @@ describe('SignUpScreen', () => {
     } finally {
       restorePlatform();
     }
+  });
+  it('resolves the primary-form background and email field colors from the active theme', async () => {
+    const customTheme: DefaultTheme = {
+      background: '#123456',
+      accent: '#abcdef',
+      text: '#fedcba',
+      textMuted: '#997755',
+      buttonBackground: '#111111',
+      buttonBackgroundSecondary: '#222222',
+    };
+    let root!: ReactTestRenderer;
+    await act(async () => {
+      root = create(
+        <StyledThemeProvider theme={customTheme}>
+          <SignUpScreen />
+        </StyledThemeProvider>,
+      );
+    });
+
+    const screenStyle = root.root.findAll(
+      (node) =>
+        typeof node.props.style === 'object' &&
+        node.props.style !== null &&
+        !Array.isArray(node.props.style) &&
+        node.props.style.backgroundColor === customTheme.background,
+    );
+    expect(screenStyle.length).toBeGreaterThan(0);
+
+    const emailInputs = root.root.findAll((node) => node.props.accessibilityLabel === 'Email');
+    const emailInputStyle = emailInputs.find(
+      (node) =>
+        typeof node.props.style === 'object' &&
+        node.props.style !== null &&
+        !Array.isArray(node.props.style),
+    )?.props.style as Record<string, string> | undefined;
+    expect(emailInputStyle).toMatchObject({
+      backgroundColor: customTheme.background,
+      borderColor: customTheme.text,
+      color: customTheme.text,
+    });
+    expect(
+      emailInputs.find((node) => typeof node.props.placeholderTextColor === 'string')?.props
+        .placeholderTextColor,
+    ).toBe(customTheme.textMuted);
   });
 });

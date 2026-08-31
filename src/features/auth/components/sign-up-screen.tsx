@@ -128,73 +128,74 @@ export function SignUpScreen() {
   }
 
   return (
-    <FormScroll keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: 24 }}>
-      <FormContent>
-        <Eyebrow>Sign up</Eyebrow>
-        <PageTitle>Create your account.</PageTitle>
-        <Introduction>
-          Create an account to sync your practice history across devices.
-        </Introduction>
+    <Screen>
+      <FormScroll keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: 24 }}>
+        <FormContent>
+          <Eyebrow>Sign up</Eyebrow>
+          <PageTitle>Create your account.</PageTitle>
+          <Introduction>
+            Create an account to sync your practice history across devices.
+          </Introduction>
 
-        <Field>
-          <FieldLabel>Email</FieldLabel>
-          <FieldInput
-            accessibilityLabel="Email"
-            autoCapitalize="none"
-            autoCorrect={false}
-            keyboardType="email-address"
-            textContentType="username"
+          <Field>
+            <FieldLabel>Email</FieldLabel>
+            <FieldInput
+              accessibilityLabel="Email"
+              autoCapitalize="none"
+              autoCorrect={false}
+              keyboardType="email-address"
+              textContentType="username"
+              blurOnSubmit={false}
+              onChangeText={setEmail}
+              onSubmitEditing={() => passwordInputRef.current?.focus()}
+              placeholder="Email"
+              returnKeyType="next"
+              value={email}
+            />
+            {errors.email ? <ErrorText>{errors.email}</ErrorText> : null}
+          </Field>
+
+          <PasswordInput
+            ref={passwordInputRef}
             blurOnSubmit={false}
-            onChangeText={setEmail}
-            onSubmitEditing={() => passwordInputRef.current?.focus()}
-            placeholder="Email"
-            placeholderTextColor={AppColors.textSubtle}
+            error={errors.password}
+            hint={<>Use at least {MIN_PASSWORD_LENGTH} characters.</>}
+            label="Password"
+            textContentType="newPassword"
+            onChangeText={setPassword}
+            onSubmitEditing={() => confirmPasswordInputRef.current?.focus()}
             returnKeyType="next"
-            value={email}
+            value={password}
           />
-          {errors.email ? <ErrorText>{errors.email}</ErrorText> : null}
-        </Field>
 
-        <PasswordInput
-          ref={passwordInputRef}
-          blurOnSubmit={false}
-          error={errors.password}
-          hint={<>Use at least {MIN_PASSWORD_LENGTH} characters.</>}
-          label="Password"
-          textContentType="newPassword"
-          onChangeText={setPassword}
-          onSubmitEditing={() => confirmPasswordInputRef.current?.focus()}
-          returnKeyType="next"
-          value={password}
-        />
+          <PasswordInput
+            ref={confirmPasswordInputRef}
+            error={errors.confirmPassword}
+            label="Confirm password"
+            textContentType="newPassword"
+            onChangeText={setConfirmPassword}
+            onSubmitEditing={() => void handleSubmit()}
+            returnKeyType="done"
+            value={confirmPassword}
+          />
 
-        <PasswordInput
-          ref={confirmPasswordInputRef}
-          error={errors.confirmPassword}
-          label="Confirm password"
-          textContentType="newPassword"
-          onChangeText={setConfirmPassword}
-          onSubmitEditing={() => void handleSubmit()}
-          returnKeyType="done"
-          value={confirmPassword}
-        />
+          {submitCategory ? <ErrorText>{SUBMIT_ERROR_COPY[submitCategory]}</ErrorText> : null}
 
-        {submitCategory ? <ErrorText>{SUBMIT_ERROR_COPY[submitCategory]}</ErrorText> : null}
-
-        <FormActions>
-          <Button accessibilityLabel="Sign up" disabled={isSubmitting} fill onPress={handleSubmit}>
-            {isSubmitting ? 'Creating account...' : 'Sign up'}
-          </Button>
-          <Button
-            accessibilityLabel="Sign in"
-            variant="secondary"
-            fill
-            onPress={() => router.push('/auth/sign-in')}>
-            Already have an account? Sign in
-          </Button>
-        </FormActions>
-      </FormContent>
-    </FormScroll>
+          <FormActions>
+            <Button accessibilityLabel="Sign up" disabled={isSubmitting} fill onPress={handleSubmit}>
+              {isSubmitting ? 'Creating account...' : 'Sign up'}
+            </Button>
+            <Button
+              accessibilityLabel="Sign in"
+              variant="secondary"
+              fill
+              onPress={() => router.push('/auth/sign-in')}>
+              Already have an account? Sign in
+            </Button>
+          </FormActions>
+        </FormContent>
+      </FormScroll>
+    </Screen>
   );
 }
 
@@ -233,11 +234,13 @@ const FieldLabel = styled.Text`
   letter-spacing: 1px;
   text-transform: uppercase;
 `;
-const FieldInput = styled(TextInput)`
+const FieldInput = styled(TextInput).attrs(({ theme }) => ({
+  placeholderTextColor: theme.textMuted,
+}))`
   min-height: 56px;
-  background-color: ${AppColors.paper};
-  border: 2px solid ${AppColors.ink};
-  color: ${AppColors.ink};
+  background-color: ${({ theme }) => theme.background};
+  border: 2px solid ${({ theme }) => theme.text};
+  color: ${({ theme }) => theme.text};
   font-size: 18px;
   font-weight: 800;
   margin-top: 8px;

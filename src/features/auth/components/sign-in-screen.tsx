@@ -116,72 +116,73 @@ export function SignInScreen() {
   }
 
   return (
-    <FormScroll keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: 24 }}>
-      <FormContent>
-        <Eyebrow>Sign in</Eyebrow>
-        <PageTitle>Welcome back.</PageTitle>
-        <Introduction>Sign in with your email and password to sync your progress.</Introduction>
+    <Screen>
+      <FormScroll keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: 24 }}>
+        <FormContent>
+          <Eyebrow>Sign in</Eyebrow>
+          <PageTitle>Welcome back.</PageTitle>
+          <Introduction>Sign in with your email and password to sync your progress.</Introduction>
 
-        <Field>
-          <FieldLabel>Email</FieldLabel>
-          <FieldInput
-            accessibilityLabel="Email"
-            autoCapitalize="none"
-            autoCorrect={false}
-            keyboardType="email-address"
-            textContentType="username"
-            blurOnSubmit={false}
-            onChangeText={setEmail}
-            onSubmitEditing={() => passwordInputRef.current?.focus()}
-            placeholder="Email"
-            placeholderTextColor={AppColors.textSubtle}
-            returnKeyType="next"
-            value={email}
+          <Field>
+            <FieldLabel>Email</FieldLabel>
+            <FieldInput
+              accessibilityLabel="Email"
+              autoCapitalize="none"
+              autoCorrect={false}
+              keyboardType="email-address"
+              textContentType="username"
+              blurOnSubmit={false}
+              onChangeText={setEmail}
+              onSubmitEditing={() => passwordInputRef.current?.focus()}
+              placeholder="Email"
+              returnKeyType="next"
+              value={email}
+            />
+            {errors.email ? <ErrorText>{errors.email}</ErrorText> : null}
+          </Field>
+
+          <PasswordInput
+            ref={passwordInputRef}
+            error={errors.password}
+            label="Password"
+            textContentType="password"
+            onChangeText={setPassword}
+            onSubmitEditing={() => void handleSubmit()}
+            returnKeyType="done"
+            value={password}
           />
-          {errors.email ? <ErrorText>{errors.email}</ErrorText> : null}
-        </Field>
 
-        <PasswordInput
-          ref={passwordInputRef}
-          error={errors.password}
-          label="Password"
-          textContentType="password"
-          onChangeText={setPassword}
-          onSubmitEditing={() => void handleSubmit()}
-          returnKeyType="done"
-          value={password}
-        />
+          {submitCategory ? <ErrorText>{SUBMIT_ERROR_COPY[submitCategory]}</ErrorText> : null}
 
-        {submitCategory ? <ErrorText>{SUBMIT_ERROR_COPY[submitCategory]}</ErrorText> : null}
-
-        <FormActions>
-          <Button accessibilityLabel="Sign in" disabled={isSubmitting} fill onPress={handleSubmit}>
-            {isSubmitting ? 'Signing in...' : 'Sign in'}
-          </Button>
-          <Button
-            accessibilityLabel="Forgot password?"
-            variant="secondary"
-            fill
-            onPress={() => router.push('/auth/forgot-password')}>
-            Forgot password?
-          </Button>
-          <Button
-            accessibilityLabel="Continue as guest"
-            variant="secondary"
-            fill
-            onPress={() => router.replace('/app/home')}>
-            Continue as guest
-          </Button>
-          <Button
-            accessibilityLabel="Sign up"
-            variant="secondary"
-            fill
-            onPress={() => router.push('/auth/sign-up')}>
-            Need an account? Sign up
-          </Button>
-        </FormActions>
-      </FormContent>
-    </FormScroll>
+          <FormActions>
+            <Button accessibilityLabel="Sign in" disabled={isSubmitting} fill onPress={handleSubmit}>
+              {isSubmitting ? 'Signing in...' : 'Sign in'}
+            </Button>
+            <Button
+              accessibilityLabel="Forgot password?"
+              variant="secondary"
+              fill
+              onPress={() => router.push('/auth/forgot-password')}>
+              Forgot password?
+            </Button>
+            <Button
+              accessibilityLabel="Continue as guest"
+              variant="secondary"
+              fill
+              onPress={() => router.replace('/app/home')}>
+              Continue as guest
+            </Button>
+            <Button
+              accessibilityLabel="Sign up"
+              variant="secondary"
+              fill
+              onPress={() => router.push('/auth/sign-up')}>
+              Need an account? Sign up
+            </Button>
+          </FormActions>
+        </FormContent>
+      </FormScroll>
+    </Screen>
   );
 }
 
@@ -220,11 +221,13 @@ const FieldLabel = styled.Text`
   letter-spacing: 1px;
   text-transform: uppercase;
 `;
-const FieldInput = styled(TextInput)`
+const FieldInput = styled(TextInput).attrs(({ theme }) => ({
+  placeholderTextColor: theme.textMuted,
+}))`
   min-height: 56px;
-  background-color: ${AppColors.paper};
-  border: 2px solid ${AppColors.ink};
-  color: ${AppColors.ink};
+  background-color: ${({ theme }) => theme.background};
+  border: 2px solid ${({ theme }) => theme.text};
+  color: ${({ theme }) => theme.text};
   font-size: 18px;
   font-weight: 800;
   margin-top: 8px;

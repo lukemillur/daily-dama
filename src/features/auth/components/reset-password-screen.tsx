@@ -108,41 +108,43 @@ export function ResetPasswordScreen() {
   }
 
   return (
-    <FormScroll keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: 24 }}>
-      <FormContent>
-        <Eyebrow>Password reset</Eyebrow>
-        <PageTitle>Choose a new password.</PageTitle>
-        <Introduction>Enter and confirm a new password for your account.</Introduction>
+    <Screen>
+      <FormScroll keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: 24 }}>
+        <FormContent>
+          <Eyebrow>Password reset</Eyebrow>
+          <PageTitle>Choose a new password.</PageTitle>
+          <Introduction>Enter and confirm a new password for your account.</Introduction>
 
-        <PasswordInput
-          error={errors.password}
-          label="New password"
-          onChangeText={setPassword}
-          textContentType="newPassword"
-          value={password}
-        />
+          <PasswordInput
+            error={errors.password}
+            label="New password"
+            onChangeText={setPassword}
+            textContentType="newPassword"
+            value={password}
+          />
 
-        <PasswordInput
-          error={errors.confirmPassword}
-          label="Confirm new password"
-          onChangeText={setConfirmPassword}
-          textContentType="newPassword"
-          value={confirmPassword}
-        />
+          <PasswordInput
+            error={errors.confirmPassword}
+            label="Confirm new password"
+            onChangeText={setConfirmPassword}
+            textContentType="newPassword"
+            value={confirmPassword}
+          />
 
-        {submitCategory ? <ErrorText>{SUBMIT_ERROR_COPY[submitCategory]}</ErrorText> : null}
+          {submitCategory ? <ErrorText>{SUBMIT_ERROR_COPY[submitCategory]}</ErrorText> : null}
 
-        <FormActions>
-          <Button
-            accessibilityLabel="Set new password"
-            disabled={isSubmitting}
-            fill
-            onPress={handleSubmit}>
-            {isSubmitting ? 'Setting password...' : 'Set new password'}
-          </Button>
-        </FormActions>
-      </FormContent>
-    </FormScroll>
+          <FormActions>
+            <Button
+              accessibilityLabel="Set new password"
+              disabled={isSubmitting}
+              fill
+              onPress={handleSubmit}>
+              {isSubmitting ? 'Setting password...' : 'Set new password'}
+            </Button>
+          </FormActions>
+        </FormContent>
+      </FormScroll>
+    </Screen>
   );
 }
 

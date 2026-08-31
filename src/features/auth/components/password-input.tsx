@@ -81,8 +81,8 @@ const InputRow = styled.View`
   min-height: 56px;
   flex-direction: row;
   align-items: center;
-  background-color: ${AppColors.paper};
-  border: 2px solid ${AppColors.ink};
+  background-color: ${({ theme }) => theme.background};
+  border: 2px solid ${({ theme }) => theme.text};
   margin-top: 8px;
 `;
 const FieldHint = styled.Text`
@@ -93,7 +93,7 @@ const FieldHint = styled.Text`
 `;
 const Input = styled(TextInput)`
   flex: 1;
-  color: ${AppColors.ink};
+  color: ${({ theme }) => theme.text};
   font-size: 18px;
   font-weight: 800;
   padding: 12px 0 12px 14px;
@@ -105,7 +105,7 @@ const VisibilityToggle = styled(Pressable)`
   padding: 12px 14px;
 `;
 const ToggleText = styled.Text`
-  color: ${AppColors.ink};
+  color: ${({ theme }) => theme.text};
   font-size: 13px;
   font-weight: 900;
   text-transform: uppercase;
