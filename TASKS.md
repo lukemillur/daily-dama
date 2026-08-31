@@ -156,7 +156,7 @@ _T182–T193 come from stories S063–S074 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 - **Area:** Authentication / Supabase
 - **Priority:** High
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** The `delete-account` Edge Function currently returns a 503 when invoked from the app, blocking T161.4's already-shipped deletion flow entirely. Diagnose whether this is a local-environment issue (per `supabase/README.md`, the function needs a running local stack via `supabase start`/`db reset`) or an actual handler/deployment defect, and fix it.
 - **Exit criteria:** A real account created for this purpose is deleted successfully end-to-end through the app UI (204 from the function, Auth user and application rows removed), and the deletion control cannot be resubmitted after success; if the root cause is environmental, document the required running-stack precondition where a developer would look for it (`supabase/README.md` or `DEPLOYMENT_HANDOFF.md`).
