@@ -4,13 +4,14 @@ import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 import { AccountDeletionScreen } from '@/features/auth/components/account-deletion-screen';
 
 const mockPush = jest.fn();
+const mockReplace = jest.fn();
 const mockDeleteAccount = jest.fn<(
   currentPassword: string,
   confirmation: string,
 ) => Promise<{ error: unknown }>>();
 let mockAuthState: { status: 'authenticated' | 'guest' | 'initializing' } = { status: 'authenticated' };
 
-jest.mock('expo-router', () => ({ useRouter: () => ({ push: mockPush }) }));
+jest.mock('expo-router', () => ({ useRouter: () => ({ push: mockPush, replace: mockReplace }) }));
 jest.mock('@/features/auth/state/auth-provider', () => ({
   useAuthState: () => mockAuthState,
   useAuthActions: () => ({ deleteAccount: mockDeleteAccount }),
@@ -35,6 +36,7 @@ async function flush() {
 describe('AccountDeletionScreen', () => {
   afterEach(() => {
     mockPush.mockReset();
+    mockReplace.mockReset();
     mockDeleteAccount.mockReset();
     mockDeleteAccount.mockResolvedValue({ error: null });
     mockAuthState = { status: 'authenticated' };
@@ -70,6 +72,10 @@ describe('AccountDeletionScreen', () => {
     await act(async () => resolve({ error: null }));
     expect(containsText(root, /permanently deleted/i)).toBe(true);
     expect(() => findByLabel(root, 'Delete account permanently')).toThrow();
+    // T188: navigates to the dedicated top-level confirmation route, out of
+    // the `/app/*` tabs tree entirely, rather than relying solely on staying
+    // mounted on this in-tabs route.
+    expect(mockReplace).toHaveBeenCalledWith('/account-deleted');
   });
 
   it('keeps rendering the success view even if authState has already flipped to guest by the time this renders', async () => {
