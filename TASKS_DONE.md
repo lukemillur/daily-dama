@@ -4,6 +4,16 @@ Completed entries move here from `TASKS.md`'s `Backlog`, in the same commit that
 
 Entries keep their content as it was at completion. Don't retroactively edit a description or exit criteria after the fact; if something about a completed task turns out to be wrong or misleading, note that in a new entry or in code, not by rewriting history here.
 
+### [T183] Present the signup re-invite as a dismissible modal
+
+- **Area:** Sesh / guest invitation
+- **Priority:** Medium
+- **Status:** Done
+- **Planning:** Implementer
+- **Description:** `PostSeshSignupInvite` (`sesh.tsx`) currently renders inline as the last item in the wrap-up screen's column. Convert it to a modal overlay the user must dismiss or act on, reusing the absolute-fill `View` overlay pattern `rank-up-celebration-modal.tsx` and `logout-prompt.tsx` already establish in this codebase (no RN `Modal` precedent here) rather than introducing a new modal mechanism.
+- **Exit criteria:** `sesh.test.tsx` passes, including an assertion that `showSignupInvite` renders the invite as an overlay (not inline wrap-up content) and that both "Sign up" and "Dismiss" close it, for both the first-ever-Sesh case and the every-5th-session case. Met: `PostSeshSignupInvite` now renders as an `InviteOverlay` (absolute-fill, matching `rank-up-celebration-modal.tsx`/`logout-prompt.tsx`) rendered as a sibling after `CompletedSesh`'s `ScrollArea`, not inside `ActiveContent`. New tests assert the invite node is absent from the `ScrollView` subtree and present at the top level, for both the first-ever-Sesh case and the every-5th-session (6th completion) case, and that pressing either "Sign up" (now `router.push`-driven instead of `Link asChild`, so its `onPress` can also dismiss) or "Dismiss" closes the overlay in both cases. `sesh.test.tsx` passes (`yarn test --runInBand --runTestsByPath src/features/sesh/components/sesh.test.tsx`), plus `yarn tsc --noEmit` and `yarn eslint` on both changed files (0 errors).
+- **Notes:** From S064. Pure presentation change — `isRegularSessionInviteEligible`'s eligibility logic (T166) and its dismiss/sign-up handlers are unchanged. Switched the "Sign up" action from `Link asChild` to `useRouter().push`, since `Link asChild` overrides the child's own `onPress` (documented precedent: `trick-directory.tsx`'s `RowAction` comment), which would have prevented composing navigation with dismissal.
+
 ### [T182] Make the trick title prominent and right-aligned on goal cards
 
 - **Area:** Goals

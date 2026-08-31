@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
 import type { ComponentProps, ReactElement } from 'react';
-import { Pressable, Text } from 'react-native';
+import { Pressable, ScrollView, Text } from 'react-native';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 import { ThemeProvider as StyledThemeProvider, type DefaultTheme } from 'styled-components/native';
 
@@ -728,8 +728,47 @@ describe('CompletedSesh signup invite', () => {
     );
 
     expect(findByAccessibilityLabel(root, 'Guest signup invitation').length).toBeGreaterThan(0);
-    const signUpLinks = root.root.findAll((node) => node.props.href === '/auth/sign-up');
-    expect(signUpLinks.length).toBeGreaterThan(0);
+  });
+
+  it('renders the invite as an overlay outside the wrap-up scroll content, not inline (T183)', async () => {
+    const root = await mountWithNoteProvider(
+      <CompletedSesh
+        summary={summary}
+        isFirstLace={false}
+        showSignupInvite={true}
+        onReset={noop}
+        onRepeat={noop}
+      />,
+    );
+
+    const inviteNodes = findByAccessibilityLabel(root, 'Guest signup invitation');
+    expect(inviteNodes.length).toBeGreaterThan(0);
+
+    const [scrollView] = root.root.findAllByType(ScrollView);
+    const inviteInsideScroll = scrollView.findAll(
+      (node) => node.props.accessibilityLabel === 'Guest signup invitation',
+    );
+    expect(inviteInsideScroll).toHaveLength(0);
+  });
+
+  it('closes the invite when "Sign up" is pressed', async () => {
+    const root = await mountWithNoteProvider(
+      <CompletedSesh
+        summary={summary}
+        isFirstLace={false}
+        showSignupInvite={true}
+        onReset={noop}
+        onRepeat={noop}
+      />,
+    );
+
+    expect(findByAccessibilityLabel(root, 'Guest signup invitation').length).toBeGreaterThan(0);
+
+    act(() => {
+      pressByVisibleText(root, 'Sign up');
+    });
+
+    expect(findByAccessibilityLabel(root, 'Guest signup invitation')).toHaveLength(0);
   });
 
   it('dismisses the invite without changing the completed record', async () => {
@@ -1774,6 +1813,46 @@ describe('Sesh signup invite integration', () => {
     }
   });
 
+  it('renders the invite as an overlay on the first-ever sesh, and "Dismiss" closes it (T183)', async () => {
+    jest.useFakeTimers();
+    try {
+      const root = await mountSesh('guest');
+      completeASesh(root, `Start a sesh with ${TRICK.name}`);
+
+      expect(findByAccessibilityLabel(root, 'Guest signup invitation').length).toBeGreaterThan(0);
+      const [scrollView] = root.root.findAllByType(ScrollView);
+      expect(
+        scrollView.findAll((node) => node.props.accessibilityLabel === 'Guest signup invitation'),
+      ).toHaveLength(0);
+
+      act(() => {
+        pressByAccessibilityLabel(root, 'Dismiss signup invitation');
+      });
+
+      expect(findByAccessibilityLabel(root, 'Guest signup invitation')).toHaveLength(0);
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it('"Sign up" also closes the invite on the first-ever sesh (T183)', async () => {
+    jest.useFakeTimers();
+    try {
+      const root = await mountSesh('guest');
+      completeASesh(root, `Start a sesh with ${TRICK.name}`);
+
+      expect(findByAccessibilityLabel(root, 'Guest signup invitation').length).toBeGreaterThan(0);
+
+      act(() => {
+        pressByVisibleText(root, 'Sign up');
+      });
+
+      expect(findByAccessibilityLabel(root, 'Guest signup invitation')).toHaveLength(0);
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
   it('does not show the invite on a later completion in the same session', async () => {
     jest.useFakeTimers();
     try {
@@ -1848,6 +1927,50 @@ describe('Sesh signup invite integration', () => {
       repeatASesh(root);
       expect(findByAccessibilityLabel(root, 'Guest signup invitation').length).toBeGreaterThan(0);
       expect(findByAccessibilityLabel(root, 'session-count:6').length).toBeGreaterThan(0);
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it('renders the invite as an overlay on the every-5th-session reappearance, and "Dismiss" closes it (T183)', async () => {
+    jest.useFakeTimers();
+    try {
+      const root = await mountSesh('guest');
+      completeASesh(root, `Start a sesh with ${TRICK.name}`);
+      for (let session = 2; session <= 6; session += 1) {
+        repeatASesh(root);
+      }
+      expect(findByAccessibilityLabel(root, 'Guest signup invitation').length).toBeGreaterThan(0);
+      const [scrollView] = root.root.findAllByType(ScrollView);
+      expect(
+        scrollView.findAll((node) => node.props.accessibilityLabel === 'Guest signup invitation'),
+      ).toHaveLength(0);
+
+      act(() => {
+        pressByAccessibilityLabel(root, 'Dismiss signup invitation');
+      });
+
+      expect(findByAccessibilityLabel(root, 'Guest signup invitation')).toHaveLength(0);
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it('"Sign up" also closes the invite on the every-5th-session reappearance (T183)', async () => {
+    jest.useFakeTimers();
+    try {
+      const root = await mountSesh('guest');
+      completeASesh(root, `Start a sesh with ${TRICK.name}`);
+      for (let session = 2; session <= 6; session += 1) {
+        repeatASesh(root);
+      }
+      expect(findByAccessibilityLabel(root, 'Guest signup invitation').length).toBeGreaterThan(0);
+
+      act(() => {
+        pressByVisibleText(root, 'Sign up');
+      });
+
+      expect(findByAccessibilityLabel(root, 'Guest signup invitation')).toHaveLength(0);
     } finally {
       jest.useRealTimers();
     }
