@@ -156,7 +156,7 @@ _T182–T193 come from stories S063–S074 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 - **Area:** Sesh / guest invitation
 - **Priority:** Medium
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Implementer
 - **Description:** `PostSeshSignupInvite` (`sesh.tsx`) currently renders inline as the last item in the wrap-up screen's column. Convert it to a modal overlay the user must dismiss or act on, reusing the absolute-fill `View` overlay pattern `rank-up-celebration-modal.tsx` and `logout-prompt.tsx` already establish in this codebase (no RN `Modal` precedent here) rather than introducing a new modal mechanism.
 - **Exit criteria:** `sesh.test.tsx` passes, including an assertion that `showSignupInvite` renders the invite as an overlay (not inline wrap-up content) and that both "Sign up" and "Dismiss" close it, for both the first-ever-Sesh case and the every-5th-session case.
