@@ -164,7 +164,7 @@ _T182–T193 come from stories S063–S074 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 - **Area:** Synchronization
 - **Priority:** High
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** Using T187.1's new `updatedAt` field (and `note.ts`'s existing one), change each of the four mutable domains' sync drivers to resolve a detected conflict automatically by keeping the snapshot with the later `updatedAt`, instead of recording a `SyncConflictRecord` for manual choice. Remove `/app/profile/sync-conflicts.tsx`, `sync-conflict-list.tsx`, and `SyncStatusSection`'s "Review conflicts" link.
 - **Exit criteria:** The existing per-domain conflict fault-injection suites (from T160.2/T160.3) are updated to assert automatic resolution by `updatedAt` instead of asserting a pending `SyncConflictRecord`, and pass; `sync-status.ts`'s conflict-count fact either resolves to zero permanently or is removed if no longer reachable; full app verification sequence passes (test, lint, typecheck, web export).
