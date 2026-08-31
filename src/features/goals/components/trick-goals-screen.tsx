@@ -143,13 +143,17 @@ export function GoalRow({
       onPress={() => router.push({ pathname: '/app/sesh', params: { trickId: goal.trickId, mode: 'practice' } })}
       onPressIn={() => setPressed(true)}
       onPressOut={() => setPressed(false)}>
-      <GoalTrickName>{goal.trickName}</GoalTrickName>
-      <GoalMetaRow>
-        <GoalMeta>{goal.kind === 'count' ? 'Lace count goal' : 'Practice time goal'}</GoalMeta>
-        {progress.achieved ? <AchievedBadge>Achieved</AchievedBadge> : null}
-      </GoalMetaRow>
-      <GoalBody>{formatGoalTarget(goal)}</GoalBody>
-      <ProgressText>{formatGoalProgress(progress)}</ProgressText>
+      <GoalHeaderRow>
+        <GoalInfoColumn>
+          <GoalMetaRow>
+            <GoalMeta>{goal.kind === 'count' ? 'Lace count goal' : 'Practice time goal'}</GoalMeta>
+            {progress.achieved ? <AchievedBadge>Achieved</AchievedBadge> : null}
+          </GoalMetaRow>
+          <GoalBody>{formatGoalTarget(goal)}</GoalBody>
+          <ProgressText>{formatGoalProgress(progress)}</ProgressText>
+        </GoalInfoColumn>
+        <GoalTrickName numberOfLines={2}>{goal.trickName}</GoalTrickName>
+      </GoalHeaderRow>
       <GoalActionsRow>
         <PracticeHintText>Practice toward this goal</PracticeHintText>
         <GoalAction
@@ -285,12 +289,13 @@ const GoalCardPressable = styled(Pressable)<{ readonly $pressed: boolean }>`
   padding: 16px;
   opacity: ${({ $pressed }) => ($pressed ? 0.7 : 1)};
 `;
-const GoalTrickName = styled.Text`
-  color: ${AppColors.ink};
-  font-size: 13px;
-  font-weight: 900;
-  letter-spacing: 0.4px;
-  margin-bottom: 8px;
+const GoalHeaderRow = styled.View`flex-direction: row; align-items: flex-start; justify-content: space-between; gap: 14px;`;
+const GoalInfoColumn = styled.View`flex: 1;`;
+const GoalTrickName = styled(DisplayTitle)`
+  flex-shrink: 1;
+  font-size: 28px;
+  line-height: 30px;
+  text-align: right;
 `;
 const GoalMetaRow = styled.View`flex-direction: row; align-items: center; justify-content: space-between; gap: 10px;`;
 const GoalMeta = styled.Text`color: ${AppColors.red}; font-size: 11px; font-weight: 900; letter-spacing: 0.8px; text-transform: uppercase;`;
