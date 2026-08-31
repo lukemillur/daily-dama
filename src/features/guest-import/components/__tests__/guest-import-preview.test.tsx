@@ -94,12 +94,19 @@ describe('GuestImportPreview', () => {
     expect(root.toJSON()).toBeNull();
   });
 
-  it.each(['uploading', 'awaitingProfileChoice', 'conflicts'] as const)(
-    'renders an inert progress row for status %s',
-    async (status) => {
-      mockUseGuestImportResult = { ...mockUseGuestImportResult, state: withState(status) };
-      const root = await mount();
-      expect(findByLabel(root, 'Import in progress').length).toBeGreaterThan(0);
-    },
-  );
+  it('renders an inert progress row for status uploading', async () => {
+    mockUseGuestImportResult = { ...mockUseGuestImportResult, state: withState('uploading') };
+    const root = await mount();
+    expect(findByLabel(root, 'Import in progress').length).toBeGreaterThan(0);
+  });
+
+  // T186.2: the manual choice/JSON-snapshot UI is deleted entirely, not
+  // just hidden -- no raw record data (or a button referencing it) can
+  // reach this component's rendered output for any reachable status.
+  it('never renders the deleted manual profile-choice UI', async () => {
+    mockUseGuestImportResult = { ...mockUseGuestImportResult, state: withState('uploading') };
+    const root = await mount();
+    expect(findByLabel(root, 'Keep guest profile preferences')).toHaveLength(0);
+    expect(findByLabel(root, 'Keep cloud profile preferences')).toHaveLength(0);
+  });
 });

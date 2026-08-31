@@ -31,6 +31,11 @@ import type { GuestImportDomainCounts } from '@/features/guest-import/model/gues
 import { createIdentityContext } from '@/shared/persistence/identity-context';
 import { createUserIdentity, GUEST_IDENTITY, type Identity } from '@/shared/persistence/identity';
 import { IdentityHandleContext } from '@/shared/persistence/identity-provider';
+import { createGuestMigratingStorage } from '@/shared/persistence/scoped-storage';
+import { saveGoals } from '@/features/goals/persistence/goal-persistence';
+import { saveUserProfile } from '@/features/profile/persistence/user-profile-persistence';
+import { INITIAL_USER_PROFILE } from '@/features/profile/model/user-profile';
+import type { SyncPushRequest } from '@/shared/sync/transport';
 
 const USER_ID = '11111111-1111-1111-1111-111111111111';
 const USER_IDENTITY: Identity = createUserIdentity(USER_ID)!;
@@ -337,5 +342,86 @@ describe('useGuestImport: remount/resume and identity change', () => {
     expect(captured.result?.state.status).toBe('awaitingConfirmation');
     expect(captured.result?.state.ownerIdentityNamespace).toBe(`user:${OTHER_USER_ID}`);
     expect(captured.result?.state.inventory).toEqual(zeroCounts());
+  });
+});
+
+// T186.2: an existing-account merge's profile-preference and record
+// conflicts are resolved automatically by updatedAt at merge-planning time
+// (planExistingAccountMerge), so this drives a genuine targetKind:
+// 'existing' merge with a guest/cloud mismatch all the way through the
+// hook to 'completed', with a fuller mocked transports object (the "dry-run
+// inventory" stub used above deliberately no-ops the upload effect).
+describe('useGuestImport: existing-account merge resolves automatically', () => {
+  beforeEach(async () => {
+    await AsyncStorage.clear();
+    mockCountLocalGuestRecords.mockReset();
+    mockCountCloudRecords.mockReset();
+    mockBuildGuestImportTransports.mockReset();
+    mockGetSupabaseClient.mockReset();
+    mockGetSupabaseClient.mockReturnValue({ kind: 'fake-client' });
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
+  it('resolves a strictly-newer guest edit automatically, pushes it, and completes with no chooseProfile/resolveConflict/finishConflicts caller action', async () => {
+    // Seed the guest's own local goal, strictly newer than the cloud's.
+    const guestStorage = createGuestMigratingStorage(AsyncStorage, { getIdentity: () => GUEST_IDENTITY });
+    await saveUserProfile(guestStorage, { ...INITIAL_USER_PROFILE, hasCompletedOnboarding: true });
+    await saveGoals(guestStorage, {
+      goals: [{ id: 'goal-1', trickId: 'trick-1', trickName: 'Trick', kind: 'count', targetCount: 3, createdAt: 500, updatedAt: 2000 }],
+    });
+
+    mockCountLocalGuestRecords.mockResolvedValue({
+      profile: { local: 0, cloud: 0 }, customTricks: { local: 0, cloud: 0 }, practiceHistory: { local: 0, cloud: 0 },
+      goals: { local: 1, cloud: 0 }, notes: { local: 0, cloud: 0 },
+    });
+    mockCountCloudRecords.mockResolvedValue({
+      status: 'succeeded', counts: { profile: 0, customTricks: 0, practiceHistory: 0, goals: 1, notes: 0 },
+    });
+
+    const pushedByDomain: Record<string, SyncPushRequest[]> = { profile: [], customTricks: [], practiceHistory: [], goals: [], notes: [] };
+    function trackingPush(domain: string) {
+      return async (request: SyncPushRequest) => {
+        pushedByDomain[domain].push(request);
+        return { status: 'succeeded' as const, row: {} };
+      };
+    }
+    const emptyPage = async () => ({ status: 'succeeded' as const, page: { items: [] as unknown[], nextCursor: null } });
+    const cloudGoalRow = {
+      id: 'goal-1', user_id: USER_ID, trick_id: 'trick-1', trick_name: 'Trick', kind: 'count',
+      target_count: 5, target_ms: null, created_at: new Date(500).toISOString(), updated_at: new Date(1000).toISOString(),
+      revision: 2, deleted_at: null,
+    };
+    mockBuildGuestImportTransports.mockReturnValue({
+      profile: {
+        pullProfileRow: async () => ({ status: 'succeeded', page: { items: [], nextCursor: null } }),
+        pullTrickStatePage: emptyPage,
+        push: trackingPush('profile'),
+      },
+      customTricks: { pull: emptyPage, push: trackingPush('customTricks') },
+      practiceHistory: { pull: emptyPage, push: trackingPush('practiceHistory') },
+      goals: {
+        pull: async () => ({ status: 'succeeded', page: { items: [cloudGoalRow], nextCursor: null } }),
+        push: trackingPush('goals'),
+      },
+      notes: { pull: emptyPage, push: trackingPush('notes') },
+    });
+
+    const { captured } = await mountHarness(USER_IDENTITY);
+    await flush(20);
+
+    expect(captured.result?.state.status).toBe('completed');
+    expect('chooseProfile' in (captured.result ?? {})).toBe(false);
+    expect('resolveConflict' in (captured.result ?? {})).toBe(false);
+    expect('finishConflicts' in (captured.result ?? {})).toBe(false);
+
+    // The guest's strictly-newer goal (updatedAt 2000 vs. cloud's 1000) won
+    // automatically -- its pushed payload carries the guest's targetCount,
+    // not the cloud's.
+    expect(pushedByDomain.goals).toHaveLength(1);
+    expect(pushedByDomain.goals[0].recordId).toBe('goal-1');
+    expect(pushedByDomain.goals[0].payload).toEqual(expect.objectContaining({ target_count: 3 }));
   });
 });

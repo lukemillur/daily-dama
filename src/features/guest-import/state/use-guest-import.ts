@@ -37,11 +37,9 @@ import {
   type GuestImportAction,
   type GuestImportDomainCounts,
   type GuestImportState,
-  type GuestImportChoice,
 } from '@/features/guest-import/model/guest-import';
 import { prepareGuestImport, readGuestImportSnapshot, runEmptyGuestImport } from '@/features/guest-import/persistence/guest-import-empty-account';
 import { planExistingAccountMerge, readExistingAccountSnapshot } from '@/features/guest-import/persistence/guest-import-existing-account';
-import { planProfileChoice, runExistingGuestImport } from '@/features/guest-import/persistence/guest-import-decisions';
 import { identityNamespace } from '@/shared/persistence/identity';
 import { useIdentityHandle } from '@/shared/persistence/identity-provider';
 import { useIdentityScopedDomain } from '@/shared/persistence/use-identity-scoped-domain';
@@ -52,9 +50,6 @@ export interface UseGuestImportResult {
   readonly state: GuestImportState;
   readonly confirmImport: () => void;
   readonly dismiss: () => void;
-  readonly chooseProfile?: (choice: GuestImportChoice) => void;
-  readonly resolveConflict?: (domain: import('@/shared/sync/domain').SyncDomain, recordId: string, choice: GuestImportChoice) => void;
-  readonly finishConflicts?: () => void;
 }
 
 function mergeCounts(
@@ -234,7 +229,7 @@ export function useGuestImport(): UseGuestImportResult {
     if (!hasHydrated || identity.kind !== 'user' || state.status !== 'uploading' || state.targetKind === undefined) return;
     const importId = state.importId;
     if (importId === undefined) return;
-    const phaseKey = `${importId}:${state.status}:${state.profileChoice ?? ''}:${state.conflictResolutions.length}`;
+    const phaseKey = `${importId}:${state.status}`;
     if (importStartedRef.current.has(phaseKey)) return;
     importStartedRef.current.add(phaseKey);
     let cancelled = false;
@@ -273,8 +268,8 @@ export function useGuestImport(): UseGuestImportResult {
           });
           progress = { sourceIdentityNamespace: 'guest', destinationIdentityNamespace: identityNamespace(destinationIdentity), operations: planned.operations };
           if (cancelled || latestRef.current.state.importId !== importId) return;
-          latestRef.current.dispatch({ type: 'existingMergePrepared', importId, progress, profileComparison: planned.profileComparison, deduplications: planned.deduplications, conflicts: planned.conflicts, now: Date.now() });
-          await latestRef.current.saveNow?.({ ...latestRef.current.state, progress, profileComparison: planned.profileComparison, deduplications: planned.deduplications, conflicts: planned.conflicts });
+          latestRef.current.dispatch({ type: 'existingMergePrepared', importId, progress, deduplications: planned.deduplications, now: Date.now() });
+          await latestRef.current.saveNow?.({ ...latestRef.current.state, progress, deduplications: planned.deduplications });
         }
         if (progress === undefined) throw new Error('Guest import could not prepare its progress record.');
         const client = getSupabaseClient();
@@ -283,24 +278,18 @@ export function useGuestImport(): UseGuestImportResult {
         // The hook remains inert when a test/dry-run inventory supplies no
         // mutation-capable transport; production adapters always expose push.
         if (typeof transports.profile?.push !== 'function') return;
-        const profilePlan = state.profileChoice && state.profileComparison ? planProfileChoice({ comparison: state.profileComparison, choice: state.profileChoice, destinationUserId: destinationIdentity.userId, expectedRevision: null, operationId: `guest-import-profile-${importId}`, createdAt: state.startedAt ?? Date.now() }) : undefined;
-        const result = state.targetKind === 'existing'
-          ? { status: 'completed' as const, progress: await runExistingGuestImport({
-            progress, repositories: transports, storage: AsyncStorage, destinationIdentity, destinationUserId: destinationIdentity.userId,
-            profileChoice: state.profileChoice, profileOperation: profilePlan?.operation, cleanupReferences: state.deduplications,
-            conflicts: latestRef.current.state.conflicts, resolutions: latestRef.current.state.conflictResolutions,
-            saveProgress: async (nextProgress) => {
-              if (cancelled || latestRef.current.state.importId !== importId) return;
-              latestRef.current.dispatch({ type: 'progressUpdated', importId, progress: nextProgress, now: Date.now() });
-              await latestRef.current.saveNow?.({ ...latestRef.current.state, progress: nextProgress });
-            },
-          }) }
-          : await runEmptyGuestImport({
+        // T186.2: both targetKinds are fully resolved by planning time now
+        // (empty accounts trivially, existing accounts via
+        // planExistingAccountMerge's automatic updatedAt resolution), so
+        // there is nothing left for a separate "existing" run path to add
+        // over runEmptyGuestImport's own cleanupReferences support.
+        const result = await runEmptyGuestImport({
           storage: AsyncStorage,
           destinationIdentity,
           destinationUserId: destinationIdentity.userId,
           progress,
           repositories: transports,
+          cleanupReferences: state.deduplications,
           saveProgress: async (nextProgress) => {
             if (cancelled || latestRef.current.state.importId !== importId) return;
             latestRef.current.dispatch({ type: 'progressUpdated', importId, progress: nextProgress, now: Date.now() });
@@ -310,8 +299,7 @@ export function useGuestImport(): UseGuestImportResult {
         });
         if (cancelled || latestRef.current.state.importId !== importId || result.status !== 'completed') return;
         for (const domain of SYNC_DOMAINS) {
-          const hasConflict = latestRef.current.state.conflicts.some((conflict) => conflict.domain === domain);
-          if (latestRef.current.state.status === 'uploading') latestRef.current.dispatch({ type: 'domainUploadSettled', importId, domain, outcome: { status: hasConflict ? 'conflict' : 'succeeded', errorMessage: undefined }, now: Date.now() });
+          if (latestRef.current.state.status === 'uploading') latestRef.current.dispatch({ type: 'domainUploadSettled', importId, domain, outcome: { status: 'succeeded', errorMessage: undefined }, now: Date.now() });
         }
       } catch (error) {
         if (cancelled || latestRef.current.state.importId !== importId) return;
@@ -320,7 +308,7 @@ export function useGuestImport(): UseGuestImportResult {
       }
     })();
     return () => { cancelled = true; };
-  }, [hasHydrated, identity, state.status, state.targetKind, state.importId, state.profileChoice, state.profileComparison, state.deduplications, state.startedAt, state.conflictResolutions.length]);
+  }, [hasHydrated, identity, state.status, state.targetKind, state.importId, state.deduplications]);
 
   const confirmImport = useCallback(() => {
     const latest = latestRef.current;
@@ -332,23 +320,5 @@ export function useGuestImport(): UseGuestImportResult {
     dispatch({ type: 'dismissPressed' });
   }, [dispatch]);
 
-  const chooseProfile = useCallback((choice: GuestImportChoice) => {
-    const latest = latestRef.current;
-    if (latest.state.importId === undefined || latest.state.profileComparison === undefined) return;
-    const plan = planProfileChoice({ comparison: latest.state.profileComparison, choice, destinationUserId: identity.kind === 'user' ? identity.userId : '', expectedRevision: null, operationId: `guest-import-profile-${latest.state.importId}`, createdAt: Date.now() });
-    const progress = plan.operation === null || latest.state.progress === undefined ? latest.state.progress : { ...latest.state.progress, operations: [...latest.state.progress.operations, plan.operation] };
-    latest.dispatch({ type: 'profileChoiceMade', importId: latest.state.importId, choice, now: Date.now() });
-    if (progress !== undefined) latest.dispatch({ type: 'progressUpdated', importId: latest.state.importId, progress, now: Date.now() });
-  }, [identity]);
-  const resolveConflict = useCallback((domain: import('@/shared/sync/domain').SyncDomain, recordId: string, choice: GuestImportChoice) => {
-    const latest = latestRef.current;
-    if (latest.state.importId === undefined) return;
-    latest.dispatch({ type: 'conflictResolved', importId: latest.state.importId, domain, recordId, choice, now: Date.now() });
-  }, []);
-  const finishConflicts = useCallback(() => {
-    const latest = latestRef.current;
-    if (latest.state.importId !== undefined) latest.dispatch({ type: 'conflictsResolved', importId: latest.state.importId, now: Date.now() });
-  }, []);
-
-  return { state, confirmImport, dismiss, chooseProfile, resolveConflict, finishConflicts };
+  return { state, confirmImport, dismiss };
 }
