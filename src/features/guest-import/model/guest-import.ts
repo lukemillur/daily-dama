@@ -13,7 +13,6 @@
 
 import { SYNC_DOMAINS, type SyncDomain } from '@/shared/sync/domain';
 import type { OutboxOperationType } from '@/shared/sync/outbox-operation';
-import type { ConflictSnapshot } from '@/shared/sync/json-snapshot';
 
 export type GuestImportOperationStatus = 'pending' | 'acknowledged' | 'rejected';
 export type GuestImportSourceCleanupStatus = 'pending' | 'completed' | 'retained';
@@ -48,8 +47,6 @@ export type GuestImportStatus =
   | 'inventorying'
   | 'awaitingConfirmation'
   | 'uploading'
-  | 'awaitingProfileChoice'
-  | 'conflicts'
   | 'completed'
   | 'cancelled';
 
@@ -64,31 +61,12 @@ export interface GuestImportDomainOutcome {
   readonly errorMessage: string | undefined;
 }
 
-export interface GuestImportConflict {
-  readonly domain: SyncDomain;
-  readonly recordId: string;
-  readonly guestSnapshot: ConflictSnapshot;
-  readonly cloudSnapshot: ConflictSnapshot;
-  readonly cloudRevision: number | null;
-}
-
 export interface GuestImportRecordReference {
   readonly domain: SyncDomain;
   readonly recordId: string;
 }
 
-export interface GuestImportProfileComparison {
-  readonly guest: ConflictSnapshot;
-  readonly cloud: ConflictSnapshot | null;
-}
-
 export type GuestImportChoice = 'guest' | 'cloud';
-
-export interface GuestImportConflictResolution {
-  readonly domain: SyncDomain;
-  readonly recordId: string;
-  readonly choice: GuestImportChoice;
-}
 
 export interface GuestImportState {
   readonly status: GuestImportStatus;
@@ -97,11 +75,7 @@ export interface GuestImportState {
   readonly inventory: GuestImportDomainCounts | undefined;
   readonly targetKind: GuestImportTargetKind | undefined;
   readonly domainOutcomes: Readonly<Partial<Record<SyncDomain, GuestImportDomainOutcome>>>;
-  readonly profileChoice: GuestImportChoice | undefined;
-  readonly conflictResolutions: readonly GuestImportConflictResolution[];
-  readonly conflicts: readonly GuestImportConflict[];
   readonly deduplications: readonly GuestImportRecordReference[];
-  readonly profileComparison: GuestImportProfileComparison | undefined;
   readonly errorMessage: string | undefined;
   readonly startedAt: number | undefined;
   readonly updatedAt: number | undefined;
@@ -115,11 +89,7 @@ export const INITIAL_GUEST_IMPORT_STATE: GuestImportState = {
   inventory: undefined,
   targetKind: undefined,
   domainOutcomes: {},
-  profileChoice: undefined,
-  conflictResolutions: [],
-  conflicts: [],
   deduplications: [],
-  profileComparison: undefined,
   errorMessage: undefined,
   startedAt: undefined,
   updatedAt: undefined,
@@ -142,9 +112,7 @@ export type GuestImportAction =
       readonly type: 'existingMergePrepared';
       readonly importId: string;
       readonly progress: GuestImportProgress;
-      readonly profileComparison: GuestImportProfileComparison;
       readonly deduplications: readonly GuestImportRecordReference[];
-      readonly conflicts: readonly GuestImportConflict[];
       readonly now: number;
     }
   | {
@@ -154,14 +122,6 @@ export type GuestImportAction =
       readonly outcome: GuestImportDomainOutcome;
       readonly now: number;
     }
-  | {
-      readonly type: 'profileChoiceMade';
-      readonly importId: string;
-      readonly choice: GuestImportChoice;
-      readonly now: number;
-    }
-  | { readonly type: 'conflictResolved'; readonly importId: string; readonly domain: SyncDomain; readonly recordId: string; readonly choice: GuestImportChoice; readonly now: number }
-  | { readonly type: 'conflictsResolved'; readonly importId: string; readonly now: number }
   | { readonly type: 'cancelPressed'; readonly importId: string; readonly now: number }
   | { readonly type: 'dismissPressed' }
   | { readonly type: 'stateRestored'; readonly state: GuestImportState }
@@ -188,24 +148,24 @@ function allDomainsSettled(domainOutcomes: Readonly<Partial<Record<SyncDomain, G
   });
 }
 
-function conflictKey(value: Pick<GuestImportConflictResolution, 'domain' | 'recordId'>): string {
-  return `${value.domain}:${value.recordId}`;
-}
-
-function allConflictsResolved(state: GuestImportState): boolean {
-  const resolved = new Set(state.conflictResolutions.map(conflictKey));
-  return state.conflicts.every((conflict) => resolved.has(conflictKey(conflict)));
-}
-
-export function isGuestImportFinalizable(state: GuestImportState): boolean {
-  if (state.status === 'uploading') return false;
-  if (state.profileChoice === undefined && state.targetKind === 'existing') return false;
-  if (state.conflicts.some((conflict) => !state.conflictResolutions.some((item) => conflictKey(item) === conflictKey(conflict)))) return false;
+function operationsSettled(state: GuestImportState): boolean {
   return (state.progress?.operations ?? []).every((operation) =>
     operation.status === 'rejected' ||
     (operation.status === 'acknowledged' &&
       (operation.sourceCleanupStatus === 'completed' || operation.sourceCleanupStatus === 'retained')),
   );
+}
+
+// `state.status === 'uploading'` is deliberately excluded here for
+// progressPrepared/progressUpdated below: those actions never move status
+// themselves, so gating strictly on "not literally uploading anymore" means
+// a mid-upload progress update can never prematurely complete an import
+// before domainUploadSettled has had its own say (see that case, which
+// checks `operationsSettled` directly instead, since it's the one action
+// that's actually allowed to leave 'uploading').
+export function isGuestImportFinalizable(state: GuestImportState): boolean {
+  if (state.status === 'uploading') return false;
+  return operationsSettled(state);
 }
 
 export function guestImportReducer(state: GuestImportState, action: GuestImportAction): GuestImportState {
@@ -266,9 +226,7 @@ export function guestImportReducer(state: GuestImportState, action: GuestImportA
       return {
         ...state,
         progress: action.progress,
-        profileComparison: action.profileComparison,
         deduplications: action.deduplications,
-        conflicts: action.conflicts,
         updatedAt: action.now,
       };
     }
@@ -282,37 +240,8 @@ export function guestImportReducer(state: GuestImportState, action: GuestImportA
         return { ...state, domainOutcomes, updatedAt: action.now };
       }
 
-      return {
-        ...state,
-        status: state.targetKind === 'empty' ? 'completed' : 'awaitingProfileChoice',
-        domainOutcomes,
-        updatedAt: action.now,
-      };
-    }
-
-    case 'profileChoiceMade': {
-      if (state.status !== 'awaitingProfileChoice' || state.importId !== action.importId) return state;
-      if (state.profileChoice !== undefined) return state;
-      if (action.choice === 'cloud' && state.profileComparison?.cloud === null) return state;
-      return {
-        ...state,
-        status: state.conflicts.length > 0 ? 'conflicts' : (isGuestImportFinalizable({ ...state, profileChoice: action.choice }) ? 'completed' : 'awaitingProfileChoice'),
-        profileChoice: action.choice,
-        updatedAt: action.now,
-      };
-    }
-
-    case 'conflictResolved': {
-      if (state.status !== 'conflicts' || state.importId !== action.importId || state.conflictResolutions.some((item) => conflictKey(item) === `${action.domain}:${action.recordId}`)) return state;
-      if (!state.conflicts.some((item) => item.domain === action.domain && item.recordId === action.recordId)) return state;
-      const conflictResolutions = [...state.conflictResolutions, { domain: action.domain, recordId: action.recordId, choice: action.choice }];
-      return { ...state, conflictResolutions, updatedAt: action.now };
-    }
-
-    case 'conflictsResolved': {
-      if (state.status !== 'conflicts' || state.importId !== action.importId) return state;
-      if (state.profileChoice === undefined || !allConflictsResolved(state)) return state;
-      return { ...state, status: isGuestImportFinalizable(state) ? 'completed' : 'conflicts', updatedAt: action.now };
+      const next = { ...state, domainOutcomes, updatedAt: action.now };
+      return operationsSettled(next) ? { ...next, status: 'completed' } : next;
     }
 
     case 'cancelPressed': {
@@ -372,8 +301,6 @@ export function isGuestImportPendingResolution(state: GuestImportState): boolean
   switch (state.status) {
     case 'inventorying':
     case 'uploading':
-    case 'awaitingProfileChoice':
-    case 'conflicts':
       return true;
     case 'awaitingConfirmation':
       return state.inventory !== undefined && hasAnyLocalGuestData(state.inventory);

@@ -41,17 +41,7 @@ function fullState(status: GuestImportState['status']): GuestImportState {
     inventory: inventory as unknown as GuestImportState['inventory'],
     targetKind: 'existing',
     domainOutcomes: domainOutcomes as unknown as GuestImportState['domainOutcomes'],
-    profileChoice: 'cloud',
-    conflictResolutions: [
-      { domain: 'goals', recordId: 'goal-1', choice: 'cloud' },
-      { domain: 'notes', recordId: 'note-1', choice: 'guest' },
-    ],
-    conflicts: [
-      { domain: 'goals', recordId: 'goal-1', guestSnapshot: { id: 'goal-1' }, cloudSnapshot: { id: 'goal-1' }, cloudRevision: 2 },
-      { domain: 'notes', recordId: 'note-1', guestSnapshot: { id: 'note-1' }, cloudSnapshot: { id: 'note-1' }, cloudRevision: null },
-    ],
     deduplications: [{ domain: 'customTricks', recordId: 'trick-1' }],
-    profileComparison: { guest: { hasCompletedOnboarding: true }, cloud: null },
     errorMessage: undefined,
     startedAt: 1000,
     updatedAt: 2000,
@@ -63,8 +53,6 @@ const STATUSES: readonly GuestImportState['status'][] = [
   'inventorying',
   'awaitingConfirmation',
   'uploading',
-  'awaitingProfileChoice',
-  'conflicts',
   'completed',
   'cancelled',
 ];
@@ -92,8 +80,7 @@ describe('guest-import-persistence', () => {
     expect(
       isGuestImportState({ ...base, domainOutcomes: { profile: { status: 'not-a-status', errorMessage: undefined } } }),
     ).toBe(false);
-    expect(isGuestImportState({ ...base, profileChoice: 'both' })).toBe(false);
-    expect(isGuestImportState({ ...base, conflicts: [{ domain: 'not-a-domain', recordId: 'x' }] })).toBe(false);
+    expect(isGuestImportState({ ...base, deduplications: [{ domain: 'not-a-domain', recordId: 'x' }] })).toBe(false);
     expect(isGuestImportState({ ...base, errorMessage: 42 })).toBe(false);
     expect(isGuestImportState({ ...base, startedAt: 'not-a-number' })).toBe(false);
     expect(isGuestImportState({ ...base, updatedAt: 'not-a-number' })).toBe(false);

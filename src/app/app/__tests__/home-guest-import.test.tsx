@@ -46,9 +46,6 @@ jest.mock('@/features/guest-import/state/use-guest-import', () => ({
     state: mockGuestImportState,
     confirmImport: jest.fn(),
     dismiss: jest.fn(),
-    chooseProfile: jest.fn(),
-    resolveConflict: jest.fn(),
-    finishConflicts: jest.fn(),
   }),
 }));
 

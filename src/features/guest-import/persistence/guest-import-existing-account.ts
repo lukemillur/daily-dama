@@ -1,6 +1,7 @@
 import type { UserProfile } from '@/features/profile/model/user-profile';
 import {
   extractScalarFields,
+  mapUserProfileToProfileUpsertInput,
   mapUserProfileToTrickStateUpsertInputs,
   type ProfileScalarFields,
 } from '@/features/profile/persistence/profile-cloud-mapping';
@@ -15,12 +16,11 @@ import type { Note } from '@/features/notes/model/note';
 import type { NoteCloudEntry } from '@/features/notes/persistence/note-cloud-mapping';
 import { mapNoteToInsertInput } from '@/features/notes/persistence/note-cloud-mapping';
 import type {
-  GuestImportConflict,
+  GuestImportChoice,
   GuestImportOperationProgress,
-  GuestImportProfileComparison,
   GuestImportRecordReference,
 } from '@/features/guest-import/model/guest-import';
-import type { ConflictSnapshot } from '@/shared/sync/json-snapshot';
+import { resolveUpdatedAtConflict } from '@/shared/sync/conflict-resolution';
 import { SYNC_DOMAINS, type SyncDomain } from '@/shared/sync/domain';
 import { createOutboxOperation, type NewOutboxOperationInput } from '@/shared/sync/outbox-operation';
 import type { GuestImportTransports } from '@/features/guest-import/persistence/guest-import-inventory';
@@ -74,6 +74,7 @@ export async function readExistingAccountSnapshot(
     status: 'succeeded',
     snapshot: {
       profile: profileFields,
+      profileUpdatedAt: profileMapped.status === 'absent' ? null : profileMapped.updatedAt,
       trickStates: trickStates.rows.map((row) => ({ trickId: row.trick_id, isSelected: row.is_selected, isManuallyUnlocked: row.is_manually_unlocked, revision: row.revision })),
       customTricks: customMapped.collection,
       practiceHistory: historyMapped.history,
@@ -92,6 +93,7 @@ export interface GuestImportTrickStateSnapshot {
 
 export interface ExistingAccountSnapshot {
   readonly profile: ProfileScalarFields | null;
+  readonly profileUpdatedAt: number | null;
   readonly trickStates: readonly GuestImportTrickStateSnapshot[];
   readonly customTricks: CustomTrickCollection;
   readonly practiceHistory: PracticeHistory;
@@ -100,11 +102,26 @@ export interface ExistingAccountSnapshot {
 }
 
 export interface ExistingMergePlan {
-  readonly profileComparison: GuestImportProfileComparison;
   readonly operations: readonly GuestImportOperationProgress[];
   readonly deduplications: readonly GuestImportRecordReference[];
-  readonly conflicts: readonly GuestImportConflict[];
-  readonly counts: Readonly<Record<SyncDomain, { readonly creates: number; readonly deduplicated: number; readonly conflicts: number }>>;
+  readonly counts: Readonly<Record<SyncDomain, { readonly creates: number; readonly deduplicated: number }>>;
+}
+
+/**
+ * T186.2: the single resolution primitive for guest-import's own
+ * profile-preference and record conflicts, reusing T187.2's
+ * `resolveUpdatedAtConflict` rather than a bespoke comparison. A guest side
+ * with no provable `updatedAt` (e.g. `practiceHistory`, which never carries
+ * one) falls through to `-Infinity`, which `resolveUpdatedAtConflict`
+ * treats exactly like "can't prove local is newer" -- it always loses to a
+ * defined cloud timestamp and to the tie-break-to-server default when the
+ * cloud side is also undefined.
+ */
+export function resolveGuestImportChoice(
+  guestUpdatedAt: number | undefined,
+  cloudUpdatedAt: number | undefined,
+): GuestImportChoice {
+  return resolveUpdatedAtConflict(guestUpdatedAt ?? -Infinity, cloudUpdatedAt) === 'local' ? 'guest' : 'cloud';
 }
 
 export interface PlanExistingMergeOptions {
@@ -114,10 +131,6 @@ export interface PlanExistingMergeOptions {
   readonly importId: string;
   readonly createdAt: number;
   readonly createOperationId: (domain: SyncDomain, recordId: string) => string;
-}
-
-function snapshot(value: unknown): ConflictSnapshot {
-  return value as ConflictSnapshot;
 }
 
 function equal(a: unknown, b: unknown): boolean {
@@ -157,18 +170,28 @@ function operation(
   };
 }
 
-function conflict(domain: SyncDomain, recordId: string, guest: unknown, cloud: unknown, revision: number | null): GuestImportConflict {
-  return { domain, recordId, guestSnapshot: snapshot(guest), cloudSnapshot: snapshot(cloud), cloudRevision: revision };
-}
-
 export function planExistingAccountMerge(options: PlanExistingMergeOptions): ExistingMergePlan {
-  const guestScalar = extractScalarFields(options.guest.profile);
-  const profileComparison: GuestImportProfileComparison = { guest: snapshot(guestScalar), cloud: options.cloud.profile === null ? null : snapshot(options.cloud.profile) };
   const operations: GuestImportOperationProgress[] = [];
   const deduplications: GuestImportRecordReference[] = [];
-  const conflicts: GuestImportConflict[] = [];
-  const counts = {} as Record<SyncDomain, { creates: number; deduplicated: number; conflicts: number }>;
-  for (const domain of SYNC_DOMAINS) counts[domain] = { creates: 0, deduplicated: 0, conflicts: 0 };
+  const counts = {} as Record<SyncDomain, { creates: number; deduplicated: number }>;
+  for (const domain of SYNC_DOMAINS) counts[domain] = { creates: 0, deduplicated: 0 };
+
+  // T186.2: profile-preference conflict resolved automatically by
+  // `updatedAt` rather than parked for a manual guest-vs-cloud choice (see
+  // .claude/plans/T186.2.md). A cloud profile that doesn't exist yet always
+  // takes the guest's -- there's nothing to compare against.
+  const guestScalar = extractScalarFields(options.guest.profile);
+  const guestProfileUpdatedAt = options.guest.profile.updatedAt;
+  const cloudProfileUpdatedAt = options.cloud.profile === null ? undefined : options.cloud.profileUpdatedAt ?? undefined;
+  const profileWinner = options.cloud.profile === null ? 'guest' : resolveGuestImportChoice(guestProfileUpdatedAt, cloudProfileUpdatedAt);
+  if (profileWinner === 'guest') {
+    const payload = mapUserProfileToProfileUpsertInput(
+      { ...guestScalar, selectedTrickIds: [] } as unknown as UserProfile,
+      options.destinationUserId,
+    ) as unknown as Record<string, unknown>;
+    operations.push(operation('profile', options.destinationUserId, payload, null, options));
+    counts.profile.creates += 1;
+  }
 
   const guestTrickStates = trickStatesById(mapUserProfileToTrickStateUpsertInputs(options.guest.profile, options.destinationUserId).map((input) => ({
     trickId: input.trick_id, isSelected: input.is_selected ?? false, isManuallyUnlocked: input.is_manually_unlocked ?? false, revision: 0,
@@ -189,20 +212,57 @@ export function planExistingAccountMerge(options: PlanExistingMergeOptions): Exi
     }
   }
 
-  const domains: readonly [SyncDomain, readonly { id: string }[], readonly unknown[], (item: unknown) => Record<string, unknown>][] = [
-    ['customTricks', options.guest.customTricks.tricks, options.cloud.customTricks.tricks, (item) => mapCustomTrickToUpsertInput(item as CustomTrick, options.destinationUserId) as unknown as Record<string, unknown>],
-    ['practiceHistory', options.guest.practiceHistory.sessions, options.cloud.practiceHistory.sessions, (item) => mapPracticeSessionRecordToInsertInput(item as PracticeSessionRecord, options.destinationUserId) as unknown as Record<string, unknown>],
-    ['goals', options.guest.goals.goals, options.cloud.goals, (item) => mapGoalToInsertInput(item as Goal, options.destinationUserId) as unknown as Record<string, unknown>],
-    ['notes', options.guest.notes.notes, options.cloud.notes, (item) => mapNoteToInsertInput(item as Note, options.destinationUserId) as unknown as Record<string, unknown>],
+  // T186.2: per-record `updatedAt` accessors, one pair per domain, since the
+  // guest and cloud shapes differ (raw domain object vs. `GoalCloudEntry`/
+  // `NoteCloudEntry` wrapper). A tombstone's "last modified" time is its
+  // `deletedAt`, not the pre-deletion `updatedAt` still sitting on the
+  // snapshotted `goal`/`note` -- otherwise an older guest edit than the
+  // *original* record would incorrectly out-rank a *later* cloud deletion.
+  const domains: readonly [
+    SyncDomain,
+    readonly { id: string }[],
+    readonly unknown[],
+    (item: unknown) => Record<string, unknown>,
+    (item: unknown) => number | undefined,
+    (item: unknown) => number | undefined,
+  ][] = [
+    [
+      'customTricks', options.guest.customTricks.tricks, options.cloud.customTricks.tricks,
+      (item) => mapCustomTrickToUpsertInput(item as CustomTrick, options.destinationUserId) as unknown as Record<string, unknown>,
+      (item) => (item as CustomTrick).updatedAt,
+      (item) => (item as CustomTrick).updatedAt,
+    ],
+    [
+      'practiceHistory', options.guest.practiceHistory.sessions, options.cloud.practiceHistory.sessions,
+      (item) => mapPracticeSessionRecordToInsertInput(item as PracticeSessionRecord, options.destinationUserId) as unknown as Record<string, unknown>,
+      () => undefined,
+      () => undefined,
+    ],
+    [
+      'goals', options.guest.goals.goals, options.cloud.goals,
+      (item) => mapGoalToInsertInput(item as Goal, options.destinationUserId) as unknown as Record<string, unknown>,
+      (item) => (item as Goal).updatedAt,
+      (item) => {
+        const entry = item as GoalCloudEntry;
+        return entry.status === 'active' ? entry.goal.updatedAt : entry.meta.deletedAt;
+      },
+    ],
+    [
+      'notes', options.guest.notes.notes, options.cloud.notes,
+      (item) => mapNoteToInsertInput(item as Note, options.destinationUserId) as unknown as Record<string, unknown>,
+      (item) => (item as Note).updatedAt,
+      (item) => {
+        const entry = item as NoteCloudEntry;
+        return entry.status === 'active' ? entry.note.updatedAt : entry.meta.deletedAt;
+      },
+    ],
   ];
-  for (const [domain, guestItems, cloudItems, toPayload] of domains) {
+  for (const [domain, guestItems, cloudItems, toPayload, guestUpdatedAtOf, cloudUpdatedAtOf] of domains) {
     const guestById = byId(guestItems, domain);
     const cloudById = new Map<string, unknown>();
     for (const item of cloudItems) {
       const id = domain === 'goals' || domain === 'notes'
-        ? (item as GoalCloudEntry | NoteCloudEntry).status === 'active'
-          ? ((item as GoalCloudEntry | NoteCloudEntry).status === 'active' && domain === 'goals' ? (item as GoalCloudEntry).goal.id : (item as NoteCloudEntry).note.id)
-          : (domain === 'goals' ? (item as GoalCloudEntry).goal.id : (item as NoteCloudEntry).note.id)
+        ? (domain === 'goals' ? (item as GoalCloudEntry).goal.id : (item as NoteCloudEntry).note.id)
         : (item as { readonly id: string }).id;
       if (cloudById.has(id)) throw new Error(`Duplicate ${domain} record id ${JSON.stringify(id)}.`);
       cloudById.set(id, item);
@@ -227,11 +287,14 @@ export function planExistingAccountMerge(options: PlanExistingMergeOptions): Exi
       // canonical payloads intentionally omit server metadata and tombstone wrappers.
       if (cloudItem === undefined) { operations.push(operation(domain, id, guestCanonical, null, options)); counts[domain].creates += 1; }
       else if (equal(guestCanonical, cloudCanonical)) { deduplications.push({ domain, recordId: id }); counts[domain].deduplicated += 1; }
-      else { conflicts.push(conflict(domain, id, guestCanonical, cloudCanonical, revision)); counts[domain].conflicts += 1; }
+      else {
+        const winner = resolveGuestImportChoice(guestUpdatedAtOf(guestItem), cloudUpdatedAtOf(cloudItem));
+        if (winner === 'guest') { operations.push(operation(domain, id, guestCanonical, revision, options)); counts[domain].creates += 1; }
+        else { deduplications.push({ domain, recordId: id }); counts[domain].deduplicated += 1; }
+      }
     }
   }
   operations.sort((a, b) => SYNC_DOMAINS.indexOf(a.domain) - SYNC_DOMAINS.indexOf(b.domain) || a.recordId.localeCompare(b.recordId));
   deduplications.sort((a, b) => SYNC_DOMAINS.indexOf(a.domain) - SYNC_DOMAINS.indexOf(b.domain) || a.recordId.localeCompare(b.recordId));
-  conflicts.sort((a, b) => SYNC_DOMAINS.indexOf(a.domain) - SYNC_DOMAINS.indexOf(b.domain) || a.recordId.localeCompare(b.recordId));
-  return { profileComparison, operations, deduplications, conflicts, counts };
+  return { operations, deduplications, counts };
 }

@@ -147,7 +147,7 @@ describe('guestImportReducer: upload/profile-choice/conflicts', () => {
     expect(result).toBe(awaiting);
   });
 
-  it('the full uploading -> awaitingProfileChoice -> conflicts -> completed chain, driven by literal actions', () => {
+  it('domainUploadSettled moves uploading straight to completed once every domain settles (targetKind existing)', () => {
     let state = afterAwaitingConfirmation(nonEmptyCloudInventory());
     state = guestImportReducer(state, { type: 'confirmPressed', importId: IMPORT_ID, now: NOW + 2 });
 
@@ -163,84 +163,21 @@ describe('guestImportReducer: upload/profile-choice/conflicts', () => {
       expect(state.status).toBe('uploading');
     }
 
-    // Last domain reports a conflict -- this ticket doesn't populate
-    // state.conflicts through this path (that's T159.4's job), so
-    // awaitingProfileChoice is exercised via targetKind === 'existing',
-    // and the conflicts branch is exercised separately below via a
-    // constructed literal state.
+    // T186.2: profile-preference and record conflicts are resolved
+    // automatically by planExistingAccountMerge at merge-planning time, so
+    // the last domain settling moves straight to 'completed' -- there is no
+    // more awaitingProfileChoice/conflicts status to pass through.
     state = guestImportReducer(state, {
       type: 'domainUploadSettled',
       importId: IMPORT_ID,
       domain: domains[domains.length - 1],
-      outcome: { status: 'conflict', errorMessage: undefined },
+      outcome: { status: 'succeeded', errorMessage: undefined },
       now: NOW + 3,
     });
-    expect(state.status).toBe('awaitingProfileChoice');
+    expect(state.status).toBe('completed');
     for (const domain of SYNC_DOMAINS) {
       expect(state.domainOutcomes[domain]?.status).not.toBe('pending');
     }
-
-    // Construct a conflicts-bearing awaitingProfileChoice state directly
-    // (T159.1 has no real path that populates `conflicts`) to prove
-    // profileChoiceMade correctly routes to 'conflicts' when present.
-    const withConflicts: GuestImportState = {
-      ...state,
-      conflicts: [{ domain: 'goals', recordId: 'goal-1', guestSnapshot: { id: 'goal-1' }, cloudSnapshot: { id: 'goal-1' }, cloudRevision: 2 }],
-    };
-    const afterChoice = guestImportReducer(withConflicts, {
-      type: 'profileChoiceMade',
-      importId: IMPORT_ID,
-      choice: 'cloud',
-      now: NOW + 4,
-    });
-    expect(afterChoice.status).toBe('conflicts');
-    expect(afterChoice.profileChoice).toBe('cloud');
-
-    const completed = guestImportReducer(afterChoice, { type: 'conflictsResolved', importId: IMPORT_ID, now: NOW + 5 });
-    expect(completed.status).toBe('conflicts');
-    state = guestImportReducer(afterChoice, { type: 'conflictResolved', importId: IMPORT_ID, domain: 'goals', recordId: 'goal-1', choice: 'cloud', now: NOW + 5 });
-    state = guestImportReducer(state, { type: 'conflictsResolved', importId: IMPORT_ID, now: NOW + 6 });
-    expect(state.status).toBe('completed');
-  });
-
-  it('profileChoiceMade moves awaitingProfileChoice straight to completed when there are no conflicts', () => {
-    let state = afterAwaitingConfirmation(nonEmptyCloudInventory());
-    state = guestImportReducer(state, { type: 'confirmPressed', importId: IMPORT_ID, now: NOW + 2 });
-    for (const domain of SYNC_DOMAINS) {
-      state = guestImportReducer(state, {
-        type: 'domainUploadSettled',
-        importId: IMPORT_ID,
-        domain,
-        outcome: { status: 'succeeded', errorMessage: undefined },
-        now: NOW + 3,
-      });
-    }
-    expect(state.status).toBe('awaitingProfileChoice');
-
-    const result = guestImportReducer(state, { type: 'profileChoiceMade', importId: IMPORT_ID, choice: 'guest', now: NOW + 4 });
-    expect(result.status).toBe('completed');
-    expect(result.profileChoice).toBe('guest');
-  });
-
-  it('profileChoiceMade and conflictsResolved with a stale importId are no-ops', () => {
-    let state = afterAwaitingConfirmation(nonEmptyCloudInventory());
-    state = guestImportReducer(state, { type: 'confirmPressed', importId: IMPORT_ID, now: NOW + 2 });
-    for (const domain of SYNC_DOMAINS) {
-      state = guestImportReducer(state, {
-        type: 'domainUploadSettled',
-        importId: IMPORT_ID,
-        domain,
-        outcome: { status: 'succeeded', errorMessage: undefined },
-        now: NOW + 3,
-      });
-    }
-
-    const staleChoice = guestImportReducer(state, { type: 'profileChoiceMade', importId: 'stale', choice: 'guest', now: NOW + 4 });
-    expect(staleChoice).toBe(state);
-
-    const conflictsState: GuestImportState = { ...state, status: 'conflicts' };
-    const staleResolve = guestImportReducer(conflictsState, { type: 'conflictsResolved', importId: 'stale', now: NOW + 4 });
-    expect(staleResolve).toBe(conflictsState);
   });
 
   it('the shorter uploading -> completed chain for an empty-target import', () => {
@@ -376,8 +313,6 @@ describe('guestImportReducer: cancel/dismiss/resume/identityChanged/stateRestore
     'inventorying',
     'awaitingConfirmation',
     'uploading',
-    'awaitingProfileChoice',
-    'conflicts',
   ];
 
   it.each(cancellableStatuses)('identityChanged resets state %s when the namespace differs', (status) => {
@@ -451,7 +386,7 @@ describe('isGuestImportPendingResolution', () => {
     expect(isGuestImportPendingResolution(state)).toBe(false);
   });
 
-  it.each(['inventorying', 'uploading', 'awaitingProfileChoice', 'conflicts'] as const)(
+  it.each(['inventorying', 'uploading'] as const)(
     'is true for status %s regardless of inventory',
     (status: GuestImportStatus) => {
       const state = { ...INITIAL_GUEST_IMPORT_STATE, status, inventory: undefined };

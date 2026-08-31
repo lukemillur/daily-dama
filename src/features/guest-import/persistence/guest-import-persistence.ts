@@ -7,16 +7,13 @@
 
 import {
   INITIAL_GUEST_IMPORT_STATE,
-  type GuestImportConflict,
   type GuestImportDomainCounts,
   type GuestImportDomainOutcome,
   type GuestImportState,
   type GuestImportStatus,
   type GuestImportTargetKind,
   type GuestImportProgress,
-  type GuestImportConflictResolution,
 } from '@/features/guest-import/model/guest-import';
-import { isConflictSnapshot } from '@/shared/sync/json-snapshot';
 import { isSyncDomain, SYNC_DOMAINS } from '@/shared/sync/domain';
 import type {
   KeyValueStorage,
@@ -25,7 +22,13 @@ import type {
 } from '@/shared/persistence/storage';
 
 export const GUEST_IMPORT_STORAGE_KEY = 'daily-dama:guest-import';
-export const GUEST_IMPORT_SCHEMA_VERSION = 1;
+// T186.2: bumped from 1 to 2 -- the awaitingProfileChoice/conflicts states
+// and their carried fields no longer exist. A pre-existing v1 record
+// mid-flight across this deploy falls back cleanly to
+// INITIAL_GUEST_IMPORT_STATE via loadGuestImportState's version-mismatch
+// path (see .claude/plans/T186.2.md step 4): worst case, their import
+// silently restarts from idle and re-inventories/re-resolves automatically.
+export const GUEST_IMPORT_SCHEMA_VERSION = 2;
 
 interface GuestImportDocumentV1 {
   readonly version: typeof GUEST_IMPORT_SCHEMA_VERSION;
@@ -41,8 +44,6 @@ const STATUSES: readonly GuestImportStatus[] = [
   'inventorying',
   'awaitingConfirmation',
   'uploading',
-  'awaitingProfileChoice',
-  'conflicts',
   'completed',
   'cancelled',
 ];
@@ -92,12 +93,6 @@ function isDomainOutcomes(
   );
 }
 
-function isGuestImportConflict(value: unknown): value is GuestImportConflict {
-  return isRecord(value) && isSyncDomain(value.domain) && isNonEmptyString(value.recordId) &&
-    isConflictSnapshot(value.guestSnapshot) && isConflictSnapshot(value.cloudSnapshot) &&
-    (value.cloudRevision === null || isPositiveInteger(value.cloudRevision));
-}
-
 function isNonEmptyString(value: unknown): value is string {
   return typeof value === 'string' && value.length > 0 && value === value.trim();
 }
@@ -108,30 +103,6 @@ function isPositiveInteger(value: unknown): value is number {
 
 function isRecordReference(value: unknown): boolean {
   return isRecord(value) && isSyncDomain(value.domain) && isNonEmptyString(value.recordId);
-}
-
-function isProfileComparison(value: unknown): boolean {
-  return isRecord(value) && isConflictSnapshot(value.guest) &&
-    (value.cloud === null || isConflictSnapshot(value.cloud));
-}
-
-function isConflictsArray(value: unknown): value is readonly GuestImportConflict[] {
-  if (!Array.isArray(value) || !value.every(isGuestImportConflict)) return false;
-  const keys = value.map((item) => `${item.domain}:${item.recordId}`);
-  return new Set(keys).size === keys.length;
-}
-
-function isConflictResolutions(value: unknown, conflicts: readonly GuestImportConflict[]): value is readonly GuestImportConflictResolution[] {
-  if (!Array.isArray(value)) return false;
-  const conflictKeys = new Set(conflicts.map((item) => `${item.domain}:${item.recordId}`));
-  const seen = new Set<string>();
-  return value.every((item) => {
-    if (!isRecord(item) || !isSyncDomain(item.domain) || !isNonEmptyString(item.recordId) || (item.choice !== 'guest' && item.choice !== 'cloud')) return false;
-    const key = `${item.domain}:${item.recordId}`;
-    if (!conflictKeys.has(key) || seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  });
 }
 
 function isGuestImportProgress(value: unknown): value is GuestImportProgress | undefined {
@@ -172,15 +143,11 @@ export function isGuestImportState(value: unknown): value is GuestImportState {
     inventory,
     targetKind,
     domainOutcomes,
-    profileChoice,
-    conflictResolutions,
-    conflicts,
     errorMessage,
     startedAt,
     updatedAt,
     progress,
     deduplications,
-    profileComparison,
   } = value;
 
   if (!isGuestImportStatus(status)) return false;
@@ -189,11 +156,7 @@ export function isGuestImportState(value: unknown): value is GuestImportState {
   if (!isGuestImportDomainCounts(inventory)) return false;
   if (!isGuestImportTargetKind(targetKind)) return false;
   if (!isDomainOutcomes(domainOutcomes)) return false;
-  if (profileChoice !== undefined && profileChoice !== 'guest' && profileChoice !== 'cloud') return false;
-  if (!isConflictsArray(conflicts)) return false;
-  if (!isConflictResolutions(conflictResolutions, conflicts)) return false;
   if (!Array.isArray(deduplications) || !deduplications.every(isRecordReference)) return false;
-  if (profileComparison !== undefined && !isProfileComparison(profileComparison)) return false;
   if (!isOptionalString(errorMessage)) return false;
   if (!isOptionalNumber(startedAt)) return false;
   if (!isOptionalNumber(updatedAt)) return false;
