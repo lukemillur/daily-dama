@@ -160,16 +160,6 @@ _T182–T193 come from stories S063–S074 in [BACKLOG_STORIES.md](BACKLOG_STORI
 - **Description:** Remove the user-visible guest-import preview/confirmation step and the forced repeat of onboarding, so signing up or signing into an account with existing local data migrates it automatically and never exposes "guest"/"cloud" framing or raw data to the user.
 - **Notes:** Umbrella from S067. Complete T186.1–T186.2. T186.2 depends on T187.2.
 
-### [T186.1] Auto-trigger guest-to-account import and skip repeat onboarding when local data exists
-
-- **Area:** Guest conversion / onboarding
-- **Priority:** High
-- **Status:** In progress
-- **Planning:** Required
-- **Description:** `use-guest-import.ts` currently stops at `awaitingConfirmation` until a user presses "Import my practice data" on `GuestImportPreview` (rendered on `/app/profile`), and `home.tsx`'s onboarding gate (`profile.hasCompletedOnboarding && profile.kenteiRank`) runs before that import ever happens, so a guest with local data is sent through onboarding again. Auto-call `confirmImport()` as soon as `awaitingConfirmation` is reached with any local data present (skipping the confirm/"Not now" choice), delete `GuestImportPreview`'s user-visible rendering, and make the onboarding gate aware of an in-progress or completed auto-import so a user with existing local data is never shown onboarding a second time.
-- **Exit criteria:** `use-guest-import.test.tsx` passes, including a test asserting `awaitingConfirmation` with local data transitions to `uploading` without any `confirmImport()` caller action; a new `home.tsx`/onboarding integration test asserts a freshly-signed-up identity with existing local guest data skips onboarding, while one with no local data still sees it.
-- **Notes:** From S067. Covers the common case: a brand-new account has no existing cloud data, so `GuestImportPreview`'s own trace shows the state machine goes `uploading → completed` directly, never reaching `awaitingProfileChoice`/`conflicts` — this ticket's exit criteria doesn't need those states resolved. `cancelImport`'s "Not now" path becomes unreachable UI and should be removed, not just hidden, unless another reachable caller is found.
-
 ### [T186.2] Resolve guest-import's own profile-preference and record conflicts automatically
 
 - **Area:** Guest conversion

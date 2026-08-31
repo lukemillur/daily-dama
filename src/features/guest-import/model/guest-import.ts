@@ -350,3 +350,34 @@ export function guestImportReducer(state: GuestImportState, action: GuestImportA
 export function createGuestImportId(now = Date.now(), random = Math.random()): string {
   return `guest-import-${now.toString(36)}-${Math.floor(random * 0x100000000).toString(36)}`;
 }
+
+// T186.1: centralizes the "does this inventory have any local-only data
+// worth importing" check that both the auto-confirm effect
+// (state/use-guest-import.ts) and the onboarding gate (app/app/home.tsx)
+// need, so it isn't duplicated ad hoc the way GuestImportPreview's own
+// domainsWithLocalData used to be.
+export function hasAnyLocalGuestData(inventory: GuestImportDomainCounts): boolean {
+  return SYNC_DOMAINS.some((domain) => inventory[domain].local > 0);
+}
+
+// T186.1: true whenever a guest import is either actively running or
+// parked at awaitingConfirmation with local data still to auto-confirm --
+// i.e. whenever home.tsx's onboarding gate must wait rather than risk
+// showing onboarding a second time to someone with existing local data.
+// An awaitingConfirmation record with an all-zero inventory is
+// permanently parked (see .claude/plans/T186.1.md's "Key design
+// decision") and must NOT be treated as pending here, or the gate would
+// wedge forever.
+export function isGuestImportPendingResolution(state: GuestImportState): boolean {
+  switch (state.status) {
+    case 'inventorying':
+    case 'uploading':
+    case 'awaitingProfileChoice':
+    case 'conflicts':
+      return true;
+    case 'awaitingConfirmation':
+      return state.inventory !== undefined && hasAnyLocalGuestData(state.inventory);
+    default:
+      return false;
+  }
+}

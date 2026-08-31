@@ -3,9 +3,12 @@ import { describe, expect, it } from '@jest/globals';
 import {
   createGuestImportId,
   guestImportReducer,
+  hasAnyLocalGuestData,
   INITIAL_GUEST_IMPORT_STATE,
+  isGuestImportPendingResolution,
   type GuestImportDomainCounts,
   type GuestImportState,
+  type GuestImportStatus,
 } from '@/features/guest-import/model/guest-import';
 import { SYNC_DOMAINS } from '@/shared/sync/domain';
 
@@ -411,5 +414,53 @@ describe('createGuestImportId', () => {
     expect(a).toBe(b);
     expect(a).not.toBe(c);
     expect(a.startsWith('guest-import-')).toBe(true);
+  });
+});
+
+function zeroInventory(): GuestImportDomainCounts {
+  const counts = { } as Record<string, { local: number; cloud: number }>;
+  for (const domain of SYNC_DOMAINS) {
+    counts[domain] = { local: 0, cloud: 0 };
+  }
+  return counts as GuestImportDomainCounts;
+}
+
+describe('hasAnyLocalGuestData', () => {
+  it('is false when every domain has zero local count', () => {
+    expect(hasAnyLocalGuestData(zeroInventory())).toBe(false);
+  });
+
+  it('is true when a single domain has nonzero local count', () => {
+    expect(hasAnyLocalGuestData(nonEmptyCloudInventory())).toBe(true);
+  });
+});
+
+describe('isGuestImportPendingResolution', () => {
+  it('is true for awaitingConfirmation with a nonzero-local inventory', () => {
+    const state = { ...INITIAL_GUEST_IMPORT_STATE, status: 'awaitingConfirmation' as const, inventory: emptyCloudInventory() };
+    expect(isGuestImportPendingResolution(state)).toBe(true);
+  });
+
+  it('is false for awaitingConfirmation with an all-zero inventory (permanently parked)', () => {
+    const state = { ...INITIAL_GUEST_IMPORT_STATE, status: 'awaitingConfirmation' as const, inventory: zeroInventory() };
+    expect(isGuestImportPendingResolution(state)).toBe(false);
+  });
+
+  it('is false for awaitingConfirmation with inventory undefined', () => {
+    const state = { ...INITIAL_GUEST_IMPORT_STATE, status: 'awaitingConfirmation' as const, inventory: undefined };
+    expect(isGuestImportPendingResolution(state)).toBe(false);
+  });
+
+  it.each(['inventorying', 'uploading', 'awaitingProfileChoice', 'conflicts'] as const)(
+    'is true for status %s regardless of inventory',
+    (status: GuestImportStatus) => {
+      const state = { ...INITIAL_GUEST_IMPORT_STATE, status, inventory: undefined };
+      expect(isGuestImportPendingResolution(state)).toBe(true);
+    },
+  );
+
+  it.each(['idle', 'completed', 'cancelled'] as const)('is false for status %s', (status: GuestImportStatus) => {
+    const state = { ...INITIAL_GUEST_IMPORT_STATE, status, inventory: emptyCloudInventory() };
+    expect(isGuestImportPendingResolution(state)).toBe(false);
   });
 });
