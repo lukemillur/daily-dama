@@ -155,7 +155,7 @@ _T182–T193 come from stories S063–S074 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 - **Area:** Goals
 - **Priority:** Medium
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Implementer
 - **Description:** `GoalRow` (`trick-goals-screen.tsx`) currently renders `GoalTrickName` as a small 13px eyebrow-style label above `GoalMetaRow`. Restructure the card so the goal's progress info (`GoalMeta`/`ProgressText`, i.e. "Lace count goal, 50 laces, 0/50 laces") renders as the first, left element of a horizontal row, with the trick's title as the second element, in large `DisplayTitle`-scale text, right-aligned so all cards' titles line up on the same vertical edge.
 - **Exit criteria:** `trick-goals-screen.test.tsx` and `all-trick-goals-screen.test.tsx` pass, including an assertion that the trick-name text renders at a materially larger font size than today's 13px eyebrow treatment and sits in the same row as the progress info.
