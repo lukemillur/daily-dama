@@ -156,7 +156,7 @@ _T182–T193 come from stories S063–S074 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 - **Area:** Authentication UI
 - **Priority:** Medium
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Implementer
 - **Description:** `password-input.tsx` currently owns its own `isVisible` state per instance, so sign-up's password/confirm-password toggles operate independently, and the toggle renders as `ToggleText` ("Show"/"Hide"). Lift visibility into shared state across all `PasswordInput` instances rendered together on one form (sign-up's password+confirm, reset-password's new+confirm, Account Security's current/new/confirm), and replace the text toggle with an eye-open/eye-closed icon.
 - **Exit criteria:** `password-input.test.tsx` passes, including a test asserting that toggling visibility on one `PasswordInput` updates a sibling `PasswordInput`'s visibility when both share the new visibility context/state; updated tests on sign-up, reset-password, and Account Security confirm the shared toggle behavior end-to-end and that the control renders as an icon with an accessible label (not "Show"/"Hide" text).
