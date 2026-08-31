@@ -164,7 +164,7 @@ _T182–T193 come from stories S063–S074 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 - **Area:** Persistence / synchronization
 - **Priority:** High
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** `note.ts` already carries `updatedAt`; `goal.ts` (`GoalBase`) has only `createdAt`, and neither `custom-trick.ts` nor `user-profile-persistence.ts` has any last-modified field at all. Add an `updatedAt: number` to each, set on every create and edit, threaded through each domain's local reducer, persistence envelope, and cloud mapping/repository contract.
 - **Exit criteria:** Domain model, persistence round-trip, and cloud-mapping tests for profile, custom-tricks, and goals confirm `updatedAt` is set on creation, advances on every edit, and survives serialization and the existing sync transport's revision-guarded update path.
