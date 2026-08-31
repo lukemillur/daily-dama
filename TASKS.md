@@ -164,7 +164,7 @@ _T182–T193 come from stories S063–S074 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 - **Area:** Guest conversion
 - **Priority:** Medium
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** When an existing account (with its own cloud data) reaches `awaitingProfileChoice` or `conflicts` during guest import, `guest-import-preview.tsx` today blocks on a manual guest-vs-cloud choice and prints raw JSON snapshots. Resolve both automatically using T187.2's most-recent-wins primitive, and delete the manual choice/JSON-snapshot UI entirely.
 - **Exit criteria:** `use-guest-import.test.tsx` and `guest-import-existing-account.test.ts` pass, including a test asserting a profile-preference comparison and a record conflict both resolve automatically by `updatedAt` with no `chooseProfile`/`resolveConflict` caller action, and that no raw record data reaches any rendered UI.
