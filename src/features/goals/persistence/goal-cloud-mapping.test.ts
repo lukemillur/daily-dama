@@ -59,7 +59,7 @@ function toGoalRow(goal: Goal, overrides: Partial<GoalRow> = {}): GoalRow {
     target_ms: input.target_ms ?? null,
     revision: 1,
     created_at: new Date(goal.createdAt).toISOString(),
-    updated_at: new Date(goal.createdAt).toISOString(),
+    updated_at: new Date(goal.updatedAt).toISOString(),
     deleted_at: null,
     ...overrides,
   } as GoalRow;
@@ -80,6 +80,7 @@ describe('round-trip: domain -> row -> domain', () => {
       kind: 'count',
       targetCount: 25,
       createdAt: TIMESTAMP_MS,
+      updatedAt: TIMESTAMP_MS,
     });
   });
 
@@ -91,6 +92,7 @@ describe('round-trip: domain -> row -> domain', () => {
       kind: 'time',
       targetMs: 5 * 60_000,
       createdAt: TIMESTAMP_MS,
+      updatedAt: TIMESTAMP_MS,
     });
   });
 
@@ -114,6 +116,7 @@ describe('round-trip: domain -> row -> domain', () => {
           kind: 'count',
           targetCount: 42,
           createdAt: TIMESTAMP_MS,
+          updatedAt: TIMESTAMP_MS,
         },
         meta: { revision: 3, deletedAt: DELETED_TIMESTAMP_MS },
       },
@@ -266,6 +269,7 @@ describe('mapGoalToInsertInput', () => {
       kind: 'count',
       targetCount: 10,
       createdAt: TIMESTAMP_MS,
+      updatedAt: TIMESTAMP_MS,
     };
     const input = mapGoalToInsertInput(goal, USER_ID);
     expect(input).toEqual({
@@ -290,6 +294,7 @@ describe('mapGoalToInsertInput', () => {
       kind: 'time',
       targetMs: 5 * 60_000,
       createdAt: TIMESTAMP_MS,
+      updatedAt: TIMESTAMP_MS,
     };
     const input = mapGoalToInsertInput(goal, USER_ID);
     expect(input).toEqual({
@@ -314,6 +319,7 @@ describe('prepareGoalDeletionPatch', () => {
       kind: 'count',
       targetCount: 10,
       createdAt: TIMESTAMP_MS,
+      updatedAt: TIMESTAMP_MS,
     },
     meta: { revision: 1 },
   };
@@ -359,6 +365,7 @@ describe('no input mutation', () => {
       kind: 'count',
       targetCount: 10,
       createdAt: TIMESTAMP_MS,
+      updatedAt: TIMESTAMP_MS,
     });
     const before = JSON.stringify(goal);
 
@@ -394,6 +401,7 @@ describe('no input mutation', () => {
         kind: 'count',
         targetCount: 10,
         createdAt: TIMESTAMP_MS,
+        updatedAt: TIMESTAMP_MS,
       },
       meta: { revision: 1 },
     });
@@ -436,6 +444,7 @@ describe('diffGoalsForOutboxOperations', () => {
     kind: 'count',
     targetCount: 10,
     createdAt: TIMESTAMP_MS,
+    updatedAt: TIMESTAMP_MS,
   };
   const TIME_GOAL: Goal = {
     id: 'goal-b',
@@ -444,6 +453,7 @@ describe('diffGoalsForOutboxOperations', () => {
     kind: 'time',
     targetMs: 600000,
     createdAt: TIMESTAMP_MS,
+    updatedAt: TIMESTAMP_MS,
   };
 
   it('produces no operations for a no-op diff', () => {

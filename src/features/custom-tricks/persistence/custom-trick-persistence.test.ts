@@ -14,7 +14,7 @@ import type { KeyValueStorage } from '@/shared/persistence/storage';
 
 const COLLECTION: CustomTrickCollection = {
   tricks: [
-    { id: 'custom-standalone', kind: 'standalone', name: 'Stilt flip', kenteiRank: 8 },
+    { id: 'custom-standalone', kind: 'standalone', name: 'Stilt flip', kenteiRank: 8, updatedAt: 1 },
     {
       id: 'custom-sequence',
       kind: 'sequence',
@@ -23,6 +23,7 @@ const COLLECTION: CustomTrickCollection = {
         { kind: 'existingTrick', sourceTrickId: 'big-cup', name: 'Big cup' },
         { kind: 'customText', name: 'Airplane variation' },
       ],
+      updatedAt: 1,
     },
   ],
 };

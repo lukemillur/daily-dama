@@ -1,6 +1,11 @@
 import { describe, expect, it } from '@jest/globals';
 
-import type { CustomTrick, CustomTrickCollection } from '@/features/custom-tricks/model/custom-trick';
+import type {
+  CustomTrick,
+  CustomTrickCollection,
+  SequenceCustomTrick,
+  StandaloneCustomTrick,
+} from '@/features/custom-tricks/model/custom-trick';
 import type { CustomTrickRow } from '@/features/custom-tricks/persistence/custom-trick-cloud-repository';
 import {
   diffCustomTricksForOutboxOperations,
@@ -13,6 +18,7 @@ import {
 const USER_ID = '11111111-1111-4111-8111-111111111111';
 const OTHER_USER_ID = '22222222-2222-4222-8222-222222222222';
 const TIMESTAMP = '2026-01-01T00:00:00.000Z';
+const TIMESTAMP_MS = Date.parse(TIMESTAMP);
 
 function makeCustomTrickRow(overrides: Partial<CustomTrickRow> = {}): CustomTrickRow {
   return {
@@ -55,7 +61,10 @@ function toCustomTrickRow(trick: CustomTrick): CustomTrickRow {
   } as CustomTrickRow;
 }
 
-function expectRoundTrip(trick: CustomTrick) {
+function expectRoundTrip(
+  trickWithoutTimestamp: Omit<StandaloneCustomTrick, 'updatedAt'> | Omit<SequenceCustomTrick, 'updatedAt'>,
+) {
+  const trick = { ...trickWithoutTimestamp, updatedAt: TIMESTAMP_MS } as CustomTrick;
   const row = toCustomTrickRow(trick);
   const result = mapCustomTrickRowToDomainTrick(row, USER_ID);
   expect(result).toEqual({ status: 'valid', trick });
@@ -125,7 +134,7 @@ describe('round-trip: domain -> row -> domain', () => {
 
   it('round-trips a whole collection, preserving order', () => {
     const tricks: readonly CustomTrick[] = [
-      { id: 'custom-1', kind: 'standalone', name: 'Around the World' },
+      { id: 'custom-1', kind: 'standalone', name: 'Around the World', updatedAt: TIMESTAMP_MS },
       {
         id: 'custom-seq-1',
         kind: 'sequence',
@@ -134,8 +143,9 @@ describe('round-trip: domain -> row -> domain', () => {
           { kind: 'customText', name: 'Step one' },
           { kind: 'customText', name: 'Step two' },
         ],
+        updatedAt: TIMESTAMP_MS,
       },
-      { id: 'custom-2', kind: 'standalone', name: 'Lighthouse', kenteiRank: 3 },
+      { id: 'custom-2', kind: 'standalone', name: 'Lighthouse', kenteiRank: 3, updatedAt: TIMESTAMP_MS },
     ];
 
     const rows = mapCustomTrickCollectionToUpsertInputs({ tricks }, USER_ID).map(
@@ -423,7 +433,7 @@ describe('stored-name preservation', () => {
 
 describe('no input mutation', () => {
   it('does not mutate a frozen standalone CustomTrick passed to the domain -> row mapper', () => {
-    const trick = deepFreeze<CustomTrick>({ id: 'custom-1', kind: 'standalone', name: 'Around the World', kenteiRank: 5 });
+    const trick = deepFreeze<CustomTrick>({ id: 'custom-1', kind: 'standalone', name: 'Around the World', kenteiRank: 5, updatedAt: 1 });
     const before = JSON.stringify(trick);
 
     expect(() => mapCustomTrickToUpsertInput(trick, USER_ID)).not.toThrow();
@@ -440,6 +450,7 @@ describe('no input mutation', () => {
         { kind: 'existingTrick', name: 'Lighthouse', sourceTrickId: 'kentei-1-1' },
         { kind: 'customText', name: 'Custom flourish' },
       ],
+      updatedAt: 1,
     });
     const before = JSON.stringify(trick);
 
@@ -472,7 +483,7 @@ describe('no input mutation', () => {
 });
 
 describe('diffCustomTricksForOutboxOperations', () => {
-  const STANDALONE: CustomTrick = { id: 'custom-a', kind: 'standalone', name: 'Around the World', kenteiRank: 3 };
+  const STANDALONE: CustomTrick = { id: 'custom-a', kind: 'standalone', name: 'Around the World', kenteiRank: 3, updatedAt: 1 };
   const SEQUENCE: CustomTrick = {
     id: 'custom-b',
     kind: 'sequence',
@@ -481,6 +492,7 @@ describe('diffCustomTricksForOutboxOperations', () => {
       { kind: 'existingTrick', sourceTrickId: 'big-cup', name: 'Big cup' },
       { kind: 'customText', name: 'Airplane variation' },
     ],
+    updatedAt: 1,
   };
 
   it('produces no operations for a no-op diff', () => {
@@ -551,11 +563,11 @@ describe('diffCustomTricksForOutboxOperations', () => {
   });
 
   it('handles a batch of several simultaneous changes in stable ascending-id order', () => {
-    const untouched: CustomTrick = { id: 'custom-z', kind: 'standalone', name: 'Untouched' };
-    const removed: CustomTrick = { id: 'custom-m', kind: 'standalone', name: 'Going away' };
-    const editedBefore: CustomTrick = { id: 'custom-c', kind: 'standalone', name: 'Old name' };
-    const editedAfter: CustomTrick = { id: 'custom-c', kind: 'standalone', name: 'New name' };
-    const added: CustomTrick = { id: 'custom-a', kind: 'standalone', name: 'Brand new' };
+    const untouched: CustomTrick = { id: 'custom-z', kind: 'standalone', name: 'Untouched', updatedAt: 1 };
+    const removed: CustomTrick = { id: 'custom-m', kind: 'standalone', name: 'Going away', updatedAt: 1 };
+    const editedBefore: CustomTrick = { id: 'custom-c', kind: 'standalone', name: 'Old name', updatedAt: 1 };
+    const editedAfter: CustomTrick = { id: 'custom-c', kind: 'standalone', name: 'New name', updatedAt: 1 };
+    const added: CustomTrick = { id: 'custom-a', kind: 'standalone', name: 'Brand new', updatedAt: 1 };
 
     const previous: CustomTrickCollection = { tricks: [untouched, removed, editedBefore] };
     const next: CustomTrickCollection = { tricks: [untouched, editedAfter, added] };

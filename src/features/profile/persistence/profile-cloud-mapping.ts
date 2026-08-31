@@ -21,6 +21,12 @@ import {
   isLastSesh,
   isStreakThresholdMs,
 } from '@/features/profile/persistence/user-profile-persistence';
+
+function parseTimestampMs(value: unknown): number | undefined {
+  if (typeof value !== 'string') return undefined;
+  const ms = Date.parse(value);
+  return Number.isFinite(ms) ? ms : undefined;
+}
 import type {
   ProfileRow,
   ProfileUpsertInput,
@@ -45,13 +51,20 @@ export interface ProfileMappingIssue {
   readonly message: string;
 }
 
-export type ProfileScalarFields = Omit<UserProfile, 'selectedTrickIds' | 'manuallyUnlockedTrickIds'>;
+// `updatedAt` is deliberately excluded from `ProfileScalarFields`: the
+// reducer bumps it on every mutation, including trick-selection-only
+// actions that don't otherwise touch any scalar field, so if it
+// participated in `scalarFieldsEqual` every profile mutation would emit a
+// spurious profile-row upsert. It round-trips for display/composition
+// (see `composeUserProfileFromCloudRows`) but never participates in
+// outbox-diffing, exactly like `created_at`/`revision` already don't.
+export type ProfileScalarFields = Omit<UserProfile, 'selectedTrickIds' | 'manuallyUnlockedTrickIds' | 'updatedAt'>;
 export type TrickStateFields = Pick<UserProfile, 'selectedTrickIds' | 'manuallyUnlockedTrickIds'>;
 
 export type ProfileRowMappingResult =
   | { readonly status: 'absent' }
   | { readonly status: 'invalid'; readonly issues: readonly ProfileMappingIssue[] }
-  | { readonly status: 'valid'; readonly fields: ProfileScalarFields };
+  | { readonly status: 'valid'; readonly fields: ProfileScalarFields; readonly updatedAt: number };
 
 export type TrickStateRowsMappingResult =
   | { readonly status: 'invalid'; readonly issues: readonly ProfileMappingIssue[] }
@@ -181,6 +194,11 @@ export function mapProfileRowToDomainFields(
     themeColors[domainKey] = value;
   }
 
+  const updatedAtRaw = parseTimestampMs(raw.updated_at);
+  if (updatedAtRaw === undefined) {
+    issues.push({ path: 'updated_at', reason: 'wrongType', message: 'updated_at must be a parseable timestamp.' });
+  }
+
   if (issues.length > 0) return { status: 'invalid', issues };
 
   return {
@@ -192,6 +210,7 @@ export function mapProfileRowToDomainFields(
       ...(streakThresholdMs !== undefined ? { streakThresholdMs } : {}),
       ...themeColors,
     },
+    updatedAt: updatedAtRaw as number,
   };
 }
 
@@ -321,6 +340,7 @@ export function composeUserProfileFromCloudRows(
       // matching rows), so `[]` is the acceptable, documented lossy
       // reconstruction of that field.
       manuallyUnlockedTrickIds: trickStateResult.fields.manuallyUnlockedTrickIds,
+      updatedAt: profileResult.updatedAt,
     },
   };
 }
@@ -381,9 +401,16 @@ export function mapUserProfileToTrickStateUpsertInputs(
 export function extractScalarFields(profile: UserProfile): ProfileScalarFields {
   // Spread-omit rather than destructure-with-underscore-prefixes so this
   // stays correct if UserProfile grows another scalar field later without
-  // anyone needing to remember to update this function.
-  const { selectedTrickIds: _selectedTrickIds, manuallyUnlockedTrickIds: _manuallyUnlockedTrickIds, ...scalarFields } =
-    profile;
+  // anyone needing to remember to update this function. `updatedAt` is
+  // omitted alongside the two trick-id arrays -- see the
+  // `ProfileScalarFields` comment for why it must never participate in
+  // outbox-diffing.
+  const {
+    selectedTrickIds: _selectedTrickIds,
+    manuallyUnlockedTrickIds: _manuallyUnlockedTrickIds,
+    updatedAt: _updatedAt,
+    ...scalarFields
+  } = profile;
   return scalarFields;
 }
 

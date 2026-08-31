@@ -41,6 +41,7 @@ import { GUEST_IDENTITY } from '@/shared/persistence/identity';
 const USER_ID = '11111111-1111-1111-1111-111111111111';
 const USER: Identity = createUserIdentity(USER_ID)!;
 const TIMESTAMP = '2026-01-01T00:00:00.000Z';
+const TIMESTAMP_MS = Date.parse(TIMESTAMP);
 
 function storage() {
   const values = new Map<string, string>();
@@ -54,9 +55,9 @@ function guestView(source: ReturnType<typeof storage>) {
 async function seedGuest(source: ReturnType<typeof storage>) {
   const guest = guestView(source);
   await saveUserProfile(guest, { ...INITIAL_USER_PROFILE, hasCompletedOnboarding: true, kenteiRank: 4, selectedTrickIds: ['standard-1'] });
-  await saveCustomTricks(guest, { tricks: [{ id: 'custom-1', kind: 'standalone', name: 'Orbit', kenteiRank: 4 }] });
+  await saveCustomTricks(guest, { tricks: [{ id: 'custom-1', kind: 'standalone', name: 'Orbit', kenteiRank: 4, updatedAt: 10 }] });
   await savePracticeHistory(guest, { sessions: [{ id: 'session-1', trickId: 'standard-1', trickName: 'Lighthouse', startedAt: 10, completedAt: 1010, durationMs: 1000, laceCount: 3 }] });
-  await saveGoals(guest, { goals: [{ id: 'goal-1', trickId: 'standard-1', trickName: 'Lighthouse', kind: 'count', targetCount: 3, createdAt: 10 }] });
+  await saveGoals(guest, { goals: [{ id: 'goal-1', trickId: 'standard-1', trickName: 'Lighthouse', kind: 'count', targetCount: 3, createdAt: 10, updatedAt: 10 }] });
   await saveNotes(guest, { notes: [{ id: 'note-1', trickId: 'standard-1', trickName: 'Lighthouse', body: 'Relax the grip', createdAt: 10, updatedAt: 10 }] });
 }
 
@@ -139,7 +140,7 @@ describe('guest import second-browser integration', () => {
     await act(async () => { await captured.sync?.run(); });
     await flush();
 
-    expect(captured.profile).toEqual({ ...INITIAL_USER_PROFILE, hasCompletedOnboarding: true, kenteiRank: 4, selectedTrickIds: ['standard-1'], manuallyUnlockedTrickIds: [] });
+    expect(captured.profile).toEqual({ ...INITIAL_USER_PROFILE, hasCompletedOnboarding: true, kenteiRank: 4, selectedTrickIds: ['standard-1'], manuallyUnlockedTrickIds: [], updatedAt: TIMESTAMP_MS });
     expect(captured.custom?.tricks.map((item) => item.id)).toEqual(['custom-1']);
     expect(captured.history?.sessions.map((item) => item.id)).toEqual(['session-1']);
     expect(captured.goals?.goals.map((item) => item.id)).toEqual(['goal-1']);

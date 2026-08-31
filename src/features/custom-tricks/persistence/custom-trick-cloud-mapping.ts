@@ -70,6 +70,12 @@ function hasExactKeys(value: Record<string, unknown>, keys: ReadonlySet<string>)
   return actualKeys.every((key) => keys.has(key));
 }
 
+function parseTimestampMs(value: unknown): number | undefined {
+  if (typeof value !== 'string') return undefined;
+  const ms = Date.parse(value);
+  return Number.isFinite(ms) ? ms : undefined;
+}
+
 /**
  * Maps a single `custom_tricks` row to a `CustomTrick`. Self-contained --
  * never looks at sibling rows. The batch-level nested-sequence check lives
@@ -115,6 +121,11 @@ export function mapCustomTrickRowToDomainTrick(
   const nameValid = isNormalizedText(nameRaw);
   if (!nameValid) {
     issues.push({ path: 'name', reason: 'malformedShape', message: 'name must be a non-empty, trimmed string.' });
+  }
+
+  const updatedAtRaw = parseTimestampMs(raw.updated_at);
+  if (updatedAtRaw === undefined) {
+    issues.push({ path: 'updated_at', reason: 'wrongType', message: 'updated_at must be a parseable timestamp.' });
   }
 
   const kenteiRankRaw = raw.kentei_rank;
@@ -193,6 +204,7 @@ export function mapCustomTrickRowToDomainTrick(
       id: idRaw as string,
       kind,
       name: nameRaw as string,
+      updatedAt: updatedAtRaw as number,
       ...(kenteiRank !== undefined ? { kenteiRank } : {}),
       ...(kind === 'sequence' ? { steps: mappedSteps } : {}),
     } as CustomTrick,

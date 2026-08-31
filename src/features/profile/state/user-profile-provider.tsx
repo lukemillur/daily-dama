@@ -8,6 +8,7 @@ import {
   INITIAL_USER_PROFILE,
   type UserProfile,
   type UserProfileAction,
+  type UserProfileActionPayload,
   userProfileReducer,
 } from '@/features/profile/model/user-profile';
 import {
@@ -74,6 +75,7 @@ export function UserProfileProvider({ children }: PropsWithChildren) {
     createRestoreAction: (value: UserProfile): UserProfileAction => ({
       type: 'profileRestored',
       profile: value,
+      updatedAt: value.updatedAt ?? 0,
     }),
     onRecovered: (error) => {
       console.warn('Unable to restore the saved user profile. Using safe defaults.', error);
@@ -104,66 +106,75 @@ export function UserProfileProvider({ children }: PropsWithChildren) {
     getTransport,
   });
 
+  // Single Date.now() call site for the whole profile domain (AGENTS.md:
+  // keep timer/Date.now() calls outside pure reducer logic). Every
+  // action-creator below dispatches through this wrapper instead of
+  // `dispatch` directly so `UserProfileAction.updatedAt` is always fresh.
+  const dispatchWithTimestamp = useCallback(
+    (payload: UserProfileActionPayload) => dispatch({ ...payload, updatedAt: Date.now() }),
+    [dispatch],
+  );
+
   const toggleSelectedTrick = useCallback((trickId: string) => {
-    dispatch({ type: 'selectedTrickToggled', trickId });
-  }, []);
+    dispatchWithTimestamp({ type: 'selectedTrickToggled', trickId });
+  }, [dispatchWithTimestamp]);
 
   const addSelectedTrick = useCallback((trickId: string) => {
-    dispatch({ type: 'selectedTrickAdded', trickId });
-  }, []);
+    dispatchWithTimestamp({ type: 'selectedTrickAdded', trickId });
+  }, [dispatchWithTimestamp]);
 
   const clearSelectedTricks = useCallback(() => {
-    dispatch({ type: 'selectedTricksCleared' });
-  }, []);
+    dispatchWithTimestamp({ type: 'selectedTricksCleared' });
+  }, [dispatchWithTimestamp]);
 
   const removeSelectedTrick = useCallback((trickId: string) => {
-    dispatch({ type: 'selectedTrickRemoved', trickId });
-  }, []);
+    dispatchWithTimestamp({ type: 'selectedTrickRemoved', trickId });
+  }, [dispatchWithTimestamp]);
 
   const toggleManualUnlock = useCallback((trickId: string) => {
-    dispatch({ type: 'manualUnlockToggled', trickId });
-  }, []);
+    dispatchWithTimestamp({ type: 'manualUnlockToggled', trickId });
+  }, [dispatchWithTimestamp]);
 
   const removeManualUnlock = useCallback((trickId: string) => {
-    dispatch({ type: 'manualUnlockRemoved', trickId });
-  }, []);
+    dispatchWithTimestamp({ type: 'manualUnlockRemoved', trickId });
+  }, [dispatchWithTimestamp]);
 
   const setLastSesh = useCallback((trickId: string, plan: SeshPlan) => {
-    dispatch({ type: 'lastSeshUpdated', lastSesh: createLastSesh(trickId, plan) });
-  }, []);
+    dispatchWithTimestamp({ type: 'lastSeshUpdated', lastSesh: createLastSesh(trickId, plan) });
+  }, [dispatchWithTimestamp]);
 
   const setStreakThresholdMs = useCallback((thresholdMs: number) => {
-    dispatch({ type: 'streakThresholdUpdated', thresholdMs });
-  }, []);
+    dispatchWithTimestamp({ type: 'streakThresholdUpdated', thresholdMs });
+  }, [dispatchWithTimestamp]);
 
   const setThemeColors = useCallback(
     (themeBackgroundColor: string | undefined, themeAccentColor: string | undefined) => {
-      dispatch({ type: 'themeColorsUpdated', themeBackgroundColor, themeAccentColor });
+      dispatchWithTimestamp({ type: 'themeColorsUpdated', themeBackgroundColor, themeAccentColor });
     },
-    [],
+    [dispatchWithTimestamp],
   );
 
   const setThemeTextColor = useCallback((themeTextColor: string | undefined) => {
-    dispatch({ type: 'themeTextColorUpdated', themeTextColor });
-  }, []);
+    dispatchWithTimestamp({ type: 'themeTextColorUpdated', themeTextColor });
+  }, [dispatchWithTimestamp]);
 
   const completeOnboarding = useCallback(
     (kenteiRank: number, selectedTrickIds: readonly string[], lacedTrickIds: readonly string[]) => {
-      dispatch({ type: 'onboardingCompleted', kenteiRank, selectedTrickIds, lacedTrickIds });
+      dispatchWithTimestamp({ type: 'onboardingCompleted', kenteiRank, selectedTrickIds, lacedTrickIds });
       if (Platform.OS === 'web') {
         track('onboarding_completed');
       }
     },
-    [],
+    [dispatchWithTimestamp],
   );
 
   const restartOnboarding = useCallback(() => {
-    dispatch({ type: 'onboardingRestarted' });
-  }, []);
+    dispatchWithTimestamp({ type: 'onboardingRestarted' });
+  }, [dispatchWithTimestamp]);
 
   const advanceKenteiRank = useCallback((rank: number) => {
-    dispatch({ type: 'kenteiRankAdvanced', rank });
-  }, []);
+    dispatchWithTimestamp({ type: 'kenteiRankAdvanced', rank });
+  }, [dispatchWithTimestamp]);
 
   const actions = useMemo(
     () => ({

@@ -254,7 +254,7 @@ describe('useCustomTrickDomainSync', () => {
     transport.setFailPush(true);
 
     const standalone: CustomTrickCollection = {
-      tricks: [{ id: 'custom-standalone', kind: 'standalone', name: 'Around the World' }],
+      tricks: [{ id: 'custom-standalone', kind: 'standalone', name: 'Around the World', updatedAt: 1 }],
     };
     const withSequence: CustomTrickCollection = {
       tricks: [
@@ -267,6 +267,7 @@ describe('useCustomTrickDomainSync', () => {
             { kind: 'customText', name: 'a' },
             { kind: 'customText', name: 'b' },
           ],
+          updatedAt: 1,
         },
       ],
     };
@@ -314,10 +315,10 @@ describe('useCustomTrickDomainSync', () => {
     transport.setFailPush(true);
 
     const created: CustomTrickCollection = {
-      tricks: [{ id: 'custom-1', kind: 'standalone', name: 'Original' }],
+      tricks: [{ id: 'custom-1', kind: 'standalone', name: 'Original', updatedAt: 1 }],
     };
     const edited: CustomTrickCollection = {
-      tricks: [{ id: 'custom-1', kind: 'standalone', name: 'Edited' }],
+      tricks: [{ id: 'custom-1', kind: 'standalone', name: 'Edited', updatedAt: 1 }],
     };
     const deleted: CustomTrickCollection = { tricks: [] };
 
@@ -366,7 +367,7 @@ describe('useCustomTrickDomainSync', () => {
     await flush();
 
     act(() => {
-      captured.setCollection?.({ tricks: [{ id: 'custom-1', kind: 'standalone', name: 'Reconnect trick' }] });
+      captured.setCollection?.({ tricks: [{ id: 'custom-1', kind: 'standalone', name: 'Reconnect trick', updatedAt: 1 }] });
     });
     await flush();
 
@@ -435,7 +436,7 @@ describe('useCustomTrickDomainSync', () => {
 
     expect(captured.collection).toEqual({
       tricks: [
-        { id: 'custom-standalone-seed', kind: 'standalone', name: 'Seeded standalone', kenteiRank: 5 },
+        { id: 'custom-standalone-seed', kind: 'standalone', name: 'Seeded standalone', kenteiRank: 5, updatedAt: Date.parse(TIMESTAMP) },
         {
           id: 'custom-sequence-seed',
           kind: 'sequence',
@@ -444,6 +445,7 @@ describe('useCustomTrickDomainSync', () => {
             { kind: 'customText', name: 'a' },
             { kind: 'customText', name: 'b' },
           ],
+          updatedAt: Date.parse(TIMESTAMP),
         },
       ],
     });
@@ -508,7 +510,7 @@ describe('useCustomTrickDomainSync', () => {
     // First, a clean successful create so this device observes a real
     // revision (1) for custom-1 in its envelope's revision cache.
     act(() => {
-      captured.setCollection?.({ tricks: [{ id: 'custom-1', kind: 'standalone', name: 'First' }] });
+      captured.setCollection?.({ tricks: [{ id: 'custom-1', kind: 'standalone', name: 'First', updatedAt: 1 }] });
     });
     await flush();
     await act(async () => {
@@ -523,8 +525,8 @@ describe('useCustomTrickDomainSync', () => {
     act(() => {
       captured.setCollection?.({
         tricks: [
-          { id: 'custom-1', kind: 'standalone', name: 'Edited locally' },
-          { id: 'custom-2', kind: 'standalone', name: 'Second' },
+          { id: 'custom-1', kind: 'standalone', name: 'Edited locally', updatedAt: 1 },
+          { id: 'custom-2', kind: 'standalone', name: 'Second', updatedAt: 1 },
         ],
       });
     });
@@ -581,7 +583,7 @@ describe('useCustomTrickDomainSync', () => {
     await flush();
 
     act(() => {
-      captured.setCollection?.({ tricks: [{ id: 'custom-deleted', kind: 'standalone', name: 'Original' }] });
+      captured.setCollection?.({ tricks: [{ id: 'custom-deleted', kind: 'standalone', name: 'Original', updatedAt: 1 }] });
     });
     await flush();
     await act(async () => {
@@ -594,8 +596,8 @@ describe('useCustomTrickDomainSync', () => {
     act(() => {
       captured.setCollection?.({
         tricks: [
-          { id: 'custom-deleted', kind: 'standalone', name: 'Resurrection attempt' },
-          { id: 'custom-unrelated', kind: 'standalone', name: 'Unrelated' },
+          { id: 'custom-deleted', kind: 'standalone', name: 'Resurrection attempt', updatedAt: 1 },
+          { id: 'custom-unrelated', kind: 'standalone', name: 'Unrelated', updatedAt: 1 },
         ],
       });
     });
@@ -656,7 +658,7 @@ describe('useCustomTrickDomainSync', () => {
 
     for (const name of ['Name 1', 'Name 2', 'Name 3', 'Name 4', 'Final name']) {
       act(() => {
-        captured.setCollection?.({ tricks: [{ id: 'custom-1', kind: 'standalone', name }] });
+        captured.setCollection?.({ tricks: [{ id: 'custom-1', kind: 'standalone', name, updatedAt: 1 }] });
       });
       await flush(1);
     }
@@ -683,7 +685,7 @@ describe('useCustomTrickDomainSync', () => {
     await flush();
 
     act(() => {
-      captured.setCollection?.({ tricks: [{ id: 'custom-1', kind: 'standalone', name: 'Guest trick' }] });
+      captured.setCollection?.({ tricks: [{ id: 'custom-1', kind: 'standalone', name: 'Guest trick', updatedAt: 1 }] });
     });
     await flush();
 
@@ -707,7 +709,7 @@ describe('useCustomTrickDomainSync', () => {
     expect(captured.pendingCount).toBe(0);
 
     act(() => {
-      captured.setCollection?.({ tricks: [{ id: 'custom-1', kind: 'standalone', name: 'Around the World' }] });
+      captured.setCollection?.({ tricks: [{ id: 'custom-1', kind: 'standalone', name: 'Around the World', updatedAt: 1 }] });
     });
     await flush();
 
@@ -732,7 +734,7 @@ describe('useCustomTrickDomainSync', () => {
     await flush();
 
     act(() => {
-      captured.setCollection?.({ tricks: [{ id: 'custom-1', kind: 'standalone', name: 'Around the World' }] });
+      captured.setCollection?.({ tricks: [{ id: 'custom-1', kind: 'standalone', name: 'Around the World', updatedAt: 1 }] });
     });
     await flush();
     expect(captured.pendingCount).toBe(1);
@@ -784,7 +786,7 @@ describe('useCustomTrickDomainSync', () => {
     await flush();
 
     act(() => {
-      captured.setCollection?.({ tricks: [{ id: 'custom-1', kind: 'standalone', name: 'Around the World' }] });
+      captured.setCollection?.({ tricks: [{ id: 'custom-1', kind: 'standalone', name: 'Around the World', updatedAt: 1 }] });
     });
     await flush();
     expect(captured.pendingCount).toBe(1);

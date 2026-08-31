@@ -2,6 +2,7 @@ import type { PracticeTrick } from '@/features/tricks/model/trick';
 
 interface CustomTrickBase extends PracticeTrick {
   readonly kenteiRank?: number;
+  readonly updatedAt: number;
 }
 
 export type SequenceStep =
@@ -62,8 +63,8 @@ export type CustomTrickDraftValidation =
   | {
       readonly status: 'valid';
       readonly value:
-        | Omit<StandaloneCustomTrick, 'id'>
-        | Omit<SequenceCustomTrick, 'id'>;
+        | Omit<StandaloneCustomTrick, 'id' | 'updatedAt'>
+        | Omit<SequenceCustomTrick, 'id' | 'updatedAt'>;
     };
 
 export function validateCustomTrickDraft(draft: CustomTrickDraft): CustomTrickDraftValidation {
@@ -105,8 +106,9 @@ export function validateCustomTrickDraft(draft: CustomTrickDraft): CustomTrickDr
 export function createCustomTrick(
   id: string,
   validatedDraft: Extract<CustomTrickDraftValidation, { status: 'valid' }>['value'],
+  updatedAt: number = Date.now(),
 ): CustomTrick {
-  return { id, ...validatedDraft };
+  return { id, ...validatedDraft, updatedAt };
 }
 
 export function createCustomTrickId(now = Date.now(), random = Math.random()) {

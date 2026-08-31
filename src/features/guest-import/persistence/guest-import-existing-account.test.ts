@@ -9,9 +9,9 @@ import type { Note } from '@/features/notes/model/note';
 
 const USER_ID = '11111111-1111-1111-1111-111111111111';
 const profile = (selectedTrickIds: readonly string[] = []): UserProfile => ({ hasCompletedOnboarding: true, selectedTrickIds });
-const trick = (id: string, name = id): CustomTrick => ({ id, kind: 'standalone', name });
+const trick = (id: string, name = id): CustomTrick => ({ id, kind: 'standalone', name, updatedAt: 1000 });
 const session = (id: string, laceCount = 1): PracticeSessionRecord => ({ id, trickId: 'lighthouse', trickName: 'Lighthouse', startedAt: 1000, completedAt: 2000, durationMs: 1000, laceCount });
-const goal = (id: string, targetCount = 3): Goal => ({ id, trickId: 'lighthouse', trickName: 'Lighthouse', kind: 'count', targetCount, createdAt: 1000 });
+const goal = (id: string, targetCount = 3): Goal => ({ id, trickId: 'lighthouse', trickName: 'Lighthouse', kind: 'count', targetCount, createdAt: 1000, updatedAt: 1000 });
 const note = (id: string, body = 'note'): Note => ({ id, trickId: 'lighthouse', trickName: 'Lighthouse', body, createdAt: 1000, updatedAt: 1000 });
 
 function cloud(overrides: Partial<ExistingAccountSnapshot> = {}): ExistingAccountSnapshot {

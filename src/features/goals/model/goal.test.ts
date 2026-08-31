@@ -44,6 +44,7 @@ describe('goals', () => {
       kind: 'count',
       targetCount: 50,
       createdAt: 1_000,
+      updatedAt: 1_000,
     });
   });
 
@@ -69,6 +70,7 @@ describe('goals', () => {
       kind: 'time',
       targetMs: 5_400_000,
       createdAt: 2_000,
+      updatedAt: 2_000,
     });
   });
 
@@ -158,11 +160,11 @@ describe('goals', () => {
 
     const editValidation = validateGoalTargetEdit({ kind: 'count', targetCount: 25 });
     if (editValidation.status !== 'valid') throw new Error('Expected a valid edit.');
-    const edited = applyGoalTargetEdit(goal, editValidation.value);
+    const edited = applyGoalTargetEdit(goal, editValidation.value, 3);
 
     const next = goalReducer(state, { type: 'goalEdited', goal: edited });
     expect(next.goals).toEqual([
-      { id: 'goal-1', trickId: 'big-cup', trickName: 'Big cup', kind: 'count', targetCount: 25, createdAt: 1 },
+      { id: 'goal-1', trickId: 'big-cup', trickName: 'Big cup', kind: 'count', targetCount: 25, createdAt: 1, updatedAt: 3 },
     ]);
 
     const missingGoal = { ...edited, id: 'missing' };

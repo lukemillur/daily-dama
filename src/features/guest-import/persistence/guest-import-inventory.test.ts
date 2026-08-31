@@ -47,8 +47,8 @@ describe('countLocalGuestRecords', () => {
     });
     const goalsDoc = serializeGoals({
       goals: [
-        { id: 'g1', trickId: 't1', trickName: 'Trick 1', createdAt: 0, kind: 'count', targetCount: 10 },
-        { id: 'g2', trickId: 't2', trickName: 'Trick 2', createdAt: 0, kind: 'time', targetMs: 60000 },
+        { id: 'g1', trickId: 't1', trickName: 'Trick 1', createdAt: 0, updatedAt: 0, kind: 'count', targetCount: 10 },
+        { id: 'g2', trickId: 't2', trickName: 'Trick 2', createdAt: 0, updatedAt: 0, kind: 'time', targetMs: 60000 },
       ],
     });
     const notesDoc = serializeNotes({
@@ -57,8 +57,8 @@ describe('countLocalGuestRecords', () => {
     // Legacy pre-T156.2 fallback: custom tricks live at the bare (un-namespaced) key.
     const customTricksDoc = serializeCustomTricks({
       tricks: [
-        { id: 'c1', name: 'Custom 1', kind: 'standalone' },
-        { id: 'c2', name: 'Custom 2', kind: 'standalone' },
+        { id: 'c1', name: 'Custom 1', kind: 'standalone', updatedAt: 0 },
+        { id: 'c2', name: 'Custom 2', kind: 'standalone', updatedAt: 0 },
       ],
     });
 

@@ -20,6 +20,7 @@ const COLLECTION: GoalCollection = {
       kind: 'count',
       targetCount: 50,
       createdAt: 1_000,
+      updatedAt: 1_000,
     },
     {
       id: 'goal-time',
@@ -28,6 +29,7 @@ const COLLECTION: GoalCollection = {
       kind: 'time',
       targetMs: 5_400_000,
       createdAt: 2_000,
+      updatedAt: 2_000,
     },
   ],
 };

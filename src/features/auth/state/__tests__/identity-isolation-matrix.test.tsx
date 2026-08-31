@@ -101,7 +101,7 @@ async function seedAllDomains(tag: string, identity = GUEST_IDENTITY) {
   await AsyncStorage.setItem(
     physicalKey(identity, CUSTOM_TRICKS_STORAGE_KEY),
     serializeCustomTricks({
-      tricks: [createCustomTrick(`trick-${tag}`, { kind: 'standalone', name: `${tag}-trick` })],
+      tricks: [createCustomTrick(`trick-${tag}`, { kind: 'standalone', name: `${tag}-trick` }, 0)],
     }),
   );
   await AsyncStorage.setItem(
@@ -131,6 +131,7 @@ async function seedAllDomains(tag: string, identity = GUEST_IDENTITY) {
           kind: 'count',
           targetCount: 5,
           createdAt: 0,
+          updatedAt: 0,
         },
       ],
     }),
@@ -360,7 +361,7 @@ describe('identity isolation matrix (real five-provider tree, all five domains)'
       (await AsyncStorage.getItem(physicalKey(GUEST_IDENTITY, CUSTOM_TRICKS_STORAGE_KEY)))!,
     );
     expect(guestTricks).toEqual({
-      tricks: [createCustomTrick('trick-guest', { kind: 'standalone', name: 'guest-trick' })],
+      tricks: [createCustomTrick('trick-guest', { kind: 'standalone', name: 'guest-trick' }, 0)],
     });
 
     const guestHistory = deserializePracticeHistory(
@@ -487,6 +488,7 @@ describe('identity isolation matrix (real five-provider tree, all five domains)'
           kind: 'count',
           targetCount: 5,
           createdAt: 0,
+          updatedAt: 0,
         },
       ],
     });

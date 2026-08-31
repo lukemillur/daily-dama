@@ -23,6 +23,7 @@ import { IdentityHandleContext } from '@/shared/persistence/identity-provider';
 const USER_ID = '11111111-1111-1111-1111-111111111111';
 const USER_IDENTITY: Identity = createUserIdentity(USER_ID)!;
 const TIMESTAMP = '2026-01-01T00:00:00.000Z';
+const TIMESTAMP_MS = Date.parse(TIMESTAMP);
 
 interface FakeTransportOptions {
   readonly seedProfile?: ProfileRow | null;
@@ -388,6 +389,7 @@ describe('useProfileDomainSync', () => {
       kenteiRank: 8,
       selectedTrickIds: ['trick-1'],
       manuallyUnlockedTrickIds: [],
+      updatedAt: TIMESTAMP_MS,
     });
 
     act(() => {
