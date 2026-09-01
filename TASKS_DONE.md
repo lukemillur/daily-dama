@@ -2936,3 +2936,12 @@ Completed entries live in [TASKS_DONE.md](TASKS_DONE.md) — not part of the top
 - **Description:** T191 added "Back to Profile" as a `fill`/`variant="secondary"` `Button` on `account-security-screen.tsx`, reused as-is on `account-deletion-screen.tsx` and `forgot-password-screen.tsx`. Replace it on all three with a small text link matching the existing "← Back to Stats" pattern (`BackLink` in `src/app/app/stats/[trickId].tsx`).
 - **Exit criteria:** `account-security-screen.test.tsx`, `account-deletion-screen.test.tsx`, and `forgot-password-screen.test.tsx` pass with the control still present and functional; confirmed in-browser that all three screens now show a small "← Back to Profile" text link instead of a full-width button.
 - **Notes:** From S077. Pure style swap — navigation target, visibility conditions (forgot-password's guest-from-sign-in absence case), and all other T191 behavior are unchanged.
+### [T201] Rework the signup invite: inline on the first Sesh, translucent modal every 5th Sesh after
+
+- **Area:** Sesh / guest invitation
+- **Priority:** Medium
+- **Status:** Done
+- **Planning:** Implementer
+- **Description:** `isRegularSessionInviteEligible` (`practice-history.ts`) already fires on the 1st, 6th, 11th, ... regular Sesh — the every-5th cadence is correct today. The gap is presentation: T183 made every eligible occurrence render as the `InviteOverlay` modal, including the very first one, which the user finds too aggressive, and that overlay's background is opaque instead of translucent. Change `sesh.tsx` so the first-ever occurrence (`selectRegularSessions(priorSessions).length === 0`) renders the original inline invite on the wrap-up screen instead of the overlay, and change `InviteOverlay`'s background to translucent for the modal case.
+- **Exit criteria:** `sesh.test.tsx` passes, including cases asserting the first-ever-Sesh completion renders the invite inline (present in the `ScrollView` subtree) and the 6th completion renders it as the overlay with a translucent background, with the wrap-up content visible behind it.
+- **Notes:** From S081 and S082 (combined — see the batch note above). Eligibility logic (`isRegularSessionInviteEligible`) itself does not change, only which occurrences get which presentation.

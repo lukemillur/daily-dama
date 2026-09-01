@@ -50,6 +50,7 @@ import {
   hasPriorLaceForTrick,
   isFirstLaceForTrick,
   isRegularSessionInviteEligible,
+  selectRegularSessions,
   type PracticeSessionOrigin,
   type PracticeSessionRecord,
 } from '@/features/stats/model/practice-history';
@@ -110,6 +111,7 @@ export function Sesh({
   const [goalBaselines, setGoalBaselines] = useState<readonly GoalProgress[]>([]);
   const [justAchievedGoals, setJustAchievedGoals] = useState<readonly Goal[]>([]);
   const [showSignupInvite, setShowSignupInvite] = useState(false);
+  const [signupInviteIsFirstOccurrence, setSignupInviteIsFirstOccurrence] = useState(false);
   const practiceTricks = useMemo(
     () => selectSeshPracticeTricks(availableTricks, selectedTrickIds, preferredTrickId),
     [availableTricks, preferredTrickId, selectedTrickIds],
@@ -159,7 +161,9 @@ export function Sesh({
         return isGoalNewlyAchieved(goal, baseline.current, contribution);
       }),
     );
-    setShowSignupInvite(authStatus === 'guest' && isRegularSessionInviteEligible(sessions, origin));
+    const inviteEligible = authStatus === 'guest' && isRegularSessionInviteEligible(sessions, origin);
+    setShowSignupInvite(inviteEligible);
+    setSignupInviteIsFirstOccurrence(inviteEligible && selectRegularSessions(sessions).length === 0);
     recordCompletedSesh(state.summary, origin);
   }, [authStatus, goals, origin, recordCompletedSesh, sessions, state, timerCuePlayer]);
 
@@ -268,11 +272,13 @@ export function Sesh({
       isFirstLace={firstLaceCelebration}
       justAchievedGoals={justAchievedGoals}
       showSignupInvite={showSignupInvite}
+      signupInviteIsFirstOccurrence={signupInviteIsFirstOccurrence}
       onReset={() => {
         setFirstLaceCelebration(false);
         setHadPriorLaceAtSeshStart(false);
         setJustAchievedGoals([]);
         setShowSignupInvite(false);
+        setSignupInviteIsFirstOccurrence(false);
         dispatch({ type: 'seshReset' });
       }}
       onRepeat={() => {
@@ -285,6 +291,7 @@ export function Sesh({
         setFirstLaceCelebration(false);
         setJustAchievedGoals([]);
         setShowSignupInvite(false);
+        setSignupInviteIsFirstOccurrence(false);
         setHadPriorLaceAtSeshStart(hasPriorLaceForTrick(sessions, state.summary.trick.id));
         setGoalBaselines(
           selectGoalsForTrick(goals, state.summary.trick.id).map((goal) =>
@@ -971,6 +978,7 @@ export function CompletedSesh({
   isFirstLace,
   justAchievedGoals = [],
   showSignupInvite = false,
+  signupInviteIsFirstOccurrence = false,
   onReset,
   onRepeat,
 }: {
@@ -981,6 +989,13 @@ export function CompletedSesh({
   readonly isFirstLace: boolean;
   readonly justAchievedGoals?: readonly Goal[];
   readonly showSignupInvite?: boolean;
+  /**
+   * T201: the first-ever eligible occurrence renders inline on the wrap-up
+   * screen (less aggressive for a brand-new guest); every 5th occurrence
+   * after that (the 6th, 11th, ...) renders as the translucent PostSeshSignupInvite
+   * overlay. Ignored when showSignupInvite is false.
+   */
+  readonly signupInviteIsFirstOccurrence?: boolean;
   readonly onReset: () => void;
   readonly onRepeat: () => void;
 }) {
@@ -1028,18 +1043,48 @@ export function CompletedSesh({
           <LandingHistory landings={summary.landings} />
           {goalProgressList.length > 0 ? <SeshGoalsPanel goalProgressList={goalProgressList} /> : null}
           {promptForNote ? <SeshNotePrompt summary={summary} /> : null}
+          {showSignupInvite && signupInviteIsFirstOccurrence ? <InlineSignupInvite /> : null}
           <PrimaryButton onPress={onRepeat}>Repeat sesh</PrimaryButton>
           <SecondaryButton variant="secondary" onPress={onReset}>Start another sesh</SecondaryButton>
         </ActiveContent>
       </ScrollArea>
-      {showSignupInvite ? <PostSeshSignupInvite /> : null}
+      {showSignupInvite && !signupInviteIsFirstOccurrence ? <PostSeshSignupInvite /> : null}
     </>
+  );
+}
+
+// T201: the original pre-T183 inline presentation, restored for the guest's first-ever eligible
+// occurrence only -- rendered as ordinary wrap-up content inside the ScrollView, not an overlay.
+function InlineSignupInvite() {
+  const [dismissed, setDismissed] = useState(false);
+  if (dismissed) return null;
+
+  return (
+    <InlineInviteCard accessibilityLabel="Guest signup invitation">
+      <InviteTitle>Save this sesh for good.</InviteTitle>
+      <InviteCopy>
+        Right now your practice history only lives on this device. Sign up free to keep it if you
+        switch devices or clear your browser.
+      </InviteCopy>
+      <InviteActions>
+        <Link href="/auth/sign-up" asChild>
+          <InviteSignUpButton accessibilityRole="link">Sign up</InviteSignUpButton>
+        </Link>
+        <InviteDismissButton
+          accessibilityLabel="Dismiss signup invitation"
+          onPress={() => setDismissed(true)}>
+          Not now
+        </InviteDismissButton>
+      </InviteActions>
+    </InlineInviteCard>
   );
 }
 
 // T183: dismissible modal overlay, not inline wrap-up content. Follows RankUpCelebrationModal and
 // LogoutPrompt's precedent (no React Native <Modal> in this codebase) -- an absolute-fill <View>
-// covering the wrap-up screen until the guest signs up or dismisses it.
+// covering the wrap-up screen (translucent, T201) until the guest signs up or dismisses it. T201
+// restricts this presentation to every 5th occurrence after the first (the 6th, 11th, ...); the
+// first-ever occurrence renders InlineSignupInvite instead.
 function PostSeshSignupInvite() {
   const [dismissed, setDismissed] = useState(false);
   const router = useRouter();
@@ -1327,8 +1372,9 @@ const NotePromptButton = styled(Pressable)<{ $disabled?: boolean }>`min-height: 
 const NotePromptButtonText = styled.Text`color: ${({ theme }) => theme.accent}; font-size: 14px; font-weight: 900;`;
 const NotePromptSecondaryButton = styled(Pressable)`min-height: 44px; flex: 1; align-items: center; justify-content: center; padding: 10px 18px; border: 2px solid ${AppColors.ink}; border-radius: 5px;`;
 const NotePromptSecondaryButtonText = styled.Text`color: ${({ theme }) => theme.text}; font-size: 14px; font-weight: 900;`;
-const InviteOverlay = styled.View`position: absolute; top: 0; right: 0; bottom: 0; left: 0; background-color: ${AppColors.yellow}; align-items: center; justify-content: center; padding: 24px; z-index: 1000;`;
+const InviteOverlay = styled.View`position: absolute; top: 0; right: 0; bottom: 0; left: 0; background-color: rgba(244, 201, 77, 0.85); align-items: center; justify-content: center; padding: 24px; z-index: 1000;`;
 const InviteCard = styled.View`width: 100%; max-width: 500px; background-color: #f8f1dd; border: 2px solid ${AppColors.ink}; padding: 18px;`;
+const InlineInviteCard = styled(InviteCard)`margin-top: 20px;`;
 const InviteTitle = styled.Text`color: ${({ theme }) => theme.text}; font-size: 17px; font-weight: 900;`;
 const InviteCopy = styled.Text`color: ${({ theme }) => theme.text}; font-size: 13px; font-weight: 650; line-height: 19px; margin-top: 6px;`;
 const InviteActions = styled.View`flex-direction: row; gap: 10px; margin-top: 14px;`;

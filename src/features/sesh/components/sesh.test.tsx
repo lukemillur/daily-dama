@@ -109,6 +109,16 @@ function findByAccessibilityLabel(root: ReactTestRenderer, label: string) {
   return root.root.findAll((node) => node.props.accessibilityLabel === label);
 }
 
+// Multiple nodes can share an accessibilityLabel (e.g. styled-components/native wraps a host
+// element); this finds the one carrying a resolved plain-object style so callers can assert on
+// background color, etc.
+function findStyledByAccessibilityLabel(root: ReactTestRenderer, label: string) {
+  const matches = findByAccessibilityLabel(root, label);
+  return matches.find(
+    (node) => typeof node.props.style === 'object' && node.props.style !== null && !Array.isArray(node.props.style),
+  ) as { props: { style?: { backgroundColor?: string } } } | undefined;
+}
+
 // Some buttons (e.g. "End Sesh") only carry visible text, no accessibilityLabel. Find the text
 // node and climb to the nearest ancestor exposing an onPress handler.
 function pressByVisibleText(root: ReactTestRenderer, text: string) {
@@ -749,6 +759,87 @@ describe('CompletedSesh signup invite', () => {
       (node) => node.props.accessibilityLabel === 'Guest signup invitation',
     );
     expect(inviteInsideScroll).toHaveLength(0);
+  });
+
+  it('renders the invite as a translucent overlay when signupInviteIsFirstOccurrence is false (T201)', async () => {
+    const root = await mountWithNoteProvider(
+      <CompletedSesh
+        summary={summary}
+        isFirstLace={false}
+        showSignupInvite={true}
+        signupInviteIsFirstOccurrence={false}
+        onReset={noop}
+        onRepeat={noop}
+      />,
+    );
+
+    const overlay = findStyledByAccessibilityLabel(root, 'Guest signup invitation');
+    expect(overlay?.props.style?.backgroundColor).toMatch(/^rgba\(/);
+
+    // The wrap-up content stays mounted (and visible) behind the translucent overlay.
+    expect(JSON.stringify(root.toJSON())).toContain(summary.trick.name);
+  });
+
+  it('renders the invite inline within the wrap-up scroll content when signupInviteIsFirstOccurrence is true (T201)', async () => {
+    const root = await mountWithNoteProvider(
+      <CompletedSesh
+        summary={summary}
+        isFirstLace={false}
+        showSignupInvite={true}
+        signupInviteIsFirstOccurrence={true}
+        onReset={noop}
+        onRepeat={noop}
+      />,
+    );
+
+    const inviteNodes = findByAccessibilityLabel(root, 'Guest signup invitation');
+    expect(inviteNodes.length).toBeGreaterThan(0);
+
+    const [scrollView] = root.root.findAllByType(ScrollView);
+    const inviteInsideScroll = scrollView.findAll(
+      (node) => node.props.accessibilityLabel === 'Guest signup invitation',
+    );
+    expect(inviteInsideScroll.length).toBeGreaterThan(0);
+  });
+
+  it('renders the inline invite\'s "Sign up" as a real link to /auth/sign-up (T201)', async () => {
+    const root = await mountWithNoteProvider(
+      <CompletedSesh
+        summary={summary}
+        isFirstLace={false}
+        showSignupInvite={true}
+        signupInviteIsFirstOccurrence={true}
+        onReset={noop}
+        onRepeat={noop}
+      />,
+    );
+
+    const [signUpLink] = root.root.findAll(
+      (node) => node.props.accessibilityRole === 'link' && node.props.href === '/auth/sign-up',
+    );
+    expect(signUpLink).toBeDefined();
+  });
+
+  it('dismisses the inline invite without changing the completed record (T201)', async () => {
+    const root = await mountWithNoteProvider(
+      <CompletedSesh
+        summary={summary}
+        isFirstLace={false}
+        showSignupInvite={true}
+        signupInviteIsFirstOccurrence={true}
+        onReset={noop}
+        onRepeat={noop}
+      />,
+    );
+
+    act(() => {
+      pressByAccessibilityLabel(root, 'Dismiss signup invitation');
+    });
+
+    expect(findByAccessibilityLabel(root, 'Guest signup invitation')).toHaveLength(0);
+    const afterText = JSON.stringify(root.toJSON());
+    expect(afterText).toContain(summary.trick.name);
+    expect(afterText).toContain(String(summary.landings.length));
   });
 
   it('closes the invite when "Sign up" is pressed', async () => {
@@ -1813,7 +1904,7 @@ describe('Sesh signup invite integration', () => {
     }
   });
 
-  it('renders the invite as an overlay on the first-ever sesh, and "Dismiss" closes it (T183)', async () => {
+  it('renders the invite inline (inside the ScrollView) on the first-ever sesh, and "Dismiss" closes it (T201)', async () => {
     jest.useFakeTimers();
     try {
       const root = await mountSesh('guest');
@@ -1822,8 +1913,8 @@ describe('Sesh signup invite integration', () => {
       expect(findByAccessibilityLabel(root, 'Guest signup invitation').length).toBeGreaterThan(0);
       const [scrollView] = root.root.findAllByType(ScrollView);
       expect(
-        scrollView.findAll((node) => node.props.accessibilityLabel === 'Guest signup invitation'),
-      ).toHaveLength(0);
+        scrollView.findAll((node) => node.props.accessibilityLabel === 'Guest signup invitation').length,
+      ).toBeGreaterThan(0);
 
       act(() => {
         pressByAccessibilityLabel(root, 'Dismiss signup invitation');
@@ -1835,7 +1926,7 @@ describe('Sesh signup invite integration', () => {
     }
   });
 
-  it('"Sign up" also closes the invite on the first-ever sesh (T183)', async () => {
+  it('the first-ever sesh\'s inline invite exposes "Sign up" as a real link to /auth/sign-up (T201)', async () => {
     jest.useFakeTimers();
     try {
       const root = await mountSesh('guest');
@@ -1843,11 +1934,10 @@ describe('Sesh signup invite integration', () => {
 
       expect(findByAccessibilityLabel(root, 'Guest signup invitation').length).toBeGreaterThan(0);
 
-      act(() => {
-        pressByVisibleText(root, 'Sign up');
-      });
-
-      expect(findByAccessibilityLabel(root, 'Guest signup invitation')).toHaveLength(0);
+      const [signUpLink] = root.root.findAll(
+        (node) => node.props.accessibilityRole === 'link' && node.props.href === '/auth/sign-up',
+      );
+      expect(signUpLink).toBeDefined();
     } finally {
       jest.useRealTimers();
     }
@@ -1951,6 +2041,25 @@ describe('Sesh signup invite integration', () => {
       });
 
       expect(findByAccessibilityLabel(root, 'Guest signup invitation')).toHaveLength(0);
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it('renders the 6th-completion overlay translucent, with the wrap-up content visible behind it (T201)', async () => {
+    jest.useFakeTimers();
+    try {
+      const root = await mountSesh('guest');
+      completeASesh(root, `Start a sesh with ${TRICK.name}`);
+      for (let session = 2; session <= 6; session += 1) {
+        repeatASesh(root);
+      }
+
+      const overlay = findStyledByAccessibilityLabel(root, 'Guest signup invitation');
+      expect(overlay?.props.style?.backgroundColor).toMatch(/^rgba\(/);
+
+      // The wrap-up screen behind the overlay is still mounted, not replaced.
+      expect(JSON.stringify(root.toJSON())).toContain(TRICK.name);
     } finally {
       jest.useRealTimers();
     }
