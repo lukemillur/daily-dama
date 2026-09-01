@@ -120,4 +120,23 @@ describe('AccountDeletionScreen', () => {
     expect(findByLabel(root, 'Go to sign in')).toBeDefined();
     expect(() => findByLabel(root, 'Delete account permanently')).toThrow();
   });
+
+  it('shows a Back to Profile control for the authenticated Profile context and navigates back via it', async () => {
+    mockAuthState = { status: 'authenticated' };
+    let root!: ReactTestRenderer;
+    await act(async () => { root = create(<AccountDeletionScreen />); });
+
+    const button = findByLabel(root, 'Back to Profile');
+    expect(button).toBeDefined();
+    act(() => button.props.onPress());
+    expect(mockPush).toHaveBeenCalledWith('/app/profile');
+  });
+
+  it('does not show a Back to Profile control for a guest', async () => {
+    mockAuthState = { status: 'guest' };
+    let root!: ReactTestRenderer;
+    await act(async () => { root = create(<AccountDeletionScreen />); });
+
+    expect(() => findByLabel(root, 'Back to Profile')).toThrow();
+  });
 });

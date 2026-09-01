@@ -116,7 +116,7 @@ export function AccountSecurityScreen() {
 
   const handleForgotPassword = async () => {
     await signOut();
-    router.push('/auth/forgot-password');
+    router.push('/auth/forgot-password?from=account-security');
   };
 
   const handleEmailSubmit = async () => {

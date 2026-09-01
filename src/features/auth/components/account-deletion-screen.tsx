@@ -34,6 +34,10 @@ export function AccountDeletionScreen() {
   const [succeeded, setSucceeded] = useState(false);
   const submittingRef = useRef(false);
 
+  const handleBack = () => {
+    router.push('/app/profile');
+  };
+
   const isValid = currentPassword.length > 0 && confirmation === 'DELETE';
   const passwordError = hasSubmitted && currentPassword.length === 0 ? 'Enter your current password.' : undefined;
   const confirmationError =
@@ -101,6 +105,13 @@ export function AccountDeletionScreen() {
         <Content>
           <Eyebrow>Delete account</Eyebrow>
           <PageTitle>This is permanent.</PageTitle>
+
+          <Actions>
+            <Button accessibilityLabel="Back to Profile" fill variant="secondary" onPress={handleBack}>
+              Back to Profile
+            </Button>
+          </Actions>
+
           <Introduction>
             Deleting your account happens immediately and permanently. Your account and cloud data will be removed.
           </Introduction>
