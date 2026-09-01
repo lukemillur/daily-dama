@@ -156,7 +156,7 @@ _T182–T193 come from stories S063–S074 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 - **Area:** Authentication / Supabase email
 - **Priority:** Low
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Implementer
 - **Description:** `supabase/templates/confirmation.html` is already a repository-owned template (not Supabase's generic default) but uses a generic rounded-corner SaaS style — unlike the app's own bold ink-bordered, hard-shadow "sticker" visual language (`AppColors`, `boxShadow: 8px 8px 0 ink`, uppercase eyebrow labels). Restyle it to match.
 - **Exit criteria:** `supabase/tests/` (or a manual Mailpit check per `supabase/README.md`'s documented verification flow) confirms the template still renders and the confirmation link still resolves; visually reviewed against the app's landing/auth screens for a consistent look.
