@@ -175,16 +175,6 @@ _T194–T206 come from stories S075–S088 in [BACKLOG_STORIES.md](BACKLOG_STORI
 - **Exit criteria:** A real disposable account, in the environment the user actually tests against, is deleted successfully through the app UI (no 503) and can no longer sign in afterward.
 - **Notes:** From S078. Coordinate with T195 on identifying the real target environment first — resolving that question likely un-blocks both tickets at once.
 
-### [T199] Stop showing onboarding again to a guest whose data just got imported
-
-- **Area:** Guest conversion / onboarding
-- **Priority:** High
-- **Status:** In progress
-- **Planning:** Required
-- **Description:** T186.1 was supposed to gate onboarding on existing local data so a guest with data lands on Home after signup, not the Kentei rank picker. The user reports being sent to onboarding anyway, immediately after signup, with several elements painting first. This needs runtime tracing (not a known fix) through `use-guest-import.ts`'s auto-confirm sequencing, the guest→user identity-generation switch, and `UserProfileProvider`'s hydration/write timing, to find why `hasCompletedOnboarding`/`kenteiRank` don't read as complete by the time the post-signup redirect/render evaluates them.
-- **Exit criteria:** A real signup (through the actual auth flow, not a seeded fixture) for a guest identity with existing local practice/profile data lands on Home directly, with no onboarding screen shown at any point, verified in-browser end-to-end against a real account.
-- **Notes:** From S079 (the onboarding-recurrence symptom). Same general bug class as T189 (a post-identity-change read racing or missing the just-written state) but on the opposite transition (guest→user after import, not logout); worth checking whether the fix is structurally similar (an identity-scoped read landing before a write settles) before assuming a new mechanism. Depends on T198 only in the sense that removing the visible import panel makes this bug easier to observe cleanly — not a hard sequencing dependency.
-
 ### [T200] Add sign-up/sign-in entry points to the landing page
 
 - **Area:** Landing / navigation
