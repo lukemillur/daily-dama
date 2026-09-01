@@ -12,6 +12,8 @@ _S042–S062 came from the user's 2026-08-25 QA pass on the Full-Batch of PR #15
 
 _S063–S074 came from the user's 2026-08-31 QA pass on PRs #224–256 — the batch that closed T163–T181. Every reviewed T163–T181 item came back with a follow-up gap (the implementation shipped but didn't fully satisfy the QA scenario), plus six items of general feedback not tied to a specific ticket. All twelve are refinements/corrections to already-`Done` work, not new features. All twelve were scoped into T182–T193 (see `TASKS.md`) and removed from this file: S063→T182, S064→T183, S065→T184, S066→T185, S067→T186 (T186.1–T186.2), S068→T187 (T187.1–T187.2), S069→T188, S070→T189, S071→T190, S072→T191, S073→T192, S074→T193._
 
+_S075–S088 came from the user's 2026-09-01 QA pass on T182–T193 (the batch closed by the 2026-08-31 pass, S063–S074). Every reviewed T188/T189/T191/T192/T193 item came back with a follow-up gap, T186.1 came back with two distinct problems, T183 came back with a styling gap, and seven items are general feedback not tied to a specific ticket. All fourteen were scoped into T194–T206 (see `TASKS.md`) and removed from this file: S075→T194, S076→T195, S077→T196, S078→T197, S079→T198 (visible-UI/flash symptom) & T199 (onboarding-recurrence symptom), S080→T200, S081→T201, S082→T201 (combined with S081), S083→T202, S084→T203, S085→T204, S086→T205, S087→T206, S088→T198 (combined with S079's UI symptom)._
+
 ### [S057] Enforce email uniqueness at signup with a clear message — REJECTED
 
 - **Status:** Rejected (2026-08-26)

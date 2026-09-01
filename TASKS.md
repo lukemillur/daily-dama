@@ -151,5 +151,140 @@ _Phase 5 consideration: no cross-platform account-hardening ticket is activated.
 
 _T182–T193 come from stories S063–S074 in [BACKLOG_STORIES.md](BACKLOG_STORIES.md) (the user's 2026-08-31 QA pass on PRs #224–256 — every T163–T181 item came back with a follow-up gap on the same already-`Done` ticket, plus six items of general feedback). T182 (S063, goal-card trick title), T183 (S064, signup-invite modal), T185 (S066, synced password-visibility icon), T190 (S071, hide sync status for guests), T191 (S072, auth-screen back buttons), T192 (S073, verification-email branding), and T193 (S074, forgot-password left-align) are `Implementer` — local, known-pattern changes, several reusing an existing precedent in this same codebase (T158's `logout-prompt.tsx` absolute-fill modal for T183; T181's "Back to Profile" button for T191). T184 (S065) is `Required`: tracing all four `/auth/*` screens confirmed each renders its primary form via `FormScroll` directly, never wrapped in `<Screen>` (T170's own Notes already flagged this gap) — `PageTitle`/`Introduction`/`Eyebrow` already resolve from `theme.text`/`theme.textMuted` via `typography.tsx`, but with no themed `Screen` background underneath them the only visible surface is `+html.tsx`'s static CSS, and `FieldInput`/`PasswordInput`'s field chrome use hardcoded `AppColors` instead of theme tokens. Wrapping the primary form in `<Screen>` on four screens without reintroducing T145's hydration-flicker fix is exactly the kind of provider/boundary risk this project's Planning rules reserve for `Required`. T189 (S070) is `Required` for the same class of reason: tracing `router.replace('/')`'s target confirmed `/`'s own `useRedirectOnboardedVisitorHome` reads `use-cached-onboarding-status.ts`, which — like `read-cached-theme-background.ts` — still reads only the legacy bare `USER_PROFILE_STORAGE_KEY` rather than the identity-scoped guest key T156.2 introduced; T170's Notes already flagged this exact gap as an "undiscovered gap flagged as a follow-up candidate," and both post-logout symptoms (wrong destination, un-reset theme) trace to it. T188 (S069) is `Required` because the `delete-account` Edge Function's 503 could not be attributed to an app-code defect from static tracing alone — `supabase/README.md` documents that the function needs a running local Supabase stack (`supabase start` + `db reset`), so this needs a runtime diagnosis pass, not a known fix applied locally. T186 (S067) and T187 (S068) are both `Required` M-chains: tracing `goal.ts`, `custom-trick.ts`, and `user-profile-persistence.ts` found no per-record `updatedAt` field in the profile, custom-trick, or goal domains (only `note.ts` already has one), so S068's "resolve by timestamp" premise needs that field added first — T187.1 adds it, T187.2 wires the automatic most-recent-wins resolution and removes `/app/profile/sync-conflicts` and `sync-conflict-list.tsx`. T186.1 covers the common empty-account signup path (`GuestImportPreview`'s own state-machine trace confirmed a brand-new account has no cloud data yet, so `uploading -> completed` never touches `awaitingProfileChoice`/`conflicts`), auto-triggering `confirmImport()`, deleting the preview UI, and gating onboarding on existing local data. T186.2 (existing-account guest imports that do reach a profile-choice or conflict state) depends on T187.2's automatic-resolution primitive and is ordered after it.
 
+---
+
+_T194–T206 come from stories S075–S088 in [BACKLOG_STORIES.md](BACKLOG_STORIES.md) (the user's 2026-09-01 QA pass on T182–T193). T194 (S075), T196 (S077), T198 (S079 partial + S088), T202 (S083), T203 (S084), T204 (S085), and T205 (S086) are `Implementer` — local, known-pattern changes. T201 combines S081 and S082 into one ticket because both edit the same `PostSeshSignupInvite`/`InviteOverlay` block in `sesh.tsx`; splitting them would mean two PRs colliding on the same lines for no benefit. T195 (S076) and T197 (S078) are `Required`: tracing `supabase/README.md:281` ("This config is local-only. It does not touch the hosted Supabase project") shows T192's and T188's local-stack verification never actually reached whatever environment the user's real signups and deletions hit, so both need a fresh diagnosis pass against that real environment rather than a known local fix reapplied. T199 (S079 remainder) and T206 (S087) are `Required` for the same class of reason as T188/T189 before them: both are post-auth-identity-change render/redirect races (guest→user after import for T199, sign-in to an existing populated account for T206) that need runtime tracing through `UserProfileProvider`'s hydration and the sync coordinator before a fix can be written, not a known pattern applied locally. T200 (S080) is `Required` because it adds a new pre-onboarding entry point into routing (`landing-cta.tsx`/`use-cached-onboarding-status.ts`) that several prior tickets (T112.5, T145, T170, T189) have already shown is easy to get wrong around hydration and redirect ordering. T204 depends on T203 landing first (both touch `AccountSection`'s contents, T203 removing its "Delete account" button and T204 relocating what remains).
+
+### [T194] Left-align header text on sign-in, sign-up, and reset-password
+
+- **Area:** Authentication UI
+- **Priority:** Medium
+- **Status:** Not started
+- **Planning:** Implementer
+- **Description:** T193 removed `text-align: center` from `forgot-password-screen.tsx`'s `PageTitle`/`Introduction`/`Guidance`, but left the equivalent styled components in `sign-in-screen.tsx`, `sign-up-screen.tsx`, and `reset-password-screen.tsx` centered (confirmed: each still has two `text-align: center` declarations). Remove those overrides on all three screens, matching forgot-password.
+- **Exit criteria:** `sign-in-screen.test.tsx`, `sign-up-screen.test.tsx`, and `reset-password-screen.test.tsx` pass; confirmed in-browser at a narrow viewport (where the copy wraps to multiple lines) that all three screens' header text renders left-aligned, matching forgot-password and account-security.
+- **Notes:** From S075. Scope is these three screens only — `account-deletion-screen.tsx`, `account-deleted-screen.tsx`, `check-email-screen.tsx`, and `auth-callback-screen.tsx` also center text but are single-message/status screens, not the input-form family the QA comment named ("sign-in screen, sign-up screen, etc."); leave them centered unless the user flags them separately. `account-security-screen.tsx`'s dynamic `$align` default is also out of scope for the same reason.
+
+### [T195] Make the branded confirmation email reach real signups
+
+- **Area:** Authentication / Supabase email
+- **Priority:** High
+- **Status:** Not started
+- **Planning:** Required
+- **Description:** T192 restyled `supabase/templates/confirmation.html` and verified it against the local Supabase stack via Mailpit, but a real signup shows no branding change at all. `supabase/README.md:281` states the local `config.toml`/template setup "does not touch the hosted Supabase project," so the template almost certainly needs to be applied to whatever project real signups hit (hosted-project email template configuration, via dashboard or a deploy step — not further local-stack changes).
+- **Exit criteria:** A real signup, in the environment the user actually tests against, receives the branded confirmation email (cream/paper background, ink border, hard drop shadow, red uppercase eyebrow, ink-background/yellow-text button) — verified directly in that environment's inbox, not the local Mailpit stack.
+- **Notes:** From S076. First confirm which environment ("real" signup in the QA comment) the user is testing against — likely the hosted/production Supabase project — before making changes; this is the same environment question as T197.
+
+### [T196] Shrink "Back to Profile" controls to a text-link style
+
+- **Area:** Authentication UI
+- **Priority:** Medium
+- **Status:** Not started
+- **Planning:** Implementer
+- **Description:** T191 added "Back to Profile" as a `fill`/`variant="secondary"` `Button` on `account-security-screen.tsx`, reused as-is on `account-deletion-screen.tsx` and `forgot-password-screen.tsx`. Replace it on all three with a small text link matching the existing "← Back to Stats" pattern (`BackLink` in `src/app/app/stats/[trickId].tsx`).
+- **Exit criteria:** `account-security-screen.test.tsx`, `account-deletion-screen.test.tsx`, and `forgot-password-screen.test.tsx` pass with the control still present and functional; confirmed in-browser that all three screens now show a small "← Back to Profile" text link instead of a full-width button.
+- **Notes:** From S077. Pure style swap — navigation target, visibility conditions (forgot-password's guest-from-sign-in absence case), and all other T191 behavior are unchanged.
+
+### [T197] Fix account deletion still returning a 503 in the real environment
+
+- **Area:** Authentication / Supabase
+- **Priority:** High
+- **Status:** Not started
+- **Planning:** Required
+- **Description:** T188 diagnosed and fixed a 503 caused by a stale **local** Supabase stack, and verified the fix against a freshly cycled local stack. The user reports the 503 still happens. Given T195's parallel finding that T192's local-stack verification didn't hold in the real environment, first confirm whether this is the same local-vs-real gap (i.e., the real environment the user hits was never actually fixed) before re-diagnosing from scratch.
+- **Exit criteria:** A real disposable account, in the environment the user actually tests against, is deleted successfully through the app UI (no 503) and can no longer sign in afterward.
+- **Notes:** From S078. Coordinate with T195 on identifying the real target environment first — resolving that question likely un-blocks both tickets at once.
+
+### [T198] Stop the guest-import status panel from ever rendering visible UI
+
+- **Area:** Guest conversion / onboarding
+- **Priority:** High
+- **Status:** Not started
+- **Planning:** Implementer
+- **Description:** `GuestImportPreview` (`src/features/guest-import/components/guest-import-preview.tsx`) still renders an "Import in progress..." panel while `state.status === 'uploading'`, and is still unconditionally mounted in `profile/index.tsx` — every other status branch already returns `null`. This directly contradicts T186/T186.1's "internally invisible" goal and is the most likely source of both the visible import text the user reports and the "elements painted very quickly" flash before landing on onboarding (see T199 for the onboarding-redirect part of that same report).
+- **Exit criteria:** `guest-import-preview.test.tsx` passes with no case that renders visible text; confirmed in-browser that signing up with existing local data shows no import-status text or panel anywhere at any point during the flow.
+- **Notes:** From S079 (the visible-UI/flash symptom) and S088. Since every remaining status branch of `GuestImportPreview` already returns `null`, the straightforward fix is deleting the component (and its mount in `profile/index.tsx`) entirely rather than keeping a dead shell around — confirm no other branch is reachable before doing so.
+
+### [T199] Stop showing onboarding again to a guest whose data just got imported
+
+- **Area:** Guest conversion / onboarding
+- **Priority:** High
+- **Status:** Not started
+- **Planning:** Required
+- **Description:** T186.1 was supposed to gate onboarding on existing local data so a guest with data lands on Home after signup, not the Kentei rank picker. The user reports being sent to onboarding anyway, immediately after signup, with several elements painting first. This needs runtime tracing (not a known fix) through `use-guest-import.ts`'s auto-confirm sequencing, the guest→user identity-generation switch, and `UserProfileProvider`'s hydration/write timing, to find why `hasCompletedOnboarding`/`kenteiRank` don't read as complete by the time the post-signup redirect/render evaluates them.
+- **Exit criteria:** A real signup (through the actual auth flow, not a seeded fixture) for a guest identity with existing local practice/profile data lands on Home directly, with no onboarding screen shown at any point, verified in-browser end-to-end against a real account.
+- **Notes:** From S079 (the onboarding-recurrence symptom). Same general bug class as T189 (a post-identity-change read racing or missing the just-written state) but on the opposite transition (guest→user after import, not logout); worth checking whether the fix is structurally similar (an identity-scoped read landing before a write settles) before assuming a new mechanism. Depends on T198 only in the sense that removing the visible import panel makes this bug easier to observe cleanly — not a hard sequencing dependency.
+
+### [T200] Add sign-up/sign-in entry points to the landing page
+
+- **Area:** Landing / navigation
+- **Priority:** High
+- **Status:** Not started
+- **Planning:** Required
+- **Description:** The sign-up screen is currently only reachable after completing onboarding (the Kentei rank picker), which makes it impossible for a guest with existing local data to create an account without first going through onboarding again, and blocks any true "brand-new guest" signup test. Add direct sign-up/sign-in entry points to the landing page (`landing-cta.tsx` or a sibling landing component) so a visitor can reach `/auth/sign-up` / `/auth/sign-in` without completing onboarding first.
+- **Exit criteria:** From the landing page (as a not-yet-onboarded visitor), tapping a new sign-up/sign-in control navigates to `/auth/sign-up`/`/auth/sign-in` directly. A visitor who signs up this way with existing local data gets it imported per T198/T199; a visitor with no local data who signs up this way still sees onboarding normally afterward, unchanged from today. Confirmed in-browser for both cases.
+- **Notes:** From S080. The user's own suggested direction. This adds a parallel entry point only — it does not remove or change the existing onboarding-gated in-app flow for guests who continue using the app without an account. Required because the landing page's existing routing (`use-cached-onboarding-status.ts`, `useRedirectOnboardedVisitorHome`, the `LANDING_ARRIVAL_PARAM` in-app-arrival signal) has already needed several corrective follow-ups (T145, T170, T189) around hydration and redirect ordering — a new entry point into that routing carries the same risk class.
+
+### [T201] Rework the signup invite: inline on the first Sesh, translucent modal every 5th Sesh after
+
+- **Area:** Sesh / guest invitation
+- **Priority:** Medium
+- **Status:** Not started
+- **Planning:** Implementer
+- **Description:** `isRegularSessionInviteEligible` (`practice-history.ts`) already fires on the 1st, 6th, 11th, ... regular Sesh — the every-5th cadence is correct today. The gap is presentation: T183 made every eligible occurrence render as the `InviteOverlay` modal, including the very first one, which the user finds too aggressive, and that overlay's background is opaque instead of translucent. Change `sesh.tsx` so the first-ever occurrence (`selectRegularSessions(priorSessions).length === 0`) renders the original inline invite on the wrap-up screen instead of the overlay, and change `InviteOverlay`'s background to translucent for the modal case.
+- **Exit criteria:** `sesh.test.tsx` passes, including cases asserting the first-ever-Sesh completion renders the invite inline (present in the `ScrollView` subtree) and the 6th completion renders it as the overlay with a translucent background, with the wrap-up content visible behind it.
+- **Notes:** From S081 and S082 (combined — see the batch note above). Eligibility logic (`isRegularSessionInviteEligible`) itself does not change, only which occurrences get which presentation.
+
+### [T202] Prompt for a trick note in the open-ended Sesh flow
+
+- **Area:** Sesh
+- **Priority:** Medium
+- **Status:** Not started
+- **Planning:** Implementer
+- **Description:** `shouldPromptSeshNote` (`src/features/sesh/model/sesh.ts:247`) currently returns true only for `summary.plan.kind === 'timed'`, with a comment explicitly documenting open-ended exclusion as "an explicit scoping decision, not an oversight." The user has now asked for parity: open-ended Seshes should prompt for a note the same way timed Seshes do.
+- **Exit criteria:** `sesh.test.ts`'s (or the model test file's) `shouldPromptSeshNote` cases and `sesh.test.tsx` pass with an open-ended-Sesh case asserting the note prompt appears, matching the existing timed-Sesh case.
+- **Notes:** From S083. Update `shouldPromptSeshNote`'s own doc comment, since the "explicit scoping decision" it currently documents is being reversed by this ticket.
+
+### [T203] Move "Delete account" into the Profile screen's footer bar
+
+- **Area:** Profile / navigation shell
+- **Priority:** Medium
+- **Status:** Not started
+- **Planning:** Implementer
+- **Description:** `AccountSection` (`src/features/auth/components/account-section.tsx`) currently renders "Delete account" as one of three stacked buttons. `AppFooterBar` (`src/components/app-tabs.web.tsx`, shown only on `/app/profile`) currently holds a single left-aligned "Leave app" link with no auth check. Add a right-aligned "Delete account" link to that footer bar, gated to authenticated users only (mirroring `AccountSection`'s own `authState.status !== 'authenticated'` guard), navigating to the existing `/app/profile/account/delete` route; remove the button from `AccountSection`.
+- **Exit criteria:** `app-tabs.web.test.tsx` and `account-section.test.tsx` pass, including a case asserting the footer bar shows "Delete account" right-aligned only when authenticated, and that it navigates to the existing deletion flow; `account-section.test.tsx` confirms the button no longer renders there.
+- **Notes:** From S084. T204 depends on this landing first (see the batch note above) since both touch `AccountSection`'s contents.
+
+### [T204] Move the Account block to the bottom of the Profile screen
+
+- **Area:** Profile
+- **Priority:** Medium
+- **Status:** Not started
+- **Planning:** Implementer
+- **Description:** `profile/index.tsx` currently renders `<AccountSection />` immediately after the rank summary, ahead of Kentei assessment, theme presets/picker, and streak settings. Move it to render after the Feedback section, as the last content block on the screen, for a signed-in user.
+- **Exit criteria:** `profile/index.test.tsx` (or an equivalent screen test) passes, asserting the Account block renders after the Feedback section in the signed-in case; confirmed in-browser. Guest-facing layout (`GuestAccountSection`, `SyncStatusSection`, `GuestImportPreview`'s removal per T198) is unaffected.
+- **Notes:** From S085. Depends on T203 landing first (see the batch note above) — this ticket relocates what T203 leaves behind (email, "Manage account security," "Log out").
+
+### [T205] Size the "Account" section title to match other Profile section titles
+
+- **Area:** Profile
+- **Priority:** Low
+- **Status:** Not started
+- **Planning:** Implementer
+- **Description:** `AccountSection`'s "Account" label uses a local 11px uppercase eyebrow-style `SectionLabel`, while `profile/index.tsx`'s other section titles ("Put it to the test.," "Select a preset.") use the larger `DisplayTitle`-derived `Title` style. Change `AccountSection`'s "Account" heading to match that larger style.
+- **Exit criteria:** `account-section.test.tsx` passes; confirmed in-browser that "Account" renders at the same size/weight as "Put it to the test." and "Select a preset."
+- **Notes:** From S086. Purely typographic; `AccountSection`'s own small eyebrow-style labels elsewhere (if any) are unaffected unless they're the same element.
+
+### [T206] Fix Home rendering blank after logging into a populated account
+
+- **Area:** Home / Authentication
+- **Priority:** High
+- **Status:** Not started
+- **Planning:** Required
+- **Description:** Logging into an existing, data-populated account redirects to Home, but nothing renders — and a manual refresh doesn't fix it either. This needs runtime diagnosis (not a known fix) through the post-sign-in identity-change path: `UserProfileProvider`/practice-history hydration timing, whether the sync coordinator's initial pull has settled before Home reads its data, and whether the blank render is a silent failure rather than genuinely empty state.
+- **Exit criteria:** Signing into a real, existing account with practice history/tricks/goals data lands on a fully rendered Home screen showing that data, both on the initial post-login redirect and after a manual refresh — verified end-to-end against a real account.
+- **Notes:** From S087. Worth checking whether this shares a root cause with T199 (both are post-auth-identity-change render races), even though the two tickets have distinct reproduction steps (login to an existing account vs. signup with local data to import) and stay separate tickets for that reason.
+
+
 
 ---
