@@ -156,7 +156,7 @@ _T182–T193 come from stories S063–S074 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 - **Area:** Profile
 - **Priority:** Medium
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Implementer
 - **Description:** `profile/index.tsx` renders `<SyncStatusSection />` unconditionally. Guard it the same way `GuestAccountSection`/`AccountSection` already self-guard on `useAuthState().status`, so it renders only for an authenticated user.
 - **Exit criteria:** `sync-status-section.test.tsx` (or a new `profile/index.test.tsx` case) passes, asserting `SyncStatusSection` renders nothing while `authState.status === 'guest'` and renders normally when authenticated.
