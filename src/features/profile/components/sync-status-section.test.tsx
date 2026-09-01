@@ -1,12 +1,18 @@
-import { describe, expect, jest, test } from '@jest/globals';
+import { beforeEach, describe, expect, jest, test } from '@jest/globals';
 import { act, create } from 'react-test-renderer';
 jest.mock('@react-native-async-storage/async-storage', () => require('@react-native-async-storage/async-storage/jest/async-storage-mock'));
 import { SyncStatusSection } from '@/features/profile/components/sync-status-section';
+import { useAuthState } from '@/features/auth/state/auth-provider';
 import { useSyncCoordinatorStatus } from '@/shared/sync/sync-coordinator-provider';
 jest.mock('@/shared/sync/sync-coordinator-provider');
+jest.mock('@/features/auth/state/auth-provider');
 const mocked = jest.mocked(useSyncCoordinatorStatus);
+const mockedAuth = jest.mocked(useAuthState);
 const base = { syncStatus: { kind: 'synced' as const, coordinator: 'idle' as const, pendingCount: 0, conflictCount: 0, retryableFailureCount: 0, online: true, lastSuccessfulSyncAt: 1, isSynced: true }, retry: jest.fn() };
 describe('SyncStatusSection', () => {
+  beforeEach(() => { mockedAuth.mockReturnValue({ status: 'authenticated' } as never); });
+  test('renders nothing while a guest', () => { mockedAuth.mockReturnValue({ status: 'guest' } as never); mocked.mockReturnValue(base as never); let tree!: ReturnType<typeof create>; act(() => { tree = create(<SyncStatusSection />); }); expect(tree.toJSON()).toBeNull(); });
+  test('renders normally when authenticated', () => { mockedAuth.mockReturnValue({ status: 'authenticated' } as never); mocked.mockReturnValue(base as never); let tree!: ReturnType<typeof create>; act(() => { tree = create(<SyncStatusSection />); }); expect(tree.root.findAll((node) => node.props.children === 'Everything is synced.').length).toBeGreaterThan(0); });
   test.each([['no-sync-yet', 'No sync yet.'], ['syncing', 'Syncing now.'], ['offline', 'You are offline.'], ['pending', 'Sync is queued.'], ['retryable-failure', 'Sync needs a retry.'], ['conflict', 'Conflicts need your attention.']])('%s', (kind, headline) => { mocked.mockReturnValue({ ...base, syncStatus: { ...base.syncStatus, kind: kind as never, lastSuccessfulSyncAt: undefined, pendingCount: kind === 'pending' ? 1 : 0, conflictCount: kind === 'conflict' ? 1 : 0 } } as never); let tree!: ReturnType<typeof create>; act(() => { tree = create(<SyncStatusSection />); }); expect(tree.root.findAll((node) => node.props.children === headline).length).toBeGreaterThan(0); });
   test('dispatches retry', () => { const retry = jest.fn(); mocked.mockReturnValue({ ...base, retry } as never); let tree!: ReturnType<typeof create>; act(() => { tree = create(<SyncStatusSection />); }); act(() => { tree.root.find((node) => node.props.children === 'Retry sync').props.onPress(); }); expect(retry).toHaveBeenCalledTimes(1); });
 });
