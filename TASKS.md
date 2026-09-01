@@ -165,16 +165,6 @@ _T194–T206 come from stories S075–S088 in [BACKLOG_STORIES.md](BACKLOG_STORI
 - **Exit criteria:** A real disposable account, in the environment the user actually tests against, is deleted successfully through the app UI (no 503) and can no longer sign in afterward.
 - **Notes:** From S078. Coordinate with T195 on identifying the real target environment first — resolving that question likely un-blocks both tickets at once.
 
-### [T200] Add sign-up/sign-in entry points to the landing page
-
-- **Area:** Landing / navigation
-- **Priority:** High
-- **Status:** Not started
-- **Planning:** Required
-- **Description:** The sign-up screen is currently only reachable after completing onboarding (the Kentei rank picker), which makes it impossible for a guest with existing local data to create an account without first going through onboarding again, and blocks any true "brand-new guest" signup test. Add direct sign-up/sign-in entry points to the landing page (`landing-cta.tsx` or a sibling landing component) so a visitor can reach `/auth/sign-up` / `/auth/sign-in` without completing onboarding first.
-- **Exit criteria:** From the landing page (as a not-yet-onboarded visitor), tapping a new sign-up/sign-in control navigates to `/auth/sign-up`/`/auth/sign-in` directly. A visitor who signs up this way with existing local data gets it imported per T198/T199; a visitor with no local data who signs up this way still sees onboarding normally afterward, unchanged from today. Confirmed in-browser for both cases.
-- **Notes:** From S080. The user's own suggested direction. This adds a parallel entry point only — it does not remove or change the existing onboarding-gated in-app flow for guests who continue using the app without an account. Required because the landing page's existing routing (`use-cached-onboarding-status.ts`, `useRedirectOnboardedVisitorHome`, the `LANDING_ARRIVAL_PARAM` in-app-arrival signal) has already needed several corrective follow-ups (T145, T170, T189) around hydration and redirect ordering — a new entry point into that routing carries the same risk class.
-
 ### [T201] Rework the signup invite: inline on the first Sesh, translucent modal every 5th Sesh after
 
 - **Area:** Sesh / guest invitation
