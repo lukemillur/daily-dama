@@ -2908,6 +2908,15 @@ Completed entries live in [TASKS_DONE.md](TASKS_DONE.md) — not part of the top
 - **Exit criteria:** `sign-in-screen.test.tsx`, `sign-up-screen.test.tsx`, and `reset-password-screen.test.tsx` pass; confirmed in-browser at a narrow viewport (where the copy wraps to multiple lines) that all three screens' header text renders left-aligned, matching forgot-password and account-security. Met: all three Jest suites pass; Playwright at a 320px viewport confirmed `textAlign: start` (left) on the wrapped `PageTitle`/`Introduction` text for sign-in, sign-up, and reset-password's error state, matching forgot-password and account-security.
 - **Notes:** From S075. Scope is these three screens only — `account-deletion-screen.tsx`, `account-deleted-screen.tsx`, `check-email-screen.tsx`, and `auth-callback-screen.tsx` also center text but are single-message/status screens, not the input-form family the QA comment named ("sign-in screen, sign-up screen, etc."); leave them centered unless the user flags them separately. `account-security-screen.tsx`'s dynamic `$align` default is also out of scope for the same reason.
 
+### [T195] Make the branded confirmation email reach real signups
+
+- **Area:** Authentication / Supabase email
+- **Priority:** High
+- **Status:** Done
+- **Planning:** Required
+- **Description:** T192 restyled `supabase/templates/confirmation.html` and verified it against the local Supabase stack via Mailpit, but a real signup shows no branding change at all. `supabase/README.md:281` states the local `config.toml`/template setup "does not touch the hosted Supabase project," so the template almost certainly needs to be applied to whatever project real signups hit (hosted-project email template configuration, via dashboard or a deploy step — not further local-stack changes).
+- **Exit criteria:** A real signup, in the environment the user actually tests against, receives the branded confirmation email (cream/paper background, ink border, hard drop shadow, red uppercase eyebrow, ink-background/yellow-text button) — verified directly in that environment's inbox, not the local Mailpit stack. Met: confirmed via the Management API that the hosted `Daily Dama Dev` project (ref `ylyoqswauqyesuwmetnl`) was still serving T192's pre-restyle template; patched only `mailer_templates_confirmation_content`/`mailer_subjects_confirmation` via a targeted `PATCH /v1/projects/{ref}/config/auth` (leaving `site_url`, `uri_allow_list`, and SMTP settings untouched); re-`GET` confirmed a byte-for-byte match; a real `POST /auth/v1/signup` against the hosted project delivered a confirmation email to a real disposable inbox whose HTML was inspected directly and confirmed to contain all five branding elements. See `supabase/RESEND_DNS_AUTH.md`'s "2026-09-01 update — T195" section for the full record.
+- **Notes:** From S076. Confirmed the "real" environment from the QA comment is the hosted `Daily Dama Dev` Supabase project — the same environment question flagged for T197.
 ### [T196] Shrink "Back to Profile" controls to a text-link style
 
 - **Area:** Authentication UI

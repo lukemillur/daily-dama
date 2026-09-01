@@ -138,3 +138,39 @@ the Delivery record's live DNS lookups supersede the guess.
 
 No SMTP credential, Resend API key, or Supabase PAT is recorded in this file
 or any other tracked file.
+
+
+## 2026-09-01 update — T195 (branded confirmation template reaching real signups)
+
+T192 (2026-08-31) restyled `supabase/templates/confirmation.html` but only re-verified it
+against the **local** CLI/Mailpit stack. That local template config does not touch the hosted
+project, and nothing re-ran T153.3's original hosted push after T192's restyle. Real signups
+against the hosted `Daily Dama Dev` project (ref `ylyoqswauqyesuwmetnl`) were therefore still
+serving the pre-T192 (unstyled, old-copy) confirmation HTML.
+
+- **Confirmed stale before the fix:** `GET /v1/projects/ylyoqswauqyesuwmetnl/config/auth`
+  showed `mailer_templates_confirmation_content` did **not** match the repository's current
+  `supabase/templates/confirmation.html` (missing the T192 restyle -- no `text-transform:
+  uppercase` eyebrow, old cream/white color scheme). `mailer_templates_recovery_content` was
+  separately confirmed already in sync with `supabase/templates/recovery.html` (unchanged since
+  T153.3), so it needed no action.
+- **Fix:** targeted `PATCH /v1/projects/ylyoqswauqyesuwmetnl/config/auth` sending only
+  `mailer_templates_confirmation_content` (the exact current bytes of
+  `supabase/templates/confirmation.html`) and `mailer_subjects_confirmation` (`"Confirm your
+  Daily Dama account"`, unchanged/idempotent). No other field in the request body, matching
+  T153.3's precedent -- `site_url`, `uri_allow_list`, and SMTP settings were left untouched and
+  reconfirmed identical on re-`GET`.
+- **Verified after the fix:** re-`GET` showed `mailer_templates_confirmation_content` matching
+  `supabase/templates/confirmation.html` byte-for-byte.
+- **Real-signup verification:** a live `POST /auth/v1/signup` against the hosted project (using
+  a disposable, non-`@example.com` inbox) delivered a confirmation email from
+  `team@auth.dailydama.com`, subject `Confirm your Daily Dama account`, whose HTML body was
+  inspected directly and confirmed to contain all five branding elements from the exit
+  criteria: the `#f8f1dd` cream/paper background, the `2px solid #18382e` ink border, the
+  `8px 8px 0 #18382e` hard drop shadow, the `#d84929` red uppercase eyebrow badge, and the
+  `#18382e`-background/`#f4c94d`-text confirm button. The callback URL in the delivered message
+  was `https://ylyoqswauqyesuwmetnl.supabase.co/auth/v1/verify?token=<opaque>&type=signup&redirect_to=https://dailydama.com/auth/callback`,
+  matching the pattern already recorded above from T153.3's original verification.
+
+No SMTP credential, Resend API key, or Supabase PAT is recorded in this update, consistent with
+the rest of this file.
