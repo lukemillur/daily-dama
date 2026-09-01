@@ -4,6 +4,16 @@ Completed entries move here from `TASKS.md`'s `Backlog`, in the same commit that
 
 Entries keep their content as it was at completion. Don't retroactively edit a description or exit criteria after the fact; if something about a completed task turns out to be wrong or misleading, note that in a new entry or in code, not by rewriting history here.
 
+### [T198] Stop the guest-import status panel from ever rendering visible UI
+
+- **Area:** Guest conversion / onboarding
+- **Priority:** High
+- **Status:** Done
+- **Planning:** Implementer
+- **Description:** `GuestImportPreview` (`src/features/guest-import/components/guest-import-preview.tsx`) still renders an "Import in progress..." panel while `state.status === 'uploading'`, and is still unconditionally mounted in `profile/index.tsx` — every other status branch already returns `null`. This directly contradicts T186/T186.1's "internally invisible" goal and is the most likely source of both the visible import text the user reports and the "elements painted very quickly" flash before landing on onboarding (see T199 for the onboarding-redirect part of that same report).
+- **Exit criteria:** `guest-import-preview.test.tsx` passes with no case that renders visible text; confirmed in-browser that signing up with existing local data shows no import-status text or panel anywhere at any point during the flow. Met: confirmed every remaining `GuestImportPreview` status branch (`idle`/`cancelled`/`completed`/`inventorying`/`awaitingConfirmation`) already returned `null`, with only `uploading` still rendering the visible "Import in progress..." panel -- so the component was deleted entirely (along with `guest-import-preview.test.tsx`, which tested the now-nonexistent panel) rather than left as a dead shell, and its mount removed from `profile/index.tsx`. Verified in-browser against a running dev server (Playwright, no local Supabase signup required since the component and its only visible-rendering branch no longer exist in the bundle) that neither `/app/profile` nor `/` render "Import in progress" text anywhere, with no console errors.
+- **Notes:** From S079 (the visible-UI/flash symptom) and S088. Since every remaining status branch of `GuestImportPreview` already returns `null`, the straightforward fix is deleting the component (and its mount in `profile/index.tsx`) entirely rather than keeping a dead shell around — confirm no other branch is reachable before doing so.
+
 ### [T189] Fix logout destination and reset session-scoped app state
 
 - **Area:** Authentication / Landing
@@ -2327,6 +2337,17 @@ Entries keep their content as it was at completion. Don't retroactively edit a d
 
 Completed entries live in [TASKS_DONE.md](TASKS_DONE.md) — not part of the top-to-bottom read above; see step 5 under _Completing a task_.
 
+### [T199] Stop showing onboarding again to a guest whose data just got imported
+
+- **Area:** Guest conversion / onboarding
+- **Priority:** High
+- **Status:** Done
+- **Planning:** Required
+- **Description:** T186.1 was supposed to gate onboarding on existing local data so a guest with data lands on Home after signup, not the Kentei rank picker. The user reports being sent to onboarding anyway, immediately after signup, with several elements painting first. This needs runtime tracing (not a known fix) through `use-guest-import.ts`'s auto-confirm sequencing, the guest→user identity-generation switch, and `UserProfileProvider`'s hydration/write timing, to find why `hasCompletedOnboarding`/`kenteiRank` don't read as complete by the time the post-signup redirect/render evaluates them.
+- **Exit criteria:** A real signup (through the actual auth flow, not a seeded fixture) for a guest identity with existing local practice/profile data lands on Home directly, with no onboarding screen shown at any point, verified in-browser end-to-end against a real account.
+- **Notes:** From S079 (the onboarding-recurrence symptom). Same general bug class as T189 (a post-identity-change read racing or missing the just-written state) but on the opposite transition (guest→user after import, not logout). Confirmed root cause: `useSyncCoordinator`'s login pull fires once per identity generation and settles (against a genuinely empty new account) before `use-guest-import.ts`'s upload phase pushes the guest's profile to the cloud row, and nothing ever re-triggers a second pull afterward -- the local primary `UserProfile` reducer never adopts the just-imported `hasCompletedOnboarding`/`kenteiRank`. Fixed in `src/app/app/home.tsx`: an `importId`-guarded effect calls `useUserProfileSync().runSync('login')` once guest-import reaches `'completed'`, and a new `isResyncingAfterImport` flag is folded into the existing `importPending` render gate so onboarding can't paint during that resync. Covered by a new integration test (`home.guest-import-resync.test.tsx`) driving a real guest-import state machine + a real (mocked-transport) profile resync through `HomeScreen`, confirmed to fail against the pre-fix code. Live-verified against the local Supabase Auth stack via a real signup (real `/auth/v1/signup`, real Mailpit confirmation email, real PKCE code exchange) for a guest with seeded local profile+practice-history data: Home rendered `DailyHome` directly with `KenteiOnboarding` never painting, stable across a reload. Port 8081 (the local stack's fixed redirect_to target) was occupied by an unrelated long-running dev server outside this worktree, so the app under test ran on port 8090 and the sign-up/callback network calls were driven directly via a second `supabase-js` client instance injected into the same page (sharing the app's default session storage key) instead of clicking through the sign-up form/callback route -- every network call (signup, email delivery, verify, PKCE exchange) was real. The equivalent staleness gap likely affects the other 4 sync domains (customTricks, practiceHistory, goals, notes) too, but nothing currently gates rendering on them the way Home gates onboarding, so no user-visible flash was observed for those in this live check; flagged as a possible follow-up rather than folded into this fix, per the plan's explicit scope boundary.
+
+
 ### [T164] Make the onboarding theme step's background actually preview
 
 - **Area:** Onboarding
@@ -2896,3 +2917,12 @@ Completed entries live in [TASKS_DONE.md](TASKS_DONE.md) — not part of the top
 - **Description:** T192 restyled `supabase/templates/confirmation.html` and verified it against the local Supabase stack via Mailpit, but a real signup shows no branding change at all. `supabase/README.md:281` states the local `config.toml`/template setup "does not touch the hosted Supabase project," so the template almost certainly needs to be applied to whatever project real signups hit (hosted-project email template configuration, via dashboard or a deploy step — not further local-stack changes).
 - **Exit criteria:** A real signup, in the environment the user actually tests against, receives the branded confirmation email (cream/paper background, ink border, hard drop shadow, red uppercase eyebrow, ink-background/yellow-text button) — verified directly in that environment's inbox, not the local Mailpit stack. Met: confirmed via the Management API that the hosted `Daily Dama Dev` project (ref `ylyoqswauqyesuwmetnl`) was still serving T192's pre-restyle template; patched only `mailer_templates_confirmation_content`/`mailer_subjects_confirmation` via a targeted `PATCH /v1/projects/{ref}/config/auth` (leaving `site_url`, `uri_allow_list`, and SMTP settings untouched); re-`GET` confirmed a byte-for-byte match; a real `POST /auth/v1/signup` against the hosted project delivered a confirmation email to a real disposable inbox whose HTML was inspected directly and confirmed to contain all five branding elements. See `supabase/RESEND_DNS_AUTH.md`'s "2026-09-01 update — T195" section for the full record.
 - **Notes:** From S076. Confirmed the "real" environment from the QA comment is the hosted `Daily Dama Dev` Supabase project — the same environment question flagged for T197.
+### [T196] Shrink "Back to Profile" controls to a text-link style
+
+- **Area:** Authentication UI
+- **Priority:** Medium
+- **Status:** Done
+- **Planning:** Implementer
+- **Description:** T191 added "Back to Profile" as a `fill`/`variant="secondary"` `Button` on `account-security-screen.tsx`, reused as-is on `account-deletion-screen.tsx` and `forgot-password-screen.tsx`. Replace it on all three with a small text link matching the existing "← Back to Stats" pattern (`BackLink` in `src/app/app/stats/[trickId].tsx`).
+- **Exit criteria:** `account-security-screen.test.tsx`, `account-deletion-screen.test.tsx`, and `forgot-password-screen.test.tsx` pass with the control still present and functional; confirmed in-browser that all three screens now show a small "← Back to Profile" text link instead of a full-width button.
+- **Notes:** From S077. Pure style swap — navigation target, visibility conditions (forgot-password's guest-from-sign-in absence case), and all other T191 behavior are unchanged.

@@ -155,16 +155,6 @@ _T182–T193 come from stories S063–S074 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 _T194–T206 come from stories S075–S088 in [BACKLOG_STORIES.md](BACKLOG_STORIES.md) (the user's 2026-09-01 QA pass on T182–T193). T194 (S075), T196 (S077), T198 (S079 partial + S088), T202 (S083), T203 (S084), T204 (S085), and T205 (S086) are `Implementer` — local, known-pattern changes. T201 combines S081 and S082 into one ticket because both edit the same `PostSeshSignupInvite`/`InviteOverlay` block in `sesh.tsx`; splitting them would mean two PRs colliding on the same lines for no benefit. T195 (S076) and T197 (S078) are `Required`: tracing `supabase/README.md:281` ("This config is local-only. It does not touch the hosted Supabase project") shows T192's and T188's local-stack verification never actually reached whatever environment the user's real signups and deletions hit, so both need a fresh diagnosis pass against that real environment rather than a known local fix reapplied. T199 (S079 remainder) and T206 (S087) are `Required` for the same class of reason as T188/T189 before them: both are post-auth-identity-change render/redirect races (guest→user after import for T199, sign-in to an existing populated account for T206) that need runtime tracing through `UserProfileProvider`'s hydration and the sync coordinator before a fix can be written, not a known pattern applied locally. T200 (S080) is `Required` because it adds a new pre-onboarding entry point into routing (`landing-cta.tsx`/`use-cached-onboarding-status.ts`) that several prior tickets (T112.5, T145, T170, T189) have already shown is easy to get wrong around hydration and redirect ordering. T204 depends on T203 landing first (both touch `AccountSection`'s contents, T203 removing its "Delete account" button and T204 relocating what remains).
 
-### [T196] Shrink "Back to Profile" controls to a text-link style
-
-- **Area:** Authentication UI
-- **Priority:** Medium
-- **Status:** Not started
-- **Planning:** Implementer
-- **Description:** T191 added "Back to Profile" as a `fill`/`variant="secondary"` `Button` on `account-security-screen.tsx`, reused as-is on `account-deletion-screen.tsx` and `forgot-password-screen.tsx`. Replace it on all three with a small text link matching the existing "← Back to Stats" pattern (`BackLink` in `src/app/app/stats/[trickId].tsx`).
-- **Exit criteria:** `account-security-screen.test.tsx`, `account-deletion-screen.test.tsx`, and `forgot-password-screen.test.tsx` pass with the control still present and functional; confirmed in-browser that all three screens now show a small "← Back to Profile" text link instead of a full-width button.
-- **Notes:** From S077. Pure style swap — navigation target, visibility conditions (forgot-password's guest-from-sign-in absence case), and all other T191 behavior are unchanged.
-
 ### [T197] Fix account deletion still returning a 503 in the real environment
 
 - **Area:** Authentication / Supabase
@@ -174,26 +164,6 @@ _T194–T206 come from stories S075–S088 in [BACKLOG_STORIES.md](BACKLOG_STORI
 - **Description:** T188 diagnosed and fixed a 503 caused by a stale **local** Supabase stack, and verified the fix against a freshly cycled local stack. The user reports the 503 still happens. Given T195's parallel finding that T192's local-stack verification didn't hold in the real environment, first confirm whether this is the same local-vs-real gap (i.e., the real environment the user hits was never actually fixed) before re-diagnosing from scratch.
 - **Exit criteria:** A real disposable account, in the environment the user actually tests against, is deleted successfully through the app UI (no 503) and can no longer sign in afterward.
 - **Notes:** From S078. Coordinate with T195 on identifying the real target environment first — resolving that question likely un-blocks both tickets at once.
-
-### [T198] Stop the guest-import status panel from ever rendering visible UI
-
-- **Area:** Guest conversion / onboarding
-- **Priority:** High
-- **Status:** Not started
-- **Planning:** Implementer
-- **Description:** `GuestImportPreview` (`src/features/guest-import/components/guest-import-preview.tsx`) still renders an "Import in progress..." panel while `state.status === 'uploading'`, and is still unconditionally mounted in `profile/index.tsx` — every other status branch already returns `null`. This directly contradicts T186/T186.1's "internally invisible" goal and is the most likely source of both the visible import text the user reports and the "elements painted very quickly" flash before landing on onboarding (see T199 for the onboarding-redirect part of that same report).
-- **Exit criteria:** `guest-import-preview.test.tsx` passes with no case that renders visible text; confirmed in-browser that signing up with existing local data shows no import-status text or panel anywhere at any point during the flow.
-- **Notes:** From S079 (the visible-UI/flash symptom) and S088. Since every remaining status branch of `GuestImportPreview` already returns `null`, the straightforward fix is deleting the component (and its mount in `profile/index.tsx`) entirely rather than keeping a dead shell around — confirm no other branch is reachable before doing so.
-
-### [T199] Stop showing onboarding again to a guest whose data just got imported
-
-- **Area:** Guest conversion / onboarding
-- **Priority:** High
-- **Status:** Not started
-- **Planning:** Required
-- **Description:** T186.1 was supposed to gate onboarding on existing local data so a guest with data lands on Home after signup, not the Kentei rank picker. The user reports being sent to onboarding anyway, immediately after signup, with several elements painting first. This needs runtime tracing (not a known fix) through `use-guest-import.ts`'s auto-confirm sequencing, the guest→user identity-generation switch, and `UserProfileProvider`'s hydration/write timing, to find why `hasCompletedOnboarding`/`kenteiRank` don't read as complete by the time the post-signup redirect/render evaluates them.
-- **Exit criteria:** A real signup (through the actual auth flow, not a seeded fixture) for a guest identity with existing local practice/profile data lands on Home directly, with no onboarding screen shown at any point, verified in-browser end-to-end against a real account.
-- **Notes:** From S079 (the onboarding-recurrence symptom). Same general bug class as T189 (a post-identity-change read racing or missing the just-written state) but on the opposite transition (guest→user after import, not logout); worth checking whether the fix is structurally similar (an identity-scoped read landing before a write settles) before assuming a new mechanism. Depends on T198 only in the sense that removing the visible import panel makes this bug easier to observe cleanly — not a hard sequencing dependency.
 
 ### [T200] Add sign-up/sign-in entry points to the landing page
 
