@@ -169,7 +169,7 @@ _T194–T206 come from stories S075–S088 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 - **Area:** Authentication UI
 - **Priority:** Medium
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Implementer
 - **Description:** T191 added "Back to Profile" as a `fill`/`variant="secondary"` `Button` on `account-security-screen.tsx`, reused as-is on `account-deletion-screen.tsx` and `forgot-password-screen.tsx`. Replace it on all three with a small text link matching the existing "← Back to Stats" pattern (`BackLink` in `src/app/app/stats/[trickId].tsx`).
 - **Exit criteria:** `account-security-screen.test.tsx`, `account-deletion-screen.test.tsx`, and `forgot-password-screen.test.tsx` pass with the control still present and functional; confirmed in-browser that all three screens now show a small "← Back to Profile" text link instead of a full-width button.
