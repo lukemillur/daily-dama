@@ -8,6 +8,7 @@ import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const ReactNative = require('react-native') as typeof import('react-native');
 
+import type { AuthState } from '@/features/auth/model/auth-state';
 import { LandingPage, MOBILE_SCREENSHOTS, WEB_SCREENSHOTS } from '@/features/landing/components/landing-page';
 import type { CachedOnboardingStatus } from '@/features/profile/persistence/read-cached-onboarding-status';
 
@@ -42,6 +43,11 @@ jest.mock('expo-image', () => {
 const mockUseCachedOnboardingStatus = jest.fn<() => CachedOnboardingStatus>();
 jest.mock('@/features/landing/state/use-cached-onboarding-status', () => ({
   useCachedOnboardingStatus: () => mockUseCachedOnboardingStatus(),
+}));
+
+let mockAuthState: AuthState = { status: 'guest', reason: 'signedOut' };
+jest.mock('@/features/auth/state/auth-provider', () => ({
+  useAuthState: () => mockAuthState,
 }));
 
 function findByVisibleText(root: ReactTestRenderer, text: string) {
@@ -85,6 +91,7 @@ beforeEach(() => {
   });
   mockUseWindowDimensions.mockReset();
   mockUseWindowDimensions.mockReturnValue({ width: 375, height: 812, scale: 2, fontScale: 1 });
+  mockAuthState = { status: 'guest', reason: 'signedOut' };
 });
 
 describe('LandingPage', () => {
@@ -100,6 +107,32 @@ describe('LandingPage', () => {
     expect(ctaIndex).toBeGreaterThanOrEqual(0);
     expect(featureHeadingIndex).toBeGreaterThanOrEqual(0);
     expect(ctaIndex).toBeLessThan(featureHeadingIndex);
+  });
+});
+
+describe('LandingPage sign-up/sign-in entry points', () => {
+  function findAllByLabel(root: ReactTestRenderer, label: string) {
+    return root.root.findAll((node) => node.props.accessibilityLabel === label);
+  }
+
+  it('renders Sign up and Sign in entry points for a guest visitor', async () => {
+    mockAuthState = { status: 'guest', reason: 'signedOut' };
+    const root = await mount();
+
+    expect(findAllByLabel(root, 'Sign up').length).toBeGreaterThan(0);
+    expect(findAllByLabel(root, 'Sign in').length).toBeGreaterThan(0);
+  });
+
+  it('hides the sign-up/sign-in entry points once authenticated', async () => {
+    mockAuthState = {
+      status: 'authenticated',
+      session: { access_token: 'tok', user: { email: 'someone@example.com' } } as never,
+      lastEvent: 'SIGNED_IN',
+    };
+    const root = await mount();
+
+    expect(findAllByLabel(root, 'Sign up').length).toBe(0);
+    expect(findAllByLabel(root, 'Sign in').length).toBe(0);
   });
 });
 

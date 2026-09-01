@@ -7,6 +7,7 @@ import { styled } from 'styled-components/native';
 import { Screen } from '@/components/ui/screen';
 import { BodyText, DisplayTitle, Eyebrow } from '@/components/ui/typography';
 import { AppColors, Radii } from '@/constants/theme';
+import { LandingAuthCta } from '@/features/landing/components/landing-auth-cta';
 import { LandingCta } from '@/features/landing/components/landing-cta';
 
 interface Feature {
@@ -137,6 +138,8 @@ export function LandingPage() {
           </Lede>
 
           <LandingCta />
+
+          <LandingAuthCta />
 
           <FeatureList>
             {FEATURES.map((feature) => (
