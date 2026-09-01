@@ -155,16 +155,6 @@ _T182–T193 come from stories S063–S074 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 _T194–T206 come from stories S075–S088 in [BACKLOG_STORIES.md](BACKLOG_STORIES.md) (the user's 2026-09-01 QA pass on T182–T193). T194 (S075), T196 (S077), T198 (S079 partial + S088), T202 (S083), T203 (S084), T204 (S085), and T205 (S086) are `Implementer` — local, known-pattern changes. T201 combines S081 and S082 into one ticket because both edit the same `PostSeshSignupInvite`/`InviteOverlay` block in `sesh.tsx`; splitting them would mean two PRs colliding on the same lines for no benefit. T195 (S076) and T197 (S078) are `Required`: tracing `supabase/README.md:281` ("This config is local-only. It does not touch the hosted Supabase project") shows T192's and T188's local-stack verification never actually reached whatever environment the user's real signups and deletions hit, so both need a fresh diagnosis pass against that real environment rather than a known local fix reapplied. T199 (S079 remainder) and T206 (S087) are `Required` for the same class of reason as T188/T189 before them: both are post-auth-identity-change render/redirect races (guest→user after import for T199, sign-in to an existing populated account for T206) that need runtime tracing through `UserProfileProvider`'s hydration and the sync coordinator before a fix can be written, not a known pattern applied locally. T200 (S080) is `Required` because it adds a new pre-onboarding entry point into routing (`landing-cta.tsx`/`use-cached-onboarding-status.ts`) that several prior tickets (T112.5, T145, T170, T189) have already shown is easy to get wrong around hydration and redirect ordering. T204 depends on T203 landing first (both touch `AccountSection`'s contents, T203 removing its "Delete account" button and T204 relocating what remains).
 
-### [T194] Left-align header text on sign-in, sign-up, and reset-password
-
-- **Area:** Authentication UI
-- **Priority:** Medium
-- **Status:** In progress
-- **Planning:** Implementer
-- **Description:** T193 removed `text-align: center` from `forgot-password-screen.tsx`'s `PageTitle`/`Introduction`/`Guidance`, but left the equivalent styled components in `sign-in-screen.tsx`, `sign-up-screen.tsx`, and `reset-password-screen.tsx` centered (confirmed: each still has two `text-align: center` declarations). Remove those overrides on all three screens, matching forgot-password.
-- **Exit criteria:** `sign-in-screen.test.tsx`, `sign-up-screen.test.tsx`, and `reset-password-screen.test.tsx` pass; confirmed in-browser at a narrow viewport (where the copy wraps to multiple lines) that all three screens' header text renders left-aligned, matching forgot-password and account-security.
-- **Notes:** From S075. Scope is these three screens only — `account-deletion-screen.tsx`, `account-deleted-screen.tsx`, `check-email-screen.tsx`, and `auth-callback-screen.tsx` also center text but are single-message/status screens, not the input-form family the QA comment named ("sign-in screen, sign-up screen, etc."); leave them centered unless the user flags them separately. `account-security-screen.tsx`'s dynamic `$align` default is also out of scope for the same reason.
-
 ### [T195] Make the branded confirmation email reach real signups
 
 - **Area:** Authentication / Supabase email
