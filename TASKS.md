@@ -159,7 +159,7 @@ _T194–T206 come from stories S075–S088 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 - **Area:** Authentication UI
 - **Priority:** Medium
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Implementer
 - **Description:** T193 removed `text-align: center` from `forgot-password-screen.tsx`'s `PageTitle`/`Introduction`/`Guidance`, but left the equivalent styled components in `sign-in-screen.tsx`, `sign-up-screen.tsx`, and `reset-password-screen.tsx` centered (confirmed: each still has two `text-align: center` declarations). Remove those overrides on all three screens, matching forgot-password.
 - **Exit criteria:** `sign-in-screen.test.tsx`, `sign-up-screen.test.tsx`, and `reset-password-screen.test.tsx` pass; confirmed in-browser at a narrow viewport (where the copy wraps to multiple lines) that all three screens' header text renders left-aligned, matching forgot-password and account-security.
