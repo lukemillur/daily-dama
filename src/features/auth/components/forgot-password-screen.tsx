@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { ScrollView, TextInput } from 'react-native';
+import { Pressable, ScrollView, TextInput } from 'react-native';
 import { styled } from 'styled-components/native';
 
 import { Button } from '@/components/ui/button';
@@ -126,13 +126,12 @@ export function ForgotPasswordScreen() {
               Back to sign in
             </Button>
             {cameFromAccountSecurity ? (
-              <Button
+              <BackLink
                 accessibilityLabel="Back to Profile"
-                variant="secondary"
-                fill
+                accessibilityRole="link"
                 onPress={() => router.push('/app/profile')}>
-                Back to Profile
-              </Button>
+                <BackLinkText>← Back to Profile</BackLinkText>
+              </BackLink>
             ) : null}
           </FormActions>
         </Centered>
@@ -180,13 +179,12 @@ export function ForgotPasswordScreen() {
               Back to sign in
             </Button>
             {cameFromAccountSecurity ? (
-              <Button
+              <BackLink
                 accessibilityLabel="Back to Profile"
-                variant="secondary"
-                fill
+                accessibilityRole="link"
                 onPress={() => router.push('/app/profile')}>
-                Back to Profile
-              </Button>
+                <BackLinkText>← Back to Profile</BackLinkText>
+              </BackLink>
             ) : null}
           </FormActions>
         </FormContent>
@@ -253,4 +251,15 @@ const ErrorText = styled.Text`
 const FormActions = styled.View`
   gap: 10px;
   margin-top: 36px;
+`;
+const BackLink = styled(Pressable)`
+  align-self: flex-start;
+  margin-top: 4px;
+`;
+const BackLinkText = styled.Text`
+  padding: 8px 0;
+  color: ${AppColors.ink};
+  font-size: 13px;
+  font-weight: 900;
+  text-decoration-line: underline;
 `;

@@ -1,11 +1,12 @@
 import { useRef, useState } from 'react';
 import { useRouter } from 'expo-router';
-import { ScrollView, TextInput } from 'react-native';
+import { Pressable, ScrollView, TextInput } from 'react-native';
 import { styled } from 'styled-components/native';
 
 import { Button } from '@/components/ui/button';
 import { Screen } from '@/components/ui/screen';
 import { BodyText, DisplayTitle, Eyebrow } from '@/components/ui/typography';
+import { AppColors } from '@/constants/theme';
 import { categorizeAuthError, type AuthErrorCategory } from '@/features/auth/model/auth-errors';
 import { validateForgotPasswordEmail } from '@/features/auth/model/forgot-password-validation';
 import { validateNewPassword } from '@/features/auth/model/password-policy';
@@ -187,11 +188,9 @@ export function AccountSecurityScreen() {
         <Eyebrow>Account security</Eyebrow>
         <PageTitle>Manage your account.</PageTitle>
 
-        <FormActions>
-          <Button accessibilityLabel="Back to Profile" fill variant="secondary" onPress={handleBack}>
-            Back to Profile
-          </Button>
-        </FormActions>
+        <BackLink accessibilityLabel="Back to Profile" accessibilityRole="link" onPress={handleBack}>
+          <BackLinkText>← Back to Profile</BackLinkText>
+        </BackLink>
 
         <SectionLabel>Change password</SectionLabel>
 
@@ -387,4 +386,15 @@ const SuccessText = styled.Text`
 const FormActions = styled.View`
   gap: 10px;
   margin-top: 24px;
+`;
+const BackLink = styled(Pressable)`
+  align-self: flex-start;
+  margin-bottom: 10px;
+`;
+const BackLinkText = styled.Text`
+  padding: 8px 0;
+  color: ${AppColors.ink};
+  font-size: 13px;
+  font-weight: 900;
+  text-decoration-line: underline;
 `;

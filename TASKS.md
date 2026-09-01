@@ -165,16 +165,6 @@ _T194–T206 come from stories S075–S088 in [BACKLOG_STORIES.md](BACKLOG_STORI
 - **Exit criteria:** A real signup, in the environment the user actually tests against, receives the branded confirmation email (cream/paper background, ink border, hard drop shadow, red uppercase eyebrow, ink-background/yellow-text button) — verified directly in that environment's inbox, not the local Mailpit stack.
 - **Notes:** From S076. First confirm which environment ("real" signup in the QA comment) the user is testing against — likely the hosted/production Supabase project — before making changes; this is the same environment question as T197.
 
-### [T196] Shrink "Back to Profile" controls to a text-link style
-
-- **Area:** Authentication UI
-- **Priority:** Medium
-- **Status:** Not started
-- **Planning:** Implementer
-- **Description:** T191 added "Back to Profile" as a `fill`/`variant="secondary"` `Button` on `account-security-screen.tsx`, reused as-is on `account-deletion-screen.tsx` and `forgot-password-screen.tsx`. Replace it on all three with a small text link matching the existing "← Back to Stats" pattern (`BackLink` in `src/app/app/stats/[trickId].tsx`).
-- **Exit criteria:** `account-security-screen.test.tsx`, `account-deletion-screen.test.tsx`, and `forgot-password-screen.test.tsx` pass with the control still present and functional; confirmed in-browser that all three screens now show a small "← Back to Profile" text link instead of a full-width button.
-- **Notes:** From S077. Pure style swap — navigation target, visibility conditions (forgot-password's guest-from-sign-in absence case), and all other T191 behavior are unchanged.
-
 ### [T197] Fix account deletion still returning a 503 in the real environment
 
 - **Area:** Authentication / Supabase
