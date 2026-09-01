@@ -169,7 +169,7 @@ _T194–T206 come from stories S075–S088 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 - **Area:** Sesh / guest invitation
 - **Priority:** Medium
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Implementer
 - **Description:** `isRegularSessionInviteEligible` (`practice-history.ts`) already fires on the 1st, 6th, 11th, ... regular Sesh — the every-5th cadence is correct today. The gap is presentation: T183 made every eligible occurrence render as the `InviteOverlay` modal, including the very first one, which the user finds too aggressive, and that overlay's background is opaque instead of translucent. Change `sesh.tsx` so the first-ever occurrence (`selectRegularSessions(priorSessions).length === 0`) renders the original inline invite on the wrap-up screen instead of the overlay, and change `InviteOverlay`'s background to translucent for the modal case.
 - **Exit criteria:** `sesh.test.tsx` passes, including cases asserting the first-ever-Sesh completion renders the invite inline (present in the `ScrollView` subtree) and the 6th completion renders it as the overlay with a translucent background, with the wrap-up content visible behind it.
