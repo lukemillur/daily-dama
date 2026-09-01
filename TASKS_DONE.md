@@ -2886,3 +2886,13 @@ Completed entries live in [TASKS_DONE.md](TASKS_DONE.md) — not part of the top
 - **Description:** T193 removed `text-align: center` from `forgot-password-screen.tsx`'s `PageTitle`/`Introduction`/`Guidance`, but left the equivalent styled components in `sign-in-screen.tsx`, `sign-up-screen.tsx`, and `reset-password-screen.tsx` centered (confirmed: each still has two `text-align: center` declarations). Remove those overrides on all three screens, matching forgot-password.
 - **Exit criteria:** `sign-in-screen.test.tsx`, `sign-up-screen.test.tsx`, and `reset-password-screen.test.tsx` pass; confirmed in-browser at a narrow viewport (where the copy wraps to multiple lines) that all three screens' header text renders left-aligned, matching forgot-password and account-security. Met: all three Jest suites pass; Playwright at a 320px viewport confirmed `textAlign: start` (left) on the wrapped `PageTitle`/`Introduction` text for sign-in, sign-up, and reset-password's error state, matching forgot-password and account-security.
 - **Notes:** From S075. Scope is these three screens only — `account-deletion-screen.tsx`, `account-deleted-screen.tsx`, `check-email-screen.tsx`, and `auth-callback-screen.tsx` also center text but are single-message/status screens, not the input-form family the QA comment named ("sign-in screen, sign-up screen, etc."); leave them centered unless the user flags them separately. `account-security-screen.tsx`'s dynamic `$align` default is also out of scope for the same reason.
+
+### [T196] Shrink "Back to Profile" controls to a text-link style
+
+- **Area:** Authentication UI
+- **Priority:** Medium
+- **Status:** Done
+- **Planning:** Implementer
+- **Description:** T191 added "Back to Profile" as a `fill`/`variant="secondary"` `Button` on `account-security-screen.tsx`, reused as-is on `account-deletion-screen.tsx` and `forgot-password-screen.tsx`. Replace it on all three with a small text link matching the existing "← Back to Stats" pattern (`BackLink` in `src/app/app/stats/[trickId].tsx`).
+- **Exit criteria:** `account-security-screen.test.tsx`, `account-deletion-screen.test.tsx`, and `forgot-password-screen.test.tsx` pass with the control still present and functional; confirmed in-browser that all three screens now show a small "← Back to Profile" text link instead of a full-width button.
+- **Notes:** From S077. Pure style swap — navigation target, visibility conditions (forgot-password's guest-from-sign-in absence case), and all other T191 behavior are unchanged.

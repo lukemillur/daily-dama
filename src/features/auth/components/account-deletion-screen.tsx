@@ -1,6 +1,6 @@
 import { useRef, useState, type ReactNode } from 'react';
 import { useRouter } from 'expo-router';
-import { ScrollView, TextInput } from 'react-native';
+import { Pressable, ScrollView, TextInput } from 'react-native';
 import { styled } from 'styled-components/native';
 
 import { Button } from '@/components/ui/button';
@@ -106,11 +106,9 @@ export function AccountDeletionScreen() {
           <Eyebrow>Delete account</Eyebrow>
           <PageTitle>This is permanent.</PageTitle>
 
-          <Actions>
-            <Button accessibilityLabel="Back to Profile" fill variant="secondary" onPress={handleBack}>
-              Back to Profile
-            </Button>
-          </Actions>
+          <BackLink accessibilityLabel="Back to Profile" accessibilityRole="link" onPress={handleBack}>
+            <BackLinkText>← Back to Profile</BackLinkText>
+          </BackLink>
 
           <Introduction>
             Deleting your account happens immediately and permanently. Your account and cloud data will be removed.
@@ -180,3 +178,14 @@ const FieldInput = styled(TextInput).attrs(({ theme }) => ({ placeholderTextColo
 `;
 const ErrorText = styled.Text`color: ${AppColors.red}; font-size: 12px; font-weight: 800; margin-top: 10px;`;
 const Actions = styled.View`width: 100%; margin-top: 24px;`;
+const BackLink = styled(Pressable)`
+  align-self: flex-start;
+  margin-bottom: 10px;
+`;
+const BackLinkText = styled.Text`
+  padding: 8px 0;
+  color: ${AppColors.ink};
+  font-size: 13px;
+  font-weight: 900;
+  text-decoration-line: underline;
+`;
