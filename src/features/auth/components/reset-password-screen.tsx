@@ -169,12 +169,10 @@ const Centered = styled.View`
 `;
 const PageTitle = styled(DisplayTitle)`
   margin-top: 12px;
-  text-align: center;
 `;
 const Introduction = styled(BodyText)`
   max-width: 480px;
   margin-top: 16px;
-  text-align: center;
 `;
 const ErrorText = styled.Text`
   color: ${AppColors.red};
