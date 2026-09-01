@@ -159,7 +159,7 @@ _T194–T206 come from stories S075–S088 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 - **Area:** Authentication / Supabase
 - **Priority:** High
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** T188 diagnosed and fixed a 503 caused by a stale **local** Supabase stack, and verified the fix against a freshly cycled local stack. The user reports the 503 still happens. Given T195's parallel finding that T192's local-stack verification didn't hold in the real environment, first confirm whether this is the same local-vs-real gap (i.e., the real environment the user hits was never actually fixed) before re-diagnosing from scratch.
 - **Exit criteria:** A real disposable account, in the environment the user actually tests against, is deleted successfully through the app UI (no 503) and can no longer sign in afterward.
