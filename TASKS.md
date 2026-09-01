@@ -159,7 +159,7 @@ _T194–T206 come from stories S075–S088 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 - **Area:** Authentication / Supabase email
 - **Priority:** High
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** T192 restyled `supabase/templates/confirmation.html` and verified it against the local Supabase stack via Mailpit, but a real signup shows no branding change at all. `supabase/README.md:281` states the local `config.toml`/template setup "does not touch the hosted Supabase project," so the template almost certainly needs to be applied to whatever project real signups hit (hosted-project email template configuration, via dashboard or a deploy step — not further local-stack changes).
 - **Exit criteria:** A real signup, in the environment the user actually tests against, receives the branded confirmation email (cream/paper background, ink border, hard drop shadow, red uppercase eyebrow, ink-background/yellow-text button) — verified directly in that environment's inbox, not the local Mailpit stack.
