@@ -213,17 +213,14 @@ const Centered = styled.View`
 `;
 const PageTitle = styled(DisplayTitle)`
   margin-top: 12px;
-  text-align: center;
 `;
 const Introduction = styled(BodyText)`
   max-width: 480px;
   margin-top: 16px;
-  text-align: center;
 `;
 const Guidance = styled(BodyText)`
   max-width: 480px;
   margin-top: 8px;
-  text-align: center;
 `;
 const Field = styled.View`
   margin-top: 28px;
