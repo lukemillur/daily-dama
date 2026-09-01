@@ -175,16 +175,6 @@ _T194–T206 come from stories S075–S088 in [BACKLOG_STORIES.md](BACKLOG_STORI
 - **Exit criteria:** A real disposable account, in the environment the user actually tests against, is deleted successfully through the app UI (no 503) and can no longer sign in afterward.
 - **Notes:** From S078. Coordinate with T195 on identifying the real target environment first — resolving that question likely un-blocks both tickets at once.
 
-### [T198] Stop the guest-import status panel from ever rendering visible UI
-
-- **Area:** Guest conversion / onboarding
-- **Priority:** High
-- **Status:** Not started
-- **Planning:** Implementer
-- **Description:** `GuestImportPreview` (`src/features/guest-import/components/guest-import-preview.tsx`) still renders an "Import in progress..." panel while `state.status === 'uploading'`, and is still unconditionally mounted in `profile/index.tsx` — every other status branch already returns `null`. This directly contradicts T186/T186.1's "internally invisible" goal and is the most likely source of both the visible import text the user reports and the "elements painted very quickly" flash before landing on onboarding (see T199 for the onboarding-redirect part of that same report).
-- **Exit criteria:** `guest-import-preview.test.tsx` passes with no case that renders visible text; confirmed in-browser that signing up with existing local data shows no import-status text or panel anywhere at any point during the flow.
-- **Notes:** From S079 (the visible-UI/flash symptom) and S088. Since every remaining status branch of `GuestImportPreview` already returns `null`, the straightforward fix is deleting the component (and its mount in `profile/index.tsx`) entirely rather than keeping a dead shell around — confirm no other branch is reachable before doing so.
-
 ### [T199] Stop showing onboarding again to a guest whose data just got imported
 
 - **Area:** Guest conversion / onboarding

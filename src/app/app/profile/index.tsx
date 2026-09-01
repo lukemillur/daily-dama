@@ -9,7 +9,6 @@ import { BodyText, DisplayTitle, Eyebrow } from "@/components/ui/typography";
 import { AppColors, BottomTabInset } from "@/constants/theme";
 import { AccountSection } from "@/features/auth/components/account-section";
 import { GuestAccountSection } from "@/features/auth/components/guest-account-section";
-import { GuestImportPreview } from "@/features/guest-import/components/guest-import-preview";
 import { useRequireOnboarding } from "@/features/onboarding/state/require-onboarding";
 import { RainbowThemePresets } from "@/features/profile/components/rainbow-theme-presets";
 import { ThemeColorPicker } from "@/features/profile/components/theme-color-picker";
@@ -52,7 +51,6 @@ export default function ProfileScreen() {
           </RankLine>
           <AccountSection />
           <SyncStatusSection />
-          <GuestImportPreview />
           <GuestAccountSection />
           <Divider />
           <SectionLabel>Kentei assessment</SectionLabel>

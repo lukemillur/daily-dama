@@ -4,6 +4,16 @@ Completed entries move here from `TASKS.md`'s `Backlog`, in the same commit that
 
 Entries keep their content as it was at completion. Don't retroactively edit a description or exit criteria after the fact; if something about a completed task turns out to be wrong or misleading, note that in a new entry or in code, not by rewriting history here.
 
+### [T198] Stop the guest-import status panel from ever rendering visible UI
+
+- **Area:** Guest conversion / onboarding
+- **Priority:** High
+- **Status:** Done
+- **Planning:** Implementer
+- **Description:** `GuestImportPreview` (`src/features/guest-import/components/guest-import-preview.tsx`) still renders an "Import in progress..." panel while `state.status === 'uploading'`, and is still unconditionally mounted in `profile/index.tsx` — every other status branch already returns `null`. This directly contradicts T186/T186.1's "internally invisible" goal and is the most likely source of both the visible import text the user reports and the "elements painted very quickly" flash before landing on onboarding (see T199 for the onboarding-redirect part of that same report).
+- **Exit criteria:** `guest-import-preview.test.tsx` passes with no case that renders visible text; confirmed in-browser that signing up with existing local data shows no import-status text or panel anywhere at any point during the flow. Met: confirmed every remaining `GuestImportPreview` status branch (`idle`/`cancelled`/`completed`/`inventorying`/`awaitingConfirmation`) already returned `null`, with only `uploading` still rendering the visible "Import in progress..." panel -- so the component was deleted entirely (along with `guest-import-preview.test.tsx`, which tested the now-nonexistent panel) rather than left as a dead shell, and its mount removed from `profile/index.tsx`. Verified in-browser against a running dev server (Playwright, no local Supabase signup required since the component and its only visible-rendering branch no longer exist in the bundle) that neither `/app/profile` nor `/` render "Import in progress" text anywhere, with no console errors.
+- **Notes:** From S079 (the visible-UI/flash symptom) and S088. Since every remaining status branch of `GuestImportPreview` already returns `null`, the straightforward fix is deleting the component (and its mount in `profile/index.tsx`) entirely rather than keeping a dead shell around — confirm no other branch is reachable before doing so.
+
 ### [T189] Fix logout destination and reset session-scoped app state
 
 - **Area:** Authentication / Landing
