@@ -314,7 +314,7 @@ describe('AccountSecurityScreen', () => {
     await pressLabel(root, 'Forgot password?');
 
     expect(mockSignOut).toHaveBeenCalledTimes(1);
-    expect(mockPush).toHaveBeenCalledWith('/auth/forgot-password');
+    expect(mockPush).toHaveBeenCalledWith('/auth/forgot-password?from=account-security');
   });
 
   it('blocks submit and calls neither current-password check message nor changePassword for an empty current password', async () => {

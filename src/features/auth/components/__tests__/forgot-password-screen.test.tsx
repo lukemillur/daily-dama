@@ -84,7 +84,11 @@ function restorePlatform() {
 
 const mockReplace = jest.fn();
 const mockPush = jest.fn();
-jest.mock('expo-router', () => ({ useRouter: () => ({ replace: mockReplace, push: mockPush }) }));
+let mockSearchParams: { from?: string } = {};
+jest.mock('expo-router', () => ({
+  useRouter: () => ({ replace: mockReplace, push: mockPush }),
+  useLocalSearchParams: () => mockSearchParams,
+}));
 
 const mockRequestPasswordReset = jest.fn<() => Promise<{ error: unknown }>>();
 let mockAuthState: AuthState = { status: 'guest', reason: 'signedOut' };
@@ -145,6 +149,37 @@ describe('ForgotPasswordScreen', () => {
     mockTrackAuthEvent.mockReset();
     mockLogAuthWarning.mockReset();
     mockAuthState = { status: 'guest', reason: 'signedOut' };
+    mockSearchParams = {};
+  });
+
+  it('shows a Back to Profile control when reached from the authenticated account-security flow', async () => {
+    mockSearchParams = { from: 'account-security' };
+    const root = await mount();
+
+    const button = findByLabel(root, 'Back to Profile');
+    expect(button).toBeDefined();
+    await act(async () => {
+      button.props.onPress();
+    });
+    expect(mockPush).toHaveBeenCalledWith('/app/profile');
+  });
+
+  it('omits the Back to Profile control for a guest reaching this screen from sign-in', async () => {
+    mockSearchParams = {};
+    const root = await mount();
+
+    expect(() => findByLabel(root, 'Back to Profile')).toThrow();
+  });
+
+  it('shows the Back to Profile control on the confirmation view too when reached from account-security', async () => {
+    mockSearchParams = { from: 'account-security' };
+    mockRequestPasswordReset.mockResolvedValue({ error: null });
+    const root = await mount();
+
+    await setEmail(root, 'person@example.com');
+    await submit(root);
+
+    expect(findByLabel(root, 'Back to Profile')).toBeDefined();
   });
 
   it('redirects to /app/home when already authenticated', async () => {

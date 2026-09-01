@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { ScrollView, TextInput } from 'react-native';
 import { styled } from 'styled-components/native';
 
@@ -41,6 +41,12 @@ export function ForgotPasswordScreen() {
   const authState = useAuthState();
   const { requestPasswordReset } = useAuthActions();
   const router = useRouter();
+  const params = useLocalSearchParams<{ from?: string }>();
+  // T191: account-security-screen.tsx's gated "Forgot password?" link (T180) signs the user out
+  // before navigating here, so `authState` is already back to guest by the time this renders --
+  // the *origin* of the navigation, not the live auth status, is what distinguishes "came from the
+  // authenticated Profile flow" from "a guest arrived here directly from sign-in".
+  const cameFromAccountSecurity = params.from === 'account-security';
 
   const [email, setEmail] = useState('');
   const [hasSubmitted, setHasSubmitted] = useState(false);
@@ -119,6 +125,15 @@ export function ForgotPasswordScreen() {
               onPress={() => router.push('/auth/sign-in')}>
               Back to sign in
             </Button>
+            {cameFromAccountSecurity ? (
+              <Button
+                accessibilityLabel="Back to Profile"
+                variant="secondary"
+                fill
+                onPress={() => router.push('/app/profile')}>
+                Back to Profile
+              </Button>
+            ) : null}
           </FormActions>
         </Centered>
       </Screen>
@@ -164,6 +179,15 @@ export function ForgotPasswordScreen() {
               onPress={() => router.push('/auth/sign-in')}>
               Back to sign in
             </Button>
+            {cameFromAccountSecurity ? (
+              <Button
+                accessibilityLabel="Back to Profile"
+                variant="secondary"
+                fill
+                onPress={() => router.push('/app/profile')}>
+                Back to Profile
+              </Button>
+            ) : null}
           </FormActions>
         </FormContent>
       </FormScroll>
