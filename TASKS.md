@@ -157,7 +157,7 @@ _T182–T193 come from stories S063–S074 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 - **Area:** Authentication UI
 - **Priority:** Low
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Implementer
 - **Description:** `forgot-password-screen.tsx`'s `PageTitle`/`Introduction` (and any sibling header text) are styled with `text-align: center`, unlike sign-up/sign-in's left-aligned (unstyled-alignment) headers. Remove the center-alignment overrides to match.
 - **Exit criteria:** `forgot-password-screen.test.tsx` passes; confirmed in-browser or via snapshot that the screen's header text is left-aligned, matching sign-up/sign-in.
