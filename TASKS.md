@@ -156,7 +156,7 @@ _T182–T193 come from stories S063–S074 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 - **Area:** Authentication UI
 - **Priority:** Medium
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Implementer
 - **Description:** `forgot-password-screen.tsx` (reached from `account-security-screen.tsx`'s gated link, T180) and `account-deletion-screen.tsx` (reached from Profile) currently offer no way back to Profile, only "Sign in"-style links — unlike `account-security-screen.tsx` itself, which already has a "Back to Profile" button (T181). Add the same "Back to Profile" control to both, shown only when reached from the authenticated Profile context (forgot-password is also reachable pre-auth from sign-in, where there is no Profile to return to).
 - **Exit criteria:** `forgot-password-screen.test.tsx` and `account-deletion-screen.test.tsx` pass, including a test asserting the back-to-Profile control appears when reached from the authenticated context and forgot-password's control is absent for a guest reaching it from sign-in.
