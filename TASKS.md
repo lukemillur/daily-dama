@@ -179,7 +179,7 @@ _T194–T206 come from stories S075–S088 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 - **Area:** Landing / navigation
 - **Priority:** High
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** The sign-up screen is currently only reachable after completing onboarding (the Kentei rank picker), which makes it impossible for a guest with existing local data to create an account without first going through onboarding again, and blocks any true "brand-new guest" signup test. Add direct sign-up/sign-in entry points to the landing page (`landing-cta.tsx` or a sibling landing component) so a visitor can reach `/auth/sign-up` / `/auth/sign-in` without completing onboarding first.
 - **Exit criteria:** From the landing page (as a not-yet-onboarded visitor), tapping a new sign-up/sign-in control navigates to `/auth/sign-up`/`/auth/sign-in` directly. A visitor who signs up this way with existing local data gets it imported per T198/T199; a visitor with no local data who signs up this way still sees onboarding normally afterward, unchanged from today. Confirmed in-browser for both cases.
