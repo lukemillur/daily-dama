@@ -7,9 +7,15 @@ jest.mock('@react-native-async-storage/async-storage', () =>
   require('@react-native-async-storage/async-storage/jest/async-storage-mock'),
 );
 
+import { GUEST_IDENTITY } from '@/shared/persistence/identity';
+import { physicalKey } from '@/shared/persistence/scoped-storage';
+
 import { readCachedOnboardingStatus } from './read-cached-onboarding-status';
+import { USER_PROFILE_STORAGE_KEY } from './user-profile-persistence';
 
 const DEFAULT_STATUS = { hasCompletedOnboarding: false, kenteiRank: undefined };
+
+const GUEST_SCOPED_KEY = physicalKey(GUEST_IDENTITY, USER_PROFILE_STORAGE_KEY);
 
 function validDocument(hasCompletedOnboarding: boolean, kenteiRank?: number): string {
   return JSON.stringify({
@@ -55,5 +61,31 @@ describe('readCachedOnboardingStatus', () => {
       throw new Error('blocked');
     };
     expect(readCachedOnboardingStatus(getItem)).toEqual(DEFAULT_STATUS);
+  });
+
+  it('falls back to the legacy bare key when the guest-scoped key is empty', () => {
+    const store: Record<string, string> = {
+      [USER_PROFILE_STORAGE_KEY]: validDocument(true, 4),
+    };
+    const result = readCachedOnboardingStatus((key) => store[key] ?? null);
+    expect(result).toEqual({ hasCompletedOnboarding: true, kenteiRank: 4 });
+  });
+
+  it('prefers the guest-scoped key over the legacy bare key when both exist', () => {
+    const store: Record<string, string> = {
+      [GUEST_SCOPED_KEY]: validDocument(true, 9),
+      [USER_PROFILE_STORAGE_KEY]: validDocument(true, 2),
+    };
+    const result = readCachedOnboardingStatus((key) => store[key] ?? null);
+    expect(result).toEqual({ hasCompletedOnboarding: true, kenteiRank: 9 });
+  });
+
+  it('reads a fresh guest identity from the guest-scoped key even when a stale bare-key snapshot claims completed onboarding', () => {
+    const store: Record<string, string> = {
+      [GUEST_SCOPED_KEY]: validDocument(false),
+      [USER_PROFILE_STORAGE_KEY]: validDocument(true, 7),
+    };
+    const result = readCachedOnboardingStatus((key) => store[key] ?? null);
+    expect(result).toEqual(DEFAULT_STATUS);
   });
 });
