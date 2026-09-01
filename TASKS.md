@@ -179,7 +179,7 @@ _T194–T206 come from stories S075–S088 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 - **Area:** Guest conversion / onboarding
 - **Priority:** High
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** T186.1 was supposed to gate onboarding on existing local data so a guest with data lands on Home after signup, not the Kentei rank picker. The user reports being sent to onboarding anyway, immediately after signup, with several elements painting first. This needs runtime tracing (not a known fix) through `use-guest-import.ts`'s auto-confirm sequencing, the guest→user identity-generation switch, and `UserProfileProvider`'s hydration/write timing, to find why `hasCompletedOnboarding`/`kenteiRank` don't read as complete by the time the post-signup redirect/render evaluates them.
 - **Exit criteria:** A real signup (through the actual auth flow, not a seeded fixture) for a guest identity with existing local practice/profile data lands on Home directly, with no onboarding screen shown at any point, verified in-browser end-to-end against a real account.
