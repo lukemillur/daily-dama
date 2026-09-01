@@ -12,7 +12,13 @@ jest.mock('@react-native-async-storage/async-storage', () =>
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+import { USER_PROFILE_STORAGE_KEY } from '@/features/profile/persistence/user-profile-persistence';
+import { GUEST_IDENTITY } from '@/shared/persistence/identity';
+import { physicalKey } from '@/shared/persistence/scoped-storage';
+
 import { useCachedOnboardingStatus } from './use-cached-onboarding-status';
+
+const GUEST_SCOPED_KEY = physicalKey(GUEST_IDENTITY, USER_PROFILE_STORAGE_KEY);
 
 function validDocument(hasCompletedOnboarding: boolean, kenteiRank?: number): string {
   return JSON.stringify({
@@ -77,6 +83,21 @@ describe('useCachedOnboardingStatus (web)', () => {
 
     expect(result).toEqual({ hasCompletedOnboarding: true, kenteiRank: 7 });
   });
+
+  it('reads a fresh guest identity from the guest-scoped key even when a stale bare-key snapshot claims completed onboarding (post-logout)', async () => {
+    const store: Record<string, string> = {
+      [GUEST_SCOPED_KEY]: validDocument(false),
+      [USER_PROFILE_STORAGE_KEY]: validDocument(true, 6),
+    };
+    Object.defineProperty(window, 'localStorage', {
+      value: { getItem: (key: string) => store[key] ?? null },
+      configurable: true,
+    });
+
+    const result = await mountHook();
+
+    expect(result).toEqual({ hasCompletedOnboarding: false, kenteiRank: undefined });
+  });
 });
 
 describe('useCachedOnboardingStatus (native)', () => {
@@ -90,7 +111,7 @@ describe('useCachedOnboardingStatus (native)', () => {
   });
 
   it('resolves the cached onboarding status via an async AsyncStorage read', async () => {
-    await AsyncStorage.setItem('daily-dama:user-profile', validDocument(true, 3));
+    await AsyncStorage.setItem(GUEST_SCOPED_KEY, validDocument(true, 3));
 
     const result = await mountHook();
 

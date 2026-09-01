@@ -4,6 +4,16 @@ Completed entries move here from `TASKS.md`'s `Backlog`, in the same commit that
 
 Entries keep their content as it was at completion. Don't retroactively edit a description or exit criteria after the fact; if something about a completed task turns out to be wrong or misleading, note that in a new entry or in code, not by rewriting history here.
 
+### [T189] Fix logout destination and reset session-scoped app state
+
+- **Area:** Authentication / Landing
+- **Priority:** High
+- **Status:** Done
+- **Planning:** Required
+- **Description:** `account-section.tsx` already calls `router.replace('/')` on successful logout (T175), but `/`'s `useRedirectOnboardedVisitorHome` immediately redirects back to `/app/home` via `use-cached-onboarding-status.ts`, which — like `read-cached-theme-background.ts` — still reads the legacy bare `USER_PROFILE_STORAGE_KEY` instead of the identity-scoped guest key T156.2 introduced, so both helpers see a stale/wrong-identity snapshot after logout. Update both helpers to read the identity-scoped guest key first with a bare-key fallback, mirroring `CachedAppThemeProvider`'s `readCachedGuestTheme`/`useCachedGuestTheme` (T170).
+- **Exit criteria:** `use-cached-onboarding-status.test.ts` and `read-cached-theme-background.test.ts` (or equivalents) pass, including a test asserting a post-logout guest identity with no completed guest onboarding reads `hasCompletedOnboarding: false` and the default theme even when a stale bare-key snapshot exists; confirmed in-browser that logging out from an account with a custom theme lands on the landing page showing the default theme. Met: `read-cached-onboarding-status.ts`, `read-cached-theme-background.ts`, and `use-cached-onboarding-status.ts` (native branch) now read the identity-scoped guest key first, falling back to the bare legacy key, mirroring `read-cached-guest-theme.ts`'s established pattern. New regression tests were added to `read-cached-onboarding-status.test.ts`, `read-cached-theme-background.test.ts`, and `use-cached-onboarding-status.test.tsx` covering the fallback order and the exact post-logout stale-bare-key scenario; all pass. Manually verified against a local Supabase stack: signed up a real account, completed onboarding with the Blue custom theme selected, then logged out via `AccountSection` — landed on `/` showing the default cream theme and "Start your first Sesh" guest copy (no redirect to `/app/home`), confirmed again on a hard refresh of `/` (no blue splash flash).
+- **Notes:** From S070, follow-up on T175. Preserved T145's hydration-flicker-free first paint on `/` — the existing `useSyncExternalStore` hydration-mismatch guard in `use-cached-onboarding-status.ts` was untouched; only the storage key(s) read after that boundary changed. This was the same "stale bare-key read" gap T170's own Notes had already flagged as an undiscovered follow-up candidate. `landing-cta.tsx` also consumes `useCachedOnboardingStatus` and got the fix for free with no separate change.
+
 ### [T185] Synchronize password-visibility toggles and use an icon instead of text
 
 - **Area:** Authentication UI

@@ -7,11 +7,15 @@ import {
   readCachedOnboardingStatus,
 } from '@/features/profile/persistence/read-cached-onboarding-status';
 import { USER_PROFILE_STORAGE_KEY } from '@/features/profile/persistence/user-profile-persistence';
+import { GUEST_IDENTITY } from '@/shared/persistence/identity';
+import { physicalKey } from '@/shared/persistence/scoped-storage';
 
 const DEFAULT_STATUS: CachedOnboardingStatus = {
   hasCompletedOnboarding: false,
   kenteiRank: undefined,
 };
+
+const GUEST_SCOPED_KEY = physicalKey(GUEST_IDENTITY, USER_PROFILE_STORAGE_KEY);
 
 const emptySubscribe = () => () => {};
 
@@ -42,7 +46,7 @@ export function useCachedOnboardingStatus(): CachedOnboardingStatus {
     if (Platform.OS === 'web') return;
 
     let isCurrent = true;
-    AsyncStorage.getItem(USER_PROFILE_STORAGE_KEY).then((serialized) => {
+    AsyncStorage.getItem(GUEST_SCOPED_KEY).then((serialized) => {
       if (!isCurrent) return;
       setNativeStatus(readCachedOnboardingStatus(() => serialized));
     });
