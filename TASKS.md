@@ -172,7 +172,7 @@ _T208–T215 come from stories S090–S097 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 - **Area:** Sesh
 - **Priority:** Low
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Implementer
 - **Description:** `InviteOverlay` (`sesh.tsx`) currently hardcodes `rgba(244, 201, 77, 0.85)` (mustard yellow) regardless of the user's selected theme. Change it to derive from `theme.accent` via `ThemeContext` — matching `RankUpCelebrationModal`'s existing precedent — at a lower, more translucent opacity.
 - **Exit criteria:** `sesh.test.tsx` passes with cases confirming the overlay's background color tracks at least two different theme presets' accent colors; confirmed in-browser that the wrap-up content behind the overlay is clearly legible under the new opacity.
