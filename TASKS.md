@@ -208,3 +208,15 @@ _T194–T206 come from stories S075–S088 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 
 ---
+
+_T207 comes from story S089 in [BACKLOG_STORIES.md](BACKLOG_STORIES.md) (a 2026-09-01 product observation that new signups get no acknowledgment of success). Tracing confirmed the only redirect target that is specific to a brand-new, just-verified account is `auth-callback-screen.tsx`'s default branch (`router.replace('/app/home')` at line 138) — this route only runs for GoTrue email-link callbacks (signup verification, recovery, email change), and the recovery/email-change cases already branch elsewhere, so the remaining default case is exactly the post-signup-verification moment. Regular password sign-in (`sign-in-screen.tsx:82`) redirects to the same `/app/home` target but is deliberately left unchanged per the story's scoping note. T207 is `Implementer`: it's a one-time transient UI signal (a query param plus a dismissible banner on Home, following the existing `CelebrationBanner` pattern in `sesh.tsx`), touching no persistence domain, reducer, or state machine._
+
+### [T207] Acknowledge a newly verified account on first arrival at Home
+
+- **Area:** Home / Authentication
+- **Priority:** Medium
+- **Status:** Not started
+- **Planning:** Implementer
+- **Description:** `auth-callback-screen.tsx`'s default branch (the post-signup-email-verification redirect) and `sign-in-screen.tsx`'s redirect both land on `/app/home` via `router.replace` with no acknowledgment that the account was created and the user is signed in. Have the callback screen's default-branch redirect carry a one-time signal (e.g. a query param) that `home.tsx` reads on mount to show a dismissible success banner, then discards — this path only fires for a just-verified new account, not for `sign-in-screen.tsx`'s routine sign-in redirect, which is unaffected.
+- **Exit criteria:** `home.test.tsx` (or equivalent) passes with a case asserting the banner renders when arriving via the new-account signal and does not render on a plain mount; confirmed in-browser that completing signup + email verification shows the banner once on Home, dismissing it (or navigating away and back) does not re-show it, and a regular sign-in shows no banner.
+- **Notes:** From S089. Banner copy and exact visual treatment (adapt `CelebrationBanner` from `sesh.tsx`, or a simpler one-off) are left to the implementer; the story's only hard constraints are that it's dismissible, non-blocking, and scoped to the new-account moment only.

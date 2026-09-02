@@ -14,6 +14,8 @@ _S063–S074 came from the user's 2026-08-31 QA pass on PRs #224–256 — the b
 
 _S075–S088 came from the user's 2026-09-01 QA pass on T182–T193 (the batch closed by the 2026-08-31 pass, S063–S074). Every reviewed T188/T189/T191/T192/T193 item came back with a follow-up gap, T186.1 came back with two distinct problems, T183 came back with a styling gap, and seven items are general feedback not tied to a specific ticket. All fourteen were scoped into T194–T206 (see `TASKS.md`) and removed from this file: S075→T194, S076→T195, S077→T196, S078→T197, S079→T198 (visible-UI/flash symptom) & T199 (onboarding-recurrence symptom), S080→T200, S081→T201, S082→T201 (combined with S081), S083→T202, S084→T203, S085→T204, S086→T205, S087→T206, S088→T198 (combined with S079's UI symptom)._
 
+_S089 was refined on 2026-09-01 from the user's direct observation that a newly created account gets no success acknowledgment. It was scoped into T207 (see `TASKS.md`) and removed from this file._
+
 ### [S057] Enforce email uniqueness at signup with a clear message — REJECTED
 
 - **Status:** Rejected (2026-08-26)
