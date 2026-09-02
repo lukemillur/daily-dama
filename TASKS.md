@@ -172,7 +172,7 @@ _T208–T215 come from stories S090–S097 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 - **Area:** Landing
 - **Priority:** Medium
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Implementer
 - **Description:** Replace `LandingAuthCta`'s current inline placement inside the landing page's scrollable hero content with a minimal, persistent header bar (styled consistently with the rest of the app) holding the same sign up/sign in entry points; hide that header bar once the visitor scrolls past a threshold near the top of the page.
 - **Exit criteria:** `landing-page.test.tsx` (or equivalent) passes with cases asserting the header bar renders sign up/sign in controls above the scrollable content and hides once scroll position passes the threshold; confirmed in-browser that the inline hero buttons are gone and the header bar's show/hide behaves correctly while scrolling.
