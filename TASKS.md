@@ -153,3 +153,87 @@ _T182–T193 come from stories S063–S074 in [BACKLOG_STORIES.md](BACKLOG_STORI
 ---
 
 _T194–T206 come from stories S075–S088 in [BACKLOG_STORIES.md](BACKLOG_STORIES.md) (the user's 2026-09-01 QA pass on T182–T193). T194 (S075), T196 (S077), T198 (S079 partial + S088), T202 (S083), T203 (S084), T204 (S085), and T205 (S086) are `Implementer` — local, known-pattern changes. T201 combines S081 and S082 into one ticket because both edit the same `PostSeshSignupInvite`/`InviteOverlay` block in `sesh.tsx`; splitting them would mean two PRs colliding on the same lines for no benefit. T195 (S076) and T197 (S078) are `Required`: tracing `supabase/README.md:281` ("This config is local-only. It does not touch the hosted Supabase project") shows T192's and T188's local-stack verification never actually reached whatever environment the user's real signups and deletions hit, so both need a fresh diagnosis pass against that real environment rather than a known local fix reapplied. T199 (S079 remainder) and T206 (S087) are `Required` for the same class of reason as T188/T189 before them: both are post-auth-identity-change render/redirect races (guest→user after import for T199, sign-in to an existing populated account for T206) that need runtime tracing through `UserProfileProvider`'s hydration and the sync coordinator before a fix can be written, not a known pattern applied locally. T200 (S080) is `Required` because it adds a new pre-onboarding entry point into routing (`landing-cta.tsx`/`use-cached-onboarding-status.ts`) that several prior tickets (T112.5, T145, T170, T189) have already shown is easy to get wrong around hydration and redirect ordering. T204 depends on T203 landing first (both touch `AccountSection`'s contents, T203 removing its "Delete account" button and T204 relocating what remains).
+
+---
+
+_T208–T215 come from stories S090–S097 in [BACKLOG_STORIES.md](BACKLOG_STORIES.md) (the user's 2026-09-02 QA pass on T195/T201/T205/T207, plus three items of general feedback). T209 (S091), T210 (S092), T211 (S093), T213 (S095), and T214 (S096) are `Implementer` — local, known-pattern changes, several reusing an existing precedent in this codebase (T205's `DisplayTitle` title style for T209; `RankUpCelebrationModal`'s `theme.accent` precedent for T211; `trick-goals-screen.tsx`'s `GoalHeaderRow`/`GoalTrickName` pattern for T214). T208 (S090) is `Required`: it mounts a new full-screen overlay above `<Slot />` in `_layout.tsx` and introduces `useGlobalSearchParams`, which has no precedent anywhere in this codebase today — both are boundary-level changes per this project's Planning rules, even though the celebration visual mechanism itself already exists via `RankUpCelebrationModal`. T212 (S094) is `Required` because T195's confirmed-working hosted-project fix (`supabase/RESEND_DNS_AUTH.md`'s 2026-09-01 entry) has now regressed — this needs a fresh runtime diagnosis of why the fix didn't hold, not a repeat of the same PATCH. T215 (S097) is `Required` for the same class of reason as T199/T206 before it: `StatsScreen` renders synchronously off `usePracticeHistory().sessions` with no guest-import-pending gate, unlike `home.tsx`'s existing `isGuestImportPendingResolution` check — this needs runtime tracing to confirm whether the same gate suffices for Stats before a fix can be written.
+
+### [T208] Replace Home's new-account banner with a global, celebration-style acknowledgment
+
+- **Area:** Home / Authentication
+- **Priority:** Medium
+- **Status:** Not started
+- **Planning:** Required
+- **Description:** Replace `home.tsx`'s locally-scoped `NewAccountBanner` (added by T207) with a full-screen, auto-dismissing acknowledgment mounted at the root layout (`src/app/_layout.tsx`), reusing `RankUpCelebrationModal`'s visual pattern (theme-derived full-bleed overlay, `OnboardingRankRevealStep`-style layout) with its own "welcome/verified" copy — not the trick-lace celebration copy or component instance. `auth-callback-screen.tsx`'s existing `newAccount=1` redirect param stays the trigger; since no route-scoped `useLocalSearchParams` read is available above `<Slot />`, the root layout reads it via `useGlobalSearchParams` and strips it the same way `home.tsx` does today.
+- **Exit criteria:** A new test at the root-layout level (or an equivalent integration test) asserts the acknowledgment overlay renders once when `newAccount=1` is present anywhere in the URL and never on a routine sign-in redirect; `home.test.tsx`'s now-removed `NewAccountBanner` cases are deleted rather than left dangling. Confirmed in-browser: completing signup + email verification through the real callback link shows the full-screen overlay regardless of what's rendered under it (Home content or onboarding), it auto-dismisses without requiring a tap, appears exactly once, and a regular sign-in shows nothing.
+- **Notes:** From S090. Direction confirmed with the user 2026-09-02: reuse the presentation *mechanism* (full-screen overlay, theme-derived styling per `RankUpCelebrationModal`'s precedent) and *visual identity*, not the trick-lace copy or component instance. Pick an auto-dismiss duration that doesn't reintroduce T145-class flicker risk.
+
+### [T209] Bring guest Profile's "Account" title to parity with the signed-in version
+
+- **Area:** Profile
+- **Priority:** Low
+- **Status:** Not started
+- **Planning:** Implementer
+- **Description:** `GuestAccountSection`'s "Account" heading (`SectionLabel`, `guest-account-section.tsx`) still uses an 11px uppercase eyebrow style; change it to the same `styled(DisplayTitle)` `Title` style `AccountSection` already uses since T205, so both login states render "Account" at the same size/weight.
+- **Exit criteria:** `guest-account-section.test.tsx` passes with the heading using the larger title style; confirmed in-browser that a signed-out Profile visitor sees "Account" at the same size/weight as "Put it to the test." and "Select a preset."
+- **Notes:** From S091. Purely typographic, mirrors T205's fix on the authenticated side.
+
+### [T210] Move the first-Sesh inline signup invite above the session metrics
+
+- **Area:** Sesh
+- **Priority:** Low
+- **Status:** Not started
+- **Planning:** Implementer
+- **Description:** In `sesh.tsx`'s wrap-up screen, move the first-occurrence `<InlineSignupInvite />` (currently rendered near the bottom of `ActiveContent`, after the note prompt) to render immediately after the trick name (`DisplayTitle`)/`SequenceSteps`, before the `SummaryGrid` metrics.
+- **Exit criteria:** `sesh.test.tsx` passes with a case asserting the inline invite renders after the trick name and before the summary metrics on the first-ever regular Sesh's wrap-up screen.
+- **Notes:** From S092. Placement-only; invite eligibility and the every-5th-Sesh overlay (T211) are unaffected.
+
+### [T211] Make the every-5th-Sesh invite overlay theme-matched and lighter
+
+- **Area:** Sesh
+- **Priority:** Low
+- **Status:** Not started
+- **Planning:** Implementer
+- **Description:** `InviteOverlay` (`sesh.tsx`) currently hardcodes `rgba(244, 201, 77, 0.85)` (mustard yellow) regardless of the user's selected theme. Change it to derive from `theme.accent` via `ThemeContext` — matching `RankUpCelebrationModal`'s existing precedent — at a lower, more translucent opacity.
+- **Exit criteria:** `sesh.test.tsx` passes with cases confirming the overlay's background color tracks at least two different theme presets' accent colors; confirmed in-browser that the wrap-up content behind the overlay is clearly legible under the new opacity.
+- **Notes:** From S093. The theme-preset system already exposes `theme.accent` to styled-components; no new theming capability needed.
+
+### [T212] Make the branded confirmation email fix actually hold for real signups
+
+- **Area:** Authentication / Supabase
+- **Priority:** High
+- **Status:** Not started
+- **Planning:** Required
+- **Description:** T195's `PATCH /v1/projects/{ref}/config/auth` fix to the hosted project's confirmation-email template passed live verification on 2026-09-01, but a real signup now again receives raw/unstyled HTML. Diagnose why the hosted config didn't hold — a leading, unconfirmed hypothesis is that the fix was applied as a one-off runtime PATCH rather than through the repository's declarative `supabase/config.toml`, so a later config push or project change reverted it — and land a fix durable enough to survive normal operations, not just a repeated PATCH.
+- **Exit criteria:** A real signup, in the environment the user actually tests against, receives the branded confirmation email (cream/paper background, ink border, hard drop shadow, red uppercase eyebrow, ink-background/yellow-text button) in the actual inbox — verified a second time. `supabase/RESEND_DNS_AUTH.md` documents what caused the previous fix to not hold, so a third recurrence doesn't require re-diagnosing from scratch.
+- **Notes:** From S094. `Required` for the same reason T195/T197 were: needs a runtime diagnosis pass against the real hosted environment, not a known local fix reapplied. "Why didn't the first fix hold" is part of the exit criteria, not optional.
+
+### [T213] Replace the landing page's inline auth buttons with a scroll-aware header bar
+
+- **Area:** Landing
+- **Priority:** Medium
+- **Status:** Not started
+- **Planning:** Implementer
+- **Description:** Replace `LandingAuthCta`'s current inline placement inside the landing page's scrollable hero content with a minimal, persistent header bar (styled consistently with the rest of the app) holding the same sign up/sign in entry points; hide that header bar once the visitor scrolls past a threshold near the top of the page.
+- **Exit criteria:** `landing-page.test.tsx` (or equivalent) passes with cases asserting the header bar renders sign up/sign in controls above the scrollable content and hides once scroll position passes the threshold; confirmed in-browser that the inline hero buttons are gone and the header bar's show/hide behaves correctly while scrolling.
+- **Notes:** From S095. `LandingAuthCta`'s existing guest-only gating (`authState.status !== 'guest'` → render nothing) carries over unchanged to the new header bar.
+
+### [T214] Give trick notes cards the same title treatment as trick goal cards
+
+- **Area:** Trick notes
+- **Priority:** Low
+- **Status:** Not started
+- **Planning:** Implementer
+- **Description:** `NoteCard` (`trick-notes-screen.tsx`) has no trick-name heading today — only a small date label and note body. Add the trick name as a large title on the right side of the card, matching `GoalCard`'s `GoalHeaderRow`/`GoalTrickName` pattern in `trick-goals-screen.tsx`. `Note` already carries a `trickName` snapshot field, so no model change is needed.
+- **Exit criteria:** `trick-notes-screen.test.tsx` passes with a case asserting a note card renders its `trickName` as a large title on the right side of the card; confirmed in-browser that trick notes cards visually match the trick goal card's title placement and size.
+- **Notes:** From S096. Pure presentation change using an existing field; no persistence or model changes.
+
+### [T215] Fix Stats showing a false empty state right after a guest-to-account merge
+
+- **Area:** Stats / guest conversion
+- **Priority:** High
+- **Status:** Not started
+- **Planning:** Required
+- **Description:** `StatsScreen` (`src/app/app/stats/index.tsx`) reads `usePracticeHistory().sessions` synchronously and renders `EmptyStats` whenever `sessions.length === 0`, with no check for a pending guest-to-account data merge — unlike `home.tsx`, which already gates rendering on `isGuestImportPendingResolution(guestImportState)` for exactly this class of race (T199/T206). Diagnose the render-order race for Stats specifically and gate it the same way, so a guest who signs up with existing local data doesn't see a false empty state before a manual refresh.
+- **Exit criteria:** A new integration test (mirroring `home.guest-import-upload-failure.test.tsx`'s approach) confirms `StatsScreen` does not render `EmptyStats` while a guest import is still resolving, and renders the correct populated stats once it resolves without requiring a remount. Confirmed against a real guest-to-account signup with existing local practice data that Stats shows that history immediately, with no manual refresh needed.
+- **Notes:** From S097. `Required` for the same class of reason as T188/T189/T199/T206: an identity-change/hydration-timing race needs runtime tracing, not a known pattern applied blindly — confirm whether gating on `isGuestImportPendingResolution` alone is sufficient for Stats, or whether Stats' `usePracticeHistory()` hook has its own independent timing gap from Home's.

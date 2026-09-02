@@ -16,6 +16,8 @@ _S075–S088 came from the user's 2026-09-01 QA pass on T182–T193 (the batch c
 
 _S089 was refined on 2026-09-01 from the user's direct observation that a newly created account gets no success acknowledgment. It was scoped into T207 (see `TASKS.md`) and removed from this file._
 
+_S090–S097 came from the user's 2026-09-02 QA pass on T195/T201/T205/T207 (the batch closed by the 2026-09-01 pass, S075–S089), plus three items of general feedback not tied to a specific ticket. S090's direction question was resolved the same day (reuse the celebration mechanism/visual identity, own copy). All eight were scoped into T208–T215 (see `TASKS.md`) and removed from this file: S090→T208, S091→T209, S092→T210, S093→T211, S094→T212, S095→T213, S096→T214, S097→T215._
+
 ### [S057] Enforce email uniqueness at signup with a clear message — REJECTED
 
 - **Status:** Rejected (2026-08-26)
