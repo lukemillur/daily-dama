@@ -63,6 +63,21 @@ function mergeCounts(
   return merged as GuestImportDomainCounts;
 }
 
+// T206: normalizes the `error`/`conflict` payload `runEmptyGuestImport` can
+// resolve with (see the `'paused'` branch above) into a single human-readable
+// string for `uploadFailed`'s `errorMessage`. Never throws.
+function describeGuestImportPauseError(error: unknown): string {
+  if (error instanceof Error) return error.message;
+  if (error !== null && typeof error === 'object') {
+    const candidate = error as { message?: unknown; recordId?: unknown; serverRevision?: unknown };
+    if (typeof candidate.message === 'string') return candidate.message;
+    if (typeof candidate.recordId === 'string') {
+      return `A record conflicted with data already in your account (record ${candidate.recordId}).`;
+    }
+  }
+  return 'Guest import could not be completed.';
+}
+
 export function useGuestImport(): UseGuestImportResult {
   const { identity, generation } = useIdentityHandle();
 
@@ -289,7 +304,13 @@ export function useGuestImport(): UseGuestImportResult {
           destinationUserId: destinationIdentity.userId,
           progress,
           repositories: transports,
-          cleanupReferences: state.deduplications,
+          // T206: read fresh via latestRef, never the closure-captured
+          // `state.deduplications` -- see the dependency-array comment
+          // below for why `state.deduplications` must not be a dependency
+          // of this effect (the closure value here would be stale for the
+          // very first invocation anyway, since `existingMergePrepared`
+          // only sets it after this effect has already started).
+          cleanupReferences: latestRef.current.state.deduplications,
           saveProgress: async (nextProgress) => {
             if (cancelled || latestRef.current.state.importId !== importId) return;
             latestRef.current.dispatch({ type: 'progressUpdated', importId, progress: nextProgress, now: Date.now() });
@@ -297,18 +318,61 @@ export function useGuestImport(): UseGuestImportResult {
           },
           now: () => Date.now(),
         });
-        if (cancelled || latestRef.current.state.importId !== importId || result.status !== 'completed') return;
+        if (cancelled || latestRef.current.state.importId !== importId) return;
+        // T206: `runEmptyGuestImport` never throws on an ordinary push
+        // failure or conflict -- it *resolves* with `{ status: 'paused',
+        // progress, error }` instead (see guest-import-empty-account.ts).
+        // Silently `return`ing here on any non-'completed' result (the
+        // pre-fix behavior) left the reducer sitting at 'uploading' with
+        // no terminal action ever dispatched -- the same permanent wedge
+        // as the uncaught-throw case below, just reached without an
+        // exception at all. A real `409` profile-row conflict during live
+        // verification against the local Supabase stack hit exactly this
+        // path (not the catch block), confirming it's not just a
+        // theoretical gap.
+        if (result.status !== 'completed') {
+          latestRef.current.dispatch({
+            type: 'uploadFailed',
+            importId,
+            errorMessage: describeGuestImportPauseError(result.error),
+            now: Date.now(),
+          });
+          return;
+        }
         for (const domain of SYNC_DOMAINS) {
           if (latestRef.current.state.status === 'uploading') latestRef.current.dispatch({ type: 'domainUploadSettled', importId, domain, outcome: { status: 'succeeded', errorMessage: undefined }, now: Date.now() });
         }
       } catch (error) {
         if (cancelled || latestRef.current.state.importId !== importId) return;
         const message = error instanceof Error ? error.message : 'Guest import could not be completed.';
-        latestRef.current.dispatch({ type: 'domainUploadSettled', importId, domain: 'profile', outcome: { status: 'failed', errorMessage: message }, now: Date.now() });
+        // T206: a mid-upload exception (thrown before or during
+        // readExistingAccountSnapshot/planExistingAccountMerge, or from the
+        // push executor itself) is not a single domain's outcome -- forcing
+        // it through domainUploadSettled for just 'profile' left the other
+        // 4 domains permanently 'pending', wedging the machine in
+        // 'uploading' forever (isGuestImportPendingResolution then blocks
+        // Home indefinitely, surviving reload). uploadFailed resets to
+        // idle so the render gate unblocks immediately, mirroring the
+        // existing inventoryFailed precedent.
+        latestRef.current.dispatch({ type: 'uploadFailed', importId, errorMessage: message, now: Date.now() });
       }
     })();
     return () => { cancelled = true; };
-  }, [hasHydrated, identity, state.status, state.targetKind, state.importId, state.deduplications]);
+  // T206: `state.deduplications` is deliberately NOT a dependency here --
+  // it changes mid-flight (via the `existingMergePrepared` dispatch inside
+  // this very effect's own async body), and `importStartedRef`'s guard
+  // only prevents a *second* async closure from starting, not the effect
+  // from re-running: React still calls the outgoing effect's cleanup
+  // (`cancelled = true`) before the new invocation's early return. That
+  // silently cancelled the ORIGINAL, still-in-flight closure right after
+  // it dispatched `existingMergePrepared` -- confirmed live against the
+  // local Supabase stack: the push itself succeeded, but the resulting
+  // `domainUploadSettled`/`uploadFailed` dispatch was discarded by the
+  // `cancelled` guard, wedging the machine in 'uploading' forever with no
+  // thrown exception at all. `state.progress` is excluded from these deps
+  // for the identical reason; `state.deduplications` was the one instance
+  // of this same hazard that had been missed.
+  }, [hasHydrated, identity, state.status, state.targetKind, state.importId]);
 
   const confirmImport = useCallback(() => {
     const latest = latestRef.current;

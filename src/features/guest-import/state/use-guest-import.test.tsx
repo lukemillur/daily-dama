@@ -180,6 +180,23 @@ describe('useGuestImport', () => {
   it('a nonzero cloud count yields targetKind "existing"', async () => {
     mockCountLocalGuestRecords.mockResolvedValue(localOnlyCounts());
     mockCountCloudRecords.mockResolvedValue({ status: 'succeeded', counts: { profile: 1, customTricks: 0, practiceHistory: 0, goals: 0, notes: 0 } });
+    // T206: unlike the 'empty'-target case above, the 'existing'-target
+    // upload path unconditionally calls readExistingAccountSnapshot before
+    // it ever reaches the transports.profile?.push dry-run check below --
+    // the bare `{ kind: 'fake-transports' }` stub's missing
+    // pullProfileRow/pull methods would throw a real TypeError here (this
+    // used to be silently masked by the pre-fix bug that mis-wedged any
+    // mid-upload exception in 'uploading' forever; now it correctly
+    // resets to 'idle', so this stub needs real (if empty) pull methods to
+    // freeze at the same push-check early return the 'empty' case relies on).
+    const emptyPage = async () => ({ status: 'succeeded' as const, page: { items: [] as unknown[], nextCursor: null } });
+    mockBuildGuestImportTransports.mockReturnValue({
+      profile: { pullProfileRow: async () => ({ status: 'succeeded' as const, page: { items: [], nextCursor: null } }), pullTrickStatePage: emptyPage },
+      customTricks: { pull: emptyPage },
+      practiceHistory: { pull: emptyPage },
+      goals: { pull: emptyPage },
+      notes: { pull: emptyPage },
+    });
 
     const { captured } = await mountHarness(USER_IDENTITY);
     await flush();
@@ -423,5 +440,44 @@ describe('useGuestImport: existing-account merge resolves automatically', () => 
     expect(pushedByDomain.goals).toHaveLength(1);
     expect(pushedByDomain.goals[0].recordId).toBe('goal-1');
     expect(pushedByDomain.goals[0].payload).toEqual(expect.objectContaining({ target_count: 3 }));
+  });
+
+  // T206: a mid-upload exception during readExistingAccountSnapshot (any
+  // pull failure, thrown as `new Error(target.error.message)`) must not
+  // wedge the state machine in 'uploading' forever -- pre-fix, the catch
+  // block only ever marked the 'profile' domain settled via
+  // domainUploadSettled, leaving the other 4 domains permanently 'pending'
+  // and isGuestImportPendingResolution stuck `true`, which is exactly what
+  // blanked Home. This is the regression test for that bug.
+  it('a mid-upload exception (existing-account cloud pull failure) resets to idle with an errorMessage instead of wedging in uploading', async () => {
+    mockCountLocalGuestRecords.mockResolvedValue({
+      profile: { local: 1, cloud: 0 }, customTricks: { local: 0, cloud: 0 }, practiceHistory: { local: 0, cloud: 0 },
+      goals: { local: 0, cloud: 0 }, notes: { local: 0, cloud: 0 },
+    });
+    mockCountCloudRecords.mockResolvedValue({
+      status: 'succeeded', counts: { profile: 1, customTricks: 0, practiceHistory: 0, goals: 0, notes: 0 },
+    });
+
+    const emptyPage = async () => ({ status: 'succeeded' as const, page: { items: [] as unknown[], nextCursor: null } });
+    mockBuildGuestImportTransports.mockReturnValue({
+      profile: {
+        pullProfileRow: async () => ({ status: 'failed', error: { kind: 'network', message: 'could not reach cloud profile' } }),
+        pullTrickStatePage: emptyPage,
+        push: async () => ({ status: 'succeeded' as const, row: {} }),
+      },
+      customTricks: { pull: emptyPage, push: async () => ({ status: 'succeeded' as const, row: {} }) },
+      practiceHistory: { pull: emptyPage, push: async () => ({ status: 'succeeded' as const, row: {} }) },
+      goals: { pull: emptyPage, push: async () => ({ status: 'succeeded' as const, row: {} }) },
+      notes: { pull: emptyPage, push: async () => ({ status: 'succeeded' as const, row: {} }) },
+    });
+
+    const { captured } = await mountHarness(USER_IDENTITY);
+    await flush(20);
+
+    expect(captured.result?.state.status).toBe('idle');
+    expect(captured.result?.state.errorMessage).toBe('could not reach cloud profile');
+    // Every domain must be cleared back out, not left half-'pending' --
+    // this is what the pre-fix bug got wrong.
+    expect(Object.keys(captured.result?.state.domainOutcomes ?? {})).toHaveLength(0);
   });
 });
