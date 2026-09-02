@@ -182,7 +182,7 @@ _T208–T215 come from stories S090–S097 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 - **Area:** Observability / Configuration
 - **Priority:** Medium
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** Add Sentry (`@sentry/react-native`, which covers the Expo web target as well as native) to capture uncaught exceptions and unhandled promise rejections, initialized once at app startup (e.g. `src/app/_layout.tsx` or an entry-level file). Scope this to automatic capture only — no manual `Sentry.captureException` calls added through business logic, and no new graceful-fallback error UI/boundary; both are natural follow-ups, not this task. Per this project's active platform scope (AGENTS.md), wire this for **web only** — no iOS/Android native Sentry config in this task, even though the package also supports native. The Sentry DSN is designed to be public (unlike the source-map-upload auth token, which is a real secret and out of scope here) and can live in an `EXPO_PUBLIC_SENTRY_DSN` env var following this repo's existing `EXPO_PUBLIC_*` convention (see `DEPLOYMENT_HANDOFF.md`).
 - **Exit criteria:** Per AGENTS.md's "Configuration/dependencies" verification tier — the complete app sequence (`yarn test --runInBand`, `yarn lint`, `yarn tsc --noEmit`, `yarn expo export --platform web`) passes. Additionally, a deliberately thrown test error in a running web build (dev server or a real Vercel deploy) is confirmed to actually appear in the Sentry dashboard — not just "SDK initialized without crashing."
