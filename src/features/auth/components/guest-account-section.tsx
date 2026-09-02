@@ -2,7 +2,7 @@ import { useRouter } from 'expo-router';
 import { styled } from 'styled-components/native';
 
 import { Button } from '@/components/ui/button';
-import { BodyText } from '@/components/ui/typography';
+import { BodyText, DisplayTitle } from '@/components/ui/typography';
 import { AppColors } from '@/constants/theme';
 import { useAuthState } from '@/features/auth/state/auth-provider';
 
@@ -23,7 +23,7 @@ export function GuestAccountSection() {
   return (
     <Section>
       <Divider />
-      <SectionLabel>Account</SectionLabel>
+      <Title>Account</Title>
       <Copy>
         Create an account to keep your progress backed up and sign in on other devices.
       </Copy>
@@ -44,7 +44,7 @@ export function GuestAccountSection() {
   );
 }
 
-// Local copies of Profile's own section chrome (Divider/SectionLabel), matching
+// Local copies of Profile's own section chrome (Divider/Title), matching
 // AccountSection's precedent of owning its own styles rather than importing from
 // src/app/app/profile/index.tsx, which doesn't export them.
 const Section = styled.View`
@@ -55,12 +55,8 @@ const Divider = styled.View`
   background-color: ${AppColors.ink};
   margin: 28px 0 30px;
 `;
-const SectionLabel = styled.Text`
-  color: ${({ theme }) => theme.text};
-  font-size: 11px;
-  font-weight: 900;
-  letter-spacing: 1px;
-  text-transform: uppercase;
+const Title = styled(DisplayTitle)`
+  margin-top: 10px;
 `;
 const Copy = styled(BodyText)`
   margin-top: 10px;
