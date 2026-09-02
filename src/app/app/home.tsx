@@ -1,8 +1,10 @@
-import { Link } from 'expo-router';
+import { Link, useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { StyleSheet } from 'react-native';
+import { Pressable, StyleSheet } from 'react-native';
+import { styled } from 'styled-components/native';
 
 import { Screen } from '@/components/ui/screen';
+import { BodyText } from '@/components/ui/typography';
 import { AppColors } from '@/constants/theme';
 import { useCustomTricks } from '@/features/custom-tricks/state/custom-trick-provider';
 import { DailyHome } from '@/features/home/components/daily-home';
@@ -17,7 +19,34 @@ import { usePracticeHistory } from '@/features/stats/state/practice-history-prov
 import { KENDAMA_KENTEI_TRICKS } from '@/features/tricks/data/kendama-kentei-tricks';
 import { useIdentityHandle } from '@/shared/persistence/identity-provider';
 
+// T207: a one-time signal auth-callback-screen.tsx's default branch (post-signup-email-
+// verification redirect) attaches to its /app/home redirect -- never set by sign-in-screen.tsx's
+// routine sign-in redirect. Read once on mount to show a dismissible acknowledgment banner, then
+// stripped from the URL so a refresh/back-nav doesn't re-show it.
+type HomeSearchParams = { newAccount?: string | string[] };
+
+function firstStringOrUndefined(value: string | string[] | undefined): string | undefined {
+  return typeof value === 'string' ? value : undefined;
+}
+
 export default function HomeScreen() {
+  const params = useLocalSearchParams<HomeSearchParams>();
+  const router = useRouter();
+  // Captured once via the lazy initializer -- the param is stripped from the URL right after
+  // mount (below), so re-reading params on later renders must not re-derive this.
+  const [showNewAccountBanner, setShowNewAccountBanner] = useState(
+    () => firstStringOrUndefined(params.newAccount) === '1',
+  );
+  const hasStrippedNewAccountParamRef = useRef(false);
+
+  useEffect(() => {
+    if (hasStrippedNewAccountParamRef.current) return;
+    if (firstStringOrUndefined(params.newAccount) !== '1') return;
+    hasStrippedNewAccountParamRef.current = true;
+    router.replace('/app/home');
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- one-shot strip, guarded by the ref.
+  }, [params]);
+
   const profile = useUserProfile();
   const { tricks: customTricks } = useCustomTricks();
   const { sessions } = usePracticeHistory();
@@ -98,6 +127,9 @@ export default function HomeScreen() {
       }
       edges={['top', 'left', 'right']}
       webBottomInset={24}>
+      {showNewAccountBanner ? (
+        <NewAccountBanner onDismiss={() => setShowNewAccountBanner(false)} />
+      ) : null}
       {blockingOnboardingRender ? null : profile.hasCompletedOnboarding && profile.kenteiRank ? (
         <DailyHome summary={summary} />
       ) : (
@@ -116,6 +148,53 @@ export default function HomeScreen() {
     </Screen>
   );
 }
+
+function NewAccountBanner({ onDismiss }: { readonly onDismiss: () => void }) {
+  return (
+    <BannerCard accessibilityLabel="Account verified">
+      <BannerCopy>
+        <BannerEyebrow>Welcome to Daily Dama</BannerEyebrow>
+        <BannerTitle>Your account is verified and you’re signed in.</BannerTitle>
+      </BannerCopy>
+      <BannerDismiss accessibilityLabel="Dismiss" accessibilityRole="button" onPress={onDismiss}>
+        <BannerDismissText>✕</BannerDismissText>
+      </BannerDismiss>
+    </BannerCard>
+  );
+}
+
+const BannerCard = styled.View`
+  width: 100%;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background-color: ${({ theme }) => theme.accent ?? AppColors.yellow};
+  border: 3px solid ${AppColors.ink};
+  border-radius: 6px;
+  padding: 14px 16px;
+  margin: 0 16px 12px 16px;
+`;
+const BannerCopy = styled.View`
+  flex: 1;
+`;
+const BannerEyebrow = styled(BodyText)`
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 1.4px;
+  text-transform: uppercase;
+`;
+const BannerTitle = styled(BodyText)`
+  margin-top: 4px;
+  font-weight: 700;
+`;
+const BannerDismiss = styled(Pressable)`
+  padding: 4px 8px;
+`;
+const BannerDismissText = styled(BodyText)`
+  font-size: 16px;
+  font-weight: 900;
+`;
 
 const styles = StyleSheet.create({
   devLink: {

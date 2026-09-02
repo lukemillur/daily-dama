@@ -4,6 +4,16 @@ Completed entries move here from `TASKS.md`'s `Backlog`, in the same commit that
 
 Entries keep their content as it was at completion. Don't retroactively edit a description or exit criteria after the fact; if something about a completed task turns out to be wrong or misleading, note that in a new entry or in code, not by rewriting history here.
 
+### [T207] Acknowledge a newly verified account on first arrival at Home
+
+- **Area:** Home / Authentication
+- **Priority:** Medium
+- **Status:** Done
+- **Planning:** Implementer
+- **Description:** `auth-callback-screen.tsx`'s default branch (the post-signup-email-verification redirect) and `sign-in-screen.tsx`'s redirect both land on `/app/home` via `router.replace` with no acknowledgment that the account was created and the user is signed in. Have the callback screen's default-branch redirect carry a one-time signal (e.g. a query param) that `home.tsx` reads on mount to show a dismissible success banner, then discards — this path only fires for a just-verified new account, not for `sign-in-screen.tsx`'s routine sign-in redirect, which is unaffected.
+- **Exit criteria:** `home.test.tsx` (or equivalent) passes with a case asserting the banner renders when arriving via the new-account signal and does not render on a plain mount; confirmed in-browser that completing signup + email verification shows the banner once on Home, dismissing it (or navigating away and back) does not re-show it, and a regular sign-in shows no banner.
+- **Notes:** From S089. `auth-callback-screen.tsx`'s default branch now redirects with `router.replace({ pathname: '/app/home', params: { newAccount: '1' } })` instead of the bare string target; `sign-in-screen.tsx`'s two `/app/home` redirects are untouched. `home.tsx` reads `newAccount` once via a lazy `useState` initializer (so a same-tick re-render of `useLocalSearchParams`'s fresh object identity can't re-derive it), then strips the param with a follow-up `router.replace('/app/home')` guarded by a ref so it only fires once. The banner is a small one-off dismissible card (not the `sesh.tsx` `CelebrationBanner`, which auto-dismisses and has no user-dismiss affordance) rendered above the onboarding/`DailyHome` content so it can show even mid-onboarding. New coverage in `home.test.tsx`: a plain mount shows no banner and never calls `router.replace`; mounting with the `newAccount` signal shows the banner, strips the param, and dismissing it removes it. `auth-callback-screen.test.tsx`'s three affected assertions were updated to expect the new object-shaped redirect target. `yarn tsc --noEmit` and `yarn lint` both pass; `yarn expo export --platform web` succeeds. Live-verified via a headless Playwright script against `yarn expo start --web`: a plain `/app/home` mount shows no banner; `/app/home?newAccount=1` shows it and strips the query param from the URL; clicking Dismiss hides it; reloading afterward keeps it hidden (no re-trigger).
+
 ### [T206] Fix Home rendering blank after logging into a populated account
 
 - **Area:** Home / Authentication
