@@ -172,7 +172,7 @@ _T208–T215 come from stories S090–S097 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 - **Area:** Authentication / Supabase
 - **Priority:** Medium
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Implementer
 - **Description:** `AccountSecurityScreen`'s `changeEmail` flow (`auth-provider.tsx:233`) calls `client.auth.updateUser({ email: newEmail })`, which sends GoTrue's confirm-new-email message — the only other Auth email actually reachable through the app today besides signup confirmation and password recovery. Unlike those two, it still uses Supabase's generic default copy: the hosted project's `mailer_templates_custom_contents.MAILER_TEMPLATES_EMAIL_CHANGE_CONTENT` is `false`. Add `supabase/templates/email_change.html` following `confirmation.html`/`recovery.html`'s existing pattern (same branding elements, fully inline-styled, no `<style>` block or external resources) and wire it in `config.toml` via `[auth.email.template.email_change]`, then apply it to the hosted project the same way T153.3/T195 did.
 - **Exit criteria:** Local: Mailpit receives the new template for a local email-change request, matching `confirmation.html`/`recovery.html`'s branding (cream/paper background, ink border, hard drop shadow, red uppercase eyebrow, ink-background/yellow-text button). Hosted: per `supabase/README.md`'s "Troubleshooting: Mailpit isn't proof of hosted email delivery" note, verify the *hosted* project separately — either a real `changeEmail` request's delivered message or, more directly, Resend's own delivery log for that send — not Mailpit alone.
