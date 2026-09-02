@@ -162,7 +162,7 @@ _T208–T215 come from stories S090–S097 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 - **Area:** Home / Authentication
 - **Priority:** Medium
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** Replace `home.tsx`'s locally-scoped `NewAccountBanner` (added by T207) with a full-screen, auto-dismissing acknowledgment mounted at the root layout (`src/app/_layout.tsx`), reusing `RankUpCelebrationModal`'s visual pattern (theme-derived full-bleed overlay, `OnboardingRankRevealStep`-style layout) with its own "welcome/verified" copy — not the trick-lace celebration copy or component instance. `auth-callback-screen.tsx`'s existing `newAccount=1` redirect param stays the trigger; since no route-scoped `useLocalSearchParams` read is available above `<Slot />`, the root layout reads it via `useGlobalSearchParams` and strips it the same way `home.tsx` does today.
 - **Exit criteria:** A new test at the root-layout level (or an equivalent integration test) asserts the acknowledgment overlay renders once when `newAccount=1` is present anywhere in the URL and never on a routine sign-in redirect; `home.test.tsx`'s now-removed `NewAccountBanner` cases are deleted rather than left dangling. Confirmed in-browser: completing signup + email verification through the real callback link shows the full-screen overlay regardless of what's rendered under it (Home content or onboarding), it auto-dismisses without requiring a tap, appears exactly once, and a regular sign-in shows nothing.
