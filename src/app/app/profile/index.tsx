@@ -49,7 +49,6 @@ export default function ProfileScreen() {
               </RankContext>
             </RankIdentity>
           </RankLine>
-          <AccountSection />
           <SyncStatusSection />
           <GuestAccountSection />
           <Divider />
@@ -90,6 +89,8 @@ export default function ProfileScreen() {
           >
             Send feedback
           </RetakeButton>
+          <Divider />
+          <AccountSection />
         </Content>
       </ProfileScroll>
     </Screen>

@@ -144,6 +144,27 @@ describe('ProfileScreen account section', () => {
       root.unmount();
     });
   });
+
+  it('renders the Account block after the Feedback section, as the last content block', async () => {
+    mockAuthState = {
+      status: 'authenticated',
+      session: { access_token: 'tok', user: { email: 'someone@example.com' } } as never,
+      lastEvent: 'SIGNED_IN',
+    };
+    const root = await mountProfileScreen();
+
+    const texts = collectTextInOrder(root);
+    const feedbackIndex = texts.indexOf('Send feedback');
+    const accountIndex = texts.indexOf('Account');
+
+    expect(feedbackIndex).toBeGreaterThan(-1);
+    expect(accountIndex).toBeGreaterThan(-1);
+    expect(accountIndex).toBeGreaterThan(feedbackIndex);
+
+    act(() => {
+      root.unmount();
+    });
+  });
 });
 
 describe('ProfileScreen guest account entry points', () => {
