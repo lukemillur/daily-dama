@@ -1,5 +1,5 @@
 import { Link, useRouter } from 'expo-router';
-import { useMemo } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, ScrollView } from 'react-native';
 import { styled } from 'styled-components/native';
 
@@ -8,6 +8,8 @@ import { Screen } from '@/components/ui/screen';
 import { BodyText, DisplayTitle, Eyebrow } from '@/components/ui/typography';
 import { AppColors } from '@/constants/theme';
 import { useCustomTricks } from '@/features/custom-tricks/state/custom-trick-provider';
+import { isGuestImportPendingResolution } from '@/features/guest-import/model/guest-import';
+import { useGuestImport } from '@/features/guest-import/state/use-guest-import';
 import { useRequireOnboarding } from '@/features/onboarding/state/require-onboarding';
 import { useUserProfile } from '@/features/profile/state/user-profile-provider';
 import { formatDuration } from '@/features/sesh/model/sesh';
@@ -19,9 +21,10 @@ import {
   selectRegularSessions,
   type PracticeSessionRecord,
 } from '@/features/stats/model/practice-history';
-import { usePracticeHistory } from '@/features/stats/state/practice-history-provider';
+import { usePracticeHistory, usePracticeHistorySync } from '@/features/stats/state/practice-history-provider';
 import { KENDAMA_KENTEI_TRICKS } from '@/features/tricks/data/kendama-kentei-tricks';
 import { selectAvailablePracticeTricks } from '@/features/tricks/model/trick-directory';
+import { useIdentityHandle } from '@/shared/persistence/identity-provider';
 
 export default function StatsScreen() {
   const isOnboardingComplete = useRequireOnboarding();
@@ -32,11 +35,55 @@ export default function StatsScreen() {
   const stats = aggregatePracticeStats(regularSessions);
   const neglectedTricks = useSelectNeglectedTricks(selectedTrickIds, customTricks, regularSessions);
 
+  const { identity } = useIdentityHandle();
+  const { state: guestImportState } = useGuestImport();
+  const { runSync: runPracticeHistorySync } = usePracticeHistorySync();
+
+  // T186.1-style gate: never render EmptyStats while a guest import is
+  // still inventorying/uploading/awaiting confirmation.
+  const importPending = identity.kind === 'user' && isGuestImportPendingResolution(guestImportState);
+
+  // T215: mirrors home.tsx's T199 resync effect, but targets the
+  // practiceHistory domain instead of profile. The guest import's upload
+  // phase pushes imported practice-history rows straight to the cloud
+  // practice-history repository, bypassing this component's own
+  // usePracticeHistory() reducer entirely. SyncCoordinatorProvider's
+  // login-triggered pull fires once per identity generation, before the
+  // import has finished uploading, so it never picks up the newly-imported
+  // sessions on its own. Without this explicit resync, Stats would show a
+  // false EmptyStats until a manual refresh re-triggers hydration.
+  const [isResyncingAfterImport, setIsResyncingAfterImport] = useState(false);
+  const resyncedImportIdsRef = useRef<Set<string>>(new Set());
+
+  useEffect(() => {
+    if (identity.kind !== 'user') {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setIsResyncingAfterImport(false);
+      return;
+    }
+    if (guestImportState.status !== 'completed') return;
+    const importId = guestImportState.importId;
+    if (importId === undefined) return;
+    if (resyncedImportIdsRef.current.has(importId)) return;
+    resyncedImportIdsRef.current.add(importId);
+
+    let cancelled = false;
+    setIsResyncingAfterImport(true);
+    void runPracticeHistorySync('login').finally(() => {
+      if (!cancelled) setIsResyncingAfterImport(false);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [identity, guestImportState.status, guestImportState.importId, runPracticeHistorySync]);
+
+  const blockingRender = importPending || isResyncingAfterImport;
+
   if (!isOnboardingComplete) return null;
 
   return (
     <Screen edges={['top', 'left', 'right']}>
-      {stats.sessionCount === 0 ? (
+      {blockingRender ? null : stats.sessionCount === 0 ? (
         <EmptyStats />
       ) : (
         <PopulatedStats neglectedTricks={neglectedTricks} stats={stats} />
