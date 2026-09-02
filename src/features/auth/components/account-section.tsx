@@ -62,12 +62,6 @@ export function AccountSection() {
         variant="secondary">
         Manage account security
       </SecurityLinkButton>
-      <SecurityLinkButton
-        accessibilityLabel="Delete account"
-        onPress={() => router.push("/app/profile/account/delete")}
-        variant="secondary">
-        Delete account
-      </SecurityLinkButton>
       {state.errorCategory ? <ErrorText>{LOG_OUT_ERROR_COPY[state.errorCategory]}</ErrorText> : null}
       <LogOutButton
         accessibilityLabel="Log out"

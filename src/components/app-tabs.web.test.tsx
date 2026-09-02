@@ -27,6 +27,11 @@ jest.mock('@/features/profile/state/user-profile-provider', () => ({
   useUserProfile: () => mockUseUserProfile(),
 }));
 
+let mockAuthState: { status: string } = { status: 'guest' };
+jest.mock('@/features/auth/state/auth-provider', () => ({
+  useAuthState: () => mockAuthState,
+}));
+
 jest.mock('@/features/landing/components/landing-page', () => ({
   LandingPage: () => {
     const { Text: RNText } = jest.requireActual('react-native') as typeof import('react-native');
@@ -48,7 +53,7 @@ const customThemeProfile: UserProfile = {
   themeAccentColor: '#654321',
 };
 
-function pressByVisibleText(root: ReactTestRenderer, text: string) {
+function pressableAncestorByVisibleText(root: ReactTestRenderer, text: string) {
   const [textNode] = root.root.findAll((node) => node.props.children === text);
   if (!textNode) throw new Error('No node found with text: ' + text);
   let current: typeof textNode | null = textNode;
@@ -56,7 +61,11 @@ function pressByVisibleText(root: ReactTestRenderer, text: string) {
     current = current.parent;
   }
   if (!current) throw new Error('No pressable ancestor found for text: ' + text);
-  current.props.onPress();
+  return current;
+}
+
+function pressByVisibleText(root: ReactTestRenderer, text: string) {
+  pressableAncestorByVisibleText(root, text).props.onPress();
 }
 
 function findByVisibleText(root: ReactTestRenderer, text: string) {
@@ -94,6 +103,7 @@ beforeEach(() => {
   mockUseUserProfile.mockReturnValue(defaultProfile);
   mockSearchParams = {};
   mockPathname = '/app/profile';
+  mockAuthState = { status: 'guest' };
 });
 
 describe('CustomTabList leave-app footer bar', () => {
@@ -153,6 +163,36 @@ describe('CustomTabList leave-app footer bar', () => {
 
     expect(customFooterStyle.backgroundColor).not.toBe(defaultFooterStyle.backgroundColor);
     expect(customLinkStyle.color).not.toBe(defaultLinkStyle.color);
+  });
+});
+
+describe('CustomTabList footer bar Delete account link', () => {
+  it('does not render "Delete account" when not authenticated', async () => {
+    mockAuthState = { status: 'guest' };
+    const root = await mountTabList();
+
+    expect(findByVisibleText(root, 'Delete account').length).toBe(0);
+  });
+
+  it('renders "Delete account" right-aligned in the footer bar when authenticated', async () => {
+    mockAuthState = { status: 'authenticated' };
+    const root = await mountTabList();
+
+    const footerBar = findFooterBar(root);
+    expect(footerBar.findAllByProps({ children: 'Delete account' }).length).toBeGreaterThan(0);
+
+    const pressable = pressableAncestorByVisibleText(root, 'Delete account');
+    const flattenedLinkStyle = [pressable.props.style({ pressed: false })].flat();
+    expect(flattenedLinkStyle).toEqual(expect.arrayContaining([expect.objectContaining({ marginLeft: 'auto' })]));
+  });
+
+  it('navigates to the account deletion route when "Delete account" is pressed', async () => {
+    mockAuthState = { status: 'authenticated' };
+    const root = await mountTabList();
+
+    act(() => pressByVisibleText(root, 'Delete account'));
+
+    expect(mockRouter.push).toHaveBeenCalledWith('/app/profile/account/delete');
   });
 });
 
