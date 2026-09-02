@@ -14,6 +14,7 @@ import { ThemedText } from './themed-text';
 import { ThemedView } from './themed-view';
 
 import { MaxContentWidth, Spacing } from '@/constants/theme';
+import { useAuthState } from '@/features/auth/state/auth-provider';
 import { LANDING_ARRIVAL_FROM_APP, LANDING_ARRIVAL_PARAM } from '@/features/landing/state/landing-navigation';
 import { deriveAutomaticTextColor, useResolvedTheme } from '@/features/profile/state/use-resolved-theme';
 import { useUserProfile } from '@/features/profile/state/user-profile-provider';
@@ -104,27 +105,43 @@ export function CustomTabList({ hidden, children, ...props }: TabListProps & { r
  */
 function AppFooterBar() {
   const router = useRouter();
+  const authState = useAuthState();
   const theme = useResolvedTheme();
   const backgroundColor = theme.buttonBackground;
   const textColor = deriveAutomaticTextColor(backgroundColor, backgroundColor);
+  const isAuthenticated = authState.status === 'authenticated';
 
-  const handlePress = () => {
+  const handleLeaveAppPress = () => {
     router.push({
       pathname: '/',
       params: { [LANDING_ARRIVAL_PARAM]: LANDING_ARRIVAL_FROM_APP },
     });
   };
 
+  const handleDeleteAccountPress = () => {
+    router.push('/app/profile/account/delete');
+  };
+
   return (
     <View testID="app-footer-bar" style={[styles.footerBar, { backgroundColor }]}>
       <Pressable
         accessibilityRole="link"
-        onPress={handlePress}
+        onPress={handleLeaveAppPress}
         style={({ pressed }) => [styles.leaveAppLink, pressed && styles.pressed]}>
         <ThemedText type="small" style={{ color: textColor }}>
           Leave app
         </ThemedText>
       </Pressable>
+      {isAuthenticated && (
+        <Pressable
+          accessibilityRole="link"
+          onPress={handleDeleteAccountPress}
+          style={({ pressed }) => [styles.deleteAccountLink, pressed && styles.pressed]}>
+          <ThemedText type="small" style={{ color: textColor }}>
+            Delete account
+          </ThemedText>
+        </Pressable>
+      )}
     </View>
   );
 }
@@ -199,6 +216,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.three,
   },
   leaveAppLink: {
+    padding: Spacing.one,
+  },
+  deleteAccountLink: {
+    marginLeft: 'auto',
     padding: Spacing.one,
   },
   pressed: {
