@@ -3035,3 +3035,13 @@ Completed entries live in [TASKS_DONE.md](TASKS_DONE.md) — not part of the top
 - **Description:** `GuestAccountSection`'s "Account" heading (`SectionLabel`, `guest-account-section.tsx`) still uses an 11px uppercase eyebrow style; change it to the same `styled(DisplayTitle)` `Title` style `AccountSection` already uses since T205, so both login states render "Account" at the same size/weight.
 - **Exit criteria:** `guest-account-section.test.tsx` passes with the heading using the larger title style; confirmed in-browser that a signed-out Profile visitor sees "Account" at the same size/weight as "Put it to the test." and "Select a preset." Met: `guest-account-section.test.tsx` and `account-section.test.tsx` both pass. `GuestAccountSection`'s "Account" heading now uses `styled(DisplayTitle)` with `margin-top: 10px`, byte-identical to `AccountSection`'s `Title`. Browser-verified with Playwright against the local Expo web dev server (guest identity seeded with a completed onboarding profile in localStorage to reach `/app/profile` as a signed-out visitor): computed styles for "Account", "Put it to the test.", and "Select a preset" are identical (`fontSize: 42px`, `fontWeight: 900`, `lineHeight: 44px`).
 - **Notes:** From S091. Purely typographic, mirrors T205's fix on the authenticated side.
+
+### [T210] Move the first-Sesh inline signup invite above the session metrics
+
+- **Area:** Sesh
+- **Priority:** Low
+- **Status:** Done
+- **Planning:** Implementer
+- **Description:** In `sesh.tsx`'s wrap-up screen, move the first-occurrence `<InlineSignupInvite />` (currently rendered near the bottom of `ActiveContent`, after the note prompt) to render immediately after the trick name (`DisplayTitle`)/`SequenceSteps`, before the `SummaryGrid` metrics.
+- **Exit criteria:** `sesh.test.tsx` passes with a case asserting the inline invite renders after the trick name and before the summary metrics on the first-ever regular Sesh's wrap-up screen. Met: added "renders the first-occurrence inline invite after the trick name and before the summary metrics (T210)" to `sesh.test.tsx`; full file passes. `InlineSignupInvite` now renders in `CompletedSesh` immediately after `SequenceSteps` (right after `DisplayTitle`) and before `SummaryGrid`. Browser-verified with Playwright against the local Expo web dev server (guest identity seeded with a completed onboarding profile in localStorage, a trick focused via Tricks, a Sesh run to first-ever completion): wrap-up screen text order is trick name, then "Save this sesh for good.", then "TOTAL TIME".
+- **Notes:** From S092. Placement-only; invite eligibility and the every-5th-Sesh overlay (T211) are unaffected.
