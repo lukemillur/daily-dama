@@ -155,16 +155,6 @@ _T182–T193 come from stories S063–S074 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 _T194–T206 come from stories S075–S088 in [BACKLOG_STORIES.md](BACKLOG_STORIES.md) (the user's 2026-09-01 QA pass on T182–T193). T194 (S075), T196 (S077), T198 (S079 partial + S088), T202 (S083), T203 (S084), T204 (S085), and T205 (S086) are `Implementer` — local, known-pattern changes. T201 combines S081 and S082 into one ticket because both edit the same `PostSeshSignupInvite`/`InviteOverlay` block in `sesh.tsx`; splitting them would mean two PRs colliding on the same lines for no benefit. T195 (S076) and T197 (S078) are `Required`: tracing `supabase/README.md:281` ("This config is local-only. It does not touch the hosted Supabase project") shows T192's and T188's local-stack verification never actually reached whatever environment the user's real signups and deletions hit, so both need a fresh diagnosis pass against that real environment rather than a known local fix reapplied. T199 (S079 remainder) and T206 (S087) are `Required` for the same class of reason as T188/T189 before them: both are post-auth-identity-change render/redirect races (guest→user after import for T199, sign-in to an existing populated account for T206) that need runtime tracing through `UserProfileProvider`'s hydration and the sync coordinator before a fix can be written, not a known pattern applied locally. T200 (S080) is `Required` because it adds a new pre-onboarding entry point into routing (`landing-cta.tsx`/`use-cached-onboarding-status.ts`) that several prior tickets (T112.5, T145, T170, T189) have already shown is easy to get wrong around hydration and redirect ordering. T204 depends on T203 landing first (both touch `AccountSection`'s contents, T203 removing its "Delete account" button and T204 relocating what remains).
 
-### [T197] Fix account deletion still returning a 503 in the real environment
-
-- **Area:** Authentication / Supabase
-- **Priority:** High
-- **Status:** Not started
-- **Planning:** Required
-- **Description:** T188 diagnosed and fixed a 503 caused by a stale **local** Supabase stack, and verified the fix against a freshly cycled local stack. The user reports the 503 still happens. Given T195's parallel finding that T192's local-stack verification didn't hold in the real environment, first confirm whether this is the same local-vs-real gap (i.e., the real environment the user hits was never actually fixed) before re-diagnosing from scratch.
-- **Exit criteria:** A real disposable account, in the environment the user actually tests against, is deleted successfully through the app UI (no 503) and can no longer sign in afterward.
-- **Notes:** From S078. Coordinate with T195 on identifying the real target environment first — resolving that question likely un-blocks both tickets at once.
-
 ### [T202] Prompt for a trick note in the open-ended Sesh flow
 
 - **Area:** Sesh
