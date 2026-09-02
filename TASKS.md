@@ -198,16 +198,6 @@ _T208–T215 come from stories S090–S097 in [BACKLOG_STORIES.md](BACKLOG_STORI
 - **Exit criteria:** `sesh.test.tsx` passes with cases confirming the overlay's background color tracks at least two different theme presets' accent colors; confirmed in-browser that the wrap-up content behind the overlay is clearly legible under the new opacity.
 - **Notes:** From S093. The theme-preset system already exposes `theme.accent` to styled-components; no new theming capability needed.
 
-### [T212] Make the branded confirmation email fix actually hold for real signups
-
-- **Area:** Authentication / Supabase
-- **Priority:** High
-- **Status:** Not started
-- **Planning:** Required
-- **Description:** T195's `PATCH /v1/projects/{ref}/config/auth` fix to the hosted project's confirmation-email template passed live verification on 2026-09-01, but a real signup now again receives raw/unstyled HTML. Diagnose why the hosted config didn't hold — a leading, unconfirmed hypothesis is that the fix was applied as a one-off runtime PATCH rather than through the repository's declarative `supabase/config.toml`, so a later config push or project change reverted it — and land a fix durable enough to survive normal operations, not just a repeated PATCH.
-- **Exit criteria:** A real signup, in the environment the user actually tests against, receives the branded confirmation email (cream/paper background, ink border, hard drop shadow, red uppercase eyebrow, ink-background/yellow-text button) in the actual inbox — verified a second time. `supabase/RESEND_DNS_AUTH.md` documents what caused the previous fix to not hold, so a third recurrence doesn't require re-diagnosing from scratch.
-- **Notes:** From S094. `Required` for the same reason T195/T197 were: needs a runtime diagnosis pass against the real hosted environment, not a known local fix reapplied. "Why didn't the first fix hold" is part of the exit criteria, not optional.
-
 ### [T213] Replace the landing page's inline auth buttons with a scroll-aware header bar
 
 - **Area:** Landing
@@ -237,3 +227,51 @@ _T208–T215 come from stories S090–S097 in [BACKLOG_STORIES.md](BACKLOG_STORI
 - **Description:** `StatsScreen` (`src/app/app/stats/index.tsx`) reads `usePracticeHistory().sessions` synchronously and renders `EmptyStats` whenever `sessions.length === 0`, with no check for a pending guest-to-account data merge — unlike `home.tsx`, which already gates rendering on `isGuestImportPendingResolution(guestImportState)` for exactly this class of race (T199/T206). Diagnose the render-order race for Stats specifically and gate it the same way, so a guest who signs up with existing local data doesn't see a false empty state before a manual refresh.
 - **Exit criteria:** A new integration test (mirroring `home.guest-import-upload-failure.test.tsx`'s approach) confirms `StatsScreen` does not render `EmptyStats` while a guest import is still resolving, and renders the correct populated stats once it resolves without requiring a remount. Confirmed against a real guest-to-account signup with existing local practice data that Stats shows that history immediately, with no manual refresh needed.
 - **Notes:** From S097. `Required` for the same class of reason as T188/T189/T199/T206: an identity-change/hydration-timing race needs runtime tracing, not a known pattern applied blindly — confirm whether gating on `isGuestImportPendingResolution` alone is sufficient for Stats, or whether Stats' `usePracticeHistory()` hook has its own independent timing gap from Home's.
+
+### [T216] Add a branded template for the email-change confirmation
+
+- **Area:** Authentication / Supabase
+- **Priority:** Medium
+- **Status:** Not started
+- **Planning:** Implementer
+- **Description:** `AccountSecurityScreen`'s `changeEmail` flow (`auth-provider.tsx:233`) calls `client.auth.updateUser({ email: newEmail })`, which sends GoTrue's confirm-new-email message — the only other Auth email actually reachable through the app today besides signup confirmation and password recovery. Unlike those two, it still uses Supabase's generic default copy: the hosted project's `mailer_templates_custom_contents.MAILER_TEMPLATES_EMAIL_CHANGE_CONTENT` is `false`. Add `supabase/templates/email_change.html` following `confirmation.html`/`recovery.html`'s existing pattern (same branding elements, fully inline-styled, no `<style>` block or external resources) and wire it in `config.toml` via `[auth.email.template.email_change]`, then apply it to the hosted project the same way T153.3/T195 did.
+- **Exit criteria:** Local: Mailpit receives the new template for a local email-change request, matching `confirmation.html`/`recovery.html`'s branding (cream/paper background, ink border, hard drop shadow, red uppercase eyebrow, ink-background/yellow-text button). Hosted: per `supabase/README.md`'s "Troubleshooting: Mailpit isn't proof of hosted email delivery" note, verify the *hosted* project separately — either a real `changeEmail` request's delivered message or, more directly, Resend's own delivery log for that send — not Mailpit alone.
+- **Notes:** Not from a BACKLOG_STORIES story — scoped directly during T212's investigation (2026-09-02), which surveyed every GoTrue email type this app can currently trigger. Invite, magic link, reauthentication, and the various notification emails (password/email/phone-changed, MFA enrolled/unenrolled, identity linked/unlinked) are excluded: none of them are reachable by any current app flow (no admin-invite, OTP, MFA, phone auth, or OAuth identity linking), and the password-changed notification is disabled outright in `config.toml`, not just unbranded. If any of those flows is added later, it needs this same treatment.
+
+### [T217] Add an in-app feedback channel backed by a new `api.feedback` table
+
+- **Area:** Feedback / Supabase
+- **Priority:** Medium
+- **Status:** Not started
+- **Description:** Umbrella for T217.1 (schema) and T217.2 (UI). Give users a way to send feedback without exposing a real email address to the public internet. Originally scoped as a Resend Inbound `feedback@dailydama.com` address forwarded to a personal inbox, but rejected during scoping (2026-09-02): inbound receiving shares Resend account quota with the Supabase Auth transactional email already wired up (`supabase/RESEND_DNS_AUTH.md`), so a spammed public address could exhaust the daily/monthly send cap and break real signup confirmation emails — a materially worse failure than losing feedback. A Supabase-backed table sidesteps this: spam becomes low-stakes noisy rows the owner deletes, with no shared blast radius and no DNS/MX setup.
+- **Notes:** No exit criteria of its own; done when both children are `Done`.
+
+### [T217.1] Add `api.feedback` table with anon insert-only RLS
+
+- **Area:** Persistence / Supabase
+- **Priority:** Medium
+- **Status:** Not started
+- **Planning:** Required
+- **Description:** New migration adding `api.feedback` (`id uuid primary key default gen_random_uuid()`, `created_at timestamptz not null default now()`, `name text`, `email text`, `message text not null`), following the `api`/`private` schema convention established in `supabase/migrations/20260822191737_create_private_and_exposed_schemas.sql`. Grant `anon` `INSERT` only (no `SELECT`/`UPDATE`/`DELETE`) via an RLS policy with a `WITH CHECK` clause enforcing non-empty, length-bounded `message` (e.g. ≤2000 chars), length-bounded `name`/`email` (e.g. ≤100/≤254 chars), and a basic email-format check on `email` when present. This is a deliberate, narrow, documented exception to that migration's "anon gets nothing here or anywhere else" comment — update or annotate that comment so it reflects the real, current policy rather than going stale.
+- **Exit criteria:** Per `supabase/README.md`'s dedicated suite (not the app Jest suite): migration applies cleanly against the local CLI stack; manual REST verification with the anon key confirms (a) a well-formed insert succeeds, (b) `SELECT`/`UPDATE`/`DELETE` with the anon key are rejected, (c) an insert violating a length/format constraint is rejected, and (d) `service_role`/direct DB access can read back a row inserted in (a), confirming it actually persisted.
+- **Notes:** Blocks T217.2. Service-role/server-side insertion was considered and rejected during scoping: it would bypass RLS entirely for that connection, giving a bug in application code a much larger blast radius than an RLS-scoped anon grant, for no actual increase in the anonymous caller's capability.
+
+### [T217.2] Build the standalone feedback route and submission form
+
+- **Area:** Feedback / navigation
+- **Priority:** Medium
+- **Status:** Not started
+- **Planning:** Implementer
+- **Description:** New standalone Expo Router route (not nested under Profile) with a form (optional `name`, optional `email`, required `message`) that inserts directly into `api.feedback` via the Supabase client and the anon key — no server route or service-role key, per T217.1's RLS grant. Link to the route from Profile (a simple "Send feedback" entry point); Profile itself stays a placeholder otherwise, per AGENTS.md. Show a success state after a successful insert and an error state on failure. No rate limiting — deliberately deferred (see T217 notes on why spam here is low-stakes).
+- **Exit criteria:** A route/component test confirms the form renders all three fields, keeps submit disabled until `message` is non-empty, and shows success/error state after a mocked insert resolves/rejects; full `yarn tsc --noEmit`; confirmed in-browser (web) that submitting the form inserts a real row visible via Supabase Studio, the route is reachable at its path, and the 320px five-link web nav is unaffected (this route isn't part of it).
+- **Notes:** Depends on T217.1. Submitting feedback requires no login — anonymous and authenticated users both hit the same anon-key insert path.
+
+### [T218] Add Sentry error tracking for the web build
+
+- **Area:** Observability / Configuration
+- **Priority:** Medium
+- **Status:** Not started
+- **Planning:** Required
+- **Description:** Add Sentry (`@sentry/react-native`, which covers the Expo web target as well as native) to capture uncaught exceptions and unhandled promise rejections, initialized once at app startup (e.g. `src/app/_layout.tsx` or an entry-level file). Scope this to automatic capture only — no manual `Sentry.captureException` calls added through business logic, and no new graceful-fallback error UI/boundary; both are natural follow-ups, not this task. Per this project's active platform scope (AGENTS.md), wire this for **web only** — no iOS/Android native Sentry config in this task, even though the package also supports native. The Sentry DSN is designed to be public (unlike the source-map-upload auth token, which is a real secret and out of scope here) and can live in an `EXPO_PUBLIC_SENTRY_DSN` env var following this repo's existing `EXPO_PUBLIC_*` convention (see `DEPLOYMENT_HANDOFF.md`).
+- **Exit criteria:** Per AGENTS.md's "Configuration/dependencies" verification tier — the complete app sequence (`yarn test --runInBand`, `yarn lint`, `yarn tsc --noEmit`, `yarn expo export --platform web`) passes. Additionally, a deliberately thrown test error in a running web build (dev server or a real Vercel deploy) is confirmed to actually appear in the Sentry dashboard — not just "SDK initialized without crashing."
+- **Notes:** `Required` because this is both a dependency/configuration change and a version-sensitive Expo integration unfamiliar to this codebase — consult the installed Expo version's own docs per AGENTS.md's top-level instruction rather than assuming an API shape. Source-map upload for de-minified stack traces on the Vercel static export is deliberately deferred — baseline capture (message, breadcrumbs, file/component names) ships first; readable production stack traces can be a follow-up once it's clear the tool is actually in use.
