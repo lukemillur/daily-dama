@@ -172,7 +172,7 @@ _T208–T215 come from stories S090–S097 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 - **Area:** Profile
 - **Priority:** Low
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Implementer
 - **Description:** `GuestAccountSection`'s "Account" heading (`SectionLabel`, `guest-account-section.tsx`) still uses an 11px uppercase eyebrow style; change it to the same `styled(DisplayTitle)` `Title` style `AccountSection` already uses since T205, so both login states render "Account" at the same size/weight.
 - **Exit criteria:** `guest-account-section.test.tsx` passes with the heading using the larger title style; confirmed in-browser that a signed-out Profile visitor sees "Account" at the same size/weight as "Put it to the test." and "Select a preset."
