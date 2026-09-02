@@ -168,16 +168,6 @@ _T208–T215 come from stories S090–S097 in [BACKLOG_STORIES.md](BACKLOG_STORI
 - **Exit criteria:** A new test at the root-layout level (or an equivalent integration test) asserts the acknowledgment overlay renders once when `newAccount=1` is present anywhere in the URL and never on a routine sign-in redirect; `home.test.tsx`'s now-removed `NewAccountBanner` cases are deleted rather than left dangling. Confirmed in-browser: completing signup + email verification through the real callback link shows the full-screen overlay regardless of what's rendered under it (Home content or onboarding), it auto-dismisses without requiring a tap, appears exactly once, and a regular sign-in shows nothing.
 - **Notes:** From S090. Direction confirmed with the user 2026-09-02: reuse the presentation *mechanism* (full-screen overlay, theme-derived styling per `RankUpCelebrationModal`'s precedent) and *visual identity*, not the trick-lace copy or component instance. Pick an auto-dismiss duration that doesn't reintroduce T145-class flicker risk.
 
-### [T210] Move the first-Sesh inline signup invite above the session metrics
-
-- **Area:** Sesh
-- **Priority:** Low
-- **Status:** In progress
-- **Planning:** Implementer
-- **Description:** In `sesh.tsx`'s wrap-up screen, move the first-occurrence `<InlineSignupInvite />` (currently rendered near the bottom of `ActiveContent`, after the note prompt) to render immediately after the trick name (`DisplayTitle`)/`SequenceSteps`, before the `SummaryGrid` metrics.
-- **Exit criteria:** `sesh.test.tsx` passes with a case asserting the inline invite renders after the trick name and before the summary metrics on the first-ever regular Sesh's wrap-up screen.
-- **Notes:** From S092. Placement-only; invite eligibility and the every-5th-Sesh overlay (T211) are unaffected.
-
 ### [T211] Make the every-5th-Sesh invite overlay theme-matched and lighter
 
 - **Area:** Sesh

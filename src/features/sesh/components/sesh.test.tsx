@@ -802,6 +802,28 @@ describe('CompletedSesh signup invite', () => {
     expect(inviteInsideScroll.length).toBeGreaterThan(0);
   });
 
+  it('renders the first-occurrence inline invite after the trick name and before the summary metrics (T210)', async () => {
+    const root = await mountWithNoteProvider(
+      <CompletedSesh
+        summary={summary}
+        isFirstLace={false}
+        showSignupInvite={true}
+        signupInviteIsFirstOccurrence={true}
+        onReset={noop}
+        onRepeat={noop}
+      />,
+    );
+
+    const text = JSON.stringify(root.toJSON());
+    const trickNameIndex = text.indexOf(summary.trick.name);
+    const inviteIndex = text.indexOf('Save this sesh for good.');
+    const metricsIndex = text.indexOf('Total time');
+
+    expect(trickNameIndex).toBeGreaterThan(-1);
+    expect(inviteIndex).toBeGreaterThan(trickNameIndex);
+    expect(metricsIndex).toBeGreaterThan(inviteIndex);
+  });
+
   it('renders the inline invite\'s "Sign up" as a real link to /auth/sign-up (T201)', async () => {
     const root = await mountWithNoteProvider(
       <CompletedSesh
