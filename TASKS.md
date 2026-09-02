@@ -158,7 +158,7 @@ _T194–T206 come from stories S075–S088 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 - **Area:** Profile
 - **Priority:** Low
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Implementer
 - **Description:** `AccountSection`'s "Account" label uses a local 11px uppercase eyebrow-style `SectionLabel`, while `profile/index.tsx`'s other section titles ("Put it to the test.," "Select a preset.") use the larger `DisplayTitle`-derived `Title` style. Change `AccountSection`'s "Account" heading to match that larger style.
 - **Exit criteria:** `account-section.test.tsx` passes; confirmed in-browser that "Account" renders at the same size/weight as "Put it to the test." and "Select a preset."
