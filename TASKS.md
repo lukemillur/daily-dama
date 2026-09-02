@@ -190,7 +190,7 @@ _T208–T215 come from stories S090–S097 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 - **Area:** Persistence / Supabase
 - **Priority:** Medium
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** New migration adding `api.feedback` (`id uuid primary key default gen_random_uuid()`, `created_at timestamptz not null default now()`, `name text`, `email text`, `message text not null`), following the `api`/`private` schema convention established in `supabase/migrations/20260822191737_create_private_and_exposed_schemas.sql`. Grant `anon` `INSERT` only (no `SELECT`/`UPDATE`/`DELETE`) via an RLS policy with a `WITH CHECK` clause enforcing non-empty, length-bounded `message` (e.g. ≤2000 chars), length-bounded `name`/`email` (e.g. ≤100/≤254 chars), and a basic email-format check on `email` when present. This is a deliberate, narrow, documented exception to that migration's "anon gets nothing here or anywhere else" comment — update or annotate that comment so it reflects the real, current policy rather than going stale.
 - **Exit criteria:** Per `supabase/README.md`'s dedicated suite (not the app Jest suite): migration applies cleanly against the local CLI stack; manual REST verification with the anon key confirms (a) a well-formed insert succeeds, (b) `SELECT`/`UPDATE`/`DELETE` with the anon key are rejected, (c) an insert violating a length/format constraint is rejected, and (d) `service_role`/direct DB access can read back a row inserted in (a), confirming it actually persisted.
