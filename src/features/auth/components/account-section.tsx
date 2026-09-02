@@ -3,7 +3,7 @@ import { useEffect, useRef } from "react";
 import { styled } from "styled-components/native";
 
 import { Button } from "@/components/ui/button";
-import { BodyText } from "@/components/ui/typography";
+import { BodyText, DisplayTitle } from "@/components/ui/typography";
 import { AppColors } from "@/constants/theme";
 import type { AuthErrorCategory } from "@/features/auth/model/auth-errors";
 import { useAuthState } from "@/features/auth/state/auth-provider";
@@ -54,7 +54,7 @@ export function AccountSection() {
   return (
     <Section>
       <Divider />
-      <SectionLabel>Account</SectionLabel>
+      <Title>Account</Title>
       <AccountEmail>{authState.session.user.email ?? "Your account"}</AccountEmail>
       <SecurityLinkButton
         accessibilityLabel="Manage account security"
@@ -83,7 +83,7 @@ export function AccountSection() {
   );
 }
 
-// Local copies of Profiles own section chrome (Divider/SectionLabel) rather than importing
+// Local copies of Profiles own section chrome (Divider/Title) rather than importing
 // from src/app/app/profile/index.tsx, which does not export them -- this keeps AccountSection
 // self-contained, matching sign-in-screen.tsxs precedent of owning its own styles.
 const Section = styled.View`
@@ -94,12 +94,8 @@ const Divider = styled.View`
   background-color: ${AppColors.ink};
   margin: 28px 0 30px;
 `;
-const SectionLabel = styled.Text`
-  color: ${({ theme }) => theme.text};
-  font-size: 11px;
-  font-weight: 900;
-  letter-spacing: 1px;
-  text-transform: uppercase;
+const Title = styled(DisplayTitle)`
+  margin-top: 10px;
 `;
 const AccountEmail = styled(BodyText)`
   margin-top: 10px;

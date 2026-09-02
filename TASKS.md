@@ -154,16 +154,6 @@ _T182–T193 come from stories S063–S074 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 _T194–T206 come from stories S075–S088 in [BACKLOG_STORIES.md](BACKLOG_STORIES.md) (the user's 2026-09-01 QA pass on T182–T193). T194 (S075), T196 (S077), T198 (S079 partial + S088), T202 (S083), T203 (S084), T204 (S085), and T205 (S086) are `Implementer` — local, known-pattern changes. T201 combines S081 and S082 into one ticket because both edit the same `PostSeshSignupInvite`/`InviteOverlay` block in `sesh.tsx`; splitting them would mean two PRs colliding on the same lines for no benefit. T195 (S076) and T197 (S078) are `Required`: tracing `supabase/README.md:281` ("This config is local-only. It does not touch the hosted Supabase project") shows T192's and T188's local-stack verification never actually reached whatever environment the user's real signups and deletions hit, so both need a fresh diagnosis pass against that real environment rather than a known local fix reapplied. T199 (S079 remainder) and T206 (S087) are `Required` for the same class of reason as T188/T189 before them: both are post-auth-identity-change render/redirect races (guest→user after import for T199, sign-in to an existing populated account for T206) that need runtime tracing through `UserProfileProvider`'s hydration and the sync coordinator before a fix can be written, not a known pattern applied locally. T200 (S080) is `Required` because it adds a new pre-onboarding entry point into routing (`landing-cta.tsx`/`use-cached-onboarding-status.ts`) that several prior tickets (T112.5, T145, T170, T189) have already shown is easy to get wrong around hydration and redirect ordering. T204 depends on T203 landing first (both touch `AccountSection`'s contents, T203 removing its "Delete account" button and T204 relocating what remains).
 
-### [T205] Size the "Account" section title to match other Profile section titles
-
-- **Area:** Profile
-- **Priority:** Low
-- **Status:** Not started
-- **Planning:** Implementer
-- **Description:** `AccountSection`'s "Account" label uses a local 11px uppercase eyebrow-style `SectionLabel`, while `profile/index.tsx`'s other section titles ("Put it to the test.," "Select a preset.") use the larger `DisplayTitle`-derived `Title` style. Change `AccountSection`'s "Account" heading to match that larger style.
-- **Exit criteria:** `account-section.test.tsx` passes; confirmed in-browser that "Account" renders at the same size/weight as "Put it to the test." and "Select a preset."
-- **Notes:** From S086. Purely typographic; `AccountSection`'s own small eyebrow-style labels elsewhere (if any) are unaffected unless they're the same element.
-
 ### [T206] Fix Home rendering blank after logging into a populated account
 
 - **Area:** Home / Authentication
