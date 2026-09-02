@@ -168,16 +168,6 @@ _T208–T215 come from stories S090–S097 in [BACKLOG_STORIES.md](BACKLOG_STORI
 - **Exit criteria:** A new test at the root-layout level (or an equivalent integration test) asserts the acknowledgment overlay renders once when `newAccount=1` is present anywhere in the URL and never on a routine sign-in redirect; `home.test.tsx`'s now-removed `NewAccountBanner` cases are deleted rather than left dangling. Confirmed in-browser: completing signup + email verification through the real callback link shows the full-screen overlay regardless of what's rendered under it (Home content or onboarding), it auto-dismisses without requiring a tap, appears exactly once, and a regular sign-in shows nothing.
 - **Notes:** From S090. Direction confirmed with the user 2026-09-02: reuse the presentation *mechanism* (full-screen overlay, theme-derived styling per `RankUpCelebrationModal`'s precedent) and *visual identity*, not the trick-lace copy or component instance. Pick an auto-dismiss duration that doesn't reintroduce T145-class flicker risk.
 
-### [T213] Replace the landing page's inline auth buttons with a scroll-aware header bar
-
-- **Area:** Landing
-- **Priority:** Medium
-- **Status:** In progress
-- **Planning:** Implementer
-- **Description:** Replace `LandingAuthCta`'s current inline placement inside the landing page's scrollable hero content with a minimal, persistent header bar (styled consistently with the rest of the app) holding the same sign up/sign in entry points; hide that header bar once the visitor scrolls past a threshold near the top of the page.
-- **Exit criteria:** `landing-page.test.tsx` (or equivalent) passes with cases asserting the header bar renders sign up/sign in controls above the scrollable content and hides once scroll position passes the threshold; confirmed in-browser that the inline hero buttons are gone and the header bar's show/hide behaves correctly while scrolling.
-- **Notes:** From S095. `LandingAuthCta`'s existing guest-only gating (`authState.status !== 'guest'` → render nothing) carries over unchanged to the new header bar.
-
 ### [T214] Give trick notes cards the same title treatment as trick goal cards
 
 - **Area:** Trick notes

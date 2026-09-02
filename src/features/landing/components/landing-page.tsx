@@ -1,6 +1,6 @@
 import { Image } from 'expo-image';
 import { useEffect, useRef, useState, type ComponentRef } from 'react';
-import { Platform, ScrollView, useWindowDimensions } from 'react-native';
+import { Platform, ScrollView, useWindowDimensions, type NativeSyntheticEvent, type NativeScrollEvent } from 'react-native';
 import Animated, { FadeInUp } from 'react-native-reanimated';
 import { styled } from 'styled-components/native';
 
@@ -9,6 +9,8 @@ import { BodyText, DisplayTitle, Eyebrow } from '@/components/ui/typography';
 import { AppColors, Radii } from '@/constants/theme';
 import { LandingAuthCta } from '@/features/landing/components/landing-auth-cta';
 import { LandingCta } from '@/features/landing/components/landing-cta';
+
+export const HEADER_BAR_SCROLL_HIDE_THRESHOLD = 24;
 
 interface Feature {
   readonly heading: string;
@@ -122,10 +124,20 @@ export function LandingPage() {
   const { width } = useWindowDimensions();
   const isWebLayout = Platform.OS === 'web' && width >= 768;
   const screenshots = isWebLayout ? WEB_SCREENSHOTS : MOBILE_SCREENSHOTS;
+  const [headerVisible, setHeaderVisible] = useState(true);
+
+  const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const scrollY = event.nativeEvent.contentOffset.y;
+    setHeaderVisible(scrollY <= HEADER_BAR_SCROLL_HIDE_THRESHOLD);
+  };
 
   return (
     <Screen background={AppColors.paper}>
-      <LandingScroll contentContainerStyle={{ paddingBottom: 80 }}>
+      <LandingAuthCta visible={headerVisible} />
+      <LandingScroll
+        contentContainerStyle={{ paddingBottom: 80 }}
+        onScroll={handleScroll}
+        scrollEventThrottle={16}>
         <Content testID="landing-content" $isWebLayout={isWebLayout}>
           {/* <LandingHero /> */}
           <Eyebrow>Why Daily Dama</Eyebrow>
@@ -138,8 +150,6 @@ export function LandingPage() {
           </Lede>
 
           <LandingCta />
-
-          <LandingAuthCta />
 
           <FeatureList>
             {FEATURES.map((feature) => (

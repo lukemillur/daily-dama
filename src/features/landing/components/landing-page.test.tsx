@@ -9,7 +9,7 @@ import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 const ReactNative = require('react-native') as typeof import('react-native');
 
 import type { AuthState } from '@/features/auth/model/auth-state';
-import { LandingPage, MOBILE_SCREENSHOTS, WEB_SCREENSHOTS } from '@/features/landing/components/landing-page';
+import { HEADER_BAR_SCROLL_HIDE_THRESHOLD, LandingPage, MOBILE_SCREENSHOTS, WEB_SCREENSHOTS } from '@/features/landing/components/landing-page';
 import type { CachedOnboardingStatus } from '@/features/profile/persistence/read-cached-onboarding-status';
 
 const mockRouter = { push: jest.fn() };
@@ -133,6 +133,65 @@ describe('LandingPage sign-up/sign-in entry points', () => {
 
     expect(findAllByLabel(root, 'Sign up').length).toBe(0);
     expect(findAllByLabel(root, 'Sign in').length).toBe(0);
+  });
+});
+
+describe('LandingPage header bar', () => {
+  function findHeaderBar(root: ReactTestRenderer) {
+    return root.root.findAllByProps({ testID: 'landing-header-bar' })[0]!;
+  }
+
+  function findScrollView(root: ReactTestRenderer) {
+    return root.root.findAllByType(ReactNative.ScrollView)[0]!;
+  }
+
+  async function scrollTo(root: ReactTestRenderer, y: number) {
+    await act(async () => {
+      findScrollView(root).props.onScroll({ nativeEvent: { contentOffset: { y } } });
+    });
+  }
+
+  it('renders the header bar with sign up/sign in controls above the scrollable content', async () => {
+    const root = await mount();
+
+    const orderedMarkers = root.root.findAll(
+      (node) => node.props.testID === 'landing-header-bar' || node.props.testID === 'landing-content',
+    );
+    const testIds = orderedMarkers.map((node) => node.props.testID as string);
+
+    expect(testIds.indexOf('landing-header-bar')).toBeGreaterThanOrEqual(0);
+    expect(testIds.indexOf('landing-content')).toBeGreaterThanOrEqual(0);
+    expect(testIds.indexOf('landing-header-bar')).toBeLessThan(testIds.indexOf('landing-content'));
+
+    const headerBar = findHeaderBar(root);
+    const signUp = headerBar.findAll((node) => node.props.accessibilityLabel === 'Sign up');
+    const signIn = headerBar.findAll((node) => node.props.accessibilityLabel === 'Sign in');
+    expect(signUp.length).toBeGreaterThan(0);
+    expect(signIn.length).toBeGreaterThan(0);
+  });
+
+  it('shows the header bar while near the top of the scroll position', async () => {
+    const root = await mount();
+
+    expect(findHeaderBar(root).props.pointerEvents).toBe('auto');
+  });
+
+  it('hides the header bar once scroll position passes the threshold', async () => {
+    const root = await mount();
+
+    await scrollTo(root, HEADER_BAR_SCROLL_HIDE_THRESHOLD + 40);
+
+    expect(findHeaderBar(root).props.pointerEvents).toBe('none');
+  });
+
+  it('shows the header bar again once scroll position returns near the top', async () => {
+    const root = await mount();
+
+    await scrollTo(root, HEADER_BAR_SCROLL_HIDE_THRESHOLD + 40);
+    expect(findHeaderBar(root).props.pointerEvents).toBe('none');
+
+    await scrollTo(root, 0);
+    expect(findHeaderBar(root).props.pointerEvents).toBe('auto');
   });
 });
 
