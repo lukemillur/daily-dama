@@ -158,7 +158,7 @@ _T194–T206 come from stories S075–S088 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 - **Area:** Home / Authentication
 - **Priority:** High
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** Logging into an existing, data-populated account redirects to Home, but nothing renders — and a manual refresh doesn't fix it either. This needs runtime diagnosis (not a known fix) through the post-sign-in identity-change path: `UserProfileProvider`/practice-history hydration timing, whether the sync coordinator's initial pull has settled before Home reads its data, and whether the blank render is a silent failure rather than genuinely empty state.
 - **Exit criteria:** Signing into a real, existing account with practice history/tricks/goals data lands on a fully rendered Home screen showing that data, both on the initial post-login redirect and after a manual refresh — verified end-to-end against a real account.
