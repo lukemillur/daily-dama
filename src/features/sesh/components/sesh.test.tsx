@@ -928,6 +928,15 @@ describe('CompletedSesh note prompt', () => {
     landings: [],
   };
 
+  const openEndedSummary: SeshSummary = {
+    trick: TRICK,
+    plan: createOpenEndedSeshPlan(),
+    startedAt: 0,
+    endedAt: 5000,
+    durationMs: 5000,
+    landings: [landing(1000)],
+  };
+
   it('shows laced copy for a timed sesh with at least one landing', async () => {
     const root = await mountWithNoteProvider(
       <CompletedSesh summary={lacedSummary} isFirstLace={false} onReset={noop} onRepeat={noop} />,
@@ -946,6 +955,14 @@ describe('CompletedSesh note prompt', () => {
     const text = JSON.stringify(root.toJSON());
     expect(text).toContain("Didn't land it this time.");
     expect(text).not.toContain('Landed it.');
+  });
+
+  it('shows the note prompt for an open-ended sesh, matching the timed sesh', async () => {
+    const root = await mountWithNoteProvider(
+      <CompletedSesh summary={openEndedSummary} isFirstLace={false} onReset={noop} onRepeat={noop} />,
+    );
+
+    expect(findByAccessibilityLabel(root, 'Add a note').length).toBeGreaterThan(0);
   });
 
   it.each([

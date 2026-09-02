@@ -155,16 +155,6 @@ _T182–T193 come from stories S063–S074 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 _T194–T206 come from stories S075–S088 in [BACKLOG_STORIES.md](BACKLOG_STORIES.md) (the user's 2026-09-01 QA pass on T182–T193). T194 (S075), T196 (S077), T198 (S079 partial + S088), T202 (S083), T203 (S084), T204 (S085), and T205 (S086) are `Implementer` — local, known-pattern changes. T201 combines S081 and S082 into one ticket because both edit the same `PostSeshSignupInvite`/`InviteOverlay` block in `sesh.tsx`; splitting them would mean two PRs colliding on the same lines for no benefit. T195 (S076) and T197 (S078) are `Required`: tracing `supabase/README.md:281` ("This config is local-only. It does not touch the hosted Supabase project") shows T192's and T188's local-stack verification never actually reached whatever environment the user's real signups and deletions hit, so both need a fresh diagnosis pass against that real environment rather than a known local fix reapplied. T199 (S079 remainder) and T206 (S087) are `Required` for the same class of reason as T188/T189 before them: both are post-auth-identity-change render/redirect races (guest→user after import for T199, sign-in to an existing populated account for T206) that need runtime tracing through `UserProfileProvider`'s hydration and the sync coordinator before a fix can be written, not a known pattern applied locally. T200 (S080) is `Required` because it adds a new pre-onboarding entry point into routing (`landing-cta.tsx`/`use-cached-onboarding-status.ts`) that several prior tickets (T112.5, T145, T170, T189) have already shown is easy to get wrong around hydration and redirect ordering. T204 depends on T203 landing first (both touch `AccountSection`'s contents, T203 removing its "Delete account" button and T204 relocating what remains).
 
-### [T202] Prompt for a trick note in the open-ended Sesh flow
-
-- **Area:** Sesh
-- **Priority:** Medium
-- **Status:** Not started
-- **Planning:** Implementer
-- **Description:** `shouldPromptSeshNote` (`src/features/sesh/model/sesh.ts:247`) currently returns true only for `summary.plan.kind === 'timed'`, with a comment explicitly documenting open-ended exclusion as "an explicit scoping decision, not an oversight." The user has now asked for parity: open-ended Seshes should prompt for a note the same way timed Seshes do.
-- **Exit criteria:** `sesh.test.ts`'s (or the model test file's) `shouldPromptSeshNote` cases and `sesh.test.tsx` pass with an open-ended-Sesh case asserting the note prompt appears, matching the existing timed-Sesh case.
-- **Notes:** From S083. Update `shouldPromptSeshNote`'s own doc comment, since the "explicit scoping decision" it currently documents is being reversed by this ticket.
-
 ### [T203] Move "Delete account" into the Profile screen's footer bar
 
 - **Area:** Profile / navigation shell
