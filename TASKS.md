@@ -190,7 +190,7 @@ _T208–T215 come from stories S090–S097 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 - **Area:** Feedback / navigation
 - **Priority:** Medium
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Implementer
 - **Description:** New standalone Expo Router route (not nested under Profile) with a form (optional `name`, optional `email`, required `message`) that inserts directly into `api.feedback` via the Supabase client and the anon key — no server route or service-role key, per T217.1's RLS grant. Link to the route from Profile (a simple "Send feedback" entry point); Profile itself stays a placeholder otherwise, per AGENTS.md. Show a success state after a successful insert and an error state on failure. No rate limiting — deliberately deferred (see T217 notes on why spam here is low-stakes).
 - **Exit criteria:** A route/component test confirms the form renders all three fields, keeps submit disabled until `message` is non-empty, and shows success/error state after a mocked insert resolves/rejects; full `yarn tsc --noEmit`; confirmed in-browser (web) that submitting the form inserts a real row visible via Supabase Studio, the route is reachable at its path, and the 320px five-link web nav is unaffected (this route isn't part of it).
