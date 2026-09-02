@@ -172,7 +172,7 @@ _T208–T215 come from stories S090–S097 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 - **Area:** Trick notes
 - **Priority:** Low
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Implementer
 - **Description:** `NoteCard` (`trick-notes-screen.tsx`) has no trick-name heading today — only a small date label and note body. Add the trick name as a large title on the right side of the card, matching `GoalCard`'s `GoalHeaderRow`/`GoalTrickName` pattern in `trick-goals-screen.tsx`. `Note` already carries a `trickName` snapshot field, so no model change is needed.
 - **Exit criteria:** `trick-notes-screen.test.tsx` passes with a case asserting a note card renders its `trickName` as a large title on the right side of the card; confirmed in-browser that trick notes cards visually match the trick goal card's title placement and size.
