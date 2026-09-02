@@ -158,7 +158,7 @@ _T194–T206 come from stories S075–S088 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 - **Area:** Profile
 - **Priority:** Medium
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Implementer
 - **Description:** `profile/index.tsx` currently renders `<AccountSection />` immediately after the rank summary, ahead of Kentei assessment, theme presets/picker, and streak settings. Move it to render after the Feedback section, as the last content block on the screen, for a signed-in user.
 - **Exit criteria:** `profile/index.test.tsx` (or an equivalent screen test) passes, asserting the Account block renders after the Feedback section in the signed-in case; confirmed in-browser. Guest-facing layout (`GuestAccountSection`, `SyncStatusSection`, `GuestImportPreview`'s removal per T198) is unaffected.
