@@ -186,16 +186,6 @@ _T208–T215 come from stories S090–S097 in [BACKLOG_STORIES.md](BACKLOG_STORI
 - **Description:** Umbrella for T217.1 (schema) and T217.2 (UI). Give users a way to send feedback without exposing a real email address to the public internet. Originally scoped as a Resend Inbound `feedback@dailydama.com` address forwarded to a personal inbox, but rejected during scoping (2026-09-02): inbound receiving shares Resend account quota with the Supabase Auth transactional email already wired up (`supabase/RESEND_DNS_AUTH.md`), so a spammed public address could exhaust the daily/monthly send cap and break real signup confirmation emails — a materially worse failure than losing feedback. A Supabase-backed table sidesteps this: spam becomes low-stakes noisy rows the owner deletes, with no shared blast radius and no DNS/MX setup.
 - **Notes:** No exit criteria of its own; done when both children are `Done`.
 
-### [T217.1] Add `api.feedback` table with anon insert-only RLS
-
-- **Area:** Persistence / Supabase
-- **Priority:** Medium
-- **Status:** Not started
-- **Planning:** Required
-- **Description:** New migration adding `api.feedback` (`id uuid primary key default gen_random_uuid()`, `created_at timestamptz not null default now()`, `name text`, `email text`, `message text not null`), following the `api`/`private` schema convention established in `supabase/migrations/20260822191737_create_private_and_exposed_schemas.sql`. Grant `anon` `INSERT` only (no `SELECT`/`UPDATE`/`DELETE`) via an RLS policy with a `WITH CHECK` clause enforcing non-empty, length-bounded `message` (e.g. ≤2000 chars), length-bounded `name`/`email` (e.g. ≤100/≤254 chars), and a basic email-format check on `email` when present. This is a deliberate, narrow, documented exception to that migration's "anon gets nothing here or anywhere else" comment — update or annotate that comment so it reflects the real, current policy rather than going stale.
-- **Exit criteria:** Per `supabase/README.md`'s dedicated suite (not the app Jest suite): migration applies cleanly against the local CLI stack; manual REST verification with the anon key confirms (a) a well-formed insert succeeds, (b) `SELECT`/`UPDATE`/`DELETE` with the anon key are rejected, (c) an insert violating a length/format constraint is rejected, and (d) `service_role`/direct DB access can read back a row inserted in (a), confirming it actually persisted.
-- **Notes:** Blocks T217.2. Service-role/server-side insertion was considered and rejected during scoping: it would bypass RLS entirely for that connection, giving a bug in application code a much larger blast radius than an RLS-scoped anon grant, for no actual increase in the anonymous caller's capability.
-
 ### [T217.2] Build the standalone feedback route and submission form
 
 - **Area:** Feedback / navigation
