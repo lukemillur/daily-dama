@@ -178,24 +178,6 @@ _T208–T215 come from stories S090–S097 in [BACKLOG_STORIES.md](BACKLOG_STORI
 - **Exit criteria:** Local: Mailpit receives the new template for a local email-change request, matching `confirmation.html`/`recovery.html`'s branding (cream/paper background, ink border, hard drop shadow, red uppercase eyebrow, ink-background/yellow-text button). Hosted: per `supabase/README.md`'s "Troubleshooting: Mailpit isn't proof of hosted email delivery" note, verify the *hosted* project separately — either a real `changeEmail` request's delivered message or, more directly, Resend's own delivery log for that send — not Mailpit alone.
 - **Notes:** Not from a BACKLOG_STORIES story — scoped directly during T212's investigation (2026-09-02), which surveyed every GoTrue email type this app can currently trigger. Invite, magic link, reauthentication, and the various notification emails (password/email/phone-changed, MFA enrolled/unenrolled, identity linked/unlinked) are excluded: none of them are reachable by any current app flow (no admin-invite, OTP, MFA, phone auth, or OAuth identity linking), and the password-changed notification is disabled outright in `config.toml`, not just unbranded. If any of those flows is added later, it needs this same treatment.
 
-### [T217] Add an in-app feedback channel backed by a new `api.feedback` table
-
-- **Area:** Feedback / Supabase
-- **Priority:** Medium
-- **Status:** Not started
-- **Description:** Umbrella for T217.1 (schema) and T217.2 (UI). Give users a way to send feedback without exposing a real email address to the public internet. Originally scoped as a Resend Inbound `feedback@dailydama.com` address forwarded to a personal inbox, but rejected during scoping (2026-09-02): inbound receiving shares Resend account quota with the Supabase Auth transactional email already wired up (`supabase/RESEND_DNS_AUTH.md`), so a spammed public address could exhaust the daily/monthly send cap and break real signup confirmation emails — a materially worse failure than losing feedback. A Supabase-backed table sidesteps this: spam becomes low-stakes noisy rows the owner deletes, with no shared blast radius and no DNS/MX setup.
-- **Notes:** No exit criteria of its own; done when both children are `Done`.
-
-### [T217.2] Build the standalone feedback route and submission form
-
-- **Area:** Feedback / navigation
-- **Priority:** Medium
-- **Status:** Not started
-- **Planning:** Implementer
-- **Description:** New standalone Expo Router route (not nested under Profile) with a form (optional `name`, optional `email`, required `message`) that inserts directly into `api.feedback` via the Supabase client and the anon key — no server route or service-role key, per T217.1's RLS grant. Link to the route from Profile (a simple "Send feedback" entry point); Profile itself stays a placeholder otherwise, per AGENTS.md. Show a success state after a successful insert and an error state on failure. No rate limiting — deliberately deferred (see T217 notes on why spam here is low-stakes).
-- **Exit criteria:** A route/component test confirms the form renders all three fields, keeps submit disabled until `message` is non-empty, and shows success/error state after a mocked insert resolves/rejects; full `yarn tsc --noEmit`; confirmed in-browser (web) that submitting the form inserts a real row visible via Supabase Studio, the route is reachable at its path, and the 320px five-link web nav is unaffected (this route isn't part of it).
-- **Notes:** Depends on T217.1. Submitting feedback requires no login — anonymous and authenticated users both hit the same anon-key insert path.
-
 ### [T218] Add Sentry error tracking for the web build
 
 - **Area:** Observability / Configuration
