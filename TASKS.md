@@ -159,7 +159,7 @@ _T194–T206 come from stories S075–S088 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 - **Area:** Sesh
 - **Priority:** Medium
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Implementer
 - **Description:** `shouldPromptSeshNote` (`src/features/sesh/model/sesh.ts:247`) currently returns true only for `summary.plan.kind === 'timed'`, with a comment explicitly documenting open-ended exclusion as "an explicit scoping decision, not an oversight." The user has now asked for parity: open-ended Seshes should prompt for a note the same way timed Seshes do.
 - **Exit criteria:** `sesh.test.ts`'s (or the model test file's) `shouldPromptSeshNote` cases and `sesh.test.tsx` pass with an open-ended-Sesh case asserting the note prompt appears, matching the existing timed-Sesh case.
