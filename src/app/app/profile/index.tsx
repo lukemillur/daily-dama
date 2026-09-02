@@ -1,6 +1,6 @@
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import { Linking, ScrollView, TextInput } from "react-native";
+import { ScrollView, TextInput } from "react-native";
 import { styled } from "styled-components/native";
 
 import { Button } from "@/components/ui/button";
@@ -80,13 +80,7 @@ export default function ProfileScreen() {
             Daily Dama is a work in progress. Bug reports, trick corrections,
             and feature requests all help.
           </Copy>
-          <RetakeButton
-            onPress={() =>
-              Linking.openURL(
-                "mailto:test@gmail.com?subject=Daily%20Dama%20feedback",
-              )
-            }
-          >
+          <RetakeButton onPress={() => router.push("/feedback")}>
             Send feedback
           </RetakeButton>
           <Divider />
