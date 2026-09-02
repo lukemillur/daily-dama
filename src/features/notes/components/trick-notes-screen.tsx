@@ -86,6 +86,10 @@ function NoteRow({ note, onEdit }: { readonly note: Note; readonly onEdit: () =>
   if (confirmingDelete) {
     return (
       <NoteCard>
+        <NoteHeaderRow>
+          <NoteMeta>{formatPracticeDate(note.createdAt)}</NoteMeta>
+          <NoteTrickName numberOfLines={2}>{note.trickName}</NoteTrickName>
+        </NoteHeaderRow>
         <NoteBody>Delete this note? This cannot be undone.</NoteBody>
         <NoteActions>
           <NoteAction
@@ -110,7 +114,10 @@ function NoteRow({ note, onEdit }: { readonly note: Note; readonly onEdit: () =>
 
   return (
     <NoteCard>
-      <NoteMeta>{formatPracticeDate(note.createdAt)}</NoteMeta>
+      <NoteHeaderRow>
+        <NoteMeta>{formatPracticeDate(note.createdAt)}</NoteMeta>
+        <NoteTrickName numberOfLines={2}>{note.trickName}</NoteTrickName>
+      </NoteHeaderRow>
       <NoteBody>{note.body}</NoteBody>
       <NoteActions>
         <NoteAction accessibilityLabel="Edit note" accessibilityRole="button" onPress={onEdit}>
@@ -191,7 +198,14 @@ const Introduction = styled(BodyText)`max-width: 580px; margin-top: 16px;`;
 const AddButton = styled(Button)`align-self: flex-start; margin-top: 26px;`;
 const NoteList = styled.View`gap: 12px; margin-top: 28px;`;
 const NoteCard = styled.View`background-color: ${AppColors.paper}; border: 2px solid ${AppColors.ink}; padding: 16px;`;
+const NoteHeaderRow = styled.View`flex-direction: row; align-items: flex-start; justify-content: space-between; gap: 14px;`;
 const NoteMeta = styled.Text`color: ${AppColors.red}; font-size: 11px; font-weight: 900; letter-spacing: 0.8px; text-transform: uppercase;`;
+const NoteTrickName = styled(DisplayTitle)`
+  flex-shrink: 1;
+  font-size: 28px;
+  line-height: 30px;
+  text-align: right;
+`;
 const NoteBody = styled.Text`color: ${AppColors.ink}; font-size: 16px; font-weight: 650; line-height: 23px; margin-top: 8px;`;
 const NoteActions = styled.View`flex-direction: row; gap: 14px; margin-top: 12px;`;
 const NoteAction = styled(Pressable)`min-height: 36px; justify-content: center;`;
