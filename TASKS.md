@@ -162,7 +162,7 @@ _T207 comes from story S089 in [BACKLOG_STORIES.md](BACKLOG_STORIES.md) (a 2026-
 
 - **Area:** Home / Authentication
 - **Priority:** Medium
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Implementer
 - **Description:** `auth-callback-screen.tsx`'s default branch (the post-signup-email-verification redirect) and `sign-in-screen.tsx`'s redirect both land on `/app/home` via `router.replace` with no acknowledgment that the account was created and the user is signed in. Have the callback screen's default-branch redirect carry a one-time signal (e.g. a query param) that `home.tsx` reads on mount to show a dismissible success banner, then discards — this path only fires for a just-verified new account, not for `sign-in-screen.tsx`'s routine sign-in redirect, which is unaffected.
 - **Exit criteria:** `home.test.tsx` (or equivalent) passes with a case asserting the banner renders when arriving via the new-account signal and does not render on a plain mount; confirmed in-browser that completing signup + email verification shows the banner once on Home, dismissing it (or navigating away and back) does not re-show it, and a regular sign-in shows no banner.
