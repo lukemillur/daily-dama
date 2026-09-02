@@ -159,7 +159,7 @@ _T194–T206 come from stories S075–S088 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 - **Area:** Profile / navigation shell
 - **Priority:** Medium
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Implementer
 - **Description:** `AccountSection` (`src/features/auth/components/account-section.tsx`) currently renders "Delete account" as one of three stacked buttons. `AppFooterBar` (`src/components/app-tabs.web.tsx`, shown only on `/app/profile`) currently holds a single left-aligned "Leave app" link with no auth check. Add a right-aligned "Delete account" link to that footer bar, gated to authenticated users only (mirroring `AccountSection`'s own `authState.status !== 'authenticated'` guard), navigating to the existing `/app/profile/account/delete` route; remove the button from `AccountSection`.
 - **Exit criteria:** `app-tabs.web.test.tsx` and `account-section.test.tsx` pass, including a case asserting the footer bar shows "Delete account" right-aligned only when authenticated, and that it navigates to the existing deletion flow; `account-section.test.tsx` confirms the button no longer renders there.
