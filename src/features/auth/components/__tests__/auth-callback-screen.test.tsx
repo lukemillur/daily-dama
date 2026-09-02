@@ -117,7 +117,7 @@ describe('AuthCallbackScreen', () => {
     expect(mockExchangeCodeForSession).toHaveBeenCalledTimes(1);
     expect(mockExchangeCodeForSession).toHaveBeenCalledWith('valid-confirmation-code');
     expect(mockReplace).toHaveBeenCalledTimes(1);
-    expect(mockReplace).toHaveBeenCalledWith('/app/home');
+    expect(mockReplace).toHaveBeenCalledWith({ pathname: '/app/home', params: { newAccount: '1' } });
     expect(mockTrackAuthEvent).toHaveBeenCalledWith('auth_callback_success');
   });
 
@@ -150,7 +150,7 @@ describe('AuthCallbackScreen', () => {
     await mount();
 
     expect(mockReplace).toHaveBeenCalledTimes(1);
-    expect(mockReplace).toHaveBeenCalledWith('/app/home');
+    expect(mockReplace).toHaveBeenCalledWith({ pathname: '/app/home', params: { newAccount: '1' } });
   });
 
   it('shows mid-flow guidance (not an error) and does not exchange when only a message param is present', async () => {
@@ -171,7 +171,7 @@ describe('AuthCallbackScreen', () => {
     await mount();
 
     expect(mockReplace).toHaveBeenCalledTimes(1);
-    expect(mockReplace).toHaveBeenCalledWith('/app/home');
+    expect(mockReplace).toHaveBeenCalledWith({ pathname: '/app/home', params: { newAccount: '1' } });
   });
 
   it('shows error copy and never exchanges when the code param is missing', async () => {

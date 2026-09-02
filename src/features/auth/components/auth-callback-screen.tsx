@@ -135,7 +135,10 @@ export function AuthCallbackScreen() {
       } else if (redirectType === 'recovery') {
         router.replace('/auth/reset-password');
       } else {
-        router.replace('/app/home');
+        // Default branch: only fires for a just-verified new account (signup email
+        // confirmation), never for sign-in-screen.tsx's routine sign-in redirect. Carries a
+        // one-time signal so home.tsx can acknowledge the new account, then discards it.
+        router.replace({ pathname: '/app/home', params: { newAccount: '1' } });
       }
     })();
     // Deliberately depend on the whole params object (not just its extracted fields): expo-router
