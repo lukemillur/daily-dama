@@ -780,6 +780,50 @@ describe('CompletedSesh signup invite', () => {
     expect(JSON.stringify(root.toJSON())).toContain(summary.trick.name);
   });
 
+  it('derives the translucent overlay background from theme.accent across theme presets (T211)', async () => {
+    const themeA: DefaultTheme = {
+      background: '#123456',
+      accent: '#abcdef',
+      text: '#fedcba',
+      textMuted: '#997755',
+      buttonBackground: '#111111',
+      buttonBackgroundSecondary: '#222222',
+    };
+    const themeB: DefaultTheme = {
+      background: '#000000',
+      accent: '#33aa77',
+      text: '#ffffff',
+      textMuted: '#888888',
+      buttonBackground: '#444444',
+      buttonBackgroundSecondary: '#555555',
+    };
+
+    for (const theme of [themeA, themeB]) {
+      const root = await mountWithNoteProvider(
+        <StyledThemeProvider theme={theme}>
+          <CompletedSesh
+            summary={summary}
+            isFirstLace={false}
+            showSignupInvite={true}
+            signupInviteIsFirstOccurrence={false}
+            onReset={noop}
+            onRepeat={noop}
+          />
+        </StyledThemeProvider>,
+      );
+
+      const overlay = findStyledByAccessibilityLabel(root, 'Guest signup invitation');
+      const r = parseInt(theme.accent.slice(1, 3), 16);
+      const g = parseInt(theme.accent.slice(3, 5), 16);
+      const b = parseInt(theme.accent.slice(5, 7), 16);
+      expect(overlay?.props.style?.backgroundColor).toBe(`rgba(${r}, ${g}, ${b}, 0.35)`);
+
+      act(() => {
+        root.unmount();
+      });
+    }
+  });
+
   it('renders the invite inline within the wrap-up scroll content when signupInviteIsFirstOccurrence is true (T201)', async () => {
     const root = await mountWithNoteProvider(
       <CompletedSesh

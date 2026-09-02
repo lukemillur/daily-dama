@@ -78,6 +78,19 @@ export const AppColors = {
   borderMuted: '#d8cfb7',
 } as const;
 
+/**
+ * Converts a 6-digit hex color (e.g. `#f4c94d`) into an `rgba(...)` string at the given opacity.
+ * Used to derive translucent overlays from theme colors (e.g. `theme.accent`) that are otherwise
+ * only ever supplied as opaque hex strings.
+ */
+export function hexToRgba(hex: string, alpha: number): string {
+  const normalized = hex.replace('#', '');
+  const r = parseInt(normalized.substring(0, 2), 16);
+  const g = parseInt(normalized.substring(2, 4), 16);
+  const b = parseInt(normalized.substring(4, 6), 16);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
 export const Radii = {
   control: 4,
   panel: 6,
