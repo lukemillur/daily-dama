@@ -1,5 +1,6 @@
+import { useAudioPlayer } from 'expo-audio';
 import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
-import { Link } from 'expo-router';
+import { Link, useRouter } from 'expo-router';
 import { useEffect, useLayoutEffect, useMemo, useReducer, useRef, useState, type ReactNode } from 'react';
 import { Animated, Pressable, ScrollView, TextInput } from 'react-native';
 import { styled } from 'styled-components/native';
@@ -42,11 +43,14 @@ import {
   type SeshSummary,
 } from '@/features/sesh/model/sesh';
 import { formatKenteiStanding, isTrickSummary, type PracticeTrick } from '@/features/tricks/model/trick';
+import type { AuthStatus } from '@/features/auth/model/auth-state';
 import {
   createPracticeSessionRecordId,
   getPersonalBest,
   hasPriorLaceForTrick,
   isFirstLaceForTrick,
+  isRegularSessionInviteEligible,
+  selectRegularSessions,
   type PracticeSessionOrigin,
   type PracticeSessionRecord,
 } from '@/features/stats/model/practice-history';
@@ -70,6 +74,11 @@ interface SeshProps {
    * mirrors `MultiTrickSeshProps.origin` for structural consistency.
    */
   readonly origin?: PracticeSessionOrigin;
+  /**
+   * Supplied by the route file from `useAuthState()`; omitted (as in every
+   * existing test) means the guest signup invite never renders.
+   */
+  readonly authStatus?: AuthStatus;
 }
 
 export function Sesh({
@@ -79,6 +88,7 @@ export function Sesh({
   directPracticeTrickId,
   selectedTrickIds,
   origin,
+  authStatus,
 }: SeshProps) {
   const [state, dispatch] = useReducer(
     seshReducer,
@@ -92,12 +102,16 @@ export function Sesh({
   const { setLastSesh } = useUserProfileActions();
   const { notes } = useNotes();
   const recordedSummaryId = useRef<string | undefined>(undefined);
+  const timerCuePlayer = useAudioPlayer(require('@/assets/audio/sesh-timer-complete.wav'));
+  const timerElapsedTransitionRef = useRef(false);
   const [personalBest, setPersonalBest] = useState<number | undefined>(undefined);
   const [liveChallengeEnabled, setLiveChallengeEnabled] = useState(false);
   const [firstLaceCelebration, setFirstLaceCelebration] = useState(false);
   const [hadPriorLaceAtSeshStart, setHadPriorLaceAtSeshStart] = useState(false);
   const [goalBaselines, setGoalBaselines] = useState<readonly GoalProgress[]>([]);
   const [justAchievedGoals, setJustAchievedGoals] = useState<readonly Goal[]>([]);
+  const [showSignupInvite, setShowSignupInvite] = useState(false);
+  const [signupInviteIsFirstOccurrence, setSignupInviteIsFirstOccurrence] = useState(false);
   const practiceTricks = useMemo(
     () => selectSeshPracticeTricks(availableTricks, selectedTrickIds, preferredTrickId),
     [availableTricks, preferredTrickId, selectedTrickIds],
@@ -130,6 +144,11 @@ export function Sesh({
     if (recordedSummaryId.current === summaryId) return;
 
     recordedSummaryId.current = summaryId;
+    if (timerElapsedTransitionRef.current) {
+      timerCuePlayer.seekTo(0);
+      timerCuePlayer.play();
+    }
+    timerElapsedTransitionRef.current = false;
     setFirstLaceCelebration(isFirstLaceForTrick(sessions, state.summary));
     setJustAchievedGoals(
       selectGoalsForTrick(goals, state.summary.trick.id).filter((goal) => {
@@ -142,8 +161,11 @@ export function Sesh({
         return isGoalNewlyAchieved(goal, baseline.current, contribution);
       }),
     );
+    const inviteEligible = authStatus === 'guest' && isRegularSessionInviteEligible(sessions, origin);
+    setShowSignupInvite(inviteEligible);
+    setSignupInviteIsFirstOccurrence(inviteEligible && selectRegularSessions(sessions).length === 0);
     recordCompletedSesh(state.summary, origin);
-  }, [goals, origin, recordCompletedSesh, sessions, state]);
+  }, [authStatus, goals, origin, recordCompletedSesh, sessions, state, timerCuePlayer]);
 
   useEffect(() => {
     if (!shouldKeepScreenAwake(state.status)) return;
@@ -233,7 +255,10 @@ export function Sesh({
         onPause={() => dispatch({ type: 'seshPaused', now: Date.now() })}
         onResume={() => dispatch({ type: 'seshResumed', now: Date.now() })}
         onEnd={() => dispatch({ type: 'seshEnded', now: Date.now() })}
-        onTimerElapsed={() => dispatch({ type: 'timerElapsed', now: Date.now() })}
+        onTimerElapsed={() => {
+          timerElapsedTransitionRef.current = true;
+          dispatch({ type: 'timerElapsed', now: Date.now() });
+        }}
       />
     );
   }
@@ -246,10 +271,14 @@ export function Sesh({
       sessions={sessions}
       isFirstLace={firstLaceCelebration}
       justAchievedGoals={justAchievedGoals}
+      showSignupInvite={showSignupInvite}
+      signupInviteIsFirstOccurrence={signupInviteIsFirstOccurrence}
       onReset={() => {
         setFirstLaceCelebration(false);
         setHadPriorLaceAtSeshStart(false);
         setJustAchievedGoals([]);
+        setShowSignupInvite(false);
+        setSignupInviteIsFirstOccurrence(false);
         dispatch({ type: 'seshReset' });
       }}
       onRepeat={() => {
@@ -261,6 +290,8 @@ export function Sesh({
         setLiveChallengeEnabled(false);
         setFirstLaceCelebration(false);
         setJustAchievedGoals([]);
+        setShowSignupInvite(false);
+        setSignupInviteIsFirstOccurrence(false);
         setHadPriorLaceAtSeshStart(hasPriorLaceForTrick(sessions, state.summary.trick.id));
         setGoalBaselines(
           selectGoalsForTrick(goals, state.summary.trick.id).map((goal) =>
@@ -280,7 +311,7 @@ function EmptyState() {
       <Eyebrow>Nothing queued</Eyebrow>
       <DisplayTitle>Build your{`\n`}practice list.</DisplayTitle>
       <BodyCopy>Select at least one trick in Tricks before starting a focused sesh.</BodyCopy>
-      <Link href="/tricks" asChild>
+      <Link href="/app/tricks" asChild>
         <PrimaryButton accessibilityRole="link">
           Choose tricks
         </PrimaryButton>
@@ -346,7 +377,7 @@ function TrickPicker({
   const hasAnyPersonalBest = personalBestsByTrickId.size > 0;
 
   return (
-    <ScrollArea contentContainerStyle={{ padding: 24, paddingBottom: 140 }}>
+    <ScrollArea contentContainerStyle={{ padding: 24 }}>
       <PickerContent>
         {isDirectPractice ? (
           <>
@@ -441,7 +472,7 @@ function TrickPicker({
           </ChallengeField>
         ) : null}
         {isDirectPractice ? null : (
-          <Link href="/sesh/multi-trick" asChild>
+          <Link href="/app/sesh/multi-trick" asChild>
             <MultiTrickAction
               accessibilityLabel="Practice several tricks"
               accessibilityRole="link">
@@ -450,6 +481,7 @@ function TrickPicker({
             </MultiTrickAction>
           </Link>
         )}
+        <PlanLabel>Focused tricks</PlanLabel>
         <TrickChoices>
           {tricks.map((trick) => {
             const isPreferred = trick.id === preferredTrickId;
@@ -657,7 +689,7 @@ export function ActiveSesh({
   }, [elapsedMs, isPaused, onTimerElapsed, plan]);
 
   return (
-    <ScrollArea contentContainerStyle={{ padding: 24, paddingBottom: 140 }}>
+    <ScrollArea contentContainerStyle={{ padding: 24 }}>
       <ActiveContent>
         {countGoalCelebrations.map((baseline) => (
           <GoalCelebrationBanner key={baseline.goal.id} goal={baseline.goal} tense="inSesh" />
@@ -945,6 +977,8 @@ export function CompletedSesh({
   sessions = [],
   isFirstLace,
   justAchievedGoals = [],
+  showSignupInvite = false,
+  signupInviteIsFirstOccurrence = false,
   onReset,
   onRepeat,
 }: {
@@ -954,6 +988,14 @@ export function CompletedSesh({
   readonly sessions?: readonly PracticeSessionRecord[];
   readonly isFirstLace: boolean;
   readonly justAchievedGoals?: readonly Goal[];
+  readonly showSignupInvite?: boolean;
+  /**
+   * T201: the first-ever eligible occurrence renders inline on the wrap-up
+   * screen (less aggressive for a brand-new guest); every 5th occurrence
+   * after that (the 6th, 11th, ...) renders as the translucent PostSeshSignupInvite
+   * overlay. Ignored when showSignupInvite is false.
+   */
+  readonly signupInviteIsFirstOccurrence?: boolean;
   readonly onReset: () => void;
   readonly onRepeat: () => void;
 }) {
@@ -979,31 +1021,100 @@ export function CompletedSesh({
           : { $beaten: false as const, text: `${personalBest - laceCount} short of your best of ${personalBest}.` };
 
   return (
-    <ScrollArea contentContainerStyle={{ padding: 24, paddingBottom: 140 }}>
-      <ActiveContent>
-        {isFirstLace ? <FirstLaceBanner trickName={summary.trick.name} tense="wrapUp" /> : null}
-        {justAchievedGoals.map((goal) => (
-          <GoalCelebrationBanner key={goal.id} goal={goal} tense="wrapUp" />
-        ))}
-        <Eyebrow>Sesh complete</Eyebrow>
-        <DisplayTitle>{summary.trick.name}</DisplayTitle>
-        <SequenceSteps trick={summary.trick} />
-        {challengeResult ? (
-          <ResultBanner $beaten={challengeResult.$beaten}>{challengeResult.text}</ResultBanner>
-        ) : null}
-        <SummaryGrid>
-          <Metric><MetricValue>{formatDuration(summary.durationMs)}</MetricValue><MetricLabel>Total time</MetricLabel></Metric>
-          <Metric><MetricValue>{summary.landings.length}</MetricValue><MetricLabel>Laces</MetricLabel></Metric>
-          <Metric><MetricValue>{average === undefined ? '—' : formatDuration(average)}</MetricValue><MetricLabel>Average pace</MetricLabel></Metric>
-          <Metric><MetricValue>{fastest === undefined ? '—' : formatDuration(fastest)}</MetricValue><MetricLabel>Fastest lace</MetricLabel></Metric>
-        </SummaryGrid>
-        <LandingHistory landings={summary.landings} />
-        {goalProgressList.length > 0 ? <SeshGoalsPanel goalProgressList={goalProgressList} /> : null}
-        {promptForNote ? <SeshNotePrompt summary={summary} /> : null}
-        <PrimaryButton onPress={onRepeat}>Repeat sesh</PrimaryButton>
-        <SecondaryButton variant="secondary" onPress={onReset}>Start another sesh</SecondaryButton>
-      </ActiveContent>
-    </ScrollArea>
+    <>
+      <ScrollArea contentContainerStyle={{ padding: 24 }}>
+        <ActiveContent>
+          {isFirstLace ? <FirstLaceBanner trickName={summary.trick.name} tense="wrapUp" /> : null}
+          {justAchievedGoals.map((goal) => (
+            <GoalCelebrationBanner key={goal.id} goal={goal} tense="wrapUp" />
+          ))}
+          <Eyebrow>Sesh complete</Eyebrow>
+          <DisplayTitle>{summary.trick.name}</DisplayTitle>
+          <SequenceSteps trick={summary.trick} />
+          {challengeResult ? (
+            <ResultBanner $beaten={challengeResult.$beaten}>{challengeResult.text}</ResultBanner>
+          ) : null}
+          <SummaryGrid>
+            <Metric><MetricValue>{formatDuration(summary.durationMs)}</MetricValue><MetricLabel>Total time</MetricLabel></Metric>
+            <Metric><MetricValue>{summary.landings.length}</MetricValue><MetricLabel>Laces</MetricLabel></Metric>
+            <Metric><MetricValue>{average === undefined ? '—' : formatDuration(average)}</MetricValue><MetricLabel>Average pace</MetricLabel></Metric>
+            <Metric><MetricValue>{fastest === undefined ? '—' : formatDuration(fastest)}</MetricValue><MetricLabel>Fastest lace</MetricLabel></Metric>
+          </SummaryGrid>
+          <LandingHistory landings={summary.landings} />
+          {goalProgressList.length > 0 ? <SeshGoalsPanel goalProgressList={goalProgressList} /> : null}
+          {promptForNote ? <SeshNotePrompt summary={summary} /> : null}
+          {showSignupInvite && signupInviteIsFirstOccurrence ? <InlineSignupInvite /> : null}
+          <PrimaryButton onPress={onRepeat}>Repeat sesh</PrimaryButton>
+          <SecondaryButton variant="secondary" onPress={onReset}>Start another sesh</SecondaryButton>
+        </ActiveContent>
+      </ScrollArea>
+      {showSignupInvite && !signupInviteIsFirstOccurrence ? <PostSeshSignupInvite /> : null}
+    </>
+  );
+}
+
+// T201: the original pre-T183 inline presentation, restored for the guest's first-ever eligible
+// occurrence only -- rendered as ordinary wrap-up content inside the ScrollView, not an overlay.
+function InlineSignupInvite() {
+  const [dismissed, setDismissed] = useState(false);
+  if (dismissed) return null;
+
+  return (
+    <InlineInviteCard accessibilityLabel="Guest signup invitation">
+      <InviteTitle>Save this sesh for good.</InviteTitle>
+      <InviteCopy>
+        Right now your practice history only lives on this device. Sign up free to keep it if you
+        switch devices or clear your browser.
+      </InviteCopy>
+      <InviteActions>
+        <Link href="/auth/sign-up" asChild>
+          <InviteSignUpButton accessibilityRole="link">Sign up</InviteSignUpButton>
+        </Link>
+        <InviteDismissButton
+          accessibilityLabel="Dismiss signup invitation"
+          onPress={() => setDismissed(true)}>
+          Not now
+        </InviteDismissButton>
+      </InviteActions>
+    </InlineInviteCard>
+  );
+}
+
+// T183: dismissible modal overlay, not inline wrap-up content. Follows RankUpCelebrationModal and
+// LogoutPrompt's precedent (no React Native <Modal> in this codebase) -- an absolute-fill <View>
+// covering the wrap-up screen (translucent, T201) until the guest signs up or dismisses it. T201
+// restricts this presentation to every 5th occurrence after the first (the 6th, 11th, ...); the
+// first-ever occurrence renders InlineSignupInvite instead.
+function PostSeshSignupInvite() {
+  const [dismissed, setDismissed] = useState(false);
+  const router = useRouter();
+  if (dismissed) return null;
+
+  return (
+    <InviteOverlay accessibilityLabel="Guest signup invitation">
+      <InviteCard>
+        <InviteTitle>Save this sesh for good.</InviteTitle>
+        <InviteCopy>
+          Right now your practice history only lives on this device. Sign up free to keep it if you
+          switch devices or clear your browser.
+        </InviteCopy>
+        <InviteActions>
+          <InviteSignUpButton
+            accessibilityRole="link"
+            onPress={() => {
+              setDismissed(true);
+              router.push('/auth/sign-up');
+            }}>
+            Sign up
+          </InviteSignUpButton>
+          <InviteDismissButton
+            accessibilityLabel="Dismiss signup invitation"
+            onPress={() => setDismissed(true)}>
+            Not now
+          </InviteDismissButton>
+        </InviteActions>
+      </InviteCard>
+    </InviteOverlay>
   );
 }
 
@@ -1261,6 +1372,14 @@ const NotePromptButton = styled(Pressable)<{ $disabled?: boolean }>`min-height: 
 const NotePromptButtonText = styled.Text`color: ${({ theme }) => theme.accent}; font-size: 14px; font-weight: 900;`;
 const NotePromptSecondaryButton = styled(Pressable)`min-height: 44px; flex: 1; align-items: center; justify-content: center; padding: 10px 18px; border: 2px solid ${AppColors.ink}; border-radius: 5px;`;
 const NotePromptSecondaryButtonText = styled.Text`color: ${({ theme }) => theme.text}; font-size: 14px; font-weight: 900;`;
+const InviteOverlay = styled.View`position: absolute; top: 0; right: 0; bottom: 0; left: 0; background-color: rgba(244, 201, 77, 0.85); align-items: center; justify-content: center; padding: 24px; z-index: 1000;`;
+const InviteCard = styled.View`width: 100%; max-width: 500px; background-color: #f8f1dd; border: 2px solid ${AppColors.ink}; padding: 18px;`;
+const InlineInviteCard = styled(InviteCard)`margin-top: 20px;`;
+const InviteTitle = styled.Text`color: ${({ theme }) => theme.text}; font-size: 17px; font-weight: 900;`;
+const InviteCopy = styled.Text`color: ${({ theme }) => theme.text}; font-size: 13px; font-weight: 650; line-height: 19px; margin-top: 6px;`;
+const InviteActions = styled.View`flex-direction: row; gap: 10px; margin-top: 14px;`;
+const InviteSignUpButton = styled(Button).attrs({ size: 'medium' })`flex: 1;`;
+const InviteDismissButton = styled(Button).attrs({ variant: 'secondary', size: 'medium' })`flex: 1;`;
 const SummaryGrid = styled.View`width: 100%; flex-direction: row; flex-wrap: wrap; gap: 10px; margin-top: 28px;`;
 const Metric = styled.View`min-width: 46%; flex-grow: 1; background-color: #f8f1dd; border-top-width: 5px; border-top-color: #d84929; padding: 18px;`;
 const MetricValue = styled.Text`color: #18382e; font-size: 30px; font-variant: tabular-nums; font-weight: 900;`;

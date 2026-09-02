@@ -1,4 +1,35 @@
 # Backlog Stories
 
-User stories awaiting technical scoping. A story is `Ready for scoping` once its product decision is settled; `scope-tickets` turns it into one or more `TASKS.md` entries and flips its status to `Scoped → T###`. See `.claude/skills/product-manager/SKILL.md` and `.claude/skills/scope-tickets/SKILL.md`.
+Product outcomes, technical enablers, security controls, and launch gates awaiting technical scoping. An item is `Ready for scoping` once its product decision is settled; `scope-tickets` turns it into one or more entries in `TASKS.md` or the non-automated `TASKS_BACKLOG.md`. Harness-specific workflows live under `.claude/skills/` for Claude Code and `.agents/skills/` for Codex.
 
+## Stories
+
+_S001–S022 came from the user's 2026-08-21 QA pass on T122–T131 (landing page and trick goals), compiled via the `qa-handoff` artifact and refined by `product-manager`. S001–S005 and S007–S022 were scoped in this pass into T132–T152 (see `TASKS.md`) and removed from this file per the usual promotion cleanup. S006 was held back pending confirmation and later closed (see the S042–S062 note below)._
+
+_S032–S041 were refined from [BACKEND_ROADMAP.md](BACKEND_ROADMAP.md) on 2026-08-21 using the Codex `product-manager` workflow. S032–S039 and S041 were scoped into umbrellas T153–T162 and removed from this file; T153 was later activated in [TASKS.md](TASKS.md), while T154–T162 remain in [TASKS_BACKLOG.md](TASKS_BACKLOG.md). S040 remains proposed because mobile hardening is explicitly deferred by [AGENTS.md](AGENTS.md)._
+
+_S042–S062 came from the user's 2026-08-25 QA pass on the Full-Batch of PR #158–223 (three items were follow-up gaps on already-`Done` tickets T144/T146/T153.12; the rest were general feedback, mostly Auth/Account UI). 19 were scoped into T163–T181 (see `TASKS.md`) and removed from this file. S051 and S006 were confirmed working in the live app by the user on 2026-08-26 and removed per the usual promotion cleanup. S057 was rejected by the user on 2026-08-26 — see [V1_LAUNCH_PLAN.md](V1_LAUNCH_PLAN.md) Stage 1._
+
+_S063–S074 came from the user's 2026-08-31 QA pass on PRs #224–256 — the batch that closed T163–T181. Every reviewed T163–T181 item came back with a follow-up gap (the implementation shipped but didn't fully satisfy the QA scenario), plus six items of general feedback not tied to a specific ticket. All twelve are refinements/corrections to already-`Done` work, not new features. All twelve were scoped into T182–T193 (see `TASKS.md`) and removed from this file: S063→T182, S064→T183, S065→T184, S066→T185, S067→T186 (T186.1–T186.2), S068→T187 (T187.1–T187.2), S069→T188, S070→T189, S071→T190, S072→T191, S073→T192, S074→T193._
+
+_S075–S088 came from the user's 2026-09-01 QA pass on T182–T193 (the batch closed by the 2026-08-31 pass, S063–S074). Every reviewed T188/T189/T191/T192/T193 item came back with a follow-up gap, T186.1 came back with two distinct problems, T183 came back with a styling gap, and seven items are general feedback not tied to a specific ticket. All fourteen were scoped into T194–T206 (see `TASKS.md`) and removed from this file: S075→T194, S076→T195, S077→T196, S078→T197, S079→T198 (visible-UI/flash symptom) & T199 (onboarding-recurrence symptom), S080→T200, S081→T201, S082→T201 (combined with S081), S083→T202, S084→T203, S085→T204, S086→T205, S087→T206, S088→T198 (combined with S079's UI symptom)._
+
+_S089 was refined on 2026-09-01 from the user's direct observation that a newly created account gets no success acknowledgment. It was scoped into T207 (see `TASKS.md`) and removed from this file._
+
+_S090–S097 came from the user's 2026-09-02 QA pass on T195/T201/T205/T207 (the batch closed by the 2026-09-01 pass, S075–S089), plus three items of general feedback not tied to a specific ticket. S090's direction question was resolved the same day (reuse the celebration mechanism/visual identity, own copy). All eight were scoped into T208–T215 (see `TASKS.md`) and removed from this file: S090→T208, S091→T209, S092→T210, S093→T211, S094→T212, S095→T213, S096→T214, S097→T215._
+
+### [S057] Enforce email uniqueness at signup with a clear message — REJECTED
+
+- **Status:** Rejected (2026-08-26)
+- **Reason:** Its acceptance criteria (a distinguishable "account already exists" message) directly contradicts a deliberate anti-enumeration design already in the code: `sign-up-screen.tsx`'s `handleSubmit` intentionally routes a duplicate-account signup through the identical success path as a real signup, specifically so the distinct branch can't be used as an email-enumeration oracle (see the inline comment at that call site). The user chose to keep the current anti-enumeration behavior over the enumeration tradeoff this story would introduce.
+
+### [S040] Harden account behavior on iOS and Android
+
+- **Type:** User outcome
+- **Beneficiary:** Mobile practitioners
+- **Outcome:** The same account, callback, secure credential storage, offline sync, conflicts, logout, and deletion behavior works across web, iOS, and Android.
+- **Evidence:** `BACKEND_ROADMAP.md` Phase 5.
+- **Priority:** Medium
+- **Status:** Proposed
+- **Acceptance criteria:** Independent platform verification covers native PKCE callbacks, SecureStore-backed Auth storage, Auth email links, offline mutation and reconnection, account isolation, and active-Sesh safety on both iOS and Android.
+- **Notes:** Deliberately deferred. `AGENTS.md` makes web the only active target until the user explicitly resumes mobile hardening; do not scope or implement this item under the current agreement.

@@ -3,7 +3,7 @@ name: ticket-planner
 description: Plans the implementation of one Daily Dama backlog task from TASKS.md. Given a task's full entry and the project's architecture context, explores the real codebase and produces a concrete, ordered implementation plan. Read-only except for the plan file it commits.
 model: sonnet
 effort: medium
-tools: Read, Grep, Glob, Bash, Write, WebFetch, WebSearch, TodoWrite
+tools: Read, Grep, Glob, Bash, Write, WebFetch, WebSearch, TodoWrite, ToolSearch
 isolation: worktree
 ---
 
@@ -30,6 +30,8 @@ WORKTREE_ROOT="$(git rev-parse --show-toplevel)"; echo "$WORKTREE_ROOT"
 ```
 
 Every subsequent Bash call must run inside `$WORKTREE_ROOT`. Never `cd` to the shared main checkout (the repo path outside `.claude/worktrees/`) or any other absolute path — you'd be reading or reasoning about another session's working copy instead of this branch's. If a command needs a `pwd` sanity check (before the final commit/push in step 3), fold it in rather than assuming.
+
+**Guardrail: never pipe or redirect a `git` command.** The worktree-isolation sandbox refuses any Bash call where a `git` invocation also carries a pipe (`|`), a redirect (`>`, `>>`, `<`), or a `2>&1` in the same call — it can't statically prove the redirected output stays scoped to your worktree and refuses the whole command. Run `git` commands plain (e.g. `git log --oneline -20`, not piped through `head`/`grep`) and read the output directly from the tool result.
 
 ## 2. Plan
 

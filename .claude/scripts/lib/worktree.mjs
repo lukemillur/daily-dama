@@ -79,9 +79,10 @@ function isInside(child, parent) {
  * @param {string} [input.containerDir] directory workflow worktrees must live under
  * @param {boolean} [input.allowAttachedBranch] allow a verified task branch to be detached for cleanup
  * @param {string} [input.expectedBranch] task branch required when allowAttachedBranch is true
+ * @param {string} [input.mergedHead] canonical merged PR head SHA that may substitute for a deleted remote branch
  * @returns {{safe: boolean, reason: string, detail: string}}
  */
-export function assessWorktree({ run, repoRoot, worktree, containerDir, allowAttachedBranch = false, expectedBranch }) {
+export function assessWorktree({ run, repoRoot, worktree, containerDir, allowAttachedBranch = false, expectedBranch, mergedHead }) {
   const container = containerDir ?? path.join(repoRoot, '.claude', 'worktrees');
   const refuse = (reason, detail) => ({ safe: false, reason, detail });
 
@@ -114,7 +115,9 @@ export function assessWorktree({ run, repoRoot, worktree, containerDir, allowAtt
   });
   if (unreachable.code !== 0) return refuse('unverifiable', `git rev-list failed: ${unreachable.stderr.trim()}`);
   if (unreachable.stdout.trim() !== '0') {
-    return refuse('unpushed-commits', `${unreachable.stdout.trim()} commit(s) exist only here`);
+    if (!mergedHead || worktree.head !== mergedHead) {
+      return refuse('unpushed-commits', `${unreachable.stdout.trim()} commit(s) exist only here`);
+    }
   }
 
   // Ask lsof for every process cwd, then compare paths ourselves. Querying the
@@ -140,7 +143,13 @@ export function assessWorktree({ run, repoRoot, worktree, containerDir, allowAtt
     return refuse('active-process', `a process is running with cwd ${activeCwd} inside this worktree`);
   }
 
-  return { safe: true, reason: 'clean', detail: 'detached, clean, fully pushed, unlocked' };
+  return {
+    safe: true,
+    reason: 'clean',
+    detail: mergedHead && worktree.head === mergedHead
+      ? 'clean, unlocked, and exact head recorded by canonical merged PR'
+      : 'detached, clean, fully pushed, unlocked',
+  };
 }
 
 /**
@@ -152,10 +161,11 @@ export function assessWorktree({ run, repoRoot, worktree, containerDir, allowAtt
  * @param {ReturnType<typeof parseWorktreeList>[number]} input.worktree
  * @param {boolean} [input.dryRun]
  * @param {string} [input.containerDir]
+ * @param {string} [input.mergedHead]
  * @returns {{path: string, action: 'removed'|'would-remove'|'refused'|'failed', reason: string, detail: string}}
  */
-export function removeWorktree({ run, repoRoot, worktree, dryRun = false, containerDir }) {
-  const assessment = assessWorktree({ run, repoRoot, worktree, containerDir });
+export function removeWorktree({ run, repoRoot, worktree, dryRun = false, containerDir, mergedHead }) {
+  const assessment = assessWorktree({ run, repoRoot, worktree, containerDir, mergedHead });
   if (!assessment.safe) {
     return { path: worktree.path, action: 'refused', reason: assessment.reason, detail: assessment.detail };
   }
@@ -184,9 +194,10 @@ export function removeWorktree({ run, repoRoot, worktree, dryRun = false, contai
  * @param {string} input.branch
  * @param {boolean} [input.dryRun]
  * @param {string} [input.containerDir]
+ * @param {string} [input.mergedHead]
  * @returns {{path: string, action: 'removed'|'would-remove'|'refused'|'failed', reason: string, detail: string}}
  */
-export function releaseAttachedWorktree({ run, repoRoot, worktree, branch, dryRun = false, containerDir }) {
+export function releaseAttachedWorktree({ run, repoRoot, worktree, branch, dryRun = false, containerDir, mergedHead }) {
   const assessment = assessWorktree({
     run,
     repoRoot,
@@ -194,6 +205,7 @@ export function releaseAttachedWorktree({ run, repoRoot, worktree, branch, dryRu
     containerDir,
     allowAttachedBranch: true,
     expectedBranch: branch,
+    mergedHead,
   });
   if (!assessment.safe) {
     return { path: worktree.path, action: 'refused', reason: assessment.reason, detail: assessment.detail };
@@ -211,7 +223,7 @@ export function releaseAttachedWorktree({ run, repoRoot, worktree, branch, dryRu
   if (!refreshed) {
     return { path: worktree.path, action: 'failed', reason: 'unverifiable', detail: 'worktree disappeared after detaching' };
   }
-  return removeWorktree({ run, repoRoot, worktree: refreshed, dryRun, containerDir });
+  return removeWorktree({ run, repoRoot, worktree: refreshed, dryRun, containerDir, mergedHead });
 }
 
 /** List worktrees known to the repository. */

@@ -34,7 +34,7 @@ export function NeglectedTricksSection({
                   : `Last practiced ${formatPracticeDate(entry.mostRecentPracticeAt)}`}
               </RowMeta>
             </RowText>
-            <Link asChild href={{ pathname: '/sesh', params: { trickId: entry.trick.id, mode: 'practice' } }}>
+            <Link asChild href={{ pathname: '/app/sesh', params: { trickId: entry.trick.id, mode: 'practice' } }}>
               <PracticeAction
                 accessibilityLabel={`Practice ${entry.trick.name}`}
                 accessibilityRole="link">

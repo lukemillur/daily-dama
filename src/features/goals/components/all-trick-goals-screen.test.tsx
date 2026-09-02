@@ -1,18 +1,25 @@
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Pressable } from 'react-native';
+import { Pressable, StyleSheet } from 'react-native';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 
 import { AllTrickGoalsScreen } from '@/features/goals/components/all-trick-goals-screen';
 import { GOALS_STORAGE_KEY } from '@/features/goals/persistence/goal-persistence';
 import { GoalProvider, useGoalActions } from '@/features/goals/state/goal-provider';
 import { createTimedSeshPlan, type Landing, type SeshSummary } from '@/features/sesh/model/sesh';
+import { UserProfileProvider } from '@/features/profile/state/user-profile-provider';
 import {
   PracticeHistoryProvider,
   usePracticeHistoryActions,
 } from '@/features/stats/state/practice-history-provider';
 import type { PracticeTrick } from '@/features/tricks/model/trick';
 import type { DirectoryTrick } from '@/features/tricks/model/trick-directory';
+import { GUEST_IDENTITY } from '@/shared/persistence/identity';
+import { physicalKey } from '@/shared/persistence/scoped-storage';
+
+// This test doesn't wrap providers in <IdentityProvider>, so GoalProvider hydrates against the
+// module's default guest handle -- writes land at the guest-namespaced physical key.
+const GUEST_GOALS_KEY = physicalKey(GUEST_IDENTITY, GOALS_STORAGE_KEY);
 
 // AllTrickGoalsScreen transitively imports practice-history-provider, which pulls in
 // AsyncStorage. Mock it the same way sesh.test.tsx and kentei-rank-auto-promotion.test.tsx do.
@@ -20,6 +27,11 @@ jest.mock('@react-native-async-storage/async-storage', () =>
   // eslint-disable-next-line @typescript-eslint/no-require-imports -- required by jest hoisting
   require('@react-native-async-storage/async-storage/jest/async-storage-mock'),
 );
+
+const mockRouterPush = jest.fn();
+jest.mock('expo-router', () => ({
+  useRouter: () => ({ push: mockRouterPush }),
+}));
 
 const TRICK_A: PracticeTrick = { id: 'big-cup', name: 'Big Cup' };
 const TRICK_B: PracticeTrick = { id: 'stall', name: 'Stall' };
@@ -65,6 +77,12 @@ function Harness({ focusedTrickIds = [] }: { readonly focusedTrickIds?: readonly
         }
       />
       <Pressable
+        accessibilityLabel="add-goal-a2"
+        onPress={() =>
+          addGoal({ kind: 'time', trickId: TRICK_A.id, trickName: TRICK_A.name, targetMinutes: 10 })
+        }
+      />
+      <Pressable
         accessibilityLabel="record-sesh-a"
         onPress={() => recordCompletedSesh(summaryFor(TRICK_A, 3))}
       />
@@ -77,11 +95,13 @@ async function mountHarness(focusedTrickIds: readonly string[] = []) {
   let root!: ReactTestRenderer;
   await act(async () => {
     root = create(
-      <GoalProvider>
-        <PracticeHistoryProvider>
-          <Harness focusedTrickIds={focusedTrickIds} />
-        </PracticeHistoryProvider>
-      </GoalProvider>,
+      <UserProfileProvider>
+        <GoalProvider>
+          <PracticeHistoryProvider>
+            <Harness focusedTrickIds={focusedTrickIds} />
+          </PracticeHistoryProvider>
+        </GoalProvider>
+      </UserProfileProvider>,
     );
   });
   return root;
@@ -103,6 +123,7 @@ function findText(root: ReactTestRenderer, text: string) {
 describe('AllTrickGoalsScreen', () => {
   beforeEach(async () => {
     await AsyncStorage.clear();
+    mockRouterPush.mockClear();
   });
 
   it('lists goals from multiple tricks with per-goal progress, achieved and unachieved rendered distinguishably', async () => {
@@ -115,11 +136,15 @@ describe('AllTrickGoalsScreen', () => {
       const root = await mountHarness();
 
       press(root, 'add-goal-a');
+      press(root, 'add-goal-a2');
       press(root, 'add-goal-b');
       press(root, 'record-sesh-a');
 
-      expect(findText(root, 'Big Cup')).toHaveLength(1);
-      expect(findText(root, 'Stall')).toHaveLength(1);
+      // Trick A has two goals -> heading shown. Trick B has one goal -> no heading, but its
+      // card still names the trick.
+      expect(findText(root, 'Big Cup goals')).toHaveLength(1);
+      expect(findText(root, 'Stall').length).toBeGreaterThan(0);
+      expect(findText(root, 'Stall goals')).toHaveLength(0);
       expect(findText(root, '3 / 3 laces')).toHaveLength(1);
       expect(findText(root, '0 / 5 laces')).toHaveLength(1);
 
@@ -138,20 +163,85 @@ describe('AllTrickGoalsScreen', () => {
     expect(findText(root, "No goals yet. Set one from a trick's Goals action, or add one below.")).toHaveLength(1);
   });
 
-  it('links each goal\'s Practice action to /sesh with the correct trickId param', async () => {
+  it('renders each goal card trick name whether or not the group heading is also present', async () => {
+    const root = await mountHarness();
+
+    press(root, 'add-goal-a');
+    press(root, 'add-goal-a2');
+    press(root, 'add-goal-b');
+
+    // Trick A has a group heading (two goals); trick B does not (one goal). Both still name
+    // their trick on the card itself.
+    expect(findText(root, 'Big Cup goals')).toHaveLength(1);
+    expect(findText(root, 'Big Cup').length).toBeGreaterThanOrEqual(2);
+    expect(findText(root, 'Stall goals')).toHaveLength(0);
+    expect(findText(root, 'Stall').length).toBeGreaterThan(0);
+  });
+
+  it('renders the goal card trick title large and right-aligned in the same row as the progress info', async () => {
+    const root = await mountHarness();
+
+    press(root, 'add-goal-b');
+
+    const card = root.root.findByProps({ accessibilityLabel: 'Practice Stall' });
+    const [titleNode] = card.findAll(
+      (node) => typeof node.type === 'string' && node.props.children === 'Stall',
+    );
+    const titleStyle = StyleSheet.flatten(titleNode!.props.style) as { fontSize?: number; textAlign?: string };
+    // Materially larger than the previous 13px eyebrow treatment.
+    expect(titleStyle.fontSize).toBeGreaterThan(20);
+    expect(titleStyle.textAlign).toBe('right');
+
+    const [progressNode] = card.findAll(
+      (node) => typeof node.type === 'string' && node.props.children === '0 / 5 laces',
+    );
+    expect(progressNode).toBeDefined();
+
+    let ancestor = progressNode!.parent;
+    while (ancestor && ancestor.findAll((node) => node === titleNode).length === 0) {
+      ancestor = ancestor.parent;
+    }
+    expect(ancestor).not.toBeNull();
+    const rowStyle = StyleSheet.flatten(ancestor!.props.style) as { flexDirection?: string };
+    expect(rowStyle.flexDirection).toBe('row');
+  });
+
+  it('navigates to /sesh with the correct trickId param when a goal card is pressed', async () => {
     const root = await mountHarness();
 
     press(root, 'add-goal-a');
 
-    const link = root.root.findByProps({ accessibilityLabel: 'Practice Big Cup' });
-    expect(link.props.href).toBe('/sesh?trickId=big-cup&mode=practice');
+    const card = root.root.findByProps({ accessibilityLabel: 'Practice Big Cup' });
+    act(() => {
+      card.props.onPress();
+    });
+
+    expect(mockRouterPush).toHaveBeenCalledWith({
+      pathname: '/app/sesh',
+      params: { trickId: 'big-cup', mode: 'practice' },
+    });
+  });
+
+  it('does not navigate to /sesh when Delete is pressed on a goal card', async () => {
+    const root = await mountHarness();
+
+    press(root, 'add-goal-a');
+
+    const [deleteAction] = root.root.findAll(
+      (node) => node.props.accessibilityLabel === 'Delete goal',
+    );
+    act(() => {
+      deleteAction.props.onPress();
+    });
+
+    expect(mockRouterPush).not.toHaveBeenCalled();
   });
 
   it('removes a goal from the list once deleted', async () => {
     const root = await mountHarness();
 
     press(root, 'add-goal-a');
-    expect(findText(root, 'Big Cup')).toHaveLength(1);
+    expect(() => root.root.findByProps({ accessibilityLabel: 'Practice Big Cup' })).not.toThrow();
 
     const [deleteAction] = root.root.findAll(
       (node) => node.props.accessibilityLabel === 'Delete goal',
@@ -167,7 +257,7 @@ describe('AllTrickGoalsScreen', () => {
       confirmDelete.props.onPress();
     });
 
-    expect(findText(root, 'Big Cup')).toHaveLength(0);
+    expect(() => root.root.findByProps({ accessibilityLabel: 'Practice Big Cup' })).toThrow();
   });
 
   it('creates a goal for a chosen trick from the all-trick-goals screen and it appears in the list', async () => {
@@ -191,7 +281,7 @@ describe('AllTrickGoalsScreen', () => {
 
     press(root, 'Save goal');
 
-    expect(findText(root, 'Stall')).toHaveLength(1);
+    expect(() => root.root.findByProps({ accessibilityLabel: 'Practice Stall' })).not.toThrow();
     expect(findText(root, '0 / 10 laces')).toHaveLength(1);
   });
 
@@ -234,7 +324,7 @@ describe('AllTrickGoalsScreen', () => {
     await act(async () => {
       await new Promise((resolve) => setTimeout(resolve, 0));
     });
-    const serialized = await AsyncStorage.getItem(GOALS_STORAGE_KEY);
+    const serialized = await AsyncStorage.getItem(GUEST_GOALS_KEY);
     expect(JSON.parse(serialized ?? '{}').goals).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ trickId: 'big-cup', trickName: 'Big Cup', targetCount: 7 }),

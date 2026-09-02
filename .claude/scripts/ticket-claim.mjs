@@ -15,11 +15,19 @@
 //   * emits one JSON object on stdout; a human summary goes to stderr
 //
 // Usage:
-//   node .claude/scripts/ticket-claim.mjs                  # next actionable task
+//   node .claude/scripts/ticket-claim.mjs                  # next actionable task, file order
+//   node .claude/scripts/ticket-claim.mjs ranked           # next actionable task, unblock-value order
 //   node .claude/scripts/ticket-claim.mjs T035             # named task
 //   node .claude/scripts/ticket-claim.mjs resume T035      # resume an existing claim
 //   node .claude/scripts/ticket-claim.mjs T035 --resume    # same
 //   node .claude/scripts/ticket-claim.mjs --dry-run        # decide, change nothing
+//
+// `ranked` reorders which actionable candidate continuous mode reaches first
+// — highest unblock fan-out (how many other pending tasks depend on it), then
+// declared Priority, then file order — instead of scanning TASKS.md top to
+// bottom. It only applies to continuous mode: combining it with a task ID or
+// `resume` is a usage error, since both already select a single task
+// directly. See lib/tasks.mjs's orderByUnblockValue for the exact ordering.
 
 import fs from 'node:fs';
 import path from 'node:path';
@@ -28,6 +36,8 @@ import { pathToFileURL } from 'node:url';
 import { createRunner } from './lib/exec.mjs';
 import {
   branchNameFor,
+  computeUnblockFanOut,
+  orderByUnblockValue,
   parseBacklog,
   parseDoneIds,
   resolvePlanningPolicy,
@@ -42,6 +52,7 @@ export function parseArgs(argv) {
   const options = {
     taskId: null,
     resume: false,
+    ranked: false,
     dryRun: false,
     fetch: true,
     base: 'origin/development',
@@ -51,6 +62,7 @@ export function parseArgs(argv) {
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index];
     if (arg === '--resume' || arg === 'resume') options.resume = true;
+    else if (arg === '--ranked' || arg === 'ranked') options.ranked = true;
     else if (arg === '--dry-run') options.dryRun = true;
     else if (arg === '--no-fetch') options.fetch = false;
     else if (arg === '--json') options.json = true;
@@ -62,6 +74,10 @@ export function parseArgs(argv) {
   }
   if (options.taskId) options.taskId = options.taskId.toUpperCase();
   if (options.resume && !options.taskId) throw new Error('resume requires a task ID, e.g. `resume T035`');
+  if (options.ranked && options.resume) throw new Error('ranked is a continuous-mode option; it cannot combine with resume');
+  if (options.ranked && options.taskId) {
+    throw new Error('ranked only applies to continuous mode; drop the task ID or drop ranked');
+  }
   return options;
 }
 
@@ -219,14 +235,18 @@ export function claim({ run, repoRoot, options, fileSystem = fs, createClaimNonc
   const tasks = parseBacklog(readFileAtRef(run, repoRoot, options.base, 'TASKS.md'));
   const doneIds = parseDoneIds(readFileAtRef(run, repoRoot, options.base, 'TASKS_DONE.md'));
   const claimedBranches = remoteClaims(run, repoRoot);
+  // Reordering (not filtering) the candidates: selectTask's scan and its skip
+  // bookkeeping are otherwise unchanged, so `ranked` never selects a task
+  // `selectTask` wouldn't have picked eventually anyway on the unordered scan.
+  const candidates = options.ranked ? orderByUnblockValue(tasks, doneIds) : tasks;
 
-  const selection = selectTask({ tasks, doneIds, claimedBranches, requestedId: options.taskId });
+  const selection = selectTask({ tasks: candidates, doneIds, claimedBranches, requestedId: options.taskId });
   if (selection.status === 'backlog-exhausted') {
-    return { status: 'backlog-exhausted', skipped: selection.skipped };
+    return { status: 'backlog-exhausted', skipped: selection.skipped, ranked: options.ranked };
   }
   if (selection.status === 'blocked') {
     const { reason, detail, taskId } = selection.blocker;
-    const result = blocked(reason, detail, { taskId: taskId ?? null, skipped: selection.skipped });
+    const result = blocked(reason, detail, { taskId: taskId ?? null, skipped: selection.skipped, ranked: options.ranked });
     if (reason === 'claimed') {
       result.blocker.resumeCommand = `/newTicket resume ${taskId}`;
       result.branches = claimedBranches.get(taskId) ?? [];
@@ -244,14 +264,14 @@ export function claim({ run, repoRoot, options, fileSystem = fs, createClaimNonc
     return blocked(
       'local-branch-exists',
       `local branch ${branch} already exists; refusing to overwrite or delete it. Inspect it and either resume its remote claim or resolve it manually.`,
-      { taskId: task.id, branch },
+      { taskId: task.id, branch, ranked: options.ranked },
     );
   }
   if (localBranch.code !== 1) {
     return blocked(
       'local-branch-check-failed',
       `could not determine whether local branch ${branch} exists: ${localBranch.stderr.trim() || `git exited ${localBranch.code}`}`,
-      { taskId: task.id, branch },
+      { taskId: task.id, branch, ranked: options.ranked },
     );
   }
   const planning = resolvePlanningPolicy(task);
@@ -265,6 +285,8 @@ export function claim({ run, repoRoot, options, fileSystem = fs, createClaimNonc
     planning,
     resolvedFromParent: Boolean(selection.resolvedFromParent),
     skipped: selection.skipped,
+    ranked: options.ranked,
+    ...(options.ranked ? { unblockFanOut: computeUnblockFanOut(tasks, doneIds).get(task.id) } : {}),
   };
 
   if (options.dryRun) return { status: 'claimed', dryRun: true, ...base };
@@ -284,11 +306,12 @@ export function claim({ run, repoRoot, options, fileSystem = fs, createClaimNonc
       return blocked(
         'claimed',
         `push of ${branch} was rejected and ${recheck.join(', ')} now exists on the remote — another worker claimed ${task.id} first.`,
-        { taskId: task.id, branches: recheck },
+        { taskId: task.id, branches: recheck, ranked: options.ranked },
       );
     }
     return blocked('push-failed', `push of ${branch} failed and no competing branch exists: ${push.stderr}`, {
       taskId: task.id,
+      ranked: options.ranked,
     });
   }
   return { status: 'claimed', dryRun: false, ...base };
@@ -296,8 +319,10 @@ export function claim({ run, repoRoot, options, fileSystem = fs, createClaimNonc
 
 function summarize(result) {
   switch (result.status) {
-    case 'claimed':
-      return `${result.taskId}: ${result.dryRun ? 'would claim' : 'claimed'} on ${result.branch} — planning: ${result.planning.policy} (${result.planning.source})`;
+    case 'claimed': {
+      const rankNote = result.ranked ? `, ranked pick (unblock fan-out ${result.unblockFanOut})` : '';
+      return `${result.taskId}: ${result.dryRun ? 'would claim' : 'claimed'} on ${result.branch}${rankNote} — planning: ${result.planning.policy} (${result.planning.source})`;
+    }
     case 'resumed':
       return `${result.taskId}: resuming ${result.branch} — plan ${result.planExists ? 'exists' : 'missing'}, planning: ${result.planning.policy}`;
     case 'backlog-exhausted':

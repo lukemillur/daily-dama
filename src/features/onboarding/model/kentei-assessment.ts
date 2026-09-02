@@ -28,6 +28,13 @@ export type KenteiAssessmentState =
       readonly landedTrickIds: readonly string[];
     }
   | {
+      readonly status: 'durationSelect';
+      readonly rank: number;
+      readonly selectedTrickIds: readonly string[];
+      readonly startingRank: number;
+      readonly landedTrickIds: readonly string[];
+    }
+  | {
       readonly status: 'themeSelect';
       readonly rank: number;
       readonly selectedTrickIds: readonly string[];
@@ -42,6 +49,7 @@ export type KenteiAssessmentAction =
   | { readonly type: 'trickNotLanded' }
   | { readonly type: 'rankRevealContinued' }
   | { readonly type: 'practiceTrickToggled'; readonly trickId: string }
+  | { readonly type: 'durationStepEntered' }
   | { readonly type: 'themeStepEntered' };
 
 export const INITIAL_KENTEI_ASSESSMENT: KenteiAssessmentState = { status: 'intro' };
@@ -113,8 +121,10 @@ export function kenteiAssessmentReducer(
           ? state.selectedTrickIds.filter((trickId) => trickId !== action.trickId)
           : [...state.selectedTrickIds, action.trickId],
       };
+    case 'durationStepEntered':
+      return state.status === 'selecting' ? { ...state, status: 'durationSelect' } : state;
     case 'themeStepEntered':
-      return state.status === 'selecting' ? { ...state, status: 'themeSelect' } : state;
+      return state.status === 'durationSelect' ? { ...state, status: 'themeSelect' } : state;
   }
 }
 

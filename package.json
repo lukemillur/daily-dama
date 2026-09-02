@@ -6,8 +6,11 @@
     "@react-native-async-storage/async-storage": "2.2.0",
     "@react-three/drei": "^10.7.8",
     "@react-three/fiber": "^9.7.0",
+    "@supabase/supabase-js": "^2.112.3",
+    "@vercel/analytics": "^2.0.1",
     "expo": "~57.0.10",
     "expo-asset": "~57.0.9",
+    "expo-audio": "~57.0.4",
     "expo-constants": "~57.0.9",
     "expo-font": "~57.0.1",
     "expo-gl": "~57.0.2",
@@ -32,6 +35,7 @@
     "three": "^0.185.1"
   },
   "devDependencies": {
+    "@playwright/test": "^1.62.1",
     "@react-native/jest-preset": "0.86.2",
     "@types/jest": "29.5.14",
     "@types/react": "~19.2.2",
@@ -48,20 +52,34 @@
     "web": "expo start --web",
     "lint": "expo lint",
     "test": "jest --runInBand",
-    "test:workflow": "node --test '.claude/scripts/test/*.test.mjs'"
+    "test:workflow": "node .claude/scripts/terse-node-test.mjs '.claude/scripts/test/*.test.mjs'",
+    "test:e2e:auth": "node .claude/scripts/run-auth-e2e.mjs",
+    "test:data-api": "node --test --test-concurrency=1 'supabase/tests/data-api/**/*.test.mjs'",
+    "test:functions": "node --test --test-concurrency=1 'supabase/tests/functions/**/*.test.mjs'",
+    "test:db": "node supabase/tests/run-db-tests.mjs",
+    "db:generate-types": "node supabase/scripts/generate-database-types.mjs",
+    "db:prep-manual-testing": "bash supabase/scripts/prep-manual-testing.sh",
+    "security:check-headers": "node security/scripts/check-csp-headers.mjs",
+    "test:e2e:security": "playwright test --config=playwright.security.config.ts",
+    "security:check-dependency-audit": "node security/scripts/check-dependency-audit.mjs",
+    "security:check-bundle-secrets": "node security/scripts/check-bundle-secrets.mjs",
+    "security:verify-secret-detection": "node --test security/scripts/verify-secret-detection.mjs"
   },
   "jest": {
     "preset": "jest-expo",
     "resolver": "react-native-worklets/jest/resolver",
     "moduleNameMapper": {
+      "^@/assets/(.*)$": "<rootDir>/assets/$1",
       "^@/(.*)$": "<rootDir>/src/$1"
     },
     "testPathIgnorePatterns": [
       "/node_modules/",
-      "<rootDir>/.claude/worktrees/"
+      "<rootDir>/.claude/worktrees/",
+      "<rootDir>/e2e/"
     ],
     "modulePathIgnorePatterns": [
-      "<rootDir>/.claude/worktrees/"
+      "<rootDir>/.claude/worktrees/",
+      "<rootDir>/e2e/"
     ]
   },
   "private": true

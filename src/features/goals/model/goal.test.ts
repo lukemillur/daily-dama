@@ -6,6 +6,7 @@ import {
   INITIAL_CUSTOM_TRICKS,
 } from '@/features/custom-tricks/model/custom-trick';
 import {
+  applyGoalTargetEdit,
   createGoal,
   createGoalId,
   getGoalContribution,
@@ -16,6 +17,7 @@ import {
   selectGoalProgressByTrick,
   selectGoalsForTrick,
   validateGoalCreation,
+  validateGoalTargetEdit,
 } from '@/features/goals/model/goal';
 import type { PracticeSessionRecord } from '@/features/stats/model/practice-history';
 
@@ -42,6 +44,7 @@ describe('goals', () => {
       kind: 'count',
       targetCount: 50,
       createdAt: 1_000,
+      updatedAt: 1_000,
     });
   });
 
@@ -67,6 +70,7 @@ describe('goals', () => {
       kind: 'time',
       targetMs: 5_400_000,
       createdAt: 2_000,
+      updatedAt: 2_000,
     });
   });
 
@@ -141,6 +145,56 @@ describe('goals', () => {
 
     expect(goalReducer(state, { type: 'goalDeleted', goalId: first.id }).goals).toEqual([second]);
     expect(goalReducer(state, { type: 'goalDeleted', goalId: 'missing' })).toBe(state);
+  });
+
+  it('edits a goal in place when its id is found, preserving id/trick/kind/createdAt, and no-ops when missing', () => {
+    const validation = validateGoalCreation({
+      kind: 'count',
+      trickId: 'big-cup',
+      trickName: 'Big cup',
+      targetCount: 10,
+    });
+    if (validation.status !== 'valid') throw new Error('Expected a valid draft.');
+    const goal = createGoal('goal-1', validation.value, 1);
+    const state = { goals: [goal] };
+
+    const editValidation = validateGoalTargetEdit({ kind: 'count', targetCount: 25 });
+    if (editValidation.status !== 'valid') throw new Error('Expected a valid edit.');
+    const edited = applyGoalTargetEdit(goal, editValidation.value, 3);
+
+    const next = goalReducer(state, { type: 'goalEdited', goal: edited });
+    expect(next.goals).toEqual([
+      { id: 'goal-1', trickId: 'big-cup', trickName: 'Big cup', kind: 'count', targetCount: 25, createdAt: 1, updatedAt: 3 },
+    ]);
+
+    const missingGoal = { ...edited, id: 'missing' };
+    expect(goalReducer(state, { type: 'goalEdited', goal: missingGoal })).toBe(state);
+  });
+
+  describe('validateGoalTargetEdit', () => {
+    it('accepts a valid count target edit', () => {
+      expect(validateGoalTargetEdit({ kind: 'count', targetCount: 75 })).toEqual({
+        status: 'valid',
+        value: { kind: 'count', targetCount: 75 },
+      });
+    });
+
+    it('accepts a valid time target edit, converting minutes to ms', () => {
+      expect(validateGoalTargetEdit({ kind: 'time', targetMinutes: 30 })).toEqual({
+        status: 'valid',
+        value: { kind: 'time', targetMs: 30 * 60_000 },
+      });
+    });
+
+    it('rejects an out-of-range count target', () => {
+      expect(validateGoalTargetEdit({ kind: 'count', targetCount: 0 }).status).toBe('invalid');
+      expect(validateGoalTargetEdit({ kind: 'count', targetCount: -5 }).status).toBe('invalid');
+    });
+
+    it('rejects an out-of-range time target', () => {
+      expect(validateGoalTargetEdit({ kind: 'time', targetMinutes: 0 }).status).toBe('invalid');
+      expect(validateGoalTargetEdit({ kind: 'time', targetMinutes: 2.5 }).status).toBe('invalid');
+    });
   });
 
   it('sorts goals for a trick by createdAt descending', () => {

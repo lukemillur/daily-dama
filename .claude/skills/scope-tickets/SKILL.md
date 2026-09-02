@@ -1,6 +1,6 @@
 ---
 name: scope-tickets
-description: Turn a Ready-for-scoping user story in BACKLOG_STORIES.md into one or more mechanically verifiable TASKS.md entries, using codebase context to decide area, planning requirement, and exit criteria. Use when the user asks to scope, promote, or turn a backlog story into a ticket. Does not judge product value or priority — that decision already happened in the product-manager skill.
+description: Turn a Ready-for-scoping user story in BACKLOG_STORIES.md into one or more mechanically verifiable TASKS.md entries, using codebase context to decide area, planning requirement, and exit criteria. Every run publishes the newly scoped tickets as an interactive review Artifact (per-ticket "reviewed" toggle, comments, a "Compile feedback" export) so the user can review and react without reading raw TASKS.md diffs. Use when the user asks to scope, promote, or turn a backlog story into a ticket. Does not judge product value or priority — that decision already happened in the product-manager skill.
 ---
 
 # Daily Dama Ticket Scoping
@@ -67,10 +67,46 @@ Scoping a story is not done when `TASKS.md` is written — it's done when `BACKL
 
 As the final step of a scoping run, delete each story entry this run promoted to `Scoped → T###` from `BACKLOG_STORIES.md` entirely — heading, all fields, everything. `TASKS.md` is the entry's permanent record from this point forward (the ticket's own `Description`/`Notes` carry the "why," and the batch-note comment above each ticket range already cites the originating story ID), so the backlog no longer needs to hold it.
 
-- Only delete entries that reached `Scoped → T###` in *this* run. Don't sweep up older `Scoped →` entries left over from previous runs as a side effect — that's a separate, deliberate cleanup pass, not an automatic consequence of running this skill.
+- Only delete entries that reached `Scoped → T###` in _this_ run. Don't sweep up older `Scoped →` entries left over from previous runs as a side effect — that's a separate, deliberate cleanup pass, not an automatic consequence of running this skill.
 - Never delete a `Proposed`, `Ready for scoping`, or `Rejected` entry, or one sent back to `product-manager` this run — only a promoted entry qualifies.
 - Do this after the status-flip write, not instead of it — the sequence is: write `TASKS.md`, flip the status to `Scoped → T###`, then remove that same entry. Even though both edits land in the same diff, skipping straight to deletion without ever writing `Scoped → T###` leaves no intermediate record of which story produced which ticket.
 - Show the deleted entry (or a summary of which story IDs were removed and their resulting ticket IDs) in the response, since it no longer exists in the file for the user to see afterward.
+
+## Publish a review artifact
+
+Every scoping run that writes at least one `TASKS.md` entry ends by publishing an interactive review artifact for the batch just written — not only when explicitly asked. This is the primary way the user reviews new tickets and leaves feedback; don't skip it just because the tickets were already shown in the chat response.
+
+Call the `artifact-design` skill before writing it. This page is a utilitarian review tool — scanned card by card, not read top to bottom — so calibrate to that: clear typographic hierarchy and a considered palette, no hero treatment, restrained flourishes. Ground the palette and type pairing in Daily Dama's own visual language (`src/constants/theme.ts`'s `AppColors`, the typography components in `src/components/ui/typography.tsx`), not a generic default.
+
+Structure, adapted from the same shape the `qa-handoff` skill uses for its checklist artifact:
+
+- **Sticky header**: an eyebrow naming the batch's source (the story IDs it came from, or "scoped during conversation" for a ticket like a T111 with no story), an `<h1>` naming the batch (e.g. "T111–T112.6 — Pre-app landing page"), and a progress bar + `reviewed / total` counter (tabular numerals) that updates live.
+- **One card per ticket written this run** (umbrella parents included): ticket ID (monospace, accent color) + title (display face), small badges for Area / Priority, the full Description, Exit criteria, and Notes text, and a "Mark reviewed" toggle — clicking it flips a visual state (checkmark badge, soft dim/strikethrough on the title), the same interaction `qa-handoff`'s checkboxes use. "Reviewed" means "I've looked at this ticket's scoping and I'm satisfied with it," not that any work has happened — don't imply otherwise in the copy.
+- **Planning badge is clickable**: unlike Area/Priority, the `Planning` badge toggles between `Required` and `Implementer` on click — this is the one scoping call a reviewer is most likely to want to flip without writing a sentence about it. A badge whose value no longer matches what was actually written to `TASKS.md` gets a distinct visual (e.g. filled accent background, a small "changed" glyph) so an override reads at a glance, not just on hover. Store overrides separately from comments, keyed by ticket ID, in the same `localStorage` blob.
+- **Per-ticket comment**: same unobtrusive toggle-to-reveal pattern as `qa-handoff` — a small "note" affordance opens a free-text field under that ticket's card, with a persistent marker (dot, filled icon, border tint) once it holds text. A comment is independent of the reviewed toggle: a reviewed ticket can still carry a "fine, but reconsider the priority" note.
+- **Persistence**: both the reviewed toggles and comment text in `localStorage`, keyed by this run's ticket IDs, so a reload keeps state. No backend or artifact runtime capability — plain client-side storage. Include a confirm-before-clearing "Reset all" control.
+- **Compile feedback**: a button that gathers every ticket with a non-empty comment _or_ a `Planning` override into a markdown block and shows it in a read-only, auto-selected textarea, plus a "Copy to clipboard" button with a manual-copy fallback if `navigator.clipboard.writeText` throws. A ticket with only a flipped `Planning` badge and no comment still belongs in the export — that toggle is itself the feedback. Format:
+  ```
+  ### <Ticket ID> — <ticket title>
+  Reviewed: yes|no
+  Planning: <original> → <overridden>   (only when changed)
+  Comment: <comment text>                (only when non-empty)
+  ```
+  Only include tickets with a comment and/or a planning override; state at the top which scoping run/date it came from. Below the per-ticket block, a single free-text **general feedback** field (also persisted) for anything not tied to one ticket — appended under its own `### General feedback` heading when non-empty.
+- Both light and dark themes, per `artifact-design`'s token rules.
+
+Write the file to the scratchpad directory, then publish with `Artifact` — title it after the batch (e.g. "T111–T112.6 Scoping Review"), a one-sentence `description` naming what's inside, and favicon `📋` (keep this favicon stable across future scope-tickets artifacts — it's how the user recognizes this skill's pages in a gallery of many). Each scoping run publishes a fresh artifact for its own batch rather than updating a previous run's page — a review page is scoped to the tickets it reviews, not a running log.
+
+Send the artifact link as part of the response, alongside (not instead of) the existing story→ticket summary this skill already produces.
+
+## Feedback loop back into scoping
+
+Same shape as `qa-handoff`'s loop back into the backlog, adapted for a scoping decision instead of a QA finding:
+
+1. The user reviews the artifact, toggling tickets and leaving comments on anything they want changed.
+2. They click "Compile feedback" and paste the resulting block into chat.
+3. Read each comment for what kind of change it's asking for: a scoping-level tweak (wrong exit criterion, wrong area, should split further, wrong `Planning` value) is a direct edit back into that `TASKS.md` entry — go make it. A comment that actually reverses a product decision (the ticket shouldn't exist, the story behind it was wrong) is not this skill's call — send it back to `product-manager` instead of quietly rewriting the ticket to match.
+4. Don't invoke `product-manager` automatically on a pasted-back comment — say which tickets look like a product-level disagreement and let the user (or their explicit instruction) trigger that skill.
 
 ## File ownership and safe writes
 
@@ -84,4 +120,4 @@ Before writing:
 - show the intended `TASKS.md` and `BACKLOG_STORIES.md` changes in the response or explain them clearly;
 - do not commit, push, open PRs, or invoke `newTicket`/implementation agents unless separately requested.
 
-After writing, run a focused structural check covering both files — inspect the diff and confirm every new `TASKS.md` entry has the required fields and a real, mechanical exit criterion, that every story promoted this run was removed from `BACKLOG_STORIES.md` (not just status-flipped), and that no non-promoted entry was touched. Full application verification isn't needed; this skill doesn't change application code.
+After writing, run a focused structural check covering both files — inspect the diff and confirm every new `TASKS.md` entry has the required fields and a real, mechanical exit criterion, that every story promoted this run was removed from `BACKLOG_STORIES.md` (not just status-flipped), and that no non-promoted entry was touched. Then publish the review artifact per the section above — a scoping run isn't finished until the artifact link has been sent, same as it isn't finished with a story left at `Ready for scoping`. Full application verification isn't needed; this skill doesn't change application code.

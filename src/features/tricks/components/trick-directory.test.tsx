@@ -1,4 +1,5 @@
 import { describe, expect, it } from '@jest/globals';
+import { useState } from 'react';
 import { act, create } from 'react-test-renderer';
 
 import { TrickDirectory } from '@/features/tricks/components/trick-directory';
@@ -81,6 +82,42 @@ describe('TrickDirectory', () => {
     expect(textAfterToggle.indexOf('Focused tricks')).toBeGreaterThanOrEqual(0);
     expect(textAfterToggle.indexOf('Spike')).toBeGreaterThan(textAfterToggle.indexOf('Focused tricks'));
     expect(textAfterToggle.indexOf('Spike')).toBeLessThan(textAfterToggle.indexOf('Rank 1'));
+  });
+
+  it('hides the focused-tricks section while a search query is present, and restores it when cleared', () => {
+    function Wrapper() {
+      const [query, setQuery] = useState('');
+      return (
+        <TrickDirectory
+          tricks={FIXTURE_TRICKS}
+          showFocusedSection
+          focusedTrickIds={['trick-3']}
+          search={{ query, onChangeText: setQuery }}
+        />
+      );
+    }
+
+    let root!: import('react-test-renderer').ReactTestRenderer;
+    act(() => {
+      root = create(<Wrapper />);
+    });
+
+    expect(allText(root)).toContain('Focused tricks');
+
+    const searchInput = root.root.findByProps({ accessibilityLabel: 'Search tricks' });
+    act(() => {
+      searchInput.props.onChangeText('Big');
+    });
+    expect(allText(root)).not.toContain('Focused tricks');
+
+    act(() => {
+      searchInput.props.onChangeText('');
+    });
+    expect(allText(root)).toContain('Focused tricks');
+
+    act(() => {
+      root.unmount();
+    });
   });
 
   it('renders no Practice action when practiceAction is absent', () => {
@@ -212,5 +249,122 @@ describe('TrickDirectory', () => {
 
     expect(flatTexts.some((text) => text.includes('—'))).toBe(false);
     expect(flatTexts).toContain('Goals');
+  });
+
+  it("renders a hostile custom trick name as literal text, not executable HTML (T162.1)", () => {
+    const hostile = `<img src=x onerror="window.__pwned=1">`;
+    const hostileTricks = [
+      { id: "hostile-1", name: hostile, customKind: "standalone" as const },
+    ];
+    let root!: import("react-test-renderer").ReactTestRenderer;
+    act(() => {
+      root = create(<TrickDirectory tricks={hostileTricks} />);
+    });
+
+    const flatTexts = allText(root);
+
+    expect(flatTexts).toContain(hostile);
+  });
+
+  it('invokes onActivate when pressing anywhere on the row, and the pressed row contains the trick identity content', () => {
+    let root!: import('react-test-renderer').ReactTestRenderer;
+    const activated: DirectoryTrick[] = [];
+    act(() => {
+      root = create(
+        <TrickDirectory
+          tricks={FIXTURE_TRICKS}
+          onActivate={(trick) => {
+            activated.push(trick);
+          }}
+        />,
+      );
+    });
+
+    const chooseNode = root.root.find(
+      (node) => node.props.accessibilityLabel === 'Choose Big Cup',
+    );
+
+    const containsTrickName = chooseNode.findAll(
+      (node) => node.props.children === 'Big Cup',
+    );
+    expect(containsTrickName.length).toBeGreaterThan(0);
+
+    act(() => {
+      chooseNode.props.onPress();
+    });
+
+    expect(activated).toEqual([FIXTURE_TRICKS[0]]);
+  });
+
+  it('keeps nested Edit/Delete/Notes/Goals controls independently functional and never triggers selection from them', () => {
+    const customTricks: readonly DirectoryTrick[] = [
+      { id: 'custom-1', name: 'Custom Trick', customKind: 'standalone' as const },
+    ];
+    let root!: import('react-test-renderer').ReactTestRenderer;
+    const activated: DirectoryTrick[] = [];
+    const edited: string[] = [];
+    const deleted: string[] = [];
+    const notesOpened: DirectoryTrick[] = [];
+    const goalsOpened: DirectoryTrick[] = [];
+    act(() => {
+      root = create(
+        <TrickDirectory
+          tricks={customTricks}
+          onActivate={(trick) => {
+            activated.push(trick);
+          }}
+          customActions={{
+            onEdit: (id) => {
+              edited.push(id);
+            },
+            onDelete: (id) => {
+              deleted.push(id);
+            },
+          }}
+          notesAction={{
+            onOpen: (trick) => {
+              notesOpened.push(trick);
+            },
+          }}
+          goalsAction={{
+            onOpen: (trick) => {
+              goalsOpened.push(trick);
+            },
+          }}
+        />,
+      );
+    });
+
+    const editNode = root.root.find((node) => node.props.accessibilityLabel === 'Edit Custom Trick');
+    act(() => {
+      editNode.props.onPress();
+    });
+    expect(edited).toEqual(['custom-1']);
+
+    const deleteNode = root.root.find((node) => node.props.accessibilityLabel === 'Delete Custom Trick');
+    act(() => {
+      deleteNode.props.onPress();
+    });
+    expect(deleted).toEqual(['custom-1']);
+
+    const notesNode = root.root.find((node) => node.props.accessibilityLabel === 'Notes for Custom Trick');
+    act(() => {
+      notesNode.props.onPress();
+    });
+    expect(notesOpened).toEqual([customTricks[0]]);
+
+    const goalsNode = root.root.find((node) => node.props.accessibilityLabel === 'Goals for Custom Trick');
+    act(() => {
+      goalsNode.props.onPress();
+    });
+    expect(goalsOpened).toEqual([customTricks[0]]);
+
+    expect(activated).toEqual([]);
+
+    const chooseNode = root.root.find((node) => node.props.accessibilityLabel === 'Choose Custom Trick');
+    act(() => {
+      chooseNode.props.onPress();
+    });
+    expect(activated).toEqual([customTricks[0]]);
   });
 });

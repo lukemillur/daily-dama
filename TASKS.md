@@ -19,10 +19,10 @@ Working backlog for Daily Dama **core-functionality** work. This file is the che
 
 1. Do the work.
 2. Run the task's own exit criteria yourself — don't mark it done on assumption.
-3. Run the project's standard verification sequence (`yarn test --runInBand`, `yarn lint`, `yarn tsc --noEmit` — see [AGENTS.md](AGENTS.md)). A task isn't done if it breaks the baseline, even when its own criteria pass.
+3. Run the risk-based local checks for the changed area in [AGENTS.md](AGENTS.md), including full typechecking for TypeScript changes. Reserve the complete app sequence for the escalation conditions documented there; narrow tasks rely on the required CI app gate for the broad baseline.
 4. Commit the change on its own, referencing the task ID in the message. Focused commits, never pushed automatically (see AGENTS.md § Git state expectations).
 5. In that same commit, move the entry from `Backlog` in this file to [TASKS_DONE.md](TASKS_DONE.md), flipping its status to `Done`. If this task was the last remaining child of a parent umbrella entry (every sibling child is now `Done`), move the parent entry to `TASKS_DONE.md` as well, in the same commit, flipping its status to `Done` too — an umbrella with no exit criteria of its own is done exactly when its children are.
-6. Open a PR into `development` and squash-merge it immediately — no review gate, this is pre-authorized (see [AGENTS.md](AGENTS.md) § Git state expectations). `development`, not `main`, is where task branches land; promoting `development` into `main` is a separate, manual step outside this protocol.
+6. Open a PR into `development`, wait for required CI checks to pass, then squash-merge it — no human review gate is required, and the automated merge remains pre-authorized (see [AGENTS.md](AGENTS.md) § Git state expectations). `development`, not `main`, is where task branches land; promoting `development` into `main` is a separate, manual step outside this protocol.
 
 **Getting stuck:**
 
@@ -103,7 +103,7 @@ Tasks here may be picked up by more than one agent at a time — possibly differ
 1. Create a branch named `task/T0NN-short-slug`, using the task's own ID, branched from `development`.
 2. Push the branch immediately, _before_ starting the actual work — this push is the claim (see the narrow exception to "never push automatically" in AGENTS.md § Git state expectations). If the push is rejected because the branch name already exists, someone beat you to it — stop and pick another task. Never `--force` here; a rejected push is the collision detector working as intended, not an obstacle to push through.
 3. Do the work on that branch. Everything under _Completing a task_ above still applies — including that moving the entry to `TASKS_DONE.md` happens in a commit on this branch, not a direct edit on `development`.
-4. Open a PR into `development` when ready and squash-merge it immediately — this is pre-authorized, no review gate (see AGENTS.md § Git state expectations). CI runs the standard verification sequence on the PR, but the merge itself does not wait on it.
+4. Open a PR into `development` when ready, wait for required CI checks to pass, and then squash-merge it — this is pre-authorized and needs no human review gate (see AGENTS.md § Git state expectations). A failed or unavailable required check blocks the merge; do not bypass it.
 5. Pushing further commits to your own branch, opening the PR, and squash-merging it into `development` are all covered by working normally on a task. Promoting `development` into `main` is a separate, manual step and still needs the usual confirmation.
 
 **Stale claims:** a pushed branch with no activity and no PR is an abandoned claim, not a real one. Deleting it releases the task — ordinary git housekeeping, no special protocol required. Deleting it is a deliberate human decision: no agent or script may take over a claim branch on its own, and branch age is never treated as proof that a claim was abandoned.
@@ -127,30 +127,113 @@ _Raw ideas land here — a name and a one-line description, nothing more. Discus
 
 ## Backlog
 
-_This round came out of a review pass over the first batch of completed work (T001–T014). Entries below are either defects in what shipped or follow-on functionality that first pass surfaced. Where an entry corrects a completed task, it names that task — but the archived entry in [TASKS_DONE.md](TASKS_DONE.md) stays as-written; history isn't rewritten._
+_All currently actionable backend-roadmap work is phase-gated and active in dependency order: Phase 1/Auth T153–T154, Phase 2 T155, Phase 3 T156–T160, Phase 4 T161, and the Phase 6 launch gate T162. T154 is the shared credential-maintenance prerequisite named by both Phase 1 and Phase 4, and is ordered before T158's guarded-logout integration. Phase 5 has no active ticket while native hardening is deferred. Supabase, unrestricted guest access, web PKCE, exact callbacks, local-first synchronization, immediate deletion, and the roadmap's security requirements are settled decisions._
 
-### Terminology note
+_Phase 1/4 shared account-maintenance activation: T154 comes from S033 and the credential-maintenance/logout items repeated across `BACKEND_ROADMAP.md` Phases 1 and 4. It follows the core Auth routes and precedes Phase 3's T158 guarded logout, while account deletion stays separate in T161._
 
-The first pass used **locked/unlocked** for "the user can land this trick." User-facing copy in this round switches to **laced/unlaced**, which is what the domain actually calls it. The persisted profile field is still named `manuallyUnlockedTrickIds` and stays that way — renaming a persisted key means either a migration or throwing away real user data, and neither is worth it for a vocabulary change. Rename the copy, not the storage contract.
+_Phase 2 activation: T155 comes from S034 and `BACKEND_ROADMAP.md` Phase 2. Its thirteen S-sized children establish the database security boundary, model all six resources, prove grants/RLS and constraints, generate typed repository contracts, and add pure runtime mappings before any provider synchronizes. The sequence is dependency-driven: schema and tests precede generated types and mappings; existing reducer authority, hydration fallback, and skipped-initial-write behavior remain unchanged._
 
-_This next batch (T045–T069) comes from a QA pass over PR 55's suggested checklist (the `development` → `main` release covering T002–T041), worked top to bottom. Where an entry names the task that shipped the behavior it's correcting, the archived entry in [TASKS_DONE.md](TASKS_DONE.md) stays as-written — history isn't rewritten, same as above._
+---
 
-_The following batch (T070–T079) comes from the QA checklist completed against PR 83, worked top to bottom. New entries are intentionally placed before the older queue so the next actionable QA finding is selected first. Existing task history is not rewritten._
+_Phase 3 activation: T156–T160 come from S035–S038 and `BACKEND_ROADMAP.md` Phase 3. The dependency chain deliberately separates identity-partitioned persistence (T156), durable synchronization mechanics and ordered domain rollout (T157), outbox-aware logout (T158), resumable guest conversion (T159), and visible conflict recovery (T160). Each child owns one persistence, orchestration, domain, or UX boundary; Realtime remains deferred and synchronization may never alter the active Sesh state machine._
 
-_The following batch (T080–T082) comes from the QA checklist completed against PR 99, worked top to bottom. New entries are intentionally placed before the older queue so the next actionable QA finding is selected first. Existing task history is not rewritten._
+---
 
-_The following batch (T083–T084) comes from a product-manager audit scoping two new product surfaces: custom app theming and rank-progression suggestions. Promoted from `Needs scoping` after resolving their open product/technical questions with the user._
+_Phase 4 activation: T161 comes from S039 and `BACKEND_ROADMAP.md` Phase 4. Its five S-sized children separate the privileged Edge Function boundary, abuse/leakage hardening, destructive-operation security acceptance tests, the confirmation UI, and identity-safe local cleanup/recovery. User-facing export and delayed deletion remain excluded._
 
-_The following batch (T085–T088) comes from user stories S001–S004 in [BACKLOG_STORIES.md](BACKLOG_STORIES.md), scoped via the `scope-tickets` skill after `product-manager` refined a round of theming UX feedback into stories. New entries are intentionally placed before the older queue (there is none currently) so they're picked up first._
+---
 
-_T089 comes from story S014 in [BACKLOG_STORIES.md](BACKLOG_STORIES.md), scoped via `scope-tickets` after a QA pass on T085–T088 surfaced a pattern of theming being bolted onto surfaces one hardcoded literal at a time. It is deliberately scoped as schema-only groundwork, sequenced ahead of the not-yet-scoped S009/S012/S013 so those consume this token set instead of inventing their own._
+_Phase 5 consideration: no cross-platform account-hardening ticket is activated. S040 remains `Proposed` in [BACKLOG_STORIES.md](BACKLOG_STORIES.md) because [AGENTS.md](AGENTS.md) makes web the only active platform until mobile hardening is explicitly resumed. Native PKCE callbacks, SecureStore Auth storage, and iOS/Android verification therefore remain deliberately deferred rather than being disguised as actionable web work._
 
-_T090–T097 come from stories S005–S009 and S011–S013 in [BACKLOG_STORIES.md](BACKLOG_STORIES.md), scoped in the same `scope-tickets` pass. S010 (preset text colors) was not scoped this round — see the note on its `BACKLOG_STORIES.md` entry; investigation found its premise doesn't hold up and it needs re-refinement by `product-manager` before it's scopable. New entries are placed after T089, since T096/T097 depend on it landing first._
 
-_T098 comes from story S010 in [BACKLOG_STORIES.md](BACKLOG_STORIES.md), rewritten by `product-manager` after the original preset-scoped framing turned out to rest on a false premise, then scoped in this pass._
+---
 
-_The following batch (T099–T105) comes from stories S015–S021 in [BACKLOG_STORIES.md](BACKLOG_STORIES.md), a QA pass over the T089–T098 theming batch refined into stories by `product-manager` and scoped in this pass. New entries are placed before the older queue (there is none currently) so they're picked up first._
+_T182–T193 come from stories S063–S074 in [BACKLOG_STORIES.md](BACKLOG_STORIES.md) (the user's 2026-08-31 QA pass on PRs #224–256 — every T163–T181 item came back with a follow-up gap on the same already-`Done` ticket, plus six items of general feedback). T182 (S063, goal-card trick title), T183 (S064, signup-invite modal), T185 (S066, synced password-visibility icon), T190 (S071, hide sync status for guests), T191 (S072, auth-screen back buttons), T192 (S073, verification-email branding), and T193 (S074, forgot-password left-align) are `Implementer` — local, known-pattern changes, several reusing an existing precedent in this same codebase (T158's `logout-prompt.tsx` absolute-fill modal for T183; T181's "Back to Profile" button for T191). T184 (S065) is `Required`: tracing all four `/auth/*` screens confirmed each renders its primary form via `FormScroll` directly, never wrapped in `<Screen>` (T170's own Notes already flagged this gap) — `PageTitle`/`Introduction`/`Eyebrow` already resolve from `theme.text`/`theme.textMuted` via `typography.tsx`, but with no themed `Screen` background underneath them the only visible surface is `+html.tsx`'s static CSS, and `FieldInput`/`PasswordInput`'s field chrome use hardcoded `AppColors` instead of theme tokens. Wrapping the primary form in `<Screen>` on four screens without reintroducing T145's hydration-flicker fix is exactly the kind of provider/boundary risk this project's Planning rules reserve for `Required`. T189 (S070) is `Required` for the same class of reason: tracing `router.replace('/')`'s target confirmed `/`'s own `useRedirectOnboardedVisitorHome` reads `use-cached-onboarding-status.ts`, which — like `read-cached-theme-background.ts` — still reads only the legacy bare `USER_PROFILE_STORAGE_KEY` rather than the identity-scoped guest key T156.2 introduced; T170's Notes already flagged this exact gap as an "undiscovered gap flagged as a follow-up candidate," and both post-logout symptoms (wrong destination, un-reset theme) trace to it. T188 (S069) is `Required` because the `delete-account` Edge Function's 503 could not be attributed to an app-code defect from static tracing alone — `supabase/README.md` documents that the function needs a running local Supabase stack (`supabase start` + `db reset`), so this needs a runtime diagnosis pass, not a known fix applied locally. T186 (S067) and T187 (S068) are both `Required` M-chains: tracing `goal.ts`, `custom-trick.ts`, and `user-profile-persistence.ts` found no per-record `updatedAt` field in the profile, custom-trick, or goal domains (only `note.ts` already has one), so S068's "resolve by timestamp" premise needs that field added first — T187.1 adds it, T187.2 wires the automatic most-recent-wins resolution and removes `/app/profile/sync-conflicts` and `sync-conflict-list.tsx`. T186.1 covers the common empty-account signup path (`GuestImportPreview`'s own state-machine trace confirmed a brand-new account has no cloud data yet, so `uploading -> completed` never touches `awaitingProfileChoice`/`conflicts`), auto-triggering `confirmImport()`, deleting the preview UI, and gating onboarding on existing local data. T186.2 (existing-account guest imports that do reach a profile-choice or conflict state) depends on T187.2's automatic-resolution primitive and is ordered after it.
 
-## Done
+---
 
-Completed entries live in [TASKS_DONE.md](TASKS_DONE.md) — not part of the top-to-bottom read above; see step 5 under _Completing a task_.
+_T194–T206 come from stories S075–S088 in [BACKLOG_STORIES.md](BACKLOG_STORIES.md) (the user's 2026-09-01 QA pass on T182–T193). T194 (S075), T196 (S077), T198 (S079 partial + S088), T202 (S083), T203 (S084), T204 (S085), and T205 (S086) are `Implementer` — local, known-pattern changes. T201 combines S081 and S082 into one ticket because both edit the same `PostSeshSignupInvite`/`InviteOverlay` block in `sesh.tsx`; splitting them would mean two PRs colliding on the same lines for no benefit. T195 (S076) and T197 (S078) are `Required`: tracing `supabase/README.md:281` ("This config is local-only. It does not touch the hosted Supabase project") shows T192's and T188's local-stack verification never actually reached whatever environment the user's real signups and deletions hit, so both need a fresh diagnosis pass against that real environment rather than a known local fix reapplied. T199 (S079 remainder) and T206 (S087) are `Required` for the same class of reason as T188/T189 before them: both are post-auth-identity-change render/redirect races (guest→user after import for T199, sign-in to an existing populated account for T206) that need runtime tracing through `UserProfileProvider`'s hydration and the sync coordinator before a fix can be written, not a known pattern applied locally. T200 (S080) is `Required` because it adds a new pre-onboarding entry point into routing (`landing-cta.tsx`/`use-cached-onboarding-status.ts`) that several prior tickets (T112.5, T145, T170, T189) have already shown is easy to get wrong around hydration and redirect ordering. T204 depends on T203 landing first (both touch `AccountSection`'s contents, T203 removing its "Delete account" button and T204 relocating what remains).
+
+---
+
+_T208–T215 come from stories S090–S097 in [BACKLOG_STORIES.md](BACKLOG_STORIES.md) (the user's 2026-09-02 QA pass on T195/T201/T205/T207, plus three items of general feedback). T209 (S091), T210 (S092), T211 (S093), T213 (S095), and T214 (S096) are `Implementer` — local, known-pattern changes, several reusing an existing precedent in this codebase (T205's `DisplayTitle` title style for T209; `RankUpCelebrationModal`'s `theme.accent` precedent for T211; `trick-goals-screen.tsx`'s `GoalHeaderRow`/`GoalTrickName` pattern for T214). T208 (S090) is `Required`: it mounts a new full-screen overlay above `<Slot />` in `_layout.tsx` and introduces `useGlobalSearchParams`, which has no precedent anywhere in this codebase today — both are boundary-level changes per this project's Planning rules, even though the celebration visual mechanism itself already exists via `RankUpCelebrationModal`. T212 (S094) is `Required` because T195's confirmed-working hosted-project fix (`supabase/RESEND_DNS_AUTH.md`'s 2026-09-01 entry) has now regressed — this needs a fresh runtime diagnosis of why the fix didn't hold, not a repeat of the same PATCH. T215 (S097) is `Required` for the same class of reason as T199/T206 before it: `StatsScreen` renders synchronously off `usePracticeHistory().sessions` with no guest-import-pending gate, unlike `home.tsx`'s existing `isGuestImportPendingResolution` check — this needs runtime tracing to confirm whether the same gate suffices for Stats before a fix can be written.
+
+### [T208] Replace Home's new-account banner with a global, celebration-style acknowledgment
+
+- **Area:** Home / Authentication
+- **Priority:** Medium
+- **Status:** Not started
+- **Planning:** Required
+- **Description:** Replace `home.tsx`'s locally-scoped `NewAccountBanner` (added by T207) with a full-screen, auto-dismissing acknowledgment mounted at the root layout (`src/app/_layout.tsx`), reusing `RankUpCelebrationModal`'s visual pattern (theme-derived full-bleed overlay, `OnboardingRankRevealStep`-style layout) with its own "welcome/verified" copy — not the trick-lace celebration copy or component instance. `auth-callback-screen.tsx`'s existing `newAccount=1` redirect param stays the trigger; since no route-scoped `useLocalSearchParams` read is available above `<Slot />`, the root layout reads it via `useGlobalSearchParams` and strips it the same way `home.tsx` does today.
+- **Exit criteria:** A new test at the root-layout level (or an equivalent integration test) asserts the acknowledgment overlay renders once when `newAccount=1` is present anywhere in the URL and never on a routine sign-in redirect; `home.test.tsx`'s now-removed `NewAccountBanner` cases are deleted rather than left dangling. Confirmed in-browser: completing signup + email verification through the real callback link shows the full-screen overlay regardless of what's rendered under it (Home content or onboarding), it auto-dismisses without requiring a tap, appears exactly once, and a regular sign-in shows nothing.
+- **Notes:** From S090. Direction confirmed with the user 2026-09-02: reuse the presentation *mechanism* (full-screen overlay, theme-derived styling per `RankUpCelebrationModal`'s precedent) and *visual identity*, not the trick-lace copy or component instance. Pick an auto-dismiss duration that doesn't reintroduce T145-class flicker risk.
+
+### [T209] Bring guest Profile's "Account" title to parity with the signed-in version
+
+- **Area:** Profile
+- **Priority:** Low
+- **Status:** Not started
+- **Planning:** Implementer
+- **Description:** `GuestAccountSection`'s "Account" heading (`SectionLabel`, `guest-account-section.tsx`) still uses an 11px uppercase eyebrow style; change it to the same `styled(DisplayTitle)` `Title` style `AccountSection` already uses since T205, so both login states render "Account" at the same size/weight.
+- **Exit criteria:** `guest-account-section.test.tsx` passes with the heading using the larger title style; confirmed in-browser that a signed-out Profile visitor sees "Account" at the same size/weight as "Put it to the test." and "Select a preset."
+- **Notes:** From S091. Purely typographic, mirrors T205's fix on the authenticated side.
+
+### [T210] Move the first-Sesh inline signup invite above the session metrics
+
+- **Area:** Sesh
+- **Priority:** Low
+- **Status:** Not started
+- **Planning:** Implementer
+- **Description:** In `sesh.tsx`'s wrap-up screen, move the first-occurrence `<InlineSignupInvite />` (currently rendered near the bottom of `ActiveContent`, after the note prompt) to render immediately after the trick name (`DisplayTitle`)/`SequenceSteps`, before the `SummaryGrid` metrics.
+- **Exit criteria:** `sesh.test.tsx` passes with a case asserting the inline invite renders after the trick name and before the summary metrics on the first-ever regular Sesh's wrap-up screen.
+- **Notes:** From S092. Placement-only; invite eligibility and the every-5th-Sesh overlay (T211) are unaffected.
+
+### [T211] Make the every-5th-Sesh invite overlay theme-matched and lighter
+
+- **Area:** Sesh
+- **Priority:** Low
+- **Status:** Not started
+- **Planning:** Implementer
+- **Description:** `InviteOverlay` (`sesh.tsx`) currently hardcodes `rgba(244, 201, 77, 0.85)` (mustard yellow) regardless of the user's selected theme. Change it to derive from `theme.accent` via `ThemeContext` — matching `RankUpCelebrationModal`'s existing precedent — at a lower, more translucent opacity.
+- **Exit criteria:** `sesh.test.tsx` passes with cases confirming the overlay's background color tracks at least two different theme presets' accent colors; confirmed in-browser that the wrap-up content behind the overlay is clearly legible under the new opacity.
+- **Notes:** From S093. The theme-preset system already exposes `theme.accent` to styled-components; no new theming capability needed.
+
+### [T212] Make the branded confirmation email fix actually hold for real signups
+
+- **Area:** Authentication / Supabase
+- **Priority:** High
+- **Status:** Not started
+- **Planning:** Required
+- **Description:** T195's `PATCH /v1/projects/{ref}/config/auth` fix to the hosted project's confirmation-email template passed live verification on 2026-09-01, but a real signup now again receives raw/unstyled HTML. Diagnose why the hosted config didn't hold — a leading, unconfirmed hypothesis is that the fix was applied as a one-off runtime PATCH rather than through the repository's declarative `supabase/config.toml`, so a later config push or project change reverted it — and land a fix durable enough to survive normal operations, not just a repeated PATCH.
+- **Exit criteria:** A real signup, in the environment the user actually tests against, receives the branded confirmation email (cream/paper background, ink border, hard drop shadow, red uppercase eyebrow, ink-background/yellow-text button) in the actual inbox — verified a second time. `supabase/RESEND_DNS_AUTH.md` documents what caused the previous fix to not hold, so a third recurrence doesn't require re-diagnosing from scratch.
+- **Notes:** From S094. `Required` for the same reason T195/T197 were: needs a runtime diagnosis pass against the real hosted environment, not a known local fix reapplied. "Why didn't the first fix hold" is part of the exit criteria, not optional.
+
+### [T213] Replace the landing page's inline auth buttons with a scroll-aware header bar
+
+- **Area:** Landing
+- **Priority:** Medium
+- **Status:** Not started
+- **Planning:** Implementer
+- **Description:** Replace `LandingAuthCta`'s current inline placement inside the landing page's scrollable hero content with a minimal, persistent header bar (styled consistently with the rest of the app) holding the same sign up/sign in entry points; hide that header bar once the visitor scrolls past a threshold near the top of the page.
+- **Exit criteria:** `landing-page.test.tsx` (or equivalent) passes with cases asserting the header bar renders sign up/sign in controls above the scrollable content and hides once scroll position passes the threshold; confirmed in-browser that the inline hero buttons are gone and the header bar's show/hide behaves correctly while scrolling.
+- **Notes:** From S095. `LandingAuthCta`'s existing guest-only gating (`authState.status !== 'guest'` → render nothing) carries over unchanged to the new header bar.
+
+### [T214] Give trick notes cards the same title treatment as trick goal cards
+
+- **Area:** Trick notes
+- **Priority:** Low
+- **Status:** Not started
+- **Planning:** Implementer
+- **Description:** `NoteCard` (`trick-notes-screen.tsx`) has no trick-name heading today — only a small date label and note body. Add the trick name as a large title on the right side of the card, matching `GoalCard`'s `GoalHeaderRow`/`GoalTrickName` pattern in `trick-goals-screen.tsx`. `Note` already carries a `trickName` snapshot field, so no model change is needed.
+- **Exit criteria:** `trick-notes-screen.test.tsx` passes with a case asserting a note card renders its `trickName` as a large title on the right side of the card; confirmed in-browser that trick notes cards visually match the trick goal card's title placement and size.
+- **Notes:** From S096. Pure presentation change using an existing field; no persistence or model changes.
+
+### [T215] Fix Stats showing a false empty state right after a guest-to-account merge
+
+- **Area:** Stats / guest conversion
+- **Priority:** High
+- **Status:** Not started
+- **Planning:** Required
+- **Description:** `StatsScreen` (`src/app/app/stats/index.tsx`) reads `usePracticeHistory().sessions` synchronously and renders `EmptyStats` whenever `sessions.length === 0`, with no check for a pending guest-to-account data merge — unlike `home.tsx`, which already gates rendering on `isGuestImportPendingResolution(guestImportState)` for exactly this class of race (T199/T206). Diagnose the render-order race for Stats specifically and gate it the same way, so a guest who signs up with existing local data doesn't see a false empty state before a manual refresh.
+- **Exit criteria:** A new integration test (mirroring `home.guest-import-upload-failure.test.tsx`'s approach) confirms `StatsScreen` does not render `EmptyStats` while a guest import is still resolving, and renders the correct populated stats once it resolves without requiring a remount. Confirmed against a real guest-to-account signup with existing local practice data that Stats shows that history immediately, with no manual refresh needed.
+- **Notes:** From S097. `Required` for the same class of reason as T188/T189/T199/T206: an identity-change/hydration-timing race needs runtime tracing, not a known pattern applied blindly — confirm whether gating on `isGuestImportPendingResolution` alone is sufficient for Stats, or whether Stats' `usePracticeHistory()` hook has its own independent timing gap from Home's.

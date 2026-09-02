@@ -10,11 +10,12 @@
 //   node .claude/scripts/verify.mjs                # full sequence
 //   node .claude/scripts/verify.mjs --skip-export  # omit the web export
 //   node .claude/scripts/verify.mjs --only lint    # one step (repeatable)
+//   node .claude/scripts/verify.mjs --test-file path/to/file.test.ts
 //   node .claude/scripts/verify.mjs --keep-going   # run every step even after a failure
 //   node .claude/scripts/verify.mjs --json         # machine-readable result
 //
-// Run it with a generous tool timeout (the sequence routinely exceeds the
-// default): the full run takes minutes.
+// Run it with a generous tool timeout: the full sequence can exceed a tool's
+// default timeout on slower machines.
 
 import fs from 'node:fs';
 import os from 'node:os';
@@ -32,18 +33,29 @@ export const STEPS = [
 ];
 
 export function parseArgs(argv) {
-  const options = { skipExport: false, only: [], keepGoing: false, json: false };
+  const options = { skipExport: false, only: [], testFiles: [], keepGoing: false, json: false };
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index];
     if (arg === '--skip-export') options.skipExport = true;
     else if (arg === '--keep-going') options.keepGoing = true;
     else if (arg === '--json') options.json = true;
-    else if (arg === '--only') options.only.push(argv[++index]);
-    else throw new Error(`unrecognized argument: ${arg}`);
+    else if (arg === '--only') {
+      const value = argv[++index];
+      if (!value) throw new Error('--only requires a step name');
+      options.only.push(value);
+    } else if (arg === '--test-file') {
+      const value = argv[++index];
+      if (!value || value.startsWith('--')) throw new Error('--test-file requires a test file path');
+      options.testFiles.push(value);
+    } else throw new Error(`unrecognized argument: ${arg}`);
   }
   const known = new Set(STEPS.map((step) => step.name));
   for (const name of options.only) {
     if (!known.has(name)) throw new Error(`unknown step ${JSON.stringify(name)}; expected one of ${[...known].join(', ')}`);
+  }
+  if (options.testFiles.length > 0) {
+    if (options.only.length === 0) options.only.push('test');
+    else if (!options.only.includes('test')) throw new Error('--test-file can only be combined with --only test');
   }
   return options;
 }
@@ -57,6 +69,14 @@ export function planSteps(options, steps = STEPS) {
   });
 }
 
+export function buildStepArgv(step, options, exportDir) {
+  const argv = step.argv.map((token) => (token === null ? exportDir : token));
+  if (step.name === 'test' && options.testFiles.length > 0) {
+    argv.push('--runTestsByPath', ...options.testFiles);
+  }
+  return argv;
+}
+
 function tail(text, lines) {
   const split = text.split('\n');
   if (split.length <= lines) return text;
@@ -65,6 +85,10 @@ function tail(text, lines) {
 
 function emitJson(result) {
   process.stdout.write(`${JSON.stringify({ schemaVersion: 1, ...result })}\n`);
+}
+
+export function formatFailureResult(result) {
+  return `\n--- \`${result.command}\` (exit ${result.code}) ---\n${result.outputTail}\n`;
 }
 
 function main() {
@@ -85,7 +109,7 @@ function main() {
   let failure = null;
 
   for (const step of planned) {
-    const argv = step.argv.map((token) => (token === null ? exportDir : token));
+    const argv = buildStepArgv(step, options, exportDir);
     const started = Date.now();
     const proc = spawnSync(argv[0], argv.slice(1), {
       cwd,
@@ -119,7 +143,7 @@ function main() {
       emitJson({
         status: 'failed',
         firstFailedStep: failure.name,
-        options: { skipExport: options.skipExport, only: options.only, keepGoing: options.keepGoing },
+        options: { skipExport: options.skipExport, only: options.only, testFiles: options.testFiles, keepGoing: options.keepGoing },
         steps: results,
         logPath,
       });
@@ -127,7 +151,7 @@ function main() {
     }
     emitJson({
       status: 'passed',
-      options: { skipExport: options.skipExport, only: options.only, keepGoing: options.keepGoing },
+      options: { skipExport: options.skipExport, only: options.only, testFiles: options.testFiles, keepGoing: options.keepGoing },
       steps: results,
       skippedSteps: STEPS.filter((step) => !planned.includes(step)).map((step) => step.name),
       logPath,
@@ -141,8 +165,7 @@ function main() {
   }
   if (failure) {
     for (const result of results.filter((entry) => entry.code !== 0)) {
-      process.stdout.write(`\n--- \`${result.argv.join(' ')}\` (exit ${result.code}) ---\n`);
-      process.stdout.write(`${tail(result.output.trim(), FAILURE_TAIL_LINES)}\n`);
+      process.stdout.write(formatFailureResult(result));
     }
     process.stdout.write(`\nVERIFY: FAIL at ${failure.name} — full log: ${logPath}\n`);
     process.exit(failure.code || 1);

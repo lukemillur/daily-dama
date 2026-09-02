@@ -120,14 +120,18 @@ test('a second claim of the same task is refused without touching the existing b
   assert.equal(git(repo.local, 'rev-parse', `origin/${first.json.branch}`), claimedSha, 'branch untouched');
 });
 
-test('continuous mode stops on the claimed head of the backlog', (t) => {
+test('continuous mode skips the claimed head of the backlog and advances to the next task', (t) => {
   const repo = makeRepo();
   t.after(() => cleanupRepo(repo));
 
   node(CLAIM, ['--repo', repo.local, 'T100'], repo.local);
   const next = node(CLAIM, ['--repo', repo.local], repo.local);
-  assert.equal(next.json.status, 'blocked');
-  assert.equal(next.json.taskId, 'T100', 'must not silently advance to T101');
+  assert.equal(next.json.status, 'claimed');
+  assert.equal(next.json.taskId, 'T101', 'advances past the claimed task instead of stopping on it');
+  assert.ok(
+    next.json.skipped.some((entry) => entry.id === 'T100' && entry.reason === 'claimed'),
+    'the skipped task is still reported, not silently dropped',
+  );
 });
 
 test('resume finds the claim branch and reports whether a durable plan exists', (t) => {

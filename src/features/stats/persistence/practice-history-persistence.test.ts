@@ -4,6 +4,7 @@ import { INITIAL_SESH_STATE, OPEN_ENDED_SESH_PLAN, seshReducer } from '@/feature
 import { createPracticeSessionRecord, type PracticeHistory } from '@/features/stats/model/practice-history';
 import {
   deserializePracticeHistory,
+  isPracticeHistory,
   loadPracticeHistory,
   PRACTICE_HISTORY_SCHEMA_VERSION,
   PRACTICE_HISTORY_STORAGE_KEY,
@@ -191,5 +192,45 @@ describe('practice history persistence', () => {
       PRACTICE_HISTORY_STORAGE_KEY,
       serializePracticeHistory(HISTORY),
     );
+  });
+
+  describe('isPracticeHistory', () => {
+    it('accepts a valid history value', () => {
+      expect(isPracticeHistory(HISTORY)).toBe(true);
+      expect(isPracticeHistory({ sessions: [] })).toBe(true);
+    });
+
+    it('rejects non-record values', () => {
+      expect(isPracticeHistory(null)).toBe(false);
+      expect(isPracticeHistory('not-an-object')).toBe(false);
+      expect(isPracticeHistory([])).toBe(false);
+    });
+
+    it('rejects a sessions value that is not an array', () => {
+      expect(isPracticeHistory({ sessions: 'nope' })).toBe(false);
+    });
+
+    it('rejects a history containing a malformed session record', () => {
+      expect(isPracticeHistory({ sessions: [{ id: 'partial' }] })).toBe(false);
+    });
+
+    it('rejects duplicate session ids', () => {
+      const duplicated = { sessions: [HISTORY.sessions[0], HISTORY.sessions[0]] };
+      expect(isPracticeHistory(duplicated)).toBe(false);
+    });
+
+    it('accepts a session with a paused duration (durationMs less than elapsed time)', () => {
+      const paused = {
+        sessions: [{ ...HISTORY.sessions[0], id: 'paused', durationMs: HISTORY.sessions[0].durationMs - 1 }],
+      };
+      expect(isPracticeHistory(paused)).toBe(true);
+    });
+
+    it('rejects a session whose durationMs exceeds elapsed time', () => {
+      const tooLong = {
+        sessions: [{ ...HISTORY.sessions[0], durationMs: HISTORY.sessions[0].durationMs + 1 }],
+      };
+      expect(isPracticeHistory(tooLong)).toBe(false);
+    });
   });
 });

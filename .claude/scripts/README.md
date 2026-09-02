@@ -11,6 +11,7 @@ Every stage the workflow can perform mechanically is performed mechanically. A m
 | `ticket-claim.mjs` | the former `ticket-claim` subagent (a fresh Sonnet context per cycle for a fixed sequence of git commands) |
 | `verify.mjs` | four separate `Bash` round trips per implementation |
 | `worktree-cleanup.mjs` | agents attempting to remove worktrees they cannot remove |
+| `pr-merge.mjs` | local worktree collisions and duplicate merge attempts during resume |
 | `pr-merge-status.mjs` | mistaking a post-merge local `gh` failure for a rejected remote merge |
 | `validate-agent-config.mjs` | discovering a broken agent definition at run time |
 
@@ -40,7 +41,7 @@ Prints one JSON object on stdout and a one-line summary on stderr; exits 1 when 
 }
 ```
 
-Selection, in order: umbrella parents are passed over (their children are separate entries); non-`Not started` entries are skipped; an entry whose stated `Depends on T0NN` isn't archived in `TASKS_DONE.md` is skipped; and the first candidate that already has a remote `task/<ID>-*` branch **stops the run** with `blocked` + a `resumeCommand`, rather than being skipped.
+Selection, in order: umbrella parents are passed over (their children are separate entries); non-`Not started` entries are skipped; an entry whose stated `Depends on T0NN` isn't archived in `TASKS_DONE.md` is skipped. In **continuous** mode (no requested ID), a candidate that already has a remote `task/<ID>-*` branch is likewise skipped — recorded in `skipped` with reason `claimed` — and the scan continues to the next actionable task, so one blocked/claimed task never stalls unrelated work; anything that actually depends on it stays correctly skipped by the dependency check above, since a claimed-but-unmerged task never lands in `TASKS_DONE.md`. In **named** mode (an explicit task ID) or `resume`, the same situation instead **stops the run** with `blocked` + a `resumeCommand`, since the caller asked for that specific task.
 
 What it will not do: switch branches or write files in the checkout it's invoked from; force-push; delete a branch it doesn't own; adopt an existing claim branch outside explicit resume mode; or treat branch age as evidence a claim is stale. The claim commit and push happen inside a temporary worktree under `.claude/worktrees/newticket-claim-*` that the script removes on success and on failure.
 
@@ -56,13 +57,19 @@ as the same successful claim.
 
 ```sh
 node .claude/scripts/verify.mjs                 # test, lint, typecheck, web export
-node .claude/scripts/verify.mjs --skip-export   # docs/test-only changes
+node .claude/scripts/verify.mjs --skip-export   # test, lint, and typecheck only
 node .claude/scripts/verify.mjs --only lint     # one step, repeatable
+node .claude/scripts/verify.mjs --test-file src/features/foo/foo.test.ts
 node .claude/scripts/verify.mjs --keep-going    # don't stop at the first failure
 node .claude/scripts/verify.mjs --json          # machine-readable result
 ```
 
 One line per step on success; on failure, the failing command's output tail plus a non-zero exit. The complete log of every step is always written to a temp file whose path is printed. Give it a 600000 ms tool timeout.
+
+`--test-file` is repeatable, uses Jest's exact `--runTestsByPath` selection,
+and runs only the test step. Prefer it over `--findRelatedTests` for known
+feature files; shared-module changes still require the conservative area rules
+in `AGENTS.md`.
 
 `--json` emits one JSON object with `status`, the planned options, per-step
 status/exit code/duration/command, the first failed step when applicable, and
@@ -76,6 +83,7 @@ node .claude/scripts/worktree-cleanup.mjs --path <dir> [--path <dir> …]
 node .claude/scripts/worktree-cleanup.mjs --prefix newticket-claim-
 node .claude/scripts/worktree-cleanup.mjs --list
 node .claude/scripts/worktree-cleanup.mjs --release-codex-stage --task T035 --branch task/T035-short-slug
+node .claude/scripts/worktree-cleanup.mjs --release-codex-stage --task T035 --branch task/T035-short-slug --merged-pr <url>
 # add --dry-run to any of the above
 ```
 
@@ -105,16 +113,46 @@ and then applies the normal clean/pushed/unlocked/no-process checks before
 detaching and removing it. It exists solely to make a Codex resume safe; it is
 not a general cleanup sweep.
 
+After a squash merge has deleted the remote task branch, `--merged-pr` permits
+release only when GitHub canonically reports the PR merged and its recorded
+`headRefOid` exactly matches the worktree HEAD. That authoritative pushed-head
+evidence substitutes only for the vanished remote ref; dirty, lock, path,
+branch, process, and removal checks remain unchanged.
+
 ## `pr-merge-status.mjs`
 
 ```sh
 node .claude/scripts/pr-merge-status.mjs --pr <number-or-url>
+node .claude/scripts/pr-merge-status.mjs --branch <task-branch>
 ```
 
 Read GitHub's canonical PR state after exactly one merge attempt. A confirmed
 `merged` result wins over a non-zero `gh pr merge` exit, which can occur during
 local branch cleanup after GitHub has already completed the merge. The script is
-read-only and never retries or changes merge settings.
+read-only and never retries or changes merge settings. Branch mode supports
+safe resume: it distinguishes no PR, one canonical PR, multiple ambiguous PRs,
+and an unavailable GitHub query before an agent creates or reuses a PR.
+
+## `pr-merge.mjs`
+
+```sh
+node .claude/scripts/pr-merge.mjs --pr <pull-request-url>
+```
+
+Preflight canonical state, perform at most one ordinary squash merge, and
+reconcile canonical state afterward. An already-merged PR is idempotent success;
+an unavailable preflight performs no mutation. The merge command includes the
+explicit repository selector derived from the PR URL:
+
+```sh
+gh pr merge <url> --repo <host/owner/repo> --squash --delete-branch
+```
+
+GitHub CLI disables local branch deletion when `--repo` is explicitly supplied,
+while retaining remote branch deletion. This prevents its post-merge cleanup
+from trying to check out `development` inside an implementer worktree when the
+main checkout already owns that branch. The wrapper returns one JSON object with
+whether a merge was attempted, exact command evidence, and reconciliation.
 
 ## `validate-agent-config.mjs`
 

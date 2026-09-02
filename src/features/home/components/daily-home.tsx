@@ -4,14 +4,14 @@ import { styled } from 'styled-components/native';
 
 import { Button } from '@/components/ui/button';
 import { BodyText, DisplayTitle, Eyebrow } from '@/components/ui/typography';
-import { AppColors, BottomTabInset } from '@/constants/theme';
+import { AppColors } from '@/constants/theme';
 import type { HomePracticeTrick, HomeSummary } from '@/features/home/model/home-summary';
 import { formatDuration } from '@/features/sesh/model/sesh';
 import type { TimeLoggedWindowKey } from '@/features/stats/model/time-logged';
 
 export function DailyHome({ summary }: { readonly summary: HomeSummary }) {
   return (
-    <HomeScroll contentContainerStyle={{ paddingBottom: 110 + BottomTabInset }}>
+    <HomeScroll contentContainerStyle={{ paddingBottom: 24 }}>
       <HomeContent>
         <HomeHeader>
           <BrandBlock>
@@ -49,7 +49,7 @@ function PrimaryPractice({ summary }: { readonly summary: HomeSummary }) {
         <HeroCopy>
           Your practice list is ready when you are. A little focused work is enough to begin.
         </HeroCopy>
-        <Link href="/sesh" asChild>
+        <Link href="/app/sesh" asChild>
           <HeroButton accessibilityRole="link">Start a sesh</HeroButton>
         </Link>
       </Hero>
@@ -68,7 +68,7 @@ function PrimaryPractice({ summary }: { readonly summary: HomeSummary }) {
       </LastSeshLine>
       {canPracticeAgain ? (
         <Link
-          href={{ pathname: '/sesh', params: { trickId: recent.availableTrick.id, mode: 'practice' } }}
+          href={{ pathname: '/app/sesh', params: { trickId: recent.availableTrick.id, mode: 'practice' } }}
           asChild>
           <HeroButton accessibilityRole="link">Practice again</HeroButton>
         </Link>
@@ -77,7 +77,7 @@ function PrimaryPractice({ summary }: { readonly summary: HomeSummary }) {
           <UnavailableCopy>
             This trick is no longer in your library, but the work still counts.
           </UnavailableCopy>
-          <Link href="/sesh" asChild>
+          <Link href="/app/sesh" asChild>
             <HeroButton accessibilityRole="link">Start a sesh</HeroButton>
           </Link>
         </UnavailableAction>
@@ -105,7 +105,7 @@ function NextKenteiTrick({ trick }: { readonly trick?: HomePracticeTrick }) {
         <NextTrickMeta>Rank {trick.kenteiRank} · {trick.kenteiLevel}</NextTrickMeta>
         <NextTrickName>{trick.name}</NextTrickName>
         <Link
-          href={{ pathname: '/sesh', params: { trickId: trick.id, mode: 'practice' } }}
+          href={{ pathname: '/app/sesh', params: { trickId: trick.id, mode: 'practice' } }}
           asChild>
           <NextTrickAction accessibilityRole="link">Practice →</NextTrickAction>
         </Link>
@@ -123,7 +123,7 @@ function PracticeQueue({ tricks }: { readonly tricks: readonly HomePracticeTrick
           <SectionTitle>What you’re working on</SectionTitle>
         </SectionHeadingCopy>
         {tricks.length > 0 ? (
-          <Link href="/tricks" asChild>
+          <Link href="/app/tricks" asChild>
             <TextLink accessibilityRole="link">Edit practice list</TextLink>
           </Link>
         ) : null}
@@ -135,7 +135,7 @@ function PracticeQueue({ tricks }: { readonly tricks: readonly HomePracticeTrick
           <EmptyCopy>
             Choose a few tricks to make starting a focused sesh quick and deliberate.
           </EmptyCopy>
-          <Link href="/tricks" asChild>
+          <Link href="/app/tricks" asChild>
             <ChooseButton accessibilityRole="link" variant="secondary" size="medium">
               Choose tricks
             </ChooseButton>
@@ -146,7 +146,7 @@ function PracticeQueue({ tricks }: { readonly tricks: readonly HomePracticeTrick
           {tricks.map((trick, index) => (
             <Link
               key={trick.id}
-              href={{ pathname: '/sesh', params: { trickId: trick.id, mode: 'practice' } }}
+              href={{ pathname: '/app/sesh', params: { trickId: trick.id, mode: 'practice' } }}
               asChild>
               <QueueItem accessibilityRole="link">
                 <QueueNumber>{String(index + 1).padStart(2, '0')}</QueueNumber>
@@ -222,7 +222,7 @@ function Momentum({ summary }: { readonly summary: HomeSummary }) {
           <MomentumLabel>Laces</MomentumLabel>
         </MomentumMetric>
       </MomentumStrip>
-      <Link href="/stats" asChild>
+      <Link href="/app/stats" asChild>
         <StatsLink accessibilityRole="link">See all stats →</StatsLink>
       </Link>
     </MomentumSection>

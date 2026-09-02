@@ -6,7 +6,21 @@
 
 const ENTRY_HEADING = /^### \[(T\d+(?:\.\d+)?)\]\s*(.*)$/;
 const FIELD = /^- \*\*([A-Za-z][A-Za-z ]*):\*\*\s*(.*)$/;
-const DEPENDS_ON = /\bdepends on\s+(T\d+(?:\.\d+)?)/gi;
+
+// A "Depends on ..." clause can name several ids ("Depends on A, B, and C.")
+// or a range ("Depends on A–B."). DEPENDS_ON_CLAUSE lazily consumes up to the
+// first *sentence-ending* period — one NOT followed by a digit — so a decimal
+// id like "T157.4" is never mistaken for the end of the clause. Within a
+// clause, TASK_ID matches every id named directly and DEPENDS_ON_RANGE
+// matches an "A–B"/"A-B" pair for later expansion (expandDependsOnRange)
+// once the full known-id universe — every id in TASKS.md and TASKS_DONE.md,
+// not just this document — is available.
+const DEPENDS_ON_CLAUSE = /\bdepends on\b([\s\S]*?)\.(?!\d)/gi;
+const TASK_ID = /T\d+(?:\.\d+)?/g;
+const DEPENDS_ON_RANGE = /(T\d+(?:\.\d+)?)\s*[–-]\s*(T\d+(?:\.\d+)?)/g;
+
+/** Lower ranks first: High-priority tickets sort ahead of Medium/Low/unset. */
+const PRIORITY_RANK = { high: 0, medium: 1, low: 2 };
 
 /** Planning policies. `required` runs the separate ticket-planner stage. */
 export const PLANNING_REQUIRED = 'required';
@@ -86,7 +100,11 @@ export function parseBacklog(markdown) {
  * @property {string} entry Verbatim `### [ID] …` block, trailing blank lines trimmed
  * @property {number} startLine 0-based line index of the heading in the source document
  * @property {number} endLine 0-based exclusive end line
- * @property {string[]} dependsOn
+ * @property {string[]} dependsOn Ids named directly in a "Depends on" clause.
+ * @property {[string, string][]} dependsOnRanges "A–B" pairs from a "Depends
+ *   on" clause, not yet expanded — expansion needs the full known-id universe
+ *   (see expandDependsOnRange / resolveDependsOn), which isn't available from
+ *   a single parsed document.
  */
 
 function parseEntries(lines, offset) {
@@ -101,8 +119,14 @@ function parseEntries(lines, offset) {
     current.status = current.fields.Status ?? '';
     const body = current.entry;
     const deps = new Set();
-    for (const match of body.matchAll(DEPENDS_ON)) deps.add(match[1]);
+    const ranges = [];
+    for (const clauseMatch of body.matchAll(DEPENDS_ON_CLAUSE)) {
+      const clause = clauseMatch[1];
+      for (const rangeMatch of clause.matchAll(DEPENDS_ON_RANGE)) ranges.push([rangeMatch[1], rangeMatch[2]]);
+      for (const idMatch of clause.matchAll(TASK_ID)) deps.add(idMatch[0]);
+    }
     current.dependsOn = [...deps].filter((id) => id !== current.id);
+    current.dependsOnRanges = ranges.filter(([start, end]) => start !== current.id && end !== current.id);
     tasks.push(current);
     current = null;
   };
@@ -120,6 +144,7 @@ function parseEntries(lines, offset) {
         entry: '',
         status: '',
         dependsOn: [],
+        dependsOnRanges: [],
       };
       return;
     }
@@ -133,6 +158,108 @@ function parseEntries(lines, offset) {
   });
   close(lines.length);
   return tasks;
+}
+
+function splitTaskId(id) {
+  const match = /^T(\d+)(?:\.(\d+))?$/.exec(id);
+  if (!match) return { top: NaN, sub: null };
+  return { top: Number(match[1]), sub: match[2] != null ? Number(match[2]) : null };
+}
+
+/**
+ * Every id an "A–B" dependency range resolves to, restricted to ids that
+ * actually exist. Same top-level number on both ends (e.g. "T157.4–T157.8")
+ * expands the decimal sub-range under that one parent; different top-level
+ * numbers (e.g. "T153–T161") expand to every known id — top-level or
+ * dotted-child — whose top-level number falls inclusively between them.
+ *
+ * @param {string} startId
+ * @param {string} endId
+ * @param {Set<string>} knownIds Every id that exists anywhere — both the
+ *   current backlog and TASKS_DONE.md — since a range's members are commonly
+ *   already archived.
+ * @returns {string[]}
+ */
+export function expandDependsOnRange(startId, endId, knownIds) {
+  const start = splitTaskId(startId);
+  const end = splitTaskId(endId);
+  if (start.sub != null && end.sub != null && start.top === end.top) {
+    return [...knownIds].filter((id) => {
+      const candidate = splitTaskId(id);
+      return candidate.top === start.top && candidate.sub != null && candidate.sub >= start.sub && candidate.sub <= end.sub;
+    });
+  }
+  return [...knownIds].filter((id) => {
+    const candidate = splitTaskId(id);
+    return candidate.top >= start.top && candidate.top <= end.top;
+  });
+}
+
+/**
+ * A task's full dependency set: the ids named directly, plus every range
+ * expanded against the known-id universe. This is the set selection should
+ * actually check — `task.dependsOn` alone omits ranged dependencies.
+ *
+ * @param {Task} task
+ * @param {Set<string>} knownIds
+ * @returns {Set<string>}
+ */
+export function resolveDependsOn(task, knownIds) {
+  const ids = new Set(task.dependsOn);
+  for (const [start, end] of task.dependsOnRanges ?? []) {
+    for (const id of expandDependsOnRange(start, end, knownIds)) ids.add(id);
+  }
+  ids.delete(task.id);
+  return ids;
+}
+
+/**
+ * How many other not-yet-done tasks name each task as a dependency (via
+ * resolveDependsOn), keyed by task id. A high count means completing that
+ * task unblocks several others — the signal `orderByUnblockValue` sorts on.
+ *
+ * @param {Array<Task>} tasks
+ * @param {Set<string>} doneIds
+ * @returns {Map<string, number>}
+ */
+export function computeUnblockFanOut(tasks, doneIds) {
+  const knownIds = new Set([...tasks.map((task) => task.id), ...doneIds]);
+  const dependsOn = new Map(tasks.map((task) => [task.id, resolveDependsOn(task, knownIds)]));
+  return new Map(
+    tasks.map((task) => [
+      task.id,
+      tasks.filter((other) => !doneIds.has(other.id) && dependsOn.get(other.id).has(task.id)).length,
+    ]),
+  );
+}
+
+/**
+ * Reorder tasks by unblock value instead of file order: highest unblock
+ * fan-out first, then declared Priority (High > Medium > Low > unset), then
+ * original file order as the final tiebreak. Selection semantics — which
+ * candidates are skipped for being an umbrella, wrong status, an unmet
+ * dependency, or already claimed — are unchanged; this only changes which
+ * actionable candidate `selectTask`'s continuous-mode scan reaches first.
+ *
+ * @param {Array<Task>} tasks
+ * @param {Set<string>} doneIds
+ * @returns {Array<Task>} a new array; does not mutate `tasks`
+ */
+export function orderByUnblockValue(tasks, doneIds) {
+  const fanOut = computeUnblockFanOut(tasks, doneIds);
+  const fileIndex = new Map(tasks.map((task, index) => [task.id, index]));
+  // Match the leading word only: a value like "Medium (inherited from parent
+  // T104)" must still rank as Medium, not fall through to "unset".
+  const priorityRank = (task) => {
+    const match = /^\s*(high|medium|low)\b/i.exec(task.fields.Priority ?? '');
+    return match ? PRIORITY_RANK[match[1].toLowerCase()] : 3;
+  };
+  return [...tasks].sort(
+    (a, b) =>
+      fanOut.get(b.id) - fanOut.get(a.id) ||
+      priorityRank(a) - priorityRank(b) ||
+      fileIndex.get(a.id) - fileIndex.get(b.id),
+  );
 }
 
 /**
@@ -308,7 +435,8 @@ export function setTaskStatus(markdown, taskId, status) {
 export function selectTask({ tasks, doneIds, claimedBranches, requestedId = null }) {
   const skipped = [];
   const claimedFor = (id) => claimedBranches.get(id) ?? [];
-  const unmetDependency = (task) => task.dependsOn.find((dependency) => !doneIds.has(dependency));
+  const knownIds = new Set([...tasks.map((task) => task.id), ...doneIds]);
+  const unmetDependency = (task) => [...resolveDependsOn(task, knownIds)].find((dependency) => !doneIds.has(dependency));
 
   if (requestedId) {
     let task = tasks.find((candidate) => candidate.id === requestedId);
@@ -394,17 +522,18 @@ export function selectTask({ tasks, doneIds, claimedBranches, requestedId = null
     }
     const claimed = claimedFor(candidate.id);
     if (claimed.length > 0) {
-      // Do not silently move past a claimed task: stop and let the caller decide
-      // whether to resume it. Skipping ahead is how work gets forgotten.
-      return {
-        status: 'blocked',
-        skipped,
-        blocker: {
-          reason: 'claimed',
-          taskId: candidate.id,
-          detail: `${candidate.id} is the next actionable task but is already claimed by ${claimed.join(', ')}`,
-        },
-      };
+      // A claimed task is never silently dropped — it's still visible in
+      // `skipped` — but it no longer stops the scan. An independent task later
+      // in the backlog should still be picked up in the same continuous run.
+      // Anything that actually depends on this one stays correctly blocked by
+      // the dependency check above, since a claimed-but-unmerged task is never
+      // in doneIds, so a chained task is never attempted early.
+      skipped.push({
+        id: candidate.id,
+        reason: 'claimed',
+        detail: `already claimed by ${claimed.join(', ')}`,
+      });
+      continue;
     }
     return { status: 'selected', task: candidate, resolvedFromParent: false, skipped };
   }

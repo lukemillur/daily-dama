@@ -1,0 +1,72 @@
+# T162.3: gitleaks configuration for this repo's secret scanning (history scan via
+# gitleaks-action in CI, and the built-web-bundle scan run by
+# security/scripts/check-bundle-secrets.mjs). Extends the default gitleaks ruleset
+# (JWT, generic-api-key, curl-auth-header, etc.) rather than replacing it -- see
+# security/README.md for why the default ruleset already covers this app's real
+# Supabase secret shapes (anon/service_role keys, Auth session/refresh JWTs).
+#
+# All entries below live in a single [allowlist] table (singular, not the plural
+# [[allowlists]] array-of-tables form): gitleaks-action pins its own bundled gitleaks
+# binary independent of any Docker image this repo's scripts pin -- confirmed from a
+# real CI log line ("gitleaks version: 8.24.3") -- and that older version's TOML
+# schema only recognizes the legacy singular `[allowlist]` field; `[[allowlists]]`
+# entries were silently ignored (no parse error, just never applied), even though the
+# newer gitleaks CLI (v8.30.1, used by security/scripts/gitleaks-cli.mjs's pinned
+# Docker image) accepts both forms. Discovered by comparing local `gitleaks detect`
+# runs against the same commit range gitleaks-action actually scanned in CI.
+#
+# Every regex below matches on the exact leaked *value*, not on a whole file path, so a
+# real secret later pasted into one of these files would still be caught.
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Confirmed synthetic/fixture/placeholder values, never real secrets. See the description before each regex for which file/fixture it exists for."
+regexes = [
+  # jwt.io canonical example JWT used as a fixture in
+  # src/features/auth/model/auth-test-fixtures.ts -- not a real Supabase/Auth token,
+  # matches gitleaks' default 'jwt' rule.
+  '''eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9\.eyJzdWIiOiIxMjM0NTY3ODkwIn0\.dozjgNryP4J3jVmNHl0w5N_XgL0n3I9PYRR2FyMorQI''',
+  # Synthetic REFRESH_TOKEN fixture in src/features/auth/model/auth-test-fixtures.ts --
+  # randomly generated for tests, not a real refresh token, matches gitleaks' default
+  # 'generic-api-key' rule.
+  '''vJv8bZ0kL3nQ7wR2xY9dC1mF4hT6sA8u''',
+  # WRONG_PASSWORD test fixture in e2e/auth/01-sign-in-equivalence.spec.ts -- a
+  # deliberately wrong password string used to assert sign-in rejection, not a real
+  # credential, matches gitleaks' default 'generic-api-key' rule.
+  '''incorrect-horse-battery-1''',
+  # LOCAL_ANON_KEY documented placeholder in supabase/README.md and
+  # .claude/plans/*.md (history-only, planning documents are deleted once their task
+  # closes per this repo's convention) curl examples -- a literal placeholder string
+  # for the local Supabase Auth CLI stack, never a real key, matches gitleaks' default
+  # 'curl-auth-header' rule.
+  '''LOCAL_ANON_KEY''',
+  # SERVICE_ROLE_KEY documented placeholder in .claude/plans/T153.10.md
+  # (history-only) curl examples -- same as LOCAL_ANON_KEY above, a literal
+  # placeholder, never a real key, matches gitleaks' default 'curl-auth-header' rule.
+  '''SERVICE_ROLE_KEY''',
+]
+# Belt-and-suspenders: also exclude specific historical commits by SHA from this same
+# table. Every commit listed here was manually audited while iterating on this task's
+# own PR and confirmed to contain only already-covered synthetic/fixture/placeholder
+# content (this task's own planning document text, and an earlier iteration of
+# security/scripts/verify-secret-detection.mjs's fake-JWT fixture before it was
+# rewritten to derive its value at runtime instead of embedding it as a literal). Once
+# this PR is squash-merged, none of these SHAs exist on `development`'s history, so
+# these entries become permanently inert there -- left in place as a record, not
+# pruned, since gitleaks config files aren't rewritten per-branch.
+commits = [
+  "b1b769d27c8f38ce056161ca2333a78fce0f51e6", # adds .claude/plans/T162.3.md (this task's own planning doc, later deleted)
+  "9743585219716e163187dcacb233d3d24cb5b795", # adds an earlier, literal-embedded version of the verify-secret-detection.mjs fake-JWT fixture
+  "7131b8cb3139a3749c7a36af1ea35e6ff218792f", # a follow-up fix to the above that was still not fully literal-free
+]
+
+# Deliberately NOT allowlisted (by value or by commit going forward): the fake-secret
+# fixture used by security/scripts/verify-secret-detection.mjs's self-test. Its whole
+# point is to prove gitleaks still catches a JWT-shaped secret assembled at test run
+# time -- if it were allowlisted here, the self-test would falsely report "no leaks
+# found" for the scratch repos it builds using this same config. As of the commit that
+# added this comment, that script derives its fake JWT's base64 segments from plain
+# JSON at runtime rather than writing a secret-shaped literal anywhere in source, so
+# there is nothing left to allowlist.

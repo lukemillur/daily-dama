@@ -148,4 +148,37 @@ describe('AllNotesScreen', () => {
 
     expect(findText(root, 'Big Cup')).toHaveLength(0);
   });
+  it("renders hostile note-body markup as literal text, not executable HTML (T162.1)", async () => {
+    const root = await mountHarness();
+    const hostileBody = `<img src=x onerror="window.__pwned=1">`;
+
+    const [addAction] = root.root.findAll(
+      (node) => node.props.accessibilityLabel === "add-note-a",
+    );
+    act(() => {
+      addAction.props.onPress();
+    });
+
+    const [editAction] = root.root.findAll(
+      (node) => node.props.accessibilityLabel === "Edit note",
+    );
+    act(() => {
+      editAction.props.onPress();
+    });
+    const [input] = root.root.findAllByType(TextInput);
+    act(() => {
+      input.props.onChangeText(hostileBody);
+    });
+    const [saveButton] = root.root.findAll(
+      (node) =>
+        node.props.accessibilityRole === "button" &&
+        typeof node.props.onPress === "function" &&
+        node.findAll((descendant) => descendant.props.children === "Save note").length > 0,
+    );
+    act(() => {
+      saveButton.props.onPress();
+    });
+
+    expect(findText(root, hostileBody)).toHaveLength(1);
+  });
 });

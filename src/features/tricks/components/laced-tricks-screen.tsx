@@ -4,7 +4,7 @@ import { styled } from 'styled-components/native';
 
 import { Button } from '@/components/ui/button';
 import { BodyText, DisplayTitle, Eyebrow } from '@/components/ui/typography';
-import { AppColors, BottomTabInset } from '@/constants/theme';
+import { AppColors } from '@/constants/theme';
 import {
   createTrickSections,
   type DirectoryTrick,
@@ -27,7 +27,7 @@ export function LacedTricksScreen({
   const sections = useMemo(() => createTrickSections(tricks), [tricks]);
 
   return (
-    <Scroll contentContainerStyle={{ paddingBottom: 120 + BottomTabInset }}>
+    <Scroll contentContainerStyle={{ paddingBottom: 24 }}>
       <Content>
         <Eyebrow>Laced tricks</Eyebrow>
         <PageTitle>Laced tricks</PageTitle>

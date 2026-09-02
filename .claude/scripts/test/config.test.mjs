@@ -5,7 +5,13 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { parseFrontmatter, toolList, validateAgent, validateRepo, validateSkill } from '../validate-agent-config.mjs';
-import { parseArgs as parseVerifyArgs, planSteps, STEPS } from '../verify.mjs';
+import {
+  buildStepArgv,
+  formatFailureResult,
+  parseArgs as parseVerifyArgs,
+  planSteps,
+  STEPS,
+} from '../verify.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(here, '../../..');
@@ -92,6 +98,42 @@ test('the newTicket skill restricts as well as pre-approves', () => {
   assert.equal(allowed.some((tool) => tool === 'Bash' || tool === 'Bash(*)'), false, 'generic Bash is not pre-approved');
 });
 
+test('newTicket continuous mode explicitly continues after recoverable blocks', () => {
+  const skill = fs.readFileSync(path.join(repoRoot, '.claude/skills/newTicket/SKILL.md'), 'utf8');
+  assert.match(skill, /After cleanup, return to step 1 immediately/);
+  assert.match(skill, /invoke the next claim immediately in this same turn/);
+  assert.match(skill, /The only outcomes that end continuous mode are a\s+claim-mechanism failure, a usage limit, or an exhausted backlog/);
+  assert.match(skill, /planner-side GitHub authentication\/network\/push failures/);
+  assert.match(skill, /failure must not terminate continuous mode/);
+});
+
+test('ticket merging is remote-context, resumable, and never delegated to raw gh merge instructions', () => {
+  const implementer = fs.readFileSync(path.join(repoRoot, '.claude/agents/ticket-implementer.md'), 'utf8');
+  const skill = fs.readFileSync(path.join(repoRoot, '.claude/skills/newTicket/SKILL.md'), 'utf8');
+  const settings = JSON.parse(fs.readFileSync(path.join(repoRoot, '.claude/settings.json'), 'utf8'));
+
+  assert.match(implementer, /pr-merge-status\.mjs --branch/);
+  assert.match(implementer, /reuse `prUrl` in step 7/);
+  assert.match(implementer, /Never create a\s+duplicate PR/);
+  assert.match(implementer, /pr-merge\.mjs --pr/);
+  assert.ok(
+    implementer.indexOf('pr-merge-status.mjs --branch') < implementer.indexOf('## 2. Discover'),
+    'canonical PR recovery must be resolved before implementation begins',
+  );
+  assert.match(skill, /prevents GitHub CLI's `--delete-branch` cleanup/);
+  assert.equal(implementer.includes('gh pr merge --squash --delete-branch'), false);
+  assert.ok(settings.permissions.allow.includes('Bash(node .claude/scripts/pr-merge.mjs:*)'));
+  assert.equal(settings.permissions.allow.some((permission) => permission.startsWith('Bash(gh pr merge')), false);
+});
+
+test('malformed or incomplete implementer results are explicitly blocking', () => {
+  const skill = fs.readFileSync(path.join(repoRoot, '.claude/skills/newTicket/SKILL.md'), 'utf8');
+  assert.match(skill, /missing or malformed `RESULT` object/);
+  assert.match(skill, /mismatched\/missing `taskId` or\s+`worktree`/);
+  assert.match(skill, /absent merge reconciliation/);
+  assert.match(skill, /missing per-criterion evidence/);
+});
+
 test('no subagent can spawn subagents', () => {
   const agentsDir = path.join(repoRoot, '.claude/agents');
   const agents = fs.readdirSync(agentsDir).filter((name) => name.endsWith('.md'));
@@ -123,9 +165,19 @@ test('verify wrapper: step planning', () => {
     ['test', 'lint', 'typecheck'],
   );
   assert.deepEqual(planSteps(parseVerifyArgs(['--only', 'lint'])).map((step) => step.name), ['lint']);
+  const targeted = parseVerifyArgs(['--test-file', 'src/example.test.ts', '--test-file', 'src/other.test.ts']);
+  assert.deepEqual(targeted.only, ['test']);
+  assert.deepEqual(targeted.testFiles, ['src/example.test.ts', 'src/other.test.ts']);
+  assert.deepEqual(
+    buildStepArgv(STEPS[0], targeted, '/tmp/export'),
+    ['yarn', 'test', '--runInBand', '--runTestsByPath', 'src/example.test.ts', 'src/other.test.ts'],
+  );
   assert.equal(parseVerifyArgs(['--json']).json, true);
   assert.equal(parseVerifyArgs(['--skip-export', '--json']).json, true);
   assert.throws(() => parseVerifyArgs(['--only', 'nope']), /unknown step/);
+  assert.throws(() => parseVerifyArgs(['--only']), /requires a step name/);
+  assert.throws(() => parseVerifyArgs(['--test-file']), /requires a test file path/);
+  assert.throws(() => parseVerifyArgs(['--only', 'lint', '--test-file', 'x.test.ts']), /only be combined/);
   assert.throws(() => parseVerifyArgs(['--wat']), /unrecognized argument/);
 });
 
@@ -138,5 +190,12 @@ test('verify wrapper runs the documented commands in the documented order', () =
       'yarn tsc --noEmit',
       'yarn expo export --platform web --output-dir',
     ],
+  );
+});
+
+test('verify wrapper failure output uses the stored command and output tail', () => {
+  assert.equal(
+    formatFailureResult({ command: 'yarn lint', code: 1, outputTail: 'lint failed' }),
+    '\n--- `yarn lint` (exit 1) ---\nlint failed\n',
   );
 });

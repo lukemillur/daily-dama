@@ -22,31 +22,50 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
-function isNormalizedText(value: unknown): value is string {
+export function isNormalizedText(value: unknown): value is string {
   return typeof value === 'string' && value.length > 0 && value === value.trim();
 }
 
-function isOptionalKenteiRank(value: unknown) {
+export function isOptionalKenteiRank(value: unknown) {
   return value === undefined || (Number.isInteger(value) && Number(value) >= 1 && Number(value) <= 12);
 }
 
-function isSequenceStep(value: unknown): value is SequenceStep {
+export function isFiniteNonNegative(value: unknown): value is number {
+  return typeof value === 'number' && Number.isFinite(value) && value >= 0;
+}
+
+export function isSequenceStep(value: unknown): value is SequenceStep {
   if (!isRecord(value) || !isNormalizedText(value.name)) return false;
   if (value.kind === 'customText') return value.sourceTrickId === undefined;
   return value.kind === 'existingTrick' && isNormalizedText(value.sourceTrickId);
 }
 
-function isCustomTrick(value: unknown): value is CustomTrick {
+export function isCustomTrick(value: unknown): value is CustomTrick {
   if (!isRecord(value)) return false;
 
-  const { id, kind, name, kenteiRank, steps } = value;
+  const { id, kind, name, kenteiRank, steps, updatedAt } = value;
   if (!isNormalizedText(id) || !isNormalizedText(name) || !isOptionalKenteiRank(kenteiRank)) {
     return false;
   }
+  if (!isFiniteNonNegative(updatedAt)) return false;
 
   if (kind === 'standalone') return steps === undefined;
   if (kind !== 'sequence' || !Array.isArray(steps) || steps.length < 2) return false;
   return steps.every(isSequenceStep);
+}
+
+// T157.5: validates an in-memory (already-parsed) value as a
+// `CustomTrickCollection`, unlike `deserializeCustomTricks` which only
+// operates on a JSON *string*. Used as the `SyncEnvelopeCodec<
+// CustomTrickSyncSnapshot>.isState` predicate's `collection` field check --
+// the sync envelope's `state` is stored as a plain object inside a larger
+// JSON document, not as a standalone serialized string.
+export function isCustomTrickCollection(value: unknown): value is CustomTrickCollection {
+  if (!isRecord(value) || !Array.isArray(value.tricks) || !value.tricks.every(isCustomTrick)) {
+    return false;
+  }
+  const ids = value.tricks.map((trick) => trick.id);
+  return new Set(ids).size === ids.length;
 }
 
 export function serializeCustomTricks(collection: CustomTrickCollection) {

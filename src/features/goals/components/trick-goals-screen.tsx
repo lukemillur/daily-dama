@@ -1,11 +1,11 @@
-import { Link } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { Pressable, ScrollView, TextInput } from 'react-native';
 import { styled } from 'styled-components/native';
 
 import { Button } from '@/components/ui/button';
 import { BodyText, DisplayTitle, Eyebrow } from '@/components/ui/typography';
-import { AppColors, BottomTabInset } from '@/constants/theme';
+import { AppColors, Radii } from '@/constants/theme';
 import {
   selectGoalProgress,
   selectGoalsForTrick,
@@ -52,7 +52,7 @@ export function TrickGoalsScreen({ trickId, trickName, onBack }: TrickGoalsScree
   }
 
   return (
-    <Scroll keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: 120 + BottomTabInset }}>
+    <Scroll keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: 24 }}>
       <Content>
         <Eyebrow>Goals</Eyebrow>
         <PageTitle>{trickName}</PageTitle>
@@ -66,6 +66,9 @@ export function TrickGoalsScreen({ trickId, trickName, onBack }: TrickGoalsScree
           Add goal
         </AddButton>
 
+        {trickGoals.length > 1 ? (
+          <SectionTitle>{`${trickName} goals`}</SectionTitle>
+        ) : null}
         <GoalList>
           {goalProgressList.map((progress) => (
             <GoalRow key={progress.goal.id} progress={progress} onDelete={() => deleteGoal(progress.goal.id)} />
@@ -102,11 +105,13 @@ export function GoalRow({
   readonly onDelete: () => void;
 }) {
   const { goal } = progress;
+  const router = useRouter();
   const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [pressed, setPressed] = useState(false);
 
   if (confirmingDelete) {
     return (
-      <GoalCard>
+      <GoalCard style={{ boxShadow: `8px 8px 0 ${AppColors.ink}` }}>
         <GoalBody>Delete this goal? This cannot be undone.</GoalBody>
         <GoalActionsRow>
           <GoalAction
@@ -130,27 +135,38 @@ export function GoalRow({
   }
 
   return (
-    <GoalCard>
-      <GoalMetaRow>
-        <GoalMeta>{goal.kind === 'count' ? 'Lace count goal' : 'Practice time goal'}</GoalMeta>
-        {progress.achieved ? <AchievedBadge>Achieved</AchievedBadge> : null}
-      </GoalMetaRow>
-      <GoalBody>{formatGoalTarget(goal)}</GoalBody>
-      <ProgressText>{formatGoalProgress(progress)}</ProgressText>
+    <GoalCardPressable
+      $pressed={pressed}
+      accessibilityLabel={`Practice ${goal.trickName}`}
+      accessibilityRole="button"
+      style={{ boxShadow: `8px 8px 0 ${AppColors.ink}` }}
+      onPress={() => router.push({ pathname: '/app/sesh', params: { trickId: goal.trickId, mode: 'practice' } })}
+      onPressIn={() => setPressed(true)}
+      onPressOut={() => setPressed(false)}>
+      <GoalHeaderRow>
+        <GoalInfoColumn>
+          <GoalMetaRow>
+            <GoalMeta>{goal.kind === 'count' ? 'Lace count goal' : 'Practice time goal'}</GoalMeta>
+            {progress.achieved ? <AchievedBadge>Achieved</AchievedBadge> : null}
+          </GoalMetaRow>
+          <GoalBody>{formatGoalTarget(goal)}</GoalBody>
+          <ProgressText>{formatGoalProgress(progress)}</ProgressText>
+        </GoalInfoColumn>
+        <GoalTrickName numberOfLines={2}>{goal.trickName}</GoalTrickName>
+      </GoalHeaderRow>
       <GoalActionsRow>
-        <Link asChild href={{ pathname: '/sesh', params: { trickId: goal.trickId, mode: 'practice' } }}>
-          <GoalAction accessibilityLabel={`Practice ${goal.trickName}`} accessibilityRole="link">
-            <GoalActionText>Practice toward this goal</GoalActionText>
-          </GoalAction>
-        </Link>
+        <PracticeHintText>Practice toward this goal</PracticeHintText>
         <GoalAction
           accessibilityLabel="Delete goal"
           accessibilityRole="button"
-          onPress={() => setConfirmingDelete(true)}>
+          onPress={(event) => {
+            event?.stopPropagation?.();
+            setConfirmingDelete(true);
+          }}>
           <DeleteActionText>Delete</DeleteActionText>
         </GoalAction>
       </GoalActionsRow>
-    </GoalCard>
+    </GoalCardPressable>
   );
 }
 
@@ -183,7 +199,7 @@ export function GoalForm({
   };
 
   return (
-    <Scroll keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: 120 + BottomTabInset }}>
+    <Scroll keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: 24 }}>
       <Content>
         <Eyebrow>New goal</Eyebrow>
         <PageTitle>Set a target.</PageTitle>
@@ -249,8 +265,38 @@ const Content = styled.View`width: 100%; max-width: 680px; align-self: center; p
 const PageTitle = styled(DisplayTitle)`margin-top: 12px;`;
 const Introduction = styled(BodyText)`max-width: 580px; margin-top: 16px;`;
 const AddButton = styled(Button)`align-self: flex-start; margin-top: 26px;`;
+const SectionTitle = styled.Text`
+  color: ${AppColors.ink};
+  font-size: 18px;
+  font-weight: 900;
+  margin-top: 28px;
+`;
 const GoalList = styled.View`gap: 12px; margin-top: 28px;`;
-const GoalCard = styled.View`background-color: ${AppColors.paper}; border: 2px solid ${AppColors.ink}; padding: 16px;`;
+// `boxShadow` is passed as an explicit `style` prop at each JSX call site (not baked into
+// `.attrs`) -- see landing-cta.tsx's CtaPanel comment: styled-components/native's
+// `.attrs({ style: {...} })` config is not concatenated into the final rendered style
+// unless the caller also passes its own `style` prop.
+const GoalCard = styled.View`
+  background-color: ${AppColors.paper};
+  border: 2px solid ${AppColors.ink};
+  border-radius: ${Radii.panel}px;
+  padding: 16px;
+`;
+const GoalCardPressable = styled(Pressable)<{ readonly $pressed: boolean }>`
+  background-color: ${AppColors.paper};
+  border: 2px solid ${AppColors.ink};
+  border-radius: ${Radii.panel}px;
+  padding: 16px;
+  opacity: ${({ $pressed }) => ($pressed ? 0.7 : 1)};
+`;
+const GoalHeaderRow = styled.View`flex-direction: row; align-items: flex-start; justify-content: space-between; gap: 14px;`;
+const GoalInfoColumn = styled.View`flex: 1;`;
+const GoalTrickName = styled(DisplayTitle)`
+  flex-shrink: 1;
+  font-size: 28px;
+  line-height: 30px;
+  text-align: right;
+`;
 const GoalMetaRow = styled.View`flex-direction: row; align-items: center; justify-content: space-between; gap: 10px;`;
 const GoalMeta = styled.Text`color: ${AppColors.red}; font-size: 11px; font-weight: 900; letter-spacing: 0.8px; text-transform: uppercase;`;
 const AchievedBadge = styled.Text`overflow: hidden; padding: 4px 8px; color: ${AppColors.paper}; background-color: ${AppColors.ink}; border-radius: 3px; font-size: 10px; font-weight: 900; letter-spacing: 0.8px; text-transform: uppercase;`;
@@ -260,6 +306,7 @@ const GoalActionsRow = styled.View`flex-direction: row; gap: 14px; margin-top: 1
 const GoalAction = styled(Pressable)`min-height: 36px; justify-content: center;`;
 const GoalActionText = styled.Text`color: ${AppColors.ink}; font-size: 12px; font-weight: 900; text-transform: uppercase;`;
 const DeleteActionText = styled(GoalActionText)`color: ${AppColors.red};`;
+const PracticeHintText = styled.Text`flex: 1; color: ${AppColors.inkSoft}; font-size: 12px; font-weight: 800; text-transform: uppercase; align-self: center;`;
 const Field = styled.View`margin-top: 28px;`;
 const FieldLabel = styled.Text`color: ${AppColors.ink}; font-size: 13px; font-weight: 900; letter-spacing: 1px; text-transform: uppercase;`;
 const FieldInput = styled(TextInput)`min-height: 56px; background-color: ${AppColors.paper}; border: 2px solid ${AppColors.ink}; color: ${AppColors.ink}; font-size: 18px; font-weight: 800; margin-top: 8px; padding: 12px 14px;`;

@@ -19,6 +19,7 @@ export interface UserProfile {
   readonly themeBackgroundColor?: string;
   readonly themeAccentColor?: string;
   readonly themeTextColor?: string;
+  readonly updatedAt?: number;
 }
 
 export const MIN_STREAK_THRESHOLD_MINUTES = 1;
@@ -61,10 +62,11 @@ export const INITIAL_USER_PROFILE: UserProfile = {
   hasCompletedOnboarding: false,
 };
 
-export type UserProfileAction =
+export type UserProfileActionPayload =
   | { readonly type: 'profileRestored'; readonly profile: UserProfile }
   | { readonly type: 'selectedTrickToggled'; readonly trickId: string }
   | { readonly type: 'selectedTrickRemoved'; readonly trickId: string }
+  | { readonly type: 'selectedTrickAdded'; readonly trickId: string }
   | { readonly type: 'selectedTricksCleared' }
   | { readonly type: 'manualUnlockToggled'; readonly trickId: string }
   | { readonly type: 'manualUnlockRemoved'; readonly trickId: string }
@@ -85,6 +87,8 @@ export type UserProfileAction =
   | { readonly type: 'onboardingRestarted' }
   | { readonly type: 'kenteiRankAdvanced'; readonly rank: number };
 
+export type UserProfileAction = UserProfileActionPayload & { readonly updatedAt: number };
+
 export function userProfileReducer(
   state: UserProfile,
   action: UserProfileAction,
@@ -100,6 +104,7 @@ export function userProfileReducer(
         selectedTrickIds: isSelected
           ? state.selectedTrickIds.filter((trickId) => trickId !== action.trickId)
           : [...state.selectedTrickIds, action.trickId],
+        updatedAt: action.updatedAt,
       };
     }
     case 'selectedTrickRemoved':
@@ -109,10 +114,17 @@ export function userProfileReducer(
             selectedTrickIds: state.selectedTrickIds.filter(
               (trickId) => trickId !== action.trickId,
             ),
+            updatedAt: action.updatedAt,
           }
         : state;
+    case 'selectedTrickAdded':
+      return state.selectedTrickIds.includes(action.trickId)
+        ? state
+        : { ...state, selectedTrickIds: [...state.selectedTrickIds, action.trickId], updatedAt: action.updatedAt };
     case 'selectedTricksCleared':
-      return state.selectedTrickIds.length === 0 ? state : { ...state, selectedTrickIds: [] };
+      return state.selectedTrickIds.length === 0
+        ? state
+        : { ...state, selectedTrickIds: [], updatedAt: action.updatedAt };
     case 'manualUnlockToggled': {
       const manuallyUnlockedTrickIds = state.manuallyUnlockedTrickIds ?? [];
       const isManuallyUnlocked = manuallyUnlockedTrickIds.includes(action.trickId);
@@ -122,6 +134,7 @@ export function userProfileReducer(
         manuallyUnlockedTrickIds: isManuallyUnlocked
           ? manuallyUnlockedTrickIds.filter((trickId) => trickId !== action.trickId)
           : [...manuallyUnlockedTrickIds, action.trickId],
+        updatedAt: action.updatedAt,
       };
     }
     case 'manualUnlockRemoved': {
@@ -132,22 +145,24 @@ export function userProfileReducer(
             manuallyUnlockedTrickIds: manuallyUnlockedTrickIds.filter(
               (trickId) => trickId !== action.trickId,
             ),
+            updatedAt: action.updatedAt,
           }
         : state;
     }
     case 'lastSeshUpdated':
-      return { ...state, lastSesh: action.lastSesh };
+      return { ...state, lastSesh: action.lastSesh, updatedAt: action.updatedAt };
     case 'streakThresholdUpdated':
-      return { ...state, streakThresholdMs: action.thresholdMs };
+      return { ...state, streakThresholdMs: action.thresholdMs, updatedAt: action.updatedAt };
     case 'themeColorsUpdated':
       return {
         ...state,
         themeBackgroundColor: action.themeBackgroundColor,
         themeAccentColor: action.themeAccentColor,
         themeTextColor: undefined,
+        updatedAt: action.updatedAt,
       };
     case 'themeTextColorUpdated':
-      return { ...state, themeTextColor: action.themeTextColor };
+      return { ...state, themeTextColor: action.themeTextColor, updatedAt: action.updatedAt };
     case 'onboardingCompleted':
       return {
         ...state,
@@ -157,14 +172,18 @@ export function userProfileReducer(
         manuallyUnlockedTrickIds: Array.from(
           new Set([...(state.manuallyUnlockedTrickIds ?? []), ...action.lacedTrickIds]),
         ),
+        updatedAt: action.updatedAt,
       };
     case 'onboardingRestarted':
       return {
         ...state,
         kenteiRank: undefined,
         hasCompletedOnboarding: false,
+        updatedAt: action.updatedAt,
       };
     case 'kenteiRankAdvanced':
-      return state.kenteiRank === action.rank ? state : { ...state, kenteiRank: action.rank };
+      return state.kenteiRank === action.rank
+        ? state
+        : { ...state, kenteiRank: action.rank, updatedAt: action.updatedAt };
   }
 }

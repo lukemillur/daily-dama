@@ -501,7 +501,7 @@ function SkipRankConfirmation({
     description ?? `${tricks.length} trick${tricks.length === 1 ? '' : 's'} in this rank`;
 
   return (
-    <ScrollArea contentContainerStyle={{ padding: 24, paddingBottom: 140 }}>
+    <ScrollArea contentContainerStyle={{ padding: 24 }}>
       <ActiveContent accessibilityLabel="Skip rank confirmation">
         <Eyebrow>Skip this rank?</Eyebrow>
         <DisplayTitle>{heading}</DisplayTitle>
@@ -552,7 +552,7 @@ function MultiTrickWrapUp({
   readonly finishButtonLabel?: string;
 }) {
   return (
-    <ScrollArea contentContainerStyle={{ padding: 24, paddingBottom: 140 }}>
+    <ScrollArea contentContainerStyle={{ padding: 24 }}>
       <ActiveContent>
         <Eyebrow>Sesh complete</Eyebrow>
         <DisplayTitle>Nice work.</DisplayTitle>

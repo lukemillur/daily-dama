@@ -3,7 +3,7 @@ name: ticket-implementer
 description: Implements one Daily Dama backlog task on that task's claimed branch — writes the code, runs the project's verification sequence, updates TASKS.md/TASKS_DONE.md, commits, opens the PR into development, and squash-merges it.
 model: sonnet
 effort: medium
-tools: Read, Edit, Write, Grep, Glob, Bash, TodoWrite, WebFetch, WebSearch, mcp__Claude_Browser__*
+tools: Read, Edit, Write, Grep, Glob, Bash, TodoWrite, WebFetch, WebSearch, ToolSearch, mcp__Claude_Browser__*
 isolation: worktree
 ---
 
@@ -37,6 +37,20 @@ WORKTREE_ROOT="$(git rev-parse --show-toplevel)"; echo "$WORKTREE_ROOT"
 
 Every Bash call for the rest of this run must execute inside `$WORKTREE_ROOT`. Never `cd` to the shared main checkout (the repo path outside `.claude/worktrees/`, e.g. the literal path used in `AGENTS.md` examples) or to any other absolute path — that checkout is other sessions' working copy, and edits or test runs against it corrupt their state instead of yours. Before running tests, `verify.mjs`, or any `git add`/`commit`/`push`, re-confirm with `pwd` (or fold `pwd` into the same command) that you're still at `$WORKTREE_ROOT`. If you ever discover you've drifted, `git checkout`/revert the stray changes in the *other* location first, then resume from `$WORKTREE_ROOT` — do not commit from the wrong directory to "fix" it.
 
+Before editing, resolve any existing PR for the branch:
+
+```sh
+node .claude/scripts/pr-merge-status.mjs --branch <branch>
+```
+
+- `no-pr` with the task still in `TASKS.md` → normal implementation.
+- `no-pr` with the task already in `TASKS_DONE.md` → implementation was committed before PR creation failed; do not reimplement or create another commit. Verify the existing branch, then create its PR in step 7.
+- `not-merged` with `state: "OPEN"` → implementation and PR already exist. Do not edit, archive, commit, or create another PR; verify the existing branch and reuse `prUrl` in step 7.
+- `merged` → do not edit or attempt another merge. Preserve `prUrl` and report canonical success after collecting the available exit evidence and releasing the worktree.
+- `not-merged` with another state, `unavailable`, or ambiguity → stop before edits with `RESULT.status: blocked-at-merge`.
+
+**Guardrail: never pipe or redirect a `git` command.** The worktree-isolation sandbox refuses any Bash call where a `git` invocation also carries a pipe (`|`), a redirect (`>`, `>>`, `<`), or a `2>&1`, in the same call — it can't statically prove the redirected output stays scoped to your worktree, so it refuses the whole command rather than guess, and you lose the round trip for nothing. This bites hardest during merge-conflict resolution, where the instinct is `git show <ref>:<path> > /tmp/theirs` or `git diff | head` to inspect one side of a conflict. Don't. Run the plain `git` command by itself — `git show <ref>:<path>` or `git diff <ref>` with no operator after it — and read its output directly from the tool result; it comes back to you either way, so the redirect was never buying anything. If a diff is too long to read productively, narrow it with `git diff <ref> -- <path>` (still no pipe) rather than piping through `head`/`grep`. This applies to every `git` command in this file and to any you improvise, not just the ones shown as examples.
+
 ## 2. Discover (one command)
 
 Front-load the repository lookups the plan implies into a single command instead of one call each, e.g.:
@@ -49,7 +63,9 @@ ls src/features/<area>/**; grep -rn '<symbol>' src --include='*.ts*' -l; sed -n 
 
 Follow the plan. If it turns out to be wrong once you're actually in the code, deviate — but note why in your final summary rather than silently doing something else.
 
-Run the task's own targeted tests as you go (`yarn test --runInBand <path-pattern>`) — a tight loop on the file you're editing is much cheaper than the full sequence, and step 5 still runs everything.
+Run the task's own targeted tests as you go (`node .claude/scripts/verify.mjs
+--test-file <exact-path>`) — a tight loop on the files being changed is much
+cheaper than the complete sequence.
 
 ## 4. Verify the exit criteria
 
@@ -63,17 +79,15 @@ by itself prove a required browser interaction. If any required criterion is
 
 If that needs the browser preview: **do not use `preview_start` with a named config from `.claude/launch.json`** — those configs have no `cwd` of their own, so the tool reuses (or starts) a server rooted in the main repo checkout, not your isolated worktree, and you'd silently verify pre-edit code. Start your own dev server in this worktree instead (`yarn expo start --web --port <port>`, backgrounded) on a port other than 8081/8091 — check it's actually free first rather than assuming, since a prior cycle's server may still be up. Then `preview_start` with `{url: "http://localhost:<port>"}`. Stop that server once you're done verifying so it doesn't linger past this call.
 
-## 5. Run the full verification sequence (one command)
+## 5. Run the risk-based completion checks
 
-```sh
-node .claude/scripts/verify.mjs
-```
-
-That runs `yarn test --runInBand`, `yarn lint`, `yarn tsc --noEmit` and the web export in order, prints one line per step, and on failure prints the failing command's output and exits non-zero. Give the call a generous timeout (600000 ms) — the full sequence takes minutes. Full logs are written to the file path it reports; read that file if the printed tail isn't enough.
-
-Add `--skip-export` **only** when the change cannot affect the web bundle at all — a markdown/docs-only or test-only change. Anything touching `src/`, config, or dependencies runs the full sequence.
-
-The task isn't done if it breaks the baseline, even when its own criteria pass. Only read `AGENTS.md` itself if the plan or the code raises an architecture question these commands don't answer.
+Follow `AGENTS.md`'s verification matrix. At minimum, run the relevant feature/
+domain tests and full `yarn tsc --noEmit` for TypeScript changes; lint changed
+files with `yarn eslint <files...>`. Workflow-only changes run
+`yarn test:workflow`; docs-only changes need no app suite. Use the complete
+`node .claude/scripts/verify.mjs` sequence only for its documented escalation
+conditions. The PR's required CI app checks provide the broad baseline before
+merge when a narrow task does not repeat it locally.
 
 ## 6. Commit and archive (batch the lookups)
 
@@ -90,27 +104,45 @@ grep -n '^### \[<sibling-ID>\]' -A 4 TASKS_DONE.md; grep -n '^### \[<ID>\]' -A 4
 ## 7. PR and merge
 
 ```sh
-git add -A && git commit -m '[<ID>] <summary>' && git push origin <branch> && gh pr create --base development --title '...' --body '...'
+git add -A && git commit -m '[<ID>] <summary>' && git push origin <branch>
+```
+
+For canonical `no-pr`, create the PR after the implementation commit (or after
+verifying an already-committed recovery branch):
+
+```sh
+pr_url="$(gh pr create --base development --title '...' --body '...')"
 ```
 
 The PR body includes the task ID, the task's **Description** field verbatim from `TASKS.md`, and what changed.
+For canonical `OPEN`, reuse the existing `prUrl` instead. Never create a
+duplicate PR. A canonically merged PR skips the remaining merge steps.
 
-Then attempt **exactly one** plain squash-merge: `gh pr merge --squash --delete-branch`. No review gate, no waiting on CI — that much is pre-authorized for your own claimed branch per `AGENTS.md` § Git state expectations, same as the push.
-
-Always reconcile the remote PR state after that one command, including when it
-returns non-zero:
+Wait for required CI checks before attempting the merge:
 
 ```sh
-merge_output="$(gh pr merge --squash --delete-branch 2>&1)"; merge_exit=$?
-node .claude/scripts/pr-merge-status.mjs --pr "$pr_url"
+gh pr checks "$pr_url" --watch --fail-fast
 ```
 
-The status script is read-only. If it reports `status: "merged"`, treat the
-task as merged even when `merge_exit` is non-zero: do not retry the merge, fetch
-`development`, detach as in step 8, and report the command output as a
-post-merge local failure. If it reports `not-merged` or `unavailable`, stop.
-Do not retry with different flags or reach for `--admin`, `--force`, or another
-bypass. Preserve the exact merge output for the final result.
+If required checks fail or cannot be confirmed, stop and report
+`RESULT.status: blocked-at-merge` with the exact check output. Do not bypass or
+retry with administrative flags. Once they pass, invoke the deterministic merge
+wrapper exactly once:
+
+```sh
+node .claude/scripts/pr-merge.mjs --pr "$pr_url"
+```
+
+The wrapper first reads canonical PR state. An already-merged PR succeeds
+without another merge attempt; an unavailable preflight performs no mutation.
+For an open PR it attempts exactly one ordinary squash merge with
+`--delete-branch`, but supplies an explicit `--repo` selector so GitHub CLI
+deletes only the remote branch and never checks out or deletes local branches.
+It then reconciles canonical state. If it reports `status: "merged"`, treat the
+task as merged even when `commandExitCode` is non-zero. If it reports
+`not-merged` or `unavailable`, stop. Do not run `gh pr merge` directly, retry
+with different flags, or reach for `--admin`, `--force`, or another bypass.
+Preserve the wrapper's exact JSON in the final result.
 
 ## 8. Release the worktree (one command, only after a successful merge)
 
@@ -125,7 +157,7 @@ Do **not** try to remove your own worktree — Claude Code holds a `git worktree
 Emit one `RESULT:` line containing JSON with:
 
 - `taskId`, `status` (`merged`, `blocked-at-merge`, or `blocked`), `prUrl`, and `worktree`.
-- `merge`: the read-only reconciliation result, the merge command exit code, and its exact output.
+- `merge`: the wrapper result, including whether it attempted a merge, canonical reconciliation, command exit code, and exact output when attempted.
 - `exitCriteria`: every task criterion with its `passed` / `not-run` / `blocked` status and concise evidence.
 - `deviation` only when the implementation materially departed from the plan.
 

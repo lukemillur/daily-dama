@@ -1,33 +1,31 @@
-import {
-  createContext,
-  type PropsWithChildren,
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useReducer,
-  useRef,
-  useState,
-} from 'react';
-import { StyleSheet, Text, View } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { createContext, type PropsWithChildren, useCallback, useContext, useMemo } from 'react';
+import { Platform, StyleSheet, Text, View } from 'react-native';
+import { track } from '@vercel/analytics';
 
 import { AppColors } from '@/constants/theme';
 import {
   createLastSesh,
   INITIAL_USER_PROFILE,
   type UserProfile,
+  type UserProfileAction,
+  type UserProfileActionPayload,
   userProfileReducer,
 } from '@/features/profile/model/user-profile';
 import {
   loadUserProfile,
   saveUserProfile,
 } from '@/features/profile/persistence/user-profile-persistence';
+import { createProfileSyncTransportAdapter } from '@/features/profile/persistence/profile-sync-transport';
+import { useProfileDomainSync } from '@/features/profile/state/use-profile-domain-sync';
 import type { SeshPlan } from '@/features/sesh/model/sesh';
-import { createWriteQueue } from '@/shared/persistence/storage';
+import { useIdentityHandle } from '@/shared/persistence/identity-provider';
+import { useIdentityScopedDomain } from '@/shared/persistence/use-identity-scoped-domain';
+import { getSupabaseClient } from '@/shared/supabase/supabase-client';
+import type { DomainSyncRecord, SyncTrigger } from '@/shared/sync/coordinator';
 
 interface UserProfileActions {
   readonly toggleSelectedTrick: (trickId: string) => void;
+  readonly addSelectedTrick: (trickId: string) => void;
   readonly removeSelectedTrick: (trickId: string) => void;
   readonly clearSelectedTricks: () => void;
   readonly toggleManualUnlock: (trickId: string) => void;
@@ -51,106 +49,133 @@ interface UserProfileActions {
 const UserProfileStateContext = createContext<UserProfile | undefined>(undefined);
 const UserProfileActionsContext = createContext<UserProfileActions | undefined>(undefined);
 
+export interface UserProfileSync {
+  readonly runSync: (trigger: SyncTrigger) => Promise<DomainSyncRecord>;
+  readonly isSyncing: boolean;
+  readonly lastResult: DomainSyncRecord | undefined;
+  readonly hasHydrated: boolean;
+  readonly localMutationTick: number;
+  readonly pendingCount: number;
+  readonly retryableFailureCount: number;
+  readonly discardPending: () => Promise<void>;
+}
+
+const UserProfileSyncContext = createContext<UserProfileSync | undefined>(undefined);
+
 export function UserProfileProvider({ children }: PropsWithChildren) {
-  const [profile, dispatch] = useReducer(userProfileReducer, INITIAL_USER_PROFILE);
-  const [hasHydrated, setHasHydrated] = useState(false);
-  const shouldSkipInitialWrite = useRef(true);
-  const [enqueueWrite] = useState(() =>
-    createWriteQueue(async (nextProfile: UserProfile) => {
-      const result = await saveUserProfile(AsyncStorage, nextProfile);
-      if (result.status === 'failed') {
-        console.warn('Unable to persist the user profile.', result.error);
-      }
+  const { state: profile, dispatch, hasHydrated } = useIdentityScopedDomain({
+    reducer: userProfileReducer,
+    initialState: INITIAL_USER_PROFILE,
+    load: loadUserProfile,
+    save: saveUserProfile,
+    createRestoreAction: (value: UserProfile): UserProfileAction => ({
+      type: 'profileRestored',
+      profile: value,
+      updatedAt: value.updatedAt ?? 0,
     }),
+    onRecovered: (error) => {
+      console.warn('Unable to restore the saved user profile. Using safe defaults.', error);
+    },
+    onSaveFailed: (error) => {
+      console.warn('Unable to persist the user profile.', error);
+    },
+  });
+
+  // Additive: a second, parallel identity-scoped domain instance tracking
+  // sync bookkeeping (T157.4). The primary reducer above stays completely
+  // untouched and remains the sole source of truth for the rendered
+  // `UserProfile` -- this hook only pulls/pushes in the background and, on
+  // a safe pull-adopt, dispatches the same `profileRestored` action
+  // hydration itself uses.
+  const { identity } = useIdentityHandle();
+  const getTransport = useCallback(() => {
+    if (identity.kind !== 'user') return undefined;
+    const client = getSupabaseClient();
+    if (client === null) return undefined;
+    return createProfileSyncTransportAdapter(client, identity.userId);
+  }, [identity]);
+
+  const sync = useProfileDomainSync({
+    profile,
+    hasHydratedProfile: hasHydrated,
+    dispatchProfile: dispatch,
+    getTransport,
+  });
+
+  // Single Date.now() call site for the whole profile domain (AGENTS.md:
+  // keep timer/Date.now() calls outside pure reducer logic). Every
+  // action-creator below dispatches through this wrapper instead of
+  // `dispatch` directly so `UserProfileAction.updatedAt` is always fresh.
+  const dispatchWithTimestamp = useCallback(
+    (payload: UserProfileActionPayload) => dispatch({ ...payload, updatedAt: Date.now() }),
+    [dispatch],
   );
 
-  useEffect(() => {
-    let isCurrent = true;
-
-    loadUserProfile(AsyncStorage).then((result) => {
-      if (!isCurrent) return;
-
-      if (result.status === 'recovered') {
-        console.warn('Unable to restore the saved user profile. Using safe defaults.', result.error);
-      }
-
-      dispatch({ type: 'profileRestored', profile: result.value });
-      setHasHydrated(true);
-    });
-
-    return () => {
-      isCurrent = false;
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!hasHydrated) return;
-
-    if (shouldSkipInitialWrite.current) {
-      shouldSkipInitialWrite.current = false;
-      return;
-    }
-
-    void enqueueWrite(profile);
-  }, [enqueueWrite, hasHydrated, profile]);
-
   const toggleSelectedTrick = useCallback((trickId: string) => {
-    dispatch({ type: 'selectedTrickToggled', trickId });
-  }, []);
+    dispatchWithTimestamp({ type: 'selectedTrickToggled', trickId });
+  }, [dispatchWithTimestamp]);
+
+  const addSelectedTrick = useCallback((trickId: string) => {
+    dispatchWithTimestamp({ type: 'selectedTrickAdded', trickId });
+  }, [dispatchWithTimestamp]);
 
   const clearSelectedTricks = useCallback(() => {
-    dispatch({ type: 'selectedTricksCleared' });
-  }, []);
+    dispatchWithTimestamp({ type: 'selectedTricksCleared' });
+  }, [dispatchWithTimestamp]);
 
   const removeSelectedTrick = useCallback((trickId: string) => {
-    dispatch({ type: 'selectedTrickRemoved', trickId });
-  }, []);
+    dispatchWithTimestamp({ type: 'selectedTrickRemoved', trickId });
+  }, [dispatchWithTimestamp]);
 
   const toggleManualUnlock = useCallback((trickId: string) => {
-    dispatch({ type: 'manualUnlockToggled', trickId });
-  }, []);
+    dispatchWithTimestamp({ type: 'manualUnlockToggled', trickId });
+  }, [dispatchWithTimestamp]);
 
   const removeManualUnlock = useCallback((trickId: string) => {
-    dispatch({ type: 'manualUnlockRemoved', trickId });
-  }, []);
+    dispatchWithTimestamp({ type: 'manualUnlockRemoved', trickId });
+  }, [dispatchWithTimestamp]);
 
   const setLastSesh = useCallback((trickId: string, plan: SeshPlan) => {
-    dispatch({ type: 'lastSeshUpdated', lastSesh: createLastSesh(trickId, plan) });
-  }, []);
+    dispatchWithTimestamp({ type: 'lastSeshUpdated', lastSesh: createLastSesh(trickId, plan) });
+  }, [dispatchWithTimestamp]);
 
   const setStreakThresholdMs = useCallback((thresholdMs: number) => {
-    dispatch({ type: 'streakThresholdUpdated', thresholdMs });
-  }, []);
+    dispatchWithTimestamp({ type: 'streakThresholdUpdated', thresholdMs });
+  }, [dispatchWithTimestamp]);
 
   const setThemeColors = useCallback(
     (themeBackgroundColor: string | undefined, themeAccentColor: string | undefined) => {
-      dispatch({ type: 'themeColorsUpdated', themeBackgroundColor, themeAccentColor });
+      dispatchWithTimestamp({ type: 'themeColorsUpdated', themeBackgroundColor, themeAccentColor });
     },
-    [],
+    [dispatchWithTimestamp],
   );
 
   const setThemeTextColor = useCallback((themeTextColor: string | undefined) => {
-    dispatch({ type: 'themeTextColorUpdated', themeTextColor });
-  }, []);
+    dispatchWithTimestamp({ type: 'themeTextColorUpdated', themeTextColor });
+  }, [dispatchWithTimestamp]);
 
   const completeOnboarding = useCallback(
     (kenteiRank: number, selectedTrickIds: readonly string[], lacedTrickIds: readonly string[]) => {
-      dispatch({ type: 'onboardingCompleted', kenteiRank, selectedTrickIds, lacedTrickIds });
+      dispatchWithTimestamp({ type: 'onboardingCompleted', kenteiRank, selectedTrickIds, lacedTrickIds });
+      if (Platform.OS === 'web') {
+        track('onboarding_completed');
+      }
     },
-    [],
+    [dispatchWithTimestamp],
   );
 
   const restartOnboarding = useCallback(() => {
-    dispatch({ type: 'onboardingRestarted' });
-  }, []);
+    dispatchWithTimestamp({ type: 'onboardingRestarted' });
+  }, [dispatchWithTimestamp]);
 
   const advanceKenteiRank = useCallback((rank: number) => {
-    dispatch({ type: 'kenteiRankAdvanced', rank });
-  }, []);
+    dispatchWithTimestamp({ type: 'kenteiRankAdvanced', rank });
+  }, [dispatchWithTimestamp]);
 
   const actions = useMemo(
     () => ({
       toggleSelectedTrick,
+      addSelectedTrick,
       removeSelectedTrick,
       clearSelectedTricks,
       toggleManualUnlock,
@@ -164,6 +189,7 @@ export function UserProfileProvider({ children }: PropsWithChildren) {
       advanceKenteiRank,
     }),
     [
+      addSelectedTrick,
       advanceKenteiRank,
       clearSelectedTricks,
       completeOnboarding,
@@ -191,7 +217,7 @@ export function UserProfileProvider({ children }: PropsWithChildren) {
   return (
     <UserProfileStateContext.Provider value={profile}>
       <UserProfileActionsContext.Provider value={actions}>
-        {children}
+        <UserProfileSyncContext.Provider value={sync}>{children}</UserProfileSyncContext.Provider>
       </UserProfileActionsContext.Provider>
     </UserProfileStateContext.Provider>
   );
@@ -237,4 +263,16 @@ export function useUserProfileActions() {
   }
 
   return actions;
+}
+
+// Exposed for a future manual-retry affordance (T160.1) and for tests --
+// deliberately no UI consumes this yet.
+export function useUserProfileSync(): UserProfileSync {
+  const sync = useContext(UserProfileSyncContext);
+
+  if (!sync) {
+    throw new Error('useUserProfileSync must be used within UserProfileProvider.');
+  }
+
+  return sync;
 }

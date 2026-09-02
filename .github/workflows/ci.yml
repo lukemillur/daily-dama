@@ -4,14 +4,59 @@ on:
   pull_request:
     branches: [main, development]
   push:
-    branches: [main, development]
+    # Task PRs are gated before merging into development, so re-running the
+    # same jobs on the resulting development push is redundant. Main remains
+    # protected against direct/promotion regressions.
+    branches: [main]
+  schedule:
+    # Weekly security refresh: dependency advisories and scanner wiring can
+    # change even when this repository does not.
+    - cron: "17 9 * * 1"
+  release:
+    types: [published]
+  workflow_dispatch:
 
 concurrency:
-  group: ci-${{ github.workflow }}-${{ github.ref }}
+  group: ci-${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
   cancel-in-progress: true
 
+# T162.3: explicit, auditable in this file rather than relying on an invisible
+# org/repo default setting. This is the baseline every job gets; secret-scan adds a
+# job-level `pull-requests: read` override (see below) to list a PR's commits --
+# still read-only. gitleaks-action's PR-comment feature (which would need
+# pull-requests: write) is disabled instead of granting it.
+permissions:
+  contents: read
+
 jobs:
+  security_cadence:
+    name: security-cadence
+    runs-on: ubuntu-latest
+    outputs:
+      dependency: ${{ steps.select.outputs.dependency }}
+      bundle: ${{ steps.select.outputs.bundle }}
+      self_test: ${{ steps.select.outputs.self_test }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+
+      - name: Select security checks
+        id: select
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          if [[ "$GITHUB_EVENT_NAME" == "pull_request" ]]; then
+            # A rename is a deletion plus an addition so moving a relevant
+            # file out of a watched path cannot hide its bundle impact.
+            git diff --no-renames --name-only "$BASE_SHA" "$HEAD_SHA" | node security/scripts/select-ci-scans.mjs >> "$GITHUB_OUTPUT"
+          else
+            node security/scripts/select-ci-scans.mjs --all >> "$GITHUB_OUTPUT"
+          fi
+
   verify:
+    if: ${{ github.event_name == 'pull_request' || github.event_name == 'push' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -32,3 +77,87 @@ jobs:
 
       - name: Typecheck
         run: yarn tsc --noEmit
+
+      - name: Export web
+        run: yarn expo export --platform web --output-dir /tmp/daily-dama-web-export
+
+  # T162.3: dependency, secret, and built-web-bundle scanning. See security/README.md
+  # for policy rationale (the yarn audit --level exit-code bug, the accepted-advisories
+  # allowlist, the .gitleaks.toml false-positive allowlist, and the documented
+  # Resend/SMTP-secret-rule gap).
+  dependency-audit:
+    needs: security_cadence
+    if: ${{ needs.security_cadence.outputs.dependency == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af # v4.1.0
+        with:
+          node-version: 22
+          cache: yarn
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Check dependency audit
+        run: node security/scripts/check-dependency-audit.mjs
+
+  secret-scan:
+    if: ${{ github.event_name == 'pull_request' || github.event_name == 'push' }}
+    runs-on: ubuntu-latest
+    # gitleaks-action calls the GitHub API to list the PR's commits on `pull_request`
+    # events (to scope which commits to scan), which needs `pull-requests: read` --
+    # discovered from a real CI run failing with "Resource not accessible by
+    # integration" under the workflow-level contents-only default. This is still
+    # read-only, so "runs for pull requests... without gaining write permissions"
+    # still holds; PR commenting (the one feature that would need
+    # `pull-requests: write`) stays disabled via GITLEAKS_ENABLE_COMMENTS below.
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+
+      - uses: gitleaks/gitleaks-action@e0c47f4f8be36e29cdc102c57e68cb5cbf0e8d1e # v3.0.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_ENABLE_COMMENTS: "false"
+
+  bundle-secret-scan:
+    needs: security_cadence
+    if: ${{ needs.security_cadence.outputs.bundle == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af # v4.1.0
+        with:
+          node-version: 22
+          cache: yarn
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Check built web bundle for secrets
+        run: node security/scripts/check-bundle-secrets.mjs
+
+  secret-scan-self-test:
+    needs: security_cadence
+    if: ${{ needs.security_cadence.outputs.self_test == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af # v4.1.0
+        with:
+          node-version: 22
+          cache: yarn
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Verify secret detection wiring
+        run: node --test security/scripts/verify-secret-detection.mjs

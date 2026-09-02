@@ -4,7 +4,7 @@ import { styled } from 'styled-components/native';
 
 import { Button } from '@/components/ui/button';
 import { BodyText, DisplayTitle, Eyebrow } from '@/components/ui/typography';
-import { AppColors, BottomTabInset } from '@/constants/theme';
+import { AppColors } from '@/constants/theme';
 import {
   GoalForm,
   GoalRow,
@@ -71,7 +71,7 @@ export function AllTrickGoalsScreen({
   }
 
   return (
-    <Scroll contentContainerStyle={{ paddingBottom: 120 + BottomTabInset }}>
+    <Scroll contentContainerStyle={{ paddingBottom: 24 }}>
       <Content>
         <Eyebrow>Trick goals</Eyebrow>
         <PageTitle>Trick goals</PageTitle>
@@ -92,9 +92,11 @@ export function AllTrickGoalsScreen({
         <Sections>
           {groups.map((group) => (
             <Section key={group.trickId}>
-              <SectionHeader>
-                <SectionTitle>{group.trickName}</SectionTitle>
-              </SectionHeader>
+              {group.progress.length > 1 ? (
+                <SectionHeader>
+                  <SectionTitle>{`${group.trickName} goals`}</SectionTitle>
+                </SectionHeader>
+              ) : null}
               <GoalList>
                 {group.progress.map((progress) => (
                   <GoalRow

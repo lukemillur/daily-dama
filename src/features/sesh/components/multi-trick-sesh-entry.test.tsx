@@ -67,7 +67,7 @@ function RouteHarness({ selectedTrickIds }: { readonly selectedTrickIds: readonl
     };
   }, []);
 
-  return route === '/sesh' ? (
+  return route === '/app/sesh' ? (
     <Sesh
       availableTricks={KENDAMA_KENTEI_TRICKS}
       selectedTrickIds={selectedTrickIds}
@@ -286,7 +286,7 @@ describe('MultiTrickSeshEntry route completion', () => {
 
     pressByAccessibilityLabel(root, 'Finish sesh');
 
-    expect(mockReplace).toHaveBeenCalledWith('/sesh');
+    expect(mockReplace).toHaveBeenCalledWith('/app/sesh');
     expect(allText(root)).toEqual(expect.arrayContaining(['Practice format', 'Practice several tricks']));
     expect(allText(root)).not.toContain('Pick your\nlineup.');
     expect(root.root.findAll((node) => node.props.accessibilityLabel === 'session-count:2').length).toBeGreaterThan(0);
@@ -309,7 +309,7 @@ describe('MultiTrickSeshEntry route completion', () => {
     const root = await mountRouteHarness([trick.id]);
 
     pressByAccessibilityLabel(root, 'Back to Sesh');
-    expect(mockReplace).toHaveBeenCalledWith('/sesh');
+    expect(mockReplace).toHaveBeenCalledWith('/app/sesh');
     expect(allText(root)).toEqual(expect.arrayContaining(['Practice format', 'Practice several tricks']));
 
     await act(async () => {
@@ -321,7 +321,7 @@ describe('MultiTrickSeshEntry route completion', () => {
     pressByAccessibilityLabel(root, 'Start sesh');
     pressByVisibleText(root, 'Cancel');
 
-    expect(mockReplace).toHaveBeenLastCalledWith('/sesh');
+    expect(mockReplace).toHaveBeenLastCalledWith('/app/sesh');
     expect(allText(root)).toEqual(expect.arrayContaining(['Practice format', 'Practice several tricks']));
     expect(root.root.findAll((node) => node.props.accessibilityLabel === 'session-count:0').length).toBeGreaterThan(0);
 

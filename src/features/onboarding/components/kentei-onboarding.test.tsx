@@ -11,6 +11,12 @@ import {
 } from '@/features/profile/persistence/user-profile-persistence';
 import { UserProfileProvider } from '@/features/profile/state/user-profile-provider';
 import { KENDAMA_KENTEI_TRICKS } from '@/features/tricks/data/kendama-kentei-tricks';
+import { GUEST_IDENTITY } from '@/shared/persistence/identity';
+import { physicalKey } from '@/shared/persistence/scoped-storage';
+
+// This test doesn't wrap providers in <IdentityProvider>, so UserProfileProvider hydrates against
+// the module's default guest handle -- writes land at the guest-namespaced physical key.
+const GUEST_USER_PROFILE_KEY = physicalKey(GUEST_IDENTITY, USER_PROFILE_STORAGE_KEY);
 
 jest.mock('@react-native-async-storage/async-storage', () =>
   require('@react-native-async-storage/async-storage/jest/async-storage-mock'),
@@ -59,7 +65,7 @@ async function mountOnboarding() {
   return root;
 }
 
-async function driveToThemeSelect(root: ReactTestRenderer) {
+async function driveToDurationStep(root: ReactTestRenderer) {
   act(() => pressByVisibleText(root, 'Get started'));
   act(() =>
     pressByAccessibilityLabel(
@@ -83,8 +89,13 @@ async function driveToThemeSelect(root: ReactTestRenderer) {
   act(() => pressByVisibleText(root, 'Start practicing'));
 }
 
+async function driveToThemeSelect(root: ReactTestRenderer) {
+  await driveToDurationStep(root);
+  act(() => pressByAccessibilityLabel(root, 'Continue to theme selection'));
+}
+
 async function readPersistedProfile() {
-  const persisted = await AsyncStorage.getItem(USER_PROFILE_STORAGE_KEY);
+  const persisted = await AsyncStorage.getItem(GUEST_USER_PROFILE_KEY);
   expect(persisted).not.toBeNull();
   return deserializeUserProfile(persisted!);
 }
@@ -95,7 +106,7 @@ describe('KenteiOnboarding', () => {
     mockRouter.replace.mockClear();
   });
 
-  it('applies the selected preset and finishes onboarding, matching a direct Profile selection', async () => {
+  it('previews a preset without finishing onboarding', async () => {
     const root = await mountOnboarding();
     await driveToThemeSelect(root);
 
@@ -109,7 +120,35 @@ describe('KenteiOnboarding', () => {
       await Promise.resolve();
     });
 
-    expect(mockRouter.replace).toHaveBeenCalledWith('/sesh');
+    expect(mockRouter.replace).not.toHaveBeenCalled();
+
+    const [swatch] = findByAccessibilityLabel(root, preset.label + ' theme preset');
+    expect(swatch.props.accessibilityState.selected).toBe(true);
+
+    const profile = await readPersistedProfile();
+    expect(profile?.themeBackgroundColor).toBe(preset.backgroundColor);
+    expect(profile?.themeAccentColor).toBe(preset.accentColor);
+    expect(profile?.hasCompletedOnboarding).toBe(false);
+  });
+
+  it('finishes onboarding after previewing a preset, matching a direct Profile selection', async () => {
+    const root = await mountOnboarding();
+    await driveToThemeSelect(root);
+
+    const preset = RAINBOW_THEME_PRESETS[2];
+    act(() => pressByAccessibilityLabel(root, preset.label + ' theme preset'));
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(mockRouter.replace).not.toHaveBeenCalled();
+
+    act(() => pressByAccessibilityLabel(root, 'Finish onboarding'));
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(mockRouter.replace).toHaveBeenCalledWith('/app/sesh');
 
     const profile = await readPersistedProfile();
     expect(profile?.themeBackgroundColor).toBe(preset.backgroundColor);
@@ -117,18 +156,33 @@ describe('KenteiOnboarding', () => {
     expect(profile?.hasCompletedOnboarding).toBe(true);
     expect(profile?.kenteiRank).toBe(1);
     expect(profile?.selectedTrickIds.length).toBeGreaterThan(0);
+    expect(profile?.streakThresholdMs).toBe(300_000);
   });
 
-  it('completes onboarding normally with no theme preference set when the step is skipped', async () => {
+  it('shows the Default preset pre-selected on mount and no Skip control', async () => {
     const root = await mountOnboarding();
     await driveToThemeSelect(root);
 
-    act(() => pressByAccessibilityLabel(root, 'Skip theme selection'));
+    expect(findByAccessibilityLabel(root, 'Skip theme selection').length).toBe(0);
+    expect(
+      root.root.findAll((node) => node.props.children === 'Skip for now').length,
+    ).toBe(0);
+
+    const [defaultSwatch] = findByAccessibilityLabel(root, 'Default theme preset');
+    expect(defaultSwatch).toBeDefined();
+    expect(defaultSwatch.props.accessibilityState.selected).toBe(true);
+  });
+
+  it('completes onboarding on the default theme when Finish is pressed with no other selection', async () => {
+    const root = await mountOnboarding();
+    await driveToThemeSelect(root);
+
+    act(() => pressByAccessibilityLabel(root, 'Finish onboarding'));
     await act(async () => {
       await Promise.resolve();
     });
 
-    expect(mockRouter.replace).toHaveBeenCalledWith('/sesh');
+    expect(mockRouter.replace).toHaveBeenCalledWith('/app/sesh');
 
     const profile = await readPersistedProfile();
     expect(profile?.themeBackgroundColor).toBeUndefined();
@@ -136,5 +190,59 @@ describe('KenteiOnboarding', () => {
     expect(profile?.hasCompletedOnboarding).toBe(true);
     expect(profile?.kenteiRank).toBe(1);
     expect(profile?.selectedTrickIds.length).toBeGreaterThan(0);
+  });
+
+  it('inserts the duration step strictly between selecting and themeSelect', async () => {
+    const root = await mountOnboarding();
+    await driveToDurationStep(root);
+
+    expect(
+      root.root.findAll((node) => node.props.children === 'You can change this later from your Profile.')
+        .length,
+    ).toBeGreaterThan(0);
+    expect(
+      root.root.findAll((node) => node.props.children === 'Select a theme that matches your setup.')
+        .length,
+    ).toBe(0);
+
+    act(() => pressByAccessibilityLabel(root, 'Continue to theme selection'));
+
+    expect(
+      root.root.findAll((node) => node.props.children === 'Select a theme that matches your setup.')
+        .length,
+    ).toBeGreaterThan(0);
+  });
+
+  it('enforces a five-minute minimum on the duration step', async () => {
+    const root = await mountOnboarding();
+    await driveToDurationStep(root);
+
+    act(() => {
+      findByAccessibilityLabel(root, 'Practice minutes per day')[0].props.onChangeText('3');
+    });
+    expect(findByAccessibilityLabel(root, 'Continue to theme selection')[0].props.disabled).toBe(true);
+
+    act(() => {
+      findByAccessibilityLabel(root, 'Practice minutes per day')[0].props.onChangeText('5');
+    });
+    expect(findByAccessibilityLabel(root, 'Continue to theme selection')[0].props.disabled).toBe(false);
+  });
+
+  it('persists the same streakThresholdMs field the Profile screen reads and writes', async () => {
+    const root = await mountOnboarding();
+    await driveToDurationStep(root);
+
+    act(() => {
+      findByAccessibilityLabel(root, 'Practice minutes per day')[0].props.onChangeText('12');
+    });
+    act(() => pressByAccessibilityLabel(root, 'Continue to theme selection'));
+
+    act(() => pressByAccessibilityLabel(root, 'Finish onboarding'));
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    const profile = await readPersistedProfile();
+    expect(profile?.streakThresholdMs).toBe(12 * 60_000);
   });
 });

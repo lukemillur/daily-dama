@@ -1,15 +1,4 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import {
-  createContext,
-  type PropsWithChildren,
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useReducer,
-  useRef,
-  useState,
-} from 'react';
+import { createContext, type PropsWithChildren, useCallback, useContext, useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { AppColors } from '@/constants/theme';
@@ -17,14 +6,22 @@ import type { SeshSummary } from '@/features/sesh/model/sesh';
 import {
   INITIAL_PRACTICE_HISTORY,
   type PracticeHistory,
+  type PracticeHistoryAction,
   type PracticeSessionOrigin,
   practiceHistoryReducer,
 } from '@/features/stats/model/practice-history';
+import type { PracticeSessionRow } from '@/features/stats/persistence/practice-history-cloud-repository';
 import {
   loadPracticeHistory,
   savePracticeHistory,
 } from '@/features/stats/persistence/practice-history-persistence';
-import { createWriteQueue } from '@/shared/persistence/storage';
+import { createPracticeHistorySyncTransportAdapter } from '@/features/stats/persistence/practice-history-sync-transport';
+import { usePracticeHistoryDomainSync } from '@/features/stats/state/use-practice-history-domain-sync';
+import { useIdentityHandle } from '@/shared/persistence/identity-provider';
+import { useIdentityScopedDomain } from '@/shared/persistence/use-identity-scoped-domain';
+import { getSupabaseClient } from '@/shared/supabase/supabase-client';
+import type { DomainSyncRecord, SyncTrigger } from '@/shared/sync/coordinator';
+import type { SyncTransportRepository } from '@/shared/sync/transport';
 
 interface PracticeHistoryActions {
   readonly recordCompletedSesh: (summary: SeshSummary, origin?: PracticeSessionOrigin) => void;
@@ -33,47 +30,58 @@ interface PracticeHistoryActions {
 const PracticeHistoryStateContext = createContext<PracticeHistory | undefined>(undefined);
 const PracticeHistoryActionsContext = createContext<PracticeHistoryActions | undefined>(undefined);
 
+export interface PracticeHistorySync {
+  readonly runSync: (trigger: SyncTrigger) => Promise<DomainSyncRecord>;
+  readonly isSyncing: boolean;
+  readonly lastResult: DomainSyncRecord | undefined;
+  readonly hasHydrated: boolean;
+  readonly localMutationTick: number;
+  readonly pendingCount: number;
+  readonly retryableFailureCount: number;
+  readonly conflictCount: number;
+  readonly discardPending: () => Promise<void>;
+}
+
+const PracticeHistorySyncContext = createContext<PracticeHistorySync | undefined>(undefined);
+
 export function PracticeHistoryProvider({ children }: PropsWithChildren) {
-  const [history, dispatch] = useReducer(practiceHistoryReducer, INITIAL_PRACTICE_HISTORY);
-  const [hasHydrated, setHasHydrated] = useState(false);
-  const shouldSkipInitialWrite = useRef(true);
-  const [enqueueWrite] = useState(() =>
-    createWriteQueue(async (nextHistory: PracticeHistory) => {
-      const result = await savePracticeHistory(AsyncStorage, nextHistory);
-      if (result.status === 'failed') {
-        console.warn('Unable to persist practice history.', result.error);
-      }
+  const { state: history, dispatch, hasHydrated } = useIdentityScopedDomain({
+    reducer: practiceHistoryReducer,
+    initialState: INITIAL_PRACTICE_HISTORY,
+    load: loadPracticeHistory,
+    save: savePracticeHistory,
+    createRestoreAction: (value: PracticeHistory): PracticeHistoryAction => ({
+      type: 'historyRestored',
+      history: value,
     }),
-  );
+    onRecovered: (error) => {
+      console.warn('Unable to restore practice history. Using an empty history.', error);
+    },
+    onSaveFailed: (error) => {
+      console.warn('Unable to persist practice history.', error);
+    },
+  });
 
-  useEffect(() => {
-    let isCurrent = true;
+  // Additive: a second, parallel identity-scoped domain instance tracking
+  // sync bookkeeping (T157.6). The primary reducer above stays completely
+  // untouched and remains the sole source of truth for the rendered
+  // `PracticeHistory` -- this hook only pulls/pushes in the background and,
+  // on a pull-adopt merge, dispatches the same `historyRestored` action
+  // hydration itself uses.
+  const { identity } = useIdentityHandle();
+  const getTransport = useCallback((): SyncTransportRepository<PracticeSessionRow> | undefined => {
+    if (identity.kind !== 'user') return undefined;
+    const client = getSupabaseClient();
+    if (client === null) return undefined;
+    return createPracticeHistorySyncTransportAdapter(client, identity.userId);
+  }, [identity]);
 
-    loadPracticeHistory(AsyncStorage).then((result) => {
-      if (!isCurrent) return;
-
-      if (result.status === 'recovered') {
-        console.warn('Unable to restore practice history. Using an empty history.', result.error);
-      }
-
-      dispatch({ type: 'historyRestored', history: result.value });
-      setHasHydrated(true);
-    });
-
-    return () => {
-      isCurrent = false;
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!hasHydrated) return;
-    if (shouldSkipInitialWrite.current) {
-      shouldSkipInitialWrite.current = false;
-      return;
-    }
-
-    void enqueueWrite(history);
-  }, [enqueueWrite, hasHydrated, history]);
+  const sync = usePracticeHistoryDomainSync({
+    history,
+    hasHydratedHistory: hasHydrated,
+    dispatchHistory: dispatch,
+    getTransport,
+  });
 
   const recordCompletedSesh = useCallback((summary: SeshSummary, origin?: PracticeSessionOrigin) => {
     dispatch({ type: 'sessionRecorded', summary, origin });
@@ -93,7 +101,7 @@ export function PracticeHistoryProvider({ children }: PropsWithChildren) {
   return (
     <PracticeHistoryStateContext.Provider value={history}>
       <PracticeHistoryActionsContext.Provider value={actions}>
-        {children}
+        <PracticeHistorySyncContext.Provider value={sync}>{children}</PracticeHistorySyncContext.Provider>
       </PracticeHistoryActionsContext.Provider>
     </PracticeHistoryStateContext.Provider>
   );
@@ -111,6 +119,16 @@ export function usePracticeHistoryActions() {
     throw new Error('usePracticeHistoryActions must be used within PracticeHistoryProvider.');
   }
   return actions;
+}
+
+// Exposed for a future manual-retry affordance (T160.1) and for tests --
+// deliberately no UI consumes this yet.
+export function usePracticeHistorySync(): PracticeHistorySync {
+  const sync = useContext(PracticeHistorySyncContext);
+  if (!sync) {
+    throw new Error('usePracticeHistorySync must be used within PracticeHistoryProvider.');
+  }
+  return sync;
 }
 
 const styles = StyleSheet.create({

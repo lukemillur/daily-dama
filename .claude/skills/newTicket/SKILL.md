@@ -1,6 +1,6 @@
 ---
 name: newTicket
-description: Claims a Daily Dama backlog task — a specific one if named, otherwise the next available one — and drives it end-to-end against `development`: deterministic claim script, then the ticket-planner and ticket-implementer agents (plan, implement, merge). No plan-approval gate. When no task is named, keeps going: one task after another, each in fresh subagents so context never accumulates, until the backlog is exhausted, a blocker is hit, or the session's usage limit is reached. Also resumes an interrupted task with `/newTicket resume T0NN`.
+description: Claims a Daily Dama backlog task — a specific one if named, otherwise the next available one — and drives it end-to-end against `development`: deterministic claim script, then the ticket-planner and ticket-implementer agents (plan, implement, merge). No plan-approval gate. When no task is named, keeps going: one task after another, each in fresh subagents so context never accumulates, by default in TASKS.md file order — pass `ranked` (`/newTicket ranked`) to instead pick each cycle's task by unblock value (how many other pending tasks depend on it, then declared Priority). A task that gets blocked (claimed, or blocked at planning/implementation/merge) is recorded and skipped, not fatal — the loop moves on to any other independent task, while a task that actually depends on the blocked one stays correctly skipped too. The loop stops only when the backlog is exhausted, the claim mechanism itself fails, or the session's usage limit is reached. Also resumes an interrupted task with `/newTicket resume T0NN`.
 allowed-tools: Agent(ticket-planner), Agent(ticket-implementer), Bash(node .claude/scripts/ticket-claim.mjs:*), Bash(node .claude/scripts/worktree-cleanup.mjs:*)
 disallowed-tools: Artifact, AskUserQuestion, BashOutput, Edit, EnterWorktree, ExitWorktree, Glob, Grep, KillShell, Monitor, NotebookEdit, Read, SendMessage, Skill, SlashCommand, TaskCreate, TaskGet, TaskList, TaskStop, TaskUpdate, TodoWrite, ToolSearch, WebFetch, WebSearch, Write, mcp__Claude_Browser__*
 ---
@@ -32,30 +32,44 @@ Read what the user actually said; there's no argument syntax to parse.
 
 | They said | You run |
 | :-- | :-- |
-| `/newTicket` (nothing named) | continuous mode: cycles back to back |
+| `/newTicket` (nothing named) | continuous mode: cycles back to back, file order |
+| `/newTicket ranked` | continuous mode: cycles back to back, highest-unblock-value order |
 | `/newTicket T035`, "work on the laced count task" | one cycle for that task |
-| `/newTicket resume T034`, `/newTicket T034 --resume` | one cycle resuming that task's existing claim branch |
+| `/newTicket resume T034`, `/newTicket T034 --resume` | one cycle resuming that task's existing claim branch and reusing any canonical open/merged PR |
+
+`ranked` only changes *which* actionable task continuous mode reaches first each cycle — every other rule on this page (skip/stop conditions, one task per cycle, fresh subagents) is identical. It cannot combine with a task ID or `resume`; both of those already pick one task directly, so `ticket-claim.mjs` rejects the combination as a usage error rather than guessing which one wins.
+
+**Default to file order.** Pass `ranked` to `ticket-claim.mjs` only when the user's own words literally contain `ranked` (e.g. `/newTicket ranked`, "run newTicket ranked"). Do not infer ranked mode from context, from a prior conversation, from this being a "good default," or from any other signal — an invocation with no such word, including a bare `/newTicket`, always means file order.
 
 ## One cycle
 
 Exactly one task, claim → plan (maybe) → implement → cleanup. Post a short plain one-line status (no headers, no emoji) as its own message at each checkpoint — you're the only visible progress while a cycle runs.
 
+In continuous mode, a cycle is an iteration of the run, not the end of the
+skill invocation. After cleanup, return to step 1 immediately for every
+recoverable outcome (`success`, a claimed-task skip, or a block from planning,
+implementation, or merge). Do not send the final report or wait for a new user
+message between those cycles. The only outcomes that end continuous mode are a
+claim-mechanism failure, a usage limit, or an exhausted backlog; the detailed
+rules are below.
+
 ### 1. Claim
 
 ```sh
-node .claude/scripts/ticket-claim.mjs                 # continuous: next actionable task
+node .claude/scripts/ticket-claim.mjs                 # continuous: next actionable task, file order
+node .claude/scripts/ticket-claim.mjs ranked          # continuous: next actionable task, ranked by unblock value
 node .claude/scripts/ticket-claim.mjs T035            # named
 node .claude/scripts/ticket-claim.mjs resume T034     # resume
 ```
 
 Parse the JSON. Its `status` is one of:
 
-- **`claimed`** — post `T0NN: claimed (branch <branch>) — <one-line paraphrase of the task>`. Carry `entry`, `branch`, `planFile`, `planExists`, `planning` into step 2.
+- **`claimed`** — post `T0NN: claimed (branch <branch>) — <one-line paraphrase of the task>`. When `ranked` is `true`, also mention `unblockFanOut` in that line (e.g. "— ranked pick, unblock fan-out 4"). Carry `entry`, `branch`, `planFile`, `planExists`, `planning` into step 2.
 - **`resumed`** — post `T0NN: resuming <branch> (plan <exists|missing>)`. Same fields; the script did not modify the branch.
-- **`blocked`** — post `T0NN: blocked — <blocker.detail>`. Cycle ends. If `blocker.resumeCommand` is present, include it verbatim so the user can pick the task back up.
+- **`blocked`** — post `T0NN: blocked — <blocker.detail>`. Cycle ends. If `blocker.resumeCommand` is present, include it verbatim so the user can pick the task back up. Whether this also ends the *run* (continuous mode) depends on the reason — see Continuous mode below.
 - **`backlog-exhausted`** — post `no actionable tasks left in backlog`. Cycle ends; not an error.
 
-The script never steals or rewrites an existing claim branch. A task that already has a remote `task/<ID>-*` branch is reported `blocked` with reason `claimed`, in named *and* continuous mode — continuous mode stops there rather than skipping ahead, because skipping is how claimed work gets forgotten.
+The script never steals or rewrites an existing claim branch. In **named** mode (an explicit task ID, or `resume`), a task that already has a remote `task/<ID>-*` branch is reported `blocked` with reason `claimed` — the caller asked for that specific task, so there is nothing to fall back to. In **continuous** mode the same situation is instead recorded in `skipped` (reason `claimed`) and the deterministic scan moves on to the next actionable task on its own — you never see it as this cycle's outcome. See Continuous mode below for the (rarer) case where `claimed` still reaches you there.
 
 ### 2. Plan — only when required
 
@@ -71,7 +85,7 @@ Never invent a third route, and never skip a `required` planner to save time —
 
 Post `T0NN: planning…`, then invoke `ticket-planner` (`subagent_type: "ticket-planner"`, `isolation: "worktree"`, `run_in_background: false`) with the full task entry and branch name.
 
-- `STATUS: blocked` → post `T0NN: blocked at planning — <reason>`; cycle ends `blocked`. The branch stays claimed for a future session. Do not implement against a plan that doesn't exist.
+- `STATUS: blocked` → post `T0NN: blocked at planning — <reason>`; cycle ends `blocked`. The branch stays claimed for a future session. Do not implement against a plan that doesn't exist. A planner-side environment failure (including GitHub authentication, network, or push failure after the plan was committed) is a recoverable stage block, not a claim-mechanism failure: preserve the branch/plan, clean only the exact staged worktree, and let continuous mode continue to its next independent claim. Resume the ticket later once the environment is repaired.
 - Usage limit (see below) → cycle ends `usage-limit`.
 - Otherwise post `T0NN: plan ready` and take `planFile` and `WORKTREE` from its report.
 
@@ -93,6 +107,16 @@ is the only route to `blocked-at-merge`. Do not make another merge attempt.
 Before accepting `success`, confirm every `exitCriteria` record is `passed`;
 otherwise report the evidence gap as `blocked` rather than claiming full
 verification.
+
+Treat a missing or malformed `RESULT` object, a mismatched/missing `taskId` or
+`worktree`, absent merge reconciliation, or missing per-criterion evidence as
+`blocked`. Never infer success from prose, a pushed commit, or an open PR.
+
+The implementer must use `.claude/scripts/pr-merge.mjs`, not invoke `gh pr
+merge` directly. The wrapper supplies an explicit repository context, which
+prevents GitHub CLI's `--delete-branch` cleanup from trying to check out
+`development` in a task worktree. It also preflights canonical state, so an
+explicit resume reuses an existing PR and never repeats a completed merge.
 
 ### 4. Clean up the stage worktree
 
@@ -121,7 +145,8 @@ A cycle covers exactly one task and ends in exactly one state. Never let a cycle
 | Outcome | Meaning | Continuous mode |
 | :-- | :-- | :-- |
 | `success` | merged into `development` | start the next cycle immediately, no confirmation |
-| `blocked` | claim, plan, implementation or merge stopped on a specific reason | stop the loop; report the reason |
+| `blocked` at the claim step, reason ≠ `claimed` | the claim mechanism itself failed for this task (stray local branch, failed push with no competing branch, script error) | stop the loop; report the reason — retrying would just hit the same failure on the same task forever |
+| `blocked`, reason `claimed`, or blocked during planning/implementation/merge | this specific task can't proceed right now, but the claim/plan/implement machinery is fine | record it, clean up, and start the next cycle immediately — see Continuous mode below |
 | `usage-limit` | an `Agent` call failed for capacity reasons | stop the loop; the task stays claimed and resumable |
 | `backlog-exhausted` | no actionable task remains | stop the loop; not an error |
 
@@ -135,10 +160,14 @@ Nothing is wrong with the task: the branch stays claimed and pushed, and a commi
 
 ## Continuous mode
 
+If the user said `ranked`, pass it through to every claim call this run (step 1's command becomes `node .claude/scripts/ticket-claim.mjs ranked`). Nothing else below changes: `ticket-claim.mjs` re-parses `TASKS.md`/`TASKS_DONE.md` and recomputes the ranking fresh on every call, so a merge earlier in the run that unblocks a new ticket is already reflected in the very next cycle's pick — there is no separate re-ranking step for you to remember.
+
 1. Run a cycle with no task ID.
 2. Append its outcome (task ID, PR URL, or blocker/limit detail) to a running tally in your reply text — not in any file.
-3. `success` → next cycle immediately (pre-authorized, matching the protocol's no-review-gate design).
-4. `blocked`, `usage-limit` or `backlog-exhausted` → stop. Never skip a blocked task to reach the next one.
+3. `success` → next cycle immediately (pre-authorized after required CI passes; no human review gate).
+4. `blocked` at the claim step (step 1) for a reason other than `claimed` → stop the run. This means the claim mechanism itself failed for that task — a stray local branch, a push that failed with no competing branch, or a script error — and blindly retrying would just reselect the same task and hit the same failure again. Report it as you would any blocker.
+5. Any other `blocked` — the rare claim-step `claimed` (a lost push race on the task the scan just selected), or a block from planning, implementation, or merge — → append it to the tally, run cleanup for the stage worktree, and invoke the next claim immediately in this same turn. This includes planner-side GitHub authentication/network/push failures after a plan commit: the plan and claim branch remain resumable, and the failure must not terminate continuous mode. Do **not** stop the run or return a final response for this: the task's own claim branch already exists remotely, so the next `ticket-claim.mjs` call skips right past it on its own (continuous-mode selection now treats an already-claimed candidate as a skip, not a stop) and moves on to an unrelated task later in the backlog. A task that genuinely `depends on` the blocked one keeps getting skipped too, automatically, by the script's own dependency check — never work around that check yourself to "unblock" a dependent task early.
+6. `usage-limit` or `backlog-exhausted` → stop.
 
 Each cycle's subagents are fresh, with no memory of prior cycles, by design.
 

@@ -374,20 +374,20 @@ describe('shouldPromptSeshNote', () => {
     ).toBe(true);
   });
 
-  it('never triggers for an open-ended sesh, regardless of target or landings', () => {
+  it('triggers for an open-ended sesh, regardless of target or landings', () => {
     expect(
       shouldPromptSeshNote(makeSeshSummary({ plan: OPEN_ENDED_SESH_PLAN, landings: [] })),
-    ).toBe(false);
+    ).toBe(true);
     expect(
       shouldPromptSeshNote(
         makeSeshSummary({ plan: OPEN_ENDED_SESH_PLAN, landings: [landing(1_000)] }),
       ),
-    ).toBe(false);
+    ).toBe(true);
     expect(
       shouldPromptSeshNote(
         makeSeshSummary({ plan: createOpenEndedSeshPlan(5), landings: [] }),
       ),
-    ).toBe(false);
+    ).toBe(true);
     expect(
       shouldPromptSeshNote(
         makeSeshSummary({
@@ -395,6 +395,6 @@ describe('shouldPromptSeshNote', () => {
           landings: [landing(1_000), landing(2_000), landing(3_000), landing(4_000), landing(5_000)],
         }),
       ),
-    ).toBe(false);
+    ).toBe(true);
   });
 });

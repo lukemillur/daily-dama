@@ -1,19 +1,9 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import {
-  createContext,
-  type PropsWithChildren,
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useReducer,
-  useRef,
-  useState,
-} from 'react';
+import { createContext, type PropsWithChildren, useCallback, useContext, useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { AppColors } from '@/constants/theme';
 import {
+  type NoteAction,
   createNote,
   createNoteId,
   INITIAL_NOTES,
@@ -27,7 +17,12 @@ import {
   validateNoteEdit,
 } from '@/features/notes/model/note';
 import { loadNotes, saveNotes } from '@/features/notes/persistence/note-persistence';
-import { createWriteQueue } from '@/shared/persistence/storage';
+import { createNoteSyncTransportAdapter } from '@/features/notes/persistence/note-sync-transport';
+import { useNoteDomainSync } from '@/features/notes/state/use-note-domain-sync';
+import { useIdentityHandle } from '@/shared/persistence/identity-provider';
+import { useIdentityScopedDomain } from '@/shared/persistence/use-identity-scoped-domain';
+import { getSupabaseClient } from '@/shared/supabase/supabase-client';
+import type { DomainSyncRecord, SyncTrigger } from '@/shared/sync/coordinator';
 
 type SaveNoteResult =
   | { readonly status: 'invalid'; readonly errors: NoteDraftErrors }
@@ -42,47 +37,57 @@ interface NoteActions {
 const NoteStateContext = createContext<NoteCollection | undefined>(undefined);
 const NoteActionsContext = createContext<NoteActions | undefined>(undefined);
 
+export interface NoteSync {
+  readonly runSync: (trigger: SyncTrigger) => Promise<DomainSyncRecord>;
+  readonly isSyncing: boolean;
+  readonly lastResult: DomainSyncRecord | undefined;
+  readonly hasHydrated: boolean;
+  readonly localMutationTick: number;
+  readonly pendingCount: number;
+  readonly retryableFailureCount: number;
+  readonly discardPending: () => Promise<void>;
+}
+
+const NoteSyncContext = createContext<NoteSync | undefined>(undefined);
+
 export function NoteProvider({ children }: PropsWithChildren) {
-  const [collection, dispatch] = useReducer(noteReducer, INITIAL_NOTES);
-  const [hasHydrated, setHasHydrated] = useState(false);
-  const shouldSkipInitialWrite = useRef(true);
-  const [enqueueWrite] = useState(() =>
-    createWriteQueue(async (nextCollection: NoteCollection) => {
-      const result = await saveNotes(AsyncStorage, nextCollection);
-      if (result.status === 'failed') {
-        console.warn('Unable to persist notes.', result.error);
-      }
+  const { state: collection, dispatch, hasHydrated } = useIdentityScopedDomain({
+    reducer: noteReducer,
+    initialState: INITIAL_NOTES,
+    load: loadNotes,
+    save: saveNotes,
+    createRestoreAction: (value: NoteCollection): NoteAction => ({
+      type: 'notesRestored',
+      collection: value,
     }),
-  );
+    onRecovered: (error) => {
+      console.warn('Unable to restore notes. Using an empty collection.', error);
+    },
+    onSaveFailed: (error) => {
+      console.warn('Unable to persist notes.', error);
+    },
+  });
 
-  useEffect(() => {
-    let isCurrent = true;
+  // Additive: a second, parallel identity-scoped domain instance tracking
+  // sync bookkeeping (T157.8). The primary reducer above stays completely
+  // untouched and remains the sole source of truth for the rendered
+  // `NoteCollection` -- this hook only pulls/pushes in the background and,
+  // on a safe pull-adopt, dispatches the same `notesRestored` action
+  // hydration itself uses.
+  const { identity } = useIdentityHandle();
+  const getTransport = useCallback(() => {
+    if (identity.kind !== 'user') return undefined;
+    const client = getSupabaseClient();
+    if (client === null) return undefined;
+    return createNoteSyncTransportAdapter(client, identity.userId);
+  }, [identity]);
 
-    loadNotes(AsyncStorage).then((result) => {
-      if (!isCurrent) return;
-
-      if (result.status === 'recovered') {
-        console.warn('Unable to restore notes. Using an empty collection.', result.error);
-      }
-
-      dispatch({ type: 'notesRestored', collection: result.value });
-      setHasHydrated(true);
-    });
-
-    return () => {
-      isCurrent = false;
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!hasHydrated) return;
-    if (shouldSkipInitialWrite.current) {
-      shouldSkipInitialWrite.current = false;
-      return;
-    }
-
-    void enqueueWrite(collection);
-  }, [collection, enqueueWrite, hasHydrated]);
+  const sync = useNoteDomainSync({
+    collection,
+    hasHydratedCollection: hasHydrated,
+    dispatchCollection: dispatch,
+    getTransport,
+  });
 
   const addNote = useCallback((input: NoteCreationInput): SaveNoteResult => {
     const validation = validateNoteCreation(input);
@@ -128,7 +133,9 @@ export function NoteProvider({ children }: PropsWithChildren) {
 
   return (
     <NoteStateContext.Provider value={collection}>
-      <NoteActionsContext.Provider value={actions}>{children}</NoteActionsContext.Provider>
+      <NoteActionsContext.Provider value={actions}>
+        <NoteSyncContext.Provider value={sync}>{children}</NoteSyncContext.Provider>
+      </NoteActionsContext.Provider>
     </NoteStateContext.Provider>
   );
 }
@@ -143,6 +150,14 @@ export function useNoteActions() {
   const actions = useContext(NoteActionsContext);
   if (!actions) throw new Error('useNoteActions must be used within NoteProvider.');
   return actions;
+}
+
+// Exposed for a future manual-retry affordance (T160.1) and for tests --
+// deliberately no UI consumes this yet.
+export function useNoteSync(): NoteSync {
+  const sync = useContext(NoteSyncContext);
+  if (!sync) throw new Error('useNoteSync must be used within NoteProvider.');
+  return sync;
 }
 
 const styles = StyleSheet.create({

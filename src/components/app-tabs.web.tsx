@@ -1,3 +1,4 @@
+import { usePathname, useRouter } from 'expo-router';
 import {
   Tabs,
   TabList,
@@ -13,6 +14,9 @@ import { ThemedText } from './themed-text';
 import { ThemedView } from './themed-view';
 
 import { MaxContentWidth, Spacing } from '@/constants/theme';
+import { useAuthState } from '@/features/auth/state/auth-provider';
+import { LANDING_ARRIVAL_FROM_APP, LANDING_ARRIVAL_PARAM } from '@/features/landing/state/landing-navigation';
+import { deriveAutomaticTextColor, useResolvedTheme } from '@/features/profile/state/use-resolved-theme';
 import { useUserProfile } from '@/features/profile/state/user-profile-provider';
 
 export default function AppTabs() {
@@ -24,26 +28,26 @@ export default function AppTabs() {
       <TabSlot style={styles.tabSlot} />
       <TabList asChild>
         <CustomTabList hidden={!hasCompletedOnboarding}>
-          <TabTrigger name="home" href="/" asChild>
+          <TabTrigger name="home" href="/app/home" asChild>
             <TabButton>Home</TabButton>
           </TabTrigger>
           {hasCompletedOnboarding && (
-            <TabTrigger name="sesh" href="/sesh" asChild>
+            <TabTrigger name="sesh" href="/app/sesh" asChild>
               <TabButton>Sesh</TabButton>
             </TabTrigger>
           )}
           {hasCompletedOnboarding && (
-            <TabTrigger name="tricks" href="/tricks" asChild>
+            <TabTrigger name="tricks" href="/app/tricks" asChild>
               <TabButton>Tricks</TabButton>
             </TabTrigger>
           )}
           {hasCompletedOnboarding && (
-            <TabTrigger name="stats" href="/stats" asChild>
+            <TabTrigger name="stats" href="/app/stats" asChild>
               <TabButton>Stats</TabButton>
             </TabTrigger>
           )}
           {hasCompletedOnboarding && (
-            <TabTrigger name="profile" href="/profile" asChild>
+            <TabTrigger name="profile" href="/app/profile" asChild>
               <TabButton>Profile</TabButton>
             </TabTrigger>
           )}
@@ -65,14 +69,79 @@ export function TabButton({ children, isFocused, ...props }: TabTriggerSlotProps
   );
 }
 
-export function CustomTabList({ hidden, ...props }: TabListProps & { readonly hidden?: boolean }) {
-  return (
-    <View {...props} style={[styles.tabListContainer, hidden ? styles.tabListHidden : null]}>
-      <ResponsiveTabListInner type="backgroundElement">
-        <ResponsiveBrandText type="smallBold">Daily Dama</ResponsiveBrandText>
+export function CustomTabList({ hidden, children, ...props }: TabListProps & { readonly hidden?: boolean }) {
+  const pathname = usePathname();
+  const showFooter = pathname === '/app/profile';
 
-        {props.children}
-      </ResponsiveTabListInner>
+  return (
+    <View {...props} style={[styles.tabListContainer, hidden ? styles.tabListHidden : null]} pointerEvents="box-none">
+      <View style={styles.topNavWrap} pointerEvents="box-none">
+        <ResponsiveTabListInner type="backgroundElement">
+          <ResponsiveBrandText type="smallBold">Daily Dama</ResponsiveBrandText>
+
+          {children}
+        </ResponsiveTabListInner>
+      </View>
+
+      {showFooter && <AppFooterBar />}
+    </View>
+  );
+}
+
+/**
+ * Footer bar spanning the app shell, holding the persistent affordance for
+ * leaving the app and returning to the marketing landing page at `/`. Pure
+ * client-side navigation: it must not sign the user out, reset onboarding, or
+ * touch any persisted data.
+ *
+ * Background uses the resolved theme's `buttonBackground` (already tuned for contrast
+ * against the resolved page background) rather than `background` itself, and link text follows the visitor's saved theme (via
+ * `useResolvedTheme`), falling back to the default resolved theme when no
+ * custom colors are set.
+ *
+ * Carries the T112.5 in-app-arrival signal so `useRedirectOnboardedVisitorHome`
+ * skips its redirect-to-`/app/home` behavior and the landing page actually
+ * renders, instead of bouncing the visitor straight back into the app.
+ */
+function AppFooterBar() {
+  const router = useRouter();
+  const authState = useAuthState();
+  const theme = useResolvedTheme();
+  const backgroundColor = theme.buttonBackground;
+  const textColor = deriveAutomaticTextColor(backgroundColor, backgroundColor);
+  const isAuthenticated = authState.status === 'authenticated';
+
+  const handleLeaveAppPress = () => {
+    router.push({
+      pathname: '/',
+      params: { [LANDING_ARRIVAL_PARAM]: LANDING_ARRIVAL_FROM_APP },
+    });
+  };
+
+  const handleDeleteAccountPress = () => {
+    router.push('/app/profile/account/delete');
+  };
+
+  return (
+    <View testID="app-footer-bar" style={[styles.footerBar, { backgroundColor }]}>
+      <Pressable
+        accessibilityRole="link"
+        onPress={handleLeaveAppPress}
+        style={({ pressed }) => [styles.leaveAppLink, pressed && styles.pressed]}>
+        <ThemedText type="small" style={{ color: textColor }}>
+          Leave app
+        </ThemedText>
+      </Pressable>
+      {isAuthenticated && (
+        <Pressable
+          accessibilityRole="link"
+          onPress={handleDeleteAccountPress}
+          style={({ pressed }) => [styles.deleteAccountLink, pressed && styles.pressed]}>
+          <ThemedText type="small" style={{ color: textColor }}>
+            Delete account
+          </ThemedText>
+        </Pressable>
+      )}
     </View>
   );
 }
@@ -118,14 +187,40 @@ const styles = StyleSheet.create({
   },
   tabListContainer: {
     position: 'absolute',
-    width: '100%',
-    padding: Spacing.three,
-    justifyContent: 'center',
-    alignItems: 'center',
-    flexDirection: 'row',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
   },
   tabListHidden: {
     display: 'none',
+  },
+  topNavWrap: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    padding: Spacing.three,
+    alignItems: 'center',
+  },
+  footerBar: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    width: '100%',
+    flexDirection: 'row',
+    justifyContent: 'flex-start',
+    alignItems: 'center',
+    paddingVertical: Spacing.two,
+    paddingHorizontal: Spacing.three,
+  },
+  leaveAppLink: {
+    padding: Spacing.one,
+  },
+  deleteAccountLink: {
+    marginLeft: 'auto',
+    padding: Spacing.one,
   },
   pressed: {
     opacity: 0.7,

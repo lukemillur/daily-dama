@@ -6,11 +6,14 @@
     "allow": [
       "Bash(yarn test:*)",
       "Bash(yarn lint:*)",
+      "Bash(yarn eslint:*)",
       "Bash(yarn tsc:*)",
       "Bash(yarn expo export:*)",
       "Bash(yarn expo start:*)",
       "Bash(node .claude/scripts/ticket-claim.mjs:*)",
       "Bash(node .claude/scripts/worktree-cleanup.mjs:*)",
+      "Bash(node .claude/scripts/pr-merge.mjs:*)",
+      "Bash(node .claude/scripts/pr-merge-status.mjs:*)",
       "Bash(node .claude/scripts/verify.mjs:*)",
       "Bash(node .claude/scripts/validate-agent-config.mjs:*)",
       "Bash(node --test:*)",
@@ -34,7 +37,7 @@
       "Bash(git push --set-upstream origin task/:*)",
       "Bash(git push origin --delete task/:*)",
       "Bash(gh pr create --base development:*)",
-      "Bash(gh pr merge --squash --delete-branch:*)",
+      "Bash(gh pr checks:*)",
       "mcp__Claude_Browser__*"
     ]
   }

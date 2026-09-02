@@ -73,3 +73,9 @@ Completed entries still move to [TASKS_DONE.md](TASKS_DONE.md), same as `TASKS.m
 - **Description:** Apply T044.1's proven layout pattern to notes, goals, Profile streak editing, and the access gate. Depends on T044.1.
 - **Exit criteria:** Focused checks on representative small iOS and Android viewports confirm the final input and primary action remain reachable with the keyboard open on every notes, goals, Profile streak, and access-gate form; scrolling, dismissal, safe-area, and tab-bar behavior are consistent and web rendering is unchanged.
 - **Notes:** Adapt the shared convention where a screen's structure requires it; do not introduce fixed offsets or unrelated form redesigns.
+
+---
+
+_T153–T162 came from S032–S039 and S041, refined from [BACKEND_ROADMAP.md](BACKEND_ROADMAP.md) and initially scoped into this formal backlog on 2026-08-21. Every currently actionable backend-roadmap workstream has now moved phase by phase into the automated queue in [TASKS.md](TASKS.md), where T154 is ordered as the Phase 1/Phase 4 shared prerequisite for T158. No T153–T162 ticket remains in this file. S040 (native account hardening) remains `Proposed` in [BACKLOG_STORIES.md](BACKLOG_STORIES.md) because mobile hardening is explicitly deferred._
+
+_Phase 5 consideration: no ticket is added here or to [TASKS.md](TASKS.md). S040 remains `Proposed`, and its native PKCE, SecureStore, and iOS/Android verification scope stays deferred until the user explicitly resumes mobile hardening._

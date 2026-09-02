@@ -6,18 +6,27 @@ import {
   INITIAL_KENTEI_ASSESSMENT,
   kenteiAssessmentReducer,
 } from '@/features/onboarding/model/kentei-assessment';
-import { useUserProfileActions } from '@/features/profile/state/user-profile-provider';
+import {
+  useUserProfile,
+  useUserProfileActions,
+} from '@/features/profile/state/user-profile-provider';
 import { OnboardingAssessmentStep } from '@/features/onboarding/components/onboarding-assessment-step';
+import { OnboardingDurationStep } from '@/features/onboarding/components/onboarding-duration-step';
 import { OnboardingIntroStep } from '@/features/onboarding/components/onboarding-intro-step';
 import { OnboardingLevelStep } from '@/features/onboarding/components/onboarding-level-step';
 import { OnboardingRankRevealStep } from '@/features/onboarding/components/onboarding-rank-reveal-step';
 import { OnboardingSelectionStep } from '@/features/onboarding/components/onboarding-selection-step';
 import { OnboardingThemeStep } from '@/features/onboarding/components/onboarding-theme-step';
+import {
+  DEFAULT_THEME_PRESET_ID,
+  RAINBOW_THEME_PRESETS,
+} from '@/features/profile/model/theme-presets';
 
 export function KenteiOnboarding() {
   const router = useRouter();
   const [state, dispatch] = useReducer(kenteiAssessmentReducer, INITIAL_KENTEI_ASSESSMENT);
-  const { completeOnboarding, setThemeColors } = useUserProfileActions();
+  const { completeOnboarding, setStreakThresholdMs, setThemeColors } = useUserProfileActions();
+  const { streakThresholdMs, themeBackgroundColor, themeAccentColor } = useUserProfile();
 
   switch (state.status) {
     case 'intro':
@@ -50,6 +59,16 @@ export function KenteiOnboarding() {
           onToggleTrick={(trickId) => dispatch({ type: 'practiceTrickToggled', trickId })}
           onFinish={() => {
             if (state.selectedTrickIds.length === 0) return;
+            dispatch({ type: 'durationStepEntered' });
+          }}
+        />
+      );
+    case 'durationSelect':
+      return (
+        <OnboardingDurationStep
+          streakThresholdMs={streakThresholdMs}
+          onContinue={(thresholdMs) => {
+            setStreakThresholdMs(thresholdMs);
             dispatch({ type: 'themeStepEntered' });
           }}
         />
@@ -58,15 +77,29 @@ export function KenteiOnboarding() {
       const finishOnboarding = () => {
         const lacedTrickIds = getSeedLacedTrickIds(state.rank, state.landedTrickIds);
         completeOnboarding(state.rank, state.selectedTrickIds, lacedTrickIds);
-        router.replace('/sesh');
+        router.replace('/app/sesh');
       };
+      const selectedPreset = RAINBOW_THEME_PRESETS.find(
+        (preset) =>
+          preset.backgroundColor === themeBackgroundColor &&
+          preset.accentColor === themeAccentColor,
+      );
+      const selectedPresetId =
+        selectedPreset?.id ??
+        (themeBackgroundColor === undefined && themeAccentColor === undefined
+          ? DEFAULT_THEME_PRESET_ID
+          : undefined);
       return (
         <OnboardingThemeStep
+          selectedPresetId={selectedPresetId}
           onSelectPreset={(preset) => {
-            setThemeColors(preset.backgroundColor, preset.accentColor);
-            finishOnboarding();
+            if (preset.id === DEFAULT_THEME_PRESET_ID) {
+              setThemeColors(undefined, undefined);
+            } else {
+              setThemeColors(preset.backgroundColor, preset.accentColor);
+            }
           }}
-          onSkip={finishOnboarding}
+          onFinish={finishOnboarding}
         />
       );
     }

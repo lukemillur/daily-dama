@@ -238,14 +238,13 @@ export function getFastestInterval(landings: readonly Landing[]) {
 }
 
 /**
- * Whether a completed sesh should prompt the user to add a note: every timed
- * sesh, regardless of outcome. Landing count only selects which copy the
- * prompt shows (see `SeshNotePrompt`) — it does not gate whether the prompt
- * appears. Open-ended seshes never trigger the prompt; that's an explicit
- * scoping decision, not an oversight.
+ * Whether a completed sesh should prompt the user to add a note: every
+ * completed sesh, timed or open-ended, regardless of outcome. Landing count
+ * only selects which copy the prompt shows (see `SeshNotePrompt`) — it does
+ * not gate whether the prompt appears.
  */
-export function shouldPromptSeshNote(summary: SeshSummary): boolean {
-  return summary.plan.kind === 'timed';
+export function shouldPromptSeshNote(_summary: SeshSummary): boolean {
+  return true;
 }
 
 export function selectSeshPracticeTricks(
