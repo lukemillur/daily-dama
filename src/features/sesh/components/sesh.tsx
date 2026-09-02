@@ -7,7 +7,7 @@ import { styled } from 'styled-components/native';
 
 import { Button } from '@/components/ui/button';
 import { BodyText, DisplayTitle as BaseDisplayTitle, Eyebrow as BaseEyebrow } from '@/components/ui/typography';
-import { AppColors } from '@/constants/theme';
+import { AppColors, hexToRgba } from '@/constants/theme';
 import {
   formatGoalProgress,
   formatGoalTarget,
@@ -1372,7 +1372,10 @@ const NotePromptButton = styled(Pressable)<{ $disabled?: boolean }>`min-height: 
 const NotePromptButtonText = styled.Text`color: ${({ theme }) => theme.accent}; font-size: 14px; font-weight: 900;`;
 const NotePromptSecondaryButton = styled(Pressable)`min-height: 44px; flex: 1; align-items: center; justify-content: center; padding: 10px 18px; border: 2px solid ${AppColors.ink}; border-radius: 5px;`;
 const NotePromptSecondaryButtonText = styled.Text`color: ${({ theme }) => theme.text}; font-size: 14px; font-weight: 900;`;
-const InviteOverlay = styled.View`position: absolute; top: 0; right: 0; bottom: 0; left: 0; background-color: rgba(244, 201, 77, 0.85); align-items: center; justify-content: center; padding: 24px; z-index: 1000;`;
+// T211: derives the overlay's background from theme.accent (following RankUpCelebrationModal's
+// precedent) at a low opacity so the wrap-up content behind it stays legible, rather than the
+// prior hardcoded mustard yellow that ignored the user's selected theme.
+const InviteOverlay = styled.View`position: absolute; top: 0; right: 0; bottom: 0; left: 0; background-color: ${({ theme }) => hexToRgba(theme.accent ?? AppColors.yellow, 0.35)}; align-items: center; justify-content: center; padding: 24px; z-index: 1000;`;
 const InviteCard = styled.View`width: 100%; max-width: 500px; background-color: #f8f1dd; border: 2px solid ${AppColors.ink}; padding: 18px;`;
 const InlineInviteCard = styled(InviteCard)`margin-top: 20px;`;
 const InviteTitle = styled.Text`color: ${({ theme }) => theme.text}; font-size: 17px; font-weight: 900;`;

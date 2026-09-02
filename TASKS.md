@@ -168,16 +168,6 @@ _T208–T215 come from stories S090–S097 in [BACKLOG_STORIES.md](BACKLOG_STORI
 - **Exit criteria:** A new test at the root-layout level (or an equivalent integration test) asserts the acknowledgment overlay renders once when `newAccount=1` is present anywhere in the URL and never on a routine sign-in redirect; `home.test.tsx`'s now-removed `NewAccountBanner` cases are deleted rather than left dangling. Confirmed in-browser: completing signup + email verification through the real callback link shows the full-screen overlay regardless of what's rendered under it (Home content or onboarding), it auto-dismisses without requiring a tap, appears exactly once, and a regular sign-in shows nothing.
 - **Notes:** From S090. Direction confirmed with the user 2026-09-02: reuse the presentation *mechanism* (full-screen overlay, theme-derived styling per `RankUpCelebrationModal`'s precedent) and *visual identity*, not the trick-lace copy or component instance. Pick an auto-dismiss duration that doesn't reintroduce T145-class flicker risk.
 
-### [T211] Make the every-5th-Sesh invite overlay theme-matched and lighter
-
-- **Area:** Sesh
-- **Priority:** Low
-- **Status:** Not started
-- **Planning:** Implementer
-- **Description:** `InviteOverlay` (`sesh.tsx`) currently hardcodes `rgba(244, 201, 77, 0.85)` (mustard yellow) regardless of the user's selected theme. Change it to derive from `theme.accent` via `ThemeContext` — matching `RankUpCelebrationModal`'s existing precedent — at a lower, more translucent opacity.
-- **Exit criteria:** `sesh.test.tsx` passes with cases confirming the overlay's background color tracks at least two different theme presets' accent colors; confirmed in-browser that the wrap-up content behind the overlay is clearly legible under the new opacity.
-- **Notes:** From S093. The theme-preset system already exposes `theme.accent` to styled-components; no new theming capability needed.
-
 ### [T213] Replace the landing page's inline auth buttons with a scroll-aware header bar
 
 - **Area:** Landing
