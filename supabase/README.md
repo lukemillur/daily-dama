@@ -62,6 +62,39 @@ see the "Running the delete-account Edge Function tests" section below for
 the suite that first surfaces a 503 like this and the commands to confirm the
 stack is genuinely clean afterward.
 
+### Troubleshooting: Edge Functions never reach the hosted project on their own
+
+**Symptom:** a local-stack fix (e.g. the stop/start cycle above) resolves a
+`503` locally, but the same `503` -- or, once a function is deployed, a CORS
+preflight failure -- keeps happening against the hosted "Daily Dama Dev"
+project (the backend behind every developer's `EXPO_PUBLIC_SUPABASE_URL` and
+the live `dailydama.com` site).
+
+**Cause:** this repository has no CI or deploy-pipeline step that pushes
+`supabase/functions/*` to the hosted project. Nothing in `git push`, CI, or
+the deployment pipeline documented in `DEPLOYMENT_HANDOFF.md` deploys Edge
+Functions -- only the web app bundle. A function that only exists in this
+repo (or on a developer's local stack) returns a gateway `503` for every
+caller hitting the hosted project, indistinguishable at the network layer
+from the stale-local-stack symptom above. T197 hit exactly this: T188's local
+fix was verified locally and looked complete, but the hosted project had zero
+deployed functions the whole time.
+
+**Fix:** deploy manually after creating a new function directory and after
+every change to an existing function's code:
+
+```sh
+npx supabase functions deploy <name> --project-ref ylyoqswauqyesuwmetnl
+```
+
+Verify the deploy landed with `npx supabase functions list --project-ref
+ylyoqswauqyesuwmetnl` -- it should show the function `ACTIVE` with a fresh
+`version`/`updated_at`. Because the local stack auto-serves every function
+under `supabase/functions/<name>/`, local Jest/pgTAP suites passing is not
+evidence the hosted project has the current code; always re-verify against the
+real environment (see the task's own exit criteria) before considering a
+hosted-facing Edge Function fix complete.
+
 ### Running migration tests (pgTAP)
 
 Schema migrations under `supabase/migrations/` are covered by pgTAP tests
@@ -126,14 +159,16 @@ malformed bodies, wrong confirmation text, wrong passwords, and a body that
 tries to name another user's id are all rejected.
 
 If this suite (or the app) sees a `503` instead, see "Troubleshooting: Edge
-Functions return 503 after a stale local stack" above (T188) before assuming
-a handler/app defect -- it's almost always a local Docker/session-state issue
-that a full `stop`/`start` cycle resolves.
+Functions return 503 after a stale local stack" above (T188) or, if it only
+happens against the hosted project, "Troubleshooting: Edge Functions never
+reach the hosted project on their own" above (T197) before assuming a
+handler/app defect.
 
 The handler applies a 30-attempt limit per trusted Auth user and per trusted
-edge-proxy client IP in a 15-minute window. The prototype limiter is bounded
-and isolate-local; hosted deployments need distributed enforcement validation
-in T162.4. The proxy-provided IP is used only as a rate-limit dimension, never
+edge-proxy client IP in a 15-minute window. This limiter is confirmed
+isolate-local, not distributed: the hosted project's actual runtime behavior
+under multiple concurrent isolates/instances has not yet been validated (see
+T162.4). The proxy-provided IP is used only as a rate-limit dimension, never
 as an authorization identity.
 
 This suite needs the same running local stack and recent `db reset` as the

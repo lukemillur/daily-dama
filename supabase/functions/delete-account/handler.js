@@ -4,7 +4,7 @@
 export const RATE_LIMIT_CONFIG = Object.freeze({ maxAttempts: 30, windowMs: 15 * 60 * 1000 });
 const CORS_HEADERS = Object.freeze({
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 });
 const ALLOWED_BODY_KEYS = new Set(['currentPassword', 'confirmation']);
