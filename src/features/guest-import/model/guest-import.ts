@@ -122,6 +122,7 @@ export type GuestImportAction =
       readonly outcome: GuestImportDomainOutcome;
       readonly now: number;
     }
+  | { readonly type: 'uploadFailed'; readonly importId: string; readonly errorMessage: string; readonly now: number }
   | { readonly type: 'cancelPressed'; readonly importId: string; readonly now: number }
   | { readonly type: 'dismissPressed' }
   | { readonly type: 'stateRestored'; readonly state: GuestImportState }
@@ -242,6 +243,24 @@ export function guestImportReducer(state: GuestImportState, action: GuestImportA
 
       const next = { ...state, domainOutcomes, updatedAt: action.now };
       return operationsSettled(next) ? { ...next, status: 'completed' } : next;
+    }
+
+    // Mirrors 'inventoryFailed' exactly: any thrown error during the
+    // upload phase (mid-upload exception, not a per-domain outcome) resets
+    // to idle rather than being force-fit into domainUploadSettled's
+    // per-domain vocabulary -- see use-guest-import.ts's upload effect
+    // catch block and .claude/plans/T206.md's Step 2 for why a
+    // domainUploadSettled shortcut here would be a worse, silent bug
+    // (operationsSettled vacuously true on an empty/never-populated
+    // operations list).
+    case 'uploadFailed': {
+      if (state.status !== 'uploading' || state.importId !== action.importId) return state;
+      return {
+        ...INITIAL_GUEST_IMPORT_STATE,
+        status: 'idle',
+        errorMessage: action.errorMessage,
+        updatedAt: action.now,
+      };
     }
 
     case 'cancelPressed': {

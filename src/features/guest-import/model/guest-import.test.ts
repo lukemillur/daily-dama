@@ -219,6 +219,52 @@ describe('guestImportReducer: upload/profile-choice/conflicts', () => {
     });
     expect(staleResult).toBe(uploading);
   });
+
+  it('uploadFailed resets uploading (with partial domainOutcomes) to idle with an error, mirroring inventoryFailed', () => {
+    let state = afterAwaitingConfirmation(nonEmptyCloudInventory());
+    state = guestImportReducer(state, { type: 'confirmPressed', importId: IMPORT_ID, now: NOW + 2 });
+    // Simulate a mid-upload exception after some (but not all) domains have
+    // already settled -- the exact scenario the pre-fix bug mishandled.
+    state = guestImportReducer(state, {
+      type: 'domainUploadSettled',
+      importId: IMPORT_ID,
+      domain: SYNC_DOMAINS[0],
+      outcome: { status: 'succeeded', errorMessage: undefined },
+      now: NOW + 3,
+    });
+    expect(state.status).toBe('uploading');
+
+    const result = guestImportReducer(state, {
+      type: 'uploadFailed',
+      importId: IMPORT_ID,
+      errorMessage: 'could not read your existing account data',
+      now: NOW + 4,
+    });
+    expect(result.status).toBe('idle');
+    expect(result.importId).toBeUndefined();
+    expect(result.ownerIdentityNamespace).toBeUndefined();
+    expect(result.errorMessage).toBe('could not read your existing account data');
+  });
+
+  it('uploadFailed with a stale importId or wrong status is a no-op', () => {
+    const awaiting = afterAwaitingConfirmation(nonEmptyCloudInventory());
+    const noOpFromAwaiting = guestImportReducer(awaiting, {
+      type: 'uploadFailed',
+      importId: IMPORT_ID,
+      errorMessage: 'boom',
+      now: NOW + 2,
+    });
+    expect(noOpFromAwaiting).toBe(awaiting);
+
+    const uploading = guestImportReducer(awaiting, { type: 'confirmPressed', importId: IMPORT_ID, now: NOW + 2 });
+    const staleResult = guestImportReducer(uploading, {
+      type: 'uploadFailed',
+      importId: 'stale',
+      errorMessage: 'boom',
+      now: NOW + 3,
+    });
+    expect(staleResult).toBe(uploading);
+  });
 });
 
 describe('guestImportReducer: cancel/dismiss/resume/identityChanged/stateRestored', () => {
