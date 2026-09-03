@@ -1031,7 +1031,6 @@ export function CompletedSesh({
           <Eyebrow>Sesh complete</Eyebrow>
           <DisplayTitle>{summary.trick.name}</DisplayTitle>
           <SequenceSteps trick={summary.trick} />
-          {showSignupInvite && signupInviteIsFirstOccurrence ? <InlineSignupInvite /> : null}
           {challengeResult ? (
             <ResultBanner $beaten={challengeResult.$beaten}>{challengeResult.text}</ResultBanner>
           ) : null}
@@ -1043,7 +1042,11 @@ export function CompletedSesh({
           </SummaryGrid>
           <LandingHistory landings={summary.landings} />
           {goalProgressList.length > 0 ? <SeshGoalsPanel goalProgressList={goalProgressList} /> : null}
-          {promptForNote ? <SeshNotePrompt summary={summary} /> : null}
+          {showSignupInvite && signupInviteIsFirstOccurrence ? (
+            <InlineSignupInvite />
+          ) : promptForNote ? (
+            <SeshNotePrompt summary={summary} />
+          ) : null}
           <PrimaryButton onPress={onRepeat}>Repeat sesh</PrimaryButton>
           <SecondaryButton variant="secondary" onPress={onReset}>Start another sesh</SecondaryButton>
         </ActiveContent>

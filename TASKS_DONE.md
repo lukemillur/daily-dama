@@ -4,6 +4,17 @@ Completed entries move here from `TASKS.md`'s `Backlog`, in the same commit that
 
 Entries keep their content as it was at completion. Don't retroactively edit a description or exit criteria after the fact; if something about a completed task turns out to be wrong or misleading, note that in a new entry or in code, not by rewriting history here.
 
+### [T219] Show the signup invite in the note prompt's slot on a first-ever guest Sesh
+
+- **Area:** Sesh
+- **Priority:** Low
+- **Status:** Done
+- **Planning:** Implementer
+- **Description:** In `sesh.tsx`'s `CompletedSesh`, for a first-time guest's first-ever eligible Sesh completion (`showSignupInvite && signupInviteIsFirstOccurrence`), suppress `SeshNotePrompt` and render `InlineSignupInvite` in its place instead — after `LandingHistory`/the goal panel, before the "Repeat sesh" `PrimaryButton` — rather than its current position right after `SequenceSteps` (T210's placement, immediately below the trick name). Every other completion (non-first-occurrence, non-eligible, or ineligible for the invite at all) keeps rendering `SeshNotePrompt` unchanged in that same position.
+- **Exit criteria:** Met. `sesh.test.tsx` has "renders the first-occurrence inline invite after the lace timeline and before \"Repeat sesh,\" replacing the note prompt (T219)" (asserts `SeshNotePrompt`'s "Add a note" does not render, and the invite renders after the lace-timeline metrics and before "Repeat sesh") and "keeps rendering SeshNotePrompt unchanged for a non-first-occurrence invite (T219)" (asserts the note prompt still renders, before "Repeat sesh"); full file passes. `CompletedSesh` now renders `{showSignupInvite && signupInviteIsFirstOccurrence ? <InlineSignupInvite /> : promptForNote ? <SeshNotePrompt ... /> : null}` in the single slot after `LandingHistory`/`SeshGoalsPanel` and before the "Repeat sesh" `PrimaryButton`; the old post-`SequenceSteps` `InlineSignupInvite` render (T210's placement) was removed. `yarn tsc --noEmit` and a scoped `yarn eslint` pass on the changed files (one pre-existing, unrelated `array-type` warning in `sesh.test.tsx`). Live-verified against the local Expo web dev server with a headless Playwright script (guest identity seeded with a completed-onboarding profile directly in `localStorage`, a direct-practice open-ended Sesh on a standard trick run to first-ever completion): the wrap-up screen's text order is the lace timeline (`Lace timeline`), then "Save this sesh for good.", then "Repeat sesh", with no "Add a note" text anywhere on the page.
+- **Notes:** From S098. Supersedes T210's placement (right after the trick name/`SequenceSteps`) — moves the invite further down the screen, replacing the note prompt's slot rather than sitting above the summary metrics. "First-time guest" scope is unchanged from T210 (first-ever completion only). The every-5th-occurrence `PostSeshSignupInvite` overlay (T201/T211) is unaffected.
+
+
 ### [T212] Make the branded confirmation email fix actually hold for real signups
 
 - **Area:** Authentication / Supabase
