@@ -185,7 +185,7 @@ _T219–T224 come from stories S098–S104 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 - **Area:** Landing
 - **Priority:** Low
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Implementer
 - **Description:** `landing-auth-cta.tsx`'s header bar renders its `Brand` text ("Daily Dama") at 17px, notably smaller than the landing page body's `ScreenshotHeading` ("See it in action") at 28px. Bump `Brand`'s `font-size` to 28px to match.
 - **Exit criteria:** Confirmed in-browser with Playwright at the 320px viewport width `AGENTS.md` documents as measured for the five-link web nav: the header bar's "Daily Dama" text and the "See it in action" heading resolve to the same computed `fontSize`; the header bar (wordmark plus Sign up/Sign in buttons) still renders with no wrapping or horizontal overflow at that width.
