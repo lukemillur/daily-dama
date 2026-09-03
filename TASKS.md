@@ -181,16 +181,6 @@ _T208–T215 come from stories S090–S097 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 _T219–T224 come from stories S098–S104 in [BACKLOG_STORIES.md](BACKLOG_STORIES.md) (the user's 2026-09-03 QA pass on T210/T213/T217.2, plus general feedback not tied to a specific ticket). T219 (S098), T220 (S099), and T222 (S102) are `Implementer` — local, known-pattern changes reusing existing precedent in this codebase (T210's own `InlineSignupInvite` placement for T219; T213/T214's typographic-parity bumps for T220). T221 (S100) is `Required`: both `feedback-screen.tsx`'s success-state branch and `submit-feedback.ts`'s insert call look correct on inspection, so the QA-reported failure needs a fresh runtime diagnosis against the real environment the user tested in, matching the class of bug already established for T188/T195/T199/T206/T212 rather than a known local fix reapplied. T223 (S103) is an M-chain: no shared themed text-input component exists anywhere in the codebase today (`src/components/ui/` holds only `button.tsx`/`screen.tsx`/`typography.tsx`; every screen currently defines its own local styled `TextInput`), so T223.1 is `Required` to introduce that new shared UI primitive (mirroring `button.tsx`'s own precedent) and apply it to the Authentication area the original QA note explicitly named; T223.2–T223.8 mechanically apply the resulting component to the remaining areas (Feedback, Sesh, Trick notes, Tricks, Trick goals, Onboarding, Profile) once it exists and are `Implementer`. T224 (S104) is `Implementer`: it adds a minimum-visible-duration delay to `auth-callback-screen.tsx`'s existing default-branch redirect only, deliberately not touching its error/recovery/email-change branches. S101 (the new-account banner's readability/persistence/animation problems) was not scoped as its own ticket — it targets `home.tsx`'s `NewAccountBanner`, which T208 (already `Not started` above) replaces outright with a new full-screen overlay; S101's requirements were folded into T208's own Description/Exit criteria/Notes instead, to avoid writing a ticket against code T208 is about to delete.
 
-### [T220] Enlarge the landing header's "Daily Dama" wordmark to match "See it in action"
-
-- **Area:** Landing
-- **Priority:** Low
-- **Status:** In progress
-- **Planning:** Implementer
-- **Description:** `landing-auth-cta.tsx`'s header bar renders its `Brand` text ("Daily Dama") at 17px, notably smaller than the landing page body's `ScreenshotHeading` ("See it in action") at 28px. Bump `Brand`'s `font-size` to 28px to match.
-- **Exit criteria:** Confirmed in-browser with Playwright at the 320px viewport width `AGENTS.md` documents as measured for the five-link web nav: the header bar's "Daily Dama" text and the "See it in action" heading resolve to the same computed `fontSize`; the header bar (wordmark plus Sign up/Sign in buttons) still renders with no wrapping or horizontal overflow at that width.
-- **Notes:** From S099. Purely typographic — `Brand` (`landing-auth-cta.tsx`) and `ScreenshotHeading` (`landing-page.tsx`) are unrelated styled elements; matching the pixel value is the entire change.
-
 ### [T221] Diagnose and fix the feedback form's missing success state
 
 - **Area:** Feedback

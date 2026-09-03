@@ -15,6 +15,16 @@ Entries keep their content as it was at completion. Don't retroactively edit a d
 - **Notes:** From S098. Supersedes T210's placement (right after the trick name/`SequenceSteps`) — moves the invite further down the screen, replacing the note prompt's slot rather than sitting above the summary metrics. "First-time guest" scope is unchanged from T210 (first-ever completion only). The every-5th-occurrence `PostSeshSignupInvite` overlay (T201/T211) is unaffected.
 
 
+### [T220] Enlarge the landing header's "Daily Dama" wordmark to match "See it in action"
+
+- **Area:** Landing
+- **Priority:** Low
+- **Status:** Done
+- **Planning:** Implementer
+- **Description:** `landing-auth-cta.tsx`'s header bar renders its `Brand` text ("Daily Dama") at 17px, notably smaller than the landing page body's `ScreenshotHeading` ("See it in action") at 28px. Bump `Brand`'s `font-size` to 28px to match.
+- **Exit criteria:** Met. Live-verified against the local Expo web dev server with a headless Playwright script at a 320px viewport: `Brand` ("Daily Dama") and `ScreenshotHeading` ("See it in action") both resolve to a computed `fontSize` of `28px`; the header bar's wordmark and Sign up/Sign in buttons render on a single row with `document.documentElement.scrollWidth` equal to `clientWidth` (no horizontal overflow) and no wrapping. `yarn tsc --noEmit`, a scoped `yarn eslint` pass, and the targeted `landing-auth-cta.test.tsx`/`landing-page.test.tsx` files all pass.
+- **Notes:** From S099. Bumping `Brand`'s `font-size` alone pushed the header bar past 320px (the wordmark's wider box left no room for the Sign up/Sign in buttons on one line), so beyond the described font-size change, `HeaderBar`'s horizontal padding and gap, `ButtonRow`'s gap, and the two header buttons' padding were also tightened (locally, via the existing `styled(Button)` overrides already used for `SignUpButton`/`SignInButton` in this file) to keep everything on one line with no overflow at 320px — this went beyond the "purely typographic" framing in the original description but was required by the exit criteria. The shared `Button` component itself and its use elsewhere are unchanged.
+
 ### [T212] Make the branded confirmation email fix actually hold for real signups
 
 - **Area:** Authentication / Supabase
