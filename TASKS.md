@@ -185,7 +185,7 @@ _T219–T224 come from stories S098–S104 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 - **Area:** Sesh
 - **Priority:** Low
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Implementer
 - **Description:** In `sesh.tsx`'s `CompletedSesh`, for a first-time guest's first-ever eligible Sesh completion (`showSignupInvite && signupInviteIsFirstOccurrence`), suppress `SeshNotePrompt` and render `InlineSignupInvite` in its place instead — after `LandingHistory`/the goal panel, before the "Repeat sesh" `PrimaryButton` — rather than its current position right after `SequenceSteps` (T210's placement, immediately below the trick name). Every other completion (non-first-occurrence, non-eligible, or ineligible for the invite at all) keeps rendering `SeshNotePrompt` unchanged in that same position.
 - **Exit criteria:** `sesh.test.tsx` passes with a case asserting that on a first-time guest's first-ever eligible completion, `SeshNotePrompt`'s content does not render and `InlineSignupInvite` renders after the lace timeline/goal panel and before the "Repeat sesh" button; a second case confirms a non-first-occurrence or note-eligible completion still renders `SeshNotePrompt` unchanged in that position. Confirmed in-browser with Playwright: a first-ever guest Sesh's wrap-up screen shows the lace timeline, then "Save this sesh for good.", then "Repeat sesh," with no note prompt visible.
