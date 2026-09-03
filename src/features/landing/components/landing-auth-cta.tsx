@@ -73,8 +73,8 @@ const HeaderBar = styled.View<{ readonly $visible: boolean }>`
   flex-direction: row;
   align-items: center;
   justify-content: space-between;
-  gap: ${Spacing.three}px;
-  padding: ${Spacing.three}px ${Spacing.four}px;
+  gap: ${Spacing.two}px;
+  padding: ${Spacing.three}px ${Spacing.three}px;
   background-color: ${AppColors.paper};
   border-bottom-width: 2px;
   border-bottom-color: ${AppColors.ink};
@@ -84,7 +84,7 @@ const HeaderBar = styled.View<{ readonly $visible: boolean }>`
 
 const Brand = styled.Text`
   color: ${AppColors.ink};
-  font-size: 17px;
+  font-size: 28px;
   font-weight: 900;
   letter-spacing: -0.3px;
 `;
@@ -92,13 +92,15 @@ const Brand = styled.Text`
 const ButtonRow = styled.View`
   flex-direction: row;
   flex-wrap: wrap;
-  gap: 12px;
+  gap: 8px;
 `;
 
 const SignUpButton = styled(Button)`
   align-self: flex-start;
+  padding: 10px 14px;
 `;
 
 const SignInButton = styled(Button)`
   align-self: flex-start;
+  padding: 10px 14px;
 `;
