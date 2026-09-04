@@ -203,7 +203,7 @@ _T219–T224 come from stories S098–S104 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 - **Area:** Trick notes
 - **Priority:** Medium
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Implementer
 - **Description:** Apply T223.1's shared text-input component to `trick-notes-screen.tsx` and `all-notes-screen.tsx`.
 - **Exit criteria:** Their existing tests still pass. Confirmed in-browser that trick note inputs match the new shared style.
