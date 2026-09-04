@@ -20,6 +20,8 @@ _S090–S097 came from the user's 2026-09-02 QA pass on T195/T201/T205/T207 (the
 
 _S098–S105 came from the user's 2026-09-03 QA pass on T210/T213/T217.2 (three follow-up gaps on already-`Done` tickets), plus five items of general feedback not tied to a specific ticket. S098–S104 were scoped into T219–T224 (see `TASKS.md`) and removed from this file: S098→T219, S099→T220, S100→T221, S101→T208 (folded into that already-queued ticket, which replaces the exact component S101 targeted, rather than a new ticket against soon-to-be-deleted code), S102→T222, S103→T223 (T223.1–T223.8), S104→T224. S105 remains `Proposed` pending a discovery pass (see below)._
 
+_S106–S118 came from the user's 2026-09-04 QA pass on T224/T223.8 (two follow-up gaps on already-`Done` tickets), plus eleven items of general feedback not tied to a specific ticket. All thirteen were scoped into T236–T246 (see `TASKS.md`) and removed from this file: S106→T236, S107→T237, S108→T238, S109→T238 (combined with S108/S110 — one screenshot-refresh pass), S110→T238, S111→T239, S112→T240, S113→T241, S114→T242, S115→T243, S116→T244, S117→T245, S118→T246._
+
 ### [S105] Improve application performance and initial load time
 
 - **As a:** any user
