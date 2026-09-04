@@ -51,8 +51,9 @@ const SCREENSHOT_CONTENT: readonly ScreenshotContent[] = [
     caption: 'Open the app and the loop is right there: what you last practiced, what’s next, and how the streak is going.',
   },
   {
-    title: 'First lace, first cheer',
-    caption: 'The moment a trick actually lands for the first time, Daily Dama says so.',
+    title: 'Set the terms of the sesh',
+    caption:
+      'Run the clock down, chase a lace count, or line up several tricks and work the whole set in one sesh.',
   },
   {
     title: 'Your move, your rank',
@@ -71,8 +72,8 @@ const MOBILE_SCREENSHOT_ASSETS: readonly PlatformScreenshotAsset[] = [
     aspectRatio: 375 / 812,
   },
   {
-    source: require('@/assets/images/landing/sesh-first-lace.png'),
-    alt: 'Sesh screen celebrating the first-ever lace on a trick mid-session',
+    source: require('@/assets/images/landing/sesh-open-ended.png'),
+    alt: 'Sesh setup screen with the open-ended format selected, a target lace count, and a focused-trick list spanning several Kentei ranks',
     aspectRatio: 375 / 812,
   },
   {
@@ -94,8 +95,8 @@ const WEB_SCREENSHOT_ASSETS: readonly PlatformScreenshotAsset[] = [
     aspectRatio: 1280 / 900,
   },
   {
-    source: require('@/assets/images/landing/sesh-first-lace-web.png'),
-    alt: 'Sesh screen in the desktop web layout celebrating the first-ever lace on a trick mid-session',
+    source: require('@/assets/images/landing/sesh-open-ended-web.png'),
+    alt: 'Sesh setup screen in the desktop web layout with the open-ended format selected, a target lace count, and a focused-trick list spanning several Kentei ranks',
     aspectRatio: 1280 / 900,
   },
   {

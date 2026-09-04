@@ -69,8 +69,9 @@ const SCREENSHOT_TITLES_AND_CAPTIONS: ReadonlyArray<{ title: string; caption: st
       'Open the app and the loop is right there: what you last practiced, what’s next, and how the streak is going.',
   },
   {
-    title: 'First lace, first cheer',
-    caption: 'The moment a trick actually lands for the first time, Daily Dama says so.',
+    title: 'Set the terms of the sesh',
+    caption:
+      'Run the clock down, chase a lace count, or line up several tricks and work the whole set in one sesh.',
   },
   {
     title: 'Your move, your rank',
@@ -363,5 +364,19 @@ describe('LandingPage platform-based screenshot set', () => {
 
     expect(images.length).toBeGreaterThan(0);
     expect(mobileImages.length).toBe(0);
+  });
+
+  it('renders the sesh screenshot alt for both the mobile and web asset sets', async () => {
+    mockUseWindowDimensions.mockReturnValue({ width: 375, height: 812, scale: 2, fontScale: 1 });
+    const mobileRoot = await mount();
+    const mobileImages = mobileRoot.root.findAll(
+      (node) => node.props.alt === MOBILE_SCREENSHOTS[1]!.alt,
+    );
+    expect(mobileImages.length).toBeGreaterThan(0);
+
+    mockUseWindowDimensions.mockReturnValue({ width: 1280, height: 900, scale: 1, fontScale: 1 });
+    const webRoot = await mount();
+    const webImages = webRoot.root.findAll((node) => node.props.alt === WEB_SCREENSHOTS[1]!.alt);
+    expect(webImages.length).toBeGreaterThan(0);
   });
 });
