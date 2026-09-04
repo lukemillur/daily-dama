@@ -199,16 +199,6 @@ _T219–T224 come from stories S098–S104 in [BACKLOG_STORIES.md](BACKLOG_STORI
 - **Description:** Umbrella for T223.1–T223.8. No shared themed text-input component exists anywhere in the codebase (`src/components/ui/` holds `button.tsx`/`screen.tsx`/`typography.tsx` but no input equivalent) — every screen currently defines its own local styled `TextInput` (the auth screens' `FieldInput`/`PasswordInput`, `feedback-screen.tsx`'s `FieldInput`/`MessageInput`, `sesh.tsx`'s `NotePromptInput`, and others across Notes, Tricks, Goals, Onboarding, and Profile). Introduce one shared, polished, theme-consistent text-input component and apply it everywhere a `TextInput` currently renders, per the user's explicit request to cover every text input in the app.
 - **Notes:** From S103. Split by feature area per this file's single-area scoping rule; no exit criteria of its own — done when every child is `Done`.
 
-### [T223.2] Apply the shared text-input component to Feedback
-
-- **Area:** Feedback
-- **Priority:** Medium
-- **Status:** Not started
-- **Planning:** Implementer
-- **Description:** Apply T223.1's shared text-input component to `feedback-screen.tsx`'s `FieldInput`/`MessageInput`, replacing their local styled-`TextInput` definitions.
-- **Exit criteria:** `feedback-screen.test.tsx` still passes. Confirmed in-browser that the feedback form's Name/Email/Message inputs match the new shared style.
-- **Notes:** From S103, child 2 of 8. Depends on T223.1.
-
 ### [T223.3] Apply the shared text-input component to Sesh
 
 - **Area:** Sesh

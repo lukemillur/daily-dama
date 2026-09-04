@@ -5,11 +5,12 @@
 
 import { useState } from 'react';
 import { useRouter } from 'expo-router';
-import { ScrollView, TextInput } from 'react-native';
+import { ScrollView } from 'react-native';
 import { styled } from 'styled-components/native';
 
 import { Button } from '@/components/ui/button';
 import { Screen } from '@/components/ui/screen';
+import { TextField } from '@/components/ui/text-field';
 import { BodyText, DisplayTitle, Eyebrow } from '@/components/ui/typography';
 import { AppColors } from '@/constants/theme';
 import { submitFeedback } from '@/features/feedback/persistence/submit-feedback';
@@ -70,35 +71,35 @@ export function FeedbackScreen() {
             help. Name and email are optional -- leave them blank to stay anonymous.
           </Introduction>
 
-          <Field>
-            <FieldLabel>Name (optional)</FieldLabel>
-            <FieldInput accessibilityLabel="Name" onChangeText={setName} placeholder="Name" value={name} />
-          </Field>
+          <TextField
+            accessibilityLabel="Name"
+            label="Name (optional)"
+            onChangeText={setName}
+            placeholder="Name"
+            value={name}
+          />
 
-          <Field>
-            <FieldLabel>Email (optional)</FieldLabel>
-            <FieldInput
-              accessibilityLabel="Email"
-              autoCapitalize="none"
-              autoCorrect={false}
-              keyboardType="email-address"
-              onChangeText={setEmail}
-              placeholder="Email"
-              value={email}
-            />
-          </Field>
+          <TextField
+            accessibilityLabel="Email"
+            autoCapitalize="none"
+            autoCorrect={false}
+            keyboardType="email-address"
+            label="Email (optional)"
+            onChangeText={setEmail}
+            placeholder="Email"
+            value={email}
+          />
 
-          <Field>
-            <FieldLabel>Message</FieldLabel>
-            <MessageInput
-              accessibilityLabel="Message"
-              multiline
-              numberOfLines={6}
-              onChangeText={setMessage}
-              placeholder="What's on your mind?"
-              value={message}
-            />
-          </Field>
+          <TextField
+            accessibilityLabel="Message"
+            label="Message"
+            multiline
+            numberOfLines={6}
+            onChangeText={setMessage}
+            placeholder="What's on your mind?"
+            style={MESSAGE_INPUT_STYLE}
+            value={message}
+          />
 
           {hasError ? <ErrorText>{SUBMIT_ERROR_COPY}</ErrorText> : null}
 
@@ -112,6 +113,8 @@ export function FeedbackScreen() {
     </Screen>
   );
 }
+
+const MESSAGE_INPUT_STYLE = { minHeight: 140, textAlignVertical: 'top' as const };
 
 const FormScroll = styled(ScrollView)`
   flex: 1;
@@ -136,32 +139,6 @@ const Introduction = styled(BodyText)`
   max-width: 480px;
   margin-top: 16px;
   margin-bottom: 16px;
-`;
-const Field = styled.View`
-  margin-top: 22px;
-`;
-const FieldLabel = styled.Text`
-  color: ${({ theme }) => theme.text};
-  font-size: 13px;
-  font-weight: 900;
-  letter-spacing: 1px;
-  text-transform: uppercase;
-`;
-const FieldInput = styled(TextInput).attrs(({ theme }) => ({
-  placeholderTextColor: theme.textMuted,
-}))`
-  min-height: 56px;
-  background-color: ${({ theme }) => theme.background};
-  border: 2px solid ${({ theme }) => theme.text};
-  color: ${({ theme }) => theme.text};
-  font-size: 18px;
-  font-weight: 800;
-  margin-top: 8px;
-  padding: 12px 14px;
-`;
-const MessageInput = styled(FieldInput)`
-  min-height: 140px;
-  text-align-vertical: top;
 `;
 const ErrorText = styled.Text`
   color: ${AppColors.red};
