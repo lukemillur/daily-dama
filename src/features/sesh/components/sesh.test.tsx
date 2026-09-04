@@ -846,7 +846,7 @@ describe('CompletedSesh signup invite', () => {
     expect(inviteInsideScroll.length).toBeGreaterThan(0);
   });
 
-  it('renders the first-occurrence inline invite after the trick name and before the summary metrics (T210)', async () => {
+  it('renders the first-occurrence inline invite after the lace timeline and before "Repeat sesh," replacing the note prompt (T219)', async () => {
     const root = await mountWithNoteProvider(
       <CompletedSesh
         summary={summary}
@@ -859,13 +859,37 @@ describe('CompletedSesh signup invite', () => {
     );
 
     const text = JSON.stringify(root.toJSON());
-    const trickNameIndex = text.indexOf(summary.trick.name);
+    const landingHistoryIndex = text.indexOf('Total time');
     const inviteIndex = text.indexOf('Save this sesh for good.');
-    const metricsIndex = text.indexOf('Total time');
+    const repeatIndex = text.indexOf('Repeat sesh');
 
-    expect(trickNameIndex).toBeGreaterThan(-1);
-    expect(inviteIndex).toBeGreaterThan(trickNameIndex);
-    expect(metricsIndex).toBeGreaterThan(inviteIndex);
+    expect(landingHistoryIndex).toBeGreaterThan(-1);
+    expect(inviteIndex).toBeGreaterThan(landingHistoryIndex);
+    expect(repeatIndex).toBeGreaterThan(inviteIndex);
+
+    // T219: the note prompt's slot is replaced by the invite, so it must not render at all.
+    expect(findByAccessibilityLabel(root, 'Add a note')).toHaveLength(0);
+  });
+
+  it('keeps rendering SeshNotePrompt unchanged for a non-first-occurrence invite (T219)', async () => {
+    const root = await mountWithNoteProvider(
+      <CompletedSesh
+        summary={summary}
+        isFirstLace={false}
+        showSignupInvite={true}
+        signupInviteIsFirstOccurrence={false}
+        onReset={noop}
+        onRepeat={noop}
+      />,
+    );
+
+    expect(findByAccessibilityLabel(root, 'Add a note').length).toBeGreaterThan(0);
+
+    const text = JSON.stringify(root.toJSON());
+    const notePromptIndex = text.indexOf('Add a note');
+    const repeatIndex = text.indexOf('Repeat sesh');
+    expect(notePromptIndex).toBeGreaterThan(-1);
+    expect(repeatIndex).toBeGreaterThan(notePromptIndex);
   });
 
   it('renders the inline invite\'s "Sign up" as a real link to /auth/sign-up (T201)', async () => {

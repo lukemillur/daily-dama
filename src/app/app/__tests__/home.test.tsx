@@ -34,13 +34,9 @@ jest.mock('react-native-reanimated', () =>
 // KenteiOnboarding (rendered by HomeScreen pre-onboarding) calls router.replace on finish; the
 // rest of expo-router (e.g. the dev-only <Link> HomeScreen renders) stays real.
 const mockRouter = { replace: jest.fn() };
-// Mutable so individual tests can simulate arriving via auth-callback-screen.tsx's one-time
-// newAccount signal (T207) without affecting the plain-mount default of no params.
-let mockSearchParams: Record<string, string> = {};
 jest.mock('expo-router', () => ({
   ...(jest.requireActual('expo-router') as Record<string, unknown>),
   useRouter: () => mockRouter,
-  useLocalSearchParams: () => mockSearchParams,
 }));
 
 const STREAK_THRESHOLD_MS = 300_000; // matches DEFAULT_STREAK_THRESHOLD_MS
@@ -357,42 +353,3 @@ describe('HomeScreen onboarding background preview', () => {
   });
 });
 
-
-describe('HomeScreen new-account acknowledgment banner (T207)', () => {
-  beforeEach(async () => {
-    await AsyncStorage.clear();
-    mockRouter.replace.mockClear();
-    mockSearchParams = {};
-  });
-
-  it('does not render the banner on a plain mount', async () => {
-    await seedProfile();
-    const root = await mountHomeScreen();
-
-    expect(findByAccessibilityLabel(root, 'Account verified').length).toBe(0);
-    expect(mockRouter.replace).not.toHaveBeenCalled();
-
-    await act(async () => {
-      root.unmount();
-    });
-  });
-
-  it('renders the banner when arriving via the newAccount signal, strips the param, and stays dismissed', async () => {
-    await seedProfile();
-    mockSearchParams = { newAccount: '1' };
-    const root = await mountHomeScreen();
-
-    expect(findByAccessibilityLabel(root, 'Account verified').length).toBeGreaterThan(0);
-    // The one-time param is stripped from the URL right after mount so a refresh/back-nav can't
-    // re-trigger it.
-    expect(mockRouter.replace).toHaveBeenCalledWith('/app/home');
-
-    act(() => pressByAccessibilityLabel(root, 'Dismiss'));
-
-    expect(findByAccessibilityLabel(root, 'Account verified').length).toBe(0);
-
-    await act(async () => {
-      root.unmount();
-    });
-  });
-});

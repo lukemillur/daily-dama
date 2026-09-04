@@ -1,10 +1,11 @@
 import { useRef, useState, type ReactNode } from 'react';
 import { useRouter } from 'expo-router';
-import { Pressable, ScrollView, TextInput } from 'react-native';
+import { Pressable, ScrollView } from 'react-native';
 import { styled } from 'styled-components/native';
 
 import { Button } from '@/components/ui/button';
 import { Screen } from '@/components/ui/screen';
+import { TextField } from '@/components/ui/text-field';
 import { BodyText, DisplayTitle, Eyebrow } from '@/components/ui/typography';
 import { AppColors } from '@/constants/theme';
 import { PasswordInput } from '@/features/auth/components/password-input';
@@ -122,18 +123,16 @@ export function AccountDeletionScreen() {
             textContentType="password"
             value={currentPassword}
           />
-          <Field>
-            <FieldLabel>Type DELETE to confirm</FieldLabel>
-            <FieldInput
-              accessibilityLabel="Type DELETE to confirm"
-              autoCapitalize="characters"
-              autoCorrect={false}
-              onChangeText={setConfirmation}
-              placeholder="DELETE"
-              value={confirmation}
-            />
-            {confirmationError ? <ErrorText>{confirmationError}</ErrorText> : null}
-          </Field>
+          <TextField
+            accessibilityLabel="Type DELETE to confirm"
+            autoCapitalize="characters"
+            autoCorrect={false}
+            error={confirmationError}
+            label="Type DELETE to confirm"
+            onChangeText={setConfirmation}
+            placeholder="DELETE"
+            value={confirmation}
+          />
 
           {errorCategory ? <ErrorText>{ERROR_COPY[errorCategory]}</ErrorText> : null}
           <Actions>
@@ -170,12 +169,6 @@ const Centered = styled.View`width: 100%; max-width: 480px; align-items: center;
 const PageTitle = styled(DisplayTitle)`margin-top: 12px; text-align: center;`;
 const Introduction = styled(BodyText)`max-width: 560px; margin-top: 16px;`;
 const Warning = styled.Text`color: ${({ theme }) => theme.text}; font-size: 14px; font-weight: 900; margin-top: 18px;`;
-const Field = styled.View`margin-top: 28px;`;
-const FieldLabel = styled.Text`color: ${({ theme }) => theme.text}; font-size: 13px; font-weight: 900; letter-spacing: 1px; text-transform: uppercase;`;
-const FieldInput = styled(TextInput).attrs(({ theme }) => ({ placeholderTextColor: theme.textMuted }))`
-  min-height: 56px; background-color: ${({ theme }) => theme.background}; border: 2px solid ${({ theme }) => theme.text};
-  color: ${({ theme }) => theme.text}; font-size: 18px; font-weight: 800; margin-top: 8px; padding: 12px 14px;
-`;
 const ErrorText = styled.Text`color: ${AppColors.red}; font-size: 12px; font-weight: 800; margin-top: 10px;`;
 const Actions = styled.View`width: 100%; margin-top: 24px;`;
 const BackLink = styled(Pressable)`

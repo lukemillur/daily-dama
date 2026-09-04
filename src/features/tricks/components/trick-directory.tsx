@@ -1,8 +1,9 @@
 import { Link } from 'expo-router';
 import { type ReactElement, useMemo, useState } from 'react';
-import { Pressable, SectionList, TextInput, type SectionListData } from 'react-native';
+import { Pressable, SectionList, type SectionListData } from 'react-native';
 import { css, styled } from 'styled-components/native';
 
+import { TextField } from '@/components/ui/text-field';
 import {
   createTrickSections,
   type DirectoryTrick,
@@ -111,8 +112,9 @@ export function TrickDirectory({
       <Introduction>{header?.introduction ?? DEFAULT_HEADER.introduction(tricks.length)}</Introduction>
       {headerAction}
       {search ? (
-        <DirectorySearch
+        <TextField
           accessibilityLabel="Search tricks"
+          label="Search"
           onChangeText={search.onChangeText}
           placeholder={search.placeholder ?? 'Search tricks'}
           value={search.query}
@@ -595,15 +597,6 @@ const RowAction = styled(Pressable)`min-width: 48px; min-height: 44px; align-ite
 const RowActionText = styled.Text`color: #18382e; font-size: 10px; font-weight: 900; text-transform: uppercase;`;
 const DeleteActionText = styled(RowActionText)`color: #d84929;`;
 const PracticeActionText = styled(RowActionText)`color: #274137;`;
-const DirectorySearch = styled(TextInput)`
-  min-height: 52px;
-  background-color: #f8f1dd;
-  border: 2px solid #18382e;
-  color: #18382e;
-  font-size: 16px;
-  font-weight: 700;
-  padding: 12px 14px;
-`;
 const SearchEmptyState = styled.Text`
   padding: 22px;
   color: #53635d;

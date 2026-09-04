@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 import { ThemeProvider as StyledThemeProvider, type DefaultTheme } from 'styled-components/native';
 
+import { AppColors } from '@/constants/theme';
 import type { AuthState } from '@/features/auth/model/auth-state';
 import { networkFailure } from '@/features/auth/model/auth-test-fixtures';
 import { MIN_PASSWORD_LENGTH } from '@/features/auth/model/password-policy';
@@ -196,11 +197,14 @@ describe('AccountSecurityScreen', () => {
 
     const emailInputs = root.root.findAll((node) => node.props.accessibilityLabel === 'New email');
     const emailInputStyle = resolvedStyle(emailInputs);
-    expect(emailInputStyle).toMatchObject({
+    expect(emailInputStyle).toMatchObject({ color: customTheme.text });
+
+    const emailRowStyle = resolvedStyle(root.root.findAll((node) => node.props.style?.minHeight === 56));
+    expect(emailRowStyle).toMatchObject({
       backgroundColor: customTheme.background,
       borderColor: customTheme.text,
-      color: customTheme.text,
     });
+
     expect(
       emailInputs.find((node) => typeof node.props.placeholderTextColor === 'string')?.props
         .placeholderTextColor,
@@ -225,7 +229,7 @@ describe('AccountSecurityScreen', () => {
     const errorStyle = resolvedStyle(
       root.root.findAll((node) => node.props.children === 'Enter a valid email address.'),
     );
-    expect(errorStyle?.color).toBe(customTheme.text);
+    expect(errorStyle?.color).toBe(AppColors.red);
   });
 
   it('changes the password on the happy path, clears fields, and shows success copy', async () => {
