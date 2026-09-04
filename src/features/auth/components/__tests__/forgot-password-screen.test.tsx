@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
+import { StyleSheet } from 'react-native';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 import { ThemeProvider as StyledThemeProvider, type DefaultTheme } from 'styled-components/native';
 
@@ -411,12 +412,15 @@ describe('ForgotPasswordScreen', () => {
     )?.props.style as Record<string, string> | undefined;
     expect(emailInputStyle).toMatchObject({ color: customTheme.text });
 
-    const emailRowStyle = root.root.findAll((node) => node.props.style?.minHeight === 56).find(
-      (node) =>
-        typeof node.props.style === 'object' &&
-        node.props.style !== null &&
-        !Array.isArray(node.props.style),
-    )?.props.style as Record<string, string> | undefined;
+    const emailRowStyle = StyleSheet.flatten(
+      root.root
+        .findAll(
+          (node) =>
+            (StyleSheet.flatten(node.props.style as never) as Record<string, string | number> | undefined)
+              ?.minHeight === 56,
+        )
+        .find((node) => node.props.style !== undefined)?.props.style as never,
+    ) as Record<string, string> | undefined;
     expect(emailRowStyle).toMatchObject({
       backgroundColor: customTheme.background,
       borderColor: customTheme.text,

@@ -1,8 +1,8 @@
-import { forwardRef, useState, type ComponentProps, type ReactNode } from 'react';
+import { forwardRef, useContext, useState, type ComponentProps, type ReactNode } from 'react';
 import { TextInput, View } from 'react-native';
-import { styled } from 'styled-components/native';
+import { styled, ThemeContext } from 'styled-components/native';
 
-import { AppColors, Radii, Spacing } from '@/constants/theme';
+import { AppColors, Radii, Spacing, hexToRgba } from '@/constants/theme';
 
 type NativeTextInputProps = ComponentProps<typeof TextInput>;
 
@@ -13,11 +13,20 @@ export interface TextFieldProps extends NativeTextInputProps {
   readonly rightAccessory?: ReactNode;
 }
 
+const SHADOW_OFFSET_PX = 3;
+const SHADOW_ALPHA = 0.35;
+
+function inputShadow(themeText: string | undefined): string {
+  const base = themeText && /^#[0-9a-fA-F]{6}$/.test(themeText) ? themeText : AppColors.ink;
+  return `${SHADOW_OFFSET_PX}px ${SHADOW_OFFSET_PX}px 0 ${hexToRgba(base, SHADOW_ALPHA)}`;
+}
+
 export const TextField = forwardRef<TextInput, TextFieldProps>(function TextField(
   { accessibilityLabel, error, hint, label, onBlur, onFocus, rightAccessory, ...props },
   ref,
 ) {
   const [isFocused, setIsFocused] = useState(false);
+  const theme = useContext(ThemeContext);
 
   const handleFocus: NonNullable<NativeTextInputProps['onFocus']> = (event) => {
     setIsFocused(true);
@@ -33,7 +42,7 @@ export const TextField = forwardRef<TextInput, TextFieldProps>(function TextFiel
     <Field>
       <FieldLabel>{label}</FieldLabel>
       {hint ? <FieldHint>{hint}</FieldHint> : null}
-      <InputRow $isFocused={isFocused}>
+      <InputRow $isFocused={isFocused} style={{ boxShadow: inputShadow(theme?.text) }}>
         <Input
           ref={ref}
           accessibilityLabel={accessibilityLabel ?? label}
@@ -65,12 +74,18 @@ const FieldHint = styled.Text`
   font-weight: 700;
   margin-top: 4px;
 `;
+// The drop shadow is passed as an explicit `style` prop at the JSX call site rather than
+// declared here in the styled-components template: styled-components/native silently drops
+// `.attrs({ style })`, and the CSS `box-shadow` shorthand lowers to react-native-web's
+// deprecated `shadow*` props (see `landing-cta.tsx`'s `CtaPanel` for the same tradeoff). The
+// shadow color is read via `useContext(ThemeContext)` instead of `useTheme()` because
+// `useTheme()` throws when a caller mounts this field without a `ThemeProvider`.
 const InputRow = styled(View)<{ readonly $isFocused: boolean }>`
   min-height: 56px;
   flex-direction: row;
   align-items: center;
   background-color: ${({ theme }) => theme.background};
-  border: 2px solid ${({ $isFocused, theme }) => ($isFocused ? theme.accent : theme.text)};
+  border: 3px solid ${({ $isFocused, theme }) => ($isFocused ? theme.accent : theme.text)};
   border-radius: ${Radii.control}px;
   margin-top: 8px;
 `;

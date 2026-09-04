@@ -1,5 +1,5 @@
 import { describe, expect, it } from '@jest/globals';
-import { Text } from 'react-native';
+import { StyleSheet, Text } from 'react-native';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 import { ThemeProvider as StyledThemeProvider, type DefaultTheme } from 'styled-components/native';
 
@@ -14,16 +14,16 @@ const customTheme: DefaultTheme = {
   buttonBackgroundSecondary: '#222222',
 };
 
+function flattenStyle(style: unknown) {
+  return StyleSheet.flatten(style as never) as Record<string, string | number> | undefined;
+}
+
 function resolvedRowStyle(renderer: ReactTestRenderer) {
-  const matches = renderer.root.findAll((node) => node.props.style?.minHeight === 56);
-  const withPlainStyle = matches.find(
-    (node) =>
-      typeof node.props.style === 'object' &&
-      node.props.style !== null &&
-      !Array.isArray(node.props.style) &&
-      typeof node.props.style.backgroundColor === 'string',
+  const matches = renderer.root.findAll((node) => flattenStyle(node.props.style)?.minHeight === 56);
+  const withResolvedStyle = matches.find(
+    (node) => typeof flattenStyle(node.props.style)?.backgroundColor === 'string',
   );
-  return withPlainStyle?.props.style as Record<string, string | number> | undefined;
+  return flattenStyle(withResolvedStyle?.props.style);
 }
 function resolvedInputStyle(renderer: ReactTestRenderer, label: string) {
   const matches = renderer.root.findAll((node) => node.props.accessibilityLabel === label);
@@ -83,6 +83,14 @@ describe('TextField', () => {
         .findAll((node) => node.props.accessibilityLabel === 'Email')
         .find((node) => typeof node.props.placeholderTextColor === 'string')?.props.placeholderTextColor,
     ).toBe(customTheme.textMuted);
+  });
+
+  it('renders a drop shadow and a thicker border on the input row', async () => {
+    const root = await mountField();
+
+    const rowStyle = resolvedRowStyle(root);
+    expect(rowStyle?.borderWidth).toBe(3);
+    expect(typeof rowStyle?.boxShadow).toBe('string');
   });
 
   it('switches the row border to the accent color while focused, then reverts on blur', async () => {

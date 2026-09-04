@@ -4,6 +4,16 @@ Completed entries move here from `TASKS.md`'s `Backlog`, in the same commit that
 
 Entries keep their content as it was at completion. Don't retroactively edit a description or exit criteria after the fact; if something about a completed task turns out to be wrong or misleading, note that in a new entry or in code, not by rewriting history here.
 
+### [T241] Add drop shadow and thicker border to the shared text input
+
+- **Area:** UI components
+- **Priority:** Medium
+- **Status:** Done
+- **Planning:** Implementer
+- **Description:** `text-field.tsx`'s `InputRow` (line 68-76) currently has a flat `2px solid` border and no shadow, which the user finds visually underwhelming against the background-matching fill. Add a drop shadow in the style of the landing page's shadowed components (e.g. `landing-cta.tsx`'s `CtaPanel`, `8px 8px 0 ${AppColors.ink}` via an explicit `style` prop — see that file's inline comment on why the CSS `box-shadow` shorthand can't be used with styled-components/native), but lighter/less bold, and increase the border width.
+- **Exit criteria:** Met. Confirmed in-browser on Sign up and Feedback that fields show a visible drop shadow and a thicker (3px) border, that focus still swaps the border to the accent color with the shadow unchanged, and that the multiline Feedback "Message" field's shadow follows its grown row. No new console warnings (no `shadow*` deprecation, confirming the CSS-shorthand path was avoided). No functional change to any input; `text-field.test.tsx` and all dependent screen tests pass (full `jest --runInBand`: 157 suites / 1900 tests).
+- **Notes:** From S113. User explicitly said this does not need per-screen verification — one shared-component change covers every input app-wide since T223's rollout. Implemented per `.claude/plans/T241.md`'s pre-measured facts: the shadow is passed as an explicit `style` prop at the `InputRow` JSX call site (styled-components/native drops `.attrs({ style })` and lowers the CSS `box-shadow` shorthand to react-native-web's deprecated `shadow*` props); the shadow color reads `theme.text` via `useContext(ThemeContext)` rather than `useTheme()`, since several existing auth-screen tests mount without a `ThemeProvider` and `useTheme()` throws in that case. Fixed the array-style-rejecting test helpers in `text-field.test.tsx` and six auth test files (`password-input`, `account-security-screen`, `sign-up-screen`, `sign-in-screen`, `forgot-password-screen`, `reset-password-screen`) to flatten styles via `StyleSheet.flatten` instead of requiring a plain object — the plan's pre-measured 8-test blast radius, confirmed exactly matched by the full suite run.
+
 ### [T216] Add a branded template for the email-change confirmation
 
 - **Area:** Authentication / Supabase
