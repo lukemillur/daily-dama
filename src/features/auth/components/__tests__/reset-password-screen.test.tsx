@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import type { Session } from '@supabase/supabase-js';
+import { StyleSheet } from 'react-native';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 import { ThemeProvider as StyledThemeProvider, type DefaultTheme } from 'styled-components/native';
 
@@ -373,16 +374,14 @@ describe('ResetPasswordScreen', () => {
     )?.props.style as Record<string, string> | undefined;
     expect(newPasswordStyle).toMatchObject({ color: customTheme.text });
 
-    const rowStyle = root.root.findAll(
-      (node) =>
-        typeof node.props.style === 'object' &&
-        node.props.style !== null &&
-        !Array.isArray(node.props.style) &&
-        node.props.style.minHeight === 56 &&
-        node.props.style.flexDirection === 'row',
-    );
+    const rowStyle = root.root.findAll((node) => {
+      const flattened = StyleSheet.flatten(node.props.style as never) as
+        | Record<string, string | number>
+        | undefined;
+      return flattened?.minHeight === 56 && flattened?.flexDirection === 'row';
+    });
     for (const row of rowStyle) {
-      expect(row.props.style).toMatchObject({
+      expect(StyleSheet.flatten(row.props.style as never)).toMatchObject({
         backgroundColor: customTheme.background,
         borderColor: customTheme.text,
       });

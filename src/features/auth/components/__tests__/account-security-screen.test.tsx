@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
+import { StyleSheet } from 'react-native';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 import { ThemeProvider as StyledThemeProvider, type DefaultTheme } from 'styled-components/native';
 
@@ -93,13 +94,8 @@ async function mountWithTheme() {
 }
 
 function resolvedStyle(nodes: ReturnType<ReactTestRenderer['root']['findAll']>) {
-  const node = nodes.find(
-    (candidate) =>
-      typeof candidate.props.style === 'object' &&
-      candidate.props.style !== null &&
-      !Array.isArray(candidate.props.style),
-  );
-  return node?.props.style as Record<string, string | number> | undefined;
+  const node = nodes.find((candidate) => candidate.props.style !== undefined);
+  return StyleSheet.flatten(node?.props.style as never) as Record<string, string | number> | undefined;
 }
 
 function resolvedButtonLabelColor(renderer: ReactTestRenderer, label: string) {
@@ -199,7 +195,13 @@ describe('AccountSecurityScreen', () => {
     const emailInputStyle = resolvedStyle(emailInputs);
     expect(emailInputStyle).toMatchObject({ color: customTheme.text });
 
-    const emailRowStyle = resolvedStyle(root.root.findAll((node) => node.props.style?.minHeight === 56));
+    const emailRowStyle = resolvedStyle(
+      root.root.findAll(
+        (node) =>
+          (StyleSheet.flatten(node.props.style as never) as Record<string, string | number> | undefined)
+            ?.minHeight === 56,
+      ),
+    );
     expect(emailRowStyle).toMatchObject({
       backgroundColor: customTheme.background,
       borderColor: customTheme.text,
