@@ -23,13 +23,13 @@ const ERROR_COPY: Record<AuthErrorCategory, string> = {
   unknown: 'Something went wrong. Please try again.',
 };
 
-// Floor on how long the transitional "Finishing sign-in..." screen stays visible before the
+// Floor on how long the transitional "Finishing sign up..." screen stays visible before the
 // default-branch (just-verified new account) redirect to Home, measured from when the effect
 // starts processing the code -- not added on top of an already-slow exchange. A fast
 // exchangeCodeForSession resolution can otherwise flash this screen for a single frame. Modeled
 // on sesh.tsx's CELEBRATION_VISIBLE_MS. Scoped to this one redirect only; see the description in
 // TASKS.md/TASKS_DONE.md for T224.
-const CALLBACK_MIN_VISIBLE_MS = 600;
+const CALLBACK_MIN_VISIBLE_MS = 2000;
 
 type CallbackParams = {
   code?: string | string[];
@@ -212,7 +212,7 @@ export function AuthCallbackScreen() {
     <Screen align="center">
       <Centered>
         <Eyebrow>Sign-in</Eyebrow>
-        <PageTitle>Finishing sign-in...</PageTitle>
+        <PageTitle>Finishing sign up...</PageTitle>
       </Centered>
     </Screen>
   );

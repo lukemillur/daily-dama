@@ -127,7 +127,7 @@ describe('AuthCallbackScreen', () => {
     expect(mockReplace).not.toHaveBeenCalled();
 
     await act(async () => {
-      jest.advanceTimersByTime(600);
+      jest.advanceTimersByTime(2000);
     });
 
     expect(mockReplace).toHaveBeenCalledTimes(1);
@@ -145,7 +145,7 @@ describe('AuthCallbackScreen', () => {
     expect(mockReplace).not.toHaveBeenCalled();
 
     await act(async () => {
-      jest.advanceTimersByTime(599);
+      jest.advanceTimersByTime(1999);
     });
     expect(mockReplace).not.toHaveBeenCalled();
 
@@ -185,7 +185,7 @@ describe('AuthCallbackScreen', () => {
 
     await mount();
     await act(async () => {
-      jest.advanceTimersByTime(600);
+      jest.advanceTimersByTime(2000);
     });
 
     expect(mockReplace).toHaveBeenCalledTimes(1);
@@ -210,7 +210,7 @@ describe('AuthCallbackScreen', () => {
 
     await mount();
     await act(async () => {
-      jest.advanceTimersByTime(600);
+      jest.advanceTimersByTime(2000);
     });
 
     expect(mockReplace).toHaveBeenCalledTimes(1);
@@ -314,7 +314,7 @@ describe('AuthCallbackScreen', () => {
 
     await mountWithForcedRerender();
     await act(async () => {
-      jest.advanceTimersByTime(600);
+      jest.advanceTimersByTime(2000);
     });
     expect(mockExchangeCodeForSession).toHaveBeenCalledTimes(1);
     expect(mockReplace).toHaveBeenCalledTimes(1);
