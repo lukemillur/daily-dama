@@ -163,7 +163,7 @@ _T236–T246 come from stories S106–S118 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 - **Area:** Profile
 - **Priority:** Low
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Implementer
 - **Description:** `theme-color-picker.tsx`'s `ColorField` already passes its `Swatch` as `TextField`'s `rightAccessory` prop (line 140), and `text-field.tsx`'s `InputRow` already renders `{rightAccessory}` inside the same bordered row as the `Input` (line 45) — the wiring T223.8 shipped looks correct on inspection, so the QA-reported regression (swatch not visible inside the field) needs an in-browser diagnosis of the actual rendering/layout defect (e.g. sizing, clipping, or flex-space allocation inside `InputRow`/`HexFieldWrapper`) before a fix can be written.
 - **Exit criteria:** Reproduce the defect in a local Expo web dev server (Profile → theme color picker). Fix the actual rendering/layout defect found. Confirmed in-browser that the Background, Accent, and Text Hex fields each show their color swatch rendered inside the bordered input, not outside or missing.
