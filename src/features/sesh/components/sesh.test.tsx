@@ -132,6 +132,19 @@ function pressByVisibleText(root: ReactTestRenderer, text: string) {
   current.props.onPress();
 }
 
+// Like pressByVisibleText's ancestor climb, but returns the pressable node itself so callers can
+// inspect its resolved style (e.g. width) instead of pressing it.
+function pressableAncestorByVisibleText(root: ReactTestRenderer, text: string) {
+  const [textNode] = root.root.findAll((node) => node.props.children === text);
+  if (!textNode) throw new Error(`No node found with text: ${text}`);
+  let current: typeof textNode | null = textNode;
+  while (current && typeof current.props.onPress !== 'function') {
+    current = current.parent;
+  }
+  if (!current) throw new Error(`No pressable ancestor found for text: ${text}`);
+  return current;
+}
+
 // Renders the latest note's practiceSessionId behind an accessibilityLabel so tests can assert
 // on it after driving the save flow, mirroring the Harness pattern in
 // kentei-rank-auto-promotion.test.tsx.
@@ -713,6 +726,32 @@ describe('CompletedSesh first-lace celebration', () => {
     );
 
     expect(findBanner(root)).toHaveLength(0);
+  });
+});
+
+describe('CompletedSesh completion buttons (T240)', () => {
+  const summary: SeshSummary = {
+    trick: TRICK,
+    plan: PLAN,
+    startedAt: 0,
+    endedAt: 5000,
+    durationMs: 5000,
+    landings: [landing(1000)],
+  };
+
+  it('renders "Repeat sesh" and "Start another sesh" at the same width', async () => {
+    const root = await mountWithNoteProvider(
+      <CompletedSesh summary={summary} isFirstLace={false} onReset={noop} onRepeat={noop} />,
+    );
+
+    const repeatButton = pressableAncestorByVisibleText(root, 'Repeat sesh');
+    const startAnotherButton = pressableAncestorByVisibleText(root, 'Start another sesh');
+
+    // Both buttons opt into Button's `fill` prop, which resolves to `width: 100%` on the
+    // rendered Pressable. Since they share a stretch-aligned wrapper (CompletionActions), that
+    // makes both buttons match the width of the wrapper -- and each other.
+    expect(repeatButton.props.fill).toBe(true);
+    expect(startAnotherButton.props.fill).toBe(true);
   });
 });
 
