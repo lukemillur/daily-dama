@@ -152,7 +152,7 @@ _T236–T246 come from stories S106–S118 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 - **Area:** Landing page
 - **Priority:** Medium
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** Recapture the landing page's trick goals screenshot (styling has changed since it was captured) and replace the "first lace, first cheer" screenshot with a new screenshot of the sesh home screen (Open-ended flow), prepopulated with a list of focused tricks representative of a range of Kentei ranks, paired with copy explaining that a sesh can be time-based or lace-based and can include multiple tricks at once. While recapturing, ensure no landing-page screenshot (these two or any other existing one) shows "Leave app" text or any other UI that no longer exists in the shipped app.
 - **Exit criteria:** Confirmed in-browser (or via the captured asset files) that: the trick goals screenshot shows current trick goal card styling; the "first lace, first cheer" slot is replaced by a sesh-home screenshot (Open-ended flow, tricks spanning multiple Kentei ranks) with accompanying copy about time-based/lace-based/multi-trick seshes; and no landing-page screenshot shows "Leave app" text.
