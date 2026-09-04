@@ -94,3 +94,26 @@ discriminator against the **local** stack (see `supabase/config.toml`'s
 query string). This has not been separately verified against the hosted project's
 `uri_allow_list` matching behavior -- treat that as unconfirmed until it is checked live, rather
 than assuming it behaves identically.
+
+## 2026-09-04 update — T216 (branded email-change template)
+
+Applied `supabase/templates/email_change.html` (same branded pattern as
+`confirmation.html`: `#f8f1dd` cream/paper background, `2px solid #18382e` ink
+border, `8px 8px 0 #18382e` hard drop shadow, `#d84929` red uppercase eyebrow
+badge, `#18382e`-background/`#f4c94d`-text button) to the hosted `Daily Dama
+Dev` project via a targeted `PATCH /v1/projects/{ref}/config/auth`
+(`mailer_subjects_email_change` and `mailer_templates_email_change_content`
+only -- following the same narrow-PATCH pattern as T153.3/T195, leaving
+`site_url`, `uri_allow_list`, and SMTP settings untouched), and got `HTTP 200`.
+
+Verified both exit-criteria bullets:
+
+- **Local:** a real signup/confirm/`updateUser({ email })` cycle against the
+  local stack delivered the new template to Mailpit with all five branding
+  elements intact and a valid `type=email_change` confirmation link.
+- **Hosted:** the account owner temporarily pointed `.env.local` at the hosted
+  project, signed in with a real confirmed hosted account, and triggered a
+  real `changeEmail` request through `AccountSecurityScreen`'s UI. The
+  delivered branded `email_change` message was confirmed present in Resend's
+  own delivery log (not Mailpit), consistent with the "Mailpit isn't proof of
+  hosted email delivery" guidance in `supabase/README.md`.
