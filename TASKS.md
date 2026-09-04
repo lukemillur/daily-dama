@@ -152,7 +152,7 @@ _T236–T246 come from stories S106–S118 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 - **Area:** Landing page / Authentication
 - **Priority:** Medium
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** `landing-cta.tsx`'s `LandingCta` picks `FIRST_TIME_COPY` vs `RETURNING_COPY` solely from `useCachedOnboardingStatus()`'s `hasCompletedOnboarding` flag (lines 32-35), with no reference to auth status — an authenticated user whose cached onboarding flag reads false still sees "Start your first sesh." Factor `useAuthState()` into the copy decision so an authenticated user sees the returning-user copy regardless of the onboarding flag.
 - **Exit criteria:** A new/updated `landing-cta.test.tsx` case asserts an authenticated `authState` renders `RETURNING_COPY` even when `hasCompletedOnboarding` is false. Confirmed in-browser that a signed-in user viewing the landing page sees "Jump back into practice" / "Back to practice", not "Start your first sesh."
