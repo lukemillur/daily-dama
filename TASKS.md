@@ -152,7 +152,7 @@ _T236–T246 come from stories S106–S118 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 - **Area:** Tricks
 - **Priority:** Low
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Implementer
 - **Description:** `trick-directory.tsx`'s scrollable list defaults `hideScrollIndicator` to `false` (lines 46, 86, 141), and on web `showsVerticalScrollIndicator` alone doesn't suppress the browser's native scrollbar (that needs a CSS-level hide on the underlying scroll container). Hide the scrollbar across every `TrickDirectory` call site (Tricks route, Trick goals, multi-trick sesh entry, Onboarding selection) while keeping scrolling itself functional.
 - **Exit criteria:** Confirmed in-browser that no visible scrollbar renders in the trick list on the Tricks route, when defining a new trick goal, in multi-trick sesh entry, and in Onboarding's selection step, while the list still scrolls via mouse wheel/drag. Existing `trick-directory.test.tsx` and dependent tests still pass.
