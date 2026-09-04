@@ -4,6 +4,7 @@ import { styled, ThemeContext } from 'styled-components/native';
 import Svg, { Circle, Line, Path } from 'react-native-svg';
 
 import { AppColors } from '@/constants/theme';
+import { TextField } from '@/components/ui/text-field';
 import { usePasswordVisibilityContext } from '@/features/auth/components/password-visibility-context';
 
 type NativeTextInputProps = ComponentProps<typeof TextInput>;
@@ -72,74 +73,33 @@ export const PasswordInput = forwardRef<TextInput, PasswordInputProps>(function 
   const toggleLabel = `${isVisible ? 'Hide' : 'Show'} ${label}`;
 
   return (
-    <Field>
-      <FieldLabel>{label}</FieldLabel>
-      {hint ? <FieldHint>{hint}</FieldHint> : null}
-      <InputRow>
-        <Input
-          ref={ref}
-          accessibilityLabel={label}
-          autoCapitalize="none"
-          autoCorrect={false}
-          blurOnSubmit={blurOnSubmit}
-          onChangeText={onChangeText}
-          onSubmitEditing={onSubmitEditing}
-          placeholder={label}
-          placeholderTextColor={AppColors.textSubtle}
-          returnKeyType={returnKeyType}
-          secureTextEntry={!isVisible}
-          textContentType={textContentType}
-          value={value}
-        />
+    <TextField
+      ref={ref}
+      autoCapitalize="none"
+      autoCorrect={false}
+      blurOnSubmit={blurOnSubmit}
+      error={error}
+      hint={hint}
+      label={label}
+      onChangeText={onChangeText}
+      onSubmitEditing={onSubmitEditing}
+      placeholder={label}
+      returnKeyType={returnKeyType}
+      rightAccessory={
         <VisibilityToggle accessibilityLabel={toggleLabel} accessibilityRole="button" onPress={toggleVisibility}>
           <EyeIcon color={iconColor} isVisible={isVisible} />
         </VisibilityToggle>
-      </InputRow>
-      {error ? <ErrorText>{error}</ErrorText> : null}
-    </Field>
+      }
+      secureTextEntry={!isVisible}
+      textContentType={textContentType}
+      value={value}
+    />
   );
 });
 
-const Field = styled.View`
-  margin-top: 28px;
-`;
-const FieldLabel = styled.Text`
-  color: ${({ theme }) => theme.text};
-  font-size: 13px;
-  font-weight: 900;
-  letter-spacing: 1px;
-  text-transform: uppercase;
-`;
-const InputRow = styled.View`
-  min-height: 56px;
-  flex-direction: row;
-  align-items: center;
-  background-color: ${({ theme }) => theme.background};
-  border: 2px solid ${({ theme }) => theme.text};
-  margin-top: 8px;
-`;
-const FieldHint = styled.Text`
-  color: ${AppColors.textSubtle};
-  font-size: 12px;
-  font-weight: 700;
-  margin-top: 4px;
-`;
-const Input = styled(TextInput)`
-  flex: 1;
-  color: ${({ theme }) => theme.text};
-  font-size: 18px;
-  font-weight: 800;
-  padding: 12px 0 12px 14px;
-`;
 const VisibilityToggle = styled(Pressable)`
   align-self: stretch;
   align-items: center;
   justify-content: center;
   padding: 12px 14px;
-`;
-const ErrorText = styled.Text`
-  color: ${AppColors.red};
-  font-size: 12px;
-  font-weight: 800;
-  margin-top: 7px;
 `;

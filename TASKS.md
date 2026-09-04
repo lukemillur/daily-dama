@@ -199,16 +199,6 @@ _T219–T224 come from stories S098–S104 in [BACKLOG_STORIES.md](BACKLOG_STORI
 - **Description:** Umbrella for T223.1–T223.8. No shared themed text-input component exists anywhere in the codebase (`src/components/ui/` holds `button.tsx`/`screen.tsx`/`typography.tsx` but no input equivalent) — every screen currently defines its own local styled `TextInput` (the auth screens' `FieldInput`/`PasswordInput`, `feedback-screen.tsx`'s `FieldInput`/`MessageInput`, `sesh.tsx`'s `NotePromptInput`, and others across Notes, Tricks, Goals, Onboarding, and Profile). Introduce one shared, polished, theme-consistent text-input component and apply it everywhere a `TextInput` currently renders, per the user's explicit request to cover every text input in the app.
 - **Notes:** From S103. Split by feature area per this file's single-area scoping rule; no exit criteria of its own — done when every child is `Done`.
 
-### [T223.1] Create a shared text-input component and apply it to Authentication
-
-- **Area:** Authentication
-- **Priority:** Medium
-- **Status:** Not started
-- **Planning:** Required
-- **Description:** Create a shared, polished, theme-consistent text-input component (e.g. `src/components/ui/text-field.tsx`, mirroring `button.tsx`'s existing shared-primitive pattern) and apply it across the Authentication area: `sign-up-screen.tsx`'s local `FieldInput`, `sign-in-screen.tsx`'s equivalent, `password-input.tsx`'s shared `Input`, `account-security-screen.tsx`, `account-deletion-screen.tsx`, and `forgot-password-screen.tsx`. Visual styling only — no functional or validation behavior changes.
-- **Exit criteria:** New `text-field.test.tsx` covers the shared component's rendering and theming. Existing auth screen tests (`sign-up-screen.test.tsx`, `sign-in-screen.test.tsx`, `password-input.test.tsx` or equivalent, `account-security-screen.test.tsx`, `account-deletion-screen.test.tsx`, `forgot-password-screen.test.tsx`) still pass, with only styling-related assertions (if any) updated. Confirmed in-browser that every text input across sign-up, sign-in, forgot-password, account security, and account deletion shares one consistent, polished visual style.
-- **Notes:** From S103, child 1 of 8. `Required` because it introduces a new reusable UI primitive under `src/components/ui/` and touches every Authentication screen — this project's Planning rules reserve unfamiliar shared-primitive introductions for the separate planning pass. Pick a concrete visual treatment (border, focus state, spacing) consistent with the app's existing UI language (`AppColors`, `typography.tsx`); no specific mock was provided.
-
 ### [T223.2] Apply the shared text-input component to Feedback
 
 - **Area:** Feedback

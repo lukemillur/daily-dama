@@ -530,11 +530,19 @@ describe('SignUpScreen', () => {
         node.props.style !== null &&
         !Array.isArray(node.props.style),
     )?.props.style as Record<string, string> | undefined;
-    expect(emailInputStyle).toMatchObject({
+    expect(emailInputStyle).toMatchObject({ color: customTheme.text });
+
+    const emailRowStyle = root.root.findAll((node) => node.props.style?.minHeight === 56).find(
+      (node) =>
+        typeof node.props.style === 'object' &&
+        node.props.style !== null &&
+        !Array.isArray(node.props.style),
+    )?.props.style as Record<string, string> | undefined;
+    expect(emailRowStyle).toMatchObject({
       backgroundColor: customTheme.background,
       borderColor: customTheme.text,
-      color: customTheme.text,
     });
+
     expect(
       emailInputs.find((node) => typeof node.props.placeholderTextColor === 'string')?.props
         .placeholderTextColor,
