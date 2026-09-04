@@ -78,6 +78,7 @@ const Input = styled(TextInput).attrs<{ readonly $hasAccessory: boolean }>(({ th
   placeholderTextColor: theme.textMuted,
 }))<{ readonly $hasAccessory: boolean }>`
   flex: 1;
+  min-width: 0;
   color: ${({ theme }) => theme.text};
   font-size: 18px;
   font-weight: 800;
