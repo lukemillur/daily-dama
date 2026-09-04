@@ -152,7 +152,7 @@ _T236–T246 come from stories S106–S118 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 - **Area:** Sesh
 - **Priority:** Low
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Implementer
 - **Description:** `sesh.tsx`'s completion summary renders `PrimaryButton` ("Repeat sesh") and `SecondaryButton` ("Start another sesh") back to back (lines 1051-1052), each sized to its own text content today. Make "Repeat sesh" render at the same width as "Start another sesh".
 - **Exit criteria:** `sesh.test.tsx` (or a new case) asserts both buttons render at the same width. Confirmed in-browser on the sesh completion summary that "Repeat sesh" and "Start another sesh" are visually the same width.
