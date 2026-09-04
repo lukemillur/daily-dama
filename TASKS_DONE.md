@@ -4,6 +4,16 @@ Completed entries move here from `TASKS.md`'s `Backlog`, in the same commit that
 
 Entries keep their content as it was at completion. Don't retroactively edit a description or exit criteria after the fact; if something about a completed task turns out to be wrong or misleading, note that in a new entry or in code, not by rewriting history here.
 
+### [T244] Remove "Up next" label from the sesh home focused trick card
+
+- **Area:** Sesh
+- **Priority:** Low
+- **Status:** Done
+- **Planning:** Implementer
+- **Description:** `sesh.tsx`'s trick choice card renders `` `Up next · ${trick.descriptor ?? 'Practice trick'}` `` for the preferred trick (line 499). Drop the "Up next · " prefix so the card shows just the descriptor.
+- **Exit criteria:** Met. `sesh.test.tsx`'s "keeps the plain visit picker behavior unchanged" case now asserts `text` does not contain `Up next`. Confirmed in-browser at `/app/sesh` that the focused trick card shows only its descriptor ("RANK 1 · BASIC"), with no "Up next" prefix.
+- **Notes:** From S116. Single-line copy change; `isPreferred` is retained since it still drives `ChoiceMeta`'s `$preferred` styling prop.
+
 ### [T243] Show returning-user CTA copy to an authenticated visitor on the landing page
 
 - **Area:** Landing page / Authentication

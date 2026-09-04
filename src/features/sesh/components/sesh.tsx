@@ -496,7 +496,7 @@ function TrickPicker({
               $disabled={selectedPlan === undefined}
               onPress={() => selectedPlan && onSelect(trick, selectedPlan, personalBest, liveChallengeEnabled)}>
               <ChoiceMeta $preferred={isPreferred}>
-                {isPreferred ? `Up next · ${trick.descriptor ?? 'Practice trick'}` : trick.descriptor ?? 'Practice trick'}
+                {trick.descriptor ?? 'Practice trick'}
               </ChoiceMeta>
               <ChoiceName>{trick.name}</ChoiceName>
               <SequenceSteps trick={trick} compact />
