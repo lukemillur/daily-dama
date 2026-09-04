@@ -185,7 +185,7 @@ _T219–T224 come from stories S098–S104 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 - **Area:** Feedback
 - **Priority:** High
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** `feedback-screen.tsx`'s success-state branch (rendered once `submitFeedback` resolves `status: 'succeeded'`) and `submit-feedback.ts`'s insert call both look correct on inspection — the QA-reported failure (no success state after submitting a real Message) needs a fresh runtime diagnosis against the actual environment the user tested in, not a known local fix reapplied. Determine whether the anon insert itself is failing (RLS/config drift since T217.1, a missing or misconfigured Supabase env var in that environment) or whether a successful insert isn't triggering the UI's `submitted` state, then fix the actual defect found.
 - **Exit criteria:** Reproduce the failure against the same environment/build the user tested (not just the local Supabase CLI stack T217.2 already verified against) — confirm whether `submitFeedback` resolves `failed` (capture the real Postgrest/network error if so) or `succeeded` with the UI not updating. Fix whichever is broken. Confirm afterward, on that same environment, that submitting a Message-only feedback form shows the success state and that a real row is visible via Supabase Studio or a direct DB read.
