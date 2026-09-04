@@ -203,7 +203,7 @@ _T219–T224 come from stories S098–S104 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 - **Area:** Feedback
 - **Priority:** Medium
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Implementer
 - **Description:** Apply T223.1's shared text-input component to `feedback-screen.tsx`'s `FieldInput`/`MessageInput`, replacing their local styled-`TextInput` definitions.
 - **Exit criteria:** `feedback-screen.test.tsx` still passes. Confirmed in-browser that the feedback form's Name/Email/Message inputs match the new shared style.
