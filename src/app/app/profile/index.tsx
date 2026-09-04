@@ -1,10 +1,11 @@
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import { ScrollView, TextInput } from "react-native";
+import { ScrollView } from "react-native";
 import { styled } from "styled-components/native";
 
 import { Button } from "@/components/ui/button";
 import { Screen } from "@/components/ui/screen";
+import { TextField } from "@/components/ui/text-field";
 import { BodyText, DisplayTitle, Eyebrow } from "@/components/ui/typography";
 import { AppColors, BottomTabInset } from "@/constants/theme";
 import { AccountSection } from "@/features/auth/components/account-section";
@@ -113,21 +114,18 @@ function StreakSettings({
         Log at least this much sesh time in a day to keep your streak alive.
       </Copy>
       <DurationField>
-        <DurationLabel>Minutes</DurationLabel>
-        <DurationInput
+        <TextField
           accessibilityLabel="Streak threshold in minutes"
+          error={hasValidMinutes ? undefined : "Enter a whole number from 1 to 60."}
+          hint={hasValidMinutes ? "Choose any whole minute from 1 to 60." : undefined}
           inputMode="numeric"
           keyboardType="number-pad"
+          label="Minutes"
           maxLength={2}
           onChangeText={setMinutesText}
           selectTextOnFocus
           value={minutesText}
         />
-        <DurationHint $invalid={!hasValidMinutes}>
-          {hasValidMinutes
-            ? "Choose any whole minute from 1 to 60."
-            : "Enter a whole number from 1 to 60."}
-        </DurationHint>
       </DurationField>
       <SaveButton
         disabled={!isDirty}
@@ -202,29 +200,7 @@ const RetakeButton = styled(Button).attrs({
 `;
 const DurationField = styled.View`
   margin-top: 22px;
-`;
-const DurationLabel = styled.Text`
-  color: ${({ theme }) => theme.text};
-  font-size: 12px;
-  font-weight: 900;
-  margin-bottom: 6px;
-  text-transform: uppercase;
-`;
-const DurationInput = styled(TextInput)`
-  height: 54px;
-  width: 110px;
-  background-color: ${AppColors.paper};
-  border: 2px solid ${AppColors.ink};
-  color: ${AppColors.ink};
-  font-size: 24px;
-  font-weight: 900;
-  padding: 8px 12px;
-`;
-const DurationHint = styled.Text<{ $invalid: boolean }>`
-  color: ${({ $invalid, theme }) => ($invalid ? AppColors.red : theme.text)};
-  font-size: 12px;
-  font-weight: 700;
-  margin-top: 7px;
+  max-width: 220px;
 `;
 const SaveButton = styled(Button).attrs({ size: "medium" })`
   align-self: flex-start;

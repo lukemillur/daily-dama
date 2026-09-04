@@ -191,24 +191,6 @@ _T219–T224 come from stories S098–S104 in [BACKLOG_STORIES.md](BACKLOG_STORI
 - **Exit criteria:** Reproduce the failure against the same environment/build the user tested (not just the local Supabase CLI stack T217.2 already verified against) — confirm whether `submitFeedback` resolves `failed` (capture the real Postgrest/network error if so) or `succeeded` with the UI not updating. Fix whichever is broken. Confirm afterward, on that same environment, that submitting a Message-only feedback form shows the success state and that a real row is visible via Supabase Studio or a direct DB read.
 - **Notes:** From S100. Bug fix on already-`Done` T217.2, not new scope. `Required` for the same class of reason as T188/T195/T199/T206/T212: the defect wasn't visible from static tracing of the shipped code, so it needs runtime diagnosis before a fix can be written.
 
-### [T223] Restyle text inputs app-wide with a shared component
-
-- **Area:** Shared UI
-- **Priority:** Medium
-- **Status:** Not started
-- **Description:** Umbrella for T223.1–T223.8. No shared themed text-input component exists anywhere in the codebase (`src/components/ui/` holds `button.tsx`/`screen.tsx`/`typography.tsx` but no input equivalent) — every screen currently defines its own local styled `TextInput` (the auth screens' `FieldInput`/`PasswordInput`, `feedback-screen.tsx`'s `FieldInput`/`MessageInput`, `sesh.tsx`'s `NotePromptInput`, and others across Notes, Tricks, Goals, Onboarding, and Profile). Introduce one shared, polished, theme-consistent text-input component and apply it everywhere a `TextInput` currently renders, per the user's explicit request to cover every text input in the app.
-- **Notes:** From S103. Split by feature area per this file's single-area scoping rule; no exit criteria of its own — done when every child is `Done`.
-
-### [T223.8] Apply the shared text-input component to Profile
-
-- **Area:** Profile
-- **Priority:** Medium
-- **Status:** In progress
-- **Planning:** Implementer
-- **Description:** Apply T223.1's shared text-input component to `app/app/profile/index.tsx` and `theme-color-picker.tsx`.
-- **Exit criteria:** Their existing tests still pass. Confirmed in-browser that Profile's text inputs match the new shared style.
-- **Notes:** From S103, child 8 of 8 — last child, so completing it also flips the T223 umbrella to `Done`. Depends on T223.1.
-
 ### [T224] Hold the post-verification callback screen visible briefly before entering Home
 
 - **Area:** Authentication
