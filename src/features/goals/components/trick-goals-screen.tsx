@@ -1,9 +1,10 @@
 import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { Pressable, ScrollView, TextInput } from 'react-native';
+import { Pressable, ScrollView } from 'react-native';
 import { styled } from 'styled-components/native';
 
 import { Button } from '@/components/ui/button';
+import { TextField } from '@/components/ui/text-field';
 import { BodyText, DisplayTitle, Eyebrow } from '@/components/ui/typography';
 import { AppColors, Radii } from '@/constants/theme';
 import {
@@ -228,20 +229,15 @@ export function GoalForm({
           </KindPicker>
         </Field>
 
-        <Field>
-          <FieldLabel>{kind === 'count' ? 'Target lace count' : 'Target minutes'}</FieldLabel>
-          <FieldInput
-            accessibilityLabel={kind === 'count' ? 'Target lace count' : 'Target minutes'}
-            keyboardType="number-pad"
-            onChangeText={setTargetText}
-            placeholder={kind === 'count' ? 'e.g. 50' : 'e.g. 30'}
-            placeholderTextColor={AppColors.textSubtle}
-            value={targetText}
-          />
-          {validation.status === 'invalid' && validation.errors.target ? (
-            <ErrorText>{validation.errors.target}</ErrorText>
-          ) : null}
-        </Field>
+        <TextField
+          accessibilityLabel={kind === 'count' ? 'Target lace count' : 'Target minutes'}
+          error={validation.status === 'invalid' ? validation.errors.target : undefined}
+          keyboardType="number-pad"
+          label={kind === 'count' ? 'Target lace count' : 'Target minutes'}
+          onChangeText={setTargetText}
+          placeholder={kind === 'count' ? 'e.g. 50' : 'e.g. 30'}
+          value={targetText}
+        />
 
         <FormActions>
           <Button
@@ -309,8 +305,6 @@ const DeleteActionText = styled(GoalActionText)`color: ${AppColors.red};`;
 const PracticeHintText = styled.Text`flex: 1; color: ${AppColors.inkSoft}; font-size: 12px; font-weight: 800; text-transform: uppercase; align-self: center;`;
 const Field = styled.View`margin-top: 28px;`;
 const FieldLabel = styled.Text`color: ${AppColors.ink}; font-size: 13px; font-weight: 900; letter-spacing: 1px; text-transform: uppercase;`;
-const FieldInput = styled(TextInput)`min-height: 56px; background-color: ${AppColors.paper}; border: 2px solid ${AppColors.ink}; color: ${AppColors.ink}; font-size: 18px; font-weight: 800; margin-top: 8px; padding: 12px 14px;`;
-const ErrorText = styled.Text`color: ${AppColors.red}; font-size: 12px; font-weight: 800; margin-top: 7px;`;
 const KindPicker = styled.View`flex-direction: row; gap: 10px; margin-top: 8px;`;
 const KindOption = styled(Pressable)<{ readonly $selected: boolean }>`min-width: 140px; flex: 1; min-height: 54px; flex-direction: row; align-items: center; gap: 10px; background-color: ${({ $selected }) => ($selected ? AppColors.ink : AppColors.paper)}; border: 2px solid ${AppColors.ink}; padding: 10px 13px;`;
 const KindMark = styled.Text<{ readonly $selected: boolean }>`width: 18px; color: ${({ $selected, theme }) => ($selected ? theme.accent : AppColors.red)}; font-size: 16px; font-weight: 900; text-align: center;`;
