@@ -163,7 +163,7 @@ _T236–T246 come from stories S106–S118 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 - **Area:** Authentication
 - **Priority:** Low
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Implementer
 - **Description:** `auth-callback-screen.tsx`'s default-branch transitional screen reads "Finishing sign-in..." (line 215) and holds for `CALLBACK_MIN_VISIBLE_MS = 600` (line 32), added by T224. Change the copy to "Finishing sign up..." and raise the constant to 2000.
 - **Exit criteria:** `auth-callback-screen.test.tsx` passes, with its existing minimum-duration-floor test updated to assert against the new 2000ms value and any copy-matching assertion updated to "Finishing sign up...". Confirmed in-browser that a fast signup-verification round trip shows "Finishing sign up..." for at least 2 seconds before landing on Home.
