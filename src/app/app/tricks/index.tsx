@@ -69,7 +69,6 @@ export default function TricksScreen() {
       <DirectoryContent>
         <TrickDirectory
           tricks={directoryTricks}
-          hideScrollIndicator
           showFocusedSection
           lacedCountByTrickId={lacedCountByTrickId}
           noteCountByTrickId={noteCountByTrickId}

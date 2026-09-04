@@ -28,7 +28,6 @@ export function OnboardingSelectionStep({
         tricks={rankTricks}
         fixedHeader={shouldPinSelectionChrome}
         fixedFooter={shouldPinSelectionChrome}
-        hideScrollIndicator
         selection={{ selectedTrickIds, onToggleTrick }}
         header={{
           eyebrow: `Your practice frontier · Rank ${rank}`,
