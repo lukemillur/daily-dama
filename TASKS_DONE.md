@@ -3197,6 +3197,16 @@ Completed entries live in [TASKS_DONE.md](TASKS_DONE.md) — not part of the top
 - **Exit criteria:** Their existing tests still pass. Confirmed in-browser that trick note inputs match the new shared style. Met: `yarn test --runInBand --runTestsByPath src/features/notes/components/trick-notes-screen.test.tsx src/features/notes/components/all-notes-screen.test.tsx` passes unchanged. Full `yarn tsc --noEmit` and scoped `yarn eslint` pass. Browser-verified against the local Expo web dev server: both the trick-scoped Notes screen's "New note"/"Edit note" forms and the "All notes" screen's "Edit note" form render the shared `TextField` row (uppercase "Note" label, `2px solid` bordered row, accent-colored focus border) with the multiline note textarea growing via a passed-through `style` override, matching the `sesh.tsx` note-prompt precedent.
 - **Notes:** From S103, child 4 of 8. Depends on T223.1. Both files' local `Field`/`FieldLabel`/`FieldInput` styled components were removed in favor of `TextField`, with a `NOTE_INPUT_STYLE` constant (`minHeight: 160, textAlignVertical: 'top'`) passed via `style`, mirroring `sesh.tsx`'s `NOTE_INPUT_STYLE` pattern. Existing tests locate the input via `findAllByType(TextInput)`, which continues to work since `TextField` renders a `TextInput` internally.
 
+### [T223.7] Apply the shared text-input component to Onboarding
+
+- **Area:** Onboarding
+- **Priority:** Medium
+- **Status:** Done
+- **Planning:** Implementer
+- **Description:** Apply T223.1's shared text-input component to `onboarding-duration-step.tsx`.
+- **Exit criteria:** Its existing tests still pass. Confirmed in-browser that the onboarding duration input matches the new shared style. Met: `yarn test --runInBand --runTestsByPath src/features/onboarding/components/kentei-onboarding.test.tsx` passes unchanged. Full `yarn tsc --noEmit` and scoped `yarn eslint` pass. Browser-verified against the local Expo web dev server: the onboarding "How long would you like to practice a day?" step's minutes field renders the shared `TextField` row (uppercase label, `2px solid` bordered row, inline hint/error copy via `TextField`'s `hint`/`error` props), matching the already-migrated Trick goals/Sesh screens; typing an out-of-range value shows the red error copy and disables Continue.
+- **Notes:** From S103, child 7 of 8. Depends on T223.1. The local `DurationLabel`/`DurationInput`/`DurationHint` styled components were removed in favor of `TextField`.
+
 ### [T223.6] Apply the shared text-input component to Trick goals
 
 - **Area:** Trick goals
