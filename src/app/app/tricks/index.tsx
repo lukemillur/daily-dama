@@ -29,6 +29,7 @@ import {
 import { usePracticeHistory } from '@/features/stats/state/practice-history-provider';
 import { TrickDirectory } from '@/features/tricks/components/trick-directory';
 import { KENDAMA_KENTEI_TRICKS } from '@/features/tricks/data/kendama-kentei-tricks';
+import type { PracticeTrick } from '@/features/tricks/model/trick';
 import {
   createProfileDirectoryTricks,
   selectEffectiveLacedTrickIds,
@@ -37,7 +38,6 @@ import {
   selectLacedTrickIds,
   selectNoteCountByTrickId,
 } from '@/features/tricks/model/trick-directory';
-import type { PracticeTrick } from '@/features/tricks/model/trick';
 
 export default function TricksScreen() {
   const isOnboardingComplete = useRequireOnboarding();
@@ -90,7 +90,7 @@ export default function TricksScreen() {
           practiceAction
           header={{
             eyebrow: 'Your trick lab',
-            title: 'Choose the next\nmove.',
+            title: 'What\'s up next?',
             introduction:
               selectedTrickIds.length === 0
                 ? 'Build your practice list from the Kentei library or define something entirely your own.'
@@ -99,15 +99,15 @@ export default function TricksScreen() {
           headerAction={
             <HeaderActions>
               <DefineButton onPress={() => router.push('/app/tricks/custom/new')}>Define new trick</DefineButton>
-              <LacedTricksButton variant="secondary" onPress={() => router.push('/app/tricks/laced')}>
-                Laced tricks
-              </LacedTricksButton>
               <TrickGoalsButton variant="secondary" onPress={() => router.push('/app/tricks/goals')}>
                 Trick goals
               </TrickGoalsButton>
               <AllNotesButton variant="secondary" onPress={() => router.push('/app/tricks/notes')}>
-                All notes
+                Trick notes
               </AllNotesButton>
+              <LacedTricksButton variant="secondary" onPress={() => router.push('/app/tricks/laced')}>
+                Laced tricks
+              </LacedTricksButton>
             </HeaderActions>
           }
         />

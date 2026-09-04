@@ -23,20 +23,20 @@ export function AllNotesScreen({ onBack }: AllNotesScreenProps) {
     return (
       <NoteEditForm
         note={editingNote}
-        onCancel={() => setEditingNote(undefined)}
-        onSaved={() => setEditingNote(undefined)}
+
       />
     );
   }
 
   return (
+    
     <Scroll contentContainerStyle={{ paddingBottom: 24 }}>
       <Content>
         <Eyebrow>All notes</Eyebrow>
         <PageTitle>All notes</PageTitle>
         <Introduction>
           {sortedNotes.length === 0
-            ? "No notes yet. Add one from a trick's Notes action."
+            ? "No notes yet. Add one from the trick list."
             : `${sortedNotes.length} ${sortedNotes.length === 1 ? 'note' : 'notes'} across your tricks.`}
         </Introduction>
 
