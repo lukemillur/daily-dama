@@ -6,6 +6,8 @@ To bring a task back into automated flow, move its entry from this file into `TA
 
 Completed entries still move to [TASKS_DONE.md](TASKS_DONE.md), same as `TASKS.md`, if a task here is ever completed manually.
 
+Tickets selected for owner participation or external verification live separately in [TASKS_COLLABORATIVE.md](TASKS_COLLABORATIVE.md) and use `$guided-ticket`. This file retains deferred work. Allocate IDs across both of these queues, `TASKS.md`, and `TASKS_DONE.md`.
+
 ---
 
 ### [T042] Complete native tab iconography

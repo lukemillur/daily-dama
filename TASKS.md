@@ -6,6 +6,8 @@ Working backlog for Daily Dama **core-functionality** work. This file is the che
 
 **Automation note:** [TASKS_BACKLOG.md](TASKS_BACKLOG.md) holds scoped, ready-to-work tasks that are deliberately kept out of this file so the `newTicket` workflow (`.claude/skills/newTicket/SKILL.md`) never claims, plans, or implements them automatically. Moving an entry between the two files is a deliberate human decision, not something to do as a side effect of other work.
 
+**Collaborative queue:** [TASKS_COLLABORATIVE.md](TASKS_COLLABORATIVE.md) holds tickets requiring owner decisions or external verification, executed one at a time with `$guided-ticket`. It is excluded from automatic claiming. Allocate new IDs across all three queues and `TASKS_DONE.md`. Existing claimed tickets remain with their current workflow; the new queue records any residual follow-up explicitly.
+
 ## How to use this file
 
 **Picking up work:**
@@ -191,3 +193,37 @@ _T219–T224 come from stories S098–S104 in [BACKLOG_STORIES.md](BACKLOG_STORI
 - **Exit criteria:** Reproduce the failure against the same environment/build the user tested (not just the local Supabase CLI stack T217.2 already verified against) — confirm whether `submitFeedback` resolves `failed` (capture the real Postgrest/network error if so) or `succeeded` with the UI not updating. Fix whichever is broken. Confirm afterward, on that same environment, that submitting a Message-only feedback form shows the success state and that a real row is visible via Supabase Studio or a direct DB read.
 - **Notes:** From S100. Bug fix on already-`Done` T217.2, not new scope. `Required` for the same class of reason as T188/T195/T199/T206/T212: the defect wasn't visible from static tracing of the shipped code, so it needs runtime diagnosis before a fix can be written.
 
+
+---
+
+_Ship-readiness batch approved 2026-09-04, from `SHIP_READINESS_AUDIT.md`: A1 → T225, A4 → T228, A9 → T233 are autonomous work. A2/A3/A5/A6/A7/A8/A10/A11 → T226/T227/T229/T230/T231/T232/T234/T235 live in `TASKS_COLLABORATIVE.md`. The audit describes a historical snapshot, not this checkout or a selected release. These entries do not restore the removed T162 Phase 6 launch gate; older phase-gating prose above is historical and superseded by the revised audit scope._
+
+### [T225] Reconcile the four demonstrated audit findings against current development
+
+- **Area:** Ship-readiness evidence
+- **Priority:** High
+- **Status:** Not started
+- **Planning:** Implementer
+- **Description:** Recheck signed-in feedback, dynamic-route refreshes, dependency-audit failure reporting, and Sentry/CSP against the exact checked-out development commit and current task/PR evidence. Produce `outputs/ship-readiness/T225.md` with a finding-by-finding disposition and the remaining scope of each follow-up.
+- **Exit criteria:** The committed report identifies its commit/environment and classifies all four findings as fixed, reproducible, or unverified with a specific missing prerequisite, citing current code and focused reproduction evidence where available. It reconciles T221's current claim/PR state without taking over that work and distinguishes local evidence from hosted evidence.
+- **Notes:** From A1; audit sections 1 and "Where things stand." This is a bounded investigation whose completed output may contain unverified findings; that never marks an implementation or release gate passed. Use the checked-out development revision as the investigation baseline, not an owner-selected production release. No hosted writes, release selection, defect implementation, or tracker closure of other tickets. Remote-access failure is recorded as unverified rather than preventing the local report.
+
+### [T228] Fail the dependency-audit gate on failed or incomplete audit output
+
+- **Area:** Security tooling
+- **Priority:** High
+- **Status:** Not started
+- **Planning:** Required
+- **Description:** Repair `security/scripts/check-dependency-audit.mjs` so a process, network, malformed-output, or incomplete-audit failure cannot report success. Preserve the current high/critical advisory and allowlist policy, including Yarn Classic's advisory exit-code bitmask; refresh stale accepted-advisory explanations only when supported by current evidence.
+- **Exit criteria:** Focused Node regression cases demonstrate that spawn failures, signals, error events and missing/invalid completion summaries fail visibly, while complete audit output with allowed advisories passes and an unaccepted high/critical advisory fails. A completed live audit applies that same policy; unavailable network evidence is reported as a blocked verification, never green output.
+- **Notes:** From A4; audit section 1. Depends on T225. Inspect `security/README.md` and `security/accepted-dependency-advisories.json`. Do not treat every nonzero Yarn exit as an operational failure: a complete advisory report may legitimately have a nonzero severity bitmask. No dependency overhaul or new advisory exceptions are authorized by this task.
+
+### [T233] Verify the fresh guest practice journey in a real web browser
+
+- **Area:** Guest practice acceptance
+- **Priority:** High
+- **Status:** Not started
+- **Planning:** Implementer
+- **Description:** Run a bounded browser acceptance pass against the exact development commit using an Expo development server on a verified port and a clean disposable browser context. Record results in `outputs/ship-readiness/T233.md` for onboarding, selecting/creating a trick, timed and open-ended practice, pause/resume, completion, Stats/reload, a note, goal, sequence, and multi-trick run.
+- **Exit criteria:** The report records passing browser evidence for the specified fresh-guest journey, including backgrounding a timed Sesh beyond its deadline and observing sensible completion exactly once with no duplicate history. It identifies the tested commit, URL, fixture scope, and supporting evidence; any failed required scenario keeps this ticket open with a reproducible defect report.
+- **Notes:** From A9; audit section 4. Depends on T225. This is local web acceptance and needs no hosted account or release decision. Use existing tests for deeper edge cases; do not expand into a cross-feature repair project if a blocker is found. Active-Sesh restoration after full page reload and native validation remain deferred. Hosted release validation in T234 may reuse this evidence only when code and environment applicability are established.
