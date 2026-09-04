@@ -5,6 +5,7 @@ import { styled } from 'styled-components/native';
 import { Button } from '@/components/ui/button';
 import { BodyText } from '@/components/ui/typography';
 import { AppColors, Radii } from '@/constants/theme';
+import { useAuthState } from '@/features/auth/state/auth-provider';
 import { useCachedOnboardingStatus } from '@/features/landing/state/use-cached-onboarding-status';
 
 interface CtaCopy {
@@ -29,9 +30,14 @@ const RETURNING_COPY: CtaCopy = {
 };
 
 export function LandingCta() {
+  const authState = useAuthState();
   const { hasCompletedOnboarding } = useCachedOnboardingStatus();
   const router = useRouter();
-  const isReturning = hasCompletedOnboarding;
+  // `useCachedOnboardingStatus` only ever reads the guest-scoped profile key, so a signed-in
+  // user's onboarding flag is invisible to it; an `authenticated` session is itself
+  // sufficient proof of a returning visitor. `initializing` deliberately does not count, so
+  // the prerendered/first-client render still matches today's output.
+  const isReturning = authState.status === 'authenticated' || hasCompletedOnboarding;
   const copy = isReturning ? RETURNING_COPY : FIRST_TIME_COPY;
 
   return (
