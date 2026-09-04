@@ -1,4 +1,9 @@
-import type { SeshPlan } from '@/features/sesh/model/sesh';
+import {
+  createOpenEndedSeshPlan,
+  createTimedSeshPlan,
+  isValidTimedSeshMinutes,
+  type SeshPlan,
+} from '@/features/sesh/model/sesh';
 
 export type LastSeshPlan =
   | { readonly kind: 'openEnded'; readonly targetLandingCount?: number }
@@ -55,6 +60,30 @@ export function createLastSesh(trickId: string, plan: SeshPlan): LastSesh {
           ? { kind: 'openEnded', targetLandingCount: plan.target.landingCount }
           : { kind: 'openEnded' },
   };
+}
+
+/**
+ * The plan Sesh setup should open with: an explicit challenge duration from a
+ * deep link if there is one, otherwise the shape of the last sesh this profile
+ * ran (including its open-ended lace target). The inverse of `createLastSesh`.
+ *
+ * Total and non-throwing on purpose: `challengeDurationMs` arrives from a URL
+ * query parameter, so an out-of-range or non-integer-minute value must fall
+ * back to the persisted plan rather than throwing `createTimedSeshPlan`'s
+ * RangeError out of a route render.
+ */
+export function selectInitialSeshPlan(
+  lastSesh: LastSesh | undefined,
+  challengeDurationMs?: number,
+): SeshPlan | undefined {
+  if (challengeDurationMs !== undefined && Number.isFinite(challengeDurationMs)) {
+    const minutes = challengeDurationMs / 60_000;
+    if (isValidTimedSeshMinutes(minutes)) return createTimedSeshPlan(minutes);
+  }
+  if (!lastSesh) return undefined;
+  return lastSesh.plan.kind === 'timed'
+    ? createTimedSeshPlan(lastSesh.plan.durationMinutes)
+    : createOpenEndedSeshPlan(lastSesh.plan.targetLandingCount);
 }
 
 export const INITIAL_USER_PROFILE: UserProfile = {
