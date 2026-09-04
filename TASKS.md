@@ -152,7 +152,7 @@ _T236–T246 come from stories S106–S118 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 - **Area:** Sesh / persistence
 - **Priority:** Medium
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** `sesh.tsx`'s open-ended "Target laces (optional)" field (`targetLandingCount`, lines 434-444) is local component state only. Persist the user's last-entered value so it's pre-filled the next time they open sesh setup. Decide which existing persistence domain (per `AGENTS.md`'s three-domain boundary — user profile, custom tricks, practice history) owns this value, or whether it needs its own small addition to one of them.
 - **Exit criteria:** A model/persistence test asserts that setting a target-laces value in one open-ended sesh setup and later reopening sesh setup shows that same value pre-filled. Confirmed in-browser: set target laces to 5, complete or leave the sesh, return to sesh setup, and see 5 pre-filled.
