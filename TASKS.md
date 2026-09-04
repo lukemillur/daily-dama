@@ -152,7 +152,7 @@ _T236–T246 come from stories S106–S118 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 - **Area:** Sesh
 - **Priority:** Low
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Implementer
 - **Description:** `sesh.tsx`'s trick choice card renders `` `Up next · ${trick.descriptor ?? 'Practice trick'}` `` for the preferred trick (line 499). Drop the "Up next · " prefix so the card shows just the descriptor.
 - **Exit criteria:** `sesh.test.tsx` no longer asserts "Up next" text renders (existing case updated). Confirmed in-browser that the sesh home screen's focused trick card no longer shows "Up next".
