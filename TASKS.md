@@ -195,7 +195,7 @@ _T219–T224 come from stories S098–S104 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 - **Area:** Authentication
 - **Priority:** Low
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Implementer
 - **Description:** `auth-callback-screen.tsx`'s default-branch success path (signup email verification) calls `router.replace({ pathname: '/app/home', params: { newAccount: '1' } })` immediately once `exchangeCodeForSession` resolves, which can happen fast enough that the transitional screen flashes. Add a minimum-visible-duration floor (a fixed constant, in the style of `sesh.tsx`'s existing `CELEBRATION_VISIBLE_MS`) before that specific `router.replace` call only, measured from when the effect starts — never adding extra delay on top of an already-slow exchange.
 - **Exit criteria:** `auth-callback-screen.test.tsx` passes with a case (fake timers) asserting the default-branch redirect does not fire before the minimum duration elapses even when `exchangeCodeForSession` resolves instantly, and does fire once it does. The error, `recovery`, and `email_change` branches' existing redirect-timing tests still pass unmodified. Confirmed in-browser that a fast signup-verification round trip still shows the callback screen briefly before landing on Home.
