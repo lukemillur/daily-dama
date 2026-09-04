@@ -2468,6 +2468,16 @@ Entries keep their content as it was at completion. Don't retroactively edit a d
 
 Completed entries live in [TASKS_DONE.md](TASKS_DONE.md) — not part of the top-to-bottom read above; see step 5 under _Completing a task_.
 
+### [T246] Remove the extra divider above Profile's account section
+
+- **Area:** Profile
+- **Priority:** Low
+- **Status:** Done
+- **Planning:** Implementer
+- **Description:** `src/app/app/profile/index.tsx` renders a `<Divider />` (line 87) immediately before `<AccountSection />` (line 88), on top of the section's own internal spacing — the user finds this an unnecessary extra horizontal bar. Remove that one `Divider`.
+- **Exit criteria:** Confirmed in-browser that Profile no longer shows a horizontal divider immediately above the account section, and that spacing above the section still looks intentional (not cramped against the "Send feedback" button above it).
+- **Notes:** From S118. Single-line removal; the other `Divider`s on the page (separating Kentei assessment, theme, streak, and feedback sections) are unaffected. Removed the standalone `<Divider />` at `src/app/app/profile/index.tsx:87`; `AccountSection` (`src/features/auth/components/account-section.tsx`) already renders its own internal `Divider` (28px/30px vertical margin) immediately before its "Account" title, so that spacing is untouched — the removed divider was purely a duplicate. Verified: `yarn eslint src/app/app/profile/index.tsx` clean; targeted Jest run (`src/app/app/profile/__tests__/index.test.tsx`, `src/features/auth/components/__tests__/account-section.test.tsx`) passes, including the existing `renders the Account block after the Feedback section, as the last content block` authenticated-state assertion; in-browser confirmed in guest mode (via a seeded `guest:daily-dama:user-profile` localStorage document) that the page ends cleanly after "Send feedback" with no stray divider. Full authenticated-session in-browser confirmation was not independently re-run (would require standing up the local Supabase stack for a one-line removal); relied instead on the pre-existing authenticated-state route test plus direct reading of `AccountSection`'s own spacing rules. `yarn tsc --noEmit` shows one pre-existing unrelated failure in `src/features/notes/components/all-notes-screen.tsx` (T245's known `development`-tip breakage), reproduced with zero changes from this task's diff.
+
 ### [T200] Add sign-up/sign-in entry points to the landing page
 
 - **Area:** Landing / navigation

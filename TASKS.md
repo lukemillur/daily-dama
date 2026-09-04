@@ -158,16 +158,6 @@ _T236–T246 come from stories S106–S118 in [BACKLOG_STORIES.md](BACKLOG_STORI
 - **Exit criteria:** Confirmed in-browser that no visible scrollbar renders in the trick list on the Tricks route, when defining a new trick goal, in multi-trick sesh entry, and in Onboarding's selection step, while the list still scrolls via mouse wheel/drag. Existing `trick-directory.test.tsx` and dependent tests still pass.
 - **Notes:** From S117. Single shared component (`trick-directory.tsx`) underlies every listed call site, so one change should cover all of them.
 
-### [T246] Remove the extra divider above Profile's account section
-
-- **Area:** Profile
-- **Priority:** Low
-- **Status:** In progress
-- **Planning:** Implementer
-- **Description:** `src/app/app/profile/index.tsx` renders a `<Divider />` (line 87) immediately before `<AccountSection />` (line 88), on top of the section's own internal spacing — the user finds this an unnecessary extra horizontal bar. Remove that one `Divider`.
-- **Exit criteria:** Confirmed in-browser that Profile no longer shows a horizontal divider immediately above the account section, and that spacing above the section still looks intentional (not cramped against the "Send feedback" button above it).
-- **Notes:** From S118. Single-line removal; the other `Divider`s on the page (separating Kentei assessment, theme, streak, and feedback sections) are unaffected.
-
 ---
 
 _Ship-readiness batch approved 2026-09-04, from `SHIP_READINESS_AUDIT.md`: A1 → T225, A4 → T228, A9 → T233 are autonomous work. A2/A3/A5/A6/A7/A8/A10/A11 → T226/T227/T229/T230/T231/T232/T234/T235 live in `TASKS_COLLABORATIVE.md`. The audit describes a historical snapshot, not this checkout or a selected release. These entries do not restore the removed T162 Phase 6 launch gate; older phase-gating prose above is historical and superseded by the revised audit scope._
