@@ -195,7 +195,7 @@ _T219–T224 come from stories S098–S104 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 - **Area:** Authentication
 - **Priority:** Medium
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Implementer
 - **Description:** `account-deleted-screen.tsx` currently has no way to leave it. Add subtitle text below the existing title telling the user they'll be returned to the landing page shortly, and automatically `router.replace('/')` after a brief delay (a few seconds).
 - **Exit criteria:** A new/updated test for `AccountDeletedScreen` asserts the subtitle text renders and, using fake timers, that `router.replace('/')` fires only after the delay elapses (not before). Confirmed in-browser that completing account deletion shows the confirmation screen with the subtitle, then automatically lands on the landing page with no user interaction required.
