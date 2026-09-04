@@ -152,7 +152,7 @@ _T236–T246 come from stories S106–S118 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 - **Area:** Landing page / Authentication
 - **Priority:** Medium
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** `landing-auth-cta.tsx` currently renders `null` whenever `authState.status !== 'guest'` (lines 41-43), a deliberate choice documented in its own comment ("renders nothing once a visitor is authenticated"). Reverse that: when authenticated, render a header bar showing "Daily Dama" and a logout action instead of the guest sign-up/sign-in buttons.
 - **Exit criteria:** A new/updated `landing-auth-cta.test.tsx` case asserts that an authenticated `authState` renders the "Daily Dama" header bar with a logout control (and not the sign-up/sign-in buttons), while a guest `authState` still renders the existing sign-up/sign-in bar unchanged. Confirmed in-browser that a signed-in user viewing the landing page sees the header bar and that its logout action signs them out.
