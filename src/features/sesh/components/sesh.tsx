@@ -1048,8 +1048,10 @@ export function CompletedSesh({
           ) : promptForNote ? (
             <SeshNotePrompt summary={summary} />
           ) : null}
-          <PrimaryButton onPress={onRepeat}>Repeat sesh</PrimaryButton>
-          <SecondaryButton variant="secondary" onPress={onReset}>Start another sesh</SecondaryButton>
+          <CompletionActions>
+            <PrimaryButton fill onPress={onRepeat}>Repeat sesh</PrimaryButton>
+            <SecondaryButton fill variant="secondary" onPress={onReset}>Start another sesh</SecondaryButton>
+          </CompletionActions>
         </ActiveContent>
       </ScrollArea>
       {showSignupInvite && !signupInviteIsFirstOccurrence ? <PostSeshSignupInvite /> : null}
@@ -1264,6 +1266,7 @@ const ScrollArea = styled(ScrollView)`flex: 1; width: 100%;`;
 const CenteredPanel = styled.View`flex: 1; width: 100%; max-width: 680px; align-self: center; align-items: center; justify-content: center; padding: 40px 24px 140px;`;
 const PickerContent = styled.View`width: 100%; max-width: 680px; align-self: center;`;
 const ActiveContent = styled.View`width: 100%; max-width: 680px; align-self: center; align-items: center;`;
+const CompletionActions = styled.View`align-items: stretch;`;
 const Eyebrow = styled(BaseEyebrow)`margin-bottom: 14px;`;
 const DisplayTitle = styled(BaseDisplayTitle)``;
 const BodyCopy = styled(BodyText)`max-width: 470px; margin-top: 18px;`;
