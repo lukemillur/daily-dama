@@ -1,9 +1,10 @@
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Platform, Pressable, TextInput, useWindowDimensions } from 'react-native';
+import { Platform, Pressable, useWindowDimensions } from 'react-native';
 import { styled } from 'styled-components/native';
 
 import { Button } from '@/components/ui/button';
+import { TextField } from '@/components/ui/text-field';
 import { BodyText, DisplayTitle, Eyebrow } from '@/components/ui/typography';
 import { AppColors, Radii } from '@/constants/theme';
 import { useCustomTricks } from '@/features/custom-tricks/state/custom-trick-provider';
@@ -106,22 +107,19 @@ export function MultiTrickSeshEntry() {
           {selectedCount} {selectedCount === 1 ? 'trick' : 'tricks'} selected.
         </Copy>
         <PerTrickDurationField>
-          <PerTrickDurationLabel>Time per trick, minutes (optional)</PerTrickDurationLabel>
-          <PerTrickDurationInput
+          <TextField
             accessibilityLabel="Time per trick in minutes"
+            error={hasValidPerTrickDuration ? undefined : 'Enter a whole number from 1 to 60, or leave it blank.'}
+            hint="Leave blank to move on only when you end each trick yourself."
             inputMode="numeric"
             keyboardType="number-pad"
+            label="Time per trick, minutes (optional)"
             maxLength={2}
             onChangeText={setPerTrickDurationMinutes}
             placeholder="—"
             selectTextOnFocus
             value={perTrickDurationMinutes}
           />
-          <PerTrickDurationHint $invalid={!hasValidPerTrickDuration}>
-            {hasValidPerTrickDuration
-              ? 'Leave blank to move on only when you end each trick yourself.'
-              : 'Enter a whole number from 1 to 60, or leave it blank.'}
-          </PerTrickDurationHint>
         </PerTrickDurationField>
         <AdvanceOnFirstLaceRow
           accessibilityLabel={`Advance after one lace, ${advanceOnFirstLace ? 'checked' : 'unchecked'}`}
@@ -199,9 +197,6 @@ const FinishBackdrop = styled.View<{ readonly $pinned: boolean }>`background-col
 const FinishArea = styled.View<{ readonly $pinned: boolean }>`align-items: center; margin-top: ${({ $pinned }) => $pinned ? 54 : 0}px; padding: 20px 22px 22px; background-color: ${AppColors.paper}; border-top-width: 1px; border-top-color: ${AppColors.borderMuted};`;
 const SelectionCount = styled.Text`color: ${({ theme }) => theme.text}; font-size: 14px; font-weight: 700; margin-bottom: 12px;`;
 const PerTrickDurationField = styled.View`align-self: stretch; margin-bottom: 12px;`;
-const PerTrickDurationLabel = styled.Text`color: ${({ theme }) => theme.text}; font-size: 12px; font-weight: 900; margin-bottom: 6px; text-transform: uppercase;`;
-const PerTrickDurationInput = styled(TextInput)`height: 54px; width: 110px; background-color: ${AppColors.paper}; border: 2px solid ${AppColors.ink}; color: ${AppColors.ink}; font-size: 24px; font-weight: 900; padding: 8px 12px; border-radius: ${Radii.control}px;`;
-const PerTrickDurationHint = styled.Text<{ readonly $invalid: boolean }>`color: ${({ $invalid, theme }) => ($invalid ? AppColors.red : theme.text)}; font-size: 12px; font-weight: 700; margin-top: 7px;`;
 const AdvanceOnFirstLaceRow = styled(Pressable)`flex-direction: row; align-items: center; gap: 12px; align-self: stretch; padding: 10px 2px; margin-bottom: 12px;`;
 const AdvanceOnFirstLaceIndicator = styled.View<{ readonly $checked: boolean }>`
   width: 22px;
