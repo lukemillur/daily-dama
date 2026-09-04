@@ -4,6 +4,16 @@ Completed entries move here from `TASKS.md`'s `Backlog`, in the same commit that
 
 Entries keep their content as it was at completion. Don't retroactively edit a description or exit criteria after the fact; if something about a completed task turns out to be wrong or misleading, note that in a new entry or in code, not by rewriting history here.
 
+### [T243] Show returning-user CTA copy to an authenticated visitor on the landing page
+
+- **Area:** Landing page / Authentication
+- **Priority:** Medium
+- **Status:** Done
+- **Planning:** Required
+- **Description:** `landing-cta.tsx`'s `LandingCta` picks `FIRST_TIME_COPY` vs `RETURNING_COPY` solely from `useCachedOnboardingStatus()`'s `hasCompletedOnboarding` flag (lines 32-35), with no reference to auth status — an authenticated user whose cached onboarding flag reads false still sees "Start your first sesh." Factor `useAuthState()` into the copy decision so an authenticated user sees the returning-user copy regardless of the onboarding flag.
+- **Exit criteria:** Met. A new `landing-cta.test.tsx` case asserts an authenticated `authState` renders `RETURNING_COPY` (`Welcome back` / `Jump back into practice.` / `Back to practice`, no `Start your first sesh.`) even when `hasCompletedOnboarding` is false, plus regression cases pinning the guest, `initializing`, and `passwordRecovery` rows to `FIRST_TIME_COPY`. Confirmed in-browser against a local Supabase stack (a confirmed test user signed in on `http://localhost:8090`, since port 8081 was occupied by another agent's server and sign-in does not need the fixed callback origin): a signed-in visitor with a guest cache reading `hasCompletedOnboarding: false` sees "Jump back into practice." / "Back to practice" plus the `Daily Dama` + `Log out` header bar on `/?from=app`, not "Start your first sesh." Regression-checked in the same session: logging out reverts to the first-time yellow panel, and a signed-out guest with an onboarded cache still shows the returning sage panel. No new console warnings beyond the two known-benign ones; one transient `401` on the initial post-sign-in `profiles` fetch (retried successfully) is pre-existing sync behavior unrelated to this change.
+- **Notes:** From S115. Root cause: `useCachedOnboardingStatus` only ever reads the guest-scoped profile key, so a signed-in user's onboarding flag was structurally invisible to it — not a routing bug in `LandingCta` itself. Fix per `.claude/plans/T243.md`: `isReturning = authState.status === 'authenticated' || hasCompletedOnboarding`, inline in the component (no extracted copy-selection helper — rejected as scope creep for a one-line predicate). `initializing` deliberately excluded to keep the Node prerender and first client render byte-identical (no hydration mismatch); `passwordRecovery` excluded to match T242's conservative handling of that status on this surface. Known, accepted trade-off (observe-and-report, not fixed here): a signed-in visitor sees a brief first-time-copy flash before Supabase's async `INITIAL_SESSION` resolves post-hydration, the same class of trade-off T242 accepted for its header bar; it read as an ordinary load-in during manual verification, not a jarring flash, so no follow-up ticket was opened.
+
 ### [T242] Show an authenticated header bar with logout on the landing page
 
 - **Area:** Landing page / Authentication
