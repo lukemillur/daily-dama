@@ -4,9 +4,14 @@ import {
   createLastSesh,
   INITIAL_USER_PROFILE,
   isValidThemeHexColor,
+  selectInitialSeshPlan,
   userProfileReducer,
 } from '@/features/profile/model/user-profile';
-import { createOpenEndedSeshPlan, OPEN_ENDED_SESH_PLAN } from '@/features/sesh/model/sesh';
+import {
+  createOpenEndedSeshPlan,
+  createTimedSeshPlan,
+  OPEN_ENDED_SESH_PLAN,
+} from '@/features/sesh/model/sesh';
 
 describe('user profile trick selection', () => {
   it('selects and deselects a custom trick by its stable identifier', () => {
@@ -332,6 +337,53 @@ describe('createLastSesh', () => {
         'targetLandingCount',
       ),
     ).toBe(false);
+  });
+});
+
+describe('selectInitialSeshPlan', () => {
+  it('restores an open-ended target from the last sesh', () => {
+    const lastSesh = createLastSesh('big-cup', createOpenEndedSeshPlan(5));
+    expect(selectInitialSeshPlan(lastSesh)).toEqual({
+      kind: 'openEnded',
+      target: { landingCount: 5 },
+    });
+  });
+
+  it('keeps a blank target blank, not zero', () => {
+    const lastSesh = createLastSesh('big-cup', OPEN_ENDED_SESH_PLAN);
+    const plan = selectInitialSeshPlan(lastSesh);
+    expect(plan).toEqual({ kind: 'openEnded' });
+    expect(plan && plan.kind === 'openEnded' ? plan.target : undefined).toBeUndefined();
+  });
+
+  it('restores a timed plan from the last sesh', () => {
+    const lastSesh = createLastSesh('big-cup', createTimedSeshPlan(7));
+    expect(selectInitialSeshPlan(lastSesh)).toEqual({ kind: 'timed', durationMs: 420_000 });
+  });
+
+  it('returns undefined when there is no last sesh', () => {
+    expect(selectInitialSeshPlan(undefined)).toBeUndefined();
+  });
+
+  it('prefers a valid challenge duration over the last sesh', () => {
+    const lastSesh = createLastSesh('big-cup', createOpenEndedSeshPlan(5));
+    expect(selectInitialSeshPlan(lastSesh, 300_000)).toEqual({ kind: 'timed', durationMs: 300_000 });
+  });
+
+  it('falls back to the last sesh when the challenge duration is out of range', () => {
+    const lastSesh = createLastSesh('big-cup', createOpenEndedSeshPlan(5));
+    expect(selectInitialSeshPlan(lastSesh, 30_000)).toEqual({
+      kind: 'openEnded',
+      target: { landingCount: 5 },
+    });
+  });
+
+  it('falls back to the last sesh when the challenge duration is not a number', () => {
+    const lastSesh = createLastSesh('big-cup', createOpenEndedSeshPlan(5));
+    expect(selectInitialSeshPlan(lastSesh, Number('abc'))).toEqual({
+      kind: 'openEnded',
+      target: { landingCount: 5 },
+    });
   });
 });
 
