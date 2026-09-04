@@ -128,6 +128,8 @@ opening the PR. CI's full app checks must then pass before squash-merging into
 `development`; this replaces mandatory local full-suite repetition for narrow
 changes. CI is an automated gate, not a human review gate.
 
+For tickets in `TASKS_COLLABORATIVE.md`, the owner-approved preparation-PR exception allows a PR after all applicable local checks pass while explicitly listed hosted criteria remain pending. Keep the ticket open until hosted verification passes. Required CI still applies to merging, and existing owner authorization is still required for collaborative Git publication and production deployment; this exception changes evidence timing, not action permissions.
+
 The workflow tooling under `.claude/scripts/` has its own dependency-free test suite, separate from the app's jest suite: `yarn test:workflow`.
 
 For browser verification, run the Expo development server rather than serving the static export with a generic file server. Expo Router's extensionless routes such as `/tricks` need appropriate fallback/routing behavior. If the usual port is occupied, select another explicit port instead of assuming the page at that port belongs to this repository.
@@ -146,6 +148,8 @@ Web is the only active implementation and verification target. iOS and Android a
 ## Active work
 
 Core-functionality work in progress is tracked in [TASKS.md](TASKS.md) — check it before starting session work in this area. It's the checkpoint mechanism across context compaction and new sessions: read it top to bottom, verify a task's exit criteria before touching code, and update it in the same commit that closes a task. Trick visualization is deliberately excluded from it; see below.
+
+Tasks requiring owner decisions or external verification live in [TASKS_COLLABORATIVE.md](TASKS_COLLABORATIVE.md), outside automatic claiming. Use the repository's [guided-ticket skill](.agents/skills/guided-ticket/SKILL.md) for one such ticket at a time, retaining its step-by-step execution guide at `outputs/guided-tickets/<ID>.md`. These tickets follow the existing Git authority rules; the new queue does not extend the automatic push/merge exception below. Allocate task IDs across this queue, `TASKS.md`, `TASKS_BACKLOG.md`, and `TASKS_DONE.md`.
 
 ## Feature-specific handoffs
 

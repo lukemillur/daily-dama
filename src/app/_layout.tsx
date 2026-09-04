@@ -4,6 +4,7 @@ import { Analytics } from '@vercel/analytics/react';
 import {
   DarkTheme,
   DefaultTheme,
+  type Href,
   Slot,
   ThemeProvider,
   useGlobalSearchParams,
@@ -20,6 +21,7 @@ import { sanitizeAnalyticsEvent } from '@/features/auth/observability/auth-obser
 import { AuthProvider } from '@/features/auth/state/auth-provider';
 import { DefaultAppThemeProvider } from '@/features/profile/components/app-theme-provider';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { initSentry } from '@/shared/observability/sentry-client';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -38,6 +40,11 @@ function firstStringOrUndefined(value: string | string[] | undefined): string | 
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
+
+  useEffect(() => {
+    initSentry();
+  }, []);
+
   const params = useGlobalSearchParams<GlobalSearchParams>();
   const router = useRouter();
   const pathname = usePathname();
@@ -54,7 +61,10 @@ export default function TabLayout() {
     if (hasStrippedNewAccountParamRef.current) return;
     if (firstStringOrUndefined(params.newAccount) !== '1') return;
     hasStrippedNewAccountParamRef.current = true;
-    router.replace(pathname);
+    // usePathname() always returns the currently-mounted route's own path, so it's guaranteed to
+    // be a valid Href even though its static type is a plain string -- typed routes can't express
+    // "whatever route is currently active" as a literal union member.
+    router.replace(pathname as Href);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- one-shot strip, guarded by the ref.
   }, [params]);
 

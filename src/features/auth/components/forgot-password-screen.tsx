@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Pressable, ScrollView, TextInput } from 'react-native';
+import { Pressable, ScrollView } from 'react-native';
 import { styled } from 'styled-components/native';
 
 import { Button } from '@/components/ui/button';
 import { Screen } from '@/components/ui/screen';
+import { TextField } from '@/components/ui/text-field';
 import { BodyText, DisplayTitle, Eyebrow } from '@/components/ui/typography';
 import { AppColors } from '@/constants/theme';
 import { categorizeAuthError, type AuthErrorCategory } from '@/features/auth/model/auth-errors';
@@ -150,20 +151,18 @@ export function ForgotPasswordScreen() {
           </Introduction>
           <Guidance>{SAME_BROWSER_GUIDANCE}</Guidance>
 
-          <Field>
-            <FieldLabel>Email</FieldLabel>
-            <FieldInput
-              accessibilityLabel="Email"
-              autoCapitalize="none"
-              autoCorrect={false}
-              keyboardType="email-address"
-              textContentType="username"
-              onChangeText={setEmail}
-              placeholder="Email"
-              value={email}
-            />
-            {errors.email ? <ErrorText>{errors.email}</ErrorText> : null}
-          </Field>
+          <TextField
+            accessibilityLabel="Email"
+            autoCapitalize="none"
+            autoCorrect={false}
+            error={errors.email}
+            keyboardType="email-address"
+            label="Email"
+            onChangeText={setEmail}
+            placeholder="Email"
+            textContentType="username"
+            value={email}
+          />
 
           {submitCategory ? <ErrorText>{SUBMIT_ERROR_COPY[submitCategory]}</ErrorText> : null}
 
@@ -219,28 +218,6 @@ const Introduction = styled(BodyText)`
 const Guidance = styled(BodyText)`
   max-width: 480px;
   margin-top: 8px;
-`;
-const Field = styled.View`
-  margin-top: 28px;
-`;
-const FieldLabel = styled.Text`
-  color: ${({ theme }) => theme.text};
-  font-size: 13px;
-  font-weight: 900;
-  letter-spacing: 1px;
-  text-transform: uppercase;
-`;
-const FieldInput = styled(TextInput).attrs(({ theme }) => ({
-  placeholderTextColor: theme.textMuted,
-}))`
-  min-height: 56px;
-  background-color: ${({ theme }) => theme.background};
-  border: 2px solid ${({ theme }) => theme.text};
-  color: ${({ theme }) => theme.text};
-  font-size: 18px;
-  font-weight: 800;
-  margin-top: 8px;
-  padding: 12px 14px;
 `;
 const ErrorText = styled.Text`
   color: ${AppColors.red};

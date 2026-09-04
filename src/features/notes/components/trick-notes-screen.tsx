@@ -1,8 +1,9 @@
 import { useMemo, useState } from 'react';
-import { Pressable, ScrollView, TextInput } from 'react-native';
+import { Pressable, ScrollView } from 'react-native';
 import { styled } from 'styled-components/native';
 
 import { Button } from '@/components/ui/button';
+import { TextField } from '@/components/ui/text-field';
 import { BodyText, DisplayTitle, Eyebrow } from '@/components/ui/typography';
 import { AppColors } from '@/constants/theme';
 import { selectNotesForTrick, type Note } from '@/features/notes/model/note';
@@ -86,6 +87,10 @@ function NoteRow({ note, onEdit }: { readonly note: Note; readonly onEdit: () =>
   if (confirmingDelete) {
     return (
       <NoteCard>
+        <NoteHeaderRow>
+          <NoteMeta>{formatPracticeDate(note.createdAt)}</NoteMeta>
+          <NoteTrickName numberOfLines={2}>{note.trickName}</NoteTrickName>
+        </NoteHeaderRow>
         <NoteBody>Delete this note? This cannot be undone.</NoteBody>
         <NoteActions>
           <NoteAction
@@ -110,7 +115,10 @@ function NoteRow({ note, onEdit }: { readonly note: Note; readonly onEdit: () =>
 
   return (
     <NoteCard>
-      <NoteMeta>{formatPracticeDate(note.createdAt)}</NoteMeta>
+      <NoteHeaderRow>
+        <NoteMeta>{formatPracticeDate(note.createdAt)}</NoteMeta>
+        <NoteTrickName numberOfLines={2}>{note.trickName}</NoteTrickName>
+      </NoteHeaderRow>
       <NoteBody>{note.body}</NoteBody>
       <NoteActions>
         <NoteAction accessibilityLabel="Edit note" accessibilityRole="button" onPress={onEdit}>
@@ -160,17 +168,15 @@ function NoteForm({
       <Content>
         <Eyebrow>{title}</Eyebrow>
         <PageTitle>Write it down.</PageTitle>
-        <Field>
-          <FieldLabel>Note</FieldLabel>
-          <FieldInput
-            accessibilityLabel="Note body"
-            multiline
-            onChangeText={setBody}
-            placeholder="What did you notice?"
-            placeholderTextColor={AppColors.textSubtle}
-            value={body}
-          />
-        </Field>
+        <TextField
+          accessibilityLabel="Note body"
+          label="Note"
+          multiline
+          onChangeText={setBody}
+          placeholder="What did you notice?"
+          style={NOTE_INPUT_STYLE}
+          value={body}
+        />
         <FormActions>
           <Button fill disabled={trimmedIsEmpty} onPress={save}>
             Save note
@@ -191,13 +197,18 @@ const Introduction = styled(BodyText)`max-width: 580px; margin-top: 16px;`;
 const AddButton = styled(Button)`align-self: flex-start; margin-top: 26px;`;
 const NoteList = styled.View`gap: 12px; margin-top: 28px;`;
 const NoteCard = styled.View`background-color: ${AppColors.paper}; border: 2px solid ${AppColors.ink}; padding: 16px;`;
+const NoteHeaderRow = styled.View`flex-direction: row; align-items: flex-start; justify-content: space-between; gap: 14px;`;
 const NoteMeta = styled.Text`color: ${AppColors.red}; font-size: 11px; font-weight: 900; letter-spacing: 0.8px; text-transform: uppercase;`;
+const NoteTrickName = styled(DisplayTitle)`
+  flex-shrink: 1;
+  font-size: 28px;
+  line-height: 30px;
+  text-align: right;
+`;
 const NoteBody = styled.Text`color: ${AppColors.ink}; font-size: 16px; font-weight: 650; line-height: 23px; margin-top: 8px;`;
 const NoteActions = styled.View`flex-direction: row; gap: 14px; margin-top: 12px;`;
 const NoteAction = styled(Pressable)`min-height: 36px; justify-content: center;`;
 const NoteActionText = styled.Text`color: ${AppColors.ink}; font-size: 12px; font-weight: 900; text-transform: uppercase;`;
 const DeleteActionText = styled(NoteActionText)`color: ${AppColors.red};`;
-const Field = styled.View`margin-top: 28px;`;
-const FieldLabel = styled.Text`color: ${AppColors.ink}; font-size: 13px; font-weight: 900; letter-spacing: 1px; text-transform: uppercase;`;
-const FieldInput = styled(TextInput)`min-height: 160px; background-color: ${AppColors.paper}; border: 2px solid ${AppColors.ink}; color: ${AppColors.ink}; font-size: 16px; font-weight: 650; margin-top: 8px; padding: 12px 14px; text-align-vertical: top;`;
 const FormActions = styled.View`gap: 10px; margin-top: 36px;`;
+const NOTE_INPUT_STYLE = { minHeight: 160, textAlignVertical: 'top' as const };

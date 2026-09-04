@@ -403,6 +403,42 @@ Open `http://127.0.0.1:54324`, find the recovery email, and confirm:
   `http://localhost:8081/auth/callback`, matching the same callback
   convention as confirmation.
 
+### Troubleshooting: Mailpit isn't proof of hosted email delivery
+
+**Symptom:** a real signup or password reset against the hosted project
+appears to receive raw/unstyled default-Supabase email content, even though
+the hosted project's Auth config was already confirmed correct.
+
+**Cause:** Mailpit only receives mail from the **local** CLI stack (see
+above); it never touches the hosted project, Resend, or DNS. Checking
+Mailpit and concluding the hosted template is broken conflates the two
+environments the same way T188/T197 did for the `delete-account` Edge
+Function's local-vs-hosted 503 gap -- this bit the confirmation-email
+template twice (T192/T195, then again as T212), both times as a
+false-negative traced back to Mailpit rather than an actual hosted
+regression. See `supabase/RESEND_DNS_AUTH.md`'s 2026-09-02 T212 entry for
+the full record of the second occurrence, including a `GET
+/v1/projects/{ref}/config/auth` showing the hosted template had never
+actually reverted.
+
+**Fix:** to verify a hosted-project email fix, check either the real
+recipient inbox or, more directly, Resend's own delivery log for that
+message (Resend dashboard -> Emails -> the specific send) -- it shows the
+actual `Sent`/`Delivered` HTML body that went out, not a template preview.
+Only trust Mailpit for local-stack verification; never as evidence for or
+against a hosted-project email issue.
+
+**Also resist `supabase config push` as a "durable" fix here:** it looks
+like the natural way to make a hosted email-template fix stick (pushing
+`config.toml` declaratively instead of a one-off Management API `PATCH`),
+but `config.toml`'s `[auth.email.smtp]` block is deliberately left
+commented out -- Resend's custom SMTP was wired directly on the hosted
+project via its own Supabase Integration wizard (see
+`supabase/RESEND_DNS_AUTH.md`) and was never captured in `config.toml`. A
+full `config push` would push SMTP as disabled and silently break Resend
+delivery project-wide, a strictly worse outcome than the template issue it
+would be attempting to fix.
+
 ## Automated Phase 1 Auth acceptance suite (T153.13)
 
 `yarn test:e2e:auth` is the one documented command for the black-box Playwright

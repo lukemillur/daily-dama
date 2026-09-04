@@ -1,7 +1,7 @@
 ---
 name: newTicket
-description: Claims a Daily Dama backlog task — a specific one if named, otherwise the next available one — and drives it end-to-end against `development`: deterministic claim script, then the ticket-planner and ticket-implementer agents (plan, implement, merge). No plan-approval gate. When no task is named, keeps going: one task after another, each in fresh subagents so context never accumulates, by default in TASKS.md file order — pass `ranked` (`/newTicket ranked`) to instead pick each cycle's task by unblock value (how many other pending tasks depend on it, then declared Priority). A task that gets blocked (claimed, or blocked at planning/implementation/merge) is recorded and skipped, not fatal — the loop moves on to any other independent task, while a task that actually depends on the blocked one stays correctly skipped too. The loop stops only when the backlog is exhausted, the claim mechanism itself fails, or the session's usage limit is reached. Also resumes an interrupted task with `/newTicket resume T0NN`.
-allowed-tools: Agent(ticket-planner), Agent(ticket-implementer), Bash(node .claude/scripts/ticket-claim.mjs:*), Bash(node .claude/scripts/worktree-cleanup.mjs:*)
+description: Claims a Daily Dama backlog task — a specific one if named, otherwise the next available one — and drives it end-to-end against `development`: deterministic claim script, then the ticket-planner and ticket-implementer agents (plan, implement, merge). No plan-approval gate. When no task is named, keeps going: one task after another, each in fresh subagents so context never accumulates, by default in TASKS.md file order — pass `ranked` (`/newTicket ranked`) to instead pick each cycle's task by unblock value (how many other pending tasks depend on it, then declared Priority). Pass `burn` (`/newTicket burn`) to run the planning phase on `ticket-planner-burn` (opus, high effort) instead of the default `ticket-planner` (sonnet, medium effort) — a token-surplus mode for higher-rigor plans; the implementer is unaffected. `burn` composes with a task ID, `resume`, and `ranked`. A task that gets blocked (claimed, or blocked at planning/implementation/merge) is recorded and skipped, not fatal — the loop moves on to any other independent task, while a task that actually depends on the blocked one stays correctly skipped too. The loop stops only when the backlog is exhausted, the claim mechanism itself fails, or the session's usage limit is reached. Also resumes an interrupted task with `/newTicket resume T0NN`.
+allowed-tools: Agent(ticket-planner), Agent(ticket-planner-burn), Agent(ticket-implementer), Bash(node .claude/scripts/ticket-claim.mjs:*), Bash(node .claude/scripts/worktree-cleanup.mjs:*)
 disallowed-tools: Artifact, AskUserQuestion, BashOutput, Edit, EnterWorktree, ExitWorktree, Glob, Grep, KillShell, Monitor, NotebookEdit, Read, SendMessage, Skill, SlashCommand, TaskCreate, TaskGet, TaskList, TaskStop, TaskUpdate, TodoWrite, ToolSearch, WebFetch, WebSearch, Write, mcp__Claude_Browser__*
 ---
 
@@ -18,7 +18,7 @@ You are the orchestrator. You never edit files, never plan, never implement, and
 
 Claude Code skills do not support a true positive tool allowlist: `allowed-tools`
 pre-approves calls but does not hide every unlisted tool. This skill therefore
-scopes `Agent` to the two ticket agents, pre-approves only the deterministic
+scopes `Agent` to the ticket agents, pre-approves only the deterministic
 claim/cleanup scripts, and removes unrelated built-in tools with
 `disallowed-tools`. Do not use any other Bash command from this orchestrator.
 
@@ -36,8 +36,11 @@ Read what the user actually said; there's no argument syntax to parse.
 | `/newTicket ranked` | continuous mode: cycles back to back, highest-unblock-value order |
 | `/newTicket T035`, "work on the laced count task" | one cycle for that task |
 | `/newTicket resume T034`, `/newTicket T034 --resume` | one cycle resuming that task's existing claim branch and reusing any canonical open/merged PR |
+| `/newTicket burn`, `/newTicket burn ranked`, `/newTicket burn T035`, `/newTicket burn resume T034` | any of the above, but every planning call this run uses `ticket-planner-burn` instead of `ticket-planner` |
 
 `ranked` only changes *which* actionable task continuous mode reaches first each cycle — every other rule on this page (skip/stop conditions, one task per cycle, fresh subagents) is identical. It cannot combine with a task ID or `resume`; both of those already pick one task directly, so `ticket-claim.mjs` rejects the combination as a usage error rather than guessing which one wins.
+
+`burn` only changes *which agent* runs the planning phase — it never touches `ticket-claim.mjs` (selection/claiming is unaffected) and never touches the implementer. Unlike `ranked`, it composes freely with a task ID and `resume`, since it's orthogonal to task selection. Detect it the same way as `ranked`: only when the user's own words literally contain `burn` (e.g. `/newTicket burn`, "run newTicket in burn mode"). Do not infer it from context or carry it over from an earlier invocation in the conversation — each `/newTicket` call is judged on its own wording.
 
 **Default to file order.** Pass `ranked` to `ticket-claim.mjs` only when the user's own words literally contain `ranked` (e.g. `/newTicket ranked`, "run newTicket ranked"). Do not infer ranked mode from context, from a prior conversation, from this being a "good default," or from any other signal — an invocation with no such word, including a bare `/newTicket`, always means file order.
 
@@ -79,11 +82,11 @@ Decide from the claim JSON:
 | :-- | :-- |
 | `planExists: true` | Skip planning. Post `T0NN: plan already exists (resuming)`. Go to step 3 with `planFile`. |
 | `planning.policy == "implementer"` | Skip planning. Post `T0NN: planning inline (<planning.reason>)`. Go to step 3 and pass `PLANNING: implementer` instead of a plan path. |
-| `planning.policy == "required"` | Run `ticket-planner`. |
+| `planning.policy == "required"` | Run `ticket-planner` (or `ticket-planner-burn` in `burn` mode). |
 
 Never invent a third route, and never skip a `required` planner to save time — the policy already accounts for cost. `planning.source` tells you why: `field` (the task declared it), `default` (no `**Planning:**` field — safe default is the separate planner), `escalated` (the task said `Implementer` but touches persistence, schema, state machines, concurrency, architecture boundaries or native APIs), `existing-plan`.
 
-Post `T0NN: planning…`, then invoke `ticket-planner` (`subagent_type: "ticket-planner"`, `isolation: "worktree"`, `run_in_background: false`) with the full task entry and branch name.
+Post `T0NN: planning…` (append `(burn)` when `burn` mode is active), then invoke the planner with `isolation: "worktree"`, `run_in_background: false`, and the full task entry and branch name — `subagent_type: "ticket-planner"` normally, or `subagent_type: "ticket-planner-burn"` when `burn` mode is active for this run. Everything else about step 2 is identical between the two; only the agent name changes.
 
 - `STATUS: blocked` → post `T0NN: blocked at planning — <reason>`; cycle ends `blocked`. The branch stays claimed for a future session. Do not implement against a plan that doesn't exist. A planner-side environment failure (including GitHub authentication, network, or push failure after the plan was committed) is a recoverable stage block, not a claim-mechanism failure: preserve the branch/plan, clean only the exact staged worktree, and let continuous mode continue to its next independent claim. Resume the ticket later once the environment is repaired.
 - Usage limit (see below) → cycle ends `usage-limit`.
@@ -161,6 +164,8 @@ Nothing is wrong with the task: the branch stays claimed and pushed, and a commi
 ## Continuous mode
 
 If the user said `ranked`, pass it through to every claim call this run (step 1's command becomes `node .claude/scripts/ticket-claim.mjs ranked`). Nothing else below changes: `ticket-claim.mjs` re-parses `TASKS.md`/`TASKS_DONE.md` and recomputes the ranking fresh on every call, so a merge earlier in the run that unblocks a new ticket is already reflected in the very next cycle's pick — there is no separate re-ranking step for you to remember.
+
+If the user said `burn`, hold that for the whole run too: every cycle's step 2 uses `ticket-planner-burn` in place of `ticket-planner`, with no other change to this section's logic. `burn` never reaches `ticket-claim.mjs` — it has nothing to do with which task gets picked, only which agent plans it.
 
 1. Run a cycle with no task ID.
 2. Append its outcome (task ID, PR URL, or blocker/limit detail) to a running tally in your reply text — not in any file.
