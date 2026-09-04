@@ -191,16 +191,6 @@ _T219–T224 come from stories S098–S104 in [BACKLOG_STORIES.md](BACKLOG_STORI
 - **Exit criteria:** Reproduce the failure against the same environment/build the user tested (not just the local Supabase CLI stack T217.2 already verified against) — confirm whether `submitFeedback` resolves `failed` (capture the real Postgrest/network error if so) or `succeeded` with the UI not updating. Fix whichever is broken. Confirm afterward, on that same environment, that submitting a Message-only feedback form shows the success state and that a real row is visible via Supabase Studio or a direct DB read.
 - **Notes:** From S100. Bug fix on already-`Done` T217.2, not new scope. `Required` for the same class of reason as T188/T195/T199/T206/T212: the defect wasn't visible from static tracing of the shipped code, so it needs runtime diagnosis before a fix can be written.
 
-### [T222] Auto-redirect from the account-deleted screen with an explanation
-
-- **Area:** Authentication
-- **Priority:** Medium
-- **Status:** Not started
-- **Planning:** Implementer
-- **Description:** `account-deleted-screen.tsx` currently has no way to leave it. Add subtitle text below the existing title telling the user they'll be returned to the landing page shortly, and automatically `router.replace('/')` after a brief delay (a few seconds).
-- **Exit criteria:** A new/updated test for `AccountDeletedScreen` asserts the subtitle text renders and, using fake timers, that `router.replace('/')` fires only after the delay elapses (not before). Confirmed in-browser that completing account deletion shows the confirmation screen with the subtitle, then automatically lands on the landing page with no user interaction required.
-- **Notes:** From S102. Local, single-file change; no persistence or routing-guard changes needed since `/` already handles both guest and signed-out visitors.
-
 ### [T223] Restyle text inputs app-wide with a shared component
 
 - **Area:** Shared UI
