@@ -5,26 +5,10 @@ import { styled } from "styled-components/native";
 import { Button } from "@/components/ui/button";
 import { BodyText, DisplayTitle } from "@/components/ui/typography";
 import { AppColors } from "@/constants/theme";
-import type { AuthErrorCategory } from "@/features/auth/model/auth-errors";
+import { LOG_OUT_ERROR_COPY } from "@/features/auth/model/log-out-error-copy";
 import { useAuthState } from "@/features/auth/state/auth-provider";
 import { useLogoutGuard } from "@/features/auth/state/use-logout-guard";
 import { LogoutPrompt } from "@/features/auth/components/logout-prompt";
-
-// Only offline and unknown are realistically reachable here per the signOut({ scope: local })
-// SDK trace in T154.2s plans (an already-expired/invalid session signs out silently, never
-// surfacing as an error) -- the rest are filled with the same generic fallback for type
-// completeness, mirroring SUBMIT_ERROR_COPYs shape in sign-in-screen.tsx.
-const LOG_OUT_ERROR_COPY: Record<AuthErrorCategory, string> = {
-  invalidCredentials: "Something went wrong. Please try again.",
-  unverifiedEmail: "Something went wrong. Please try again.",
-  accountAlreadyExists: "Something went wrong. Please try again.",
-  weakPassword: "Something went wrong. Please try again.",
-  expiredOrInvalidLink: "Something went wrong. Please try again.",
-  missingVerifier: "Something went wrong. Please try again.",
-  rateLimited: "Something went wrong. Please try again.",
-  offline: "You are offline. Check your connection and try again.",
-  unknown: "Something went wrong. Please try again.",
-};
 
 export function AccountSection() {
   const authState = useAuthState();
