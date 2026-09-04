@@ -78,6 +78,10 @@ describe('AuthCallbackScreen', () => {
     mockParams = {};
   });
 
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
   describe('web hash-fragment error (Supabase can redirect with error/error_code in the hash)', () => {
     const originalPlatformOS = ReactNative.Platform.OS;
 
@@ -108,7 +112,8 @@ describe('AuthCallbackScreen', () => {
     });
   });
 
-  it('exchanges a valid confirmation code exactly once and redirects to /app/home', async () => {
+  it('exchanges a valid confirmation code exactly once and redirects to /app/home after the minimum-visible-duration floor', async () => {
+    jest.useFakeTimers();
     mockExchangeCodeForSession.mockResolvedValue({ redirectType: null, error: null });
     mockParams = { code: 'valid-confirmation-code' };
 
@@ -116,9 +121,39 @@ describe('AuthCallbackScreen', () => {
 
     expect(mockExchangeCodeForSession).toHaveBeenCalledTimes(1);
     expect(mockExchangeCodeForSession).toHaveBeenCalledWith('valid-confirmation-code');
+    // Even though exchangeCodeForSession resolved instantly, the redirect is held behind the
+    // CALLBACK_MIN_VISIBLE_MS floor -- see the "does not redirect before the minimum..." test
+    // below for the precise boundary assertion.
+    expect(mockReplace).not.toHaveBeenCalled();
+
+    await act(async () => {
+      jest.advanceTimersByTime(600);
+    });
+
     expect(mockReplace).toHaveBeenCalledTimes(1);
     expect(mockReplace).toHaveBeenCalledWith({ pathname: '/app/home', params: { newAccount: '1' } });
     expect(mockTrackAuthEvent).toHaveBeenCalledWith('auth_callback_success');
+  });
+
+  it('does not redirect to /app/home before the minimum-visible-duration floor elapses even when the exchange resolves instantly, and does redirect once it does', async () => {
+    jest.useFakeTimers();
+    mockExchangeCodeForSession.mockResolvedValue({ redirectType: null, error: null });
+    mockParams = { code: 'instant-confirmation-code' };
+
+    await mount();
+
+    expect(mockReplace).not.toHaveBeenCalled();
+
+    await act(async () => {
+      jest.advanceTimersByTime(599);
+    });
+    expect(mockReplace).not.toHaveBeenCalled();
+
+    await act(async () => {
+      jest.advanceTimersByTime(1);
+    });
+    expect(mockReplace).toHaveBeenCalledTimes(1);
+    expect(mockReplace).toHaveBeenCalledWith({ pathname: '/app/home', params: { newAccount: '1' } });
   });
 
   it('exchanges a valid recovery code exactly once and redirects to /auth/reset-password', async () => {
@@ -144,10 +179,14 @@ describe('AuthCallbackScreen', () => {
   });
 
   it('ignores an unrecognized flow value and falls back to /app/home (fail closed, not open)', async () => {
+    jest.useFakeTimers();
     mockExchangeCodeForSession.mockResolvedValue({ redirectType: null, error: null });
     mockParams = { code: 'valid-code', flow: 'not-a-real-flow' } as never;
 
     await mount();
+    await act(async () => {
+      jest.advanceTimersByTime(600);
+    });
 
     expect(mockReplace).toHaveBeenCalledTimes(1);
     expect(mockReplace).toHaveBeenCalledWith({ pathname: '/app/home', params: { newAccount: '1' } });
@@ -165,10 +204,14 @@ describe('AuthCallbackScreen', () => {
   });
 
   it('never accepts or forwards an arbitrary next/destination param', async () => {
+    jest.useFakeTimers();
     mockExchangeCodeForSession.mockResolvedValue({ redirectType: null, error: null });
     mockParams = { code: 'valid-code', next: '/some/other/route' } as never;
 
     await mount();
+    await act(async () => {
+      jest.advanceTimersByTime(600);
+    });
 
     expect(mockReplace).toHaveBeenCalledTimes(1);
     expect(mockReplace).toHaveBeenCalledWith({ pathname: '/app/home', params: { newAccount: '1' } });
@@ -265,10 +308,14 @@ describe('AuthCallbackScreen', () => {
   });
 
   it('exchanges exactly once when the effect re-fires for the same code after a params-identity-changing re-render', async () => {
+    jest.useFakeTimers();
     mockExchangeCodeForSession.mockResolvedValue({ redirectType: null, error: null });
     mockParams = { code: 'same-code' };
 
     await mountWithForcedRerender();
+    await act(async () => {
+      jest.advanceTimersByTime(600);
+    });
     expect(mockExchangeCodeForSession).toHaveBeenCalledTimes(1);
     expect(mockReplace).toHaveBeenCalledTimes(1);
 

@@ -23,6 +23,14 @@ const ERROR_COPY: Record<AuthErrorCategory, string> = {
   unknown: 'Something went wrong. Please try again.',
 };
 
+// Floor on how long the transitional "Finishing sign-in..." screen stays visible before the
+// default-branch (just-verified new account) redirect to Home, measured from when the effect
+// starts processing the code -- not added on top of an already-slow exchange. A fast
+// exchangeCodeForSession resolution can otherwise flash this screen for a single frame. Modeled
+// on sesh.tsx's CELEBRATION_VISIBLE_MS. Scoped to this one redirect only; see the description in
+// TASKS.md/TASKS_DONE.md for T224.
+const CALLBACK_MIN_VISIBLE_MS = 600;
+
 type CallbackParams = {
   code?: string | string[];
   error?: string | string[];
@@ -68,10 +76,16 @@ export function AuthCallbackScreen() {
   // first, even without a real unmount) can't poison an in-flight exchange for the *same*
   // instance. Only a genuine unmount should stop a late resolution from navigating/setting state.
   const isMountedRef = useRef(true);
+  // Holds the pending Home-redirect timer (the CALLBACK_MIN_VISIBLE_MS floor below) so it can be
+  // cleared on unmount, alongside the isMountedRef guard the timer callback also checks.
+  const homeRedirectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     return () => {
       isMountedRef.current = false;
+      if (homeRedirectTimeoutRef.current !== null) {
+        clearTimeout(homeRedirectTimeoutRef.current);
+      }
     };
   }, []);
 
@@ -111,6 +125,7 @@ export function AuthCallbackScreen() {
       return;
     }
     processedCodeRef.current = code;
+    const effectStartedAt = Date.now();
 
     void (async () => {
       const { redirectType, error } = await exchangeCodeForSession(code);
@@ -138,7 +153,15 @@ export function AuthCallbackScreen() {
         // Default branch: only fires for a just-verified new account (signup email
         // confirmation), never for sign-in-screen.tsx's routine sign-in redirect. Carries a
         // one-time signal so home.tsx can acknowledge the new account, then discards it.
-        router.replace({ pathname: '/app/home', params: { newAccount: '1' } });
+        // Held visible for at least CALLBACK_MIN_VISIBLE_MS (measured from effect start, never
+        // adding delay on top of an already-slow exchange) so a fast round trip doesn't flash
+        // this screen for a single frame.
+        const remainingDelay = Math.max(0, CALLBACK_MIN_VISIBLE_MS - (Date.now() - effectStartedAt));
+        homeRedirectTimeoutRef.current = setTimeout(() => {
+          homeRedirectTimeoutRef.current = null;
+          if (!isMountedRef.current) return;
+          router.replace({ pathname: '/app/home', params: { newAccount: '1' } });
+        }, remainingDelay);
       }
     })();
     // Deliberately depend on the whole params object (not just its extracted fields): expo-router

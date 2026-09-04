@@ -191,12 +191,3 @@ _T219–T224 come from stories S098–S104 in [BACKLOG_STORIES.md](BACKLOG_STORI
 - **Exit criteria:** Reproduce the failure against the same environment/build the user tested (not just the local Supabase CLI stack T217.2 already verified against) — confirm whether `submitFeedback` resolves `failed` (capture the real Postgrest/network error if so) or `succeeded` with the UI not updating. Fix whichever is broken. Confirm afterward, on that same environment, that submitting a Message-only feedback form shows the success state and that a real row is visible via Supabase Studio or a direct DB read.
 - **Notes:** From S100. Bug fix on already-`Done` T217.2, not new scope. `Required` for the same class of reason as T188/T195/T199/T206/T212: the defect wasn't visible from static tracing of the shipped code, so it needs runtime diagnosis before a fix can be written.
 
-### [T224] Hold the post-verification callback screen visible briefly before entering Home
-
-- **Area:** Authentication
-- **Priority:** Low
-- **Status:** In progress
-- **Planning:** Implementer
-- **Description:** `auth-callback-screen.tsx`'s default-branch success path (signup email verification) calls `router.replace({ pathname: '/app/home', params: { newAccount: '1' } })` immediately once `exchangeCodeForSession` resolves, which can happen fast enough that the transitional screen flashes. Add a minimum-visible-duration floor (a fixed constant, in the style of `sesh.tsx`'s existing `CELEBRATION_VISIBLE_MS`) before that specific `router.replace` call only, measured from when the effect starts — never adding extra delay on top of an already-slow exchange.
-- **Exit criteria:** `auth-callback-screen.test.tsx` passes with a case (fake timers) asserting the default-branch redirect does not fire before the minimum duration elapses even when `exchangeCodeForSession` resolves instantly, and does fire once it does. The error, `recovery`, and `email_change` branches' existing redirect-timing tests still pass unmodified. Confirmed in-browser that a fast signup-verification round trip still shows the callback screen briefly before landing on Home.
-- **Notes:** From S104. Deliberately scoped to the default branch only — the routine sign-in redirect (`sign-in-screen.tsx`) and the callback screen's other branches (error, recovery, email-change) are unaffected and shouldn't gain an artificial delay without reason.
