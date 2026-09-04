@@ -3197,6 +3197,16 @@ Completed entries live in [TASKS_DONE.md](TASKS_DONE.md) — not part of the top
 - **Exit criteria:** Their existing tests still pass. Confirmed in-browser that trick note inputs match the new shared style. Met: `yarn test --runInBand --runTestsByPath src/features/notes/components/trick-notes-screen.test.tsx src/features/notes/components/all-notes-screen.test.tsx` passes unchanged. Full `yarn tsc --noEmit` and scoped `yarn eslint` pass. Browser-verified against the local Expo web dev server: both the trick-scoped Notes screen's "New note"/"Edit note" forms and the "All notes" screen's "Edit note" form render the shared `TextField` row (uppercase "Note" label, `2px solid` bordered row, accent-colored focus border) with the multiline note textarea growing via a passed-through `style` override, matching the `sesh.tsx` note-prompt precedent.
 - **Notes:** From S103, child 4 of 8. Depends on T223.1. Both files' local `Field`/`FieldLabel`/`FieldInput` styled components were removed in favor of `TextField`, with a `NOTE_INPUT_STYLE` constant (`minHeight: 160, textAlignVertical: 'top'`) passed via `style`, mirroring `sesh.tsx`'s `NOTE_INPUT_STYLE` pattern. Existing tests locate the input via `findAllByType(TextInput)`, which continues to work since `TextField` renders a `TextInput` internally.
 
+### [T223.6] Apply the shared text-input component to Trick goals
+
+- **Area:** Trick goals
+- **Priority:** Medium
+- **Status:** Done
+- **Planning:** Implementer
+- **Description:** Apply T223.1's shared text-input component to `trick-goals-screen.tsx`.
+- **Exit criteria:** Its existing tests still pass. Confirmed in-browser that goal-related text inputs match the new shared style. Met: `yarn test --runInBand --runTestsByPath src/features/goals/components/trick-goals-screen.test.tsx` passes unchanged. Full `yarn tsc --noEmit` and scoped `yarn eslint` pass. Browser-verified against the local Expo web dev server: the "New goal" form's "Target lace count"/"Target minutes" field renders the shared `TextField` row (uppercase label, `2px solid` bordered row, accent-colored focus border on focus, inline error copy via `TextField`'s `error` prop), matching the already-migrated Trick notes/Tricks screens.
+- **Notes:** From S103, child 6 of 8. Depends on T223.1. `GoalForm`'s local `FieldInput`/`ErrorText` styled components were removed in favor of `TextField`; the "Goal type" radio-style picker (`Field`/`FieldLabel`/`KindPicker`) was left as-is since it is not a text input.
+
 ### [T223.5] Apply the shared text-input component to Tricks
 
 - **Area:** Tricks
