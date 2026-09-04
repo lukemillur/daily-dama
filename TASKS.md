@@ -148,16 +148,6 @@ _T219–T224 come from stories S098–S104 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 _T236–T246 come from stories S106–S118 in [BACKLOG_STORIES.md](BACKLOG_STORIES.md) (the user's 2026-09-04 QA pass on T224/T223.8, plus eleven items of general feedback). T236 (S106), T240 (S112), T241 (S113), T244 (S116), T245 (S117), and T246 (S118) are `Implementer` — local, known-pattern changes: T236 mirrors T224's own precedent exactly (`CALLBACK_MIN_VISIBLE_MS`); T241 mirrors `landing-cta.tsx`'s existing explicit-`style`-prop `boxShadow` pattern (documented inline there, since styled-components/native's CSS shorthand lowers to deprecated RN shadow props); T240 has an existing `fill`/`$fill` width-100% prop on `button.tsx` to reuse. T237 (S107) is `Implementer` despite needing a diagnosis first: tracing `theme-color-picker.tsx` and `text-field.tsx` shows the swatch is already wired through as `TextField`'s `rightAccessory` exactly as T223.8's own notes describe, so the defect is a rendering/layout issue only visible in-browser, not a missing wiring change — genuinely local once found, no architectural risk. T238 (S108+S109+S110) merges three landing-page screenshot stories into one ticket because they'd otherwise recapture the same screenshots twice in two separate passes — `product-manager`'s own notes on S108/S109/S110 flagged this overlap. T239 (S111) is `Required`: `sesh.tsx`'s target-laces field (`targetLandingCount`, line 434-444) has no persistence today, and per `AGENTS.md`'s three-domain state boundary, deciding which existing domain (or a new field on one) owns this value is a persistence-shape decision, not a local styling fix. T242 (S114) and T243 (S115) are both `Required`: T242 reverses a documented deliberate design decision in `landing-auth-cta.tsx` (its own doc comment: "renders nothing once a visitor is authenticated") and adds a new authenticated-only UI surface plus a logout action on a route several prior tickets (T145, T170, T189, T200) have already shown is easy to get wrong around hydration/redirect ordering; T243 changes `landing-cta.tsx`'s copy-selection logic to read `useAuthState()` alongside or instead of `useCachedOnboardingStatus()`, the same class of routing/auth-state boundary risk T200 was scoped `Required` for.
 
-### [T244] Remove "Up next" label from the sesh home focused trick card
-
-- **Area:** Sesh
-- **Priority:** Low
-- **Status:** In progress
-- **Planning:** Implementer
-- **Description:** `sesh.tsx`'s trick choice card renders `` `Up next · ${trick.descriptor ?? 'Practice trick'}` `` for the preferred trick (line 499). Drop the "Up next · " prefix so the card shows just the descriptor.
-- **Exit criteria:** `sesh.test.tsx` no longer asserts "Up next" text renders (existing case updated). Confirmed in-browser that the sesh home screen's focused trick card no longer shows "Up next".
-- **Notes:** From S116. Single-line copy change; no other content on the card changes.
-
 ### [T245] Hide the trick list's scrollbar
 
 - **Area:** Tricks

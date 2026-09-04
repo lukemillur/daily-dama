@@ -2952,7 +2952,7 @@ describe('Sesh direct-practice planning (T077.2)', () => {
 
     const text = JSON.stringify(root.toJSON());
     expect(text).toContain('Practice format');
-    expect(text).toContain('Up next');
+    expect(text).not.toContain('Up next');
     expect(text).toContain(OTHER_TRICK.name);
 
     act(() => {
