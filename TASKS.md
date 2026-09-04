@@ -203,7 +203,7 @@ _T219–T224 come from stories S098–S104 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 - **Area:** Authentication
 - **Priority:** Medium
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** Create a shared, polished, theme-consistent text-input component (e.g. `src/components/ui/text-field.tsx`, mirroring `button.tsx`'s existing shared-primitive pattern) and apply it across the Authentication area: `sign-up-screen.tsx`'s local `FieldInput`, `sign-in-screen.tsx`'s equivalent, `password-input.tsx`'s shared `Input`, `account-security-screen.tsx`, `account-deletion-screen.tsx`, and `forgot-password-screen.tsx`. Visual styling only — no functional or validation behavior changes.
 - **Exit criteria:** New `text-field.test.tsx` covers the shared component's rendering and theming. Existing auth screen tests (`sign-up-screen.test.tsx`, `sign-in-screen.test.tsx`, `password-input.test.tsx` or equivalent, `account-security-screen.test.tsx`, `account-deletion-screen.test.tsx`, `forgot-password-screen.test.tsx`) still pass, with only styling-related assertions (if any) updated. Confirmed in-browser that every text input across sign-up, sign-in, forgot-password, account security, and account deletion shares one consistent, polished visual style.
