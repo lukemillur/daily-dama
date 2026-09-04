@@ -152,7 +152,7 @@ _T236–T246 come from stories S106–S118 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 - **Area:** UI components
 - **Priority:** Medium
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Implementer
 - **Description:** `text-field.tsx`'s `InputRow` (line 68-76) currently has a flat `2px solid` border and no shadow, which the user finds visually underwhelming against the background-matching fill. Add a drop shadow in the style of the landing page's shadowed components (e.g. `landing-cta.tsx`'s `CtaPanel`, `8px 8px 0 ${AppColors.ink}` via an explicit `style` prop — see that file's inline comment on why the CSS `box-shadow` shorthand can't be used with styled-components/native), but lighter/less bold, and increase the border width.
 - **Exit criteria:** Confirmed in-browser on any screen using the shared text input (e.g. Sign up, Feedback) that fields show a visible drop shadow and a thicker border than before. No functional change to any input; existing `text-field.test.tsx` and dependent screen tests still pass.
