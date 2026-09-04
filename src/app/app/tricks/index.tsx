@@ -5,6 +5,7 @@ import { styled } from 'styled-components/native';
 
 import { Button } from '@/components/ui/button';
 import { Screen } from '@/components/ui/screen';
+import { TextField } from '@/components/ui/text-field';
 import { BodyText, DisplayTitle, Eyebrow } from '@/components/ui/typography';
 import { AppColors } from '@/constants/theme';
 import {
@@ -254,19 +255,16 @@ export function CustomTrickForm({
             : 'Give this movement a clear name you will recognize during a sesh.'}
         </Introduction>
 
-        <Field>
-          <FieldLabel>{kind === 'sequence' ? 'Sequence name' : 'Trick name'}</FieldLabel>
-          <FieldInput
-            accessibilityLabel={kind === 'sequence' ? 'Sequence name' : 'Trick name'}
-            autoCapitalize="sentences"
-            maxLength={80}
-            onChangeText={setName}
-            placeholder={kind === 'sequence' ? 'e.g. Morning line' : 'e.g. Stilt flip'}
-            placeholderTextColor={AppColors.textSubtle}
-            value={name}
-          />
-          {errors.name ? <ErrorText>{errors.name}</ErrorText> : null}
-        </Field>
+        <TextField
+          accessibilityLabel={kind === 'sequence' ? 'Sequence name' : 'Trick name'}
+          autoCapitalize="sentences"
+          error={errors.name}
+          label={kind === 'sequence' ? 'Sequence name' : 'Trick name'}
+          maxLength={80}
+          onChangeText={setName}
+          placeholder={kind === 'sequence' ? 'e.g. Morning line' : 'e.g. Stilt flip'}
+          value={name}
+        />
 
         {kind === 'sequence' ? (
           <Field>
@@ -324,11 +322,11 @@ export function CustomTrickForm({
             <ExistingPicker>
               <FieldLabel>Choose an existing trick</FieldLabel>
               <FieldHint>Standard tricks and standalone custom tricks are available. Sequences cannot be nested.</FieldHint>
-              <SearchInput
+              <TextField
                 accessibilityLabel="Search existing tricks"
+                label="Search existing tricks"
                 onChangeText={setTrickSearch}
                 placeholder="Search the trick library"
-                placeholderTextColor={AppColors.textSubtle}
                 value={trickSearch}
               />
               <SearchResults>
@@ -535,7 +533,6 @@ const FormContent = styled.View`width: 100%; max-width: 680px; align-self: cente
 const Field = styled.View`margin-top: 28px;`;
 const FieldLabel = styled.Text`color: ${({ theme }) => theme.text}; font-size: 13px; font-weight: 900; letter-spacing: 1px; text-transform: uppercase;`;
 const FieldHint = styled.Text`color: ${({ theme }) => theme.text}; font-size: 12px; font-weight: 650; line-height: 18px; margin-top: 5px;`;
-const FieldInput = styled(TextInput)`min-height: 56px; background-color: ${AppColors.paper}; border: 2px solid ${AppColors.ink}; color: ${AppColors.ink}; font-size: 18px; font-weight: 800; margin-top: 8px; padding: 12px 14px;`;
 const ErrorText = styled.Text`color: ${AppColors.red}; font-size: 12px; font-weight: 800; margin-top: 7px;`;
 const RankPicker = styled.View`gap: 14px; margin-top: 12px;`;
 const ToggleRow = styled(Pressable)<{ readonly $selected: boolean }>`min-height: 58px; flex-direction: row; align-items: center; gap: 12px; background-color: ${({ $selected }) => $selected ? AppColors.ink : AppColors.paper}; border: 2px solid ${AppColors.ink}; padding: 10px 13px;`;
@@ -564,7 +561,6 @@ const StepActionText = styled.Text`color: ${AppColors.ink}; font-size: 17px; fon
 const RemoveText = styled.Text`color: ${AppColors.red}; font-size: 22px; font-weight: 900;`;
 const AddStepButton = styled(Button)`align-self: flex-start; margin-top: 12px;`;
 const ExistingPicker = styled.View`margin-top: 26px;`;
-const SearchInput = styled(FieldInput)`min-height: 50px; font-size: 15px;`;
 const SearchResults = styled.View`gap: 6px; margin-top: 8px;`;
 const SearchResult = styled(Pressable)`min-height: 50px; flex-direction: row; align-items: center; gap: 12px; background-color: ${AppColors.paper}; border: 1px solid ${AppColors.ink}; padding: 9px 12px;`;
 const SearchResultIdentity = styled.View`flex: 1;`;
