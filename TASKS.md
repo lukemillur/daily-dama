@@ -199,16 +199,6 @@ _T219–T224 come from stories S098–S104 in [BACKLOG_STORIES.md](BACKLOG_STORI
 - **Description:** Umbrella for T223.1–T223.8. No shared themed text-input component exists anywhere in the codebase (`src/components/ui/` holds `button.tsx`/`screen.tsx`/`typography.tsx` but no input equivalent) — every screen currently defines its own local styled `TextInput` (the auth screens' `FieldInput`/`PasswordInput`, `feedback-screen.tsx`'s `FieldInput`/`MessageInput`, `sesh.tsx`'s `NotePromptInput`, and others across Notes, Tricks, Goals, Onboarding, and Profile). Introduce one shared, polished, theme-consistent text-input component and apply it everywhere a `TextInput` currently renders, per the user's explicit request to cover every text input in the app.
 - **Notes:** From S103. Split by feature area per this file's single-area scoping rule; no exit criteria of its own — done when every child is `Done`.
 
-### [T223.4] Apply the shared text-input component to Trick notes
-
-- **Area:** Trick notes
-- **Priority:** Medium
-- **Status:** Not started
-- **Planning:** Implementer
-- **Description:** Apply T223.1's shared text-input component to `trick-notes-screen.tsx` and `all-notes-screen.tsx`.
-- **Exit criteria:** Their existing tests still pass. Confirmed in-browser that trick note inputs match the new shared style.
-- **Notes:** From S103, child 4 of 8. Depends on T223.1.
-
 ### [T223.5] Apply the shared text-input component to Tricks
 
 - **Area:** Tricks

@@ -1,8 +1,9 @@
 import { useMemo, useState } from 'react';
-import { Pressable, ScrollView, TextInput } from 'react-native';
+import { Pressable, ScrollView } from 'react-native';
 import { styled } from 'styled-components/native';
 
 import { Button } from '@/components/ui/button';
+import { TextField } from '@/components/ui/text-field';
 import { BodyText, DisplayTitle, Eyebrow } from '@/components/ui/typography';
 import { AppColors } from '@/constants/theme';
 import { selectAllNotesSorted, type Note } from '@/features/notes/model/note';
@@ -133,17 +134,15 @@ function NoteEditForm({
       <Content>
         <Eyebrow>Edit note</Eyebrow>
         <PageTitle>{note.trickName}</PageTitle>
-        <Field>
-          <FieldLabel>Note</FieldLabel>
-          <FieldInput
-            accessibilityLabel="Note body"
-            multiline
-            onChangeText={setBody}
-            placeholder="What did you notice?"
-            placeholderTextColor={AppColors.textSubtle}
-            value={body}
-          />
-        </Field>
+        <TextField
+          accessibilityLabel="Note body"
+          label="Note"
+          multiline
+          onChangeText={setBody}
+          placeholder="What did you notice?"
+          style={NOTE_INPUT_STYLE}
+          value={body}
+        />
         <FormActions>
           <Button fill disabled={trimmedIsEmpty} onPress={save}>
             Save note
@@ -171,6 +170,4 @@ const NoteActions = styled.View`flex-direction: row; gap: 14px; margin-top: 12px
 const NoteAction = styled(Pressable)`min-height: 36px; justify-content: center;`;
 const NoteActionText = styled.Text`color: ${AppColors.ink}; font-size: 12px; font-weight: 900; text-transform: uppercase;`;
 const DeleteActionText = styled(NoteActionText)`color: ${AppColors.red};`;
-const Field = styled.View`margin-top: 28px;`;
-const FieldLabel = styled.Text`color: ${AppColors.ink}; font-size: 13px; font-weight: 900; letter-spacing: 1px; text-transform: uppercase;`;
-const FieldInput = styled(TextInput)`min-height: 160px; background-color: ${AppColors.paper}; border: 2px solid ${AppColors.ink}; color: ${AppColors.ink}; font-size: 16px; font-weight: 650; margin-top: 8px; padding: 12px 14px; text-align-vertical: top;`;
+const NOTE_INPUT_STYLE = { minHeight: 160, textAlignVertical: 'top' as const };
