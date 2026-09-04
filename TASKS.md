@@ -162,7 +162,7 @@ _T236–T246 come from stories S106–S118 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 - **Area:** Profile
 - **Priority:** Low
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Implementer
 - **Description:** `src/app/app/profile/index.tsx` renders a `<Divider />` (line 87) immediately before `<AccountSection />` (line 88), on top of the section's own internal spacing — the user finds this an unnecessary extra horizontal bar. Remove that one `Divider`.
 - **Exit criteria:** Confirmed in-browser that Profile no longer shows a horizontal divider immediately above the account section, and that spacing above the section still looks intentional (not cramped against the "Send feedback" button above it).
