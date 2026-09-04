@@ -2,14 +2,23 @@ import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 
 import type { AuthState } from '@/features/auth/model/auth-state';
+import { networkFailure } from '@/features/auth/model/auth-test-fixtures';
 
 import { LandingAuthCta } from '@/features/landing/components/landing-auth-cta';
 
 let mockAuthState: AuthState = { status: 'guest', reason: 'signedOut' };
 const mockPush = jest.fn();
+const mockSignOut = jest.fn<() => Promise<{ error: unknown }>>();
+const mockTrackAuthEvent = jest.fn();
+const mockLogAuthWarning = jest.fn();
 
 jest.mock('@/features/auth/state/auth-provider', () => ({
   useAuthState: () => mockAuthState,
+  useAuthActions: () => ({ signOut: mockSignOut }),
+}));
+jest.mock('@/features/auth/observability/auth-observability', () => ({
+  trackAuthEvent: (...args: unknown[]) => mockTrackAuthEvent(...args),
+  logAuthWarning: (...args: unknown[]) => mockLogAuthWarning(...args),
 }));
 jest.mock('expo-router', () => ({
   useRouter: () => ({ push: mockPush }),
@@ -42,6 +51,10 @@ async function mount() {
 describe('LandingAuthCta', () => {
   beforeEach(() => {
     mockPush.mockReset();
+    mockSignOut.mockReset();
+    mockSignOut.mockResolvedValue({ error: null });
+    mockTrackAuthEvent.mockReset();
+    mockLogAuthWarning.mockReset();
     mockAuthState = { status: 'guest', reason: 'signedOut' };
   });
 
@@ -51,12 +64,16 @@ describe('LandingAuthCta', () => {
 
     expect(findAllByLabel(root, 'Sign up').length).toBe(0);
     expect(findAllByLabel(root, 'Sign in').length).toBe(0);
+    expect(findAllByLabel(root, 'Log out').length).toBe(0);
   });
 
-  it('renders nothing when authenticated', async () => {
+  it('renders the Daily Dama header bar with a log out control when authenticated', async () => {
     mockAuthState = authenticatedState();
     const root = await mount();
 
+    expect(findAllByLabel(root, 'Log out').length).toBeGreaterThan(0);
+    expect(root.root.findAll((node) => node.props.children === 'Daily Dama').length).toBeGreaterThan(0);
+    expect(root.root.findAllByProps({ testID: 'landing-header-bar' }).length).toBeGreaterThan(0);
     expect(findAllByLabel(root, 'Sign up').length).toBe(0);
     expect(findAllByLabel(root, 'Sign in').length).toBe(0);
   });
@@ -67,6 +84,7 @@ describe('LandingAuthCta', () => {
 
     expect(findAllByLabel(root, 'Sign up').length).toBe(0);
     expect(findAllByLabel(root, 'Sign in').length).toBe(0);
+    expect(findAllByLabel(root, 'Log out').length).toBe(0);
   });
 
   it('renders Sign up and Sign in entry points for a guest', async () => {
@@ -74,6 +92,7 @@ describe('LandingAuthCta', () => {
 
     expect(findAllByLabel(root, 'Sign up').length).toBeGreaterThan(0);
     expect(findAllByLabel(root, 'Sign in').length).toBeGreaterThan(0);
+    expect(findAllByLabel(root, 'Log out').length).toBe(0);
   });
 
   it('navigates to /auth/sign-up on Sign up', async () => {
@@ -94,5 +113,62 @@ describe('LandingAuthCta', () => {
     });
 
     expect(mockPush).toHaveBeenCalledWith('/auth/sign-in');
+  });
+
+  it('calls signOut exactly once when Log out is pressed', async () => {
+    mockAuthState = authenticatedState();
+    const root = await mount();
+
+    await act(async () => {
+      findByLabel(root, 'Log out').props.onPress();
+    });
+
+    expect(mockSignOut).toHaveBeenCalledTimes(1);
+  });
+
+  it('shows an in-flight state while signing out', async () => {
+    mockAuthState = authenticatedState();
+    let resolveSignOut!: (value: { error: null }) => void;
+    mockSignOut.mockReturnValue(
+      new Promise((resolve) => {
+        resolveSignOut = resolve;
+      }),
+    );
+    const root = await mount();
+
+    await act(async () => {
+      findByLabel(root, 'Log out').props.onPress();
+    });
+
+    const inFlightButton = findByLabel(root, 'Log out');
+    expect(inFlightButton.props.children).toBe('Logging out...');
+    expect(inFlightButton.props.disabled).toBe(true);
+
+    await act(async () => {
+      resolveSignOut({ error: null });
+    });
+
+    const settledButton = findByLabel(root, 'Log out');
+    expect(settledButton.props.children).toBe('Log out');
+    expect(settledButton.props.disabled).toBe(false);
+  });
+
+  it('shows an error and re-enables Log out when signOut fails', async () => {
+    mockAuthState = authenticatedState();
+    mockSignOut.mockResolvedValue({ error: networkFailure() as unknown as null });
+    const root = await mount();
+
+    await act(async () => {
+      findByLabel(root, 'Log out').props.onPress();
+    });
+
+    expect(
+      root.root.findAll(
+        (node) => node.props.children === 'You are offline. Check your connection and try again.',
+      ).length,
+    ).toBeGreaterThan(0);
+    const button = findByLabel(root, 'Log out');
+    expect(button.props.children).toBe('Log out');
+    expect(button.props.disabled).toBe(false);
   });
 });

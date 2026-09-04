@@ -48,6 +48,7 @@ jest.mock('@/features/landing/state/use-cached-onboarding-status', () => ({
 let mockAuthState: AuthState = { status: 'guest', reason: 'signedOut' };
 jest.mock('@/features/auth/state/auth-provider', () => ({
   useAuthState: () => mockAuthState,
+  useAuthActions: () => ({ signOut: jest.fn() }),
 }));
 
 function findByVisibleText(root: ReactTestRenderer, text: string) {
@@ -124,7 +125,7 @@ describe('LandingPage sign-up/sign-in entry points', () => {
     expect(findAllByLabel(root, 'Sign in').length).toBeGreaterThan(0);
   });
 
-  it('hides the sign-up/sign-in entry points once authenticated', async () => {
+  it('swaps the sign-up/sign-in entry points for a log out control once authenticated', async () => {
     mockAuthState = {
       status: 'authenticated',
       session: { access_token: 'tok', user: { email: 'someone@example.com' } } as never,
@@ -134,6 +135,7 @@ describe('LandingPage sign-up/sign-in entry points', () => {
 
     expect(findAllByLabel(root, 'Sign up').length).toBe(0);
     expect(findAllByLabel(root, 'Sign in').length).toBe(0);
+    expect(findAllByLabel(root, 'Log out').length).toBeGreaterThan(0);
   });
 });
 
