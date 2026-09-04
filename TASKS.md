@@ -203,7 +203,7 @@ _T219–T224 come from stories S098–S104 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 - **Area:** Sesh
 - **Priority:** Medium
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Implementer
 - **Description:** Apply T223.1's shared text-input component to `sesh.tsx`'s `NotePromptInput` and `multi-trick-sesh-entry.tsx`'s text input(s).
 - **Exit criteria:** `sesh.test.tsx` and `multi-trick-sesh-entry.test.tsx` (or equivalent) still pass. Confirmed in-browser that the Sesh note prompt's text area matches the new shared style.
