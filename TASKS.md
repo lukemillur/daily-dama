@@ -153,14 +153,4 @@ _T236–T246 come from stories S106–S118 in [BACKLOG_STORIES.md](BACKLOG_STORI
 _Ship-readiness batch approved 2026-09-04, from `SHIP_READINESS_AUDIT.md`: A1 → T225, A4 → T228, A9 → T233 are autonomous work. A2/A3/A5/A6/A7/A8/A10/A11 → T226/T227/T229/T230/T231/T232/T234/T235 live in `TASKS_COLLABORATIVE.md`. The audit describes a historical snapshot, not this checkout or a selected release. These entries do not restore the removed T162 Phase 6 launch gate; older phase-gating prose above is historical and superseded by the revised audit scope._
 
 
-### [T233] Verify the fresh guest practice journey in a real web browser
-
-- **Area:** Guest practice acceptance
-- **Priority:** High
-- **Status:** Not started
-- **Planning:** Implementer
-- **Description:** Run a bounded browser acceptance pass against the exact development commit using an Expo development server on a verified port and a clean disposable browser context. Record results in `outputs/ship-readiness/T233.md` for onboarding, selecting/creating a trick, timed and open-ended practice, pause/resume, completion, Stats/reload, a note, goal, sequence, and multi-trick run.
-- **Exit criteria:** The report records passing browser evidence for the specified fresh-guest journey, including backgrounding a timed Sesh beyond its deadline and observing sensible completion exactly once with no duplicate history. It identifies the tested commit, URL, fixture scope, and supporting evidence; any failed required scenario keeps this ticket open with a reproducible defect report.
-- **Notes:** From A9; audit section 4. Depends on T225. This is local web acceptance and needs no hosted account or release decision. Use existing tests for deeper edge cases; do not expand into a cross-feature repair project if a blocker is found. Active-Sesh restoration after full page reload and native validation remain deferred. Hosted release validation in T234 may reuse this evidence only when code and environment applicability are established.
-
 ---
