@@ -21,6 +21,7 @@ import {
 import { createCustomTrickSyncTransportAdapter } from '@/features/custom-tricks/persistence/custom-trick-sync-transport';
 import { useCustomTrickDomainSync } from '@/features/custom-tricks/state/use-custom-trick-domain-sync';
 import { useIdentityHandle } from '@/shared/persistence/identity-provider';
+import type { LocalDurabilityStatus } from '@/shared/persistence/storage';
 import { useIdentityScopedDomain } from '@/shared/persistence/use-identity-scoped-domain';
 import { getSupabaseClient } from '@/shared/supabase/supabase-client';
 import type { DomainSyncRecord, SyncTrigger } from '@/shared/sync/coordinator';
@@ -52,8 +53,14 @@ export interface CustomTrickSync {
 
 const CustomTrickSyncContext = createContext<CustomTrickSync | undefined>(undefined);
 
+// Runtime-only local-durability status, distinct from the cloud-facing
+// CustomTrickSync context above -- see `LocalDurabilityStatus`'s doc comment.
+const CustomTrickDurabilityContext = createContext<
+  LocalDurabilityStatus<CustomTrickCollection> | undefined
+>(undefined);
+
 export function CustomTrickProvider({ children }: PropsWithChildren) {
-  const { state: collection, dispatch, hasHydrated } = useIdentityScopedDomain({
+  const { state: collection, dispatch, hasHydrated, durability } = useIdentityScopedDomain({
     reducer: customTrickReducer,
     initialState: INITIAL_CUSTOM_TRICKS,
     load: loadCustomTricks,
@@ -133,7 +140,11 @@ export function CustomTrickProvider({ children }: PropsWithChildren) {
   return (
     <CustomTrickStateContext.Provider value={collection}>
       <CustomTrickActionsContext.Provider value={actions}>
-        <CustomTrickSyncContext.Provider value={sync}>{children}</CustomTrickSyncContext.Provider>
+        <CustomTrickSyncContext.Provider value={sync}>
+          <CustomTrickDurabilityContext.Provider value={durability}>
+            {children}
+          </CustomTrickDurabilityContext.Provider>
+        </CustomTrickSyncContext.Provider>
       </CustomTrickActionsContext.Provider>
     </CustomTrickStateContext.Provider>
   );
@@ -161,6 +172,14 @@ export function useCustomTrickSync(): CustomTrickSync {
     throw new Error('useCustomTrickSync must be used within CustomTrickProvider.');
   }
   return sync;
+}
+
+export function useCustomTrickDurability(): LocalDurabilityStatus<CustomTrickCollection> {
+  const durability = useContext(CustomTrickDurabilityContext);
+  if (!durability) {
+    throw new Error('useCustomTrickDurability must be used within CustomTrickProvider.');
+  }
+  return durability;
 }
 
 const styles = StyleSheet.create({

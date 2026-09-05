@@ -6,6 +6,7 @@ import { createGuestMigratingStorage } from '@/shared/persistence/scoped-storage
 import {
   createWriteQueue,
   type KeyValueStorage,
+  type LocalDurabilityStatus,
   type PersistenceLoadResult,
   type PersistenceSaveResult,
   type ScopedSaveOutcome,
@@ -25,6 +26,16 @@ export interface UseIdentityScopedDomainResult<State, Action> {
   readonly state: State;
   readonly dispatch: Dispatch<Action>;
   readonly hasHydrated: boolean;
+  // Runtime-only local-durability status for this domain's primary persisted
+  // state (see `LocalDurabilityStatus`'s doc comment). Set exclusively from
+  // inside the write queue's worker below -- never from an external `.then()`
+  // on `enqueueWrite`'s returned promise -- so its ordering guarantee falls
+  // out of the queue's existing strict serialization rather than needing
+  // separate sequence-number bookkeeping. An identity switch resets this to
+  // `{ status: 'saved' }` synchronously in the hydration effect, before the
+  // new generation's load even resolves, so a prior identity's failure can
+  // never leak into the new namespace.
+  readonly durability: LocalDurabilityStatus<State>;
   // Thin wrapper around the same internal enqueueWrite queue the
   // hydration/write effect below already uses -- an explicit imperative
   // save for a caller (T158's discard-pending-outbox flow) that needs to
@@ -55,6 +66,12 @@ interface TaggedWrite<State> {
  *   touch storage, instead of landing in the wrong (now-current) namespace.
  * - A single shared write queue lives for the whole domain's lifetime -- ordering only needs to
  *   hold within an identity's own write history, so the queue is never forked per identity.
+ * - `durability` retains the latest snapshot from a failed effect-driven write and exposes a
+ *   `retry()` that replays it through the same queue. Because the queue's writes execute strictly
+ *   serially (each write's worker only starts after the previous one has fully resolved),
+ *   `durability` is safe to set from directly inside the worker without any extra sequence-number
+ *   bookkeeping -- a later write's outcome can never be overwritten by an earlier, slower write's
+ *   outcome resolving out of order, because there is no "out of order" to begin with.
  *
  * `options` is a fresh object literal every render (each provider passes inline `createRestoreAction`
  * /`onRecovered`/`onSaveFailed` closures), so it's stashed in a ref rather than depended on directly
@@ -75,9 +92,22 @@ export function useIdentityScopedDomain<State, Action>(
   const { context, generation } = useIdentityHandle();
   const [state, dispatch] = useReducer(options.reducer, options.initialState);
   const [hydratedGeneration, setHydratedGeneration] = useState<number | undefined>(undefined);
+  const [durability, setDurability] = useState<LocalDurabilityStatus<State>>({ status: 'saved' });
   const shouldSkipNextWrite = useRef(true);
 
   const hasHydrated = hydratedGeneration === generation;
+
+  // Clears any prior generation's failed durability status the instant an identity switch is
+  // observed during render -- independent of whether this generation's load succeeds, and without
+  // waiting for an effect to run -- so a stale failure can never leak across namespaces. This is
+  // React's "adjust state during rendering" pattern rather than an effect: it compares against the
+  // last generation this component actually rendered `durability` for, and both updates land in the
+  // same render pass, so it never needlessly loops.
+  const [durabilityGeneration, setDurabilityGeneration] = useState(generation);
+  if (durabilityGeneration !== generation) {
+    setDurabilityGeneration(generation);
+    setDurability({ status: 'saved' });
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -150,15 +180,40 @@ export function useIdentityScopedDomain<State, Action>(
 
             if (result.status === 'failed') {
               optionsRef.current.onSaveFailed?.(result.error);
+              if (context.isCurrentGeneration(taggedGeneration)) {
+                setDurability({
+                  status: 'failed',
+                  snapshot: value,
+                  retry: () =>
+                    enqueueWrite({ value, taggedGeneration: context.getGeneration() }),
+                });
+              }
               return { status: 'failed', error: result.error };
             }
 
+            // A functional update that returns the same reference when durability is already
+            // `saved` lets React bail out of the re-render entirely (`Object.is` equality) instead
+            // of scheduling one for every routine successful write -- most writes never transition
+            // out of `saved`, and without this a background write settling well after a test's
+            // `act()` block (or any effect-driven write in the running app) would otherwise trigger
+            // a state update on every single successful save.
+            if (context.isCurrentGeneration(taggedGeneration)) {
+              setDurability((previous) => (previous.status === 'saved' ? previous : { status: 'saved' }));
+            }
             return { status: 'saved' };
           } catch (error) {
             if (supersededDuringWrite || !context.isCurrentGeneration(taggedGeneration)) {
               return { status: 'superseded' };
             }
             optionsRef.current.onSaveFailed?.(error);
+            if (context.isCurrentGeneration(taggedGeneration)) {
+              setDurability({
+                status: 'failed',
+                snapshot: value,
+                retry: () =>
+                  enqueueWrite({ value, taggedGeneration: context.getGeneration() }),
+              });
+            }
             return { status: 'failed', error };
           }
         },
@@ -187,5 +242,5 @@ export function useIdentityScopedDomain<State, Action>(
     [context, enqueueWrite],
   );
 
-  return { state, dispatch, hasHydrated, saveNow };
+  return { state, dispatch, hasHydrated, durability, saveNow };
 }

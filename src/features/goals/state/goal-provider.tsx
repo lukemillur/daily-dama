@@ -23,6 +23,7 @@ import { createGoalSyncTransportAdapter } from '@/features/goals/persistence/goa
 import { useGoalDomainSync } from '@/features/goals/state/use-goal-domain-sync';
 import { useUserProfileActions } from '@/features/profile/state/user-profile-provider';
 import { useIdentityHandle } from '@/shared/persistence/identity-provider';
+import type { LocalDurabilityStatus } from '@/shared/persistence/storage';
 import { useIdentityScopedDomain } from '@/shared/persistence/use-identity-scoped-domain';
 import { getSupabaseClient } from '@/shared/supabase/supabase-client';
 import type { DomainSyncRecord, SyncTrigger } from '@/shared/sync/coordinator';
@@ -59,11 +60,17 @@ export interface GoalSync {
 
 const GoalSyncContext = createContext<GoalSync | undefined>(undefined);
 
+// Runtime-only local-durability status, distinct from the cloud-facing
+// GoalSync context above -- see `LocalDurabilityStatus`'s doc comment.
+const GoalDurabilityContext = createContext<LocalDurabilityStatus<GoalCollection> | undefined>(
+  undefined,
+);
+
 export function GoalProvider({ children }: PropsWithChildren) {
   // GoalProvider must be rendered inside UserProfileProvider (see _layout.tsx's provider
   // nesting order) so addGoal can focus the goal's trick as part of the same save action.
   const { addSelectedTrick } = useUserProfileActions();
-  const { state: collection, dispatch, hasHydrated } = useIdentityScopedDomain({
+  const { state: collection, dispatch, hasHydrated, durability } = useIdentityScopedDomain({
     reducer: goalReducer,
     initialState: INITIAL_GOALS,
     load: loadGoals,
@@ -147,7 +154,9 @@ export function GoalProvider({ children }: PropsWithChildren) {
   return (
     <GoalStateContext.Provider value={collection}>
       <GoalActionsContext.Provider value={actions}>
-        <GoalSyncContext.Provider value={sync}>{children}</GoalSyncContext.Provider>
+        <GoalSyncContext.Provider value={sync}>
+          <GoalDurabilityContext.Provider value={durability}>{children}</GoalDurabilityContext.Provider>
+        </GoalSyncContext.Provider>
       </GoalActionsContext.Provider>
     </GoalStateContext.Provider>
   );
@@ -171,6 +180,14 @@ export function useGoalSync(): GoalSync {
   const sync = useContext(GoalSyncContext);
   if (!sync) throw new Error('useGoalSync must be used within GoalProvider.');
   return sync;
+}
+
+export function useGoalDurability(): LocalDurabilityStatus<GoalCollection> {
+  const durability = useContext(GoalDurabilityContext);
+  if (!durability) {
+    throw new Error('useGoalDurability must be used within GoalProvider.');
+  }
+  return durability;
 }
 
 const styles = StyleSheet.create({

@@ -20,6 +20,7 @@ import { loadNotes, saveNotes } from '@/features/notes/persistence/note-persiste
 import { createNoteSyncTransportAdapter } from '@/features/notes/persistence/note-sync-transport';
 import { useNoteDomainSync } from '@/features/notes/state/use-note-domain-sync';
 import { useIdentityHandle } from '@/shared/persistence/identity-provider';
+import type { LocalDurabilityStatus } from '@/shared/persistence/storage';
 import { useIdentityScopedDomain } from '@/shared/persistence/use-identity-scoped-domain';
 import { getSupabaseClient } from '@/shared/supabase/supabase-client';
 import type { DomainSyncRecord, SyncTrigger } from '@/shared/sync/coordinator';
@@ -51,8 +52,14 @@ export interface NoteSync {
 
 const NoteSyncContext = createContext<NoteSync | undefined>(undefined);
 
+// Runtime-only local-durability status, distinct from the cloud-facing
+// NoteSync context above -- see `LocalDurabilityStatus`'s doc comment.
+const NoteDurabilityContext = createContext<LocalDurabilityStatus<NoteCollection> | undefined>(
+  undefined,
+);
+
 export function NoteProvider({ children }: PropsWithChildren) {
-  const { state: collection, dispatch, hasHydrated } = useIdentityScopedDomain({
+  const { state: collection, dispatch, hasHydrated, durability } = useIdentityScopedDomain({
     reducer: noteReducer,
     initialState: INITIAL_NOTES,
     load: loadNotes,
@@ -135,7 +142,9 @@ export function NoteProvider({ children }: PropsWithChildren) {
   return (
     <NoteStateContext.Provider value={collection}>
       <NoteActionsContext.Provider value={actions}>
-        <NoteSyncContext.Provider value={sync}>{children}</NoteSyncContext.Provider>
+        <NoteSyncContext.Provider value={sync}>
+          <NoteDurabilityContext.Provider value={durability}>{children}</NoteDurabilityContext.Provider>
+        </NoteSyncContext.Provider>
       </NoteActionsContext.Provider>
     </NoteStateContext.Provider>
   );
@@ -159,6 +168,14 @@ export function useNoteSync(): NoteSync {
   const sync = useContext(NoteSyncContext);
   if (!sync) throw new Error('useNoteSync must be used within NoteProvider.');
   return sync;
+}
+
+export function useNoteDurability(): LocalDurabilityStatus<NoteCollection> {
+  const durability = useContext(NoteDurabilityContext);
+  if (!durability) {
+    throw new Error('useNoteDurability must be used within NoteProvider.');
+  }
+  return durability;
 }
 
 const styles = StyleSheet.create({
