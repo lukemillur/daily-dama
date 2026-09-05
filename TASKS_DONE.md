@@ -3345,6 +3345,16 @@ Completed entries live in [TASKS_DONE.md](TASKS_DONE.md) — not part of the top
 - **Description:** Umbrella for T223.1–T223.8. No shared themed text-input component exists anywhere in the codebase (`src/components/ui/` holds `button.tsx`/`screen.tsx`/`typography.tsx` but no input equivalent) — every screen currently defines its own local styled `TextInput` (the auth screens' `FieldInput`/`PasswordInput`, `feedback-screen.tsx`'s `FieldInput`/`MessageInput`, `sesh.tsx`'s `NotePromptInput`, and others across Notes, Tricks, Goals, Onboarding, and Profile). Introduce one shared, polished, theme-consistent text-input component and apply it everywhere a `TextInput` currently renders, per the user's explicit request to cover every text input in the app.
 - **Notes:** From S103. Split by feature area per this file's single-area scoping rule; no exit criteria of its own — done when every child is `Done`. All eight children (T223.1–T223.8) are now `Done`.
 
+### [T225] Reconcile the four demonstrated audit findings against current development
+
+- **Area:** Ship-readiness evidence
+- **Priority:** High
+- **Status:** Done
+- **Planning:** Implementer
+- **Description:** Recheck signed-in feedback, dynamic-route refreshes, dependency-audit failure reporting, and Sentry/CSP against the exact checked-out development commit and current task/PR evidence. Produce `outputs/ship-readiness/T225.md` with a finding-by-finding disposition and the remaining scope of each follow-up.
+- **Exit criteria:** The committed report identifies its commit/environment and classifies all four findings as fixed, reproducible, or unverified with a specific missing prerequisite, citing current code and focused reproduction evidence where available. It reconciles T221's current claim/PR state without taking over that work and distinguishes local evidence from hosted evidence. Met: `outputs/ship-readiness/T225.md` identifies the checked-out commit (`786e33a`) and environment, classifies all four findings as reproducible (none fixed) with current-code citations and fresh local reproduction evidence (a fresh `yarn expo export` plus the repo's own `security/scripts/serve-web-export.mjs` harness for the dynamic-route 404s; direct file inspection and `git log`/`git diff` showing byte-identical unpatched code for the feedback RLS grant, the dependency-audit wrapper, and the CSP `connect-src`), and it observes (without editing) T221's unmerged branch/diagnosis and its still-`Not started` state on `development`.
+- **Notes:** From A1; audit sections 1 and "Where things stand." This is a bounded investigation whose completed output may contain unverified findings; that never marks an implementation or release gate passed. Use the checked-out development revision as the investigation baseline, not an owner-selected production release. No hosted writes, release selection, defect implementation, or tracker closure of other tickets. Remote-access failure is recorded as unverified rather than preventing the local report.
+
 ### [T224] Hold the post-verification callback screen visible briefly before entering Home
 
 - **Area:** Authentication
