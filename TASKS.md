@@ -157,7 +157,7 @@ _Ship-readiness batch approved 2026-09-04, from `SHIP_READINESS_AUDIT.md`: A1 â†
 
 - **Area:** Guest practice acceptance
 - **Priority:** High
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Implementer
 - **Description:** Run a bounded browser acceptance pass against the exact development commit using an Expo development server on a verified port and a clean disposable browser context. Record results in `outputs/ship-readiness/T233.md` for onboarding, selecting/creating a trick, timed and open-ended practice, pause/resume, completion, Stats/reload, a note, goal, sequence, and multi-trick run.
 - **Exit criteria:** The report records passing browser evidence for the specified fresh-guest journey, including backgrounding a timed Sesh beyond its deadline and observing sensible completion exactly once with no duplicate history. It identifies the tested commit, URL, fixture scope, and supporting evidence; any failed required scenario keeps this ticket open with a reproducible defect report.
