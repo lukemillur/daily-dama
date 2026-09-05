@@ -2,6 +2,7 @@ import { usePathname } from "expo-router";
 import Head from "expo-router/head";
 
 import AppTabs from "@/components/app-tabs";
+import { LocalDurabilityWarningBanner } from "@/components/local-durability-warning-banner";
 import { CustomTrickProvider } from "@/features/custom-tricks/state/custom-trick-provider";
 import { GoalProvider } from "@/features/goals/state/goal-provider";
 import { NoteProvider } from "@/features/notes/state/note-provider";
@@ -51,6 +52,7 @@ export default function AppShellLayout() {
                   <SyncCoordinatorProvider>
                     <AppThemeProvider>
                       <KenteiRankAutoPromotion />
+                      <LocalDurabilityWarningBanner />
                       <AppTabs />
                     </AppThemeProvider>
                   </SyncCoordinatorProvider>

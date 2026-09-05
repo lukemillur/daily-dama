@@ -4,6 +4,24 @@ Completed entries move here from `TASKS.md`'s `Backlog`, in the same commit that
 
 Entries keep their content as it was at completion. Don't retroactively edit a description or exit criteria after the fact; if something about a completed task turns out to be wrong or misleading, note that in a new entry or in code, not by rewriting history here.
 
+### [T248] Surface local durability failures and recovery
+
+- **Area:** Local persistence UX
+- **Priority:** High
+- **Status:** Done
+- **Description:** Make failed local writes visible and retryable across profile, custom tricks, practice history, goals, and notes so the UI never silently acknowledges state that exists only in memory.
+- **Notes:** Umbrella from D002. Completed via T248.1 (shared durability contract) and T248.2 (app-shell warning/retry surface).
+
+### [T248.2] Add an app-level local-save warning and retry action
+
+- **Area:** App shell / local persistence UX
+- **Priority:** High (inherited from parent T248)
+- **Status:** Done
+- **Planning:** Required
+- **Description:** Aggregate the five domain durability handles behind a dedicated app-level contract and show one persistent, non-blocking but unmistakable warning whenever current changes are not safely stored on the device. Provide a retry action and copy that clearly distinguishes local-save failure from cloud-sync status.
+- **Exit criteria:** A fully wired five-provider integration test and app-shell component tests prove that a failure in any domain shows one accessibly announced warning that remains visible across route changes; retry operates on every currently failed domain's latest snapshot without duplicate concurrent attempts; repeated failure keeps the warning and actionable guidance visible; and the warning disappears only after every current-generation failed write succeeds. Cloud synchronization success cannot hide or misrepresent an outstanding local-save failure.
+- **Notes:** From D002. Depends on T248.1. Added `src/shared/persistence/use-app-local-durability.ts` -- a shared aggregation hook (`useAppLocalDurability`) calling all five `use*Durability()` hooks directly, plus a pure, unit-tested `deriveFailedDomainLabels` for precedence/labeling, mirroring `deriveSyncStatus`'s shape without importing anything from `src/shared/sync/`. `retryAll` guards duplicate concurrent invocations with a `useRef` flag and reads the five live statuses fresh at call time (via `useMemo` keyed on the five source values) so a retry always targets each domain's latest failed snapshot. Added `src/components/local-durability-warning-banner.tsx`: renders nothing when no domain is failing; otherwise a single `View` with `accessibilityRole="alert"`/`accessibilityLiveRegion="assertive"` naming the failing domains by label with copy that explicitly distinguishes local-save failure from cloud sync, plus a `Pressable` "Retry" control disabled while retrying. Wired as `<LocalDurabilityWarningBanner />` in `src/app/app/_layout.tsx`, mounted once inside `AppThemeProvider` and before `<AppTabs />` -- normal flex flow above the tab/nav box (not the absolutely-positioned nav layer), so it survives every route change under `/app/*` without remounting. Added `use-app-local-durability.test.ts` (pure derivation), `use-app-local-durability.retry.test.tsx` (dedup/retry-all with mocked domain hooks), `local-durability-warning-banner.test.tsx` (render/hide, alert naming, Retry disabling, no remount across a sibling prop change), and `src/app/app/__tests__/local-durability-warning.integration.test.tsx` (fully wired five real providers plus fake sync transports, forcing real `AsyncStorage.setItem` rejections for two domains: proves one alert names both failing domains, survives an in-tree route-stand-in change, and clears only once every failed write succeeds; a second test proves a concurrent double Retry press invokes each domain's own `retry()` exactly once and a still-failing retry keeps the warning and Retry control visible). Manually verified in a real Chromium browser at the supported 320px width (Playwright script driving a live `expo start --web` server): seeded a valid guest profile, forced `localStorage.setItem` to throw, added a custom trick through the real UI to trigger two real domain-write failures, confirmed the single alert-role banner (no horizontal overflow at 320px), keyboard Tab reaching and Enter activating the Retry control, the banner staying visible across an in-app tab navigation (Tricks to Home), and the banner clearing once the injected failure was lifted and Retry pressed again. Verified: full `node .claude/scripts/verify.mjs` (test/lint/typecheck/web-export) passed.
+
 ### [T248.1] Retain and expose failed local writes
 
 - **Area:** Shared local persistence
