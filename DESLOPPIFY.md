@@ -2,7 +2,9 @@
 
 Reviewed 2026-09-04 against local `development` at `7bdeb7f`.
 
-This is an audit and cleanup queue, not evidence that every existing product ticket has been completed. The checkout was four commits behind `origin/development` and already contained user-owned changes in `.vscode/settings.json`, `src/app/app/tricks/index.tsx`, and `src/features/notes/components/all-notes-screen.tsx`; those changes were preserved and were not treated as cleanup work. Before implementing any item, refresh/reconcile the branch and re-check the cited code.
+Critical-ticket reconciliation was repeated 2026-09-04 on clean, up-to-date `development` at `8979dca`. D001/D002 and the existing ownership of T226–T229 were rechecked for this ticketing pass; medium and nice-to-have findings retain the original scan's evidence and caveats until a full refresh.
+
+This is an audit and cleanup queue, not evidence that every existing product ticket has been completed. The original scan checkout was four commits behind `origin/development` and already contained user-owned changes in `.vscode/settings.json`, `src/app/app/tricks/index.tsx`, and `src/features/notes/components/all-notes-screen.tsx`; those changes were preserved and were not treated as cleanup work. Before implementing any item, refresh/reconcile the branch and re-check the cited code.
 
 ## How to use this backlog
 
@@ -17,19 +19,19 @@ Status values: `Ready`, `Wait`, `Existing ticket`, `Done`.
 
 ### [D001] Make “Discard and log out” fail closed when outbox persistence fails
 
-- **Status:** Ready
+- **Status:** Existing ticket (`TASKS.md`; T247)
 - **Where:** `src/shared/persistence/use-identity-scoped-domain.ts:131-155`; each domain's `discardPending` implementation (for example `src/features/custom-tricks/state/use-custom-trick-domain-sync.ts:365-374`); `src/shared/sync/sync-coordinator-provider.tsx:72`; `src/features/auth/state/use-logout-guard.ts:131-145`.
 - **Why it matters:** `saveNow()` resolves even when a domain save returns `{ status: 'failed' }`. The discard path then clears the in-memory outbox and advances to sign-out. The old persisted outbox can survive and be reloaded later, resurrecting changes the user explicitly chose to discard. The current tests cover successful persistence, not this failure path.
 - **Recommended change:** Make imperative persistence report failure (a result union or rejection), dispatch `outboxDiscarded` only after durable success, make `discardAllPending` return per-domain outcomes, and keep the logout prompt open with actionable error copy if any domain fails. Add a fault-injection integration test proving failed storage cannot advance to sign-out or later replay a supposedly discarded operation.
-- **Timing:** Safe and important to fix now, but plan it as a persistence/concurrency change before implementation.
+- **Timing:** Execute T247 through the automated `new-ticket` workflow. Its required planning pass owns the persistence/concurrency design.
 
 ### [D002] Surface local persistence failures instead of acknowledging volatile state
 
-- **Status:** Ready; follow D001
+- **Status:** Existing ticket (`TASKS.md`; T248.1–T248.2 after T247)
 - **Where:** `src/shared/persistence/use-identity-scoped-domain.ts:131-149`; the five providers' `onSaveFailed` callbacks, e.g. `src/features/profile/state/user-profile-provider.tsx:76-81`, `src/features/stats/state/practice-history-provider.tsx:57-62`, and their custom-trick/note/goal equivalents.
 - **Why it matters:** All five domains update the UI immediately, but a failed AsyncStorage write produces only `console.warn`. A guest can complete a Sesh, add a trick, note, or goal, see it in the UI, and lose it on reload with no warning or retry affordance. For a local-first product, silent local durability failure is a core data-integrity issue.
 - **Recommended change:** Add shared local-persistence status with retry semantics, retain the latest unsaved snapshot, and show a non-blocking but unmistakable app-level warning until the write succeeds. Keep local-persistence state distinct from cloud-sync state.
-- **Timing:** Safe to address now after D001. It changes a shared state boundary, so propose the status model first rather than adding five local booleans.
+- **Timing:** Execute the T248 umbrella after T247. T248.1 establishes the shared status model before T248.2 adds the app-level recovery surface.
 
 ### [T226] Close the signed-in feedback permission gap
 
@@ -197,8 +199,8 @@ Status values: `Ready`, `Wait`, `Existing ticket`, `Done`.
 
 ## Recommended execution order
 
-1. D001 — prevent discarded outboxes from surviving a failed durable write.
-2. D002 — make all local persistence failures visible and retryable.
+1. T247 (D001) — prevent discarded outboxes from surviving a failed durable write.
+2. T248.1–T248.2 (D002) — make all local persistence failures visible and retryable.
 3. T225, then T226/T227/T228/T229 through their existing queues.
 4. D003 — harden Auth submit failure handling.
 5. D011 and D012 — restore trustworthy documentation and static-analysis signals.
