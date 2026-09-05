@@ -145,7 +145,7 @@ _T247–T248.2 come from critical findings D001–D002 in [DESLOPPIFY.md](DESLOP
 
 - **Area:** App shell / local persistence UX
 - **Priority:** High (inherited from parent T248)
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** Aggregate the five domain durability handles behind a dedicated app-level contract and show one persistent, non-blocking but unmistakable warning whenever current changes are not safely stored on the device. Provide a retry action and copy that clearly distinguishes local-save failure from cloud-sync status.
 - **Exit criteria:** A fully wired five-provider integration test and app-shell component tests prove that a failure in any domain shows one accessibly announced warning that remains visible across route changes; retry operates on every currently failed domain's latest snapshot without duplicate concurrent attempts; repeated failure keeps the warning and actionable guidance visible; and the warning disappears only after every current-generation failed write succeeds. Cloud synchronization success cannot hide or misrepresent an outstanding local-save failure.
