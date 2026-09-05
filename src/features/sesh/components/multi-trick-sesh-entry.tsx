@@ -153,7 +153,6 @@ export function MultiTrickSeshEntry() {
         tricks={createProfileDirectoryTricks(KENDAMA_KENTEI_TRICKS, customTricks)}
         fixedHeader={shouldPinSelectionChrome}
         fixedFooter={shouldPinSelectionChrome}
-        hideScrollIndicator
         showFocusedSection
         focusedTrickIds={focusedTrickIds}
         selection={{ selectedTrickIds, onToggleTrick: handleToggleTrick }}

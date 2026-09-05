@@ -4,6 +4,16 @@ Completed entries move here from `TASKS.md`'s `Backlog`, in the same commit that
 
 Entries keep their content as it was at completion. Don't retroactively edit a description or exit criteria after the fact; if something about a completed task turns out to be wrong or misleading, note that in a new entry or in code, not by rewriting history here.
 
+### [T245] Hide the trick list's scrollbar
+
+- **Area:** Tricks
+- **Priority:** Low
+- **Status:** Done
+- **Planning:** Implementer
+- **Description:** `trick-directory.tsx`'s scrollable list defaults `hideScrollIndicator` to `false` (lines 46, 86, 141), and on web `showsVerticalScrollIndicator` alone doesn't suppress the browser's native scrollbar (that needs a CSS-level hide on the underlying scroll container). Hide the scrollbar across every `TrickDirectory` call site (Tricks route, Trick goals, multi-trick sesh entry, Onboarding selection) while keeping scrolling itself functional.
+- **Exit criteria:** Met. Confirmed in-browser (via DevTools computed styles and manual `scrollTop` writes) that every `TrickDirectory` scroll container renders `scrollbar-width: none` and no visible scrollbar track/thumb on the Tricks route, the Trick goals "Add goal" picker, multi-trick sesh entry (both ≥768px and <768px layouts), and Onboarding's selection step (both layouts), while each container still scrolls programmatically. `trick-directory.test.tsx` and dependent tests pass; full `yarn tsc --noEmit` and scoped `eslint` pass.
+- **Notes:** From S117. The ticket description's premise was inaccurate for the pinned `react-native-web@0.21.2`: `showsVerticalScrollIndicator={false}` already emits a real CSS `scrollbar-width: none` / `::-webkit-scrollbar{display:none}` hide on the scrolling element, no extra web-only CSS needed. The actual gap was that `GoalTrickPicker` (`all-trick-goals-screen.tsx`) never passed `hideScrollIndicator`, so it was the only surface with a visible scrollbar. Fix: removed the `hideScrollIndicator` escape hatch entirely from `TrickDirectory` and made `showsVerticalScrollIndicator={false}` unconditional, dropping the prop from the three call sites that used it.
+
 ### [T244] Remove "Up next" label from the sesh home focused trick card
 
 - **Area:** Sesh
