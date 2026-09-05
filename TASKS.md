@@ -156,7 +156,7 @@ _Ship-readiness batch approved 2026-09-04, from `SHIP_READINESS_AUDIT.md`: A1 â†
 
 - **Area:** Security tooling
 - **Priority:** High
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** Repair `security/scripts/check-dependency-audit.mjs` so a process, network, malformed-output, or incomplete-audit failure cannot report success. Preserve the current high/critical advisory and allowlist policy, including Yarn Classic's advisory exit-code bitmask; refresh stale accepted-advisory explanations only when supported by current evidence.
 - **Exit criteria:** Focused Node regression cases demonstrate that spawn failures, signals, error events and missing/invalid completion summaries fail visibly, while complete audit output with allowed advisories passes and an unaccepted high/critical advisory fails. A completed live audit applies that same policy; unavailable network evidence is reported as a blocked verification, never green output.
