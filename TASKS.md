@@ -156,7 +156,7 @@ _Ship-readiness batch approved 2026-09-04, from `SHIP_READINESS_AUDIT.md`: A1 â†
 
 - **Area:** Ship-readiness evidence
 - **Priority:** High
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Implementer
 - **Description:** Recheck signed-in feedback, dynamic-route refreshes, dependency-audit failure reporting, and Sentry/CSP against the exact checked-out development commit and current task/PR evidence. Produce `outputs/ship-readiness/T225.md` with a finding-by-finding disposition and the remaining scope of each follow-up.
 - **Exit criteria:** The committed report identifies its commit/environment and classifies all four findings as fixed, reproducible, or unverified with a specific missing prerequisite, citing current code and focused reproduction evidence where available. It reconciles T221's current claim/PR state without taking over that work and distinguishes local evidence from hosted evidence.
