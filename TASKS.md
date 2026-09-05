@@ -145,7 +145,7 @@ _T247–T248.2 come from critical findings D001–D002 in [DESLOPPIFY.md](DESLOP
 
 - **Area:** Shared local persistence
 - **Priority:** High (inherited from parent T248)
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** Extend the identity-scoped persistence contract with a shared typed local-durability state and retry operation. Retain the latest unsaved snapshot after a failed effect-driven write, reuse the existing FIFO queue for retries, and expose the same contract through all five domain providers without creating separate ad hoc failure models.
 - **Exit criteria:** Shared-hook and parameterized provider tests prove that returned and thrown save failures expose a failed state with the latest unsaved snapshot available for retry; rapid mutations and retries preserve write ordering and never replace newer state with an older failed snapshot; a later successful write clears the failure; and identity changes clear prior-identity status while preventing stale writes or completions from touching the new namespace. All five persistent domains expose the same typed durability handle.
