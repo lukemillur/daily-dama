@@ -21,6 +21,7 @@ import { useIdentityHandle } from '@/shared/persistence/identity-provider';
 import { useIdentityScopedDomain } from '@/shared/persistence/use-identity-scoped-domain';
 import { getSupabaseClient } from '@/shared/supabase/supabase-client';
 import type { DomainSyncRecord, SyncTrigger } from '@/shared/sync/coordinator';
+import type { DomainDiscardOutcome } from '@/shared/sync/discard-outcome';
 import type { SyncTransportRepository } from '@/shared/sync/transport';
 
 interface PracticeHistoryActions {
@@ -39,7 +40,7 @@ export interface PracticeHistorySync {
   readonly pendingCount: number;
   readonly retryableFailureCount: number;
   readonly conflictCount: number;
-  readonly discardPending: () => Promise<void>;
+  readonly discardPending: () => Promise<DomainDiscardOutcome>;
 }
 
 const PracticeHistorySyncContext = createContext<PracticeHistorySync | undefined>(undefined);

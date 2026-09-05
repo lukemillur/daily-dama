@@ -13,13 +13,27 @@ export type PersistenceSaveResult =
   | { readonly status: 'failed'; readonly error: unknown };
 
 /**
- * Serializes writes so an older, slower operation can never overwrite newer
- * state. Failures are contained so subsequent writes can still proceed.
+ * Hook-level write outcome for identity-scoped domain saves. Unlike
+ * `PersistenceSaveResult`, this additionally distinguishes a write that was
+ * superseded by an identity change (the disk write may have landed in the
+ * correct, now-stale namespace, but the caller must not act on it) from a
+ * genuine failure.
  */
-export function createWriteQueue<T>(write: (value: T) => Promise<void>) {
-  let pending = Promise.resolve();
+export type ScopedSaveOutcome =
+  | { readonly status: 'saved' }
+  | { readonly status: 'failed'; readonly error: unknown }
+  | { readonly status: 'superseded' };
 
-  return (value: T) => {
+/**
+ * Serializes writes so an older, slower operation can never overwrite newer
+ * state. Failures are contained so subsequent writes can still proceed. The
+ * worker's resolved value is returned to its own caller so failure and
+ * supersession outcomes reach the code that needs to react to them.
+ */
+export function createWriteQueue<T, R = void>(write: (value: T) => Promise<R>) {
+  let pending: Promise<unknown> = Promise.resolve();
+
+  return (value: T): Promise<R> => {
     const result = pending.then(() => write(value));
     pending = result.catch(() => undefined);
     return result;
