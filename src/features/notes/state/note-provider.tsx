@@ -23,6 +23,7 @@ import { useIdentityHandle } from '@/shared/persistence/identity-provider';
 import { useIdentityScopedDomain } from '@/shared/persistence/use-identity-scoped-domain';
 import { getSupabaseClient } from '@/shared/supabase/supabase-client';
 import type { DomainSyncRecord, SyncTrigger } from '@/shared/sync/coordinator';
+import type { DomainDiscardOutcome } from '@/shared/sync/discard-outcome';
 
 type SaveNoteResult =
   | { readonly status: 'invalid'; readonly errors: NoteDraftErrors }
@@ -45,7 +46,7 @@ export interface NoteSync {
   readonly localMutationTick: number;
   readonly pendingCount: number;
   readonly retryableFailureCount: number;
-  readonly discardPending: () => Promise<void>;
+  readonly discardPending: () => Promise<DomainDiscardOutcome>;
 }
 
 const NoteSyncContext = createContext<NoteSync | undefined>(undefined);

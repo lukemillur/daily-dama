@@ -18,6 +18,9 @@ import { useNoteDomainSync } from '@/features/notes/state/use-note-domain-sync';
 import { createIdentityContext } from '@/shared/persistence/identity-context';
 import { createUserIdentity, GUEST_IDENTITY, type Identity } from '@/shared/persistence/identity';
 import { IdentityHandleContext } from '@/shared/persistence/identity-provider';
+import { physicalKey } from '@/shared/persistence/scoped-storage';
+import type { DomainDiscardOutcome } from '@/shared/sync/discard-outcome';
+import { NOTE_SYNC_ENVELOPE_STORAGE_KEY } from '@/features/notes/persistence/note-sync-envelope';
 import type { SyncTransportRepository } from '@/shared/sync/transport';
 
 const USER_ID = '11111111-1111-1111-1111-111111111111';
@@ -236,7 +239,7 @@ interface Captured {
   runSync?: ReturnType<typeof useNoteDomainSync>['runSync'];
   isSyncing?: boolean;
   pendingCount?: number;
-  discardPending?: () => Promise<void>;
+  discardPending?: () => Promise<DomainDiscardOutcome>;
 }
 
 function makeHarness(
@@ -1112,11 +1115,13 @@ describe('useNoteDomainSync', () => {
     await flush();
     expect(captured.pendingCount).toBe(1);
 
+    let discardOutcome: DomainDiscardOutcome | undefined;
     await act(async () => {
-      await captured.discardPending?.();
+      discardOutcome = await captured.discardPending?.();
     });
     await flush();
 
+    expect(discardOutcome).toEqual({ status: 'discarded' });
     expect(captured.pendingCount).toBe(0);
     // The local edit itself stays applied -- discard only clears the sync
     // obligation, not the primary reducer state.
@@ -1142,11 +1147,13 @@ describe('useNoteDomainSync', () => {
 
     expect(captured.pendingCount).toBe(0);
 
+    let noopOutcome: DomainDiscardOutcome | undefined;
     await act(async () => {
-      await captured.discardPending?.();
+      noopOutcome = await captured.discardPending?.();
     });
     await flush();
 
+    expect(noopOutcome).toEqual({ status: 'discarded' });
     expect(captured.pendingCount).toBe(0);
 
     act(() => {
@@ -1193,6 +1200,50 @@ describe('useNoteDomainSync', () => {
 
     act(() => {
       other.root.unmount();
+    });
+  });
+
+  it('discardPending resolves failed and preserves the outbox in memory and on disk when the underlying write fails', async () => {
+    const transport = createFakeNoteSyncTransport();
+    transport.setFailPush(true);
+    const { root, captured } = await mountHarness(INITIAL_NOTES, () => transport, USER_IDENTITY);
+    await flush();
+
+    act(() => {
+      captured.setCollection?.({ notes: [{ id: 'note-fault', trickId: 'big-cup', trickName: 'Big cup', body: 'Fault edit.', createdAt: 1, updatedAt: 1 }] });
+    });
+    await flush();
+    expect(captured.pendingCount).toBe(1);
+
+    const envelopeKey = physicalKey(USER_IDENTITY, NOTE_SYNC_ENVELOPE_STORAGE_KEY);
+    // jest.spyOn on an already-a-mock (the async-storage manual mock's setItem is already a
+    // jest.fn) reuses the same underlying dispatcher rather than wrapping it, so a plain bound
+    // reference would alias the about-to-be-replaced function and recurse into itself.
+    // Capturing `getMockImplementation()` first grabs the actual original implementation.
+    const realSetItem = (AsyncStorage.setItem as unknown as jest.Mock).getMockImplementation()! as typeof AsyncStorage.setItem;
+    const setItemSpy = jest
+      .spyOn(AsyncStorage, 'setItem')
+      .mockImplementation((key, value) => (key === envelopeKey ? Promise.reject(new Error('disk full')) : realSetItem(key, value)));
+
+    let outcome: DomainDiscardOutcome | undefined;
+    await act(async () => {
+      outcome = await captured.discardPending?.();
+    });
+    await flush();
+
+    expect(outcome).toEqual({ status: 'failed', error: expect.any(Error) });
+    // In-memory preserved: the outbox was never dispatched away.
+    expect(captured.pendingCount).toBe(1);
+
+    setItemSpy.mockRestore();
+
+    // On-disk preserved: the persisted envelope still contains the operation.
+    const persisted = await AsyncStorage.getItem(envelopeKey);
+    expect(persisted).not.toBeNull();
+    expect(JSON.parse(persisted as string).outbox.length).toBeGreaterThan(0);
+
+    act(() => {
+      root.unmount();
     });
   });
 });

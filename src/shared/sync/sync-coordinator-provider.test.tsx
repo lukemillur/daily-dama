@@ -59,6 +59,7 @@ import { IdentityHandleContext } from "@/shared/persistence/identity-provider";
 import { SyncCoordinatorProvider, useSyncCoordinatorStatus } from "@/shared/sync/sync-coordinator-provider";
 import type { SyncTransportRepository } from "@/shared/sync/transport";
 import { CUSTOM_TRICK_SYNC_ENVELOPE_STORAGE_KEY } from "@/features/custom-tricks/persistence/custom-trick-sync-envelope";
+import { NOTE_SYNC_ENVELOPE_STORAGE_KEY } from "@/features/notes/persistence/note-sync-envelope";
 
 const USER_ID = "11111111-1111-1111-1111-111111111111";
 const USER_IDENTITY: Identity = createUserIdentity(USER_ID)!;
@@ -212,11 +213,13 @@ describe("SyncCoordinatorProvider pendingCount/discardAllPending aggregation (fu
     await flush();
     expect(captured.status?.pendingCount).toBe(2);
 
+    let outcome: Awaited<ReturnType<NonNullable<Captured["status"]>["discardAllPending"]>> | undefined;
     await act(async () => {
-      await captured.status?.discardAllPending();
+      outcome = await captured.status?.discardAllPending();
     });
     await flush();
 
+    expect(outcome).toEqual({ status: "discarded" });
     expect(captured.status?.pendingCount).toBe(0);
 
     const persistedKey = identityNamespace(USER_IDENTITY) + ":" + CUSTOM_TRICK_SYNC_ENVELOPE_STORAGE_KEY;
@@ -224,6 +227,57 @@ describe("SyncCoordinatorProvider pendingCount/discardAllPending aggregation (fu
     expect(persisted).not.toBeNull();
     const parsed = JSON.parse(persisted as string) as { outbox: readonly unknown[] };
     expect(parsed.outbox).toEqual([]);
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  it("reports a partial failure naming customTricks when only that domain's envelope write fails, while the note domain outbox still clears", async () => {
+    const { root, captured } = await mountHarness();
+    await flush();
+
+    act(() => {
+      captured.addCustomTrick?.({ kind: "standalone", name: "Around the World", kenteiRank: undefined });
+    });
+    await flush();
+    act(() => {
+      captured.addNote?.({ trickId: "big-cup", trickName: "Big cup", body: "Note body" });
+    });
+    await flush();
+    expect(captured.status?.pendingCount).toBe(2);
+
+    const customTrickKey = identityNamespace(USER_IDENTITY) + ":" + CUSTOM_TRICK_SYNC_ENVELOPE_STORAGE_KEY;
+    // jest.spyOn on an already-a-mock (the async-storage manual mock's setItem is already a
+    // jest.fn) reuses the same underlying dispatcher rather than wrapping it, so a plain bound
+    // reference would alias the about-to-be-replaced function and recurse into itself. Capturing
+    // `getMockImplementation()` first grabs the actual original implementation.
+    const realSetItem = (AsyncStorage.setItem as unknown as jest.Mock).getMockImplementation()! as typeof AsyncStorage.setItem;
+    const setItemSpy = jest
+      .spyOn(AsyncStorage, "setItem")
+      .mockImplementation((key, value) => (key === customTrickKey ? Promise.reject(new Error("disk full")) : realSetItem(key, value)));
+
+    let outcome: Awaited<ReturnType<NonNullable<Captured["status"]>["discardAllPending"]>> | undefined;
+    await act(async () => {
+      outcome = await captured.status?.discardAllPending();
+    });
+    await flush();
+
+    expect(outcome).toEqual({ status: "failed", failures: [{ domain: "customTricks", error: expect.any(Error) }] });
+
+    setItemSpy.mockRestore();
+
+    // Partial success (D5): the note domain, which did not fail, is durably cleared...
+    const noteKey = identityNamespace(USER_IDENTITY) + ":" + NOTE_SYNC_ENVELOPE_STORAGE_KEY;
+    const persistedNote = await AsyncStorage.getItem(noteKey);
+    expect(persistedNote).not.toBeNull();
+    expect((JSON.parse(persistedNote as string) as { outbox: readonly unknown[] }).outbox).toEqual([]);
+
+    // ...while the custom-trick outbox survives both in memory and on disk.
+    expect(captured.status?.pendingCount).toBe(1);
+    const persistedCustomTrick = await AsyncStorage.getItem(customTrickKey);
+    expect(persistedCustomTrick).not.toBeNull();
+    expect((JSON.parse(persistedCustomTrick as string) as { outbox: readonly unknown[] }).outbox.length).toBeGreaterThan(0);
 
     act(() => {
       root.unmount();

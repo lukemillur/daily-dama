@@ -8,6 +8,7 @@ import {
   type KeyValueStorage,
   type PersistenceLoadResult,
   type PersistenceSaveResult,
+  type ScopedSaveOutcome,
 } from '@/shared/persistence/storage';
 
 export interface UseIdentityScopedDomainOptions<State, Action> {
@@ -26,11 +27,14 @@ export interface UseIdentityScopedDomainResult<State, Action> {
   readonly hasHydrated: boolean;
   // Thin wrapper around the same internal enqueueWrite queue the
   // hydration/write effect below already uses -- an explicit imperative
-  // save for a caller (T158s discard-pending-outbox flow) that needs to
-  // know a specific write has been durably queued before proceeding
-  // (e.g. to signOut()), without opening a second, independent write path
-  // that could race the effect-driven writer for the same storage key.
-  readonly saveNow: (value: State) => Promise<void>;
+  // save for a caller (T158's discard-pending-outbox flow) that needs to
+  // know whether a specific write was durably written, failed, or was
+  // superseded by an identity change before proceeding (e.g. to signOut()),
+  // without opening a second, independent write path that could race the
+  // effect-driven writer for the same storage key. This never rejects: a
+  // thrown `save` resolves as `{ status: "failed", error }` instead, so
+  // callers only ever have to branch on the resolved outcome.
+  readonly saveNow: (value: State) => Promise<ScopedSaveOutcome>;
 }
 
 interface TaggedWrite<State> {
@@ -109,30 +113,56 @@ export function useIdentityScopedDomain<State, Action>(
   /* eslint-disable react-hooks/refs */
   const enqueueWrite = useMemo(
     () =>
-      createWriteQueue(async ({ value, taggedGeneration }: TaggedWrite<State>) => {
-        // Cheap early bail-out for the common case: this write's turn arrived only after it was
-        // already superseded (e.g. it was queued behind older items). Not sufficient on its own --
-        // `optionsRef.current.save` is caller-supplied and may itself take arbitrary time (slow
-        // AsyncStorage I/O, or other work) before it actually calls `setItem`, so the identity can
-        // still flip *during* `save`. The authoritative guard is inside `guardedStorage.setItem`
-        // below, which re-checks synchronously the instant `setItem` is actually invoked -- closing
-        // the race regardless of how long `save` took to get there.
-        if (!context.isCurrentGeneration(taggedGeneration)) return;
+      createWriteQueue<TaggedWrite<State>, ScopedSaveOutcome>(
+        async ({ value, taggedGeneration }: TaggedWrite<State>) => {
+          // Cheap early bail-out for the common case: this write's turn arrived only after it was
+          // already superseded (e.g. it was queued behind older items). Not sufficient on its own --
+          // `optionsRef.current.save` is caller-supplied and may itself take arbitrary time (slow
+          // AsyncStorage I/O, or other work) before it actually calls `setItem`, so the identity can
+          // still flip *during* `save`. The authoritative guard is inside `guardedStorage.setItem`
+          // below, which re-checks synchronously the instant `setItem` is actually invoked -- closing
+          // the race regardless of how long `save` took to get there.
+          if (!context.isCurrentGeneration(taggedGeneration)) return { status: 'superseded' };
 
-        const storage = createGuestMigratingStorage(AsyncStorage, context);
-        const guardedStorage: KeyValueStorage = {
-          getItem: storage.getItem,
-          setItem: (key, itemValue) => {
-            if (!context.isCurrentGeneration(taggedGeneration)) return Promise.resolve();
-            return storage.setItem(key, itemValue);
-          },
-        };
+          let supersededDuringWrite = false;
+          const storage = createGuestMigratingStorage(AsyncStorage, context);
+          const guardedStorage: KeyValueStorage = {
+            getItem: storage.getItem,
+            setItem: (key, itemValue) => {
+              if (!context.isCurrentGeneration(taggedGeneration)) {
+                supersededDuringWrite = true;
+                return Promise.resolve();
+              }
+              return storage.setItem(key, itemValue);
+            },
+          };
 
-        const result = await optionsRef.current.save(guardedStorage, value);
-        if (result.status === 'failed') {
-          optionsRef.current.onSaveFailed?.(result.error);
-        }
-      }),
+          try {
+            const result = await optionsRef.current.save(guardedStorage, value);
+
+            // A generation flip during `save` is reported as superseded regardless of the
+            // underlying result: the disk write (if it happened) landed in the correct, now-stale
+            // namespace, so there is no replay risk, but the caller must not act on this outcome
+            // (e.g. dispatch into a now-rehydrating reducer, or advance a logout flow).
+            if (supersededDuringWrite || !context.isCurrentGeneration(taggedGeneration)) {
+              return { status: 'superseded' };
+            }
+
+            if (result.status === 'failed') {
+              optionsRef.current.onSaveFailed?.(result.error);
+              return { status: 'failed', error: result.error };
+            }
+
+            return { status: 'saved' };
+          } catch (error) {
+            if (supersededDuringWrite || !context.isCurrentGeneration(taggedGeneration)) {
+              return { status: 'superseded' };
+            }
+            optionsRef.current.onSaveFailed?.(error);
+            return { status: 'failed', error };
+          }
+        },
+      ),
     [context],
   );
   /* eslint-enable react-hooks/refs */

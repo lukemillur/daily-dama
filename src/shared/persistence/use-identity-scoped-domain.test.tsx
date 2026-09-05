@@ -7,7 +7,7 @@ import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 import { IdentityHandleContext } from '@/shared/persistence/identity-provider';
 import { createIdentityContext } from '@/shared/persistence/identity-context';
 import type { Identity } from '@/shared/persistence/identity';
-import type { KeyValueStorage } from '@/shared/persistence/storage';
+import type { KeyValueStorage, PersistenceSaveResult, ScopedSaveOutcome } from '@/shared/persistence/storage';
 import {
   useIdentityScopedDomain,
   type UseIdentityScopedDomainOptions,
@@ -87,7 +87,7 @@ interface Captured {
   hasHydrated?: boolean;
   setValue?: (value: number) => void;
   setIdentity?: (next: Identity) => void;
-  saveNow?: (value: FakeState) => Promise<void>;
+  saveNow?: (value: FakeState) => Promise<ScopedSaveOutcome>;
 }
 
 function makeHarness(options: UseIdentityScopedDomainOptions<FakeState, FakeAction>, captured: Captured) {
@@ -445,7 +445,7 @@ describe('useIdentityScopedDomain', () => {
 
     setItem.mockClear();
 
-    let saveNowPromise: Promise<void> | undefined;
+    let saveNowPromise: Promise<ScopedSaveOutcome> | undefined;
     act(() => {
       saveNowPromise = captured.saveNow?.({ value: 9 });
     });
@@ -456,11 +456,153 @@ describe('useIdentityScopedDomain', () => {
       captured.setIdentity?.(USER_B);
     });
 
+    let outcome: ScopedSaveOutcome | undefined;
     await act(async () => {
-      await saveNowPromise;
+      outcome = await saveNowPromise;
       await Promise.resolve();
     });
 
+    expect(setItem).not.toHaveBeenCalled();
+    expect(outcome).toEqual({ status: 'superseded' });
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  it('resolves saveNow with { status: "saved" } on a successful write', async () => {
+    const options: UseIdentityScopedDomainOptions<FakeState, FakeAction> = {
+      reducer: fakeReducer,
+      initialState: INITIAL_FAKE_STATE,
+      load: async () => ({ status: 'empty', value: INITIAL_FAKE_STATE }),
+      save: async (storage, value) => {
+        await storage.setItem('fake-key', JSON.stringify(value));
+        return { status: 'saved' };
+      },
+      createRestoreAction: (value) => ({ type: 'restored', value: value.value }),
+    };
+
+    const { root, captured } = await mountHarness(options);
+
+    let outcome: ScopedSaveOutcome | undefined;
+    await act(async () => {
+      outcome = await captured.saveNow?.({ value: 1 });
+    });
+
+    expect(outcome).toEqual({ status: 'saved' });
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  it('resolves saveNow with { status: "failed" } and calls onSaveFailed when save returns a failed result, and the queue survives for a following write', async () => {
+    const onSaveFailed = jest.fn<(error: unknown) => void>();
+    const failure = new Error('disk full');
+
+    const options: UseIdentityScopedDomainOptions<FakeState, FakeAction> = {
+      reducer: fakeReducer,
+      initialState: INITIAL_FAKE_STATE,
+      load: async () => ({ status: 'empty', value: INITIAL_FAKE_STATE }),
+      save: jest
+        .fn<UseIdentityScopedDomainOptions<FakeState, FakeAction>['save']>()
+        .mockResolvedValueOnce({ status: 'failed', error: failure })
+        .mockResolvedValueOnce({ status: 'saved' }),
+      createRestoreAction: (value) => ({ type: 'restored', value: value.value }),
+      onSaveFailed,
+    };
+
+    const { root, captured } = await mountHarness(options);
+
+    let firstOutcome: ScopedSaveOutcome | undefined;
+    await act(async () => {
+      firstOutcome = await captured.saveNow?.({ value: 1 });
+    });
+
+    expect(firstOutcome).toEqual({ status: 'failed', error: failure });
+    expect(onSaveFailed).toHaveBeenCalledTimes(1);
+    expect(onSaveFailed).toHaveBeenCalledWith(failure);
+
+    let secondOutcome: ScopedSaveOutcome | undefined;
+    await act(async () => {
+      secondOutcome = await captured.saveNow?.({ value: 2 });
+    });
+
+    expect(secondOutcome).toEqual({ status: 'saved' });
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  it('resolves saveNow with { status: "failed" } carrying the thrown error when save throws, and produces no unhandled rejection', async () => {
+    const onSaveFailed = jest.fn<(error: unknown) => void>();
+    const thrown = new Error('unexpected');
+
+    const options: UseIdentityScopedDomainOptions<FakeState, FakeAction> = {
+      reducer: fakeReducer,
+      initialState: INITIAL_FAKE_STATE,
+      load: async () => ({ status: 'empty', value: INITIAL_FAKE_STATE }),
+      save: async () => {
+        throw thrown;
+      },
+      createRestoreAction: (value) => ({ type: 'restored', value: value.value }),
+      onSaveFailed,
+    };
+
+    const { root, captured } = await mountHarness(options);
+
+    let outcome: ScopedSaveOutcome | undefined;
+    await act(async () => {
+      outcome = await captured.saveNow?.({ value: 1 });
+    });
+
+    expect(outcome).toEqual({ status: 'failed', error: thrown });
+    expect(onSaveFailed).toHaveBeenCalledTimes(1);
+    expect(onSaveFailed).toHaveBeenCalledWith(thrown);
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  it('reports { status: "superseded" } when the generation flips during save, and the underlying setItem is never invoked', async () => {
+    const setItem = jest.spyOn(AsyncStorage, 'setItem');
+    const saveGate = deferred<PersistenceSaveResult>();
+
+    const options: UseIdentityScopedDomainOptions<FakeState, FakeAction> = {
+      reducer: fakeReducer,
+      initialState: INITIAL_FAKE_STATE,
+      load: async () => ({ status: 'empty', value: INITIAL_FAKE_STATE }),
+      save: async (storage, value) => {
+        const result = await saveGate.promise;
+        await storage.setItem('fake-key', JSON.stringify(value));
+        return result;
+      },
+      createRestoreAction: (value) => ({ type: 'restored', value: value.value }),
+    };
+
+    const { root, captured } = await mountHarness(options);
+    setItem.mockClear();
+
+    let saveNowPromise: Promise<ScopedSaveOutcome> | undefined;
+    act(() => {
+      saveNowPromise = captured.saveNow?.({ value: 3 });
+    });
+
+    // Flip identity while `save` is still awaiting the deferred gate.
+    act(() => {
+      captured.setIdentity?.(USER_A);
+    });
+
+    let outcome: ScopedSaveOutcome | undefined;
+    await act(async () => {
+      saveGate.resolve({ status: 'saved' });
+      outcome = await saveNowPromise;
+      await Promise.resolve();
+    });
+
+    expect(outcome).toEqual({ status: 'superseded' });
     expect(setItem).not.toHaveBeenCalled();
 
     act(() => {
