@@ -152,15 +152,6 @@ _T236–T246 come from stories S106–S118 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 _Ship-readiness batch approved 2026-09-04, from `SHIP_READINESS_AUDIT.md`: A1 → T225, A4 → T228, A9 → T233 are autonomous work. A2/A3/A5/A6/A7/A8/A10/A11 → T226/T227/T229/T230/T231/T232/T234/T235 live in `TASKS_COLLABORATIVE.md`. The audit describes a historical snapshot, not this checkout or a selected release. These entries do not restore the removed T162 Phase 6 launch gate; older phase-gating prose above is historical and superseded by the revised audit scope._
 
-### [T228] Fail the dependency-audit gate on failed or incomplete audit output
-
-- **Area:** Security tooling
-- **Priority:** High
-- **Status:** In progress
-- **Planning:** Required
-- **Description:** Repair `security/scripts/check-dependency-audit.mjs` so a process, network, malformed-output, or incomplete-audit failure cannot report success. Preserve the current high/critical advisory and allowlist policy, including Yarn Classic's advisory exit-code bitmask; refresh stale accepted-advisory explanations only when supported by current evidence.
-- **Exit criteria:** Focused Node regression cases demonstrate that spawn failures, signals, error events and missing/invalid completion summaries fail visibly, while complete audit output with allowed advisories passes and an unaccepted high/critical advisory fails. A completed live audit applies that same policy; unavailable network evidence is reported as a blocked verification, never green output.
-- **Notes:** From A4; audit section 1. Depends on T225. Inspect `security/README.md` and `security/accepted-dependency-advisories.json`. Do not treat every nonzero Yarn exit as an operational failure: a complete advisory report may legitimately have a nonzero severity bitmask. No dependency overhaul or new advisory exceptions are authorized by this task.
 
 ### [T233] Verify the fresh guest practice journey in a real web browser
 

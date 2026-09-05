@@ -63,6 +63,7 @@
     "security:check-headers": "node security/scripts/check-csp-headers.mjs",
     "test:e2e:security": "playwright test --config=playwright.security.config.ts",
     "security:check-dependency-audit": "node security/scripts/check-dependency-audit.mjs",
+    "security:verify-dependency-audit-gate": "node --test security/scripts/verify-dependency-audit-gate.mjs",
     "security:check-bundle-secrets": "node security/scripts/check-bundle-secrets.mjs",
     "security:verify-secret-detection": "node --test security/scripts/verify-secret-detection.mjs"
   },

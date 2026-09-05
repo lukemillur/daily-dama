@@ -161,18 +161,31 @@ Scheduled, release, `main`-push, and manual runs ignore paths and run all three,
 so newly published advisories and external scanner drift are still detected even
 when the repository has not changed.
 
-- `dependency-audit` -- runs `yarn security:check-dependency-audit`
-  (`security/scripts/check-dependency-audit.mjs`). `yarn audit --level <severity>` does
-  **not** gate Yarn Classic's exit code: the flag only filters the printed report, while
-  the actual exit code is a bitmask of every severity present regardless of `--level`
-  (confirmed locally while planning this task). This script instead runs
-  `yarn audit --json`, parses the NDJSON output itself, and fails if any `high`/`critical`
-  advisory isn't listed in `security/accepted-dependency-advisories.json`. That file is a
-  small, dated, reasoned allowlist -- currently the four Metro/bundler-devDependency
-  advisories (`image-size` x2, `nanoid`, `uuid`) that have no upstream patch as of
-  2026-08-24 and are build-time-only (never shipped in the web bundle). Revisit it on the
-  next Expo/Metro upgrade; prefer bumping the dependency and removing the entry over
-  leaving it stale.
+- `dependency-audit` -- first runs `yarn security:verify-dependency-audit-gate`, the
+  offline `node:test` self-test for the gate script itself, then
+  `yarn security:check-dependency-audit` (`security/scripts/check-dependency-audit.mjs`)
+  against the live registry. `yarn audit --level <severity>` does **not** gate Yarn
+  Classic's exit code: the flag only filters the printed report, while the actual exit
+  code is a presence bitmask over severity counts (`info`=1, `low`=2, `moderate`=4,
+  `high`=8, `critical`=16), computed before `--level` is applied and confirmed against
+  Yarn Classic 1.22.22's own source. That mask collides with yarn's generic failure exit
+  of 1 (bit-identical to the `info` bit), so the script cannot trust the exit code alone
+  to mean "audit completed" -- it treats exactly one well-formed `auditSummary` NDJSON
+  line, with a mask matching the exit status, as the completion signal, and fails closed
+  (`BLOCKED:`, exit 2) on spawn failure, a killed process, a `type: "error"` line, a
+  missing/duplicated/malformed `auditSummary`, a malformed advisory, or a summary/advisory
+  mismatch. Exit 0 means the audit completed and every gated advisory is accepted; exit 1
+  means it completed and found an un-accepted `high`/`critical` advisory; exit 2 means the
+  run could not be trusted and is never treated as a pass. A nonzero exit that matches the
+  mask (e.g. moderate-only findings) is not itself a failure. Accepted advisories live in
+  `security/accepted-dependency-advisories.json`, a small, dated, reasoned allowlist keyed
+  by advisory id, package, severity, `reason`, and `reviewedAsOf` (`YYYY-MM-DD`) --
+  currently the four Metro/bundler-devDependency advisories (`image-size` x2, `nanoid`,
+  `uuid`). Two of those four now have a reachable upstream patch per live advisory data
+  (`nanoid` and `uuid`) but resolve to an older transitive version pinned by the lockfile;
+  bumping that lockfile resolution is a separate change, tracked outside this file.
+  Revisit the allowlist on the next Expo/Metro upgrade; prefer bumping the dependency and
+  removing the entry over leaving it stale.
 - `secret-scan` -- `gitleaks/gitleaks-action@v3` scans the full checked-out git history
   (`fetch-depth: 0`) using this repo's `.gitleaks.toml`, which extends gitleaks' default
   ruleset (already covers this app's real secret shapes -- Supabase anon/service_role
@@ -228,6 +241,7 @@ stays disabled via `GITLEAKS_ENABLE_COMMENTS: "false"`.
 same as the local Supabase stack in `supabase/README.md`):
 
 - `yarn security:check-dependency-audit` -- no Docker needed.
+- `yarn security:verify-dependency-audit-gate` -- no Docker, no network needed.
 - `yarn security:check-bundle-secrets` -- requires Docker.
 - `yarn security:verify-secret-detection` -- requires Docker.
 

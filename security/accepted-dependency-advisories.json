@@ -3,28 +3,28 @@
     "id": 1138808,
     "package": "image-size",
     "severity": "high",
-    "reason": "Metro/bundler build-time devDependency (transitive via expo), not shipped in the web bundle, no upstream patch available as of 2026-08-24 -- revisit on next Expo/Metro upgrade.",
-    "noPatchAsOf": "2026-08-24"
+    "reason": "Metro/bundler build-time devDependency (transitive via expo), not shipped in the web bundle. Live advisory data as of 2026-09-04 still reports patched_versions \"<0.0.0\" -- no upstream patch exists. Revisit on next Expo/Metro upgrade.",
+    "reviewedAsOf": "2026-09-04"
   },
   {
     "id": 1138809,
     "package": "image-size",
     "severity": "high",
-    "reason": "Metro/bundler build-time devDependency (transitive via expo), not shipped in the web bundle, no upstream patch available as of 2026-08-24 -- revisit on next Expo/Metro upgrade.",
-    "noPatchAsOf": "2026-08-24"
+    "reason": "Metro/bundler build-time devDependency (transitive via expo), not shipped in the web bundle. Live advisory data as of 2026-09-04 still reports patched_versions \"<0.0.0\" -- no upstream patch exists. Revisit on next Expo/Metro upgrade.",
+    "reviewedAsOf": "2026-09-04"
   },
   {
     "id": 1139427,
     "package": "nanoid",
     "severity": "high",
-    "reason": "Metro/bundler build-time devDependency (transitive via expo), not shipped in the web bundle, no upstream patch available as of 2026-08-24 -- revisit on next Expo/Metro upgrade.",
-    "noPatchAsOf": "2026-08-24"
+    "reason": "An upstream patch now exists (patched_versions \">=3.3.18\"), but the tree resolves nanoid@3.3.17 transitively through expo-router and postcss (Metro/bundler build-time only, not shipped in the web bundle). Bumping the resolved version is a yarn.lock change and is deliberately out of scope for this review; tracked as a follow-up dependency bump rather than closed here.",
+    "reviewedAsOf": "2026-09-04"
   },
   {
     "id": 1119441,
     "package": "uuid",
     "severity": "moderate",
-    "reason": "Metro/bundler build-time devDependency (transitive via expo), not shipped in the web bundle, no upstream patch available as of 2026-08-24 -- revisit on next Expo/Metro upgrade.",
-    "noPatchAsOf": "2026-08-24"
+    "reason": "Documentation only -- moderate is below this gate's high/critical threshold and does not affect pass/fail. An upstream patch exists (patched_versions \">=11.1.1\"); the tree resolves uuid@7.0.3 transitively through the same build-time dependency chain as the other entries here.",
+    "reviewedAsOf": "2026-09-04"
   }
 ]
