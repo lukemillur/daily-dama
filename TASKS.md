@@ -152,16 +152,6 @@ _T236–T246 come from stories S106–S118 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 _Ship-readiness batch approved 2026-09-04, from `SHIP_READINESS_AUDIT.md`: A1 → T225, A4 → T228, A9 → T233 are autonomous work. A2/A3/A5/A6/A7/A8/A10/A11 → T226/T227/T229/T230/T231/T232/T234/T235 live in `TASKS_COLLABORATIVE.md`. The audit describes a historical snapshot, not this checkout or a selected release. These entries do not restore the removed T162 Phase 6 launch gate; older phase-gating prose above is historical and superseded by the revised audit scope._
 
-### [T225] Reconcile the four demonstrated audit findings against current development
-
-- **Area:** Ship-readiness evidence
-- **Priority:** High
-- **Status:** Not started
-- **Planning:** Implementer
-- **Description:** Recheck signed-in feedback, dynamic-route refreshes, dependency-audit failure reporting, and Sentry/CSP against the exact checked-out development commit and current task/PR evidence. Produce `outputs/ship-readiness/T225.md` with a finding-by-finding disposition and the remaining scope of each follow-up.
-- **Exit criteria:** The committed report identifies its commit/environment and classifies all four findings as fixed, reproducible, or unverified with a specific missing prerequisite, citing current code and focused reproduction evidence where available. It reconciles T221's current claim/PR state without taking over that work and distinguishes local evidence from hosted evidence.
-- **Notes:** From A1; audit sections 1 and "Where things stand." This is a bounded investigation whose completed output may contain unverified findings; that never marks an implementation or release gate passed. Use the checked-out development revision as the investigation baseline, not an owner-selected production release. No hosted writes, release selection, defect implementation, or tracker closure of other tickets. Remote-access failure is recorded as unverified rather than preventing the local report.
-
 ### [T228] Fail the dependency-audit gate on failed or incomplete audit output
 
 - **Area:** Security tooling
