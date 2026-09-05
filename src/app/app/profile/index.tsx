@@ -84,7 +84,6 @@ export default function ProfileScreen() {
           <RetakeButton onPress={() => router.push("/feedback")}>
             Send feedback
           </RetakeButton>
-          <Divider />
           <AccountSection />
         </Content>
       </ProfileScroll>
