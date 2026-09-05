@@ -43,7 +43,6 @@ export interface TrickDirectoryProps {
   readonly footer?: ReactElement;
   readonly fixedHeader?: boolean;
   readonly fixedFooter?: boolean;
-  readonly hideScrollIndicator?: boolean;
   readonly showFocusedSection?: boolean;
   /**
    * The persisted profile focus list to section by when `showFocusedSection`
@@ -83,7 +82,6 @@ export function TrickDirectory({
   footer,
   fixedHeader = false,
   fixedFooter = false,
-  hideScrollIndicator = false,
   showFocusedSection = false,
   focusedTrickIds,
   lacedCountByTrickId,
@@ -138,7 +136,11 @@ export function TrickDirectory({
       }}
       keyExtractor={(trick) => trick.id}
       stickySectionHeadersEnabled
-      showsVerticalScrollIndicator={!hideScrollIndicator}
+      // Always hidden. On web react-native-web turns `showsVerticalScrollIndicator={false}`
+      // into a real CSS hide on the scrolling element (`scrollbar-width: none` plus
+      // `::-webkit-scrollbar { display: none }`), so no extra web-only CSS is needed here.
+      // The list still scrolls by wheel, trackpad, touch drag, and keyboard.
+      showsVerticalScrollIndicator={false}
       contentContainerStyle={{ paddingBottom: fixedFooter ? 0 : 24 }}
       ListHeaderComponent={fixedHeader ? undefined : directoryHeader}
       ListFooterComponent={fixedFooter ? undefined : footer}
