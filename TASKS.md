@@ -137,7 +137,7 @@ _T247–T248.2 come from critical findings D001–D002 in [DESLOPPIFY.md](DESLOP
 
 - **Area:** Authentication / local persistence boundary
 - **Priority:** High
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** Make “Discard and log out” advance only after every affected outbox has been durably cleared. Give imperative identity-scoped saves a typed outcome that distinguishes successful persistence, failure, and identity-generation supersession; propagate those outcomes through all five domain discard operations and the sync coordinator so the logout guard can retain the prompt and report actionable failure instead of signing out.
 - **Exit criteria:** Fault-injection tests covering the shared persistence hook, all five domain discard contracts, coordinator aggregation, and logout flow prove that a returned save failure, thrown write failure, or superseded generation identifies the unsuccessful domain, preserves that domain's outbox in memory and on disk, keeps the logout prompt open with actionable error copy, and never calls `signOut`. The same integration coverage proves a later successful discard clears the current identity's outboxes before signing out, cannot replay discarded operations after remount, and cannot advance from a stale identity result.
