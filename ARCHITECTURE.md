@@ -272,6 +272,8 @@ sequenceDiagram
 
 The shared `createWriteQueue` serializes writes inside each provider. Without it, a slow older write could finish after a faster newer write and roll storage backward. Failures are swallowed only at the queue-tail level so the queue remains usable; providers log failed saves with `console.warn`.
 
+Each domain's `useIdentityScopedDomain` call also exposes a runtime-only `LocalDurabilityStatus` (`saved` or `failed` with the latest unsaved snapshot and a `retry()`), set from inside the same write-queue worker so a slower write's outcome can never overwrite a faster, later write's outcome. An identity switch clears a prior identity's failure immediately. This durability handle is distinct from cloud `SyncStatus`/outbox state and, as of T248.1, is exposed per domain (`use<Domain>Durability()`) but not yet aggregated or surfaced in the UI -- that is T248.2's scope.
+
 The storage adapters return discriminated results:
 
 - `loaded` — a valid stored document was restored;
@@ -286,7 +288,7 @@ The current design optimizes for clarity and prototype resilience:
 
 - each update rewrites a whole small document;
 - malformed or unsupported documents recover to defaults rather than partially loading questionable data;
-- save failures are observable in logs but are not surfaced in product UI or retried beyond later writes;
+- save failures are observable in logs and, as of T248.1, in a typed per-domain runtime durability status with an explicit `retry()`, but are not yet surfaced in product UI (T248.2);
 - schema constants reserve a migration boundary, but there is no migration pipeline yet.
 
 This is a good fit for current scale. Practice history is the first domain likely to outgrow whole-document AsyncStorage writes because it grows monotonically.

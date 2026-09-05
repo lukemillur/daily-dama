@@ -141,16 +141,6 @@ _T247–T248.2 come from critical findings D001–D002 in [DESLOPPIFY.md](DESLOP
 - **Description:** Make failed local writes visible and retryable across profile, custom tricks, practice history, goals, and notes so the UI never silently acknowledges state that exists only in memory.
 - **Notes:** Umbrella from D002. Complete T248.1–T248.2 in order. Depends on T247. Keep local-durability state distinct from cloud synchronization state.
 
-### [T248.1] Retain and expose failed local writes
-
-- **Area:** Shared local persistence
-- **Priority:** High (inherited from parent T248)
-- **Status:** Not started
-- **Planning:** Required
-- **Description:** Extend the identity-scoped persistence contract with a shared typed local-durability state and retry operation. Retain the latest unsaved snapshot after a failed effect-driven write, reuse the existing FIFO queue for retries, and expose the same contract through all five domain providers without creating separate ad hoc failure models.
-- **Exit criteria:** Shared-hook and parameterized provider tests prove that returned and thrown save failures expose a failed state with the latest unsaved snapshot available for retry; rapid mutations and retries preserve write ordering and never replace newer state with an older failed snapshot; a later successful write clears the failure; and identity changes clear prior-identity status while preventing stale writes or completions from touching the new namespace. All five persistent domains expose the same typed durability handle.
-- **Notes:** From D002. Depends on T247 so normal and imperative writes share one durable-outcome vocabulary. Keep failure state runtime-only and separate from cloud outboxes/`SyncStatus`; preserve each domain's reducer and persistence ownership. Logging may remain diagnostic but cannot be the only failure signal.
-
 ### [T248.2] Add an app-level local-save warning and retry action
 
 - **Area:** App shell / local persistence UX

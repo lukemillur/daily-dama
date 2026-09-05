@@ -18,6 +18,7 @@ import {
 import { createPracticeHistorySyncTransportAdapter } from '@/features/stats/persistence/practice-history-sync-transport';
 import { usePracticeHistoryDomainSync } from '@/features/stats/state/use-practice-history-domain-sync';
 import { useIdentityHandle } from '@/shared/persistence/identity-provider';
+import type { LocalDurabilityStatus } from '@/shared/persistence/storage';
 import { useIdentityScopedDomain } from '@/shared/persistence/use-identity-scoped-domain';
 import { getSupabaseClient } from '@/shared/supabase/supabase-client';
 import type { DomainSyncRecord, SyncTrigger } from '@/shared/sync/coordinator';
@@ -45,8 +46,14 @@ export interface PracticeHistorySync {
 
 const PracticeHistorySyncContext = createContext<PracticeHistorySync | undefined>(undefined);
 
+// Runtime-only local-durability status, distinct from the cloud-facing
+// PracticeHistorySync context above -- see `LocalDurabilityStatus`'s doc comment.
+const PracticeHistoryDurabilityContext = createContext<
+  LocalDurabilityStatus<PracticeHistory> | undefined
+>(undefined);
+
 export function PracticeHistoryProvider({ children }: PropsWithChildren) {
-  const { state: history, dispatch, hasHydrated } = useIdentityScopedDomain({
+  const { state: history, dispatch, hasHydrated, durability } = useIdentityScopedDomain({
     reducer: practiceHistoryReducer,
     initialState: INITIAL_PRACTICE_HISTORY,
     load: loadPracticeHistory,
@@ -102,7 +109,11 @@ export function PracticeHistoryProvider({ children }: PropsWithChildren) {
   return (
     <PracticeHistoryStateContext.Provider value={history}>
       <PracticeHistoryActionsContext.Provider value={actions}>
-        <PracticeHistorySyncContext.Provider value={sync}>{children}</PracticeHistorySyncContext.Provider>
+        <PracticeHistorySyncContext.Provider value={sync}>
+          <PracticeHistoryDurabilityContext.Provider value={durability}>
+            {children}
+          </PracticeHistoryDurabilityContext.Provider>
+        </PracticeHistorySyncContext.Provider>
       </PracticeHistoryActionsContext.Provider>
     </PracticeHistoryStateContext.Provider>
   );
@@ -130,6 +141,14 @@ export function usePracticeHistorySync(): PracticeHistorySync {
     throw new Error('usePracticeHistorySync must be used within PracticeHistoryProvider.');
   }
   return sync;
+}
+
+export function usePracticeHistoryDurability(): LocalDurabilityStatus<PracticeHistory> {
+  const durability = useContext(PracticeHistoryDurabilityContext);
+  if (!durability) {
+    throw new Error('usePracticeHistoryDurability must be used within PracticeHistoryProvider.');
+  }
+  return durability;
 }
 
 const styles = StyleSheet.create({

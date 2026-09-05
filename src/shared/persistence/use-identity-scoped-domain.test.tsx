@@ -7,7 +7,12 @@ import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 import { IdentityHandleContext } from '@/shared/persistence/identity-provider';
 import { createIdentityContext } from '@/shared/persistence/identity-context';
 import type { Identity } from '@/shared/persistence/identity';
-import type { KeyValueStorage, PersistenceSaveResult, ScopedSaveOutcome } from '@/shared/persistence/storage';
+import type {
+  KeyValueStorage,
+  LocalDurabilityStatus,
+  PersistenceSaveResult,
+  ScopedSaveOutcome,
+} from '@/shared/persistence/storage';
 import {
   useIdentityScopedDomain,
   type UseIdentityScopedDomainOptions,
@@ -85,6 +90,7 @@ function IdentityHandleTestProvider({
 interface Captured {
   state?: FakeState;
   hasHydrated?: boolean;
+  durability?: LocalDurabilityStatus<FakeState>;
   setValue?: (value: number) => void;
   setIdentity?: (next: Identity) => void;
   saveNow?: (value: FakeState) => Promise<ScopedSaveOutcome>;
@@ -92,11 +98,12 @@ interface Captured {
 
 function makeHarness(options: UseIdentityScopedDomainOptions<FakeState, FakeAction>, captured: Captured) {
   return function Harness() {
-    const { state, dispatch, hasHydrated, saveNow } = useIdentityScopedDomain(options);
+    const { state, dispatch, hasHydrated, durability, saveNow } = useIdentityScopedDomain(options);
 
     useEffect(() => {
       captured.state = state;
       captured.hasHydrated = hasHydrated;
+      captured.durability = durability;
       captured.setValue = (value: number) => dispatch({ type: 'valueSet', value });
       captured.saveNow = saveNow;
     });
@@ -604,6 +611,285 @@ describe('useIdentityScopedDomain', () => {
 
     expect(outcome).toEqual({ status: 'superseded' });
     expect(setItem).not.toHaveBeenCalled();
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  it('exposes a failed durability status with the latest snapshot after a returned save failure', async () => {
+    const failure = new Error('disk full');
+
+    const options: UseIdentityScopedDomainOptions<FakeState, FakeAction> = {
+      reducer: fakeReducer,
+      initialState: INITIAL_FAKE_STATE,
+      load: async () => ({ status: 'empty', value: INITIAL_FAKE_STATE }),
+      save: jest
+        .fn<UseIdentityScopedDomainOptions<FakeState, FakeAction>['save']>()
+        .mockResolvedValueOnce({ status: 'failed', error: failure }),
+      createRestoreAction: (value) => ({ type: 'restored', value: value.value }),
+    };
+
+    const { root, captured } = await mountHarness(options);
+
+    // Effect-driven write, not saveNow, so the durability-setting code path inside the write
+    // queue's worker (not the imperative saveNow wrapper) is exercised.
+    act(() => {
+      captured.setValue?.(5);
+    });
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(captured.durability?.status).toBe('failed');
+    if (captured.durability?.status === 'failed') {
+      expect(captured.durability.snapshot).toEqual({ value: 5 });
+      expect(typeof captured.durability.retry).toBe('function');
+    }
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  it('exposes a failed durability status with the latest snapshot after a thrown save', async () => {
+    const thrown = new Error('unexpected');
+    let saveCallCount = 0;
+
+    const options: UseIdentityScopedDomainOptions<FakeState, FakeAction> = {
+      reducer: fakeReducer,
+      initialState: INITIAL_FAKE_STATE,
+      load: async () => ({ status: 'empty', value: INITIAL_FAKE_STATE }),
+      save: async () => {
+        saveCallCount += 1;
+        if (saveCallCount === 1) throw thrown;
+        return { status: 'saved' };
+      },
+      createRestoreAction: (value) => ({ type: 'restored', value: value.value }),
+    };
+
+    const { root, captured } = await mountHarness(options);
+
+    act(() => {
+      captured.setValue?.(7);
+    });
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(captured.durability?.status).toBe('failed');
+    if (captured.durability?.status === 'failed') {
+      expect(captured.durability.snapshot).toEqual({ value: 7 });
+    }
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  it('clears the failure once a later write succeeds', async () => {
+    const failure = new Error('disk full');
+
+    const options: UseIdentityScopedDomainOptions<FakeState, FakeAction> = {
+      reducer: fakeReducer,
+      initialState: INITIAL_FAKE_STATE,
+      load: async () => ({ status: 'empty', value: INITIAL_FAKE_STATE }),
+      save: jest
+        .fn<UseIdentityScopedDomainOptions<FakeState, FakeAction>['save']>()
+        .mockResolvedValueOnce({ status: 'failed', error: failure })
+        .mockResolvedValueOnce({ status: 'saved' }),
+      createRestoreAction: (value) => ({ type: 'restored', value: value.value }),
+    };
+
+    const { root, captured } = await mountHarness(options);
+
+    act(() => {
+      captured.setValue?.(1);
+    });
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(captured.durability?.status).toBe('failed');
+
+    act(() => {
+      captured.setValue?.(2);
+    });
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(captured.durability).toEqual({ status: 'saved' });
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  it("retry() re-attempts the retained snapshot through the same queue and clears the failure on success", async () => {
+    const failure = new Error('disk full');
+
+    const options: UseIdentityScopedDomainOptions<FakeState, FakeAction> = {
+      reducer: fakeReducer,
+      initialState: INITIAL_FAKE_STATE,
+      load: async () => ({ status: 'empty', value: INITIAL_FAKE_STATE }),
+      save: jest
+        .fn<UseIdentityScopedDomainOptions<FakeState, FakeAction>['save']>()
+        .mockResolvedValueOnce({ status: 'failed', error: failure })
+        .mockResolvedValueOnce({ status: 'saved' }),
+      createRestoreAction: (value) => ({ type: 'restored', value: value.value }),
+    };
+
+    const { root, captured } = await mountHarness(options);
+
+    act(() => {
+      captured.setValue?.(4);
+    });
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(captured.durability?.status).toBe('failed');
+
+    let retryOutcome: ScopedSaveOutcome | undefined;
+    await act(async () => {
+      if (captured.durability?.status === 'failed') {
+        retryOutcome = await captured.durability.retry();
+      }
+    });
+
+    expect(retryOutcome).toEqual({ status: 'saved' });
+    expect(captured.durability).toEqual({ status: 'saved' });
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  it("rapid mutations never let an earlier failure's snapshot win over a later write's outcome (later succeeds)", async () => {
+    const options: UseIdentityScopedDomainOptions<FakeState, FakeAction> = {
+      reducer: fakeReducer,
+      initialState: INITIAL_FAKE_STATE,
+      load: async () => ({ status: 'empty', value: INITIAL_FAKE_STATE }),
+      save: jest
+        .fn<UseIdentityScopedDomainOptions<FakeState, FakeAction>['save']>()
+        .mockResolvedValueOnce({ status: 'failed', error: new Error('fail 1') })
+        .mockResolvedValueOnce({ status: 'saved' }),
+      createRestoreAction: (value) => ({ type: 'restored', value: value.value }),
+    };
+
+    const { root, captured } = await mountHarness(options);
+
+    act(() => {
+      captured.setValue?.(1);
+    });
+    await act(async () => {
+      await Promise.resolve();
+    });
+    act(() => {
+      captured.setValue?.(2);
+    });
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(captured.durability).toEqual({ status: 'saved' });
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  it("rapid mutations never let an earlier failure's snapshot win over a later write's outcome (both fail)", async () => {
+    const options: UseIdentityScopedDomainOptions<FakeState, FakeAction> = {
+      reducer: fakeReducer,
+      initialState: INITIAL_FAKE_STATE,
+      load: async () => ({ status: 'empty', value: INITIAL_FAKE_STATE }),
+      save: jest
+        .fn<UseIdentityScopedDomainOptions<FakeState, FakeAction>['save']>()
+        .mockResolvedValueOnce({ status: 'failed', error: new Error('fail 1') })
+        .mockResolvedValueOnce({ status: 'failed', error: new Error('fail 2') }),
+      createRestoreAction: (value) => ({ type: 'restored', value: value.value }),
+    };
+
+    const { root, captured } = await mountHarness(options);
+
+    act(() => {
+      captured.setValue?.(1);
+    });
+    await act(async () => {
+      await Promise.resolve();
+    });
+    act(() => {
+      captured.setValue?.(2);
+    });
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(captured.durability?.status).toBe('failed');
+    if (captured.durability?.status === 'failed') {
+      expect(captured.durability.snapshot).toEqual({ value: 2 });
+    }
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  it("clears a prior generation's failed durability status on identity switch, and a stale write's completion cannot resurrect it", async () => {
+    const saveGate = deferred<PersistenceSaveResult>();
+
+    const options: UseIdentityScopedDomainOptions<FakeState, FakeAction> = {
+      reducer: fakeReducer,
+      initialState: INITIAL_FAKE_STATE,
+      load: async () => ({ status: 'empty', value: INITIAL_FAKE_STATE }),
+      save: async () => saveGate.promise,
+      createRestoreAction: (value) => ({ type: 'restored', value: value.value }),
+    };
+
+    const { root, captured } = await mountHarness(options);
+
+    act(() => {
+      captured.setValue?.(3);
+    });
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    // The write is queued (blocked on saveGate). Switch identity before it resolves.
+    act(() => {
+      captured.setIdentity?.(USER_A);
+    });
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(captured.durability).toEqual({ status: 'saved' });
+
+    // Now resolve the stale write as a failure -- it must not resurrect a failed durability
+    // status for the new (current) generation.
+    await act(async () => {
+      saveGate.resolve({ status: 'failed', error: new Error('stale failure') });
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(captured.durability).toEqual({ status: 'saved' });
 
     act(() => {
       root.unmount();

@@ -25,6 +25,22 @@ export type ScopedSaveOutcome =
   | { readonly status: 'superseded' };
 
 /**
+ * Runtime-only local-durability status for a domain's primary persisted
+ * state, as tracked by `useIdentityScopedDomain`. Distinct from
+ * `ScopedSaveOutcome` (a single write's resolved outcome) and from
+ * `SyncStatus`/cloud outbox state (which track remote durability): this
+ * answers "is the current in-memory value for this domain known to be
+ * safely on disk," derived purely from local write attempts.
+ */
+export type LocalDurabilityStatus<State> =
+  | { readonly status: 'saved' }
+  | {
+      readonly status: 'failed';
+      readonly snapshot: State;
+      readonly retry: () => Promise<ScopedSaveOutcome>;
+    };
+
+/**
  * Serializes writes so an older, slower operation can never overwrite newer
  * state. Failures are contained so subsequent writes can still proceed. The
  * worker's resolved value is returned to its own caller so failure and
