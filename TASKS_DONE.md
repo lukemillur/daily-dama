@@ -4,6 +4,16 @@ Completed entries move here from `TASKS.md`'s `Backlog`, in the same commit that
 
 Entries keep their content as it was at completion. Don't retroactively edit a description or exit criteria after the fact; if something about a completed task turns out to be wrong or misleading, note that in a new entry or in code, not by rewriting history here.
 
+### [T252] Add onboarding-aware guest/back-to-app button parity to Sign up and Sign in
+
+- **Area:** Authentication
+- **Priority:** Medium
+- **Status:** Done
+- **Planning:** Required
+- **Description:** Add a guest/back-to-app button to `sign-up-screen.tsx` (which has none today) and make `sign-in-screen.tsx`'s existing "Continue as guest" button onboarding-status-aware. On both screens, read `useCachedOnboardingStatus()` (the same hook `landing-cta.tsx`/`landing-auth-cta.tsx` already use per T242/T243) and render "Continue as guest" when `hasCompletedOnboarding` is false, or "Back to app" when true; both labels perform the same action the current guest button performs (`router.replace('/app/home')`).
+- **Exit criteria:** A test on each screen asserts the button reads "Continue as guest" when the cached onboarding status is incomplete and "Back to app" when complete, navigating to `/app/home` on press in both cases. Confirmed in-browser on both Sign up and Sign in with a guest-onboarded browser profile (button reads "Back to app") and a non-onboarded one (button reads "Continue as guest"). Met: added a shared pure helper `src/features/auth/model/guest-back-button.ts` (`resolveGuestBackButtonLabel`) reusing `landing-cta.tsx`'s `authState.status === 'authenticated' || hasCompletedOnboarding` rule, wired into both screens via `useCachedOnboardingStatus()`. `sign-in-screen.test.tsx`/`sign-up-screen.test.tsx` gained/extended tests asserting the label and `/app/home` navigation for both onboarding states; `guest-back-button.test.ts` covers the full truth table. Confirmed in-browser with a throwaway Playwright script against a local Expo web dev server: a fresh guest profile shows "Continue as guest" on both `/auth/sign-in` and `/auth/sign-up`, and a profile with a seeded `hasCompletedOnboarding: true`/valid `kenteiRank` user-profile document shows "Back to app" on both, navigating to `/app/home` in all four cases.
+- **Notes:** From S122, combining two general-feedback items that described one consistent rule across both screens (the second item's wording repeated "sign up screen" where context implies "sign in screen" — treated as the same rule applied to both, not a third distinct behavior). `Required`, matching this project's established precedent for reading onboarding/auth state into routing or copy decisions (T200, T242, T243). `landing-cta.tsx` itself was intentionally left untouched (different `CtaCopy`/theming shape, not required by this task's exit criteria). `parseUserProfile` rejects a persisted `hasCompletedOnboarding: true` document without a valid `kenteiRank` (1–12) — the in-browser verification fixture needed that field to exercise the "Back to app" case at all.
+
 ### [T254] Fully hide the landing header bar on scroll, not just fade it
 
 - **Area:** Landing page

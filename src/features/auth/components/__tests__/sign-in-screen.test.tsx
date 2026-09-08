@@ -97,6 +97,11 @@ jest.mock('@/features/auth/state/auth-provider', () => ({
   useAuthActions: () => ({ signInWithPassword: mockSignInWithPassword }),
 }));
 
+const mockUseCachedOnboardingStatus = jest.fn<() => { hasCompletedOnboarding: boolean; kenteiRank: number | undefined }>();
+jest.mock('@/features/landing/state/use-cached-onboarding-status', () => ({
+  useCachedOnboardingStatus: () => mockUseCachedOnboardingStatus(),
+}));
+
 const mockTrackAuthEvent = jest.fn();
 const mockLogAuthWarning = jest.fn();
 jest.mock('@/features/auth/observability/auth-observability', () => ({
@@ -162,6 +167,8 @@ describe('SignInScreen', () => {
     mockTrackAuthEvent.mockReset();
     mockLogAuthWarning.mockReset();
     mockAuthState = { status: 'guest', reason: 'signedOut' };
+    mockUseCachedOnboardingStatus.mockReset();
+    mockUseCachedOnboardingStatus.mockReturnValue({ hasCompletedOnboarding: false, kenteiRank: undefined });
   });
 
   it('navigates to /auth/forgot-password when "Forgot password?" is pressed', async () => {
@@ -322,8 +329,22 @@ describe('SignInScreen', () => {
   });
 
   it('lets a guest continue to /app/home without calling signInWithPassword', async () => {
+    mockUseCachedOnboardingStatus.mockReturnValue({ hasCompletedOnboarding: false, kenteiRank: undefined });
     const root = await mount();
     const guestButton = findByLabel(root, 'Continue as guest');
+
+    await act(async () => {
+      guestButton.props.onPress();
+    });
+
+    expect(mockReplace).toHaveBeenCalledWith('/app/home');
+    expect(mockSignInWithPassword).not.toHaveBeenCalled();
+  });
+
+  it('reads "Back to app" and still navigates to /app/home for a guest-onboarded visitor', async () => {
+    mockUseCachedOnboardingStatus.mockReturnValue({ hasCompletedOnboarding: true, kenteiRank: undefined });
+    const root = await mount();
+    const guestButton = findByLabel(root, 'Back to app');
 
     await act(async () => {
       guestButton.props.onPress();

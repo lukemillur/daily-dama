@@ -9,10 +9,12 @@ import { TextField } from '@/components/ui/text-field';
 import { BodyText, DisplayTitle, Eyebrow } from '@/components/ui/typography';
 import { AppColors } from '@/constants/theme';
 import { categorizeAuthError, type AuthErrorCategory } from '@/features/auth/model/auth-errors';
+import { resolveGuestBackButtonLabel } from '@/features/auth/model/guest-back-button';
 import { validateSignInFields } from '@/features/auth/model/sign-in-validation';
 import { PasswordInput } from '@/features/auth/components/password-input';
 import { logAuthWarning, trackAuthEvent } from '@/features/auth/observability/auth-observability';
 import { useAuthActions, useAuthState } from '@/features/auth/state/auth-provider';
+import { useCachedOnboardingStatus } from '@/features/landing/state/use-cached-onboarding-status';
 
 // The one fixed copy string for both a wrong password and an unknown email -- categorizeAuthError
 // already collapses invalid_credentials/user_not_found into invalidCredentials, and this screen
@@ -34,7 +36,9 @@ const SUBMIT_ERROR_COPY: Record<AuthErrorCategory, string> = {
 export function SignInScreen() {
   const authState = useAuthState();
   const { signInWithPassword } = useAuthActions();
+  const { hasCompletedOnboarding } = useCachedOnboardingStatus();
   const router = useRouter();
+  const guestButtonLabel = resolveGuestBackButtonLabel(authState.status, hasCompletedOnboarding);
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -165,11 +169,11 @@ export function SignInScreen() {
               Forgot password?
             </Button>
             <Button
-              accessibilityLabel="Continue as guest"
+              accessibilityLabel={guestButtonLabel}
               variant="secondary"
               fill
               onPress={() => router.replace('/app/home')}>
-              Continue as guest
+              {guestButtonLabel}
             </Button>
             <Button
               accessibilityLabel="Sign up"
