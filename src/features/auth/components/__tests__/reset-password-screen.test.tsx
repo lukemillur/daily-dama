@@ -6,7 +6,6 @@ import { ThemeProvider as StyledThemeProvider, type DefaultTheme } from 'styled-
 
 import { hexToRgba } from '@/constants/theme';
 
-import { MIN_PASSWORD_LENGTH } from '@/features/auth/model/password-policy';
 import type { AuthState } from '@/features/auth/model/auth-state';
 
 import { ResetPasswordScreen } from '@/features/auth/components/reset-password-screen';
@@ -224,7 +223,9 @@ describe('ResetPasswordScreen', () => {
       await setInput(root, 'Confirm new password', weak);
       await submit(root);
 
-      expect(containsText(root, `Use at least ${MIN_PASSWORD_LENGTH} characters.`)).toBe(true);
+      expect(
+        containsText(root, 'Password needs at least 8 characters, an uppercase letter, and a symbol.'),
+      ).toBe(true);
       expect(mockCompletePasswordRecovery).not.toHaveBeenCalled();
     });
 

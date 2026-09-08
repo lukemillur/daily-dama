@@ -180,12 +180,20 @@ describe('SignUpScreen', () => {
 
     await fillAndSubmit(root, {
       email: '',
-      password: 'a-long-enough-password',
-      confirmPassword: 'a-long-enough-password',
+      password: 'Str0ng!Password',
+      confirmPassword: 'Str0ng!Password',
     });
 
     expect(containsText(root, 'Enter your email.')).toBe(true);
     expect(mockSignUp).not.toHaveBeenCalled();
+  });
+
+  it('shows a password hint stating all four complexity rules', async () => {
+    const root = await mount();
+
+    expect(
+      containsText(root, 'Use at least 8 characters, with an uppercase letter, a number, and a symbol.'),
+    ).toBe(true);
   });
 
   it('shares the visibility toggle between both password fields, rendered as an icon', async () => {
@@ -213,8 +221,8 @@ describe('SignUpScreen', () => {
 
     await fillAndSubmit(root, {
       email: 'not-an-email',
-      password: 'a-long-enough-password',
-      confirmPassword: 'a-long-enough-password',
+      password: 'Str0ng!Password',
+      confirmPassword: 'Str0ng!Password',
     });
 
     expect(containsText(root, 'Enter a valid email address.')).toBe(true);
@@ -230,7 +238,9 @@ describe('SignUpScreen', () => {
       confirmPassword: 'short',
     });
 
-    expect(containsText(root, 'Use at least 10 characters.')).toBe(true);
+    expect(
+      containsText(root, 'Password needs at least 8 characters, an uppercase letter, a number, and a symbol.'),
+    ).toBe(true);
     expect(mockSignUp).not.toHaveBeenCalled();
   });
 
@@ -239,7 +249,7 @@ describe('SignUpScreen', () => {
 
     await fillAndSubmit(root, {
       email: 'person@example.com',
-      password: 'a-long-enough-password',
+      password: 'Str0ng!Password',
       confirmPassword: 'a-different-password',
     });
 
@@ -253,8 +263,8 @@ describe('SignUpScreen', () => {
 
     await fillAndSubmit(root, {
       email: 'fresh@example.com',
-      password: 'a-long-enough-password',
-      confirmPassword: 'a-long-enough-password',
+      password: 'Str0ng!Password',
+      confirmPassword: 'Str0ng!Password',
     });
 
     expect(mockSetPendingVerificationEmail).toHaveBeenCalledWith('fresh@example.com');
@@ -270,8 +280,8 @@ describe('SignUpScreen', () => {
 
     await fillAndSubmit(root, {
       email: 'duplicate@example.com',
-      password: 'a-long-enough-password',
-      confirmPassword: 'a-long-enough-password',
+      password: 'Str0ng!Password',
+      confirmPassword: 'Str0ng!Password',
     });
 
     expect(mockSetPendingVerificationEmail).toHaveBeenCalledWith('duplicate@example.com');
@@ -287,8 +297,8 @@ describe('SignUpScreen', () => {
 
     await fillAndSubmit(root, {
       email: 'person@example.com',
-      password: 'a-long-enough-password',
-      confirmPassword: 'a-long-enough-password',
+      password: 'Str0ng!Password',
+      confirmPassword: 'Str0ng!Password',
     });
 
     expect(containsText(root, /offline/i)).toBe(true);
@@ -303,8 +313,8 @@ describe('SignUpScreen', () => {
 
     await fillAndSubmit(root, {
       email: 'person@example.com',
-      password: 'a-long-enough-password',
-      confirmPassword: 'a-long-enough-password',
+      password: 'Str0ng!Password',
+      confirmPassword: 'Str0ng!Password',
     });
 
     expect(containsText(root, /Too many attempts/i)).toBe(true);
@@ -317,8 +327,8 @@ describe('SignUpScreen', () => {
 
     await fillAndSubmit(root, {
       email: 'person@example.com',
-      password: 'a-long-enough-password',
-      confirmPassword: 'a-long-enough-password',
+      password: 'Str0ng!Password',
+      confirmPassword: 'Str0ng!Password',
     });
 
     expect(containsText(root, /stronger password/i)).toBe(true);
@@ -337,8 +347,8 @@ describe('SignUpScreen', () => {
 
     await act(async () => {
       findByLabel(root, 'Email').props.onChangeText('person@example.com');
-      findByLabel(root, 'Password').props.onChangeText('a-long-enough-password');
-      findByLabel(root, 'Confirm password').props.onChangeText('a-long-enough-password');
+      findByLabel(root, 'Password').props.onChangeText('Str0ng!Password');
+      findByLabel(root, 'Confirm password').props.onChangeText('Str0ng!Password');
     });
 
     const button = findByLabel(root, 'Sign up');
@@ -355,7 +365,7 @@ describe('SignUpScreen', () => {
   it('never renders the raw password anywhere in the tree', async () => {
     mockSignUp.mockResolvedValue({ error: null });
     const root = await mount();
-    const rawPassword = 'a-very-specific-password-1';
+    const rawPassword = 'Sp3cific!Password-1';
 
     await fillAndSubmit(root, {
       email: 'person@example.com',
@@ -394,8 +404,8 @@ describe('SignUpScreen', () => {
     const root = await mount();
     await act(async () => {
       findByLabel(root, 'Email').props.onChangeText('person@example.com');
-      findByLabel(root, 'Password').props.onChangeText('a-long-enough-password');
-      findByLabel(root, 'Confirm password').props.onChangeText('a-long-enough-password');
+      findByLabel(root, 'Password').props.onChangeText('Str0ng!Password');
+      findByLabel(root, 'Confirm password').props.onChangeText('Str0ng!Password');
     });
 
     await act(async () => {
@@ -403,7 +413,7 @@ describe('SignUpScreen', () => {
     });
 
     expect(mockSignUp).toHaveBeenCalledTimes(1);
-    expect(mockSignUp).toHaveBeenCalledWith('person@example.com', 'a-long-enough-password');
+    expect(mockSignUp).toHaveBeenCalledWith('person@example.com', 'Str0ng!Password');
   });
 
   it('submits on Enter anywhere in the form on web, the same as clicking Sign up', async () => {
@@ -416,8 +426,8 @@ describe('SignUpScreen', () => {
       const root = await mount();
       await act(async () => {
         findByLabel(root, 'Email').props.onChangeText('person@example.com');
-        findByLabel(root, 'Password').props.onChangeText('a-long-enough-password');
-        findByLabel(root, 'Confirm password').props.onChangeText('a-long-enough-password');
+        findByLabel(root, 'Password').props.onChangeText('Str0ng!Password');
+        findByLabel(root, 'Confirm password').props.onChangeText('Str0ng!Password');
       });
 
       expect(addEventListener).toHaveBeenCalledWith('keydown', expect.any(Function), true);
@@ -431,7 +441,7 @@ describe('SignUpScreen', () => {
       });
 
       expect(mockSignUp).toHaveBeenCalledTimes(1);
-      expect(mockSignUp).toHaveBeenCalledWith('person@example.com', 'a-long-enough-password');
+      expect(mockSignUp).toHaveBeenCalledWith('person@example.com', 'Str0ng!Password');
     } finally {
       restorePlatform();
     }
@@ -446,8 +456,8 @@ describe('SignUpScreen', () => {
       const root = await mount();
       await act(async () => {
         findByLabel(root, 'Email').props.onChangeText('person@example.com');
-        findByLabel(root, 'Password').props.onChangeText('a-long-enough-password');
-        findByLabel(root, 'Confirm password').props.onChangeText('a-long-enough-password');
+        findByLabel(root, 'Password').props.onChangeText('Str0ng!Password');
+        findByLabel(root, 'Confirm password').props.onChangeText('Str0ng!Password');
       });
 
       const handleKeyDown = addEventListener.mock.calls[addEventListener.mock.calls.length - 1][1] as (event: {
