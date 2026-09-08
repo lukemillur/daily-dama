@@ -184,9 +184,15 @@ export function LandingPage() {
   );
 }
 
-function useHasEnteredViewport(ref: { current: ComponentRef<typeof Animated.View> | null }) {
+function useHasEnteredViewport(
+  ref: { current: ComponentRef<typeof Animated.View> | null },
+  skipObserver: boolean,
+) {
+  // The first screenshot plays its entrance animation unconditionally on mount rather than
+  // waiting on the observer: it is the section's lead-in and should never depend on the
+  // visitor already having it in view (or scrolling to it) the way later screenshots do.
   const [hasEntered, setHasEntered] = useState(
-    () => Platform.OS !== 'web' || typeof IntersectionObserver === 'undefined',
+    () => skipObserver || Platform.OS !== 'web' || typeof IntersectionObserver === 'undefined',
   );
 
   useEffect(() => {
@@ -225,7 +231,7 @@ interface ScreenshotEntryProps {
 
 function ScreenshotEntry({ screenshot, index, isWebLayout }: ScreenshotEntryProps) {
   const itemRef = useRef<ComponentRef<typeof Animated.View>>(null);
-  const hasEntered = useHasEnteredViewport(itemRef);
+  const hasEntered = useHasEnteredViewport(itemRef, index === 0);
 
   return (
     <ScreenshotItem

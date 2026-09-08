@@ -179,6 +179,15 @@ describe('LandingPage header bar', () => {
     expect(findHeaderBar(root).props.pointerEvents).toBe('auto');
   });
 
+  function headerBarDisplay(root: ReactTestRenderer) {
+    const matches = root.root.findAllByProps({ testID: 'landing-header-bar' });
+    const styledMatch = matches.find((node) => node.props.style !== undefined);
+    const style = ReactNative.StyleSheet.flatten(styledMatch?.props.style) as {
+      display?: string;
+    };
+    return style.display;
+  }
+
   it('hides the header bar once scroll position passes the threshold', async () => {
     const root = await mount();
 
@@ -195,6 +204,26 @@ describe('LandingPage header bar', () => {
 
     await scrollTo(root, 0);
     expect(findHeaderBar(root).props.pointerEvents).toBe('auto');
+  });
+
+  it('fully hides the header bar container (not just pointer events) once scroll position passes the threshold', async () => {
+    const root = await mount();
+
+    expect(headerBarDisplay(root)).toBe('flex');
+
+    await scrollTo(root, HEADER_BAR_SCROLL_HIDE_THRESHOLD + 40);
+
+    expect(headerBarDisplay(root)).toBe('none');
+  });
+
+  it('restores the header bar container once scroll position returns near the top', async () => {
+    const root = await mount();
+
+    await scrollTo(root, HEADER_BAR_SCROLL_HIDE_THRESHOLD + 40);
+    expect(headerBarDisplay(root)).toBe('none');
+
+    await scrollTo(root, 0);
+    expect(headerBarDisplay(root)).toBe('flex');
   });
 });
 
