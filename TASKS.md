@@ -137,7 +137,7 @@ _T249–T252 come from stories S119–S122 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 - **Area:** Authentication / Home
 - **Priority:** High
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** T208's `NewAccountWelcomeOverlay` (mounted in `src/app/_layout.tsx`, triggered by `auth-callback-screen.tsx`'s `router.replace({ pathname: '/app/home', params: { newAccount: '1' } })` on the default post-verification branch) does not render at all in the flow the user tested, even though T208's own browser verification passed when it shipped and the wiring looks correct on inspection today. Needs a fresh runtime diagnosis against the actual environment/flow the user tested, then a fix for whatever's actually broken.
 - **Exit criteria:** Reproduce the failure via a real signup + email-confirmation-link round trip (in the environment the user tested in, if that differs from the local Supabase CLI stack T208 verified against). Identify the actual cause — e.g. the `newAccount` param never reaching `_layout.tsx` (stripped upstream, or interference from a hosting/rewrite layer on the dynamic `/app/home?newAccount=1` URL — see T227), a timing/state regression from a later change touching the callback screen (T224/T236), or something else — and fix it. Confirm afterward that the overlay renders exactly once on a real verification round trip and not on a routine sign-in, matching T208's original exit criteria.
