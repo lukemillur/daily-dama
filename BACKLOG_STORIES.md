@@ -22,6 +22,8 @@ _S098–S105 came from the user's 2026-09-03 QA pass on T210/T213/T217.2 (three 
 
 _S106–S118 came from the user's 2026-09-04 QA pass on T224/T223.8 (two follow-up gaps on already-`Done` tickets), plus eleven items of general feedback not tied to a specific ticket. All thirteen were scoped into T236–T246 (see `TASKS.md`) and removed from this file: S106→T236, S107→T237, S108→T238, S109→T238 (combined with S108/S110 — one screenshot-refresh pass), S110→T238, S111→T239, S112→T240, S113→T241, S114→T242, S115→T243, S116→T244, S117→T245, S118→T246._
 
+_S119–S122 came from the user's 2026-09-08 QA pass on T208/T241 (two follow-up gaps on already-`Done` tickets), plus three items of general feedback not tied to a specific ticket (two of which describe one consistent copy rule and were combined into S122). All four were scoped into T249–T252 (see `TASKS.md`) and removed from this file: S119→T249, S120→T250, S121→T251, S122→T252._
+
 ### [S105] Improve application performance and initial load time
 
 - **As a:** any user

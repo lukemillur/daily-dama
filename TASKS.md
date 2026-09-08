@@ -131,6 +131,50 @@ _Raw ideas land here — a name and a one-line description, nothing more. Discus
 
 ---
 
+_T249–T252 come from stories S119–S122 in [BACKLOG_STORIES.md](BACKLOG_STORIES.md) (the user's 2026-09-08 QA pass on T208/T241, plus two general-feedback items describing one consistent rule, combined into S122/T252). T249 (S119) is `Required`: T208's overlay wiring (`useGlobalSearchParams` read in `_layout.tsx`, `auth-callback-screen.tsx`'s `newAccount=1` redirect param) looks correct on inspection but doesn't render in the flow the user tested — the same class of gap as T212/T221/T237, needing runtime diagnosis before a fix. T250 (S120) is `Implementer`: a color-only swap between `text-field.tsx`'s existing border and shadow expressions, the same narrow scope T241 itself shipped. T251 (S121) is `Implementer`: a mechanical rule change to the existing `password-policy.ts`/`validateNewPassword` shape, applied to both signup and reset-password since they already share that module (flagged in the story as an assumption, not explicitly requested). T252 (S122) is `Required`, matching this project's established precedent for reading onboarding/auth state into routing or copy decisions (T200, T242, T243) — it reuses `useCachedOnboardingStatus()` exactly as T242/T243 already do, but on two new call sites (Sign up, Sign in) that don't read that state today._
+
+### [T249] Diagnose and fix the new-account welcome overlay not appearing
+
+- **Area:** Authentication / Home
+- **Priority:** High
+- **Status:** Not started
+- **Planning:** Required
+- **Description:** T208's `NewAccountWelcomeOverlay` (mounted in `src/app/_layout.tsx`, triggered by `auth-callback-screen.tsx`'s `router.replace({ pathname: '/app/home', params: { newAccount: '1' } })` on the default post-verification branch) does not render at all in the flow the user tested, even though T208's own browser verification passed when it shipped and the wiring looks correct on inspection today. Needs a fresh runtime diagnosis against the actual environment/flow the user tested, then a fix for whatever's actually broken.
+- **Exit criteria:** Reproduce the failure via a real signup + email-confirmation-link round trip (in the environment the user tested in, if that differs from the local Supabase CLI stack T208 verified against). Identify the actual cause — e.g. the `newAccount` param never reaching `_layout.tsx` (stripped upstream, or interference from a hosting/rewrite layer on the dynamic `/app/home?newAccount=1` URL — see T227), a timing/state regression from a later change touching the callback screen (T224/T236), or something else — and fix it. Confirm afterward that the overlay renders exactly once on a real verification round trip and not on a routine sign-in, matching T208's original exit criteria.
+- **Notes:** From S119. Follow-up regression/gap on `Done` ticket T208. `Required` for the same class of reason as T212/T221/T237: the code looks correct from static inspection, so this needs runtime diagnosis before a fix can be written, not a blind reapplication of T208's original approach.
+
+### [T250] Swap the shared text input's border and shadow colors
+
+- **Area:** UI components
+- **Priority:** Low
+- **Status:** Not started
+- **Planning:** Implementer
+- **Description:** `text-field.tsx`'s `InputRow` currently renders its border in an opaque theme color (`theme.text` unfocused, `theme.accent` focused) and its drop shadow in a separate, focus-independent translucent color (`inputShadow(theme.text)`, `SHADOW_ALPHA = 0.35`). Swap which color expression drives which visual: the border should render using the color/alpha currently applied to the shadow, and the shadow should render using the color currently applied to the border — preserving the existing accent-on-focus distinction on whichever role now carries it.
+- **Exit criteria:** Confirmed in-browser (Sign up and at least one other `TextField`-using screen) that the border now renders in the color/translucency previously used for the shadow, the drop shadow now renders in the color previously used for the border, and focus still produces a visibly distinct state. No other functional change to any input. `text-field.test.tsx` and dependent screen tests still pass.
+- **Notes:** From S120. Follow-up color-only gap on `Done` ticket T241 — same "one shared-component change, no per-screen verification needed beyond a couple of spot checks" scope T241 itself established.
+
+### [T251] Require password complexity at signup and reset
+
+- **Area:** Authentication
+- **Priority:** Medium
+- **Status:** Not started
+- **Planning:** Implementer
+- **Description:** Replace `password-policy.ts`'s current rule (`MIN_PASSWORD_LENGTH = 10`, length-only) with: at least 8 characters, at least one uppercase letter, at least one number, and at least one symbol. Update `sign-up-screen.tsx`'s password hint text and any related validation error copy to state these actual rules instead of just a character count.
+- **Exit criteria:** `validateNewPassword` rejects a password missing any one of the four rules and accepts one satisfying all four, with test coverage for each rule individually and combined. Submitting a password failing any rule on the Sign up screen shows an error identifying what's missing, before a network round trip. The Sign up screen's password hint states all four rules. `yarn tsc --noEmit` passes; existing signup/reset-password screen tests pass with copy assertions updated to the new hint/error text.
+- **Notes:** From S121. `password-policy.ts` is shared by `sign-up-screen.tsx` and `reset-password-screen.tsx` via `validateNewPassword` — this ticket applies the new rule to both flows for consistency, since they already share the module. The user's request named only the signup screen's copy; this shared-scope choice was flagged in the story as an assumption pending confirmation. If reset-password should keep the old length-only rule instead, resolve that before implementing rather than deciding it silently here.
+
+### [T252] Add onboarding-aware guest/back-to-app button parity to Sign up and Sign in
+
+- **Area:** Authentication
+- **Priority:** Medium
+- **Status:** Not started
+- **Planning:** Required
+- **Description:** Add a guest/back-to-app button to `sign-up-screen.tsx` (which has none today) and make `sign-in-screen.tsx`'s existing "Continue as guest" button onboarding-status-aware. On both screens, read `useCachedOnboardingStatus()` (the same hook `landing-cta.tsx`/`landing-auth-cta.tsx` already use per T242/T243) and render "Continue as guest" when `hasCompletedOnboarding` is false, or "Back to app" when true; both labels perform the same action the current guest button performs (`router.replace('/app/home')`).
+- **Exit criteria:** A test on each screen asserts the button reads "Continue as guest" when the cached onboarding status is incomplete and "Back to app" when complete, navigating to `/app/home` on press in both cases. Confirmed in-browser on both Sign up and Sign in with a guest-onboarded browser profile (button reads "Back to app") and a non-onboarded one (button reads "Continue as guest").
+- **Notes:** From S122, combining two general-feedback items that described one consistent rule across both screens (the second item's wording repeated "sign up screen" where context implies "sign in screen" — treated as the same rule applied to both, not a third distinct behavior; confirm with the user if a screen-specific difference was actually intended). `Required`, matching this project's established precedent for reading onboarding/auth state into routing or copy decisions (T200, T242, T243). `useCachedOnboardingStatus` only reads the guest-scoped profile key (per T243's own note on this exact gap) — confirm during planning whether that's sufficient for a signed-in user reaching these screens, or whether it needs the same handling T243 worked out for the landing page. The Sign up screen has no guest button today, so this is a net-new addition there, not just a label change.
+
+---
+
 _T247–T248.2 come from critical findings D001–D002 in [DESLOPPIFY.md](DESLOPPIFY.md). The other critical findings remain owned by T226–T229 and were not duplicated. T247 closes the fail-open discard path first; T248 then builds general local-durability reporting and recovery on its typed persistence outcome. These tickets extend T158/T160 without reopening their completed scope._
 
 _T208–T215 come from stories S090–S097 in [BACKLOG_STORIES.md](BACKLOG_STORIES.md) (the user's 2026-09-02 QA pass on T195/T201/T205/T207, plus three items of general feedback). T209 (S091), T210 (S092), T211 (S093), T213 (S095), and T214 (S096) are `Implementer` — local, known-pattern changes, several reusing an existing precedent in this codebase (T205's `DisplayTitle` title style for T209; `RankUpCelebrationModal`'s `theme.accent` precedent for T211; `trick-goals-screen.tsx`'s `GoalHeaderRow`/`GoalTrickName` pattern for T214). T208 (S090) is `Required`: it mounts a new full-screen overlay above `<Slot />` in `_layout.tsx` and introduces `useGlobalSearchParams`, which has no precedent anywhere in this codebase today — both are boundary-level changes per this project's Planning rules, even though the celebration visual mechanism itself already exists via `RankUpCelebrationModal`. T212 (S094) is `Required` because T195's confirmed-working hosted-project fix (`supabase/RESEND_DNS_AUTH.md`'s 2026-09-01 entry) has now regressed — this needs a fresh runtime diagnosis of why the fix didn't hold, not a repeat of the same PATCH. T215 (S097) is `Required` for the same class of reason as T199/T206 before it: `StatsScreen` renders synchronously off `usePracticeHistory().sessions` with no guest-import-pending gate, unlike `home.tsx`'s existing `isGuestImportPendingResolution` check — this needs runtime tracing to confirm whether the same gate suffices for Stats before a fix can be written._
