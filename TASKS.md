@@ -133,16 +133,6 @@ _Raw ideas land here — a name and a one-line description, nothing more. Discus
 
 _T249–T252 come from stories S119–S122 in [BACKLOG_STORIES.md](BACKLOG_STORIES.md) (the user's 2026-09-08 QA pass on T208/T241, plus two general-feedback items describing one consistent rule, combined into S122/T252). T249 (S119) is `Required`: T208's overlay wiring (`useGlobalSearchParams` read in `_layout.tsx`, `auth-callback-screen.tsx`'s `newAccount=1` redirect param) looks correct on inspection but doesn't render in the flow the user tested — the same class of gap as T212/T221/T237, needing runtime diagnosis before a fix. T250 (S120) is `Implementer`: a color-only swap between `text-field.tsx`'s existing border and shadow expressions, the same narrow scope T241 itself shipped. T251 (S121) is `Implementer`: a mechanical rule change to the existing `password-policy.ts`/`validateNewPassword` shape, applied to both signup and reset-password since they already share that module (flagged in the story as an assumption, not explicitly requested). T252 (S122) is `Required`, matching this project's established precedent for reading onboarding/auth state into routing or copy decisions (T200, T242, T243) — it reuses `useCachedOnboardingStatus()` exactly as T242/T243 already do, but on two new call sites (Sign up, Sign in) that don't read that state today._
 
-### [T250] Swap the shared text input's border and shadow colors
-
-- **Area:** UI components
-- **Priority:** Low
-- **Status:** In progress
-- **Planning:** Implementer
-- **Description:** `text-field.tsx`'s `InputRow` currently renders its border in an opaque theme color (`theme.text` unfocused, `theme.accent` focused) and its drop shadow in a separate, focus-independent translucent color (`inputShadow(theme.text)`, `SHADOW_ALPHA = 0.35`). Swap which color expression drives which visual: the border should render using the color/alpha currently applied to the shadow, and the shadow should render using the color currently applied to the border — preserving the existing accent-on-focus distinction on whichever role now carries it.
-- **Exit criteria:** Confirmed in-browser (Sign up and at least one other `TextField`-using screen) that the border now renders in the color/translucency previously used for the shadow, the drop shadow now renders in the color previously used for the border, and focus still produces a visibly distinct state. No other functional change to any input. `text-field.test.tsx` and dependent screen tests still pass.
-- **Notes:** From S120. Follow-up color-only gap on `Done` ticket T241 — same "one shared-component change, no per-screen verification needed beyond a couple of spot checks" scope T241 itself established.
-
 ### [T251] Require password complexity at signup and reset
 
 - **Area:** Authentication

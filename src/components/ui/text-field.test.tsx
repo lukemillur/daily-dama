@@ -4,6 +4,7 @@ import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 import { ThemeProvider as StyledThemeProvider, type DefaultTheme } from 'styled-components/native';
 
 import { TextField } from '@/components/ui/text-field';
+import { hexToRgba } from '@/constants/theme';
 
 const customTheme: DefaultTheme = {
   background: '#123456',
@@ -72,7 +73,7 @@ describe('TextField', () => {
     const rowStyle = resolvedRowStyle(root);
     expect(rowStyle).toMatchObject({
       backgroundColor: customTheme.background,
-      borderColor: customTheme.text,
+      borderColor: hexToRgba(customTheme.text, 0.35),
     });
 
     const inputStyle = resolvedInputStyle(root, 'Email');
@@ -93,21 +94,26 @@ describe('TextField', () => {
     expect(typeof rowStyle?.boxShadow).toBe('string');
   });
 
-  it('switches the row border to the accent color while focused, then reverts on blur', async () => {
+  it('switches the row drop shadow to the accent color while focused, then reverts on blur', async () => {
     const root = await mountField();
     const input = root.root
       .findAll((node) => node.props.accessibilityLabel === 'Email')
       .find((node) => typeof node.props.onFocus === 'function');
 
+    const unfocusedShadow = resolvedRowStyle(root)?.boxShadow;
+    expect(unfocusedShadow).toEqual(expect.stringContaining(customTheme.text));
+
     await act(async () => {
       input?.props.onFocus?.({});
     });
-    expect(resolvedRowStyle(root)?.borderColor).toBe(customTheme.accent);
+    expect(resolvedRowStyle(root)?.boxShadow).toEqual(expect.stringContaining(customTheme.accent));
 
     await act(async () => {
       input?.props.onBlur?.({});
     });
-    expect(resolvedRowStyle(root)?.borderColor).toBe(customTheme.text);
+    expect(resolvedRowStyle(root)?.boxShadow).toBe(unfocusedShadow);
+
+    expect(resolvedRowStyle(root)?.borderColor).toBe(hexToRgba(customTheme.text, 0.35));
   });
 
   it('forwards a ref to the underlying host text input', async () => {
