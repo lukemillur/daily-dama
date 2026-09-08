@@ -1,0 +1,4 @@
+interface:
+  display_name: "Daily Dama Desloppify"
+  short_description: "Audit and work through cleanup debt"
+  default_prompt: "Use $desloppify to scan this project and create a prioritized cleanup backlog."

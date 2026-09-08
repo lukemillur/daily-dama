@@ -1,6 +1,6 @@
 import { Image } from 'expo-image';
 import { useEffect, useRef, useState, type ComponentRef } from 'react';
-import { Platform, ScrollView, useWindowDimensions } from 'react-native';
+import { Platform, ScrollView, useWindowDimensions, type NativeSyntheticEvent, type NativeScrollEvent } from 'react-native';
 import Animated, { FadeInUp } from 'react-native-reanimated';
 import { styled } from 'styled-components/native';
 
@@ -9,6 +9,8 @@ import { BodyText, DisplayTitle, Eyebrow } from '@/components/ui/typography';
 import { AppColors, Radii } from '@/constants/theme';
 import { LandingAuthCta } from '@/features/landing/components/landing-auth-cta';
 import { LandingCta } from '@/features/landing/components/landing-cta';
+
+export const HEADER_BAR_SCROLL_HIDE_THRESHOLD = 24;
 
 interface Feature {
   readonly heading: string;
@@ -49,8 +51,9 @@ const SCREENSHOT_CONTENT: readonly ScreenshotContent[] = [
     caption: 'Open the app and the loop is right there: what you last practiced, what’s next, and how the streak is going.',
   },
   {
-    title: 'First lace, first cheer',
-    caption: 'The moment a trick actually lands for the first time, Daily Dama says so.',
+    title: 'Set the terms of the sesh',
+    caption:
+      'Run the clock down, chase a lace count, or line up several tricks and work the whole set in one sesh.',
   },
   {
     title: 'Your move, your rank',
@@ -69,8 +72,8 @@ const MOBILE_SCREENSHOT_ASSETS: readonly PlatformScreenshotAsset[] = [
     aspectRatio: 375 / 812,
   },
   {
-    source: require('@/assets/images/landing/sesh-first-lace.png'),
-    alt: 'Sesh screen celebrating the first-ever lace on a trick mid-session',
+    source: require('@/assets/images/landing/sesh-open-ended.png'),
+    alt: 'Sesh setup screen with the open-ended format selected, a target lace count, and a focused-trick list spanning several Kentei ranks',
     aspectRatio: 375 / 812,
   },
   {
@@ -92,8 +95,8 @@ const WEB_SCREENSHOT_ASSETS: readonly PlatformScreenshotAsset[] = [
     aspectRatio: 1280 / 900,
   },
   {
-    source: require('@/assets/images/landing/sesh-first-lace-web.png'),
-    alt: 'Sesh screen in the desktop web layout celebrating the first-ever lace on a trick mid-session',
+    source: require('@/assets/images/landing/sesh-open-ended-web.png'),
+    alt: 'Sesh setup screen in the desktop web layout with the open-ended format selected, a target lace count, and a focused-trick list spanning several Kentei ranks',
     aspectRatio: 1280 / 900,
   },
   {
@@ -122,10 +125,20 @@ export function LandingPage() {
   const { width } = useWindowDimensions();
   const isWebLayout = Platform.OS === 'web' && width >= 768;
   const screenshots = isWebLayout ? WEB_SCREENSHOTS : MOBILE_SCREENSHOTS;
+  const [headerVisible, setHeaderVisible] = useState(true);
+
+  const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const scrollY = event.nativeEvent.contentOffset.y;
+    setHeaderVisible(scrollY <= HEADER_BAR_SCROLL_HIDE_THRESHOLD);
+  };
 
   return (
     <Screen background={AppColors.paper}>
-      <LandingScroll contentContainerStyle={{ paddingBottom: 80 }}>
+      <LandingAuthCta visible={headerVisible} />
+      <LandingScroll
+        contentContainerStyle={{ paddingBottom: 80 }}
+        onScroll={handleScroll}
+        scrollEventThrottle={16}>
         <Content testID="landing-content" $isWebLayout={isWebLayout}>
           {/* <LandingHero /> */}
           <Eyebrow>Why Daily Dama</Eyebrow>
@@ -138,8 +151,6 @@ export function LandingPage() {
           </Lede>
 
           <LandingCta />
-
-          <LandingAuthCta />
 
           <FeatureList>
             {FEATURES.map((feature) => (

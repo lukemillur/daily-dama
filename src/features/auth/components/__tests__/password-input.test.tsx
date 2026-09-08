@@ -1,7 +1,9 @@
 import { describe, expect, it, jest } from '@jest/globals';
-import { View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { act, create } from 'react-test-renderer';
 import { ThemeProvider as StyledThemeProvider, type DefaultTheme } from 'styled-components/native';
+
+import { hexToRgba } from '@/constants/theme';
 
 import { PasswordInput } from '@/features/auth/components/password-input';
 import { PasswordVisibilityProvider } from '@/features/auth/components/password-visibility-context';
@@ -16,13 +18,8 @@ const customTheme: DefaultTheme = {
 };
 
 function resolvedStyle(nodes: ReturnType<ReturnType<typeof create>['root']['findAll']>) {
-  const node = nodes.find(
-    (candidate) =>
-      typeof candidate.props.style === 'object' &&
-      candidate.props.style !== null &&
-      !Array.isArray(candidate.props.style),
-  );
-  return node?.props.style as Record<string, string | number> | undefined;
+  const node = nodes.find((candidate) => candidate.props.style !== undefined);
+  return StyleSheet.flatten(node?.props.style as never) as Record<string, string | number> | undefined;
 }
 
 describe('PasswordInput', () => {
@@ -139,11 +136,15 @@ describe('PasswordInput', () => {
     expect(inputStyle).toMatchObject({ color: customTheme.text });
 
     const rowStyle = resolvedStyle(
-      root.root.findAll((node) => node.props.style?.minHeight === 56),
+      root.root.findAll(
+        (node) =>
+          (StyleSheet.flatten(node.props.style as never) as Record<string, string | number> | undefined)
+            ?.minHeight === 56,
+      ),
     );
     expect(rowStyle).toMatchObject({
       backgroundColor: customTheme.background,
-      borderColor: customTheme.text,
+      borderColor: hexToRgba(customTheme.text, 0.35),
     });
   });
 

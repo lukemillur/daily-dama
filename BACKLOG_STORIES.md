@@ -18,6 +18,23 @@ _S089 was refined on 2026-09-01 from the user's direct observation that a newly 
 
 _S090–S097 came from the user's 2026-09-02 QA pass on T195/T201/T205/T207 (the batch closed by the 2026-09-01 pass, S075–S089), plus three items of general feedback not tied to a specific ticket. S090's direction question was resolved the same day (reuse the celebration mechanism/visual identity, own copy). All eight were scoped into T208–T215 (see `TASKS.md`) and removed from this file: S090→T208, S091→T209, S092→T210, S093→T211, S094→T212, S095→T213, S096→T214, S097→T215._
 
+_S098–S105 came from the user's 2026-09-03 QA pass on T210/T213/T217.2 (three follow-up gaps on already-`Done` tickets), plus five items of general feedback not tied to a specific ticket. S098–S104 were scoped into T219–T224 (see `TASKS.md`) and removed from this file: S098→T219, S099→T220, S100→T221, S101→T208 (folded into that already-queued ticket, which replaces the exact component S101 targeted, rather than a new ticket against soon-to-be-deleted code), S102→T222, S103→T223 (T223.1–T223.8), S104→T224. S105 remains `Proposed` pending a discovery pass (see below)._
+
+_S106–S118 came from the user's 2026-09-04 QA pass on T224/T223.8 (two follow-up gaps on already-`Done` tickets), plus eleven items of general feedback not tied to a specific ticket. All thirteen were scoped into T236–T246 (see `TASKS.md`) and removed from this file: S106→T236, S107→T237, S108→T238, S109→T238 (combined with S108/S110 — one screenshot-refresh pass), S110→T238, S111→T239, S112→T240, S113→T241, S114→T242, S115→T243, S116→T244, S117→T245, S118→T246._
+
+_S119–S122 came from the user's 2026-09-08 QA pass on T208/T241 (two follow-up gaps on already-`Done` tickets), plus three items of general feedback not tied to a specific ticket (two of which describe one consistent copy rule and were combined into S122). All four were scoped into T249–T252 (see `TASKS.md`) and removed from this file: S119→T249, S120→T250, S121→T251, S122→T252._
+
+### [S105] Improve application performance and initial load time
+
+- **As a:** any user
+- **I want:** the app, especially the very first load, to feel fast
+- **So that:** I'm not waiting on a sluggish experience before I can start practicing
+- **Evidence:** User request; no specific measured regression evidence yet in this pass.
+- **Priority:** Medium
+- **Status:** Proposed
+- **Acceptance criteria:** Initial page/app load is measurably faster than the current baseline, with all existing functionality preserved. Any dependency removed to achieve this has no user-visible functional loss. Sentry is explicitly out of scope for removal.
+- **Notes:** Deliberately left at `Proposed`, not `Ready for scoping` — "do whatever you can" needs a baseline measurement and a bounded set of candidate changes (bundle analysis, dependency audit, code-splitting, lazy loading) before this is a scopeable ticket rather than an open-ended mandate. Recommend a quick discovery pass (bundle-size audit + Lighthouse/web-vitals baseline) before promoting.
+
 ### [S057] Enforce email uniqueness at signup with a clear message — REJECTED
 
 - **Status:** Rejected (2026-08-26)

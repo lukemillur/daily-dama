@@ -1,7 +1,9 @@
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
+import { StyleSheet } from 'react-native';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 import { ThemeProvider as StyledThemeProvider, type DefaultTheme } from 'styled-components/native';
 
+import { AppColors, hexToRgba } from '@/constants/theme';
 import type { AuthState } from '@/features/auth/model/auth-state';
 import { networkFailure } from '@/features/auth/model/auth-test-fixtures';
 import { MIN_PASSWORD_LENGTH } from '@/features/auth/model/password-policy';
@@ -92,13 +94,8 @@ async function mountWithTheme() {
 }
 
 function resolvedStyle(nodes: ReturnType<ReactTestRenderer['root']['findAll']>) {
-  const node = nodes.find(
-    (candidate) =>
-      typeof candidate.props.style === 'object' &&
-      candidate.props.style !== null &&
-      !Array.isArray(candidate.props.style),
-  );
-  return node?.props.style as Record<string, string | number> | undefined;
+  const node = nodes.find((candidate) => candidate.props.style !== undefined);
+  return StyleSheet.flatten(node?.props.style as never) as Record<string, string | number> | undefined;
 }
 
 function resolvedButtonLabelColor(renderer: ReactTestRenderer, label: string) {
@@ -196,11 +193,20 @@ describe('AccountSecurityScreen', () => {
 
     const emailInputs = root.root.findAll((node) => node.props.accessibilityLabel === 'New email');
     const emailInputStyle = resolvedStyle(emailInputs);
-    expect(emailInputStyle).toMatchObject({
+    expect(emailInputStyle).toMatchObject({ color: customTheme.text });
+
+    const emailRowStyle = resolvedStyle(
+      root.root.findAll(
+        (node) =>
+          (StyleSheet.flatten(node.props.style as never) as Record<string, string | number> | undefined)
+            ?.minHeight === 56,
+      ),
+    );
+    expect(emailRowStyle).toMatchObject({
       backgroundColor: customTheme.background,
-      borderColor: customTheme.text,
-      color: customTheme.text,
+      borderColor: hexToRgba(customTheme.text, 0.35),
     });
+
     expect(
       emailInputs.find((node) => typeof node.props.placeholderTextColor === 'string')?.props
         .placeholderTextColor,
@@ -225,7 +231,7 @@ describe('AccountSecurityScreen', () => {
     const errorStyle = resolvedStyle(
       root.root.findAll((node) => node.props.children === 'Enter a valid email address.'),
     );
-    expect(errorStyle?.color).toBe(customTheme.text);
+    expect(errorStyle?.color).toBe(AppColors.red);
   });
 
   it('changes the password on the happy path, clears fields, and shows success copy', async () => {

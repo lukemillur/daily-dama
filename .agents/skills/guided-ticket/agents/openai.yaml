@@ -1,0 +1,4 @@
+interface:
+  display_name: "Daily Dama Guided Ticket"
+  short_description: "Work through tickets with owner and hosted gates"
+  default_prompt: "Use $guided-ticket to work through a Daily Dama collaborative ticket with a resumable step-by-step guide."

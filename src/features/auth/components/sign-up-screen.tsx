@@ -5,10 +5,11 @@ import { styled } from 'styled-components/native';
 
 import { Button } from '@/components/ui/button';
 import { Screen } from '@/components/ui/screen';
+import { TextField } from '@/components/ui/text-field';
 import { BodyText, DisplayTitle, Eyebrow } from '@/components/ui/typography';
 import { AppColors } from '@/constants/theme';
 import { categorizeAuthError, type AuthErrorCategory } from '@/features/auth/model/auth-errors';
-import { MIN_PASSWORD_LENGTH } from '@/features/auth/model/password-policy';
+import { PASSWORD_REQUIREMENTS_HINT } from '@/features/auth/model/password-policy';
 import { PasswordInput } from '@/features/auth/components/password-input';
 import { PasswordVisibilityProvider } from '@/features/auth/components/password-visibility-context';
 import { validateSignUpFields } from '@/features/auth/model/signup-validation';
@@ -138,30 +139,28 @@ export function SignUpScreen() {
             Create an account to sync your practice history across devices.
           </Introduction>
 
-          <Field>
-            <FieldLabel>Email</FieldLabel>
-            <FieldInput
-              accessibilityLabel="Email"
-              autoCapitalize="none"
-              autoCorrect={false}
-              keyboardType="email-address"
-              textContentType="username"
-              blurOnSubmit={false}
-              onChangeText={setEmail}
-              onSubmitEditing={() => passwordInputRef.current?.focus()}
-              placeholder="Email"
-              returnKeyType="next"
-              value={email}
-            />
-            {errors.email ? <ErrorText>{errors.email}</ErrorText> : null}
-          </Field>
+          <TextField
+            accessibilityLabel="Email"
+            autoCapitalize="none"
+            autoCorrect={false}
+            blurOnSubmit={false}
+            error={errors.email}
+            keyboardType="email-address"
+            label="Email"
+            onChangeText={setEmail}
+            onSubmitEditing={() => passwordInputRef.current?.focus()}
+            placeholder="Email"
+            returnKeyType="next"
+            textContentType="username"
+            value={email}
+          />
 
           <PasswordVisibilityProvider>
             <PasswordInput
               ref={passwordInputRef}
               blurOnSubmit={false}
               error={errors.password}
-              hint={<>Use at least {MIN_PASSWORD_LENGTH} characters.</>}
+              hint={PASSWORD_REQUIREMENTS_HINT}
               label="Password"
               textContentType="newPassword"
               onChangeText={setPassword}
@@ -224,28 +223,6 @@ const PageTitle = styled(DisplayTitle)`
 const Introduction = styled(BodyText)`
   max-width: 480px;
   margin-top: 16px;
-`;
-const Field = styled.View`
-  margin-top: 28px;
-`;
-const FieldLabel = styled.Text`
-  color: ${({ theme }) => theme.text};
-  font-size: 13px;
-  font-weight: 900;
-  letter-spacing: 1px;
-  text-transform: uppercase;
-`;
-const FieldInput = styled(TextInput).attrs(({ theme }) => ({
-  placeholderTextColor: theme.textMuted,
-}))`
-  min-height: 56px;
-  background-color: ${({ theme }) => theme.background};
-  border: 2px solid ${({ theme }) => theme.text};
-  color: ${({ theme }) => theme.text};
-  font-size: 18px;
-  font-weight: 800;
-  margin-top: 8px;
-  padding: 12px 14px;
 `;
 const ErrorText = styled.Text`
   color: ${AppColors.red};

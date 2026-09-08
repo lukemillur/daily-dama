@@ -5,6 +5,22 @@
     {
       "source": "/app/stats/:trickId",
       "destination": "/app/stats/[trickId].html"
+    },
+    {
+      "source": "/app/tricks/:trickId/notes",
+      "destination": "/app/tricks/[trickId]/notes.html"
+    },
+    {
+      "source": "/app/tricks/:trickId/goals",
+      "destination": "/app/tricks/[trickId]/goals.html"
+    },
+    {
+      "source": "/app/tricks/custom/:trickId/edit",
+      "destination": "/app/tricks/custom/[trickId]/edit.html"
+    },
+    {
+      "source": "/app/tricks/custom/:trickId/delete",
+      "destination": "/app/tricks/custom/[trickId]/delete.html"
     }
   ],
   "headers": [

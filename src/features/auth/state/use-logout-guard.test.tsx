@@ -11,6 +11,7 @@ import { useEffect, useState } from "react";
 import { act, create, type ReactTestRenderer } from "react-test-renderer";
 
 import type { SyncCoordinatorState } from "@/shared/sync/coordinator";
+import type { DiscardAllPendingResult } from "@/shared/sync/discard-outcome";
 
 const mockSignOut = jest.fn<() => Promise<{ error: unknown }>>();
 
@@ -29,7 +30,7 @@ jest.mock("@/shared/persistence/identity-provider", () => ({
 }));
 
 const mockRequestManualSync = jest.fn<() => void>();
-const mockDiscardAllPending = jest.fn<() => Promise<void>>();
+const mockDiscardAllPending = jest.fn<() => Promise<DiscardAllPendingResult>>();
 let mockCoordinatorState: SyncCoordinatorState = { status: "idle", identityGeneration: 1, lastRun: undefined, pendingRerunTrigger: undefined };
 let mockPendingCount = 0;
 
@@ -111,7 +112,7 @@ describe("useLogoutGuard", () => {
     mockSignOut.mockReset();
     mockRequestManualSync.mockReset();
     mockDiscardAllPending.mockReset();
-    mockDiscardAllPending.mockResolvedValue(undefined);
+    mockDiscardAllPending.mockResolvedValue({ status: "discarded" });
     mockGeneration = 1;
     mockCoordinatorState = idleState();
     mockPendingCount = 0;
@@ -286,7 +287,7 @@ describe("useLogoutGuard", () => {
     act(() => root.unmount());
   });
 
-  it("discard unconditionally proceeds to sign-out after discardAllPending resolves", async () => {
+  it("discard proceeds to sign-out once discardAllPending resolves discarded", async () => {
     mockPendingCount = 4;
     mockSignOut.mockResolvedValue({ error: null });
     const { root, captured } = await mountHarness();
@@ -299,6 +300,78 @@ describe("useLogoutGuard", () => {
     expect(mockDiscardAllPending).toHaveBeenCalledTimes(1);
     expect(captured.result?.state.status).toBe("idle");
     expect(mockSignOut).toHaveBeenCalledTimes(1);
+
+    act(() => root.unmount());
+  });
+
+  it("a failed discard returns to prompt, exposes the failed domains, and never calls signOut", async () => {
+    mockPendingCount = 2;
+    mockDiscardAllPending.mockResolvedValue({ status: "failed", failures: [{ domain: "customTricks", error: new Error("disk full") }] });
+    const { root, captured } = await mountHarness();
+
+    act(() => captured.result?.handleLogOutPress());
+    await flush();
+    act(() => captured.result?.handleDiscard());
+    await flush();
+
+    expect(captured.result?.state.status).toBe("prompt");
+    expect(captured.result?.state.discardFailedDomains).toEqual(["customTricks"]);
+    expect(mockSignOut).not.toHaveBeenCalled();
+
+    act(() => root.unmount());
+  });
+
+  it("pressing Discard again after a failure invokes discardAllPending a second time and can then succeed and sign out", async () => {
+    mockPendingCount = 2;
+    mockSignOut.mockResolvedValue({ error: null });
+    mockDiscardAllPending.mockResolvedValueOnce({ status: "failed", failures: [{ domain: "customTricks", error: new Error("disk full") }] });
+    const { root, captured } = await mountHarness();
+
+    act(() => captured.result?.handleLogOutPress());
+    await flush();
+    act(() => captured.result?.handleDiscard());
+    await flush();
+    expect(captured.result?.state.status).toBe("prompt");
+
+    mockDiscardAllPending.mockResolvedValueOnce({ status: "discarded" });
+    act(() => captured.result?.handleDiscard());
+    await flush();
+
+    expect(mockDiscardAllPending).toHaveBeenCalledTimes(2);
+    expect(captured.result?.state.status).toBe("idle");
+    expect(mockSignOut).toHaveBeenCalledTimes(1);
+
+    act(() => root.unmount());
+  });
+
+  it("a superseded discard returns to idle without calling signOut", async () => {
+    mockPendingCount = 2;
+    mockDiscardAllPending.mockResolvedValue({ status: "superseded" });
+    const { root, captured } = await mountHarness();
+
+    act(() => captured.result?.handleLogOutPress());
+    await flush();
+    act(() => captured.result?.handleDiscard());
+    await flush();
+
+    expect(captured.result?.state.status).toBe("idle");
+    expect(mockSignOut).not.toHaveBeenCalled();
+
+    act(() => root.unmount());
+  });
+
+  it("a rejecting discardAllPending also returns to prompt without calling signOut", async () => {
+    mockPendingCount = 2;
+    mockDiscardAllPending.mockRejectedValue(new Error("unexpected"));
+    const { root, captured } = await mountHarness();
+
+    act(() => captured.result?.handleLogOutPress());
+    await flush();
+    act(() => captured.result?.handleDiscard());
+    await flush();
+
+    expect(captured.result?.state.status).toBe("prompt");
+    expect(mockSignOut).not.toHaveBeenCalled();
 
     act(() => root.unmount());
   });
@@ -326,10 +399,10 @@ describe("useLogoutGuard", () => {
 
   it("an identity/generation change during an in-flight discard aborts without calling signOut", async () => {
     mockPendingCount = 3;
-    let resolveDiscard!: () => void;
+    let resolveDiscard!: (result: DiscardAllPendingResult) => void;
     mockDiscardAllPending.mockImplementation(
       () =>
-        new Promise<void>((resolve) => {
+        new Promise<DiscardAllPendingResult>((resolve) => {
           resolveDiscard = resolve;
         }),
     );
@@ -351,7 +424,7 @@ describe("useLogoutGuard", () => {
     expect(captured.result?.state.status).toBe("idle");
 
     await act(async () => {
-      resolveDiscard();
+      resolveDiscard({ status: "discarded" });
       await Promise.resolve();
     });
     await flush();

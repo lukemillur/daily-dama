@@ -42,4 +42,23 @@ describe('createWriteQueue', () => {
     await expect(queue(2)).resolves.toBeUndefined();
     expect(write).toHaveBeenCalledTimes(2);
   });
+
+  it('returns the worker resolved value to its own caller', async () => {
+    const queue = createWriteQueue<number, string>((value) => Promise.resolve(`result-${value}`));
+
+    await expect(queue(1)).resolves.toBe('result-1');
+    await expect(queue(2)).resolves.toBe('result-2');
+  });
+
+  it('still delivers the later resolved value after an earlier worker throws', async () => {
+    const write = jest
+      .fn<(value: number) => Promise<string>>()
+      .mockRejectedValueOnce(new Error('failed'))
+      .mockResolvedValueOnce('ok');
+    const queue = createWriteQueue<number, string>(write);
+
+    await expect(queue(1)).rejects.toThrow('failed');
+    await expect(queue(2)).resolves.toBe('ok');
+    expect(write).toHaveBeenCalledTimes(2);
+  });
 });

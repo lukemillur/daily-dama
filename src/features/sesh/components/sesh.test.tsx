@@ -132,6 +132,19 @@ function pressByVisibleText(root: ReactTestRenderer, text: string) {
   current.props.onPress();
 }
 
+// Like pressByVisibleText's ancestor climb, but returns the pressable node itself so callers can
+// inspect its resolved style (e.g. width) instead of pressing it.
+function pressableAncestorByVisibleText(root: ReactTestRenderer, text: string) {
+  const [textNode] = root.root.findAll((node) => node.props.children === text);
+  if (!textNode) throw new Error(`No node found with text: ${text}`);
+  let current: typeof textNode | null = textNode;
+  while (current && typeof current.props.onPress !== 'function') {
+    current = current.parent;
+  }
+  if (!current) throw new Error(`No pressable ancestor found for text: ${text}`);
+  return current;
+}
+
 // Renders the latest note's practiceSessionId behind an accessibilityLabel so tests can assert
 // on it after driving the save flow, mirroring the Harness pattern in
 // kentei-rank-auto-promotion.test.tsx.
@@ -716,6 +729,32 @@ describe('CompletedSesh first-lace celebration', () => {
   });
 });
 
+describe('CompletedSesh completion buttons (T240)', () => {
+  const summary: SeshSummary = {
+    trick: TRICK,
+    plan: PLAN,
+    startedAt: 0,
+    endedAt: 5000,
+    durationMs: 5000,
+    landings: [landing(1000)],
+  };
+
+  it('renders "Repeat sesh" and "Start another sesh" at the same width', async () => {
+    const root = await mountWithNoteProvider(
+      <CompletedSesh summary={summary} isFirstLace={false} onReset={noop} onRepeat={noop} />,
+    );
+
+    const repeatButton = pressableAncestorByVisibleText(root, 'Repeat sesh');
+    const startAnotherButton = pressableAncestorByVisibleText(root, 'Start another sesh');
+
+    // Both buttons opt into Button's `fill` prop, which resolves to `width: 100%` on the
+    // rendered Pressable. Since they share a stretch-aligned wrapper (CompletionActions), that
+    // makes both buttons match the width of the wrapper -- and each other.
+    expect(repeatButton.props.fill).toBe(true);
+    expect(startAnotherButton.props.fill).toBe(true);
+  });
+});
+
 describe('CompletedSesh signup invite', () => {
   const summary: SeshSummary = {
     trick: TRICK,
@@ -780,6 +819,50 @@ describe('CompletedSesh signup invite', () => {
     expect(JSON.stringify(root.toJSON())).toContain(summary.trick.name);
   });
 
+  it('derives the translucent overlay background from theme.accent across theme presets (T211)', async () => {
+    const themeA: DefaultTheme = {
+      background: '#123456',
+      accent: '#abcdef',
+      text: '#fedcba',
+      textMuted: '#997755',
+      buttonBackground: '#111111',
+      buttonBackgroundSecondary: '#222222',
+    };
+    const themeB: DefaultTheme = {
+      background: '#000000',
+      accent: '#33aa77',
+      text: '#ffffff',
+      textMuted: '#888888',
+      buttonBackground: '#444444',
+      buttonBackgroundSecondary: '#555555',
+    };
+
+    for (const theme of [themeA, themeB]) {
+      const root = await mountWithNoteProvider(
+        <StyledThemeProvider theme={theme}>
+          <CompletedSesh
+            summary={summary}
+            isFirstLace={false}
+            showSignupInvite={true}
+            signupInviteIsFirstOccurrence={false}
+            onReset={noop}
+            onRepeat={noop}
+          />
+        </StyledThemeProvider>,
+      );
+
+      const overlay = findStyledByAccessibilityLabel(root, 'Guest signup invitation');
+      const r = parseInt(theme.accent.slice(1, 3), 16);
+      const g = parseInt(theme.accent.slice(3, 5), 16);
+      const b = parseInt(theme.accent.slice(5, 7), 16);
+      expect(overlay?.props.style?.backgroundColor).toBe(`rgba(${r}, ${g}, ${b}, 0.35)`);
+
+      act(() => {
+        root.unmount();
+      });
+    }
+  });
+
   it('renders the invite inline within the wrap-up scroll content when signupInviteIsFirstOccurrence is true (T201)', async () => {
     const root = await mountWithNoteProvider(
       <CompletedSesh
@@ -800,6 +883,52 @@ describe('CompletedSesh signup invite', () => {
       (node) => node.props.accessibilityLabel === 'Guest signup invitation',
     );
     expect(inviteInsideScroll.length).toBeGreaterThan(0);
+  });
+
+  it('renders the first-occurrence inline invite after the lace timeline and before "Repeat sesh," replacing the note prompt (T219)', async () => {
+    const root = await mountWithNoteProvider(
+      <CompletedSesh
+        summary={summary}
+        isFirstLace={false}
+        showSignupInvite={true}
+        signupInviteIsFirstOccurrence={true}
+        onReset={noop}
+        onRepeat={noop}
+      />,
+    );
+
+    const text = JSON.stringify(root.toJSON());
+    const landingHistoryIndex = text.indexOf('Total time');
+    const inviteIndex = text.indexOf('Save this sesh for good.');
+    const repeatIndex = text.indexOf('Repeat sesh');
+
+    expect(landingHistoryIndex).toBeGreaterThan(-1);
+    expect(inviteIndex).toBeGreaterThan(landingHistoryIndex);
+    expect(repeatIndex).toBeGreaterThan(inviteIndex);
+
+    // T219: the note prompt's slot is replaced by the invite, so it must not render at all.
+    expect(findByAccessibilityLabel(root, 'Add a note')).toHaveLength(0);
+  });
+
+  it('keeps rendering SeshNotePrompt unchanged for a non-first-occurrence invite (T219)', async () => {
+    const root = await mountWithNoteProvider(
+      <CompletedSesh
+        summary={summary}
+        isFirstLace={false}
+        showSignupInvite={true}
+        signupInviteIsFirstOccurrence={false}
+        onReset={noop}
+        onRepeat={noop}
+      />,
+    );
+
+    expect(findByAccessibilityLabel(root, 'Add a note').length).toBeGreaterThan(0);
+
+    const text = JSON.stringify(root.toJSON());
+    const notePromptIndex = text.indexOf('Add a note');
+    const repeatIndex = text.indexOf('Repeat sesh');
+    expect(notePromptIndex).toBeGreaterThan(-1);
+    expect(repeatIndex).toBeGreaterThan(notePromptIndex);
   });
 
   it('renders the inline invite\'s "Sign up" as a real link to /auth/sign-up (T201)', async () => {
@@ -2823,7 +2952,7 @@ describe('Sesh direct-practice planning (T077.2)', () => {
 
     const text = JSON.stringify(root.toJSON());
     expect(text).toContain('Practice format');
-    expect(text).toContain('Up next');
+    expect(text).not.toContain('Up next');
     expect(text).toContain(OTHER_TRICK.name);
 
     act(() => {

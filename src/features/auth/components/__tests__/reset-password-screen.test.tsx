@@ -1,9 +1,11 @@
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import type { Session } from '@supabase/supabase-js';
+import { StyleSheet } from 'react-native';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 import { ThemeProvider as StyledThemeProvider, type DefaultTheme } from 'styled-components/native';
 
-import { MIN_PASSWORD_LENGTH } from '@/features/auth/model/password-policy';
+import { hexToRgba } from '@/constants/theme';
+
 import type { AuthState } from '@/features/auth/model/auth-state';
 
 import { ResetPasswordScreen } from '@/features/auth/components/reset-password-screen';
@@ -221,7 +223,9 @@ describe('ResetPasswordScreen', () => {
       await setInput(root, 'Confirm new password', weak);
       await submit(root);
 
-      expect(containsText(root, `Use at least ${MIN_PASSWORD_LENGTH} characters.`)).toBe(true);
+      expect(
+        containsText(root, 'Password needs at least 8 characters, an uppercase letter, and a symbol.'),
+      ).toBe(true);
       expect(mockCompletePasswordRecovery).not.toHaveBeenCalled();
     });
 
@@ -373,18 +377,16 @@ describe('ResetPasswordScreen', () => {
     )?.props.style as Record<string, string> | undefined;
     expect(newPasswordStyle).toMatchObject({ color: customTheme.text });
 
-    const rowStyle = root.root.findAll(
-      (node) =>
-        typeof node.props.style === 'object' &&
-        node.props.style !== null &&
-        !Array.isArray(node.props.style) &&
-        node.props.style.minHeight === 56 &&
-        node.props.style.flexDirection === 'row',
-    );
+    const rowStyle = root.root.findAll((node) => {
+      const flattened = StyleSheet.flatten(node.props.style as never) as
+        | Record<string, string | number>
+        | undefined;
+      return flattened?.minHeight === 56 && flattened?.flexDirection === 'row';
+    });
     for (const row of rowStyle) {
-      expect(row.props.style).toMatchObject({
+      expect(StyleSheet.flatten(row.props.style as never)).toMatchObject({
         backgroundColor: customTheme.background,
-        borderColor: customTheme.text,
+        borderColor: hexToRgba(customTheme.text, 0.35),
       });
     }
     expect(rowStyle.length).toBeGreaterThan(0);

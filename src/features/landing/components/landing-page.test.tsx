@@ -9,7 +9,7 @@ import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 const ReactNative = require('react-native') as typeof import('react-native');
 
 import type { AuthState } from '@/features/auth/model/auth-state';
-import { LandingPage, MOBILE_SCREENSHOTS, WEB_SCREENSHOTS } from '@/features/landing/components/landing-page';
+import { HEADER_BAR_SCROLL_HIDE_THRESHOLD, LandingPage, MOBILE_SCREENSHOTS, WEB_SCREENSHOTS } from '@/features/landing/components/landing-page';
 import type { CachedOnboardingStatus } from '@/features/profile/persistence/read-cached-onboarding-status';
 
 const mockRouter = { push: jest.fn() };
@@ -48,6 +48,7 @@ jest.mock('@/features/landing/state/use-cached-onboarding-status', () => ({
 let mockAuthState: AuthState = { status: 'guest', reason: 'signedOut' };
 jest.mock('@/features/auth/state/auth-provider', () => ({
   useAuthState: () => mockAuthState,
+  useAuthActions: () => ({ signOut: jest.fn() }),
 }));
 
 function findByVisibleText(root: ReactTestRenderer, text: string) {
@@ -69,8 +70,9 @@ const SCREENSHOT_TITLES_AND_CAPTIONS: ReadonlyArray<{ title: string; caption: st
       'Open the app and the loop is right there: what you last practiced, what’s next, and how the streak is going.',
   },
   {
-    title: 'First lace, first cheer',
-    caption: 'The moment a trick actually lands for the first time, Daily Dama says so.',
+    title: 'Set the terms of the sesh',
+    caption:
+      'Run the clock down, chase a lace count, or line up several tricks and work the whole set in one sesh.',
   },
   {
     title: 'Your move, your rank',
@@ -123,7 +125,7 @@ describe('LandingPage sign-up/sign-in entry points', () => {
     expect(findAllByLabel(root, 'Sign in').length).toBeGreaterThan(0);
   });
 
-  it('hides the sign-up/sign-in entry points once authenticated', async () => {
+  it('swaps the sign-up/sign-in entry points for a log out control once authenticated', async () => {
     mockAuthState = {
       status: 'authenticated',
       session: { access_token: 'tok', user: { email: 'someone@example.com' } } as never,
@@ -133,6 +135,66 @@ describe('LandingPage sign-up/sign-in entry points', () => {
 
     expect(findAllByLabel(root, 'Sign up').length).toBe(0);
     expect(findAllByLabel(root, 'Sign in').length).toBe(0);
+    expect(findAllByLabel(root, 'Log out').length).toBeGreaterThan(0);
+  });
+});
+
+describe('LandingPage header bar', () => {
+  function findHeaderBar(root: ReactTestRenderer) {
+    return root.root.findAllByProps({ testID: 'landing-header-bar' })[0]!;
+  }
+
+  function findScrollView(root: ReactTestRenderer) {
+    return root.root.findAllByType(ReactNative.ScrollView)[0]!;
+  }
+
+  async function scrollTo(root: ReactTestRenderer, y: number) {
+    await act(async () => {
+      findScrollView(root).props.onScroll({ nativeEvent: { contentOffset: { y } } });
+    });
+  }
+
+  it('renders the header bar with sign up/sign in controls above the scrollable content', async () => {
+    const root = await mount();
+
+    const orderedMarkers = root.root.findAll(
+      (node) => node.props.testID === 'landing-header-bar' || node.props.testID === 'landing-content',
+    );
+    const testIds = orderedMarkers.map((node) => node.props.testID as string);
+
+    expect(testIds.indexOf('landing-header-bar')).toBeGreaterThanOrEqual(0);
+    expect(testIds.indexOf('landing-content')).toBeGreaterThanOrEqual(0);
+    expect(testIds.indexOf('landing-header-bar')).toBeLessThan(testIds.indexOf('landing-content'));
+
+    const headerBar = findHeaderBar(root);
+    const signUp = headerBar.findAll((node) => node.props.accessibilityLabel === 'Sign up');
+    const signIn = headerBar.findAll((node) => node.props.accessibilityLabel === 'Sign in');
+    expect(signUp.length).toBeGreaterThan(0);
+    expect(signIn.length).toBeGreaterThan(0);
+  });
+
+  it('shows the header bar while near the top of the scroll position', async () => {
+    const root = await mount();
+
+    expect(findHeaderBar(root).props.pointerEvents).toBe('auto');
+  });
+
+  it('hides the header bar once scroll position passes the threshold', async () => {
+    const root = await mount();
+
+    await scrollTo(root, HEADER_BAR_SCROLL_HIDE_THRESHOLD + 40);
+
+    expect(findHeaderBar(root).props.pointerEvents).toBe('none');
+  });
+
+  it('shows the header bar again once scroll position returns near the top', async () => {
+    const root = await mount();
+
+    await scrollTo(root, HEADER_BAR_SCROLL_HIDE_THRESHOLD + 40);
+    expect(findHeaderBar(root).props.pointerEvents).toBe('none');
+
+    await scrollTo(root, 0);
+    expect(findHeaderBar(root).props.pointerEvents).toBe('auto');
   });
 });
 
@@ -304,5 +366,19 @@ describe('LandingPage platform-based screenshot set', () => {
 
     expect(images.length).toBeGreaterThan(0);
     expect(mobileImages.length).toBe(0);
+  });
+
+  it('renders the sesh screenshot alt for both the mobile and web asset sets', async () => {
+    mockUseWindowDimensions.mockReturnValue({ width: 375, height: 812, scale: 2, fontScale: 1 });
+    const mobileRoot = await mount();
+    const mobileImages = mobileRoot.root.findAll(
+      (node) => node.props.alt === MOBILE_SCREENSHOTS[1]!.alt,
+    );
+    expect(mobileImages.length).toBeGreaterThan(0);
+
+    mockUseWindowDimensions.mockReturnValue({ width: 1280, height: 900, scale: 1, fontScale: 1 });
+    const webRoot = await mount();
+    const webImages = webRoot.root.findAll((node) => node.props.alt === WEB_SCREENSHOTS[1]!.alt);
+    expect(webImages.length).toBeGreaterThan(0);
   });
 });

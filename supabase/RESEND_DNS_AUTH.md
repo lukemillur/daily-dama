@@ -174,3 +174,31 @@ serving the pre-T192 (unstyled, old-copy) confirmation HTML.
 
 No SMTP credential, Resend API key, or Supabase PAT is recorded in this update, consistent with
 the rest of this file.
+
+## 2026-09-02 update — T212 (confirmation email "regression" traced to Mailpit, not the hosted config)
+
+The user reported the branded confirmation email had broken again after T195. Before repeating
+T195's PATCH, a read-only `GET /v1/projects/ylyoqswauqyesuwmetnl/config/auth` was run first:
+`mailer_templates_confirmation_content` matched `supabase/templates/confirmation.html`
+byte-for-byte, and `mailer_templates_custom_contents.MAILER_TEMPLATES_CONFIRMATION_CONTENT` was
+still `true`. The hosted config had never reverted.
+
+The actual source of the "regression" report was local Mailpit testing being treated as
+equivalent to hosted verification. The user then checked Resend's own delivery log directly (not
+the template editor/preview) for a real signup to a `mailinator.com` inbox and confirmed a
+`Sent -> Delivered` event whose HTML body contained all five branding elements from the original
+exit criteria: the `#f8f1dd` cream/paper background, the `2px solid #18382e` ink border, the
+`8px 8px 0 #18382e` hard drop shadow, the `#d84929` red uppercase eyebrow badge, and the
+`#18382e`-background/`#f4c94d`-text button. That delivery-log event is authoritative -- it shows
+what was actually sent, not a template preview -- and closes T212 with no config or code change.
+
+One fix direction was considered and explicitly rejected: `supabase config push`, which
+declaratively syncs local `config.toml` to the hosted project and was T212's own leading
+hypothesis for a "durable" fix. It was rejected because `config.toml`'s `[auth.email.smtp]`
+block is deliberately commented out -- Resend's custom SMTP was wired directly on the hosted
+project via its own Supabase Integration wizard (see the Delivery record above) and was never
+captured in `config.toml`. A full `config push` would push SMTP as disabled and silently break
+Resend delivery entirely, which is a strictly worse outcome than the problem it would "fix."
+
+No SMTP credential, Resend API key, or Supabase PAT is recorded in this update, consistent with
+the rest of this file.

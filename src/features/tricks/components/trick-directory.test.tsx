@@ -1,5 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 import { useState } from 'react';
+import { SectionList } from 'react-native';
 import { act, create } from 'react-test-renderer';
 
 import { TrickDirectory } from '@/features/tricks/components/trick-directory';
@@ -41,6 +42,14 @@ function allText(root: import('react-test-renderer').ReactTestRenderer): string[
 }
 
 describe('TrickDirectory', () => {
+  it('always hides the vertical scroll indicator', () => {
+    let root!: import('react-test-renderer').ReactTestRenderer;
+    act(() => {
+      root = create(<TrickDirectory tricks={FIXTURE_TRICKS} />);
+    });
+    expect(root.root.findByType(SectionList).props.showsVerticalScrollIndicator).toBe(false);
+  });
+
   it('sections by focusedTrickIds, independent of an in-progress selection prop, when showFocusedSection is set', () => {
     let root!: import('react-test-renderer').ReactTestRenderer;
     let toggled: string[] = [];

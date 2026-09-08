@@ -20,6 +20,9 @@ import { usePracticeHistoryDomainSync } from '@/features/stats/state/use-practic
 import { createIdentityContext } from '@/shared/persistence/identity-context';
 import { createUserIdentity, GUEST_IDENTITY, type Identity } from '@/shared/persistence/identity';
 import { IdentityHandleContext } from '@/shared/persistence/identity-provider';
+import { physicalKey } from '@/shared/persistence/scoped-storage';
+import type { DomainDiscardOutcome } from '@/shared/sync/discard-outcome';
+import { PRACTICE_HISTORY_SYNC_ENVELOPE_STORAGE_KEY } from '@/features/stats/persistence/practice-history-sync-envelope';
 import type { SyncTransportRepository } from '@/shared/sync/transport';
 
 const USER_ID = '11111111-1111-1111-1111-111111111111';
@@ -152,7 +155,7 @@ interface Captured {
   runSync?: ReturnType<typeof usePracticeHistoryDomainSync>['runSync'];
   isSyncing?: boolean;
   pendingCount?: number;
-  discardPending?: () => Promise<void>;
+  discardPending?: () => Promise<DomainDiscardOutcome>;
 }
 
 function makeHarness(
@@ -498,11 +501,13 @@ describe('usePracticeHistoryDomainSync', () => {
     await flush();
     expect(captured.pendingCount).toBe(1);
 
+    let discardOutcome: DomainDiscardOutcome | undefined;
     await act(async () => {
-      await captured.discardPending?.();
+      discardOutcome = await captured.discardPending?.();
     });
     await flush();
 
+    expect(discardOutcome).toEqual({ status: 'discarded' });
     expect(captured.pendingCount).toBe(0);
     expect(captured.history?.sessions[0]?.id).toBe('session-discard-1');
 
@@ -526,11 +531,13 @@ describe('usePracticeHistoryDomainSync', () => {
 
     expect(captured.pendingCount).toBe(0);
 
+    let noopOutcome: DomainDiscardOutcome | undefined;
     await act(async () => {
-      await captured.discardPending?.();
+      noopOutcome = await captured.discardPending?.();
     });
     await flush();
 
+    expect(noopOutcome).toEqual({ status: 'discarded' });
     expect(captured.pendingCount).toBe(0);
 
     act(() => {
@@ -561,6 +568,50 @@ describe('usePracticeHistoryDomainSync', () => {
 
     act(() => {
       other.root.unmount();
+    });
+  });
+
+  it('discardPending resolves failed and preserves the outbox in memory and on disk when the underlying write fails', async () => {
+    const transport = createFakePracticeHistorySyncTransport();
+    transport.setFailPush(true);
+    const { root, captured } = await mountHarness(INITIAL_PRACTICE_HISTORY, () => transport, USER_IDENTITY);
+    await flush();
+
+    act(() => {
+      captured.recordSession?.(makeSession('session-fault-1'));
+    });
+    await flush();
+    expect(captured.pendingCount).toBe(1);
+
+    const envelopeKey = physicalKey(USER_IDENTITY, PRACTICE_HISTORY_SYNC_ENVELOPE_STORAGE_KEY);
+    // jest.spyOn on an already-a-mock (the async-storage manual mock's setItem is already a
+    // jest.fn) reuses the same underlying dispatcher rather than wrapping it, so a plain bound
+    // reference would alias the about-to-be-replaced function and recurse into itself.
+    // Capturing `getMockImplementation()` first grabs the actual original implementation.
+    const realSetItem = (AsyncStorage.setItem as unknown as jest.Mock).getMockImplementation()! as typeof AsyncStorage.setItem;
+    const setItemSpy = jest
+      .spyOn(AsyncStorage, 'setItem')
+      .mockImplementation((key, value) => (key === envelopeKey ? Promise.reject(new Error('disk full')) : realSetItem(key, value)));
+
+    let outcome: DomainDiscardOutcome | undefined;
+    await act(async () => {
+      outcome = await captured.discardPending?.();
+    });
+    await flush();
+
+    expect(outcome).toEqual({ status: 'failed', error: expect.any(Error) });
+    // In-memory preserved: the outbox was never dispatched away.
+    expect(captured.pendingCount).toBe(1);
+
+    setItemSpy.mockRestore();
+
+    // On-disk preserved: the persisted envelope still contains the operation.
+    const persisted = await AsyncStorage.getItem(envelopeKey);
+    expect(persisted).not.toBeNull();
+    expect(JSON.parse(persisted as string).outbox.length).toBeGreaterThan(0);
+
+    act(() => {
+      root.unmount();
     });
   });
 });

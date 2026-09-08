@@ -273,6 +273,11 @@ content_path = "./supabase/templates/confirmation.html"
 subject = "Reset your Daily Dama password"
 content_path = "./supabase/templates/recovery.html"
 
+# Repository-owned email-change confirmation email (replaces Supabase's generic default copy).
+[auth.email.template.email_change]
+subject = "Confirm your new Daily Dama email"
+content_path = "./supabase/templates/email_change.html"
+
 # Uncomment to customize notification email template
 # [auth.email.notification.password_changed]
 # enabled = true

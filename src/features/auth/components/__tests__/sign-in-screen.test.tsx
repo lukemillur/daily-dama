@@ -1,6 +1,9 @@
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
+import { StyleSheet } from 'react-native';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 import { ThemeProvider as StyledThemeProvider, type DefaultTheme } from 'styled-components/native';
+
+import { hexToRgba } from '@/constants/theme';
 
 import type { AuthState } from '@/features/auth/model/auth-state';
 
@@ -498,11 +501,22 @@ describe('SignInScreen', () => {
         node.props.style !== null &&
         !Array.isArray(node.props.style),
     )?.props.style as Record<string, string> | undefined;
-    expect(emailInputStyle).toMatchObject({
+    expect(emailInputStyle).toMatchObject({ color: customTheme.text });
+
+    const emailRowStyle = StyleSheet.flatten(
+      root.root
+        .findAll(
+          (node) =>
+            (StyleSheet.flatten(node.props.style as never) as Record<string, string | number> | undefined)
+              ?.minHeight === 56,
+        )
+        .find((node) => node.props.style !== undefined)?.props.style as never,
+    ) as Record<string, string> | undefined;
+    expect(emailRowStyle).toMatchObject({
       backgroundColor: customTheme.background,
-      borderColor: customTheme.text,
-      color: customTheme.text,
+      borderColor: hexToRgba(customTheme.text, 0.35),
     });
+
     expect(
       emailInputs.find((node) => typeof node.props.placeholderTextColor === 'string')?.props
         .placeholderTextColor,

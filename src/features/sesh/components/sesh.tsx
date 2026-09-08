@@ -6,8 +6,9 @@ import { Animated, Pressable, ScrollView, TextInput } from 'react-native';
 import { styled } from 'styled-components/native';
 
 import { Button } from '@/components/ui/button';
+import { TextField } from '@/components/ui/text-field';
 import { BodyText, DisplayTitle as BaseDisplayTitle, Eyebrow as BaseEyebrow } from '@/components/ui/typography';
-import { AppColors } from '@/constants/theme';
+import { AppColors, hexToRgba } from '@/constants/theme';
 import {
   formatGoalProgress,
   formatGoalTarget,
@@ -495,7 +496,7 @@ function TrickPicker({
               $disabled={selectedPlan === undefined}
               onPress={() => selectedPlan && onSelect(trick, selectedPlan, personalBest, liveChallengeEnabled)}>
               <ChoiceMeta $preferred={isPreferred}>
-                {isPreferred ? `Up next · ${trick.descriptor ?? 'Practice trick'}` : trick.descriptor ?? 'Practice trick'}
+                {trick.descriptor ?? 'Practice trick'}
               </ChoiceMeta>
               <ChoiceName>{trick.name}</ChoiceName>
               <SequenceSteps trick={trick} compact />
@@ -1042,10 +1043,15 @@ export function CompletedSesh({
           </SummaryGrid>
           <LandingHistory landings={summary.landings} />
           {goalProgressList.length > 0 ? <SeshGoalsPanel goalProgressList={goalProgressList} /> : null}
-          {promptForNote ? <SeshNotePrompt summary={summary} /> : null}
-          {showSignupInvite && signupInviteIsFirstOccurrence ? <InlineSignupInvite /> : null}
-          <PrimaryButton onPress={onRepeat}>Repeat sesh</PrimaryButton>
-          <SecondaryButton variant="secondary" onPress={onReset}>Start another sesh</SecondaryButton>
+          {showSignupInvite && signupInviteIsFirstOccurrence ? (
+            <InlineSignupInvite />
+          ) : promptForNote ? (
+            <SeshNotePrompt summary={summary} />
+          ) : null}
+          <CompletionActions>
+            <PrimaryButton fill onPress={onRepeat}>Repeat sesh</PrimaryButton>
+            <SecondaryButton fill variant="secondary" onPress={onReset}>Start another sesh</SecondaryButton>
+          </CompletionActions>
         </ActiveContent>
       </ScrollArea>
       {showSignupInvite && !signupInviteIsFirstOccurrence ? <PostSeshSignupInvite /> : null}
@@ -1161,12 +1167,13 @@ function SeshNotePrompt({ summary }: { readonly summary: SeshSummary }) {
     return (
       <NotePromptCard>
         <NotePromptTitle>What happened?</NotePromptTitle>
-        <NotePromptInput
+        <TextField
           accessibilityLabel="Note body"
+          label="Note"
           multiline
           onChangeText={setBody}
           placeholder="What did you notice?"
-          placeholderTextColor={AppColors.textSubtle}
+          style={NOTE_INPUT_STYLE}
           value={body}
         />
         <NotePromptActions>
@@ -1259,6 +1266,7 @@ const ScrollArea = styled(ScrollView)`flex: 1; width: 100%;`;
 const CenteredPanel = styled.View`flex: 1; width: 100%; max-width: 680px; align-self: center; align-items: center; justify-content: center; padding: 40px 24px 140px;`;
 const PickerContent = styled.View`width: 100%; max-width: 680px; align-self: center;`;
 const ActiveContent = styled.View`width: 100%; max-width: 680px; align-self: center; align-items: center;`;
+const CompletionActions = styled.View`align-items: stretch;`;
 const Eyebrow = styled(BaseEyebrow)`margin-bottom: 14px;`;
 const DisplayTitle = styled(BaseDisplayTitle)``;
 const BodyCopy = styled(BodyText)`max-width: 470px; margin-top: 18px;`;
@@ -1366,13 +1374,16 @@ const TrickNotesHiddenCount = styled.Text`color: ${({ theme }) => theme.text}; f
 const NotePromptCard = styled.View`width: 100%; max-width: 500px; background-color: #f8f1dd; border: 2px solid ${AppColors.ink}; padding: 18px; margin-top: 20px;`;
 const NotePromptTitle = styled.Text`color: ${({ theme }) => theme.text}; font-size: 17px; font-weight: 900;`;
 const NotePromptCopy = styled.Text`color: ${({ theme }) => theme.text}; font-size: 13px; font-weight: 650; line-height: 19px; margin-top: 6px;`;
-const NotePromptInput = styled(TextInput)`min-height: 110px; background-color: ${AppColors.paper}; border: 2px solid ${AppColors.ink}; color: ${AppColors.ink}; font-size: 15px; font-weight: 650; margin-top: 12px; padding: 12px 14px; text-align-vertical: top;`;
+const NOTE_INPUT_STYLE = { minHeight: 110, textAlignVertical: 'top' as const };
 const NotePromptActions = styled.View`flex-direction: row; gap: 10px; margin-top: 14px;`;
 const NotePromptButton = styled(Pressable)<{ $disabled?: boolean }>`min-height: 44px; flex: 1; align-items: center; justify-content: center; opacity: ${({ $disabled }) => ($disabled ? 0.45 : 1)}; background-color: ${AppColors.ink}; padding: 10px 18px; border-radius: 5px;`;
 const NotePromptButtonText = styled.Text`color: ${({ theme }) => theme.accent}; font-size: 14px; font-weight: 900;`;
 const NotePromptSecondaryButton = styled(Pressable)`min-height: 44px; flex: 1; align-items: center; justify-content: center; padding: 10px 18px; border: 2px solid ${AppColors.ink}; border-radius: 5px;`;
 const NotePromptSecondaryButtonText = styled.Text`color: ${({ theme }) => theme.text}; font-size: 14px; font-weight: 900;`;
-const InviteOverlay = styled.View`position: absolute; top: 0; right: 0; bottom: 0; left: 0; background-color: rgba(244, 201, 77, 0.85); align-items: center; justify-content: center; padding: 24px; z-index: 1000;`;
+// T211: derives the overlay's background from theme.accent (following RankUpCelebrationModal's
+// precedent) at a low opacity so the wrap-up content behind it stays legible, rather than the
+// prior hardcoded mustard yellow that ignored the user's selected theme.
+const InviteOverlay = styled.View`position: absolute; top: 0; right: 0; bottom: 0; left: 0; background-color: ${({ theme }) => hexToRgba(theme.accent ?? AppColors.yellow, 0.35)}; align-items: center; justify-content: center; padding: 24px; z-index: 1000;`;
 const InviteCard = styled.View`width: 100%; max-width: 500px; background-color: #f8f1dd; border: 2px solid ${AppColors.ink}; padding: 18px;`;
 const InlineInviteCard = styled(InviteCard)`margin-top: 20px;`;
 const InviteTitle = styled.Text`color: ${({ theme }) => theme.text}; font-size: 17px; font-weight: 900;`;
