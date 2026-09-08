@@ -1,7 +1,7 @@
-import type { ComponentProps, ReactNode } from 'react';
+import { useContext, type ComponentProps, type ReactNode } from 'react';
 import { Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { styled } from 'styled-components/native';
+import { styled, ThemeContext } from 'styled-components/native';
 
 import { AppColors } from '@/constants/theme';
 
@@ -15,21 +15,27 @@ interface ScreenProps extends SafeAreaProps {
   readonly webBottomInset?: number;
 }
 
-export function Screen({
-  align = 'stretch',
-  background = AppColors.sage,
-  children,
-  includeWebHeaderInset = true,
-  webBottomInset = 0,
-  ...props
-}: ScreenProps) {
+export function Screen(props: ScreenProps) {
+  const align = props.align ?? 'stretch';
+  const background = props.background;
+  const children = props.children;
+  const includeWebHeaderInset = props.includeWebHeaderInset ?? true;
+  const webBottomInset = props.webBottomInset ?? 0;
+  const theme = useContext(ThemeContext);
+  const resolvedBackground = background ?? theme?.background ?? AppColors.sage;
+  const restProps: Record<string, unknown> = { ...props };
+  delete restProps.align;
+  delete restProps.background;
+  delete restProps.children;
+  delete restProps.includeWebHeaderInset;
+  delete restProps.webBottomInset;
   return (
     <Root
       $align={align}
-      $background={background}
+      $background={resolvedBackground}
       $includeWebHeaderInset={includeWebHeaderInset}
       $webBottomInset={webBottomInset}
-      {...props}>
+      {...restProps}>
       {children}
     </Root>
   );

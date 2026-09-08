@@ -1,19 +1,9 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import {
-  createContext,
-  type PropsWithChildren,
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useReducer,
-  useRef,
-  useState,
-} from 'react';
+import { createContext, type PropsWithChildren, useCallback, useContext, useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { AppColors } from '@/constants/theme';
 import {
+  type CustomTrickAction,
   createCustomTrick,
   createCustomTrickId,
   type CustomTrick,
@@ -28,7 +18,14 @@ import {
   loadCustomTricks,
   saveCustomTricks,
 } from '@/features/custom-tricks/persistence/custom-trick-persistence';
-import { createWriteQueue } from '@/shared/persistence/storage';
+import { createCustomTrickSyncTransportAdapter } from '@/features/custom-tricks/persistence/custom-trick-sync-transport';
+import { useCustomTrickDomainSync } from '@/features/custom-tricks/state/use-custom-trick-domain-sync';
+import { useIdentityHandle } from '@/shared/persistence/identity-provider';
+import type { LocalDurabilityStatus } from '@/shared/persistence/storage';
+import { useIdentityScopedDomain } from '@/shared/persistence/use-identity-scoped-domain';
+import { getSupabaseClient } from '@/shared/supabase/supabase-client';
+import type { DomainSyncRecord, SyncTrigger } from '@/shared/sync/coordinator';
+import type { DomainDiscardOutcome } from '@/shared/sync/discard-outcome';
 
 type SaveCustomTrickResult =
   | Extract<CustomTrickDraftValidation, { status: 'invalid' }>
@@ -43,47 +40,63 @@ interface CustomTrickActions {
 const CustomTrickStateContext = createContext<CustomTrickCollection | undefined>(undefined);
 const CustomTrickActionsContext = createContext<CustomTrickActions | undefined>(undefined);
 
+export interface CustomTrickSync {
+  readonly runSync: (trigger: SyncTrigger) => Promise<DomainSyncRecord>;
+  readonly isSyncing: boolean;
+  readonly lastResult: DomainSyncRecord | undefined;
+  readonly hasHydrated: boolean;
+  readonly localMutationTick: number;
+  readonly pendingCount: number;
+  readonly retryableFailureCount: number;
+  readonly discardPending: () => Promise<DomainDiscardOutcome>;
+}
+
+const CustomTrickSyncContext = createContext<CustomTrickSync | undefined>(undefined);
+
+// Runtime-only local-durability status, distinct from the cloud-facing
+// CustomTrickSync context above -- see `LocalDurabilityStatus`'s doc comment.
+const CustomTrickDurabilityContext = createContext<
+  LocalDurabilityStatus<CustomTrickCollection> | undefined
+>(undefined);
+
 export function CustomTrickProvider({ children }: PropsWithChildren) {
-  const [collection, dispatch] = useReducer(customTrickReducer, INITIAL_CUSTOM_TRICKS);
-  const [hasHydrated, setHasHydrated] = useState(false);
-  const shouldSkipInitialWrite = useRef(true);
-  const [enqueueWrite] = useState(() =>
-    createWriteQueue(async (nextCollection: CustomTrickCollection) => {
-      const result = await saveCustomTricks(AsyncStorage, nextCollection);
-      if (result.status === 'failed') {
-        console.warn('Unable to persist custom tricks.', result.error);
-      }
+  const { state: collection, dispatch, hasHydrated, durability } = useIdentityScopedDomain({
+    reducer: customTrickReducer,
+    initialState: INITIAL_CUSTOM_TRICKS,
+    load: loadCustomTricks,
+    save: saveCustomTricks,
+    createRestoreAction: (value: CustomTrickCollection): CustomTrickAction => ({
+      type: 'customTricksRestored',
+      collection: value,
     }),
-  );
+    onRecovered: (error) => {
+      console.warn('Unable to restore custom tricks. Using an empty collection.', error);
+    },
+    onSaveFailed: (error) => {
+      console.warn('Unable to persist custom tricks.', error);
+    },
+  });
 
-  useEffect(() => {
-    let isCurrent = true;
+  // Additive: a second, parallel identity-scoped domain instance tracking
+  // sync bookkeeping (T157.5). The primary reducer above stays completely
+  // untouched and remains the sole source of truth for the rendered
+  // `CustomTrickCollection` -- this hook only pulls/pushes in the background
+  // and, on a safe pull-adopt, dispatches the same `customTricksRestored`
+  // action hydration itself uses.
+  const { identity } = useIdentityHandle();
+  const getTransport = useCallback(() => {
+    if (identity.kind !== 'user') return undefined;
+    const client = getSupabaseClient();
+    if (client === null) return undefined;
+    return createCustomTrickSyncTransportAdapter(client, identity.userId);
+  }, [identity]);
 
-    loadCustomTricks(AsyncStorage).then((result) => {
-      if (!isCurrent) return;
-
-      if (result.status === 'recovered') {
-        console.warn('Unable to restore custom tricks. Using an empty collection.', result.error);
-      }
-
-      dispatch({ type: 'customTricksRestored', collection: result.value });
-      setHasHydrated(true);
-    });
-
-    return () => {
-      isCurrent = false;
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!hasHydrated) return;
-    if (shouldSkipInitialWrite.current) {
-      shouldSkipInitialWrite.current = false;
-      return;
-    }
-
-    void enqueueWrite(collection);
-  }, [collection, enqueueWrite, hasHydrated]);
+  const sync = useCustomTrickDomainSync({
+    collection,
+    hasHydratedCollection: hasHydrated,
+    dispatchCollection: dispatch,
+    getTransport,
+  });
 
   const addCustomTrick = useCallback((draft: CustomTrickDraft): SaveCustomTrickResult => {
     const validation = validateCustomTrickDraft(draft);
@@ -127,7 +140,11 @@ export function CustomTrickProvider({ children }: PropsWithChildren) {
   return (
     <CustomTrickStateContext.Provider value={collection}>
       <CustomTrickActionsContext.Provider value={actions}>
-        {children}
+        <CustomTrickSyncContext.Provider value={sync}>
+          <CustomTrickDurabilityContext.Provider value={durability}>
+            {children}
+          </CustomTrickDurabilityContext.Provider>
+        </CustomTrickSyncContext.Provider>
       </CustomTrickActionsContext.Provider>
     </CustomTrickStateContext.Provider>
   );
@@ -145,6 +162,24 @@ export function useCustomTrickActions() {
     throw new Error('useCustomTrickActions must be used within CustomTrickProvider.');
   }
   return actions;
+}
+
+// Exposed for a future manual-retry affordance (T160.1) and for tests --
+// deliberately no UI consumes this yet.
+export function useCustomTrickSync(): CustomTrickSync {
+  const sync = useContext(CustomTrickSyncContext);
+  if (!sync) {
+    throw new Error('useCustomTrickSync must be used within CustomTrickProvider.');
+  }
+  return sync;
+}
+
+export function useCustomTrickDurability(): LocalDurabilityStatus<CustomTrickCollection> {
+  const durability = useContext(CustomTrickDurabilityContext);
+  if (!durability) {
+    throw new Error('useCustomTrickDurability must be used within CustomTrickProvider.');
+  }
+  return durability;
 }
 
 const styles = StyleSheet.create({

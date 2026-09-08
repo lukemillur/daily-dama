@@ -1,6 +1,6 @@
 import type { LastSesh, UserProfile } from '@/features/profile/model/user-profile';
-import { INITIAL_USER_PROFILE, isValidStreakThresholdMinutes } from '@/features/profile/model/user-profile';
-import { isValidTimedSeshMinutes } from '@/features/sesh/model/sesh';
+import { INITIAL_USER_PROFILE, isValidStreakThresholdMinutes, isValidThemeHexColor } from '@/features/profile/model/user-profile';
+import { isValidSeshTargetLandingCount, isValidTimedSeshMinutes } from '@/features/sesh/model/sesh';
 import type {
   KeyValueStorage,
   PersistenceLoadResult,
@@ -27,24 +27,40 @@ function isStringArray(value: unknown): value is string[] {
   );
 }
 
-function isKenteiRank(value: unknown): value is number {
+export function isKenteiRank(value: unknown): value is number {
   return Number.isInteger(value) && Number(value) >= 1 && Number(value) <= 12;
 }
 
-function isLastSesh(value: unknown): value is LastSesh {
+export function isFiniteNonNegative(value: unknown): value is number {
+  return typeof value === 'number' && Number.isFinite(value) && value >= 0;
+}
+
+export function isLastSesh(value: unknown): value is LastSesh {
   if (!isRecord(value)) return false;
 
   const { trickId, plan } = value;
   if (typeof trickId !== 'string' || trickId.length === 0 || !isRecord(plan)) return false;
 
-  if (plan.kind === 'openEnded') return Object.keys(plan).length === 1;
+  if (plan.kind === 'openEnded') {
+    const keys = Object.keys(plan);
+    if (keys.length === 1) return true;
+    return (
+      keys.length === 2 &&
+      'targetLandingCount' in plan &&
+      isValidSeshTargetLandingCount(Number(plan.targetLandingCount))
+    );
+  }
   if (plan.kind === 'timed') {
     return isValidTimedSeshMinutes(Number(plan.durationMinutes)) && Object.keys(plan).length === 2;
   }
   return false;
 }
 
-function isStreakThresholdMs(value: unknown): value is number {
+function isThemeColor(value: unknown): value is string {
+  return typeof value === 'string' && isValidThemeHexColor(value);
+}
+
+export function isStreakThresholdMs(value: unknown): value is number {
   return (
     typeof value === 'number' &&
     Number.isInteger(value) &&
@@ -53,27 +69,77 @@ function isStreakThresholdMs(value: unknown): value is number {
   );
 }
 
-function parseUserProfile(value: unknown): UserProfile | undefined {
+export function parseUserProfile(value: unknown): UserProfile | undefined {
   if (!isRecord(value)) return undefined;
 
-  const { hasCompletedOnboarding, kenteiRank, selectedTrickIds, lastSesh, streakThresholdMs } = value;
+  const {
+    hasCompletedOnboarding,
+    kenteiRank,
+    selectedTrickIds,
+    lastSesh,
+    streakThresholdMs,
+    manuallyUnlockedTrickIds,
+    themeBackgroundColor,
+    themeAccentColor,
+    themeTextColor,
+    updatedAt,
+  } = value;
   if (typeof hasCompletedOnboarding !== 'boolean' || !isStringArray(selectedTrickIds)) {
     return undefined;
   }
+  if (updatedAt !== undefined && !isFiniteNonNegative(updatedAt)) return undefined;
   if (lastSesh !== undefined && !isLastSesh(lastSesh)) return undefined;
   if (streakThresholdMs !== undefined && !isStreakThresholdMs(streakThresholdMs)) return undefined;
+  if (manuallyUnlockedTrickIds !== undefined && !isStringArray(manuallyUnlockedTrickIds)) {
+    return undefined;
+  }
+  if (themeBackgroundColor !== undefined && !isThemeColor(themeBackgroundColor)) return undefined;
+  if (themeAccentColor !== undefined && !isThemeColor(themeAccentColor)) return undefined;
+  if (themeTextColor !== undefined && !isThemeColor(themeTextColor)) return undefined;
 
   const lastSeshField = lastSesh === undefined ? {} : { lastSesh: lastSesh as LastSesh };
   const streakThresholdField =
     streakThresholdMs === undefined ? {} : { streakThresholdMs: streakThresholdMs as number };
+  const manuallyUnlockedTrickIdsField =
+    manuallyUnlockedTrickIds === undefined
+      ? {}
+      : { manuallyUnlockedTrickIds: manuallyUnlockedTrickIds as string[] };
+  const themeBackgroundColorField =
+    themeBackgroundColor === undefined ? {} : { themeBackgroundColor: themeBackgroundColor as string };
+  const themeAccentColorField =
+    themeAccentColor === undefined ? {} : { themeAccentColor: themeAccentColor as string };
+  const themeTextColorField =
+    themeTextColor === undefined ? {} : { themeTextColor: themeTextColor as string };
+  const updatedAtField = updatedAt === undefined ? {} : { updatedAt: updatedAt as number };
 
   if (hasCompletedOnboarding) {
     if (!isKenteiRank(kenteiRank)) return undefined;
-    return { hasCompletedOnboarding, kenteiRank, selectedTrickIds, ...lastSeshField, ...streakThresholdField };
+    return {
+      hasCompletedOnboarding,
+      kenteiRank,
+      selectedTrickIds,
+      ...lastSeshField,
+      ...streakThresholdField,
+      ...manuallyUnlockedTrickIdsField,
+      ...themeBackgroundColorField,
+      ...themeAccentColorField,
+      ...themeTextColorField,
+      ...updatedAtField,
+    };
   }
 
   if (kenteiRank !== undefined) return undefined;
-  return { hasCompletedOnboarding, selectedTrickIds, ...lastSeshField, ...streakThresholdField };
+  return {
+    hasCompletedOnboarding,
+    selectedTrickIds,
+    ...lastSeshField,
+    ...streakThresholdField,
+    ...manuallyUnlockedTrickIdsField,
+    ...themeBackgroundColorField,
+    ...themeAccentColorField,
+    ...themeTextColorField,
+    ...updatedAtField,
+  };
 }
 
 export function serializeUserProfile(profile: UserProfile) {

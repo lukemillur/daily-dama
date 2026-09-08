@@ -5,6 +5,7 @@ import {
   CUSTOM_TRICKS_SCHEMA_VERSION,
   CUSTOM_TRICKS_STORAGE_KEY,
   deserializeCustomTricks,
+  isCustomTrickCollection,
   loadCustomTricks,
   saveCustomTricks,
   serializeCustomTricks,
@@ -13,7 +14,7 @@ import type { KeyValueStorage } from '@/shared/persistence/storage';
 
 const COLLECTION: CustomTrickCollection = {
   tricks: [
-    { id: 'custom-standalone', kind: 'standalone', name: 'Stilt flip', kenteiRank: 8 },
+    { id: 'custom-standalone', kind: 'standalone', name: 'Stilt flip', kenteiRank: 8, updatedAt: 1 },
     {
       id: 'custom-sequence',
       kind: 'sequence',
@@ -22,6 +23,7 @@ const COLLECTION: CustomTrickCollection = {
         { kind: 'existingTrick', sourceTrickId: 'big-cup', name: 'Big cup' },
         { kind: 'customText', name: 'Airplane variation' },
       ],
+      updatedAt: 1,
     },
   ],
 };
@@ -123,5 +125,36 @@ describe('custom trick persistence', () => {
       CUSTOM_TRICKS_STORAGE_KEY,
       serializeCustomTricks(COLLECTION),
     );
+  });
+});
+
+describe('isCustomTrickCollection', () => {
+  it('accepts a well-formed in-memory collection', () => {
+    expect(isCustomTrickCollection(COLLECTION)).toBe(true);
+  });
+
+  it('accepts an empty collection', () => {
+    expect(isCustomTrickCollection({ tricks: [] })).toBe(true);
+  });
+
+  it('rejects a non-object value', () => {
+    expect(isCustomTrickCollection(null)).toBe(false);
+    expect(isCustomTrickCollection('not a collection')).toBe(false);
+    expect(isCustomTrickCollection([])).toBe(false);
+  });
+
+  it('rejects a collection whose tricks are not an array', () => {
+    expect(isCustomTrickCollection({ tricks: 'nope' })).toBe(false);
+  });
+
+  it('rejects a collection containing a malformed trick', () => {
+    expect(isCustomTrickCollection({ tricks: [{ id: 'x' }] })).toBe(false);
+  });
+
+  it('rejects a collection with duplicate trick ids', () => {
+    const duplicated: CustomTrickCollection = {
+      tricks: [COLLECTION.tricks[0], { ...COLLECTION.tricks[0] }],
+    };
+    expect(isCustomTrickCollection(duplicated)).toBe(false);
   });
 });

@@ -1,14 +1,17 @@
 import { describe, expect, it, jest } from '@jest/globals';
 
-import type { PracticeHistory } from '@/features/stats/model/practice-history';
+import { INITIAL_SESH_STATE, OPEN_ENDED_SESH_PLAN, seshReducer } from '@/features/sesh/model/sesh';
+import { createPracticeSessionRecord, type PracticeHistory } from '@/features/stats/model/practice-history';
 import {
   deserializePracticeHistory,
+  isPracticeHistory,
   loadPracticeHistory,
   PRACTICE_HISTORY_SCHEMA_VERSION,
   PRACTICE_HISTORY_STORAGE_KEY,
   savePracticeHistory,
   serializePracticeHistory,
 } from '@/features/stats/persistence/practice-history-persistence';
+import type { PracticeTrick } from '@/features/tricks/model/trick';
 import type { KeyValueStorage } from '@/shared/persistence/storage';
 
 const HISTORY: PracticeHistory = {
@@ -50,6 +53,39 @@ describe('practice history persistence', () => {
     });
   });
 
+  it('restores a completed sesh record that includes paused time', () => {
+    const AIRPLANE: PracticeTrick = { id: 'airplane', name: 'Airplane' };
+    const t0 = 1_000;
+
+    let state = seshReducer(INITIAL_SESH_STATE, {
+      type: 'trickSelected',
+      trick: AIRPLANE,
+      plan: OPEN_ENDED_SESH_PLAN,
+    });
+    state = seshReducer(state, { type: 'countdownCompleted', now: t0 });
+    state = seshReducer(state, { type: 'seshPaused', now: t0 + 10_000 });
+    state = seshReducer(state, { type: 'seshResumed', now: t0 + 40_000 });
+    state = seshReducer(state, { type: 'seshEnded', now: t0 + 70_000 });
+
+    if (state.status !== 'completed') throw new Error('expected sesh to complete');
+    const summary = state.summary;
+
+    // Active practice time (40s) is strictly less than wall-clock elapsed time (70s) because
+    // of the 30s pause — this is the paused-record case the validator must accept.
+    expect(summary.durationMs).toBe(40_000);
+    expect(summary.endedAt - summary.startedAt).toBe(70_000);
+
+    const record = createPracticeSessionRecord(summary, undefined);
+    const history: PracticeHistory = { sessions: [record] };
+    const serialized = serializePracticeHistory(history);
+
+    expect(deserializePracticeHistory(serialized)).toEqual(history);
+  });
+
+  // The existing "loads valid completed sessions" test above already covers the non-paused
+  // boundary: HISTORY's session has durationMs === completedAt - startedAt exactly, and it
+  // must keep restoring successfully under the new `<=` check.
+
   it('accepts pre-existing records that predate plannedDurationMs (backward compatibility)', () => {
     const serialized = JSON.stringify({
       version: PRACTICE_HISTORY_SCHEMA_VERSION,
@@ -75,6 +111,33 @@ describe('practice history persistence', () => {
     expect(deserializePracticeHistory(JSON.stringify(withInvalidPlannedDuration))).toBeUndefined();
   });
 
+  it('round-trips a session with an assessment origin', () => {
+    const withOrigin: PracticeHistory = {
+      sessions: [{ ...HISTORY.sessions[0], origin: 'assessment' }],
+    };
+    const serialized = serializePracticeHistory(withOrigin);
+    expect(deserializePracticeHistory(serialized)).toEqual(withOrigin);
+  });
+
+  it('loads pre-existing records with no origin key as regular practice, no migration required', () => {
+    // Simulates a document persisted before the `origin` field existed.
+    const legacyDocument = {
+      version: PRACTICE_HISTORY_SCHEMA_VERSION,
+      sessions: HISTORY.sessions,
+    };
+    const result = deserializePracticeHistory(JSON.stringify(legacyDocument));
+    expect(result).not.toBeUndefined();
+    expect(result?.sessions[0]?.origin).toBeUndefined();
+  });
+
+  it('rejects a session with an unrecognized origin', () => {
+    const withInvalidOrigin = {
+      version: PRACTICE_HISTORY_SCHEMA_VERSION,
+      sessions: [{ ...HISTORY.sessions[0], origin: 'not-a-real-origin' }],
+    };
+    expect(deserializePracticeHistory(JSON.stringify(withInvalidOrigin))).toBeUndefined();
+  });
+
   it('uses empty history when storage has no document', async () => {
     await expect(loadPracticeHistory(createStorage())).resolves.toEqual({
       status: 'empty',
@@ -89,6 +152,11 @@ describe('practice history persistence', () => {
     JSON.stringify({
       version: PRACTICE_HISTORY_SCHEMA_VERSION,
       sessions: [{ ...HISTORY.sessions[0], durationMs: -1 }],
+    }),
+    // Active duration exceeding the total wall-clock span is never valid, paused or not.
+    JSON.stringify({
+      version: PRACTICE_HISTORY_SCHEMA_VERSION,
+      sessions: [{ ...HISTORY.sessions[0], durationMs: HISTORY.sessions[0].durationMs + 1 }],
     }),
   ])('recovers to empty history from malformed records', async (serialized) => {
     const result = await loadPracticeHistory(createStorage(serialized));
@@ -124,5 +192,45 @@ describe('practice history persistence', () => {
       PRACTICE_HISTORY_STORAGE_KEY,
       serializePracticeHistory(HISTORY),
     );
+  });
+
+  describe('isPracticeHistory', () => {
+    it('accepts a valid history value', () => {
+      expect(isPracticeHistory(HISTORY)).toBe(true);
+      expect(isPracticeHistory({ sessions: [] })).toBe(true);
+    });
+
+    it('rejects non-record values', () => {
+      expect(isPracticeHistory(null)).toBe(false);
+      expect(isPracticeHistory('not-an-object')).toBe(false);
+      expect(isPracticeHistory([])).toBe(false);
+    });
+
+    it('rejects a sessions value that is not an array', () => {
+      expect(isPracticeHistory({ sessions: 'nope' })).toBe(false);
+    });
+
+    it('rejects a history containing a malformed session record', () => {
+      expect(isPracticeHistory({ sessions: [{ id: 'partial' }] })).toBe(false);
+    });
+
+    it('rejects duplicate session ids', () => {
+      const duplicated = { sessions: [HISTORY.sessions[0], HISTORY.sessions[0]] };
+      expect(isPracticeHistory(duplicated)).toBe(false);
+    });
+
+    it('accepts a session with a paused duration (durationMs less than elapsed time)', () => {
+      const paused = {
+        sessions: [{ ...HISTORY.sessions[0], id: 'paused', durationMs: HISTORY.sessions[0].durationMs - 1 }],
+      };
+      expect(isPracticeHistory(paused)).toBe(true);
+    });
+
+    it('rejects a session whose durationMs exceeds elapsed time', () => {
+      const tooLong = {
+        sessions: [{ ...HISTORY.sessions[0], durationMs: HISTORY.sessions[0].durationMs + 1 }],
+      };
+      expect(isPracticeHistory(tooLong)).toBe(false);
+    });
   });
 });

@@ -27,7 +27,11 @@ export function TrickCard({ trick, eyebrow, footer }: TrickCardProps) {
 
 const Container = styled.View`width: 100%; gap: 18px;`;
 const Eyebrow = styled.Text`color: #274137; font-size: 13px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase;`;
-const Card = styled.View`min-height: 360px; overflow: hidden; justify-content: space-between; padding: 28px; background-color: #f6efd9; border: 2px solid #18382e; border-radius: 6px; box-shadow: 8px 8px 0 #18382e;`;
+// `.attrs` sets `boxShadow` directly via the style prop instead of the `box-shadow` CSS
+// shorthand in the template literal below, because styled-components/native's CSS parser
+// (css-to-react-native) always lowers `box-shadow` to the legacy `shadow*` RN style props,
+// which react-native-web warns are deprecated in favor of `boxShadow`.
+const Card = styled.View.attrs({ style: { boxShadow: '8px 8px 0 #18382e' } })`min-height: 360px; overflow: hidden; justify-content: space-between; padding: 28px; background-color: #f6efd9; border: 2px solid #18382e; border-radius: 6px;`;
 const RankWatermark = styled.Text`position: absolute; right: -14px; bottom: -55px; color: #e9d8ac; font-size: 240px; font-weight: 900; letter-spacing: -20px;`;
 const MetadataRow = styled.View`flex-direction: row; align-items: center; justify-content: space-between; gap: 16px;`;
 const RankBadge = styled.Text`overflow: hidden; padding: 7px 11px; color: #fffaf0; background-color: #de4b2a; border-radius: 3px; font-size: 13px; font-weight: 800; letter-spacing: 0.8px; text-transform: uppercase;`;

@@ -22,11 +22,12 @@ describe('custom tricks', () => {
       value: { kind: 'standalone', name: 'Stilt flip', kenteiRank: 8 },
     });
     if (validation.status !== 'valid') throw new Error('Expected a valid draft.');
-    expect(createCustomTrick('custom-stilt', validation.value)).toEqual({
+    expect(createCustomTrick('custom-stilt', validation.value, 1)).toEqual({
       id: 'custom-stilt',
       kind: 'standalone',
       name: 'Stilt flip',
       kenteiRank: 8,
+      updatedAt: 1,
     });
   });
 
@@ -92,7 +93,7 @@ describe('custom tricks', () => {
     const candidates = selectSequenceStepCandidates(
       [{ id: 'big-cup', name: 'Big cup' }],
       [
-        { id: 'custom-solo', kind: 'standalone', name: 'Moon catch' },
+        { id: 'custom-solo', kind: 'standalone', name: 'Moon catch', updatedAt: 1 },
         {
           id: 'custom-sequence',
           kind: 'sequence',
@@ -101,6 +102,7 @@ describe('custom tricks', () => {
             { kind: 'existingTrick', sourceTrickId: 'big-cup', name: 'Big cup' },
             { kind: 'customText', name: 'Nightmare turn' },
           ],
+          updatedAt: 1,
         },
       ],
     );
@@ -114,6 +116,7 @@ describe('custom tricks', () => {
       id,
       kind: 'standalone' as const,
       name: 'Original name',
+      updatedAt: 1,
     };
 
     expect(id).toBe(createCustomTrickId(1_234_567, 0.25));
@@ -122,7 +125,7 @@ describe('custom tricks', () => {
   });
 
   it('adds a trick once for a stable identifier', () => {
-    const trick = { id: 'custom-1', kind: 'standalone' as const, name: 'Custom one' };
+    const trick = { id: 'custom-1', kind: 'standalone' as const, name: 'Custom one', updatedAt: 1 };
     const once = customTrickReducer(INITIAL_CUSTOM_TRICKS, {
       type: 'customTrickAdded',
       trick,
@@ -138,6 +141,7 @@ describe('custom tricks', () => {
       id: 'custom-stable',
       kind: 'standalone' as const,
       name: 'Original name',
+      updatedAt: 1,
     };
     const state = { tricks: [original] };
     const updated = customTrickReducer(state, {
@@ -146,13 +150,13 @@ describe('custom tricks', () => {
     });
 
     expect(updated.tricks).toEqual([
-      { id: 'custom-stable', kind: 'standalone', name: 'Renamed trick', kenteiRank: 7 },
+      { id: 'custom-stable', kind: 'standalone', name: 'Renamed trick', kenteiRank: 7, updatedAt: 1 },
     ]);
   });
 
   it('deletes only the requested custom trick', () => {
-    const first = { id: 'custom-1', kind: 'standalone' as const, name: 'First' };
-    const second = { id: 'custom-2', kind: 'standalone' as const, name: 'Second' };
+    const first = { id: 'custom-1', kind: 'standalone' as const, name: 'First', updatedAt: 1 };
+    const second = { id: 'custom-2', kind: 'standalone' as const, name: 'Second', updatedAt: 1 };
 
     expect(
       customTrickReducer(

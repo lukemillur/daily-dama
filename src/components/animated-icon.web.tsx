@@ -1,13 +1,27 @@
 import { Image } from 'expo-image';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useSyncExternalStore } from 'react';
 import { StyleSheet, View } from 'react-native';
 import Animated, { Keyframe, Easing } from 'react-native-reanimated';
+
+import { readCachedThemeBackgroundColor } from '@/features/profile/persistence/read-cached-theme-background';
+import { resolveTheme } from '@/features/profile/state/use-resolved-theme';
 
 import classes from './animated-icon.module.css';
 const DURATION = 300;
 
+const emptySubscribe = () => () => {};
+
+// Rendered on the server and on the very first client render (before
+// hydration can safely read `window.localStorage`); must match app.json's
+// static splash `backgroundColor` to avoid a visible seam.
+const DEFAULT_SPLASH_BACKGROUND = resolveTheme({}).background;
+
 export function AnimatedSplashOverlay() {
   const [visible, setVisible] = useState(true);
+  const hasHydrated = useSyncExternalStore(emptySubscribe, () => true, () => false);
+  const backgroundColor = hasHydrated
+    ? readCachedThemeBackgroundColor((key) => window.localStorage.getItem(key))
+    : DEFAULT_SPLASH_BACKGROUND;
 
   useEffect(() => {
     // Waiting for two paints gives runtime-generated styles a full frame to be
@@ -28,7 +42,7 @@ export function AnimatedSplashOverlay() {
   // Inline styles are intentional: this cover must be styled before any
   // external or runtime-generated stylesheet has loaded.
   return (
-    <div aria-hidden="true" style={webSplashStyles.overlay}>
+    <div aria-hidden="true" style={{ ...webSplashStyles.overlay, backgroundColor }}>
       <div style={webSplashStyles.wordmark}>Daily Dama</div>
     </div>
   );
@@ -37,7 +51,6 @@ export function AnimatedSplashOverlay() {
 const webSplashStyles = {
   overlay: {
     alignItems: 'center',
-    backgroundColor: '#f4c94d',
     display: 'flex',
     inset: 0,
     justifyContent: 'center',

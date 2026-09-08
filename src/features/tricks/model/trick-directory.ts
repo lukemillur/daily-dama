@@ -1,4 +1,7 @@
 import type { CustomTrick } from '@/features/custom-tricks/model/custom-trick';
+import type { Goal } from '@/features/goals/model/goal';
+import type { Note } from '@/features/notes/model/note';
+import type { PracticeSessionRecord } from '@/features/stats/model/practice-history';
 import type {
   KenteiClass,
   KenteiLevel,
@@ -124,6 +127,86 @@ export function createTrickSections(
       : [...rankedSections, { kind: 'custom', data: unrankedCustomTricks }];
 
   return [...focusedSection, ...trailingSections];
+}
+
+// A rank is complete once every standard trick assigned to it is laced, by either practice
+// history or manual marking (see selectEffectiveLacedTrickIds). A rank with no standard
+// tricks assigned is never considered complete (guards against a stray rank number promoting
+// on an empty set).
+export function isKenteiRankComplete(
+  rank: number,
+  standardTricks: readonly TrickSummary[],
+  effectiveLacedTrickIds: ReadonlySet<string>,
+): boolean {
+  const tricksInRank = standardTricks.filter((trick) => trick.kenteiRank === rank);
+  if (tricksInRank.length === 0) return false;
+  return tricksInRank.every((trick) => effectiveLacedTrickIds.has(trick.id));
+}
+
+// Starting at the currently assessed rank, advances one rank at a time while the current rank
+// is fully laced (by either practice history or manual marking), cascading through multiple
+// ranks in a single call if several are already complete. Never advances past the highest rank
+// present in standardTricks.
+export function selectPromotedKenteiRank(
+  currentRank: number,
+  standardTricks: readonly TrickSummary[],
+  effectiveLacedTrickIds: ReadonlySet<string>,
+): number {
+  const maxRank = Math.max(...standardTricks.map((trick) => trick.kenteiRank));
+  let rank = currentRank;
+  while (rank < maxRank && isKenteiRankComplete(rank, standardTricks, effectiveLacedTrickIds)) {
+    rank += 1;
+  }
+  return rank;
+}
+
+export function selectLacedCountByTrickId(
+  sessions: readonly PracticeSessionRecord[],
+): ReadonlyMap<string, number> {
+  const counts = new Map<string, number>();
+  for (const session of sessions) {
+    counts.set(session.trickId, (counts.get(session.trickId) ?? 0) + session.laceCount);
+  }
+  return counts;
+}
+
+export function selectNoteCountByTrickId(notes: readonly Note[]): ReadonlyMap<string, number> {
+  const counts = new Map<string, number>();
+  for (const note of notes) {
+    counts.set(note.trickId, (counts.get(note.trickId) ?? 0) + 1);
+  }
+  return counts;
+}
+
+export function selectGoalCountByTrickId(goals: readonly Goal[]): ReadonlyMap<string, number> {
+  const counts = new Map<string, number>();
+  for (const goal of goals) {
+    counts.set(goal.trickId, (counts.get(goal.trickId) ?? 0) + 1);
+  }
+  return counts;
+}
+
+// Laced means at least one recorded session for the trick actually landed a lace.
+// A session record merely existing is not enough — see selectLacedCountByTrickId, which
+// deliberately keeps zero-lace sessions in its map (for per-trick lace-count display), and
+// hasPriorLaceForTrick in the practice-history domain, which uses the same laceCount > 0
+// predicate for "first lace" detection.
+export function selectLacedTrickIds(
+  sessions: readonly PracticeSessionRecord[],
+): ReadonlySet<string> {
+  return new Set(
+    sessions.filter((session) => session.laceCount > 0).map((session) => session.trickId),
+  );
+}
+
+// Layers the manual-unlock override on top of lace-derived laced status. A trick laced
+// by either source stays laced; this is a toggle, not a one-way override, so clearing the
+// manual flag on a trick with no lace history reverts it to unlaced.
+export function selectEffectiveLacedTrickIds(
+  lacedTrickIds: ReadonlySet<string>,
+  manuallyUnlockedTrickIds: readonly string[],
+): ReadonlySet<string> {
+  return new Set([...lacedTrickIds, ...manuallyUnlockedTrickIds]);
 }
 
 export function selectAvailablePracticeTricks(

@@ -1,8 +1,24 @@
 {
   "editor.codeActionsOnSave": {
-    "source.fixAll": "explicit",
+    "source.fixAll.eslint": "explicit",
     "source.organizeImports": "explicit",
     "source.sortMembers": "explicit"
   },
-  "cSpell.words": ["kentei", "sesh", "Sesh"]
+  "eslint.useFlatConfig": true,
+  "eslint.probe": ["javascript", "javascriptreact", "typescript", "typescriptreact"],
+  "cSpell.words": ["kentei", "sesh", "Sesh"],
+  "files.exclude": {
+    "**/.claude/worktrees": true,
+    "**/node_modules": true
+  },
+  "search.useIgnoreFiles": true,
+  "search.useGlobalIgnoreFiles": true,
+  "search.exclude": {
+    "**/.claude/worktrees/**": true,
+    "**/node_modules/**": true
+  },
+  "files.watcherExclude": {
+    "**/.claude/worktrees/**": true,
+    "**/node_modules/**": true
+  }
 }

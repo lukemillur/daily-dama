@@ -6,13 +6,24 @@ export interface Landing {
   readonly intervalMs: number;
 }
 
+/**
+ * A target the user optionally sets before starting an open-ended sesh: land
+ * the trick being practiced this many times. Purely a stored intent at this
+ * stage — gating the end action on it is T005.2's concern, not this one's.
+ */
+export interface SeshTarget {
+  readonly landingCount: number;
+}
+
 export type SeshPlan =
-  | { readonly kind: 'openEnded' }
+  | { readonly kind: 'openEnded'; readonly target?: SeshTarget }
   | { readonly kind: 'timed'; readonly durationMs: number };
 
 export const OPEN_ENDED_SESH_PLAN: SeshPlan = { kind: 'openEnded' };
 export const MIN_TIMED_SESH_MINUTES = 1;
 export const MAX_TIMED_SESH_MINUTES = 60;
+export const MIN_SESH_TARGET_LANDING_COUNT = 1;
+export const MAX_SESH_TARGET_LANDING_COUNT = 999;
 
 export function isValidTimedSeshMinutes(durationMinutes: number) {
   return (
@@ -29,6 +40,47 @@ export function createTimedSeshPlan(durationMinutes: number): SeshPlan {
   return { kind: 'timed', durationMs: durationMinutes * 60_000 };
 }
 
+export function isValidSeshTargetLandingCount(landingCount: number) {
+  return (
+    Number.isInteger(landingCount) &&
+    landingCount >= MIN_SESH_TARGET_LANDING_COUNT &&
+    landingCount <= MAX_SESH_TARGET_LANDING_COUNT
+  );
+}
+
+/**
+ * Builds an open-ended plan, optionally carrying a landing-count target.
+ * Omitting `landingCount` (or passing `undefined`) preserves today's
+ * behavior exactly — an untargeted open-ended sesh.
+ */
+export function createOpenEndedSeshPlan(landingCount?: number): SeshPlan {
+  if (landingCount === undefined) return OPEN_ENDED_SESH_PLAN;
+  if (!isValidSeshTargetLandingCount(landingCount)) {
+    throw new RangeError(
+      `A sesh target must be a whole number of laces from ${MIN_SESH_TARGET_LANDING_COUNT} to ${MAX_SESH_TARGET_LANDING_COUNT}.`,
+    );
+  }
+  return { kind: 'openEnded', target: { landingCount } };
+}
+
+/**
+ * The landing count a sesh's plan is targeting, if any. Undefined for timed
+ * plans and for untargeted open-ended plans.
+ */
+export function getSeshTargetLandingCount(plan: SeshPlan): number | undefined {
+  return plan.kind === 'openEnded' ? plan.target?.landingCount : undefined;
+}
+
+/**
+ * Whether the given landing count satisfies the plan's target. Plans without
+ * a target (timed, or untargeted open-ended) are always considered met, so
+ * callers can gate the primary end action on this unconditionally.
+ */
+export function isSeshTargetMet(plan: SeshPlan, landingCount: number): boolean {
+  const target = getSeshTargetLandingCount(plan);
+  return target === undefined || landingCount >= target;
+}
+
 export interface SeshSummary {
   readonly trick: PracticeTrick;
   readonly plan: SeshPlan;
@@ -39,7 +91,7 @@ export interface SeshSummary {
 }
 
 export type SeshState =
-  | { readonly status: 'choosing' }
+  | { readonly status: 'choosing'; readonly directPracticeTrickId?: string }
   | { readonly status: 'countdown'; readonly trick: PracticeTrick; readonly plan: SeshPlan }
   | {
       readonly status: 'active';
@@ -60,9 +112,19 @@ export type SeshAction =
   | { readonly type: 'seshResumed'; readonly now: number }
   | { readonly type: 'seshEnded'; readonly now: number }
   | { readonly type: 'timerElapsed'; readonly now: number }
-  | { readonly type: 'seshReset' };
+  | { readonly type: 'seshReset' }
+  | { readonly type: 'directPracticeRequested'; readonly trickId: string };
 
 export const INITIAL_SESH_STATE: SeshState = { status: 'choosing' };
+
+/**
+ * Whether the device screen should be kept awake for the given Sesh status.
+ * True for the countdown and active states, since those are the states where
+ * the user is expected to be hands-on with the kendama rather than the screen.
+ */
+export function shouldKeepScreenAwake(status: SeshState['status']): boolean {
+  return status === 'countdown' || status === 'active';
+}
 
 export function seshReducer(state: SeshState, action: SeshAction): SeshState {
   switch (action.type) {
@@ -125,6 +187,10 @@ export function seshReducer(state: SeshState, action: SeshAction): SeshState {
       return completeSesh(state, state.startedAt + state.plan.durationMs + state.pausedDurationMs);
     case 'seshReset':
       return INITIAL_SESH_STATE;
+    case 'directPracticeRequested':
+      return state.status === 'choosing'
+        ? { status: 'choosing', directPracticeTrickId: action.trickId }
+        : state;
   }
 }
 
@@ -169,6 +235,16 @@ export function getAverageInterval(landings: readonly Landing[]) {
 export function getFastestInterval(landings: readonly Landing[]) {
   if (landings.length === 0) return undefined;
   return Math.min(...landings.map((landing) => landing.intervalMs));
+}
+
+/**
+ * Whether a completed sesh should prompt the user to add a note: every
+ * completed sesh, timed or open-ended, regardless of outcome. Landing count
+ * only selects which copy the prompt shows (see `SeshNotePrompt`) — it does
+ * not gate whether the prompt appears.
+ */
+export function shouldPromptSeshNote(_summary: SeshSummary): boolean {
+  return true;
 }
 
 export function selectSeshPracticeTricks(

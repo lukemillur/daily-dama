@@ -1,5 +1,7 @@
 import type { SeshSummary } from '@/features/sesh/model/sesh';
 
+export type PracticeSessionOrigin = 'assessment';
+
 export interface PracticeSessionRecord {
   readonly id: string;
   readonly trickId: string;
@@ -11,6 +13,9 @@ export interface PracticeSessionRecord {
   // Set only when this session is a comparable timed attempt (see isEligibleTimedAttempt);
   // absent for open-ended seshes and for timed seshes that don't qualify.
   readonly plannedDurationMs?: number;
+  // Set only when this session was recorded via the Kentei assessment flow;
+  // absent for regular single-trick Sesh and ad hoc multi-trick practice.
+  readonly origin?: PracticeSessionOrigin;
 }
 
 export interface PracticeHistory {
@@ -21,7 +26,11 @@ export const INITIAL_PRACTICE_HISTORY: PracticeHistory = { sessions: [] };
 
 export type PracticeHistoryAction =
   | { readonly type: 'historyRestored'; readonly history: PracticeHistory }
-  | { readonly type: 'sessionRecorded'; readonly summary: SeshSummary };
+  | {
+      readonly type: 'sessionRecorded';
+      readonly summary: SeshSummary;
+      readonly origin?: PracticeSessionOrigin;
+    };
 
 export function practiceHistoryReducer(
   state: PracticeHistory,
@@ -35,7 +44,7 @@ export function practiceHistoryReducer(
         action.summary.plan.kind === 'timed'
           ? getPersonalBest(state.sessions, action.summary.trick.id, action.summary.plan.durationMs)
           : undefined;
-      const session = createPracticeSessionRecord(action.summary, previousBest);
+      const session = createPracticeSessionRecord(action.summary, previousBest, action.origin);
       return state.sessions.some((existing) => existing.id === session.id)
         ? state
         : { sessions: [...state.sessions, session] };
@@ -54,12 +63,60 @@ export function isEligibleTimedAttempt(summary: SeshSummary, previousBest: numbe
   return reachedFullDuration || exceededPreviousBest;
 }
 
+// True when at least one recorded session for the trick has a laceCount above zero — i.e. the
+// trick has been laced at least once in the given history.
+export function hasPriorLaceForTrick(
+  sessions: readonly PracticeSessionRecord[],
+  trickId: string,
+): boolean {
+  return sessions.some((session) => session.trickId === trickId && session.laceCount > 0);
+}
+
+// True when this sesh landed the trick for the first time ever — i.e. no prior recorded session
+// for the same trick has a laceCount above zero. `priorSessions` must be the history as it stood
+// BEFORE this summary was recorded (a zero-lace record for the trick doesn't disqualify it).
+export function isFirstLaceForTrick(
+  priorSessions: readonly PracticeSessionRecord[],
+  summary: SeshSummary,
+): boolean {
+  if (summary.landings.length === 0) return false;
+  return !hasPriorLaceForTrick(priorSessions, summary.trick.id);
+}
+
+// Excludes Kentei-assessment-sourced sessions from Stats/Home reads. `KenteiRankAutoPromotion`
+// deliberately reads unfiltered history and must not call this.
+export function selectRegularSessions(
+  sessions: readonly PracticeSessionRecord[],
+): readonly PracticeSessionRecord[] {
+  return sessions.filter((session) => session.origin === undefined);
+}
+
+// Guest sign-up invite eligibility (T166, extends the earlier isFirstEverRegularSession from
+// T153.12): true on the guest's first-ever completed regular (non-assessment) Sesh, then again
+// every 5th regular Sesh after that (the 6th, 11th, 16th, ...) so guests who declined the first
+// invite keep getting re-invited on a steady cadence rather than only once. `priorSessions` must
+// be the history as it stood BEFORE this summary was recorded (mirrors isFirstLaceForTrick's
+// contract). `origin` is the origin this summary is *about* to be recorded under — if it's itself
+// an assessment session, it can never be eligible regardless of what came before it or the cadence.
+export function isRegularSessionInviteEligible(
+  priorSessions: readonly PracticeSessionRecord[],
+  origin: PracticeSessionOrigin | undefined,
+): boolean {
+  if (origin !== undefined) return false;
+  return selectRegularSessions(priorSessions).length % 5 === 0;
+}
+
+export function createPracticeSessionRecordId(summary: SeshSummary): string {
+  return `${summary.startedAt}:${summary.endedAt}:${summary.trick.id}`;
+}
+
 export function createPracticeSessionRecord(
   summary: SeshSummary,
   previousBest: number | undefined,
+  origin?: PracticeSessionOrigin,
 ): PracticeSessionRecord {
   return {
-    id: `${summary.startedAt}:${summary.endedAt}:${summary.trick.id}`,
+    id: createPracticeSessionRecordId(summary),
     trickId: summary.trick.id,
     trickName: summary.trick.name,
     startedAt: summary.startedAt,
@@ -70,6 +127,7 @@ export function createPracticeSessionRecord(
       summary.plan.kind === 'timed' && isEligibleTimedAttempt(summary, previousBest)
         ? summary.plan.durationMs
         : undefined,
+    origin,
   };
 }
 

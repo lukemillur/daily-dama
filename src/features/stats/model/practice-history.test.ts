@@ -3,9 +3,14 @@ import { describe, expect, it } from '@jest/globals';
 import {
   aggregatePracticeStats,
   createPracticeSessionRecord,
+  createPracticeSessionRecordId,
   getPersonalBest,
   isEligibleTimedAttempt,
+  hasPriorLaceForTrick,
+  isRegularSessionInviteEligible,
+  isFirstLaceForTrick,
   practiceHistoryReducer,
+  selectRegularSessions,
   type PracticeSessionRecord,
 } from '@/features/stats/model/practice-history';
 import { OPEN_ENDED_SESH_PLAN, type Landing, type SeshSummary } from '@/features/sesh/model/sesh';
@@ -149,6 +154,15 @@ describe('practice history', () => {
   });
 });
 
+describe('createPracticeSessionRecordId', () => {
+  it('matches the id createPracticeSessionRecord assigns for the same summary', () => {
+    const summary = makeSummary();
+    expect(createPracticeSessionRecordId(summary)).toBe(
+      createPracticeSessionRecord(summary, undefined).id,
+    );
+  });
+});
+
 describe('isEligibleTimedAttempt', () => {
   it('is never eligible for an open-ended sesh', () => {
     const summary = makeSummary({ plan: OPEN_ENDED_SESH_PLAN });
@@ -252,6 +266,118 @@ describe('sessionRecorded reducer (plannedDurationMs eligibility)', () => {
   });
 });
 
+describe('isFirstLaceForTrick', () => {
+  it('is true when there is no prior session for the trick', () => {
+    const summary = makeSummary({ trick: { id: 'big-cup', name: 'Big cup' } });
+    expect(isFirstLaceForTrick([], summary)).toBe(true);
+  });
+
+  it('is true when the only prior session for the trick had zero laces', () => {
+    const summary = makeSummary({ trick: { id: 'airplane', name: 'Airplane' } });
+    expect(isFirstLaceForTrick([AIRPLANE_ZERO_LACES], summary)).toBe(true);
+  });
+
+  it('is false when a prior session for the trick already has laces', () => {
+    const summary = makeSummary({ trick: { id: 'big-cup', name: 'Big cup' } });
+    expect(isFirstLaceForTrick([BIG_CUP_FIRST], summary)).toBe(false);
+  });
+
+  it('is false when this sesh itself landed zero laces', () => {
+    const summary = makeSummary({ trick: { id: 'whirlwind', name: 'Whirlwind' }, landings: [] });
+    expect(isFirstLaceForTrick([], summary)).toBe(false);
+  });
+});
+
+describe('selectRegularSessions', () => {
+  it('keeps a session with no origin', () => {
+    expect(selectRegularSessions([BIG_CUP_FIRST])).toEqual([BIG_CUP_FIRST]);
+  });
+
+  it('drops a session with origin "assessment"', () => {
+    const assessmentSession: PracticeSessionRecord = { ...BIG_CUP_FIRST, origin: 'assessment' };
+    expect(selectRegularSessions([assessmentSession])).toEqual([]);
+  });
+
+  it('preserves order of kept sessions in a mixed array', () => {
+    const assessmentSession: PracticeSessionRecord = { ...BIG_CUP_SECOND, origin: 'assessment' };
+    expect(selectRegularSessions([BIG_CUP_FIRST, assessmentSession, AIRPLANE_ZERO_LACES])).toEqual([
+      BIG_CUP_FIRST,
+      AIRPLANE_ZERO_LACES,
+    ]);
+  });
+});
+
+describe('isRegularSessionInviteEligible', () => {
+  it('is true for empty prior sessions and no origin (the first-ever regular Sesh)', () => {
+    expect(isRegularSessionInviteEligible([], undefined)).toBe(true);
+  });
+
+  it('is false for sessions 2 through 5 after the first', () => {
+    for (let priorCount = 1; priorCount <= 4; priorCount += 1) {
+      const priorSessions = Array.from({ length: priorCount }, (_, index) => ({
+        ...BIG_CUP_FIRST,
+        id: `big-cup-${index}`,
+      }));
+      expect(isRegularSessionInviteEligible(priorSessions, undefined)).toBe(false);
+    }
+  });
+
+  it('is true again on the 6th completed regular session (5th after the first)', () => {
+    const priorSessions = Array.from({ length: 5 }, (_, index) => ({
+      ...BIG_CUP_FIRST,
+      id: `big-cup-${index}`,
+    }));
+    expect(isRegularSessionInviteEligible(priorSessions, undefined)).toBe(true);
+  });
+
+  it('continues on a 5-session cadence (11th, 16th, 21st, ...)', () => {
+    for (const priorCount of [10, 15, 20]) {
+      const priorSessions = Array.from({ length: priorCount }, (_, index) => ({
+        ...BIG_CUP_FIRST,
+        id: `big-cup-${index}`,
+      }));
+      expect(isRegularSessionInviteEligible(priorSessions, undefined)).toBe(true);
+    }
+  });
+
+  it('is false between cadence points, e.g. the 7th through 10th session', () => {
+    for (const priorCount of [6, 7, 8, 9]) {
+      const priorSessions = Array.from({ length: priorCount }, (_, index) => ({
+        ...BIG_CUP_FIRST,
+        id: `big-cup-${index}`,
+      }));
+      expect(isRegularSessionInviteEligible(priorSessions, undefined)).toBe(false);
+    }
+  });
+
+  it('is true when prior sessions are all assessment-origin (they do not count toward the cadence)', () => {
+    const assessmentSession: PracticeSessionRecord = { ...BIG_CUP_FIRST, origin: 'assessment' };
+    expect(isRegularSessionInviteEligible([assessmentSession], undefined)).toBe(true);
+  });
+
+  it('is false when this summary is itself an assessment session', () => {
+    expect(isRegularSessionInviteEligible([], 'assessment')).toBe(false);
+  });
+});
+
+describe('hasPriorLaceForTrick', () => {
+  it('is false for an empty history', () => {
+    expect(hasPriorLaceForTrick([], 'big-cup')).toBe(false);
+  });
+
+  it('is false when the only record for the trick has zero laces', () => {
+    expect(hasPriorLaceForTrick([AIRPLANE_ZERO_LACES], 'airplane')).toBe(false);
+  });
+
+  it('is true when a record for the trick has laces', () => {
+    expect(hasPriorLaceForTrick([BIG_CUP_FIRST], 'big-cup')).toBe(true);
+  });
+
+  it('is false when only a different trick has laces', () => {
+    expect(hasPriorLaceForTrick([BIG_CUP_FIRST], 'airplane')).toBe(false);
+  });
+});
+
 describe('getPersonalBest', () => {
   const sessions: readonly PracticeSessionRecord[] = [
     { ...BIG_CUP_FIRST, plannedDurationMs: 300_000 },
@@ -275,5 +401,37 @@ describe('getPersonalBest', () => {
   it('returns undefined when there is no match', () => {
     expect(getPersonalBest(sessions, 'big-cup', 120_000)).toBeUndefined();
     expect(getPersonalBest(sessions, 'unknown-trick', 300_000)).toBeUndefined();
+  });
+});
+
+
+describe('createPracticeSessionRecord origin', () => {
+  it('carries an assessment origin when passed', () => {
+    const summary = makeSummary();
+    const record = createPracticeSessionRecord(summary, undefined, 'assessment');
+    expect(record.origin).toBe('assessment');
+  });
+
+  it('leaves origin undefined when not passed', () => {
+    const summary = makeSummary();
+    const record = createPracticeSessionRecord(summary, undefined);
+    expect(record.origin).toBeUndefined();
+  });
+});
+
+describe('sessionRecorded reducer origin', () => {
+  it('carries an assessment origin through to the recorded session', () => {
+    const summary = makeSummary();
+    const result = practiceHistoryReducer(
+      { sessions: [] },
+      { type: 'sessionRecorded', summary, origin: 'assessment' },
+    );
+    expect(result.sessions[0]?.origin).toBe('assessment');
+  });
+
+  it('leaves origin absent when the action carries none', () => {
+    const summary = makeSummary();
+    const result = practiceHistoryReducer({ sessions: [] }, { type: 'sessionRecorded', summary });
+    expect(result.sessions[0]?.origin).toBeUndefined();
   });
 });

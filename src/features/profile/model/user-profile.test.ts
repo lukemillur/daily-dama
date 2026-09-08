@@ -1,15 +1,28 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { INITIAL_USER_PROFILE, userProfileReducer } from '@/features/profile/model/user-profile';
+import {
+  createLastSesh,
+  INITIAL_USER_PROFILE,
+  isValidThemeHexColor,
+  selectInitialSeshPlan,
+  userProfileReducer,
+} from '@/features/profile/model/user-profile';
+import {
+  createOpenEndedSeshPlan,
+  createTimedSeshPlan,
+  OPEN_ENDED_SESH_PLAN,
+} from '@/features/sesh/model/sesh';
 
 describe('user profile trick selection', () => {
   it('selects and deselects a custom trick by its stable identifier', () => {
     const selected = userProfileReducer(INITIAL_USER_PROFILE, {
       type: 'selectedTrickToggled',
+      updatedAt: 1,
       trickId: 'custom-stable-id',
     });
     const deselected = userProfileReducer(selected, {
       type: 'selectedTrickToggled',
+      updatedAt: 1,
       trickId: 'custom-stable-id',
     });
 
@@ -26,14 +39,40 @@ describe('user profile trick selection', () => {
     expect(
       userProfileReducer(state, {
         type: 'selectedTrickRemoved',
+      updatedAt: 1,
         trickId: 'custom-delete',
       }).selectedTrickIds,
     ).toEqual(['big-cup', 'airplane']);
   });
 
+  it('adds a missing trick id to selectedTrickIds', () => {
+    const state = { ...INITIAL_USER_PROFILE, selectedTrickIds: ['big-cup'] };
+
+    const next = userProfileReducer(state, {
+      type: 'selectedTrickAdded',
+      updatedAt: 1,
+      trickId: 'airplane',
+    });
+
+    expect(next.selectedTrickIds).toEqual(['big-cup', 'airplane']);
+  });
+
+  it('is a no-op when the trick id is already selected', () => {
+    const state = { ...INITIAL_USER_PROFILE, selectedTrickIds: ['big-cup', 'airplane'] };
+
+    const next = userProfileReducer(state, {
+      type: 'selectedTrickAdded',
+      updatedAt: 1,
+      trickId: 'airplane',
+    });
+
+    expect(next).toBe(state);
+  });
+
   it('caches and overwrites the last specified sesh', () => {
     const firstSesh = userProfileReducer(INITIAL_USER_PROFILE, {
       type: 'lastSeshUpdated',
+      updatedAt: 1,
       lastSesh: { trickId: 'big-cup', plan: { kind: 'timed', durationMinutes: 5 } },
     });
     expect(firstSesh.lastSesh).toEqual({
@@ -43,6 +82,7 @@ describe('user profile trick selection', () => {
 
     const secondSesh = userProfileReducer(firstSesh, {
       type: 'lastSeshUpdated',
+      updatedAt: 1,
       lastSesh: { trickId: 'airplane', plan: { kind: 'openEnded' } },
     });
     expect(secondSesh.lastSesh).toEqual({ trickId: 'airplane', plan: { kind: 'openEnded' } });
@@ -51,15 +91,88 @@ describe('user profile trick selection', () => {
   it('overwrites the streak threshold on update', () => {
     const updated = userProfileReducer(INITIAL_USER_PROFILE, {
       type: 'streakThresholdUpdated',
+      updatedAt: 1,
       thresholdMs: 300_000,
     });
     expect(updated.streakThresholdMs).toBe(300_000);
 
     const overwritten = userProfileReducer(updated, {
       type: 'streakThresholdUpdated',
+      updatedAt: 1,
       thresholdMs: 60_000,
     });
     expect(overwritten.streakThresholdMs).toBe(60_000);
+  });
+
+  it('toggles a manual unlock flag on and off', () => {
+    const set = userProfileReducer(INITIAL_USER_PROFILE, {
+      type: 'manualUnlockToggled',
+      updatedAt: 1,
+      trickId: 'big-cup',
+    });
+    expect(set.manuallyUnlockedTrickIds).toEqual(['big-cup']);
+
+    const cleared = userProfileReducer(set, {
+      type: 'manualUnlockToggled',
+      updatedAt: 1,
+      trickId: 'big-cup',
+    });
+    expect(cleared.manuallyUnlockedTrickIds).toEqual([]);
+  });
+
+  it('removes a manual unlock flag without affecting other flagged tricks', () => {
+    const state = {
+      ...INITIAL_USER_PROFILE,
+      manuallyUnlockedTrickIds: ['big-cup', 'custom-delete', 'airplane'],
+    };
+
+    expect(
+      userProfileReducer(state, {
+        type: 'manualUnlockRemoved',
+      updatedAt: 1,
+        trickId: 'custom-delete',
+      }).manuallyUnlockedTrickIds,
+    ).toEqual(['big-cup', 'airplane']);
+  });
+
+  it('seeds manuallyUnlockedTrickIds from lacedTrickIds when none existed before', () => {
+    const result = userProfileReducer(INITIAL_USER_PROFILE, {
+      type: 'onboardingCompleted',
+      updatedAt: 1,
+      kenteiRank: 4,
+      selectedTrickIds: ['big-cup'],
+      lacedTrickIds: ['trick-a', 'trick-b'],
+    });
+
+    expect(result.manuallyUnlockedTrickIds).toEqual(['trick-a', 'trick-b']);
+  });
+
+  it('unions lacedTrickIds with a pre-existing manuallyUnlockedTrickIds instead of clobbering it', () => {
+    const state = { ...INITIAL_USER_PROFILE, manuallyUnlockedTrickIds: ['existing-trick'] };
+
+    const result = userProfileReducer(state, {
+      type: 'onboardingCompleted',
+      updatedAt: 1,
+      kenteiRank: 4,
+      selectedTrickIds: ['big-cup'],
+      lacedTrickIds: ['trick-a'],
+    });
+
+    expect(result.manuallyUnlockedTrickIds).toEqual(['existing-trick', 'trick-a']);
+  });
+
+  it('de-duplicates when lacedTrickIds overlaps existing manuallyUnlockedTrickIds', () => {
+    const state = { ...INITIAL_USER_PROFILE, manuallyUnlockedTrickIds: ['trick-a', 'existing-trick'] };
+
+    const result = userProfileReducer(state, {
+      type: 'onboardingCompleted',
+      updatedAt: 1,
+      kenteiRank: 4,
+      selectedTrickIds: ['big-cup'],
+      lacedTrickIds: ['trick-a', 'trick-b'],
+    });
+
+    expect(result.manuallyUnlockedTrickIds).toEqual(['trick-a', 'existing-trick', 'trick-b']);
   });
 
   it('preserves the current practice list while an assessment is being retaken', () => {
@@ -70,11 +183,221 @@ describe('user profile trick selection', () => {
     } as const;
 
     expect(
-      userProfileReducer(completedProfile, { type: 'onboardingRestarted' }),
+      userProfileReducer(completedProfile, { type: 'onboardingRestarted', updatedAt: 1 }),
     ).toEqual({
       hasCompletedOnboarding: false,
       kenteiRank: undefined,
       selectedTrickIds: ['big-cup', 'custom-morning-line'],
+      updatedAt: 1,
     });
+  });
+
+  it('sets both theme colors and allows clearing one independently', () => {
+    const withBoth = userProfileReducer(INITIAL_USER_PROFILE, {
+      type: 'themeColorsUpdated',
+      updatedAt: 1,
+      themeBackgroundColor: '#abcdef',
+      themeAccentColor: '#123456',
+    });
+    expect(withBoth.themeBackgroundColor).toBe('#abcdef');
+    expect(withBoth.themeAccentColor).toBe('#123456');
+
+    const clearedBackground = userProfileReducer(withBoth, {
+      type: 'themeColorsUpdated',
+      updatedAt: 1,
+      themeBackgroundColor: undefined,
+      themeAccentColor: '#123456',
+    });
+    expect(clearedBackground.themeBackgroundColor).toBeUndefined();
+    expect(clearedBackground.themeAccentColor).toBe('#123456');
+  });
+
+  it('clears a custom text color when a preset theme is applied', () => {
+    const withTextColor = userProfileReducer(INITIAL_USER_PROFILE, {
+      type: 'themeTextColorUpdated',
+      updatedAt: 1,
+      themeTextColor: '#abcdef',
+    });
+    expect(withTextColor.themeTextColor).toBe('#abcdef');
+
+    const result = userProfileReducer(withTextColor, {
+      type: 'themeColorsUpdated',
+      updatedAt: 1,
+      themeBackgroundColor: '#111111',
+      themeAccentColor: '#222222',
+    });
+
+    expect(result.themeTextColor).toBeUndefined();
+    expect(result.themeBackgroundColor).toBe('#111111');
+    expect(result.themeAccentColor).toBe('#222222');
+  });
+
+  it('does not clobber unrelated profile fields when updating theme colors', () => {
+    const state = { ...INITIAL_USER_PROFILE, selectedTrickIds: ['big-cup'] };
+
+    const result = userProfileReducer(state, {
+      type: 'themeColorsUpdated',
+      updatedAt: 1,
+      themeBackgroundColor: '#abcdef',
+      themeAccentColor: undefined,
+    });
+
+    expect(result.selectedTrickIds).toEqual(['big-cup']);
+  });
+
+  it('leaves theme colors untouched when an unrelated action is dispatched', () => {
+    const state = {
+      ...INITIAL_USER_PROFILE,
+      themeBackgroundColor: '#abcdef',
+      themeAccentColor: '#123456',
+    };
+
+    const result = userProfileReducer(state, {
+      type: 'selectedTrickToggled',
+      updatedAt: 1,
+      trickId: 'big-cup',
+    });
+
+    expect(result.themeBackgroundColor).toBe('#abcdef');
+    expect(result.themeAccentColor).toBe('#123456');
+  });
+
+  it('sets and clears the custom text color', () => {
+    const withColor = userProfileReducer(INITIAL_USER_PROFILE, {
+      type: 'themeTextColorUpdated',
+      updatedAt: 1,
+      themeTextColor: '#abcdef',
+    });
+    expect(withColor.themeTextColor).toBe('#abcdef');
+
+    const cleared = userProfileReducer(withColor, {
+      type: 'themeTextColorUpdated',
+      updatedAt: 1,
+      themeTextColor: undefined,
+    });
+    expect(cleared.themeTextColor).toBeUndefined();
+  });
+
+  it('does not clobber unrelated profile fields when updating the theme text color', () => {
+    const state = { ...INITIAL_USER_PROFILE, selectedTrickIds: ['big-cup'] };
+
+    const result = userProfileReducer(state, {
+      type: 'themeTextColorUpdated',
+      updatedAt: 1,
+      themeTextColor: '#abcdef',
+    });
+
+    expect(result.selectedTrickIds).toEqual(['big-cup']);
+  });
+
+  it('leaves the theme text color untouched when an unrelated action is dispatched', () => {
+    const state = { ...INITIAL_USER_PROFILE, themeTextColor: '#abcdef' };
+
+    const result = userProfileReducer(state, {
+      type: 'selectedTrickToggled',
+      updatedAt: 1,
+      trickId: 'big-cup',
+    });
+
+    expect(result.themeTextColor).toBe('#abcdef');
+  });
+
+  it('advances the assessed Kentei rank', () => {
+    const state = { ...INITIAL_USER_PROFILE, kenteiRank: 1 };
+
+    expect(
+      userProfileReducer(state, { type: 'kenteiRankAdvanced', rank: 2, updatedAt: 1 }).kenteiRank,
+    ).toBe(2);
+  });
+
+  it('is a no-op when advancing to the already-current rank', () => {
+    const state = { ...INITIAL_USER_PROFILE, kenteiRank: 3 };
+    const result = userProfileReducer(state, { type: 'kenteiRankAdvanced', rank: 3, updatedAt: 1 });
+
+    expect(result).toBe(state);
+  });
+});
+
+describe('createLastSesh', () => {
+  it('carries an open-ended target landing count forward', () => {
+    expect(createLastSesh('big-cup', createOpenEndedSeshPlan(10))).toEqual({
+      trickId: 'big-cup',
+      plan: { kind: 'openEnded', targetLandingCount: 10 },
+    });
+  });
+
+  it('omits the target key for an untargeted open-ended plan', () => {
+    expect(createLastSesh('big-cup', OPEN_ENDED_SESH_PLAN)).toEqual({
+      trickId: 'big-cup',
+      plan: { kind: 'openEnded' },
+    });
+    expect(
+      Object.prototype.hasOwnProperty.call(
+        createLastSesh('big-cup', OPEN_ENDED_SESH_PLAN).plan,
+        'targetLandingCount',
+      ),
+    ).toBe(false);
+  });
+});
+
+describe('selectInitialSeshPlan', () => {
+  it('restores an open-ended target from the last sesh', () => {
+    const lastSesh = createLastSesh('big-cup', createOpenEndedSeshPlan(5));
+    expect(selectInitialSeshPlan(lastSesh)).toEqual({
+      kind: 'openEnded',
+      target: { landingCount: 5 },
+    });
+  });
+
+  it('keeps a blank target blank, not zero', () => {
+    const lastSesh = createLastSesh('big-cup', OPEN_ENDED_SESH_PLAN);
+    const plan = selectInitialSeshPlan(lastSesh);
+    expect(plan).toEqual({ kind: 'openEnded' });
+    expect(plan && plan.kind === 'openEnded' ? plan.target : undefined).toBeUndefined();
+  });
+
+  it('restores a timed plan from the last sesh', () => {
+    const lastSesh = createLastSesh('big-cup', createTimedSeshPlan(7));
+    expect(selectInitialSeshPlan(lastSesh)).toEqual({ kind: 'timed', durationMs: 420_000 });
+  });
+
+  it('returns undefined when there is no last sesh', () => {
+    expect(selectInitialSeshPlan(undefined)).toBeUndefined();
+  });
+
+  it('prefers a valid challenge duration over the last sesh', () => {
+    const lastSesh = createLastSesh('big-cup', createOpenEndedSeshPlan(5));
+    expect(selectInitialSeshPlan(lastSesh, 300_000)).toEqual({ kind: 'timed', durationMs: 300_000 });
+  });
+
+  it('falls back to the last sesh when the challenge duration is out of range', () => {
+    const lastSesh = createLastSesh('big-cup', createOpenEndedSeshPlan(5));
+    expect(selectInitialSeshPlan(lastSesh, 30_000)).toEqual({
+      kind: 'openEnded',
+      target: { landingCount: 5 },
+    });
+  });
+
+  it('falls back to the last sesh when the challenge duration is not a number', () => {
+    const lastSesh = createLastSesh('big-cup', createOpenEndedSeshPlan(5));
+    expect(selectInitialSeshPlan(lastSesh, Number('abc'))).toEqual({
+      kind: 'openEnded',
+      target: { landingCount: 5 },
+    });
+  });
+});
+
+describe('isValidThemeHexColor', () => {
+  it('accepts a 6-digit hex color', () => {
+    expect(isValidThemeHexColor('#4477aa')).toBe(true);
+    expect(isValidThemeHexColor('#FFFFFF')).toBe(true);
+  });
+
+  it('rejects a 3-digit shorthand hex color', () => {
+    expect(isValidThemeHexColor('#fff')).toBe(false);
+  });
+
+  it('rejects a hex value missing its leading hash', () => {
+    expect(isValidThemeHexColor('4477aa')).toBe(false);
   });
 });

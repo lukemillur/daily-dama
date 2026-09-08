@@ -56,6 +56,17 @@ describe('user profile persistence', () => {
     expect(deserializeUserProfile(serialized)).toEqual(profileWithLastSesh);
   });
 
+  it('round-trips an open-ended cached last sesh with a target', () => {
+    const profileWithLastSesh = {
+      ...COMPLETE_PROFILE,
+      lastSesh: { trickId: 'airplane', plan: { kind: 'openEnded', targetLandingCount: 10 } },
+    } as const;
+
+    const serialized = serializeUserProfile(profileWithLastSesh);
+
+    expect(deserializeUserProfile(serialized)).toEqual(profileWithLastSesh);
+  });
+
   it('round-trips a profile with a custom streak threshold', () => {
     const profileWithThreshold = { ...COMPLETE_PROFILE, streakThresholdMs: 300_000 } as const;
 
@@ -63,6 +74,136 @@ describe('user profile persistence', () => {
 
     expect(deserializeUserProfile(serialized)).toEqual(profileWithThreshold);
   });
+
+  it('round-trips a profile with manually unlocked tricks', () => {
+    const profileWithManualUnlocks = {
+      ...COMPLETE_PROFILE,
+      manuallyUnlockedTrickIds: ['big-cup', 'custom-trick'],
+    } as const;
+
+    const serialized = serializeUserProfile(profileWithManualUnlocks);
+
+    expect(deserializeUserProfile(serialized)).toEqual(profileWithManualUnlocks);
+  });
+
+  it('round-trips a profile with both theme colors set', () => {
+    const profileWithThemeColors = {
+      ...COMPLETE_PROFILE,
+      themeBackgroundColor: '#ABCDEF',
+      themeAccentColor: '#123456',
+    } as const;
+
+    const serialized = serializeUserProfile(profileWithThemeColors);
+
+    expect(deserializeUserProfile(serialized)).toEqual(profileWithThemeColors);
+  });
+
+  it('defaults theme colors to undefined when unset', () => {
+    const serialized = serializeUserProfile(COMPLETE_PROFILE);
+
+    const result = deserializeUserProfile(serialized);
+
+    expect(result?.themeBackgroundColor).toBeUndefined();
+    expect(result?.themeAccentColor).toBeUndefined();
+  });
+
+  it.each(['not-a-color', '#fff', '#1234567', '#gggggg', ''])(
+    'rejects a malformed themeBackgroundColor: %p',
+    (themeBackgroundColor) => {
+      const serialized = JSON.stringify({
+        version: USER_PROFILE_SCHEMA_VERSION,
+        profile: { ...COMPLETE_PROFILE, themeBackgroundColor },
+      });
+
+      expect(deserializeUserProfile(serialized)).toBeUndefined();
+    },
+  );
+
+  it.each(['not-a-color', '#fff', '#1234567', '#gggggg', ''])(
+    'rejects a malformed themeAccentColor: %p',
+    (themeAccentColor) => {
+      const serialized = JSON.stringify({
+        version: USER_PROFILE_SCHEMA_VERSION,
+        profile: { ...COMPLETE_PROFILE, themeAccentColor },
+      });
+
+      expect(deserializeUserProfile(serialized)).toBeUndefined();
+    },
+  );
+
+  it('loads a valid persisted profile with theme colors through the full hydration path', async () => {
+    const profileWithThemeColors = {
+      ...COMPLETE_PROFILE,
+      themeBackgroundColor: '#abcdef',
+      themeAccentColor: '#123456',
+    } as const;
+
+    const result = await loadUserProfile(
+      createStorage(serializeUserProfile(profileWithThemeColors)),
+    );
+
+    expect(result).toEqual({ status: 'loaded', value: profileWithThemeColors });
+  });
+
+  it('round-trips a profile with theme colors and a custom theme text color', () => {
+    const profileWithThemeColors = {
+      ...COMPLETE_PROFILE,
+      themeBackgroundColor: '#ABCDEF',
+      themeAccentColor: '#123456',
+      themeTextColor: '#654321',
+    } as const;
+
+    const serialized = serializeUserProfile(profileWithThemeColors);
+
+    expect(deserializeUserProfile(serialized)).toEqual(profileWithThemeColors);
+  });
+
+  it('defaults themeTextColor to undefined when unset', () => {
+    const serialized = serializeUserProfile(COMPLETE_PROFILE);
+
+    const result = deserializeUserProfile(serialized);
+
+    expect(result?.themeTextColor).toBeUndefined();
+  });
+
+  it.each(['not-a-color', '#fff', '#1234567', '#gggggg', ''])(
+    'rejects a malformed themeTextColor: %p',
+    (themeTextColor) => {
+      const serialized = JSON.stringify({
+        version: USER_PROFILE_SCHEMA_VERSION,
+        profile: { ...COMPLETE_PROFILE, themeTextColor },
+      });
+
+      expect(deserializeUserProfile(serialized)).toBeUndefined();
+    },
+  );
+
+  it('loads a valid persisted profile with a theme text color through the full hydration path', async () => {
+    const profileWithThemeTextColor = {
+      ...COMPLETE_PROFILE,
+      themeBackgroundColor: '#abcdef',
+      themeAccentColor: '#123456',
+      themeTextColor: '#654321',
+    } as const;
+
+    const result = await loadUserProfile(
+      createStorage(serializeUserProfile(profileWithThemeTextColor)),
+    );
+
+    expect(result).toEqual({ status: 'loaded', value: profileWithThemeTextColor });
+  });
+
+  it.each([0, 'not-an-array', ['big-cup', 'big-cup'], ['big-cup', ''], [1, 2]])(
+    'rejects a malformed manuallyUnlockedTrickIds: %p',
+    (manuallyUnlockedTrickIds) => {
+      const serialized = JSON.stringify({
+        version: USER_PROFILE_SCHEMA_VERSION,
+        profile: { ...COMPLETE_PROFILE, manuallyUnlockedTrickIds },
+      });
+
+      expect(deserializeUserProfile(serialized)).toBeUndefined();
+    },
+  );
 
   it.each([0, -60_000, 61 * 60_000, 90_000, 1.5 * 60_000, '60000'])(
     'rejects a malformed streak threshold: %p',
@@ -87,6 +228,9 @@ describe('user profile persistence', () => {
     { trickId: 'big-cup', plan: { kind: 'timed', durationMinutes: 61 } },
     { trickId: 'big-cup', plan: { kind: 'unknown' } },
     { trickId: '', plan: { kind: 'openEnded' } },
+    { trickId: 'big-cup', plan: { kind: 'openEnded', targetLandingCount: 0 } },
+    { trickId: 'big-cup', plan: { kind: 'openEnded', targetLandingCount: 1000 } },
+    { trickId: 'big-cup', plan: { kind: 'openEnded', targetLandingCount: 5, extra: true } },
   ])('rejects a malformed cached last sesh', (lastSesh) => {
     const serialized = JSON.stringify({
       version: USER_PROFILE_SCHEMA_VERSION,

@@ -1,9 +1,7 @@
 import { styled } from 'styled-components/native';
 
-import { AppColors } from '@/constants/theme';
-
 export const Eyebrow = styled.Text`
-  color: ${AppColors.red};
+  color: ${({ theme }) => theme.textMuted};
   font-size: 13px;
   font-weight: 900;
   letter-spacing: 1.8px;
@@ -11,7 +9,7 @@ export const Eyebrow = styled.Text`
 `;
 
 export const DisplayTitle = styled.Text`
-  color: ${AppColors.ink};
+  color: ${({ theme }) => theme.text};
   font-size: 42px;
   font-weight: 900;
   line-height: 44px;
@@ -19,7 +17,7 @@ export const DisplayTitle = styled.Text`
 `;
 
 export const BodyText = styled.Text`
-  color: ${AppColors.textMuted};
+  color: ${({ theme }) => theme.textMuted};
   font-size: 16px;
   line-height: 24px;
 `;

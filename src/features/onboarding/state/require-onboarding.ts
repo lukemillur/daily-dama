@@ -15,7 +15,7 @@ export function useRequireOnboarding() {
   const isOnboardingComplete = profile.hasCompletedOnboarding && profile.kenteiRank !== undefined;
 
   useEffect(() => {
-    if (!isOnboardingComplete) router.replace('/');
+    if (!isOnboardingComplete) router.replace('/app/home');
   }, [isOnboardingComplete, router]);
 
   return isOnboardingComplete;
