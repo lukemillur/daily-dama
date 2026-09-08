@@ -4,6 +4,16 @@ Completed entries move here from `TASKS.md`'s `Backlog`, in the same commit that
 
 Entries keep their content as it was at completion. Don't retroactively edit a description or exit criteria after the fact; if something about a completed task turns out to be wrong or misleading, note that in a new entry or in code, not by rewriting history here.
 
+### [T257] Show the entered email address on the "Check your email" screen
+
+- **Area:** Authentication
+- **Priority:** Medium
+- **Status:** Done
+- **Planning:** Implementer
+- **Description:** `check-email-screen.tsx` already reads the submitted address via `usePendingVerificationEmail()` (used today only for the resend action) but its copy (`CONFIRMATION_COPY`, `SAME_BROWSER_GUIDANCE`) never displays it. Update the screen's copy to include the actual pending email address so the user can confirm they entered it correctly.
+- **Exit criteria:** A test in `check-email-screen.test.tsx`'s `with a pending email` describe block asserts the rendered screen includes the mocked pending email address (e.g. `person@example.com`) as visible text. The existing `pendingEmail === undefined` fallback branch is unchanged and still has no email address to show. Met: added a `confirmationCopyWithEmail(email)` helper rendered in the pending-email branch's `Introduction` in place of the bare `CONFIRMATION_COPY` constant, appending "You entered {email}." to the existing confirmation sentence; the `pendingEmail === undefined` fallback branch still renders the unchanged `CONFIRMATION_COPY` constant with no email address. Added a `shows the pending email address so the user can confirm it was entered correctly` test to the `with a pending email` describe block asserting the rendered screen contains `person@example.com`.
+- **Notes:** From S128. Small, self-contained copy/rendering change.
+
 ### [T254] Fully hide the landing header bar on scroll, not just fade it
 
 - **Area:** Landing page
