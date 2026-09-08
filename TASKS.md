@@ -133,16 +133,6 @@ _Raw ideas land here — a name and a one-line description, nothing more. Discus
 
 _T253–T254, T256–T257 come from stories S123, S124, S127, S128 in [BACKLOG_STORIES.md](BACKLOG_STORIES.md) (the user's 2026-09-08 QA pass on the first live dailydama.com production deployment). S125 (email template branding) was scoped as T255 in `TASKS_COLLABORATIVE.md` instead, since it's Supabase-dashboard configuration rather than application code. S126 was intentionally never created — the reported broken auth redirect is already covered by `T231` in `TASKS_COLLABORATIVE.md`, which the user is actively working in a separate session; nothing here touches it. All four are `Implementer`: each is a local fix inside a single existing component, matching this project's established precedent (T237, T238) for a QA-reported symptom that needs a browser-only diagnosis first but is genuinely local in scope once found — none of them touch a persistence domain, state machine, or architectural boundary._
 
-### [T254] Fully hide the landing header bar on scroll, not just fade it
-
-- **Area:** Landing page
-- **Priority:** Medium
-- **Status:** In progress
-- **Planning:** Implementer
-- **Description:** `landing-auth-cta.tsx`'s `HeaderBar` toggles only `opacity` (`opacity: ${$visible ? 1 : 0}`) based on `landing-page.tsx`'s scroll-driven `headerVisible` state, while its `background-color`, 2px `border-bottom`, and absolute top-of-screen position stay rendered at all times. The visible text/buttons fade out, but the bar's background/border container remains visibly present over the content once scrolled past the threshold. Change this so the entire header bar — text, buttons, background, and border — is fully hidden once scrolled past `HEADER_BAR_SCROLL_HIDE_THRESHOLD`.
-- **Exit criteria:** `landing-page.test.tsx`'s `LandingPage header bar` describe block gains a test asserting the header bar has no visible rendered container (not just `pointerEvents: 'none'`) once scrolled past the threshold, and that it's restored when scrolling back near the top. Confirmed in-browser at both mobile and desktop widths that no header bar background or border is visible after scrolling past the threshold.
-- **Notes:** From S124. Keep the existing `pointerEvents`/reappear-on-scroll-up tests in that describe block passing — extend them rather than replacing the visibility mechanism's contract.
-
 ### [T256] Fix the onboarding practice-minutes field's broken web focus styling
 
 - **Area:** Onboarding

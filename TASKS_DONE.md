@@ -4,6 +4,16 @@ Completed entries move here from `TASKS.md`'s `Backlog`, in the same commit that
 
 Entries keep their content as it was at completion. Don't retroactively edit a description or exit criteria after the fact; if something about a completed task turns out to be wrong or misleading, note that in a new entry or in code, not by rewriting history here.
 
+### [T254] Fully hide the landing header bar on scroll, not just fade it
+
+- **Area:** Landing page
+- **Priority:** Medium
+- **Status:** Done
+- **Planning:** Implementer
+- **Description:** `landing-auth-cta.tsx`'s `HeaderBar` toggles only `opacity` (`opacity: ${$visible ? 1 : 0}`) based on `landing-page.tsx`'s scroll-driven `headerVisible` state, while its `background-color`, 2px `border-bottom`, and absolute top-of-screen position stay rendered at all times. The visible text/buttons fade out, but the bar's background/border container remains visibly present over the content once scrolled past the threshold. Change this so the entire header bar — text, buttons, background, and border — is fully hidden once scrolled past `HEADER_BAR_SCROLL_HIDE_THRESHOLD`.
+- **Exit criteria:** `landing-page.test.tsx`'s `LandingPage header bar` describe block gains a test asserting the header bar has no visible rendered container (not just `pointerEvents: 'none'`) once scrolled past the threshold, and that it's restored when scrolling back near the top. Confirmed in-browser at both mobile and desktop widths that no header bar background or border is visible after scrolling past the threshold. Met: added `display: ${({ $visible }) => ($visible ? 'flex' : 'none')}` alongside the existing `opacity`/`pointerEvents` toggle on `HeaderBar`, so the whole container (background, border, text, buttons) leaves layout entirely once hidden rather than just fading its contents. Added `fully hides the header bar container` and `restores the header bar container` tests to the `LandingPage header bar` describe block asserting the resolved `display` style, alongside the untouched existing `pointerEvents`/reappear tests. Confirmed in-browser via a throwaway Playwright script against a local Expo web dev server at 375x812 and 1280x900: post-scroll computed `display` is `none` with the header's bounding rect empty (no background/border painted), and it restores to `flex` on scrolling back to the top.
+- **Notes:** From S124. Follows the existing `opacity`/`pointerEvents` mechanism rather than replacing it, and node_modules needed a fresh `yarn install` in this worktree before Jest was runnable.
+
 ### [T253] Play the landing page's first screenshot entrance animation on mount
 
 - **Area:** Landing page
