@@ -82,7 +82,8 @@ Backend selection and release selection are explicit owner gates. T230/T231 prep
 
 - **Area:** Web release configuration
 - **Priority:** High
-- **Status:** Not started
+- **Status:** In progress
+- **Checkpoint:** Awaiting owner action
 - **Planning:** Required
 - **Execution:** Owner-in-loop
 - **Owner gates:** Select release commit, backend and canonical domain (www recommended); confirm Vercel Production Branch and authorize exact promotion/deployment steps and hosted Auth setting changes.
