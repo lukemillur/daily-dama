@@ -4,6 +4,16 @@ Completed entries move here from `TASKS.md`'s `Backlog`, in the same commit that
 
 Entries keep their content as it was at completion. Don't retroactively edit a description or exit criteria after the fact; if something about a completed task turns out to be wrong or misleading, note that in a new entry or in code, not by rewriting history here.
 
+### [T251] Require password complexity at signup and reset
+
+- **Area:** Authentication
+- **Priority:** Medium
+- **Status:** Done
+- **Planning:** Implementer
+- **Description:** Replace `password-policy.ts`'s current rule (`MIN_PASSWORD_LENGTH = 10`, length-only) with: at least 8 characters, at least one uppercase letter, at least one number, and at least one symbol. Update `sign-up-screen.tsx`'s password hint text and any related validation error copy to state these actual rules instead of just a character count.
+- **Exit criteria:** `validateNewPassword` rejects a password missing any one of the four rules and accepts one satisfying all four, with test coverage for each rule individually and combined. Submitting a password failing any rule on the Sign up screen shows an error identifying what's missing, before a network round trip. The Sign up screen's password hint states all four rules. `yarn tsc --noEmit` passes; existing signup/reset-password screen tests pass with copy assertions updated to the new hint/error text.
+- **Notes:** From S121. `password-policy.ts` is shared by `sign-up-screen.tsx` and `reset-password-screen.tsx` via `validateNewPassword` — this ticket applies the new rule to both flows for consistency, since they already share the module. The user's request named only the signup screen's copy; this shared-scope choice was flagged in the story as an assumption pending confirmation. `MIN_PASSWORD_LENGTH` is now 8, but the hosted Supabase Auth project's `minimum_password_length` config (10, per `supabase/config.toml`/`supabase/README.md`) was left unchanged as out of scope for this client-validation ticket — an 8-11 character password with full complexity would now pass client validation but could still be rejected server-side; flagging as a candidate follow-up rather than fixing here.
+
 ### [T230] Prepare the owner-selected hosted Supabase backend
 
 - **Area:** Hosted backend deployment

@@ -133,16 +133,6 @@ _Raw ideas land here — a name and a one-line description, nothing more. Discus
 
 _T249–T252 come from stories S119–S122 in [BACKLOG_STORIES.md](BACKLOG_STORIES.md) (the user's 2026-09-08 QA pass on T208/T241, plus two general-feedback items describing one consistent rule, combined into S122/T252). T249 (S119) is `Required`: T208's overlay wiring (`useGlobalSearchParams` read in `_layout.tsx`, `auth-callback-screen.tsx`'s `newAccount=1` redirect param) looks correct on inspection but doesn't render in the flow the user tested — the same class of gap as T212/T221/T237, needing runtime diagnosis before a fix. T250 (S120) is `Implementer`: a color-only swap between `text-field.tsx`'s existing border and shadow expressions, the same narrow scope T241 itself shipped. T251 (S121) is `Implementer`: a mechanical rule change to the existing `password-policy.ts`/`validateNewPassword` shape, applied to both signup and reset-password since they already share that module (flagged in the story as an assumption, not explicitly requested). T252 (S122) is `Required`, matching this project's established precedent for reading onboarding/auth state into routing or copy decisions (T200, T242, T243) — it reuses `useCachedOnboardingStatus()` exactly as T242/T243 already do, but on two new call sites (Sign up, Sign in) that don't read that state today._
 
-### [T251] Require password complexity at signup and reset
-
-- **Area:** Authentication
-- **Priority:** Medium
-- **Status:** Not started
-- **Planning:** Implementer
-- **Description:** Replace `password-policy.ts`'s current rule (`MIN_PASSWORD_LENGTH = 10`, length-only) with: at least 8 characters, at least one uppercase letter, at least one number, and at least one symbol. Update `sign-up-screen.tsx`'s password hint text and any related validation error copy to state these actual rules instead of just a character count.
-- **Exit criteria:** `validateNewPassword` rejects a password missing any one of the four rules and accepts one satisfying all four, with test coverage for each rule individually and combined. Submitting a password failing any rule on the Sign up screen shows an error identifying what's missing, before a network round trip. The Sign up screen's password hint states all four rules. `yarn tsc --noEmit` passes; existing signup/reset-password screen tests pass with copy assertions updated to the new hint/error text.
-- **Notes:** From S121. `password-policy.ts` is shared by `sign-up-screen.tsx` and `reset-password-screen.tsx` via `validateNewPassword` — this ticket applies the new rule to both flows for consistency, since they already share the module. The user's request named only the signup screen's copy; this shared-scope choice was flagged in the story as an assumption pending confirmation. If reset-password should keep the old length-only rule instead, resolve that before implementing rather than deciding it silently here.
-
 ### [T252] Add onboarding-aware guest/back-to-app button parity to Sign up and Sign in
 
 - **Area:** Authentication

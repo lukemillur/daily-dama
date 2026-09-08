@@ -9,7 +9,7 @@ import { TextField } from '@/components/ui/text-field';
 import { BodyText, DisplayTitle, Eyebrow } from '@/components/ui/typography';
 import { AppColors } from '@/constants/theme';
 import { categorizeAuthError, type AuthErrorCategory } from '@/features/auth/model/auth-errors';
-import { MIN_PASSWORD_LENGTH } from '@/features/auth/model/password-policy';
+import { PASSWORD_REQUIREMENTS_HINT } from '@/features/auth/model/password-policy';
 import { PasswordInput } from '@/features/auth/components/password-input';
 import { PasswordVisibilityProvider } from '@/features/auth/components/password-visibility-context';
 import { validateSignUpFields } from '@/features/auth/model/signup-validation';
@@ -160,7 +160,7 @@ export function SignUpScreen() {
               ref={passwordInputRef}
               blurOnSubmit={false}
               error={errors.password}
-              hint={<>Use at least {MIN_PASSWORD_LENGTH} characters.</>}
+              hint={PASSWORD_REQUIREMENTS_HINT}
               label="Password"
               textContentType="newPassword"
               onChangeText={setPassword}
