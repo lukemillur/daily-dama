@@ -18,6 +18,10 @@ const SAME_BROWSER_GUIDANCE =
 const CONFIRMATION_COPY =
   'If that email is available, we have sent a link to confirm your account.';
 
+function confirmationCopyWithEmail(email: string) {
+  return `${CONFIRMATION_COPY} You entered ${email}.`;
+}
+
 // Only offline and rateLimited are realistically returned by resend here; every other category
 // is unreachable in practice, but the Record must stay exhaustive for tsc, matching the
 // forgot-password-screen.tsx precedent.
@@ -111,7 +115,7 @@ export function CheckEmailScreen() {
       <Centered>
         <Eyebrow>Check your email</Eyebrow>
         <PageTitle>Check your email.</PageTitle>
-        <Introduction>{CONFIRMATION_COPY}</Introduction>
+        <Introduction>{confirmationCopyWithEmail(pendingEmail)}</Introduction>
         <Introduction>{SAME_BROWSER_GUIDANCE}</Introduction>
 
         {resendCategory ? <ErrorText>{RESEND_ERROR_COPY[resendCategory]}</ErrorText> : null}
