@@ -131,6 +131,50 @@ _Raw ideas land here — a name and a one-line description, nothing more. Discus
 
 ---
 
+_T253–T254, T256–T257 come from stories S123, S124, S127, S128 in [BACKLOG_STORIES.md](BACKLOG_STORIES.md) (the user's 2026-09-08 QA pass on the first live dailydama.com production deployment). S125 (email template branding) was scoped as T255 in `TASKS_COLLABORATIVE.md` instead, since it's Supabase-dashboard configuration rather than application code. S126 was intentionally never created — the reported broken auth redirect is already covered by `T231` in `TASKS_COLLABORATIVE.md`, which the user is actively working in a separate session; nothing here touches it. All four are `Implementer`: each is a local fix inside a single existing component, matching this project's established precedent (T237, T238) for a QA-reported symptom that needs a browser-only diagnosis first but is genuinely local in scope once found — none of them touch a persistence domain, state machine, or architectural boundary._
+
+### [T253] Play the landing page's first screenshot entrance animation on mount
+
+- **Area:** Landing page
+- **Priority:** Medium
+- **Status:** Not started
+- **Planning:** Implementer
+- **Description:** `landing-page.tsx`'s `ScreenshotEntry`/`useHasEnteredViewport` drives every "See it in action" screenshot's entrance animation off one shared `IntersectionObserver`. The first screenshot doesn't play its entrance animation on initial page load — it just appears — while every subsequent screenshot correctly animates in as the visitor scrolls to it. Diagnose why the first item's observer doesn't fire (or doesn't fire visibly) on mount and fix it so the first screenshot animates in immediately, without requiring the visitor to scroll first.
+- **Exit criteria:** Confirmed in-browser (Expo dev server, `/`, no scroll) that the first screenshot in the "See it in action" section plays its `FadeInUp` entrance animation automatically shortly after page load. Confirmed every subsequent screenshot still animates in on scroll exactly as before. `landing-page.test.tsx`'s existing screenshot-showcase tests still pass.
+- **Notes:** From S123. jsdom has no `IntersectionObserver`, so `useHasEnteredViewport`'s observer branch is untested today (tests exercise only the `hasEntered` default-true fallback) — this needs a real-browser diagnosis, not a Jest repro. A likely cause worth checking first: the first screenshot's image hasn't finished loading (and so has no laid-out height) at the moment the observer computes its initial intersection, making its bounding box collapse to zero and read as non-intersecting.
+
+### [T254] Fully hide the landing header bar on scroll, not just fade it
+
+- **Area:** Landing page
+- **Priority:** Medium
+- **Status:** Not started
+- **Planning:** Implementer
+- **Description:** `landing-auth-cta.tsx`'s `HeaderBar` toggles only `opacity` (`opacity: ${$visible ? 1 : 0}`) based on `landing-page.tsx`'s scroll-driven `headerVisible` state, while its `background-color`, 2px `border-bottom`, and absolute top-of-screen position stay rendered at all times. The visible text/buttons fade out, but the bar's background/border container remains visibly present over the content once scrolled past the threshold. Change this so the entire header bar — text, buttons, background, and border — is fully hidden once scrolled past `HEADER_BAR_SCROLL_HIDE_THRESHOLD`.
+- **Exit criteria:** `landing-page.test.tsx`'s `LandingPage header bar` describe block gains a test asserting the header bar has no visible rendered container (not just `pointerEvents: 'none'`) once scrolled past the threshold, and that it's restored when scrolling back near the top. Confirmed in-browser at both mobile and desktop widths that no header bar background or border is visible after scrolling past the threshold.
+- **Notes:** From S124. Keep the existing `pointerEvents`/reappear-on-scroll-up tests in that describe block passing — extend them rather than replacing the visibility mechanism's contract.
+
+### [T256] Fix the onboarding practice-minutes field's broken web focus styling
+
+- **Area:** Onboarding
+- **Priority:** High
+- **Status:** Not started
+- **Planning:** Implementer
+- **Description:** The practice-minutes onboarding field (`onboarding-duration-step.tsx`, rendered via the shared `TextField`/`Input` in `text-field.tsx` with `inputMode="numeric"` and `keyboardType="number-pad"`) shows a green background and no visible text cursor when focused on web. No other reported `TextField` usage in the app shows this, so it's likely specific to this field's numeric input configuration (a browser autofill/one-time-code heuristic on short numeric inputs is a plausible cause, worth checking first). Diagnose and fix so the field renders with the app's normal input styling and a visible cursor.
+- **Exit criteria:** Confirmed in-browser (web, Chrome) that focusing and typing in the onboarding practice-minutes field shows the app's normal themed input background (no unexpected color) and a visible text cursor throughout. `text-field.test.tsx` and the onboarding wizard tests (`kentei-onboarding.test.tsx`) still pass, and any other `TextField` usage in the app is visibly unaffected by the fix.
+- **Notes:** From S127. High priority: this sits in the onboarding funnel and a field that looks broken risks drop-off. If the fix requires special-casing numeric fields, prefer doing so in the shared `text-field.tsx` component (behind a prop) over a one-off override in `onboarding-duration-step.tsx`, so any other numeric `TextField` in the app gets the same fix.
+
+### [T257] Show the entered email address on the "Check your email" screen
+
+- **Area:** Authentication
+- **Priority:** Medium
+- **Status:** Not started
+- **Planning:** Implementer
+- **Description:** `check-email-screen.tsx` already reads the submitted address via `usePendingVerificationEmail()` (used today only for the resend action) but its copy (`CONFIRMATION_COPY`, `SAME_BROWSER_GUIDANCE`) never displays it. Update the screen's copy to include the actual pending email address so the user can confirm they entered it correctly.
+- **Exit criteria:** A test in `check-email-screen.test.tsx`'s `with a pending email` describe block asserts the rendered screen includes the mocked pending email address (e.g. `person@example.com`) as visible text. The existing `pendingEmail === undefined` fallback branch is unchanged and still has no email address to show.
+- **Notes:** From S128. Small, self-contained copy/rendering change.
+
+---
+
 _T249–T252 come from stories S119–S122 in [BACKLOG_STORIES.md](BACKLOG_STORIES.md) (the user's 2026-09-08 QA pass on T208/T241, plus two general-feedback items describing one consistent rule, combined into S122/T252). T249 (S119) is `Required`: T208's overlay wiring (`useGlobalSearchParams` read in `_layout.tsx`, `auth-callback-screen.tsx`'s `newAccount=1` redirect param) looks correct on inspection but doesn't render in the flow the user tested — the same class of gap as T212/T221/T237, needing runtime diagnosis before a fix. T250 (S120) is `Implementer`: a color-only swap between `text-field.tsx`'s existing border and shadow expressions, the same narrow scope T241 itself shipped. T251 (S121) is `Implementer`: a mechanical rule change to the existing `password-policy.ts`/`validateNewPassword` shape, applied to both signup and reset-password since they already share that module (flagged in the story as an assumption, not explicitly requested). T252 (S122) is `Required`, matching this project's established precedent for reading onboarding/auth state into routing or copy decisions (T200, T242, T243) — it reuses `useCachedOnboardingStatus()` exactly as T242/T243 already do, but on two new call sites (Sign up, Sign in) that don't read that state today._
 
 ### [T252] Add onboarding-aware guest/back-to-app button parity to Sign up and Sign in

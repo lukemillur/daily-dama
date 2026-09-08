@@ -24,6 +24,8 @@ _S106–S118 came from the user's 2026-09-04 QA pass on T224/T223.8 (two follow-
 
 _S119–S122 came from the user's 2026-09-08 QA pass on T208/T241 (two follow-up gaps on already-`Done` tickets), plus three items of general feedback not tied to a specific ticket (two of which describe one consistent copy rule and were combined into S122). All four were scoped into T249–T252 (see `TASKS.md`) and removed from this file: S119→T249, S120→T250, S121→T251, S122→T252._
 
+_S123–S128 came from the user's 2026-09-08 QA pass on the first live production deployment at dailydama.com. S126 is intentionally unused: the reported broken email-verification redirect (404) was not turned into a new story — it's already fully described by `T231` in `TASKS_COLLABORATIVE.md` ("Align and deploy the selected web release with hosted Auth settings"), which the user is actively working on in a separate session. S123, S124, S127, and S128 were scoped into `TASKS.md` and removed from this file: S123→T253, S124→T254, S127→T256, S128→T257. S125 was scoped into `TASKS_COLLABORATIVE.md` (not `TASKS.md`, since it's Supabase-dashboard configuration rather than application code) as T255 and removed from this file._
+
 ### [S105] Improve application performance and initial load time
 
 - **As a:** any user
