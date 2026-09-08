@@ -137,7 +137,7 @@ _T253–T254, T256–T257 come from stories S123, S124, S127, S128 in [BACKLOG_S
 
 - **Area:** Landing page
 - **Priority:** Medium
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Implementer
 - **Description:** `landing-auth-cta.tsx`'s `HeaderBar` toggles only `opacity` (`opacity: ${$visible ? 1 : 0}`) based on `landing-page.tsx`'s scroll-driven `headerVisible` state, while its `background-color`, 2px `border-bottom`, and absolute top-of-screen position stay rendered at all times. The visible text/buttons fade out, but the bar's background/border container remains visibly present over the content once scrolled past the threshold. Change this so the entire header bar — text, buttons, background, and border — is fully hidden once scrolled past `HEADER_BAR_SCROLL_HIDE_THRESHOLD`.
 - **Exit criteria:** `landing-page.test.tsx`'s `LandingPage header bar` describe block gains a test asserting the header bar has no visible rendered container (not just `pointerEvents: 'none'`) once scrolled past the threshold, and that it's restored when scrolling back near the top. Confirmed in-browser at both mobile and desktop widths that no header bar background or border is visible after scrolling past the threshold.
