@@ -59,6 +59,8 @@ Use the queue's `Checkpoint` vocabulary, keeping `Status` compatible with the ex
 
 Before every pause, persist the target/build, completed steps and evidence, remaining criteria, accepted decisions/authorization, and the exact next action. If ownership is ambiguous or the checkout is not writable, provide that checkpoint in chat without modifying another session's tracker or guide. Otherwise link the guide in chat and give `$guided-ticket resume <ID>`. On an ordinary follow-up in the same conversation, continue the current ticket without requiring the owner to repeat that command. Expected waiting is not failure; unavailable credentials or a failed check must not be disguised as a successful owner step.
 
+Batch tracker and execution-guide edits with the related implementation or verification commit. Do not create a separate commit for every routine plan/evidence edit. A standalone checkpoint commit is appropriate only before an anticipated long owner/external gate or when a durable recovery point would otherwise be lost; record multiple completed steps together whenever practical.
+
 ## Verify and finish
 
 Apply the repository's risk-based verification tiers and relevant backend/security handoffs. When using a repository script, inspect its current interface rather than borrowing flags from another workflow. Use the available bundled runtime when the system runtime is broken.

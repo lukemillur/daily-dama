@@ -69,14 +69,15 @@ Backend selection and release selection are explicit owner gates. T230/T231 prep
 
 - **Area:** Hosted backend deployment
 - **Priority:** High
-- **Status:** Not started
+- **Status:** In progress
+- **Checkpoint:** Awaiting external verification
 - **Planning:** Required
 - **Execution:** Owner-in-loop
-- **Owner gates:** Choose reuse of the existing project or a separate project; confirm the exact target and intended schema/function revisions; authorize the prepared hosted changes.
+- **Owner gates:** Confirm the clean production project target and region; confirm the exact target and intended schema/function revisions; authorize the prepared hosted changes.
 - **Automation boundary:** Inspect repository migrations/function requirements, compare accessible remote state read-only, and produce a target-specific deployment guide and evidence checklist.
-- **Description:** Install the required structural migrations and `delete-account` function in the selected project, check deployed grants/RLS and relevant provider security findings, and record the revisions and necessary manual settings. Confirm existing service/app abuse protections and identify any concrete unbounded public exposure with the smallest proposed response.
+- **Description:** Prepare the selected clean production Supabase project, while retaining the existing development project for forensics. Install the required structural migrations and `delete-account` function in the production project, check deployed grants/RLS and relevant provider security findings, and record the revisions and necessary manual settings. Confirm existing service/app abuse protections and identify any concrete unbounded public exposure with the smallest proposed response.
 - **Exit criteria:** The guide records the owner's project choice and verified deployed migration/function revisions, shows the required schema/permissions/function are present, and records relevant provider findings and current public-endpoint protections with every concrete blocking exposure resolved. Nonblocking limitations have an explicit owner disposition; pending decisions keep the ticket open. The chosen target is reproducible without transferring old user data or resetting hosted storage.
-- **Notes:** From A6; audit sections 2–3. Depends on T225. Read `supabase/README.md` and `supabase/RESEND_DNS_AUTH.md`; do not blanket-push local SMTP configuration. Broad security-platform work is excluded. Existing test data is not deletion authorization; preserve any real-user data. T232 owns end-to-end account/privacy acceptance. Later prepared migrations from T226 must be included in the final release target and evidence refreshed as needed.
+- **Notes:** From A6; audit sections 2–3. Depends on T225. Owner approved a new production project on 2026-09-08 because hosted migration history is unreconciled and the active function's source provenance is stale; retain the existing project and do not reset or delete it. Read `supabase/README.md` and `supabase/RESEND_DNS_AUTH.md`; do not blanket-push local SMTP configuration. Broad security-platform work is excluded. Existing test data is not deletion authorization; preserve it. T232 owns end-to-end account/privacy acceptance. Later prepared migrations from T226 must be included in the final release target and evidence refreshed as needed.
 
 ### [T231] Align and deploy the selected web release with hosted Auth settings
 
