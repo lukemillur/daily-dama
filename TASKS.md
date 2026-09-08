@@ -161,7 +161,7 @@ _T249–T252 come from stories S119–S122 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 - **Area:** Authentication
 - **Priority:** Medium
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** Add a guest/back-to-app button to `sign-up-screen.tsx` (which has none today) and make `sign-in-screen.tsx`'s existing "Continue as guest" button onboarding-status-aware. On both screens, read `useCachedOnboardingStatus()` (the same hook `landing-cta.tsx`/`landing-auth-cta.tsx` already use per T242/T243) and render "Continue as guest" when `hasCompletedOnboarding` is false, or "Back to app" when true; both labels perform the same action the current guest button performs (`router.replace('/app/home')`).
 - **Exit criteria:** A test on each screen asserts the button reads "Continue as guest" when the cached onboarding status is incomplete and "Back to app" when complete, navigating to `/app/home` on press in both cases. Confirmed in-browser on both Sign up and Sign in with a guest-onboarded browser profile (button reads "Back to app") and a non-onboarded one (button reads "Continue as guest").
