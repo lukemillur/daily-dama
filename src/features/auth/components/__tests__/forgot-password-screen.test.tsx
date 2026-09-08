@@ -3,6 +3,8 @@ import { StyleSheet } from 'react-native';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 import { ThemeProvider as StyledThemeProvider, type DefaultTheme } from 'styled-components/native';
 
+import { hexToRgba } from '@/constants/theme';
+
 import type { AuthState } from '@/features/auth/model/auth-state';
 
 import { ForgotPasswordScreen } from '@/features/auth/components/forgot-password-screen';
@@ -423,7 +425,7 @@ describe('ForgotPasswordScreen', () => {
     ) as Record<string, string> | undefined;
     expect(emailRowStyle).toMatchObject({
       backgroundColor: customTheme.background,
-      borderColor: customTheme.text,
+      borderColor: hexToRgba(customTheme.text, 0.35),
     });
 
     expect(

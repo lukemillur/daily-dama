@@ -3,6 +3,8 @@ import { StyleSheet, View } from 'react-native';
 import { act, create } from 'react-test-renderer';
 import { ThemeProvider as StyledThemeProvider, type DefaultTheme } from 'styled-components/native';
 
+import { hexToRgba } from '@/constants/theme';
+
 import { PasswordInput } from '@/features/auth/components/password-input';
 import { PasswordVisibilityProvider } from '@/features/auth/components/password-visibility-context';
 
@@ -142,7 +144,7 @@ describe('PasswordInput', () => {
     );
     expect(rowStyle).toMatchObject({
       backgroundColor: customTheme.background,
-      borderColor: customTheme.text,
+      borderColor: hexToRgba(customTheme.text, 0.35),
     });
   });
 
