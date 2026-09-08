@@ -42,7 +42,8 @@ Backend selection and release selection are explicit owner gates. T230/T231 prep
 
 - **Area:** Web hosting routes
 - **Priority:** High
-- **Status:** Not started
+- **Status:** In progress
+- **Checkpoint:** Awaiting owner action
 - **Planning:** Required
 - **Execution:** External gate
 - **Owner gates:** Approve deployment of the prepared routing change to an identified target; enable deployed-route verification.
