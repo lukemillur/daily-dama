@@ -25,11 +25,33 @@ function inputShadow(focusAwareColor: string | undefined): string {
 }
 
 export const TextField = forwardRef<TextInput, TextFieldProps>(function TextField(
-  { accessibilityLabel, error, hint, label, onBlur, onFocus, rightAccessory, ...props },
+  {
+    accessibilityLabel,
+    autoComplete,
+    error,
+    hint,
+    inputMode,
+    keyboardType,
+    label,
+    onBlur,
+    onFocus,
+    rightAccessory,
+    ...props
+  },
   ref,
 ) {
   const [isFocused, setIsFocused] = useState(false);
   const theme = useContext(ThemeContext);
+  // Chrome applies an autofill/one-time-code heuristic to short numeric inputs that have
+  // no explicit `autoComplete`, replacing the themed input background and hiding the text
+  // cursor. Opt numeric fields out unless a caller supplies its own `autoComplete` value.
+  const isNumericInput =
+    inputMode === 'numeric' ||
+    inputMode === 'decimal' ||
+    keyboardType === 'number-pad' ||
+    keyboardType === 'numeric' ||
+    keyboardType === 'decimal-pad';
+  const resolvedAutoComplete = autoComplete ?? (isNumericInput ? 'off' : undefined);
 
   const handleFocus: NonNullable<NativeTextInputProps['onFocus']> = (event) => {
     setIsFocused(true);
@@ -49,6 +71,9 @@ export const TextField = forwardRef<TextInput, TextFieldProps>(function TextFiel
         <Input
           ref={ref}
           accessibilityLabel={accessibilityLabel ?? label}
+          autoComplete={resolvedAutoComplete}
+          inputMode={inputMode}
+          keyboardType={keyboardType}
           $hasAccessory={rightAccessory !== undefined}
           onBlur={handleBlur}
           onFocus={handleFocus}
