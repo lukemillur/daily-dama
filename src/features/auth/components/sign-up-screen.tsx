@@ -9,6 +9,7 @@ import { TextField } from '@/components/ui/text-field';
 import { BodyText, DisplayTitle, Eyebrow } from '@/components/ui/typography';
 import { AppColors } from '@/constants/theme';
 import { categorizeAuthError, type AuthErrorCategory } from '@/features/auth/model/auth-errors';
+import { resolveGuestBackButtonLabel } from '@/features/auth/model/guest-back-button';
 import { PASSWORD_REQUIREMENTS_HINT } from '@/features/auth/model/password-policy';
 import { PasswordInput } from '@/features/auth/components/password-input';
 import { PasswordVisibilityProvider } from '@/features/auth/components/password-visibility-context';
@@ -16,6 +17,7 @@ import { validateSignUpFields } from '@/features/auth/model/signup-validation';
 import { logAuthWarning, trackAuthEvent } from '@/features/auth/observability/auth-observability';
 import { useAuthActions, useAuthState } from '@/features/auth/state/auth-provider';
 import { useSetPendingVerificationEmail } from '@/features/auth/state/pending-verification-email';
+import { useCachedOnboardingStatus } from '@/features/landing/state/use-cached-onboarding-status';
 
 // accountAlreadyExists deliberately takes the identical success path as a true signup, see the
 // submit handler below, so this Record entry is unreachable in practice -- kept only so the
@@ -38,7 +40,9 @@ export function SignUpScreen() {
   const authState = useAuthState();
   const { signUp } = useAuthActions();
   const setPendingVerificationEmail = useSetPendingVerificationEmail();
+  const { hasCompletedOnboarding } = useCachedOnboardingStatus();
   const router = useRouter();
+  const guestButtonLabel = resolveGuestBackButtonLabel(authState.status, hasCompletedOnboarding);
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -193,6 +197,13 @@ export function SignUpScreen() {
               fill
               onPress={() => router.push('/auth/sign-in')}>
               Already have an account? Sign in
+            </Button>
+            <Button
+              accessibilityLabel={guestButtonLabel}
+              variant="secondary"
+              fill
+              onPress={() => router.replace('/app/home')}>
+              {guestButtonLabel}
             </Button>
           </FormActions>
         </FormContent>
