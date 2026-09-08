@@ -4,6 +4,18 @@ Completed entries move here from `TASKS.md`'s `Backlog`, in the same commit that
 
 Entries keep their content as it was at completion. Don't retroactively edit a description or exit criteria after the fact; if something about a completed task turns out to be wrong or misleading, note that in a new entry or in code, not by rewriting history here.
 
+### [T221] Diagnose and fix the feedback form's missing success state
+
+- **Area:** Feedback
+- **Priority:** High
+- **Status:** Done
+- **Planning:** Required
+- **Description:** `feedback-screen.tsx`'s success-state branch (rendered once `submitFeedback` resolves `status: 'succeeded'`) and `submit-feedback.ts`'s insert call both look correct on inspection — the QA-reported failure (no success state after submitting a real Message) needs a fresh runtime diagnosis against the actual environment the user tested in, not a known local fix reapplied. Determine whether the anon insert itself is failing (RLS/config drift since T217.1, a missing or misconfigured Supabase env var in that environment) or whether a successful insert isn't triggering the UI's `submitted` state, then fix the actual defect found.
+- **Exit criteria:** Reproduce the failure against the same environment/build the user tested (not just the local Supabase CLI stack T217.2 already verified against) — confirm whether `submitFeedback` resolves `failed` (capture the real Postgrest/network error if so) or `succeeded` with the UI not updating. Fix whichever is broken. Confirm afterward, on that same environment, that submitting a Message-only feedback form shows the success state and that a real row is visible via Supabase Studio or a direct DB read. Met: root-caused against production directly (Supabase edge logs plus a live prod repro), not local reproduction. Two independent defects found and fixed in sequence:
+  1. Production's Data API "Exposed schemas" setting (Dashboard → Data API → Settings, separate from `supabase/config.toml`'s `schemas` list, which only governs local/linked CLI config) never included `api` — every request against any `api`-schema table 406'd (`PGRST106`) regardless of grants/RLS. Fixed by adding `api` to the live project's exposed schemas.
+  2. With the schema reachable, a real logged-in submission then failed 401/42501 "permission denied for table feedback": `src/shared/supabase/supabase-client.ts`'s shared client has `persistSession: true`, so `supabase-js` attaches the caller's own session JWT once one exists, and PostgREST evaluates the request as role `authenticated`, not `anon` — but T217.1 only granted/policied `anon`. Fixed with a new migration (`20260908210000_add_feedback_insert_authenticated.sql`) granting `authenticated` the same INSERT-only capability, gated by an identical `WITH CHECK`, plus a matching pgTAP test (`supabase/tests/t221_feedback_authenticated.test.sql`). Verified end-to-end on production for both an anonymous and a logged-in real submission after each fix.
+- **Notes:** From S100. Bug fix on already-`Done` T217.2, not new scope. `Required` for the same class of reason as T188/T195/T199/T206/T212: the defect wasn't visible from static tracing of the shipped code, so it needed runtime diagnosis before a fix could be written — in this case two stacked defects, only the second of which was in application code. Corrected `submit-feedback.ts`'s header comment, which had asserted (incorrectly, per defect 2) that the anon-only RLS grant was "the entire authorization surface" for both anonymous and signed-in callers.
+
 ### [T231] Align and deploy the selected web release with hosted Auth settings
 
 - **Area:** Web release configuration
