@@ -97,6 +97,11 @@ jest.mock('@/features/auth/state/auth-provider', () => ({
   useAuthActions: () => ({ signUp: mockSignUp }),
 }));
 
+const mockUseCachedOnboardingStatus = jest.fn<() => { hasCompletedOnboarding: boolean; kenteiRank: number | undefined }>();
+jest.mock('@/features/landing/state/use-cached-onboarding-status', () => ({
+  useCachedOnboardingStatus: () => mockUseCachedOnboardingStatus(),
+}));
+
 const mockSetPendingVerificationEmail = jest.fn();
 jest.mock('@/features/auth/state/pending-verification-email', () => ({
   useSetPendingVerificationEmail: () => mockSetPendingVerificationEmail,
@@ -154,6 +159,8 @@ describe('SignUpScreen', () => {
     mockTrackAuthEvent.mockReset();
     mockLogAuthWarning.mockReset();
     mockAuthState = { status: 'guest', reason: 'signedOut' };
+    mockUseCachedOnboardingStatus.mockReset();
+    mockUseCachedOnboardingStatus.mockReturnValue({ hasCompletedOnboarding: false, kenteiRank: undefined });
   });
 
   it('redirects to /app/home when already authenticated', async () => {
@@ -173,6 +180,30 @@ describe('SignUpScreen', () => {
     });
 
     expect(mockPush).toHaveBeenCalledWith('/auth/sign-in');
+  });
+
+  it('reads "Continue as guest" and navigates to /app/home when onboarding is incomplete', async () => {
+    mockUseCachedOnboardingStatus.mockReturnValue({ hasCompletedOnboarding: false, kenteiRank: undefined });
+    const root = await mount();
+    const guestButton = findByLabel(root, 'Continue as guest');
+
+    await act(async () => {
+      guestButton.props.onPress();
+    });
+
+    expect(mockReplace).toHaveBeenCalledWith('/app/home');
+  });
+
+  it('reads "Back to app" and navigates to /app/home when guest onboarding is complete', async () => {
+    mockUseCachedOnboardingStatus.mockReturnValue({ hasCompletedOnboarding: true, kenteiRank: undefined });
+    const root = await mount();
+    const guestButton = findByLabel(root, 'Back to app');
+
+    await act(async () => {
+      guestButton.props.onPress();
+    });
+
+    expect(mockReplace).toHaveBeenCalledWith('/app/home');
   });
 
   it('blocks submission and shows a field error for an empty email', async () => {

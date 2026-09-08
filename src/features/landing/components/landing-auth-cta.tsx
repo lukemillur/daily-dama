@@ -127,6 +127,7 @@ const HeaderBar = styled.View<{ readonly $visible: boolean }>`
   border-bottom-width: 2px;
   border-bottom-color: ${AppColors.ink};
   opacity: ${({ $visible }) => ($visible ? 1 : 0)};
+  display: ${({ $visible }) => ($visible ? 'flex' : 'none')};
   transition: opacity 150ms ease;
 `;
 
