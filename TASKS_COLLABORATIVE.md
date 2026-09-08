@@ -70,7 +70,7 @@ Backend selection and release selection are explicit owner gates. T230/T231 prep
 - **Area:** Hosted backend deployment
 - **Priority:** High
 - **Status:** In progress
-- **Checkpoint:** Preparing
+- **Checkpoint:** Verifying
 - **Planning:** Required
 - **Execution:** Owner-in-loop
 - **Owner gates:** Confirm creation of a new production project in the intended organization/region; confirm the exact target and intended schema/function revisions; authorize the prepared hosted changes.
