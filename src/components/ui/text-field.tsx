@@ -16,9 +16,12 @@ export interface TextFieldProps extends NativeTextInputProps {
 const SHADOW_OFFSET_PX = 3;
 const SHADOW_ALPHA = 0.35;
 
-function inputShadow(themeText: string | undefined): string {
-  const base = themeText && /^#[0-9a-fA-F]{6}$/.test(themeText) ? themeText : AppColors.ink;
-  return `${SHADOW_OFFSET_PX}px ${SHADOW_OFFSET_PX}px 0 ${hexToRgba(base, SHADOW_ALPHA)}`;
+function resolveHex(color: string | undefined): string {
+  return color && /^#[0-9a-fA-F]{6}$/.test(color) ? color : AppColors.ink;
+}
+
+function inputShadow(focusAwareColor: string | undefined): string {
+  return `${SHADOW_OFFSET_PX}px ${SHADOW_OFFSET_PX}px 0 ${resolveHex(focusAwareColor)}`;
 }
 
 export const TextField = forwardRef<TextInput, TextFieldProps>(function TextField(
@@ -42,7 +45,7 @@ export const TextField = forwardRef<TextInput, TextFieldProps>(function TextFiel
     <Field>
       <FieldLabel>{label}</FieldLabel>
       {hint ? <FieldHint>{hint}</FieldHint> : null}
-      <InputRow $isFocused={isFocused} style={{ boxShadow: inputShadow(theme?.text) }}>
+      <InputRow style={{ boxShadow: inputShadow(isFocused ? theme?.accent : theme?.text) }}>
         <Input
           ref={ref}
           accessibilityLabel={accessibilityLabel ?? label}
@@ -80,12 +83,12 @@ const FieldHint = styled.Text`
 // deprecated `shadow*` props (see `landing-cta.tsx`'s `CtaPanel` for the same tradeoff). The
 // shadow color is read via `useContext(ThemeContext)` instead of `useTheme()` because
 // `useTheme()` throws when a caller mounts this field without a `ThemeProvider`.
-const InputRow = styled(View)<{ readonly $isFocused: boolean }>`
+const InputRow = styled(View)`
   min-height: 56px;
   flex-direction: row;
   align-items: center;
   background-color: ${({ theme }) => theme.background};
-  border: 3px solid ${({ $isFocused, theme }) => ($isFocused ? theme.accent : theme.text)};
+  border: 3px solid ${({ theme }) => hexToRgba(resolveHex(theme.text), SHADOW_ALPHA)};
   border-radius: ${Radii.control}px;
   margin-top: 8px;
 `;

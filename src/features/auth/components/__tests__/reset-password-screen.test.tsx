@@ -4,6 +4,8 @@ import { StyleSheet } from 'react-native';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 import { ThemeProvider as StyledThemeProvider, type DefaultTheme } from 'styled-components/native';
 
+import { hexToRgba } from '@/constants/theme';
+
 import { MIN_PASSWORD_LENGTH } from '@/features/auth/model/password-policy';
 import type { AuthState } from '@/features/auth/model/auth-state';
 
@@ -383,7 +385,7 @@ describe('ResetPasswordScreen', () => {
     for (const row of rowStyle) {
       expect(StyleSheet.flatten(row.props.style as never)).toMatchObject({
         backgroundColor: customTheme.background,
-        borderColor: customTheme.text,
+        borderColor: hexToRgba(customTheme.text, 0.35),
       });
     }
     expect(rowStyle.length).toBeGreaterThan(0);

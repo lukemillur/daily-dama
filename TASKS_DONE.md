@@ -16,6 +16,16 @@ Entries keep their content as it was at completion. Don't retroactively edit a d
 - **Exit criteria:** Closed by explicit owner disposition on 2026-09-08. The production project `lnudjcpotidplbjqcfcx` in `us-east-2` has all nine repository migrations applied, including the public RLS-helper execution revoke; `delete-account` is active, JWT-protected, and deployed from this checkout. The remaining hosted security/provider and lifecycle verification was intentionally accepted without further evidence.
 - **Notes:** From A6; audit sections 2–3. Production preparation was delivered in PR #328. The existing project `ylyoqswauqyesuwmetnl` remains retained and must not be reset or deleted. See `outputs/guided-tickets/T230.md` for the execution record.
 
+### [T250] Swap the shared text input's border and shadow colors
+
+- **Area:** UI components
+- **Priority:** Low
+- **Status:** Done
+- **Planning:** Implementer
+- **Description:** `text-field.tsx`'s `InputRow` currently renders its border in an opaque theme color (`theme.text` unfocused, `theme.accent` focused) and its drop shadow in a separate, focus-independent translucent color (`inputShadow(theme.text)`, `SHADOW_ALPHA = 0.35`). Swap which color expression drives which visual: the border should render using the color/alpha currently applied to the shadow, and the shadow should render using the color currently applied to the border — preserving the existing accent-on-focus distinction on whichever role now carries it.
+- **Exit criteria:** Confirmed in-browser (Sign up and at least one other `TextField`-using screen) that the border now renders in the color/translucency previously used for the shadow, the drop shadow now renders in the color previously used for the border, and focus still produces a visibly distinct state. No other functional change to any input. `text-field.test.tsx` and dependent screen tests still pass.
+- **Notes:** From S120. Follow-up color-only gap on `Done` ticket T241 — same "one shared-component change, no per-screen verification needed beyond a couple of spot checks" scope T241 itself established. Verified via updated automated `text-field.test.tsx` assertions plus a throwaway Playwright script against a local Expo web dev server on both the Sign up and Sign in screens: the border now renders as a translucent, focus-independent `rgba(theme.text, 0.35)`, and the drop shadow now renders opaque and focus-aware (`theme.text` unfocused, `theme.accent` focused). Also removed the now-unused `$isFocused` prop from `InputRow`, since focus is read from the existing `isFocused` closure variable instead. `yarn tsc --noEmit` and scoped `yarn eslint` passed.
+
 ### [T249] Diagnose and fix the new-account welcome overlay not appearing
 
 - **Area:** Authentication / Home

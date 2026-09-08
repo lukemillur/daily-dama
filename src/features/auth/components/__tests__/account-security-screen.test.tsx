@@ -3,7 +3,7 @@ import { StyleSheet } from 'react-native';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 import { ThemeProvider as StyledThemeProvider, type DefaultTheme } from 'styled-components/native';
 
-import { AppColors } from '@/constants/theme';
+import { AppColors, hexToRgba } from '@/constants/theme';
 import type { AuthState } from '@/features/auth/model/auth-state';
 import { networkFailure } from '@/features/auth/model/auth-test-fixtures';
 import { MIN_PASSWORD_LENGTH } from '@/features/auth/model/password-policy';
@@ -204,7 +204,7 @@ describe('AccountSecurityScreen', () => {
     );
     expect(emailRowStyle).toMatchObject({
       backgroundColor: customTheme.background,
-      borderColor: customTheme.text,
+      borderColor: hexToRgba(customTheme.text, 0.35),
     });
 
     expect(
