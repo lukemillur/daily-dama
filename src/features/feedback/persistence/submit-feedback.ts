@@ -1,11 +1,12 @@
-// T217.2: submits a feedback row directly to `api.feedback` using the
-// browser-persistent anon-key Supabase client (see
+// T217.2/T221: submits a feedback row directly to `api.feedback` using the
+// shared, session-persisting Supabase client (see
 // src/shared/supabase/supabase-client.ts). No server route or
-// service-role key is involved -- T217.1's RLS grant (anon INSERT-only,
-// with the same length/format bounds re-enforced in its WITH CHECK) is
-// the entire authorization surface for this call, matching how
-// unauthenticated visitors and signed-in users both submit through the
-// exact same path.
+// service-role key is involved. Because that client has
+// `persistSession: true`, it attaches the caller's own JWT once a session
+// exists, so this call reaches PostgREST as `anon` for signed-out visitors
+// and as `authenticated` for signed-in ones -- both roles need their own
+// INSERT grant and WITH CHECK policy (T217.1 for anon, T221's migration for
+// authenticated) for this call to succeed either way.
 
 import { getSupabaseClient } from '@/shared/supabase/supabase-client';
 import { mapNetworkError, mapPostgrestError, type CloudMutationResult } from '@/shared/supabase/cloud-repository';
