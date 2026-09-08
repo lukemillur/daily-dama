@@ -137,7 +137,7 @@ _T253–T254, T256–T257 come from stories S123, S124, S127, S128 in [BACKLOG_S
 
 - **Area:** Landing page
 - **Priority:** Medium
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Implementer
 - **Description:** `landing-page.tsx`'s `ScreenshotEntry`/`useHasEnteredViewport` drives every "See it in action" screenshot's entrance animation off one shared `IntersectionObserver`. The first screenshot doesn't play its entrance animation on initial page load — it just appears — while every subsequent screenshot correctly animates in as the visitor scrolls to it. Diagnose why the first item's observer doesn't fire (or doesn't fire visibly) on mount and fix it so the first screenshot animates in immediately, without requiring the visitor to scroll first.
 - **Exit criteria:** Confirmed in-browser (Expo dev server, `/`, no scroll) that the first screenshot in the "See it in action" section plays its `FadeInUp` entrance animation automatically shortly after page load. Confirmed every subsequent screenshot still animates in on scroll exactly as before. `landing-page.test.tsx`'s existing screenshot-showcase tests still pass.
