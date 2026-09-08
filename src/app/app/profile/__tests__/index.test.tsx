@@ -57,7 +57,7 @@ jest.mock('@/shared/sync/sync-coordinator-provider', () => ({
     retryableFailureCount: 0,
     syncStatus: { kind: 'no-sync-yet', coordinator: 'idle', pendingCount: 0, conflictCount: 0, retryableFailureCount: 0, online: true, lastSuccessfulSyncAt: undefined, isSynced: false },
     retry: jest.fn(),
-    discardAllPending: jest.fn(async () => {}),
+    discardAllPending: jest.fn(async () => ({ status: 'discarded' })),
   }),
 }));
 

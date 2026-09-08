@@ -48,6 +48,7 @@ jest.mock('@/features/landing/state/use-cached-onboarding-status', () => ({
 let mockAuthState: AuthState = { status: 'guest', reason: 'signedOut' };
 jest.mock('@/features/auth/state/auth-provider', () => ({
   useAuthState: () => mockAuthState,
+  useAuthActions: () => ({ signOut: jest.fn() }),
 }));
 
 function findByVisibleText(root: ReactTestRenderer, text: string) {
@@ -69,8 +70,9 @@ const SCREENSHOT_TITLES_AND_CAPTIONS: ReadonlyArray<{ title: string; caption: st
       'Open the app and the loop is right there: what you last practiced, what’s next, and how the streak is going.',
   },
   {
-    title: 'First lace, first cheer',
-    caption: 'The moment a trick actually lands for the first time, Daily Dama says so.',
+    title: 'Set the terms of the sesh',
+    caption:
+      'Run the clock down, chase a lace count, or line up several tricks and work the whole set in one sesh.',
   },
   {
     title: 'Your move, your rank',
@@ -123,7 +125,7 @@ describe('LandingPage sign-up/sign-in entry points', () => {
     expect(findAllByLabel(root, 'Sign in').length).toBeGreaterThan(0);
   });
 
-  it('hides the sign-up/sign-in entry points once authenticated', async () => {
+  it('swaps the sign-up/sign-in entry points for a log out control once authenticated', async () => {
     mockAuthState = {
       status: 'authenticated',
       session: { access_token: 'tok', user: { email: 'someone@example.com' } } as never,
@@ -133,6 +135,7 @@ describe('LandingPage sign-up/sign-in entry points', () => {
 
     expect(findAllByLabel(root, 'Sign up').length).toBe(0);
     expect(findAllByLabel(root, 'Sign in').length).toBe(0);
+    expect(findAllByLabel(root, 'Log out').length).toBeGreaterThan(0);
   });
 });
 
@@ -176,6 +179,15 @@ describe('LandingPage header bar', () => {
     expect(findHeaderBar(root).props.pointerEvents).toBe('auto');
   });
 
+  function headerBarDisplay(root: ReactTestRenderer) {
+    const matches = root.root.findAllByProps({ testID: 'landing-header-bar' });
+    const styledMatch = matches.find((node) => node.props.style !== undefined);
+    const style = ReactNative.StyleSheet.flatten(styledMatch?.props.style) as {
+      display?: string;
+    };
+    return style.display;
+  }
+
   it('hides the header bar once scroll position passes the threshold', async () => {
     const root = await mount();
 
@@ -192,6 +204,26 @@ describe('LandingPage header bar', () => {
 
     await scrollTo(root, 0);
     expect(findHeaderBar(root).props.pointerEvents).toBe('auto');
+  });
+
+  it('fully hides the header bar container (not just pointer events) once scroll position passes the threshold', async () => {
+    const root = await mount();
+
+    expect(headerBarDisplay(root)).toBe('flex');
+
+    await scrollTo(root, HEADER_BAR_SCROLL_HIDE_THRESHOLD + 40);
+
+    expect(headerBarDisplay(root)).toBe('none');
+  });
+
+  it('restores the header bar container once scroll position returns near the top', async () => {
+    const root = await mount();
+
+    await scrollTo(root, HEADER_BAR_SCROLL_HIDE_THRESHOLD + 40);
+    expect(headerBarDisplay(root)).toBe('none');
+
+    await scrollTo(root, 0);
+    expect(headerBarDisplay(root)).toBe('flex');
   });
 });
 
@@ -363,5 +395,19 @@ describe('LandingPage platform-based screenshot set', () => {
 
     expect(images.length).toBeGreaterThan(0);
     expect(mobileImages.length).toBe(0);
+  });
+
+  it('renders the sesh screenshot alt for both the mobile and web asset sets', async () => {
+    mockUseWindowDimensions.mockReturnValue({ width: 375, height: 812, scale: 2, fontScale: 1 });
+    const mobileRoot = await mount();
+    const mobileImages = mobileRoot.root.findAll(
+      (node) => node.props.alt === MOBILE_SCREENSHOTS[1]!.alt,
+    );
+    expect(mobileImages.length).toBeGreaterThan(0);
+
+    mockUseWindowDimensions.mockReturnValue({ width: 1280, height: 900, scale: 1, fontScale: 1 });
+    const webRoot = await mount();
+    const webImages = webRoot.root.findAll((node) => node.props.alt === WEB_SCREENSHOTS[1]!.alt);
+    expect(webImages.length).toBeGreaterThan(0);
   });
 });

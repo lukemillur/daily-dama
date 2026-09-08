@@ -6,8 +6,8 @@ import { useAuthState } from '@/features/auth/state/auth-provider';
 import { useCustomTricks } from '@/features/custom-tricks/state/custom-trick-provider';
 import { useRequireOnboarding } from '@/features/onboarding/state/require-onboarding';
 import { Sesh } from '@/features/sesh/components/sesh';
+import { selectInitialSeshPlan } from '@/features/profile/model/user-profile';
 import { useUserProfile } from '@/features/profile/state/user-profile-provider';
-import { createOpenEndedSeshPlan, createTimedSeshPlan, type SeshPlan } from '@/features/sesh/model/sesh';
 import { KENDAMA_KENTEI_TRICKS } from '@/features/tricks/data/kendama-kentei-tricks';
 import { selectAvailablePracticeTricks } from '@/features/tricks/model/trick-directory';
 
@@ -35,13 +35,7 @@ export default function SeshScreen() {
   const preferredTrickId = linkedTrickId ?? lastSesh?.trickId;
   const challengeDurationMs =
     typeof plannedDurationMsParam === 'string' ? Number(plannedDurationMsParam) : undefined;
-  const initialPlan: SeshPlan | undefined = challengeDurationMs
-    ? createTimedSeshPlan(challengeDurationMs / 60_000)
-    : lastSesh
-      ? lastSesh.plan.kind === 'timed'
-        ? createTimedSeshPlan(lastSesh.plan.durationMinutes)
-        : createOpenEndedSeshPlan(lastSesh.plan.targetLandingCount)
-      : undefined;
+  const initialPlan = selectInitialSeshPlan(lastSesh, challengeDurationMs);
 
   if (!isOnboardingComplete) return null;
 

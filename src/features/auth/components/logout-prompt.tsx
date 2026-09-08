@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { BodyText } from '@/components/ui/typography';
 import { AppColors } from '@/constants/theme';
 import type { LogoutGuardState } from '@/features/auth/state/logout-guard';
+import { describeDiscardFailure } from '@/features/auth/model/discard-failure-copy';
 
 export interface LogoutPromptProps {
   readonly state: LogoutGuardState;
@@ -32,6 +33,9 @@ export function LogoutPrompt({ state, pendingCount, onRetry, onDiscard, onCancel
         </Copy>
         {state.retryFailed ? (
           <RetryFailedCopy>{"Still couldn't sync. Check your connection or discard these changes."}</RetryFailedCopy>
+        ) : null}
+        {state.discardFailedDomains ? (
+          <RetryFailedCopy>{describeDiscardFailure(state.discardFailedDomains)}</RetryFailedCopy>
         ) : null}
         <RetryButton
           accessibilityLabel="Retry sync"

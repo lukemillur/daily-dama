@@ -1,6 +1,9 @@
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
+import { StyleSheet } from 'react-native';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 import { ThemeProvider as StyledThemeProvider, type DefaultTheme } from 'styled-components/native';
+
+import { hexToRgba } from '@/constants/theme';
 
 import type { AuthState } from '@/features/auth/model/auth-state';
 
@@ -94,6 +97,11 @@ jest.mock('@/features/auth/state/auth-provider', () => ({
   useAuthActions: () => ({ signInWithPassword: mockSignInWithPassword }),
 }));
 
+const mockUseCachedOnboardingStatus = jest.fn<() => { hasCompletedOnboarding: boolean; kenteiRank: number | undefined }>();
+jest.mock('@/features/landing/state/use-cached-onboarding-status', () => ({
+  useCachedOnboardingStatus: () => mockUseCachedOnboardingStatus(),
+}));
+
 const mockTrackAuthEvent = jest.fn();
 const mockLogAuthWarning = jest.fn();
 jest.mock('@/features/auth/observability/auth-observability', () => ({
@@ -159,6 +167,8 @@ describe('SignInScreen', () => {
     mockTrackAuthEvent.mockReset();
     mockLogAuthWarning.mockReset();
     mockAuthState = { status: 'guest', reason: 'signedOut' };
+    mockUseCachedOnboardingStatus.mockReset();
+    mockUseCachedOnboardingStatus.mockReturnValue({ hasCompletedOnboarding: false, kenteiRank: undefined });
   });
 
   it('navigates to /auth/forgot-password when "Forgot password?" is pressed', async () => {
@@ -319,8 +329,22 @@ describe('SignInScreen', () => {
   });
 
   it('lets a guest continue to /app/home without calling signInWithPassword', async () => {
+    mockUseCachedOnboardingStatus.mockReturnValue({ hasCompletedOnboarding: false, kenteiRank: undefined });
     const root = await mount();
     const guestButton = findByLabel(root, 'Continue as guest');
+
+    await act(async () => {
+      guestButton.props.onPress();
+    });
+
+    expect(mockReplace).toHaveBeenCalledWith('/app/home');
+    expect(mockSignInWithPassword).not.toHaveBeenCalled();
+  });
+
+  it('reads "Back to app" and still navigates to /app/home for a guest-onboarded visitor', async () => {
+    mockUseCachedOnboardingStatus.mockReturnValue({ hasCompletedOnboarding: true, kenteiRank: undefined });
+    const root = await mount();
+    const guestButton = findByLabel(root, 'Back to app');
 
     await act(async () => {
       guestButton.props.onPress();
@@ -498,11 +522,22 @@ describe('SignInScreen', () => {
         node.props.style !== null &&
         !Array.isArray(node.props.style),
     )?.props.style as Record<string, string> | undefined;
-    expect(emailInputStyle).toMatchObject({
+    expect(emailInputStyle).toMatchObject({ color: customTheme.text });
+
+    const emailRowStyle = StyleSheet.flatten(
+      root.root
+        .findAll(
+          (node) =>
+            (StyleSheet.flatten(node.props.style as never) as Record<string, string | number> | undefined)
+              ?.minHeight === 56,
+        )
+        .find((node) => node.props.style !== undefined)?.props.style as never,
+    ) as Record<string, string> | undefined;
+    expect(emailRowStyle).toMatchObject({
       backgroundColor: customTheme.background,
-      borderColor: customTheme.text,
-      color: customTheme.text,
+      borderColor: hexToRgba(customTheme.text, 0.35),
     });
+
     expect(
       emailInputs.find((node) => typeof node.props.placeholderTextColor === 'string')?.props
         .placeholderTextColor,

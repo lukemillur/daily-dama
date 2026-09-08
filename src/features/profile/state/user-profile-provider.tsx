@@ -19,9 +19,11 @@ import { createProfileSyncTransportAdapter } from '@/features/profile/persistenc
 import { useProfileDomainSync } from '@/features/profile/state/use-profile-domain-sync';
 import type { SeshPlan } from '@/features/sesh/model/sesh';
 import { useIdentityHandle } from '@/shared/persistence/identity-provider';
+import type { LocalDurabilityStatus } from '@/shared/persistence/storage';
 import { useIdentityScopedDomain } from '@/shared/persistence/use-identity-scoped-domain';
 import { getSupabaseClient } from '@/shared/supabase/supabase-client';
 import type { DomainSyncRecord, SyncTrigger } from '@/shared/sync/coordinator';
+import type { DomainDiscardOutcome } from '@/shared/sync/discard-outcome';
 
 interface UserProfileActions {
   readonly toggleSelectedTrick: (trickId: string) => void;
@@ -57,13 +59,19 @@ export interface UserProfileSync {
   readonly localMutationTick: number;
   readonly pendingCount: number;
   readonly retryableFailureCount: number;
-  readonly discardPending: () => Promise<void>;
+  readonly discardPending: () => Promise<DomainDiscardOutcome>;
 }
 
 const UserProfileSyncContext = createContext<UserProfileSync | undefined>(undefined);
 
+// Runtime-only local-durability status, distinct from the cloud-facing
+// UserProfileSync context above -- see `LocalDurabilityStatus`'s doc comment.
+const UserProfileDurabilityContext = createContext<
+  LocalDurabilityStatus<UserProfile> | undefined
+>(undefined);
+
 export function UserProfileProvider({ children }: PropsWithChildren) {
-  const { state: profile, dispatch, hasHydrated } = useIdentityScopedDomain({
+  const { state: profile, dispatch, hasHydrated, durability } = useIdentityScopedDomain({
     reducer: userProfileReducer,
     initialState: INITIAL_USER_PROFILE,
     load: loadUserProfile,
@@ -217,7 +225,11 @@ export function UserProfileProvider({ children }: PropsWithChildren) {
   return (
     <UserProfileStateContext.Provider value={profile}>
       <UserProfileActionsContext.Provider value={actions}>
-        <UserProfileSyncContext.Provider value={sync}>{children}</UserProfileSyncContext.Provider>
+        <UserProfileSyncContext.Provider value={sync}>
+          <UserProfileDurabilityContext.Provider value={durability}>
+            {children}
+          </UserProfileDurabilityContext.Provider>
+        </UserProfileSyncContext.Provider>
       </UserProfileActionsContext.Provider>
     </UserProfileStateContext.Provider>
   );
@@ -275,4 +287,14 @@ export function useUserProfileSync(): UserProfileSync {
   }
 
   return sync;
+}
+
+export function useUserProfileDurability(): LocalDurabilityStatus<UserProfile> {
+  const durability = useContext(UserProfileDurabilityContext);
+
+  if (!durability) {
+    throw new Error('useUserProfileDurability must be used within UserProfileProvider.');
+  }
+
+  return durability;
 }

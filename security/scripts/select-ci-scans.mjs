@@ -35,6 +35,7 @@ export function selectSecurityScans(paths) {
         '.yarnrc.yml',
         'security/accepted-dependency-advisories.json',
         'security/scripts/check-dependency-audit.mjs',
+        'security/scripts/verify-dependency-audit-gate.mjs',
       ]),
   );
 

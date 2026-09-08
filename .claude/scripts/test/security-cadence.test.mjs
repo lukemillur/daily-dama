@@ -28,6 +28,14 @@ test('application and dependency changes select the built-bundle scan', () => {
   });
 });
 
+test('dependency-audit gate regression suite changes select only the dependency audit', () => {
+  assert.deepEqual(selectSecurityScans(['security/scripts/verify-dependency-audit-gate.mjs']), {
+    dependency: true,
+    bundle: false,
+    selfTest: false,
+  });
+});
+
 test('gitleaks wiring changes select bundle scanning and the scanner self-test', () => {
   assert.deepEqual(selectSecurityScans(['security/scripts/gitleaks-cli.mjs']), {
     dependency: false,

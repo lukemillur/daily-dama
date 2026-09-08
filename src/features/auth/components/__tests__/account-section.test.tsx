@@ -4,6 +4,7 @@ import { act, create, type ReactTestRenderer } from "react-test-renderer";
 import type { AuthState } from "@/features/auth/model/auth-state";
 import { networkFailure } from "@/features/auth/model/auth-test-fixtures";
 import type { SyncCoordinatorState } from "@/shared/sync/coordinator";
+import type { DiscardAllPendingResult } from "@/shared/sync/discard-outcome";
 
 import { AccountSection } from "@/features/auth/components/account-section";
 
@@ -25,7 +26,7 @@ jest.mock("@/shared/persistence/identity-provider", () => ({
 }));
 
 const mockRequestManualSync = jest.fn<() => void>();
-const mockDiscardAllPending = jest.fn<() => Promise<void>>();
+const mockDiscardAllPending = jest.fn<() => Promise<DiscardAllPendingResult>>();
 let mockCoordinatorState: SyncCoordinatorState = {
   status: "idle",
   identityGeneration: 1,
@@ -136,7 +137,7 @@ describe("AccountSection", () => {
     mockReplace.mockReset();
     mockRequestManualSync.mockReset();
     mockDiscardAllPending.mockReset();
-    mockDiscardAllPending.mockResolvedValue(undefined);
+    mockDiscardAllPending.mockResolvedValue({ status: "discarded" });
     mockAuthState = { status: "guest", reason: "signedOut" };
     mockGeneration = 1;
     mockCoordinatorState = idleCoordinatorState();
@@ -438,6 +439,58 @@ describe("AccountSection", () => {
     await flush();
 
     expect(mockDiscardAllPending).toHaveBeenCalledTimes(1);
+    expect(mockSignOut).toHaveBeenCalledTimes(1);
+    expect(findAllByLabel(root, "Unsynced changes").length).toBe(0);
+  });
+
+  it("a failed discard keeps the overlay mounted, renders the actionable failure copy, and never calls signOut", async () => {
+    mockAuthState = authenticatedState();
+    mockPendingCount = 3;
+    mockDiscardAllPending.mockResolvedValue({
+      status: "failed",
+      failures: [{ domain: "customTricks", error: new Error("disk full") }],
+    });
+    const root = await mount();
+
+    await pressLogOut(root);
+    const discardButton = findByLabel(root, "Discard and log out");
+    act(() => {
+      discardButton.props.onPress();
+    });
+    await flush();
+
+    expect(mockSignOut).not.toHaveBeenCalled();
+    expect(findAllByLabel(root, "Unsynced changes").length).toBeGreaterThan(0);
+    expect(containsText(root, /could not discard your custom tricks changes/i)).toBe(true);
+  });
+
+  it("a second press of Discard after a failure can then succeed and sign out", async () => {
+    mockAuthState = authenticatedState();
+    mockPendingCount = 3;
+    mockSignOut.mockResolvedValue({ error: null });
+    mockDiscardAllPending.mockResolvedValueOnce({
+      status: "failed",
+      failures: [{ domain: "customTricks", error: new Error("disk full") }],
+    });
+    const root = await mount();
+
+    await pressLogOut(root);
+    let discardButton = findByLabel(root, "Discard and log out");
+    act(() => {
+      discardButton.props.onPress();
+    });
+    await flush();
+
+    expect(mockSignOut).not.toHaveBeenCalled();
+
+    mockDiscardAllPending.mockResolvedValueOnce({ status: "discarded" });
+    discardButton = findByLabel(root, "Discard and log out");
+    act(() => {
+      discardButton.props.onPress();
+    });
+    await flush();
+
+    expect(mockDiscardAllPending).toHaveBeenCalledTimes(2);
     expect(mockSignOut).toHaveBeenCalledTimes(1);
     expect(findAllByLabel(root, "Unsynced changes").length).toBe(0);
   });

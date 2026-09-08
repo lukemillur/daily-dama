@@ -12,10 +12,23 @@ import { useAuthActions } from "@/features/auth/state/auth-provider";
 import {
   INITIAL_LOGOUT_GUARD_STATE,
   logoutGuardReducer,
+  type LogoutGuardDiscardOutcome,
   type LogoutGuardState,
 } from "@/features/auth/state/logout-guard";
 import { useIdentityHandle } from "@/shared/persistence/identity-provider";
 import { useSyncCoordinatorStatus } from "@/shared/sync/sync-coordinator-provider";
+import type { DiscardAllPendingResult } from "@/shared/sync/discard-outcome";
+
+// Non-exported: maps the shared coordinator's aggregate discard result to
+// the guard's own, smaller outcome vocabulary (only domain identity, not
+// the raw error -- copy is chosen from the domain list, and raw errors are
+// T248 concerns).
+function toGuardOutcome(result: DiscardAllPendingResult): LogoutGuardDiscardOutcome {
+  if (result.status === "failed") {
+    return { status: "failed", domains: result.failures.map((failure) => failure.domain) };
+  }
+  return result;
+}
 
 export interface UseLogoutGuardResult {
   readonly state: LogoutGuardState;
@@ -59,6 +72,11 @@ export function useLogoutGuard(): UseLogoutGuardResult {
   const statusRef = useRef(state.status);
   useEffect(() => {
     statusRef.current = state.status;
+  });
+
+  const generationRef = useRef(generation);
+  useEffect(() => {
+    generationRef.current = generation;
   });
 
   useEffect(() => {
@@ -128,16 +146,35 @@ export function useLogoutGuard(): UseLogoutGuardResult {
     }
   }, [state.status, coordinatorState.status, pendingCount]);
 
-  // Discard: unconditional -- no re-check of pendingCount after the fact,
-  // a discard always proceeds to sign-out.
+  // Discard: the outcome now determines the transition (discarded/failed/
+  // superseded) instead of unconditionally proceeding to sign-out. Do NOT
+  // add `generation` to this effect's dependency array -- it would re-fire
+  // discardAllPending() while status is still "discarding". The explicit
+  // armedGenerationRef/generationRef comparison below is the intended
+  // mechanism for closing the microtask race where the discard promise
+  // settles before React has processed the identity-change render that
+  // would have reset the flow.
   useEffect(() => {
     if (state.status !== "discarding") return;
     let cancelled = false;
 
-    discardAllPending().then(() => {
-      if (cancelled || !isMountedRef.current) return;
-      dispatch({ type: "discardFinished" });
-    });
+    discardAllPending()
+      .then((result) => {
+        if (cancelled || !isMountedRef.current) return;
+        if (armedGenerationRef.current !== generationRef.current) {
+          dispatch({ type: "reset" });
+          return;
+        }
+        dispatch({ type: "discardFinished", outcome: toGuardOutcome(result) });
+      })
+      .catch(() => {
+        // Belt-and-braces: the coordinator no longer rejects, but a
+        // rejecting mock or future regression must not turn into a
+        // sign-out. The empty domain list is the unknown-domain case the
+        // copy helper must handle.
+        if (cancelled || !isMountedRef.current) return;
+        dispatch({ type: "discardFinished", outcome: { status: "failed", domains: [] } });
+      });
 
     return () => {
       cancelled = true;

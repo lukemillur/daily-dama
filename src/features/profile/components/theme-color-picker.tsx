@@ -1,8 +1,8 @@
 import { useState } from "react";
-import { TextInput } from "react-native";
 import { styled } from "styled-components/native";
 
 import { Button } from "@/components/ui/button";
+import { TextField } from "@/components/ui/text-field";
 import { BodyText, DisplayTitle, Eyebrow } from "@/components/ui/typography";
 import { AppColors } from "@/constants/theme";
 import { ColorSpectrumPicker } from "@/features/profile/components/color-spectrum-picker";
@@ -115,13 +115,8 @@ function ColorField({
   const canSave = isDirty;
   const ratioLabel = ratio === undefined ? "unknown" : ratio.toFixed(1);
 
-  let hint: string;
-  if (!isValidHex) {
-    hint = "Enter a 6-digit hex color, e.g. #4477aa.";
-  } else {
-    hint =
-      "Contrast vs. text: " + ratioLabel + ":1. Recommended: " + WCAG_AA_MIN_CONTRAST_RATIO + ":1+.";
-  }
+  const contrastHint =
+    "Contrast vs. text: " + ratioLabel + ":1. Recommended: " + WCAG_AA_MIN_CONTRAST_RATIO + ":1+.";
 
   return (
     <ColorFieldWrapper>
@@ -132,19 +127,21 @@ function ColorField({
         persistedHex={persistedValue ?? fallbackColor}
         onChange={setHexText}
       />
-      <FieldRow>
-        <Swatch $hex={isValidHex ? hexText : undefined} />
-        <HexInput
+      <HexFieldWrapper>
+        <TextField
           accessibilityLabel={accessibilityLabel}
           autoCapitalize="none"
+          error={isValidHex ? undefined : "Enter a 6-digit hex color, e.g. #4477aa."}
+          hint={isValidHex ? contrastHint : undefined}
+          label="Hex"
           maxLength={7}
           onChangeText={setHexText}
           placeholder="#4477aa"
+          rightAccessory={<Swatch $hex={isValidHex ? hexText : undefined} />}
           selectTextOnFocus
           value={hexText}
         />
-      </FieldRow>
-      <FieldHint $invalid={!isValidHex}>{hint}</FieldHint>
+      </HexFieldWrapper>
       <SaveButton
         accessibilityLabel={label + " save"}
         disabled={!canSave}
@@ -177,33 +174,15 @@ const FieldLabel = styled.Text`
   margin-bottom: 6px;
   text-transform: uppercase;
 `;
-const FieldRow = styled.View`
-  flex-direction: row;
-  align-items: center;
-  gap: 10px;
+const HexFieldWrapper = styled.View`
+  max-width: 260px;
 `;
 const Swatch = styled.View<{ readonly $hex?: string }>`
-  width: 40px;
-  height: 40px;
+  width: 32px;
+  height: 32px;
+  margin-right: 14px;
   border: 2px solid ${AppColors.ink};
   background-color: ${({ $hex }) => $hex ?? AppColors.paperStrong};
-`;
-const HexInput = styled(TextInput)`
-  height: 54px;
-  width: 140px;
-  background-color: ${AppColors.paper};
-  border: 2px solid ${AppColors.ink};
-  color: ${AppColors.ink};
-  font-size: 18px;
-  font-weight: 900;
-  padding: 8px 12px;
-`;
-const FieldHint = styled.Text<{ readonly $invalid: boolean }>`
-  color: ${({ $invalid }) => ($invalid ? AppColors.red : AppColors.textMuted)};
-  font-size: 12px;
-  font-weight: 700;
-  margin-top: 7px;
-  max-width: 420px;
 `;
 const SaveButton = styled(Button).attrs({ size: "medium" })`
   align-self: flex-start;

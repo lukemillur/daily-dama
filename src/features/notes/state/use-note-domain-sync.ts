@@ -36,6 +36,7 @@ import { createOutboxOperationId, type OutboxOperation } from '@/shared/sync/out
 import type { DomainSyncOutcome, DomainSyncRecord, SyncTrigger } from '@/shared/sync/coordinator';
 import { parseServerRowUpdatedAt, resolveUpdatedAtConflict } from '@/shared/sync/conflict-resolution';
 import { createInitialSyncEnvelope, discardPendingOperations, type SyncEnvelope } from '@/shared/sync/sync-envelope';
+import type { DomainDiscardOutcome } from '@/shared/sync/discard-outcome';
 import { pullAllPages, pushOutboxOperations, type SyncTransportRepository } from '@/shared/sync/transport';
 
 export interface UseNoteDomainSyncOptions {
@@ -61,7 +62,7 @@ export interface UseNoteDomainSyncResult {
   // a second independent writer) without touching the primary NoteCollection
   // reducer state -- T158. A safe no-op when already empty or when the
   // identity has changed since the call was made.
-  readonly discardPending: () => Promise<void>;
+  readonly discardPending: () => Promise<DomainDiscardOutcome>;
 }
 
 const PULL_PAGE_SIZE = 200;
@@ -377,15 +378,20 @@ export function useNoteDomainSync(options: UseNoteDomainSyncOptions): UseNoteDom
   const pendingCount = envelope.state.outbox.length;
   const retryableFailureCount = envelope.state.outbox.filter((operation) => operation.lastFailureKind === 'retryable').length;
 
-  const discardPending = useCallback(async () => {
+  const discardPending = useCallback(async (): Promise<DomainDiscardOutcome> => {
     const { identity: currentIdentity, envelopeState, envelopeDispatch } = latestRef.current;
-    if (envelopeState.outbox.length === 0) return;
+    if (envelopeState.outbox.length === 0) return { status: 'discarded' }; // nothing to clear
 
     const result = discardPendingOperations(envelopeState, currentIdentity);
-    if (result.status !== 'applied') return; // identity changed underneath; no-op
+    if (result.status !== 'applied') return { status: 'superseded' }; // identity changed underneath
 
-    await envelope.saveNow(result.envelope);
+    const saveOutcome = await envelope.saveNow(result.envelope);
+    if (saveOutcome.status === 'failed') return { status: 'failed', error: saveOutcome.error };
+    if (saveOutcome.status === 'superseded') return { status: 'superseded' };
+
+    // Only now is the cleared outbox durable, so the in-memory clear can follow.
     envelopeDispatch({ type: 'outboxDiscarded', identity: currentIdentity });
+    return { status: 'discarded' };
   }, [envelope]);
 
   return useMemo(

@@ -11,13 +11,15 @@ import { identityNamespace } from '@/shared/persistence/identity';
 import { createWriteQueue } from '@/shared/persistence/storage';
 import { useSyncCoordinator, type SyncDomainHandles, type UseSyncCoordinatorResult } from '@/shared/sync/use-sync-coordinator';
 import { deriveSyncStatus, type SyncStatus } from '@/shared/sync/sync-status';
+import { aggregateDiscardOutcomes, type DiscardAllPendingResult } from '@/shared/sync/discard-outcome';
+import type { SyncDomain } from '@/shared/sync/domain';
 
 const STATUS_KEY = 'daily-dama-sync-status-v1';
 const statusStorageKey = (identity: ReturnType<typeof useIdentityHandle>['identity']) => `${identityNamespace(identity)}:${STATUS_KEY}`;
 export interface SyncCoordinatorStatus extends UseSyncCoordinatorResult {
   readonly hasHydrated: boolean;
   readonly pendingCount: number; readonly conflictCount: number; readonly retryableFailureCount: number;
-  readonly syncStatus: SyncStatus; readonly retry: () => void; readonly discardAllPending: () => Promise<void>;
+  readonly syncStatus: SyncStatus; readonly retry: () => void; readonly discardAllPending: () => Promise<DiscardAllPendingResult>;
 }
 const SyncCoordinatorContext = createContext<SyncCoordinatorStatus | undefined>(undefined);
 
@@ -69,7 +71,26 @@ export function SyncCoordinatorProvider({ children }: PropsWithChildren) {
   const conflictCount = 0;
   const retryableFailureCount = (profile.retryableFailureCount ?? 0) + (customTricks.retryableFailureCount ?? 0) + (practiceHistory.retryableFailureCount ?? 0) + (goals.retryableFailureCount ?? 0) + (notes.retryableFailureCount ?? 0);
   const syncStatus = useMemo(() => deriveSyncStatus({ coordinator: coordinator.state.status, pendingCount, conflictCount, retryableFailureCount, online, lastSuccessfulSyncAt }), [coordinator.state.status, pendingCount, conflictCount, retryableFailureCount, online, lastSuccessfulSyncAt]);
-  const discardAllPending = useCallback(async () => { await Promise.all([profile.discardPending(), customTricks.discardPending(), practiceHistory.discardPending(), goals.discardPending(), notes.discardPending()]); }, [profile, customTricks, practiceHistory, goals, notes]);
+  const discardAllPending = useCallback(async (): Promise<DiscardAllPendingResult> => {
+    // `allSettled`, not `all`, is load-bearing: `all` would short-circuit on the first
+    // rejection and lose which of the other four domains actually failed, exactly how a
+    // partial failure would become an unreported sign-out. A rejected settlement (defense in
+    // depth -- domain hooks no longer reject) maps to a failure for that domain.
+    const entries: readonly (readonly [SyncDomain, () => ReturnType<typeof profile.discardPending>])[] = [
+      ['profile', profile.discardPending],
+      ['customTricks', customTricks.discardPending],
+      ['practiceHistory', practiceHistory.discardPending],
+      ['goals', goals.discardPending],
+      ['notes', notes.discardPending],
+    ];
+    const settled = await Promise.allSettled(entries.map(([, discard]) => discard()));
+    const outcomes = entries.map(([domain], index) => {
+      const settlement = settled[index];
+      if (settlement.status === 'fulfilled') return [domain, settlement.value] as const;
+      return [domain, { status: 'failed', error: settlement.reason } as const] as const;
+    });
+    return aggregateDiscardOutcomes(outcomes);
+  }, [profile, customTricks, practiceHistory, goals, notes]);
   const value = useMemo(() => ({ ...coordinator, hasHydrated, pendingCount, conflictCount, retryableFailureCount, syncStatus, retry: coordinator.requestManualSync, discardAllPending }), [coordinator, hasHydrated, pendingCount, conflictCount, retryableFailureCount, syncStatus, discardAllPending]);
   return <SyncCoordinatorContext.Provider value={value}>{children}</SyncCoordinatorContext.Provider>;
 }

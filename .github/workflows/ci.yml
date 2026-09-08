@@ -100,6 +100,9 @@ jobs:
       - name: Install dependencies
         run: yarn install --frozen-lockfile
 
+      - name: Verify dependency-audit gate
+        run: node --test security/scripts/verify-dependency-audit-gate.mjs
+
       - name: Check dependency audit
         run: node security/scripts/check-dependency-audit.mjs
 

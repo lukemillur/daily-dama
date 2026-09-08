@@ -15,7 +15,8 @@ Choose the destination deliberately:
 
 - Default roadmap, PRD, or large batch conversions to `TASKS_BACKLOG.md`. This is the formal, scoped queue excluded from `newTicket` automation.
 - Write to `TASKS.md` only when the user explicitly wants work activated in the automated queue.
-- Never move existing tickets between the two files as a side effect of scoping unrelated work.
+- Use `TASKS_COLLABORATIVE.md` when the user selects guided execution for tickets with owner decisions or external gates. Read its working agreement and include `Execution`, `Owner gates`, and `Automation boundary`; a named owner decision can remain pending there, provided it is an explicit gate before dependent work.
+- Never move existing tickets between queues as a side effect of scoping unrelated work.
 
 If the destination is ambiguous for a small item, state the reversible assumption and prefer `TASKS_BACKLOG.md`.
 
@@ -25,7 +26,7 @@ Read:
 
 1. `AGENTS.md`, including persistence boundaries and active platform scope.
 2. `TASKS.md` top to bottom for format, planning rules, and active work.
-3. `TASKS_BACKLOG.md` and `TASKS_DONE.md` for IDs, overlap, and dependencies.
+3. `TASKS_BACKLOG.md`, `TASKS_COLLABORATIVE.md` (when present), and `TASKS_DONE.md` for IDs, overlap, and dependencies.
 4. The source planning items and their cited documents.
 5. Relevant handoffs, routes, components, providers, reducers, persistence adapters, deployment files, migrations, and tests.
 
@@ -46,7 +47,7 @@ For each planning item:
 
 Do not scope native-only work into the active queue while mobile hardening is deferred. Leave its planning item `Proposed`, unless the user explicitly requests a formally deferred native ticket in `TASKS_BACKLOG.md`.
 
-Use the next unused task ID across `TASKS.md`, `TASKS_BACKLOG.md`, and `TASKS_DONE.md`.
+Use the next unused task ID across `TASKS.md`, `TASKS_BACKLOG.md`, `TASKS_COLLABORATIVE.md` (when present), and `TASKS_DONE.md`.
 
 ```md
 ### [T###] <short imperative title>

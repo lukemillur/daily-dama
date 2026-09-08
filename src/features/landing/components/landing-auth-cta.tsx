@@ -1,9 +1,14 @@
 import { useRouter } from 'expo-router';
+import { useState } from 'react';
 import { styled } from 'styled-components/native';
 
 import { Button } from '@/components/ui/button';
 import { AppColors, Spacing } from '@/constants/theme';
-import { useAuthState } from '@/features/auth/state/auth-provider';
+import type { AuthErrorCategory } from '@/features/auth/model/auth-errors';
+import { categorizeAuthError } from '@/features/auth/model/auth-errors';
+import { LOG_OUT_ERROR_COPY } from '@/features/auth/model/log-out-error-copy';
+import { logAuthWarning, trackAuthEvent } from '@/features/auth/observability/auth-observability';
+import { useAuthActions, useAuthState } from '@/features/auth/state/auth-provider';
 
 interface LandingAuthCtaProps {
   /**
@@ -25,8 +30,12 @@ interface LandingAuthCtaProps {
  *
  * Deliberately gated only on useAuthState() -- never on onboarding status -- so this stays
  * completely decoupled from useCachedOnboardingStatus / useRedirectOnboardedVisitorHome /
- * LANDING_ARRIVAL_PARAM. It renders nothing once a visitor is authenticated, matching
- * GuestAccountSections mutually-exclusive render-null gating.
+ * LANDING_ARRIVAL_PARAM. For an authenticated visitor the same bar shows the brand plus a
+ * Log out action; logout calls useAuthActions().signOut() directly rather than
+ * useLogoutGuard, because SyncCoordinatorProvider and the five domain providers are mounted
+ * only under /app and T145 forbids mounting persistence providers above the landing route --
+ * so the unsynced-changes prompt is structurally unavailable here and Profile remains the
+ * guarded logout surface.
  *
  * Rendered as a sibling of the landing pages scrollable content (not inside it), absolutely
  * positioned across the top of the Screen. LandingPage toggles visible once the visitor
@@ -36,29 +45,68 @@ interface LandingAuthCtaProps {
 export function LandingAuthCta({ visible = true }: LandingAuthCtaProps) {
   const authState = useAuthState();
   const router = useRouter();
-  const isGuest = authState.status === 'guest';
+  const { signOut } = useAuthActions();
+  const [isSigningOut, setIsSigningOut] = useState(false);
+  const [logOutError, setLogOutError] = useState<AuthErrorCategory | undefined>(undefined);
 
-  if (!isGuest) {
+  const isGuest = authState.status === 'guest';
+  const isAuthenticated = authState.status === 'authenticated';
+
+  if (!isGuest && !isAuthenticated) {
     return null;
   }
+
+  const handleLogOutPress = async () => {
+    if (isSigningOut) return;
+    setIsSigningOut(true);
+    setLogOutError(undefined);
+    const { error } = await signOut();
+    if (error) {
+      const category = categorizeAuthError(error);
+      logAuthWarning('Log out failed.', error);
+      trackAuthEvent('log_out_error', category);
+      setLogOutError(category);
+    } else {
+      trackAuthEvent('log_out_success');
+    }
+    setIsSigningOut(false);
+  };
 
   return (
     <HeaderBar testID="landing-header-bar" $visible={visible} pointerEvents={visible ? "auto" : "none"}>
       <Brand>Daily Dama</Brand>
       <ButtonRow>
-        <SignUpButton
-          accessibilityLabel="Sign up"
-          size="medium"
-          onPress={() => router.push('/auth/sign-up')}>
-          Sign up
-        </SignUpButton>
-        <SignInButton
-          accessibilityLabel="Sign in"
-          size="medium"
-          variant="secondary"
-          onPress={() => router.push('/auth/sign-in')}>
-          Sign in
-        </SignInButton>
+        {isGuest ? (
+          <>
+            <SignUpButton
+              accessibilityLabel="Sign up"
+              size="medium"
+              onPress={() => router.push('/auth/sign-up')}>
+              Sign up
+            </SignUpButton>
+            <SignInButton
+              accessibilityLabel="Sign in"
+              size="medium"
+              variant="secondary"
+              onPress={() => router.push('/auth/sign-in')}>
+              Sign in
+            </SignInButton>
+          </>
+        ) : (
+          <LogOutColumn>
+            {logOutError ? <ErrorText>{LOG_OUT_ERROR_COPY[logOutError]}</ErrorText> : null}
+            <LogOutButton
+              accessibilityLabel="Log out"
+              size="medium"
+              variant="secondary"
+              disabled={isSigningOut}
+              onPress={() => {
+                void handleLogOutPress();
+              }}>
+              {isSigningOut ? 'Logging out...' : 'Log out'}
+            </LogOutButton>
+          </LogOutColumn>
+        )}
       </ButtonRow>
     </HeaderBar>
   );
@@ -79,6 +127,7 @@ const HeaderBar = styled.View<{ readonly $visible: boolean }>`
   border-bottom-width: 2px;
   border-bottom-color: ${AppColors.ink};
   opacity: ${({ $visible }) => ($visible ? 1 : 0)};
+  display: ${({ $visible }) => ($visible ? 'flex' : 'none')};
   transition: opacity 150ms ease;
 `;
 
@@ -103,4 +152,20 @@ const SignUpButton = styled(Button)`
 const SignInButton = styled(Button)`
   align-self: flex-start;
   padding: 10px 14px;
+`;
+
+const LogOutColumn = styled.View`
+  align-items: flex-end;
+  gap: 6px;
+`;
+
+const LogOutButton = styled(Button)`
+  align-self: flex-start;
+  padding: 10px 14px;
+`;
+
+const ErrorText = styled.Text`
+  color: ${AppColors.red};
+  font-size: 12px;
+  font-weight: 800;
 `;
