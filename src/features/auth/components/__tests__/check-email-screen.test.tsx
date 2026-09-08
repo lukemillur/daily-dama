@@ -72,6 +72,12 @@ describe('CheckEmailScreen', () => {
       expect(containsText(root, /same browser, on this device/i)).toBe(true);
     });
 
+    it('shows the pending email address so the user can confirm it was entered correctly', async () => {
+      const root = await mount();
+
+      expect(containsText(root, /person@example\.com/)).toBe(true);
+    });
+
     it('resend calls resendSignupConfirmation with the pending email', async () => {
       mockResendSignupConfirmation.mockResolvedValue({ error: null });
       const root = await mount();

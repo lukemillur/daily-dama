@@ -4,6 +4,42 @@ Completed entries move here from `TASKS.md`'s `Backlog`, in the same commit that
 
 Entries keep their content as it was at completion. Don't retroactively edit a description or exit criteria after the fact; if something about a completed task turns out to be wrong or misleading, note that in a new entry or in code, not by rewriting history here.
 
+### [T221] Diagnose and fix the feedback form's missing success state
+
+- **Area:** Feedback
+- **Priority:** High
+- **Status:** Done
+- **Planning:** Required
+- **Description:** `feedback-screen.tsx`'s success-state branch (rendered once `submitFeedback` resolves `status: 'succeeded'`) and `submit-feedback.ts`'s insert call both look correct on inspection — the QA-reported failure (no success state after submitting a real Message) needs a fresh runtime diagnosis against the actual environment the user tested in, not a known local fix reapplied. Determine whether the anon insert itself is failing (RLS/config drift since T217.1, a missing or misconfigured Supabase env var in that environment) or whether a successful insert isn't triggering the UI's `submitted` state, then fix the actual defect found.
+- **Exit criteria:** Reproduce the failure against the same environment/build the user tested (not just the local Supabase CLI stack T217.2 already verified against) — confirm whether `submitFeedback` resolves `failed` (capture the real Postgrest/network error if so) or `succeeded` with the UI not updating. Fix whichever is broken. Confirm afterward, on that same environment, that submitting a Message-only feedback form shows the success state and that a real row is visible via Supabase Studio or a direct DB read. Met: root-caused against production directly (Supabase edge logs plus a live prod repro), not local reproduction. Two independent defects found and fixed in sequence:
+  1. Production's Data API "Exposed schemas" setting (Dashboard → Data API → Settings, separate from `supabase/config.toml`'s `schemas` list, which only governs local/linked CLI config) never included `api` — every request against any `api`-schema table 406'd (`PGRST106`) regardless of grants/RLS. Fixed by adding `api` to the live project's exposed schemas.
+  2. With the schema reachable, a real logged-in submission then failed 401/42501 "permission denied for table feedback": `src/shared/supabase/supabase-client.ts`'s shared client has `persistSession: true`, so `supabase-js` attaches the caller's own session JWT once one exists, and PostgREST evaluates the request as role `authenticated`, not `anon` — but T217.1 only granted/policied `anon`. Fixed with a new migration (`20260908210000_add_feedback_insert_authenticated.sql`) granting `authenticated` the same INSERT-only capability, gated by an identical `WITH CHECK`, plus a matching pgTAP test (`supabase/tests/t221_feedback_authenticated.test.sql`). Verified end-to-end on production for both an anonymous and a logged-in real submission after each fix.
+- **Notes:** From S100. Bug fix on already-`Done` T217.2, not new scope. `Required` for the same class of reason as T188/T195/T199/T206/T212: the defect wasn't visible from static tracing of the shipped code, so it needed runtime diagnosis before a fix could be written — in this case two stacked defects, only the second of which was in application code. Corrected `submit-feedback.ts`'s header comment, which had asserted (incorrectly, per defect 2) that the anon-only RLS grant was "the entire authorization surface" for both anonymous and signed-in callers.
+
+### [T231] Align and deploy the selected web release with hosted Auth settings
+
+- **Area:** Web release configuration
+- **Priority:** High
+- **Status:** Done
+- **Checkpoint:** Complete
+- **Planning:** Required
+- **Execution:** Owner-in-loop
+- **Owner gates:** Select release commit, backend and canonical domain (www recommended); confirm Vercel Production Branch and authorize exact promotion/deployment steps and hosted Auth setting changes.
+- **Automation boundary:** Inspect build/configuration and available deployment metadata, prepare exact public values/callback URLs and release verification evidence, and guide the owner through dashboard changes.
+- **Description:** Align Vercel build/output settings, public environment variables, canonical redirect and exact Auth callback allowlist. Guide deployment of the selected, verified release through the repository's approved promotion path and record its URL, commit and backend.
+- **Exit criteria:** The deployment record shows the intended commit is live on the canonical domain with the correct hosted backend, verified build/output/branch settings and exact Auth callbacks; appropriate release checks/CI and real-bundle secret checks have passing evidence. Production email callbacks resolve to the intended screens, reusing T232's delivered-link evidence where applicable. Met: owner authorized `development`→`main`→`production` (PRs #331/#332, promoted directly; ancestry repaired this session via `ours`-strategy merge commits after both squash-merged against policy). Hosted verification found and fixed two live defects before criteria could pass: flat routes (`/auth/*`, `/feedback`, including the real `/auth/callback` target) 404'd for lack of `vercel.json`'s `cleanUrls` (PRs #337/#339/#340), which in turn broke T227's five dynamic-route rewrites since `cleanUrls` requires extensionless rewrite destinations (PRs #341/#342/#343); and the staging Preview origin was behind Vercel Deployment Protection (SSO), fixed by disabling it. All ten checked routes return 200 on `www.dailydama.com`; a real deployed-bundle gitleaks scan (not a local reproduction) found no leaks and confirmed the correct Supabase project URL embedded. A real owner-performed signup then hit a 504 on `/auth/v1/signup`, diagnosed from Supabase Auth logs as SMTP `535 Authentication credentials invalid` (a dropped character in production's Resend SMTP password) — owner corrected it, and a clean `/signup` → `/verify` → `Login` → `/token` sequence with a Resend-delivered confirmation email confirmed the full round trip.
+- **Notes:** From A7 and the audit deployment checklist. Depends on T225. T232 owns detailed email/account-lifecycle acceptance and T234 owns hosted sync/browser usability — both remain separately owned follow-on tickets; this ticket covered only that the release is live with correct backend/Auth-callback wiring. Both `development`→`main` (PR #331) and `main`→`production` (PR #332) were squash-merged by the owner directly, against AGENTS.md's merge-commit policy for these two promotions — repaired via `ours`-strategy merge commits `c0abccc` (main) and `65c4348` (production), matching the PR #285/`20f4da0` precedent. See `outputs/guided-tickets/T231.md` for the full execution record.
+
+### [T257] Show the entered email address on the "Check your email" screen
+
+- **Area:** Authentication
+- **Priority:** Medium
+- **Status:** Done
+- **Planning:** Implementer
+- **Description:** `check-email-screen.tsx` already reads the submitted address via `usePendingVerificationEmail()` (used today only for the resend action) but its copy (`CONFIRMATION_COPY`, `SAME_BROWSER_GUIDANCE`) never displays it. Update the screen's copy to include the actual pending email address so the user can confirm they entered it correctly.
+- **Exit criteria:** A test in `check-email-screen.test.tsx`'s `with a pending email` describe block asserts the rendered screen includes the mocked pending email address (e.g. `person@example.com`) as visible text. The existing `pendingEmail === undefined` fallback branch is unchanged and still has no email address to show. Met: added a `confirmationCopyWithEmail(email)` helper rendered in the pending-email branch's `Introduction` in place of the bare `CONFIRMATION_COPY` constant, appending "You entered {email}." to the existing confirmation sentence; the `pendingEmail === undefined` fallback branch still renders the unchanged `CONFIRMATION_COPY` constant with no email address. Added a `shows the pending email address so the user can confirm it was entered correctly` test to the `with a pending email` describe block asserting the rendered screen contains `person@example.com`.
+- **Notes:** From S128. Small, self-contained copy/rendering change.
+
 ### [T256] Fix the onboarding practice-minutes field's broken web focus styling
 
 - **Area:** Onboarding
