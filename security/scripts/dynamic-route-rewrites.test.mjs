@@ -25,9 +25,12 @@ test("vercel rewrites cover every exported dynamic route", async (t) => {
         const pattern = new RegExp(`^${rewrite.source.replace(/:[a-zA-Z0-9_]+/g, "[^/]+")}$`);
         return pattern.test(route);
       });
+      // cleanUrls strips the .html extension from rewrite destinations too (Vercel
+      // rejects/redirects an extensioned destination once cleanUrls is enabled) --
+      // exportPath still names the literal exported file for documentation.
       assert.deepEqual(matchingRewrite, {
         source: route.replace("example-trick", ":trickId"),
-        destination: `/${exportPath}`,
+        destination: `/${exportPath.replace(/\.html$/, "")}`,
       });
     });
   }
