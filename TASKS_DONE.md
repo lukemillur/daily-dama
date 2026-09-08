@@ -4,6 +4,18 @@ Completed entries move here from `TASKS.md`'s `Backlog`, in the same commit that
 
 Entries keep their content as it was at completion. Don't retroactively edit a description or exit criteria after the fact; if something about a completed task turns out to be wrong or misleading, note that in a new entry or in code, not by rewriting history here.
 
+### [T230] Prepare the owner-selected hosted Supabase backend
+
+- **Area:** Hosted backend deployment
+- **Priority:** High
+- **Status:** Done
+- **Checkpoint:** Complete
+- **Planning:** Required
+- **Execution:** Owner-in-loop
+- **Description:** Prepared the selected production Supabase project while retaining the existing development project for forensics. Installed the required migrations and `delete-account` function.
+- **Exit criteria:** Closed by explicit owner disposition on 2026-09-08. The production project `lnudjcpotidplbjqcfcx` in `us-east-2` has all nine repository migrations applied, including the public RLS-helper execution revoke; `delete-account` is active, JWT-protected, and deployed from this checkout. The remaining hosted security/provider and lifecycle verification was intentionally accepted without further evidence.
+- **Notes:** From A6; audit sections 2–3. Production preparation was delivered in PR #328. The existing project `ylyoqswauqyesuwmetnl` remains retained and must not be reset or deleted. See `outputs/guided-tickets/T230.md` for the execution record.
+
 ### [T249] Diagnose and fix the new-account welcome overlay not appearing
 
 - **Area:** Authentication / Home
