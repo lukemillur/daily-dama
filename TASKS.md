@@ -137,7 +137,7 @@ _T249–T252 come from stories S119–S122 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 - **Area:** UI components
 - **Priority:** Low
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Implementer
 - **Description:** `text-field.tsx`'s `InputRow` currently renders its border in an opaque theme color (`theme.text` unfocused, `theme.accent` focused) and its drop shadow in a separate, focus-independent translucent color (`inputShadow(theme.text)`, `SHADOW_ALPHA = 0.35`). Swap which color expression drives which visual: the border should render using the color/alpha currently applied to the shadow, and the shadow should render using the color currently applied to the border — preserving the existing accent-on-focus distinction on whichever role now carries it.
 - **Exit criteria:** Confirmed in-browser (Sign up and at least one other `TextField`-using screen) that the border now renders in the color/translucency previously used for the shadow, the drop shadow now renders in the color previously used for the border, and focus still produces a visibly distinct state. No other functional change to any input. `text-field.test.tsx` and dependent screen tests still pass.
