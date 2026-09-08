@@ -78,20 +78,6 @@ Backend selection and release selection are explicit owner gates. T230/T231 prep
 - **Exit criteria:** A deliberate nonsensitive error from the identified deployment reaches the intended Sentry project under actual response headers; the recorded sanitized event inspection shows no credentials or sensitive callback parameters, and unrelated external connection origins remain denied.
 - **Notes:** From A5; audit section 1. Depends on T225. See `src/shared/observability/sentry-client.ts`, `vercel.json`, `security/README.md` and T218 in `TASKS_DONE.md`. If no release DSN exists, pause at configuration rather than claiming success or removing Sentry. Source-map upload, tracing and replay remain outside scope.
 
-### [T231] Align and deploy the selected web release with hosted Auth settings
-
-- **Area:** Web release configuration
-- **Priority:** High
-- **Status:** In progress
-- **Checkpoint:** Awaiting owner action
-- **Planning:** Required
-- **Execution:** Owner-in-loop
-- **Owner gates:** Select release commit, backend and canonical domain (www recommended); confirm Vercel Production Branch and authorize exact promotion/deployment steps and hosted Auth setting changes.
-- **Automation boundary:** Inspect build/configuration and available deployment metadata, prepare exact public values/callback URLs and release verification evidence, and guide the owner through dashboard changes.
-- **Description:** Align Vercel build/output settings, public environment variables, canonical redirect and exact Auth callback allowlist. Guide deployment of the selected, verified release through the repository's approved promotion path and record its URL, commit and backend.
-- **Exit criteria:** The deployment record shows the intended commit is live on the canonical domain with the correct hosted backend, verified build/output/branch settings and exact Auth callbacks; appropriate release checks/CI and real-bundle secret checks have passing evidence. Production email callbacks resolve to the intended screens, reusing T232's delivered-link evidence where applicable.
-- **Notes:** From A7 and the audit deployment checklist. Depends on T225. Coordinate the T230 project decision/preparation and T227/T229 preparation commits before promotion; their hosted criteria need not already be closed. Never assume a final production PR adds a CI gate. Private/service-role credentials must not enter client variables. T232 owns detailed email/account acceptance; record configuration ready separately from that remaining evidence. No production promotion is preauthorized merely by starting this ticket.
-
 ### [T232] Verify the hosted account lifecycle and account isolation
 
 - **Area:** Hosted account acceptance

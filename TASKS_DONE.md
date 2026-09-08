@@ -4,6 +4,20 @@ Completed entries move here from `TASKS.md`'s `Backlog`, in the same commit that
 
 Entries keep their content as it was at completion. Don't retroactively edit a description or exit criteria after the fact; if something about a completed task turns out to be wrong or misleading, note that in a new entry or in code, not by rewriting history here.
 
+### [T231] Align and deploy the selected web release with hosted Auth settings
+
+- **Area:** Web release configuration
+- **Priority:** High
+- **Status:** Done
+- **Checkpoint:** Complete
+- **Planning:** Required
+- **Execution:** Owner-in-loop
+- **Owner gates:** Select release commit, backend and canonical domain (www recommended); confirm Vercel Production Branch and authorize exact promotion/deployment steps and hosted Auth setting changes.
+- **Automation boundary:** Inspect build/configuration and available deployment metadata, prepare exact public values/callback URLs and release verification evidence, and guide the owner through dashboard changes.
+- **Description:** Align Vercel build/output settings, public environment variables, canonical redirect and exact Auth callback allowlist. Guide deployment of the selected, verified release through the repository's approved promotion path and record its URL, commit and backend.
+- **Exit criteria:** The deployment record shows the intended commit is live on the canonical domain with the correct hosted backend, verified build/output/branch settings and exact Auth callbacks; appropriate release checks/CI and real-bundle secret checks have passing evidence. Production email callbacks resolve to the intended screens, reusing T232's delivered-link evidence where applicable. Met: owner authorized `development`→`main`→`production` (PRs #331/#332, promoted directly; ancestry repaired this session via `ours`-strategy merge commits after both squash-merged against policy). Hosted verification found and fixed two live defects before criteria could pass: flat routes (`/auth/*`, `/feedback`, including the real `/auth/callback` target) 404'd for lack of `vercel.json`'s `cleanUrls` (PRs #337/#339/#340), which in turn broke T227's five dynamic-route rewrites since `cleanUrls` requires extensionless rewrite destinations (PRs #341/#342/#343); and the staging Preview origin was behind Vercel Deployment Protection (SSO), fixed by disabling it. All ten checked routes return 200 on `www.dailydama.com`; a real deployed-bundle gitleaks scan (not a local reproduction) found no leaks and confirmed the correct Supabase project URL embedded. A real owner-performed signup then hit a 504 on `/auth/v1/signup`, diagnosed from Supabase Auth logs as SMTP `535 Authentication credentials invalid` (a dropped character in production's Resend SMTP password) — owner corrected it, and a clean `/signup` → `/verify` → `Login` → `/token` sequence with a Resend-delivered confirmation email confirmed the full round trip.
+- **Notes:** From A7 and the audit deployment checklist. Depends on T225. T232 owns detailed email/account-lifecycle acceptance and T234 owns hosted sync/browser usability — both remain separately owned follow-on tickets; this ticket covered only that the release is live with correct backend/Auth-callback wiring. Both `development`→`main` (PR #331) and `main`→`production` (PR #332) were squash-merged by the owner directly, against AGENTS.md's merge-commit policy for these two promotions — repaired via `ours`-strategy merge commits `c0abccc` (main) and `65c4348` (production), matching the PR #285/`20f4da0` precedent. See `outputs/guided-tickets/T231.md` for the full execution record.
+
 ### [T257] Show the entered email address on the "Check your email" screen
 
 - **Area:** Authentication
