@@ -4,6 +4,16 @@ Completed entries move here from `TASKS.md`'s `Backlog`, in the same commit that
 
 Entries keep their content as it was at completion. Don't retroactively edit a description or exit criteria after the fact; if something about a completed task turns out to be wrong or misleading, note that in a new entry or in code, not by rewriting history here.
 
+### [T253] Play the landing page's first screenshot entrance animation on mount
+
+- **Area:** Landing page
+- **Priority:** Medium
+- **Status:** Done
+- **Planning:** Implementer
+- **Description:** `landing-page.tsx`'s `ScreenshotEntry`/`useHasEnteredViewport` drives every "See it in action" screenshot's entrance animation off one shared `IntersectionObserver`. The first screenshot doesn't play its entrance animation on initial page load — it just appears — while every subsequent screenshot correctly animates in as the visitor scrolls to it. Diagnose why the first item's observer doesn't fire (or doesn't fire visibly) on mount and fix it so the first screenshot animates in immediately, without requiring the visitor to scroll first.
+- **Exit criteria:** Confirmed in-browser (Expo dev server, `/`, no scroll) that the first screenshot in the "See it in action" section plays its `FadeInUp` entrance animation automatically shortly after page load. Confirmed every subsequent screenshot still animates in on scroll exactly as before. `landing-page.test.tsx`'s existing screenshot-showcase tests still pass.
+- **Notes:** From S123. jsdom has no `IntersectionObserver`, so `useHasEnteredViewport`'s observer branch is untested today (tests exercise only the `hasEntered` default-true fallback) — this needs a real-browser diagnosis, not a Jest repro. A likely cause worth checking first: the first screenshot's image hasn't finished loading (and so has no laid-out height) at the moment the observer computes its initial intersection, making its bounding box collapse to zero and read as non-intersecting. Real-browser diagnosis via a throwaway Playwright script against a local Expo web dev server (multiple viewport sizes, instrumented `IntersectionObserver` callback logging, and network-throttled image loads) found the CSS `aspect-ratio` reserved by `expo-image` already gives the item a correct non-zero box before its image resource loads, so the notes' zero-height hypothesis didn't reproduce. The real gap: the first screenshot is often below the fold at typical viewport heights, so it never intersects the shrunk observed band without a scroll — but the desired UX is that it always plays immediately since it's the section's lead-in. Fixed by having `useHasEnteredViewport` accept a `skipObserver` flag, passed as `index === 0` from `ScreenshotEntry`, so the first item starts `hasEntered` true unconditionally (mirroring the existing non-web/no-`IntersectionObserver` fallback) and plays its `FadeInUp` as a normal mount animation, while every other index keeps the unchanged observer-gated, scroll-triggered path.
+
 ### [T251] Require password complexity at signup and reset
 
 - **Area:** Authentication
