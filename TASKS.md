@@ -133,16 +133,6 @@ _Raw ideas land here — a name and a one-line description, nothing more. Discus
 
 _T249–T252 come from stories S119–S122 in [BACKLOG_STORIES.md](BACKLOG_STORIES.md) (the user's 2026-09-08 QA pass on T208/T241, plus two general-feedback items describing one consistent rule, combined into S122/T252). T249 (S119) is `Required`: T208's overlay wiring (`useGlobalSearchParams` read in `_layout.tsx`, `auth-callback-screen.tsx`'s `newAccount=1` redirect param) looks correct on inspection but doesn't render in the flow the user tested — the same class of gap as T212/T221/T237, needing runtime diagnosis before a fix. T250 (S120) is `Implementer`: a color-only swap between `text-field.tsx`'s existing border and shadow expressions, the same narrow scope T241 itself shipped. T251 (S121) is `Implementer`: a mechanical rule change to the existing `password-policy.ts`/`validateNewPassword` shape, applied to both signup and reset-password since they already share that module (flagged in the story as an assumption, not explicitly requested). T252 (S122) is `Required`, matching this project's established precedent for reading onboarding/auth state into routing or copy decisions (T200, T242, T243) — it reuses `useCachedOnboardingStatus()` exactly as T242/T243 already do, but on two new call sites (Sign up, Sign in) that don't read that state today._
 
-### [T249] Diagnose and fix the new-account welcome overlay not appearing
-
-- **Area:** Authentication / Home
-- **Priority:** High
-- **Status:** Not started
-- **Planning:** Required
-- **Description:** T208's `NewAccountWelcomeOverlay` (mounted in `src/app/_layout.tsx`, triggered by `auth-callback-screen.tsx`'s `router.replace({ pathname: '/app/home', params: { newAccount: '1' } })` on the default post-verification branch) does not render at all in the flow the user tested, even though T208's own browser verification passed when it shipped and the wiring looks correct on inspection today. Needs a fresh runtime diagnosis against the actual environment/flow the user tested, then a fix for whatever's actually broken.
-- **Exit criteria:** Reproduce the failure via a real signup + email-confirmation-link round trip (in the environment the user tested in, if that differs from the local Supabase CLI stack T208 verified against). Identify the actual cause — e.g. the `newAccount` param never reaching `_layout.tsx` (stripped upstream, or interference from a hosting/rewrite layer on the dynamic `/app/home?newAccount=1` URL — see T227), a timing/state regression from a later change touching the callback screen (T224/T236), or something else — and fix it. Confirm afterward that the overlay renders exactly once on a real verification round trip and not on a routine sign-in, matching T208's original exit criteria.
-- **Notes:** From S119. Follow-up regression/gap on `Done` ticket T208. `Required` for the same class of reason as T212/T221/T237: the code looks correct from static inspection, so this needs runtime diagnosis before a fix can be written, not a blind reapplication of T208's original approach.
-
 ### [T250] Swap the shared text input's border and shadow colors
 
 - **Area:** UI components

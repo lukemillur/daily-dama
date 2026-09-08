@@ -108,6 +108,36 @@ describe('root layout new-account welcome overlay (T208)', () => {
     });
   });
 
+  it('renders the overlay when newAccount=1 arrives after mount via a client-side navigation (T249)', () => {
+    // Reproduces the real-world signup round trip: the root layout mounts once with no
+    // newAccount param (landing on /auth/callback), then auth-callback-screen.tsx's
+    // router.replace({ pathname: '/app/home', params: { newAccount: '1' } }) is a client-side
+    // History navigation that updates params on the already-mounted root layout without
+    // remounting it. Only the post-mount effect -- not the lazy useState initializer -- can
+    // pick this up.
+    mockGlobalSearchParams = {};
+    let root!: ReactTestRenderer;
+    act(() => {
+      root = create(<TabLayout />);
+    });
+
+    expect(findByAccessibilityLabel(root, 'Account verified').length).toBe(0);
+    expect(mockRouter.replace).not.toHaveBeenCalled();
+
+    mockGlobalSearchParams = { newAccount: '1' };
+    act(() => {
+      root.update(<TabLayout />);
+    });
+
+    expect(findByAccessibilityLabel(root, 'Account verified').length).toBe(1);
+    expect(mockRouter.replace).toHaveBeenCalledTimes(1);
+    expect(mockRouter.replace).toHaveBeenCalledWith('/app/home');
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
   it('renders the overlay when newAccount=1 is present alongside another unrelated global param', () => {
     mockGlobalSearchParams = { newAccount: '1', other: 'x' };
     let root!: ReactTestRenderer;
