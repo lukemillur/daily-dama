@@ -137,7 +137,7 @@ _T249–T252 come from stories S119–S122 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 - **Area:** Authentication
 - **Priority:** Medium
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Implementer
 - **Description:** Replace `password-policy.ts`'s current rule (`MIN_PASSWORD_LENGTH = 10`, length-only) with: at least 8 characters, at least one uppercase letter, at least one number, and at least one symbol. Update `sign-up-screen.tsx`'s password hint text and any related validation error copy to state these actual rules instead of just a character count.
 - **Exit criteria:** `validateNewPassword` rejects a password missing any one of the four rules and accepts one satisfying all four, with test coverage for each rule individually and combined. Submitting a password failing any rule on the Sign up screen shows an error identifying what's missing, before a network round trip. The Sign up screen's password hint states all four rules. `yarn tsc --noEmit` passes; existing signup/reset-password screen tests pass with copy assertions updated to the new hint/error text.
