@@ -4,6 +4,17 @@ Completed entries move here from `TASKS.md`'s `Backlog`, in the same commit that
 
 Entries keep their content as it was at completion. Don't retroactively edit a description or exit criteria after the fact; if something about a completed task turns out to be wrong or misleading, note that in a new entry or in code, not by rewriting history here.
 
+### [T256] Fix the onboarding practice-minutes field's broken web focus styling
+
+- **Area:** Onboarding
+- **Priority:** High
+- **Status:** Done
+- **Planning:** Implementer
+- **Description:** The practice-minutes onboarding field (`onboarding-duration-step.tsx`, rendered via the shared `TextField`/`Input` in `text-field.tsx` with `inputMode="numeric"` and `keyboardType="number-pad"`) shows a green background and no visible text cursor when focused on web. No other reported `TextField` usage in the app shows this, so it's likely specific to this field's numeric input configuration (a browser autofill/one-time-code heuristic on short numeric inputs is a plausible cause, worth checking first). Diagnose and fix so the field renders with the app's normal input styling and a visible cursor.
+- **Exit criteria:** Confirmed in-browser (web, Chrome) that focusing and typing in the onboarding practice-minutes field shows the app's normal themed input background (no unexpected color) and a visible text cursor throughout. `text-field.test.tsx` and the onboarding wizard tests (`kentei-onboarding.test.tsx`) still pass, and any other `TextField` usage in the app is visibly unaffected by the fix. Met: `text-field.tsx` now resolves an `autoComplete` default of `'off'` for numeric fields (`inputMode`/`keyboardType` indicating numeric/decimal input) unless the caller supplies its own `autoComplete`, since the root cause is Chrome's default autofill/one-time-code heuristic activating on short numeric inputs with no explicit `autoComplete` attribute. Confirmed via a throwaway Playwright script against a local Expo web dev server that the onboarding minutes field now renders `autocomplete="off"` (previously the browser default `"on"`) with the themed row background (`rgb(223, 232, 202)`) and matching `color`/`caret-color` (`rgb(24, 56, 46)`) while focused and typed into, and that unrelated `TextField` usages (e.g. sign-in email/password) keep the unset default `autocomplete="on"`. `text-field.test.tsx` and `kentei-onboarding.test.tsx` pass unchanged. Note: Chrome's ML-backed autofill-assistant highlighting itself isn't reproducible in Playwright's vanilla Chromium, so the exact green-background regression couldn't be screenshotted before/after in this sandbox; the fix applies the standard, well-documented mitigation (`autoComplete="off"`) for this exact class of Chrome heuristic and is confirmed not to regress any other field.
+- **Notes:** From S127. High priority: this sits in the onboarding funnel and a field that looks broken risks drop-off. If the fix requires special-casing numeric fields, prefer doing so in the shared `text-field.tsx` component (behind a prop) over a one-off override in `onboarding-duration-step.tsx`, so any other numeric `TextField` in the app gets the same fix.
+
+
 ### [T254] Fully hide the landing header bar on scroll, not just fade it
 
 - **Area:** Landing page

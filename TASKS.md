@@ -133,16 +133,6 @@ _Raw ideas land here — a name and a one-line description, nothing more. Discus
 
 _T253–T254, T256–T257 come from stories S123, S124, S127, S128 in [BACKLOG_STORIES.md](BACKLOG_STORIES.md) (the user's 2026-09-08 QA pass on the first live dailydama.com production deployment). S125 (email template branding) was scoped as T255 in `TASKS_COLLABORATIVE.md` instead, since it's Supabase-dashboard configuration rather than application code. S126 was intentionally never created — the reported broken auth redirect is already covered by `T231` in `TASKS_COLLABORATIVE.md`, which the user is actively working in a separate session; nothing here touches it. All four are `Implementer`: each is a local fix inside a single existing component, matching this project's established precedent (T237, T238) for a QA-reported symptom that needs a browser-only diagnosis first but is genuinely local in scope once found — none of them touch a persistence domain, state machine, or architectural boundary._
 
-### [T256] Fix the onboarding practice-minutes field's broken web focus styling
-
-- **Area:** Onboarding
-- **Priority:** High
-- **Status:** In progress
-- **Planning:** Implementer
-- **Description:** The practice-minutes onboarding field (`onboarding-duration-step.tsx`, rendered via the shared `TextField`/`Input` in `text-field.tsx` with `inputMode="numeric"` and `keyboardType="number-pad"`) shows a green background and no visible text cursor when focused on web. No other reported `TextField` usage in the app shows this, so it's likely specific to this field's numeric input configuration (a browser autofill/one-time-code heuristic on short numeric inputs is a plausible cause, worth checking first). Diagnose and fix so the field renders with the app's normal input styling and a visible cursor.
-- **Exit criteria:** Confirmed in-browser (web, Chrome) that focusing and typing in the onboarding practice-minutes field shows the app's normal themed input background (no unexpected color) and a visible text cursor throughout. `text-field.test.tsx` and the onboarding wizard tests (`kentei-onboarding.test.tsx`) still pass, and any other `TextField` usage in the app is visibly unaffected by the fix.
-- **Notes:** From S127. High priority: this sits in the onboarding funnel and a field that looks broken risks drop-off. If the fix requires special-casing numeric fields, prefer doing so in the shared `text-field.tsx` component (behind a prop) over a one-off override in `onboarding-duration-step.tsx`, so any other numeric `TextField` in the app gets the same fix.
-
 ### [T257] Show the entered email address on the "Check your email" screen
 
 - **Area:** Authentication
