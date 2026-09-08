@@ -137,7 +137,7 @@ _T253–T254, T256–T257 come from stories S123, S124, S127, S128 in [BACKLOG_S
 
 - **Area:** Onboarding
 - **Priority:** High
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Implementer
 - **Description:** The practice-minutes onboarding field (`onboarding-duration-step.tsx`, rendered via the shared `TextField`/`Input` in `text-field.tsx` with `inputMode="numeric"` and `keyboardType="number-pad"`) shows a green background and no visible text cursor when focused on web. No other reported `TextField` usage in the app shows this, so it's likely specific to this field's numeric input configuration (a browser autofill/one-time-code heuristic on short numeric inputs is a plausible cause, worth checking first). Diagnose and fix so the field renders with the app's normal input styling and a visible cursor.
 - **Exit criteria:** Confirmed in-browser (web, Chrome) that focusing and typing in the onboarding practice-minutes field shows the app's normal themed input background (no unexpected color) and a visible text cursor throughout. `text-field.test.tsx` and the onboarding wizard tests (`kentei-onboarding.test.tsx`) still pass, and any other `TextField` usage in the app is visibly unaffected by the fix.
