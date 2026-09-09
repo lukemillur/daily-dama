@@ -1,6 +1,9 @@
-// T217.2: confirms the standalone feedback form renders all three fields,
-// keeps submit disabled until `message` is non-empty, and shows
-// success/error state after a mocked insert resolves/rejects.
+// T217.2/T258: confirms the standalone feedback form renders Name and
+// Message only (no Email field -- email is server-owned, derived from the
+// caller's own JWT via a BEFORE INSERT trigger, never client-supplied), keeps
+// submit disabled until `message` is non-empty and within the server's
+// message-length bound, and shows success/error state after a mocked insert
+// resolves/rejects.
 
 import { describe, expect, it, jest } from '@jest/globals';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
@@ -35,15 +38,15 @@ describe('FeedbackScreen', () => {
     mockPush.mockReset();
   });
 
-  it('renders name, email, and message fields', () => {
+  it('renders name and message fields, and no email field anywhere', () => {
     let root!: ReactTestRenderer;
     act(() => {
       root = create(<FeedbackScreen />);
     });
 
     expect(findByAccessibilityLabel(root, 'Name')).toBeTruthy();
-    expect(findByAccessibilityLabel(root, 'Email')).toBeTruthy();
     expect(findByAccessibilityLabel(root, 'Message')).toBeTruthy();
+    expect(findByAccessibilityLabel(root, 'Email')).toBeFalsy();
   });
 
   it('keeps submit disabled until message is non-empty', () => {
@@ -70,7 +73,13 @@ describe('FeedbackScreen', () => {
     expect(blankMessageButton.props.disabled).toBe(true);
   });
 
-  it('shows a success state after a mocked insert resolves', async () => {
+  it('shows a success state after a mocked insert resolves, never sending a client-supplied email', async () => {
+    // This component has no auth/session awareness at all -- the server
+    // derives `email` entirely from the caller's own JWT via the BEFORE
+    // INSERT trigger, so there's nothing session-shaped to mock here. This
+    // proves the client never sends an email field at all, unconditionally,
+    // which covers "a signed-in submission never sends a client-supplied
+    // email" regardless of the submitter's auth state.
     mockSubmitFeedback.mockResolvedValue({ status: 'succeeded', value: undefined });
 
     let root!: ReactTestRenderer;
@@ -89,6 +98,7 @@ describe('FeedbackScreen', () => {
     });
 
     expect(mockSubmitFeedback).toHaveBeenCalledTimes(1);
+    expect(mockSubmitFeedback).toHaveBeenCalledWith({ name: '', message: 'Loving the app so far.' });
     expect(findByText(root, 'Thanks for the feedback.')).toBeTruthy();
   });
 
@@ -117,5 +127,39 @@ describe('FeedbackScreen', () => {
     expect(
       findByText(root, 'Something went wrong sending your feedback. Please try again.'),
     ).toBeTruthy();
+  });
+
+  it('stays enabled at exactly the message character limit, with no warning shown', () => {
+    let root!: ReactTestRenderer;
+    act(() => {
+      root = create(<FeedbackScreen />);
+    });
+
+    const messageField = findByAccessibilityLabel(root, 'Message');
+    act(() => {
+      messageField.props.onChangeText('x'.repeat(2000));
+    });
+
+    const submitButton = findByAccessibilityLabel(root, 'Send feedback');
+    expect(submitButton.props.disabled).toBe(false);
+    expect(messageField.props.error).toBeUndefined();
+  });
+
+  it('warns and disables submit once the message exceeds the character limit', () => {
+    let root!: ReactTestRenderer;
+    act(() => {
+      root = create(<FeedbackScreen />);
+    });
+
+    const messageField = findByAccessibilityLabel(root, 'Message');
+    // react-test-renderer doesn't enforce native `maxLength` truncation, so
+    // this is the only way to reach the over-limit branch in this harness.
+    act(() => {
+      messageField.props.onChangeText('x'.repeat(2001));
+    });
+
+    const submitButton = findByAccessibilityLabel(root, 'Send feedback');
+    expect(submitButton.props.disabled).toBe(true);
+    expect(messageField.props.error).toBeTruthy();
   });
 });

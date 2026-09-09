@@ -6,10 +6,15 @@
 -- unrestricted (service-role-equivalent) context can read an anon-inserted
 -- row back -- i.e. it actually persisted.
 
+-- T258: email moved to a server-owned BEFORE INSERT trigger; the
+-- "malformed email rejected" case here is now covered by
+-- t258_feedback_server_owned_email.test.sql instead (the trigger forces
+-- email to null/JWT-derived before RLS WITH CHECK ever sees client input).
+
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(11);
+select plan(10);
 
 -- =====================================================================
 -- Well-formed anon insert succeeds.
@@ -18,8 +23,8 @@ select plan(11);
 set local role anon;
 
 select lives_ok(
-  $$ insert into api.feedback (name, email, message)
-     values ('Test User', 'test@example.com', 'Loving the app!') $$,
+  $$ insert into api.feedback (name, message)
+     values ('Test User', 'Loving the app!') $$,
   'anon can insert a well-formed feedback row'
 );
 
@@ -60,11 +65,6 @@ select throws_ok(
 select throws_ok(
   $$ insert into api.feedback (name, message) values (repeat('x', 101), 'hi') $$,
   null, null, 'anon insert with name over 100 chars is rejected'
-);
-
-select throws_ok(
-  $$ insert into api.feedback (email, message) values ('not-an-email', 'hi') $$,
-  null, null, 'anon insert with malformed email is rejected'
 );
 
 reset role;

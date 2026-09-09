@@ -42,6 +42,11 @@ looking for one, stop; it was deliberately never added.
   repo, so the policy allows the wildcard subdomain rather than hardcoding a ref into a
   static, committed config file. If the team later wants the literal ref hardcoded, that
   is a small, mechanical tightening -- not a redesign.
+- `https://o4512057108922368.ingest.us.sentry.io` (also in `connect-src`) -- the exact
+  ingest origin for this Daily Dama Sentry project (T229), pinned by literal host rather
+  than a `*.sentry.io`/`*.ingest.sentry.io` wildcard. Only `initSentry()`'s automatic
+  uncaught-exception/unhandled-rejection capture uses this origin -- no tracing, replay,
+  or manual `captureException` calls exist in the app (T218/T229 scope).
 - `frame-src 'none'` and `frame-ancestors 'none'` -- there are no iframes anywhere in
   the app, and nothing should be able to frame it either.
 - `img-src 'self' data:` -- react-native-web renders a couple of small assets (spinner,
@@ -160,6 +165,12 @@ The pull-request path matrix is intentionally explicit:
 Scheduled, release, `main`-push, and manual runs ignore paths and run all three,
 so newly published advisories and external scanner drift are still detected even
 when the repository has not changed.
+
+The same selector also gates the `verify` job (`yarn test`/`lint`/`tsc`/`expo
+export`): a pull-request or push diff consisting entirely of `.md` files skips
+it, since none of those tools read Markdown content and the result cannot
+depend on it. Any non-Markdown file in the diff runs `verify` as normal;
+scheduled/release/manual runs always run it.
 
 - `dependency-audit` -- first runs `yarn security:verify-dependency-audit-gate`, the
   offline `node:test` self-test for the gate script itself, then

@@ -17,16 +17,23 @@ import { submitFeedback } from '@/features/feedback/persistence/submit-feedback'
 
 const SUBMIT_ERROR_COPY = 'Something went wrong sending your feedback. Please try again.';
 
+// T258: mirrors the server's own feedback_message_length CHECK constraint
+// (supabase/migrations/20260902000000_add_feedback_table_with_anon_insert.sql)
+// and its RLS WITH CHECK counterparts. Keep this number equal to that bound
+// -- it exists so the limit is surfaced client-side instead of round-tripping
+// to a server error.
+const FEEDBACK_MESSAGE_MAX_LENGTH = 2000;
+
 export function FeedbackScreen() {
   const router = useRouter();
   const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
   const [message, setMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [hasError, setHasError] = useState(false);
 
-  const canSubmit = message.trim().length > 0 && !isSubmitting;
+  const isOverMessageLimit = message.length > FEEDBACK_MESSAGE_MAX_LENGTH;
+  const canSubmit = message.trim().length > 0 && !isOverMessageLimit && !isSubmitting;
 
   const submit = async () => {
     if (!canSubmit) return;
@@ -34,7 +41,7 @@ export function FeedbackScreen() {
     setIsSubmitting(true);
     setHasError(false);
 
-    const result = await submitFeedback({ name, email, message });
+    const result = await submitFeedback({ name, message });
     setIsSubmitting(false);
 
     if (result.status === 'failed') {
@@ -68,7 +75,7 @@ export function FeedbackScreen() {
           <PageTitle>Something feel off?</PageTitle>
           <Introduction>
             Daily Dama is a work in progress. Bug reports, trick corrections, and feature requests all
-            help. Name and email are optional -- leave them blank to stay anonymous.
+            help. Name is optional -- leave it blank to stay anonymous.
           </Introduction>
 
           <TextField
@@ -80,19 +87,11 @@ export function FeedbackScreen() {
           />
 
           <TextField
-            accessibilityLabel="Email"
-            autoCapitalize="none"
-            autoCorrect={false}
-            keyboardType="email-address"
-            label="Email (optional)"
-            onChangeText={setEmail}
-            placeholder="Email"
-            value={email}
-          />
-
-          <TextField
             accessibilityLabel="Message"
+            error={isOverMessageLimit ? `Message is over the ${FEEDBACK_MESSAGE_MAX_LENGTH}-character limit.` : undefined}
+            hint={`${message.length} / ${FEEDBACK_MESSAGE_MAX_LENGTH} characters`}
             label="Message"
+            maxLength={FEEDBACK_MESSAGE_MAX_LENGTH}
             multiline
             numberOfLines={6}
             onChangeText={setMessage}
