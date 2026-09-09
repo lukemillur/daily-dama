@@ -16,6 +16,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Platform } from 'react-native';
 
 import { AnimatedSplashOverlay } from '@/components/animated-icon';
+import { FatalErrorFallback } from '@/components/fatal-error-fallback';
 import { NewAccountWelcomeOverlay } from '@/features/auth/components/new-account-welcome-overlay';
 import { sanitizeAnalyticsEvent } from '@/features/auth/observability/auth-observability';
 import { AuthProvider } from '@/features/auth/state/auth-provider';
@@ -24,6 +25,13 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import { initSentry } from '@/shared/observability/sentry-client';
 
 SplashScreen.preventAutoHideAsync();
+
+// Root-level Expo Router `ErrorBoundary` export: catches any fatal render error thrown
+// anywhere beneath this layout's default export and renders a branded fallback instead of
+// Expo Router's default red-box/blank-screen failure. See AGENTS.md's route-level recovery
+// surface requirement and src/components/fatal-error-fallback.tsx for why this component must
+// stay context-free.
+export { FatalErrorFallback as ErrorBoundary };
 
 // T208: a one-time signal auth-callback-screen.tsx's default branch (post-signup-email-
 // verification redirect) attaches to its redirect (`newAccount=1`) -- never set by

@@ -131,18 +131,6 @@ _Raw ideas land here — a name and a one-line description, nothing more. Discus
 
 ---
 
-### [T259] Add branded fallback screen for fatal app errors
-
-- **Area:** navigation
-- **Priority:** Medium
-- **Status:** In progress
-- **Planning:** Required
-- **Description:** Add a route-level recovery surface for unexpected render failures, per the AGENTS.md invariant that these need one and the follow-up flagged (but explicitly deferred) alongside T218's Sentry integration. Use Expo Router's `ErrorBoundary` export convention (e.g. from `src/app/app/_layout.tsx` or the root layout) to render a branded fallback in place of the default red-box/blank-screen failure, distinct from the existing expected-failure UI (auth errors, submission failures) which already have their own handling. Web is the active platform scope; do not add native-only branded crash UI.
-- **Exit criteria:** A test simulating a thrown render error beneath the boundary asserts the branded fallback UI (not a blank screen or default Expo error overlay) is rendered, with an accessible heading and a retry/reset action that the test confirms re-renders the underlying tree without a full page reload. `yarn tsc --noEmit` passes. No behavior change to existing expected-failure flows (auth, submission handlers) — confirm their tests are unaffected.
-- **Notes:** Deliberately scoped to the render-failure recovery surface only, not a redesign of expected-failure UI. Does not add manual `Sentry.captureException` calls beyond what automatic capture already provides (T218) — reporting the caught error to Sentry from within the boundary, if desired, is a candidate follow-up, not required here. Confirm whether Expo Router's `ErrorBoundary` convention in the currently installed Expo SDK version matches assumptions above before implementing (per AGENTS.md's Expo-documentation guidance).
-
----
-
 ### [T258] Remove the feedback form's manual email field; auto-associate signed-in users' email server-side
 
 - **Area:** Feedback
