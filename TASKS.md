@@ -131,18 +131,6 @@ _Raw ideas land here — a name and a one-line description, nothing more. Discus
 
 ---
 
-### [T261] Allowlist local Supabase demo anon key in gitleaks config
-
-- **Area:** security
-- **Priority:** Medium
-- **Status:** In progress
-- **Planning:** Implementer
-- **Description:** `security/.gitleaks.toml`'s `[allowlist]` allowlists the literal placeholder string `"LOCAL_ANON_KEY"` used in `supabase/README.md` docs, but not the actual fixed local Supabase CLI demo anon key value (`eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0` — the same standard, publicly documented value baked in by every local `supabase start`). A web export built with the "Local (Supabase CLI stack)" `.env.local` block active (as opposed to the "Hosted (Daily Dama Dev)" block) triggers a false-positive gitleaks JWT-rule match in `yarn security:check-bundle-secrets` / the equivalent CI job. Confirmed while working T229 on 2026-09-09: the local pair triggered the false positive at `security/scripts/gitleaks-cli.mjs`'s ingest step while the hosted pair scanned clean.
-- **Exit criteria:** The literal JWT value is added to `.gitleaks.toml`'s `[allowlist].regexes`, following the file's existing comment/format style for other synthetic entries (`LOCAL_ANON_KEY`, `SERVICE_ROLE_KEY` placeholders). `yarn security:check-bundle-secrets` run against a web export built with the local Supabase `.env.local` block active passes clean. `security/scripts/verify-secret-detection.mjs`'s self-test (which deliberately proves a JWT-shaped secret is still caught) continues to fail as expected — confirming the allowlist entry is scoped to this exact value, not broadened.
-- **Notes:** This key is meant to be public and only functions against a local, gitignored `supabase start` stack — it is a false positive, not a real secret exposure.
-
----
-
 ### [T259] Add branded fallback screen for fatal app errors
 
 - **Area:** navigation
