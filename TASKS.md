@@ -137,7 +137,7 @@ _T253–T254, T256–T257 come from stories S123, S124, S127, S128 in [BACKLOG_S
 
 - **Area:** Authentication
 - **Priority:** Medium
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Implementer
 - **Description:** `check-email-screen.tsx` already reads the submitted address via `usePendingVerificationEmail()` (used today only for the resend action) but its copy (`CONFIRMATION_COPY`, `SAME_BROWSER_GUIDANCE`) never displays it. Update the screen's copy to include the actual pending email address so the user can confirm they entered it correctly.
 - **Exit criteria:** A test in `check-email-screen.test.tsx`'s `with a pending email` describe block asserts the rendered screen includes the mocked pending email address (e.g. `person@example.com`) as visible text. The existing `pendingEmail === undefined` fallback branch is unchanged and still has no email address to show.
