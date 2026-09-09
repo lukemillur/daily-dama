@@ -5,23 +5,23 @@
   "rewrites": [
     {
       "source": "/app/stats/:trickId",
-      "destination": "/app/stats/[trickId].html"
+      "destination": "/app/stats/[trickId]"
     },
     {
       "source": "/app/tricks/:trickId/notes",
-      "destination": "/app/tricks/[trickId]/notes.html"
+      "destination": "/app/tricks/[trickId]/notes"
     },
     {
       "source": "/app/tricks/:trickId/goals",
-      "destination": "/app/tricks/[trickId]/goals.html"
+      "destination": "/app/tricks/[trickId]/goals"
     },
     {
       "source": "/app/tricks/custom/:trickId/edit",
-      "destination": "/app/tricks/custom/[trickId]/edit.html"
+      "destination": "/app/tricks/custom/[trickId]/edit"
     },
     {
       "source": "/app/tricks/custom/:trickId/delete",
-      "destination": "/app/tricks/custom/[trickId]/delete.html"
+      "destination": "/app/tricks/custom/[trickId]/delete"
     }
   ],
   "headers": [
