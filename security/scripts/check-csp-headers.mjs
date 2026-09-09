@@ -38,7 +38,7 @@ const EXPECTED_DIRECTIVES = {
   "style-src": ["'self'", "'unsafe-inline'"],
   "img-src": ["'self'", "data:"],
   "font-src": ["'self'"],
-  "connect-src": ["'self'", "https://*.supabase.co"],
+  "connect-src": ["'self'", "https://*.supabase.co", "https://o4512057108922368.ingest.us.sentry.io"],
   "frame-src": ["'none'"],
   "frame-ancestors": ["'none'"],
   "object-src": ["'none'"],
