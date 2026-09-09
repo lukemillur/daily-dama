@@ -42,6 +42,11 @@ looking for one, stop; it was deliberately never added.
   repo, so the policy allows the wildcard subdomain rather than hardcoding a ref into a
   static, committed config file. If the team later wants the literal ref hardcoded, that
   is a small, mechanical tightening -- not a redesign.
+- `https://o4512057108922368.ingest.us.sentry.io` (also in `connect-src`) -- the exact
+  ingest origin for this Daily Dama Sentry project (T229), pinned by literal host rather
+  than a `*.sentry.io`/`*.ingest.sentry.io` wildcard. Only `initSentry()`'s automatic
+  uncaught-exception/unhandled-rejection capture uses this origin -- no tracing, replay,
+  or manual `captureException` calls exist in the app (T218/T229 scope).
 - `frame-src 'none'` and `frame-ancestors 'none'` -- there are no iframes anywhere in
   the app, and nothing should be able to frame it either.
 - `img-src 'self' data:` -- react-native-web renders a couple of small assets (spinner,
