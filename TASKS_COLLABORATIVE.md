@@ -25,51 +25,11 @@ T221 already has remote claim `task/T221-diagnose-and-fix-the-feedback-form-s` (
 
 Backend selection and release selection are explicit owner gates. T230/T231 preparation may occur before individual fix tickets close: a fix can supply a verified preparation commit for the owner to deploy, then record hosted evidence afterward. Do not invent a circular dependency requiring every hosted-verification ticket to be complete before deploying the code needed to verify it.
 
-### [T255] Brand production Supabase Auth emails as Daily Dama
-
-- **Area:** Auth email templates
-- **Priority:** Medium
-- **Status:** Not started
-- **Planning:** Required
-- **Execution:** Owner-in-loop
-- **Owner gates:** Confirm the production Supabase project; approve final template copy/branding; apply the templates in the Supabase dashboard (or authorize a CLI/config-based deploy if the project supports it); confirm the redirect target each template link should use.
-- **Automation boundary:** Draft signup-confirmation, password-reset, and email-change template copy/HTML matching Daily Dama's visual identity; identify exactly what needs to change in the Supabase Auth email-template settings; verify the deployed templates render and their links resolve correctly once applied.
-- **Description:** Confirmed on production: signup, password-reset, and email-change emails from dailydama.com still use the generic default Supabase Auth template, not Daily Dama branding/copy. Supabase Auth email templates are dashboard (or project-config) configuration, not application code — no template content exists in this repository today (`supabase/README.md` only documents local Auth CLI setup).
-- **Exit criteria:** Signup confirmation, password reset, and email-change emails sent from the production Supabase project render with Daily Dama branding/copy instead of the default template, and every link in each template resolves to its intended screen rather than a 404 or error page. Evidence names the deployed project/environment and includes a real received email for each of the three template types.
-- **Notes:** From S125 in `BACKLOG_STORIES.md` (2026-09-08 production QA pass). Sequence after `T231` ("Align and deploy the selected web release with hosted Auth settings," currently in progress in a separate session) — template links should point at a working redirect target before this ships, otherwise branded emails would still 404. No new backend, migration, or persistence domain; this is dashboard configuration plus drafted copy.
-
-### [T226] Close the signed-in feedback permission and hosted acknowledgment gap
-
-- **Area:** Feedback authorization
-- **Priority:** High
-- **Status:** Not started
-- **Planning:** Required
-- **Execution:** External gate
-- **Owner gates:** Identify the affected hosted build/backend; authorize any remaining migration deployment; provide privileged readback access or redacted evidence.
-- **Automation boundary:** Inspect T221's result, reproduce locally, implement only residual permission defects with focused database tests, and prepare deployment/verification steps.
-- **Description:** Reconcile T221's outcome with the audit's signed-in `403 / 42501` reproduction. If still needed, add the authenticated role's narrow insert grant and validated policy while preserving guest inserts and denying ordinary-client reads/updates/deletes; verify both submission paths on the selected hosted environment.
-- **Exit criteria:** Guest and signed-in message-only feedback both persist and show acknowledgment on the identified hosted build; privileged readback confirms the test submissions, and dedicated permission/validation checks confirm both ordinary roles cannot read, edit or delete submissions and invalid payloads are rejected. Evidence names the deployed migration/build and distinguishes local negative tests from hosted checks.
-- **Notes:** From A2; audit section 1. Depends on T225 and T221. Preserve T221's existing claim; no parallel reimplementation. If its merged work already satisfies this criterion, verify and record reuse without another code fix. See `src/features/feedback/persistence/submit-feedback.ts`, `supabase/migrations/20260902000000_add_feedback_table_with_anon_insert.sql` and `supabase/README.md`.
-
-### [T227] Make all dynamic web routes refresh-safe on the deployed app
-
-- **Area:** Web hosting routes
-- **Priority:** High
-- **Status:** In progress
-- **Checkpoint:** Awaiting owner action
-- **Planning:** Required
-- **Execution:** External gate
-- **Owner gates:** Approve deployment of the prepared routing change to an identified target; enable deployed-route verification.
-- **Automation boundary:** Inventory exported routes, update `vercel.json` using actual export paths, and add focused hosting regression coverage.
-- **Description:** Extend the existing Stats rewrite to cover notes, goals, custom-trick edit and custom-trick delete URL shapes. Verify deployed direct loads and refreshes, including intentional app handling for missing record IDs.
-- **Exit criteria:** Each of the five current dynamic route shapes loads and refreshes on the selected deployment without a hosting 404; seeded valid IDs reach the intended screen and nonexistent IDs reach the app's intentional missing-record behavior. Record the deployed commit and results alongside local export/rewrite evidence.
-- **Notes:** From A3; audit section 1. Depends on T225. Inspect `src/app/app/` and actual export filenames rather than guessing rewrite destinations. Use the dedicated hosting harness for rewrite checks and Expo for normal app/browser checks. Coordinate release preparation with T231; deployment authorization is not implied by this entry.
-
 ### [T229] Verify safe Sentry delivery through the deployed CSP
 
 - **Area:** Web observability boundary
 - **Priority:** Medium
-- **Status:** Not started
+- **Status:** In progress (Checkpoint: Awaiting owner action — see `outputs/guided-tickets/T229.md`)
 - **Planning:** Required
 - **Execution:** External gate
 - **Owner gates:** Supply the intended Sentry project/DSN through appropriate configuration and dashboard access; authorize deployment and a safe test event.

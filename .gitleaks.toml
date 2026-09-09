@@ -46,6 +46,15 @@ regexes = [
   # (history-only) curl examples -- same as LOCAL_ANON_KEY above, a literal
   # placeholder, never a real key, matches gitleaks' default 'curl-auth-header' rule.
   '''SERVICE_ROLE_KEY''',
+  # T261: the fixed, standard local Supabase CLI demo anon key -- the same public,
+  # non-secret value every `supabase start` bakes into its local stack (documented
+  # upstream by Supabase, not project-specific), never a real project key. A web
+  # export built with the "Local (Supabase CLI stack)" .env.local block active
+  # inlines this exact value as EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY, matching
+  # gitleaks' default 'jwt' rule. Scoped to this exact value only -- see
+  # security/scripts/verify-secret-detection.mjs's self-test, which proves a
+  # different JWT-shaped secret is still caught.
+  '''eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9\.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9\.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0''',
 ]
 # Belt-and-suspenders: also exclude specific historical commits by SHA from this same
 # table. Every commit listed here was manually audited while iterating on this task's

@@ -6,10 +6,15 @@
 -- capability as `anon`, gated by the same WITH CHECK bounds, with no
 -- broader access.
 
+-- T258: email moved to a server-owned BEFORE INSERT trigger; the
+-- "malformed email rejected" case here is now covered by
+-- t258_feedback_server_owned_email.test.sql instead (the trigger forces
+-- email to null/JWT-derived before RLS WITH CHECK ever sees client input).
+
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(8);
+select plan(7);
 
 -- =====================================================================
 -- Well-formed authenticated insert succeeds.
@@ -18,8 +23,8 @@ select plan(8);
 set local role authenticated;
 
 select lives_ok(
-  $$ insert into api.feedback (name, email, message)
-     values ('Signed In User', 'signedin@example.com', 'Also loving the app!') $$,
+  $$ insert into api.feedback (name, message)
+     values ('Signed In User', 'Also loving the app!') $$,
   'authenticated can insert a well-formed feedback row'
 );
 
@@ -45,11 +50,6 @@ select throws_ok(
 select throws_ok(
   $$ insert into api.feedback (message) values (repeat('x', 2001)) $$,
   null, null, 'authenticated insert with message over 2000 chars is rejected'
-);
-
-select throws_ok(
-  $$ insert into api.feedback (email, message) values ('not-an-email', 'hi') $$,
-  null, null, 'authenticated insert with malformed email is rejected'
 );
 
 reset role;
