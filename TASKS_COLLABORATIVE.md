@@ -38,20 +38,6 @@ Backend selection and release selection are explicit owner gates. T230/T231 prep
 - **Exit criteria:** Guest and signed-in message-only feedback both persist and show acknowledgment on the identified hosted build; privileged readback confirms the test submissions, and dedicated permission/validation checks confirm both ordinary roles cannot read, edit or delete submissions and invalid payloads are rejected. Evidence names the deployed migration/build and distinguishes local negative tests from hosted checks.
 - **Notes:** From A2; audit section 1. Depends on T225 and T221. Preserve T221's existing claim; no parallel reimplementation. If its merged work already satisfies this criterion, verify and record reuse without another code fix. See `src/features/feedback/persistence/submit-feedback.ts`, `supabase/migrations/20260902000000_add_feedback_table_with_anon_insert.sql` and `supabase/README.md`.
 
-### [T227] Make all dynamic web routes refresh-safe on the deployed app
-
-- **Area:** Web hosting routes
-- **Priority:** High
-- **Status:** In progress
-- **Checkpoint:** Awaiting owner action
-- **Planning:** Required
-- **Execution:** External gate
-- **Owner gates:** Approve deployment of the prepared routing change to an identified target; enable deployed-route verification.
-- **Automation boundary:** Inventory exported routes, update `vercel.json` using actual export paths, and add focused hosting regression coverage.
-- **Description:** Extend the existing Stats rewrite to cover notes, goals, custom-trick edit and custom-trick delete URL shapes. Verify deployed direct loads and refreshes, including intentional app handling for missing record IDs.
-- **Exit criteria:** Each of the five current dynamic route shapes loads and refreshes on the selected deployment without a hosting 404; seeded valid IDs reach the intended screen and nonexistent IDs reach the app's intentional missing-record behavior. Record the deployed commit and results alongside local export/rewrite evidence.
-- **Notes:** From A3; audit section 1. Depends on T225. Inspect `src/app/app/` and actual export filenames rather than guessing rewrite destinations. Use the dedicated hosting harness for rewrite checks and Expo for normal app/browser checks. Coordinate release preparation with T231; deployment authorization is not implied by this entry.
-
 ### [T229] Verify safe Sentry delivery through the deployed CSP
 
 - **Area:** Web observability boundary
