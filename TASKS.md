@@ -131,6 +131,42 @@ _Raw ideas land here — a name and a one-line description, nothing more. Discus
 
 ---
 
+### [T260] Fix dependency-audit CI gate blocked by expo's xmldom/js-yaml advisories
+
+- **Area:** dependencies
+- **Priority:** High
+- **Status:** Not started
+- **Planning:** Required
+- **Description:** `security/scripts/check-dependency-audit.mjs` now fails on a clean `development` checkout with zero code changes, blocking every open and future PR (currently blocking PR #352 / T229). A fresh batch of HIGH-severity `@xmldom/xmldom` advisories (e.g. GHSA-c7q8-3ch8-vqpv, GHSA-27p8-2357-5qqv, GHSA-8344-3jmq-59r6, GHSA-965w-775f-mr7g, GHSA-93r5-fhx6-vmg9, and roughly a dozen more — run the script for the current full list) plus one `js-yaml` advisory (GHSA-2883-xcg3-v3hh) are unaccepted in `security/accepted-dependency-advisories.json`. `yarn why @xmldom/xmldom` traces both hits to Expo SDK 57's own transitive tree, not app code: `expo > @expo/cli > @expo/plist` (`@xmldom/xmldom@0.8.13`) and `expo > @expo/config-plugins > xcode > simple-plist > plist` (`@xmldom/xmldom@0.9.10`); `js-yaml` traces to `expo > @expo/cli > @expo/xcpretty` and separately to eslint's `@eslint/eslintrc`.
+- **Exit criteria:** `node security/scripts/check-dependency-audit.mjs` exits 0 on `development` HEAD. Resolution is one of, in preference order: (1) an `@expo/cli`/`@expo/config-plugins` patch-version bump within Expo SDK 57 (not a major SDK upgrade) that resolves the advisories upstream; (2) a `yarn resolutions` override to a patched `@xmldom/xmldom`, verified not to break Expo's plist/xcode native-config-plugin tooling and verified that no web build-path code parses untrusted XML through this dependency; (3) only if neither fix exists, dated and reasoned `accepted-dependency-advisories.json` entries following the file's existing format (e.g. the nanoid/image-size entries), gated on explicit owner sign-off given the advisory volume — not a rubber-stamp.
+- **Notes:** Full SDK major upgrade is out of scope for this fix. This project's active platform scope is web-only (AGENTS.md), which is relevant to judging real exposure from the native-config-plugin-related xcode/plist path but does not by itself justify blanket acceptance. Investigation starting point: `expo@57.0.10` currently pins `@expo/cli: ^57.0.12` per npm — check whether a newer 57.x `@expo/cli` patch already bumps its `xmldom` dependency.
+
+---
+
+### [T261] Allowlist local Supabase demo anon key in gitleaks config
+
+- **Area:** security
+- **Priority:** Medium
+- **Status:** Not started
+- **Planning:** Implementer
+- **Description:** `security/.gitleaks.toml`'s `[allowlist]` allowlists the literal placeholder string `"LOCAL_ANON_KEY"` used in `supabase/README.md` docs, but not the actual fixed local Supabase CLI demo anon key value (`eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0` — the same standard, publicly documented value baked in by every local `supabase start`). A web export built with the "Local (Supabase CLI stack)" `.env.local` block active (as opposed to the "Hosted (Daily Dama Dev)" block) triggers a false-positive gitleaks JWT-rule match in `yarn security:check-bundle-secrets` / the equivalent CI job. Confirmed while working T229 on 2026-09-09: the local pair triggered the false positive at `security/scripts/gitleaks-cli.mjs`'s ingest step while the hosted pair scanned clean.
+- **Exit criteria:** The literal JWT value is added to `.gitleaks.toml`'s `[allowlist].regexes`, following the file's existing comment/format style for other synthetic entries (`LOCAL_ANON_KEY`, `SERVICE_ROLE_KEY` placeholders). `yarn security:check-bundle-secrets` run against a web export built with the local Supabase `.env.local` block active passes clean. `security/scripts/verify-secret-detection.mjs`'s self-test (which deliberately proves a JWT-shaped secret is still caught) continues to fail as expected — confirming the allowlist entry is scoped to this exact value, not broadened.
+- **Notes:** This key is meant to be public and only functions against a local, gitignored `supabase start` stack — it is a false positive, not a real secret exposure.
+
+---
+
+### [T259] Add branded fallback screen for fatal app errors
+
+- **Area:** navigation
+- **Priority:** Medium
+- **Status:** Not started
+- **Planning:** Required
+- **Description:** Add a route-level recovery surface for unexpected render failures, per the AGENTS.md invariant that these need one and the follow-up flagged (but explicitly deferred) alongside T218's Sentry integration. Use Expo Router's `ErrorBoundary` export convention (e.g. from `src/app/app/_layout.tsx` or the root layout) to render a branded fallback in place of the default red-box/blank-screen failure, distinct from the existing expected-failure UI (auth errors, submission failures) which already have their own handling. Web is the active platform scope; do not add native-only branded crash UI.
+- **Exit criteria:** A test simulating a thrown render error beneath the boundary asserts the branded fallback UI (not a blank screen or default Expo error overlay) is rendered, with an accessible heading and a retry/reset action that the test confirms re-renders the underlying tree without a full page reload. `yarn tsc --noEmit` passes. No behavior change to existing expected-failure flows (auth, submission handlers) — confirm their tests are unaffected.
+- **Notes:** Deliberately scoped to the render-failure recovery surface only, not a redesign of expected-failure UI. Does not add manual `Sentry.captureException` calls beyond what automatic capture already provides (T218) — reporting the caught error to Sentry from within the boundary, if desired, is a candidate follow-up, not required here. Confirm whether Expo Router's `ErrorBoundary` convention in the currently installed Expo SDK version matches assumptions above before implementing (per AGENTS.md's Expo-documentation guidance).
+
+---
+
 ### [T258] Remove the feedback form's manual email field; auto-associate signed-in users' email server-side
 
 - **Area:** Feedback
