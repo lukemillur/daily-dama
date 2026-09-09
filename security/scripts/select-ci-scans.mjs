@@ -69,19 +69,32 @@ export function selectSecurityScans(paths) {
   return { dependency, bundle, selfTest };
 }
 
-function formatGitHubOutputs(selection) {
+// The app verify job (test/lint/tsc/export) cannot be affected by a diff
+// consisting entirely of Markdown -- none of those tools read .md content.
+// Mirrors the doc-only skip AGENTS.md already documents for local
+// verification tiers, applied to CI's equivalent job.
+export function isDocsOnlyChange(paths) {
+  const normalized = paths.map((path) => path.trim()).filter(Boolean);
+  return normalized.length > 0 && normalized.every((path) => path.endsWith('.md'));
+}
+
+function formatGitHubOutputs(selection, docsOnly) {
   return [
     `dependency=${selection.dependency}`,
     `bundle=${selection.bundle}`,
     `self_test=${selection.selfTest}`,
+    `docs_only=${docsOnly}`,
   ].join('\n');
 }
 
 function main() {
-  const selection = process.argv.includes('--all')
-    ? ALL_SCANS
-    : selectSecurityScans(readFileSync(0, 'utf8').split('\n'));
-  process.stdout.write(`${formatGitHubOutputs(selection)}\n`);
+  const isAll = process.argv.includes('--all');
+  const paths = isAll ? [] : readFileSync(0, 'utf8').split('\n');
+  const selection = isAll ? ALL_SCANS : selectSecurityScans(paths);
+  // --all covers push/schedule/release/workflow_dispatch runs, which have no
+  // single diff to inspect -- always run the app suite there.
+  const docsOnly = isAll ? false : isDocsOnlyChange(paths);
+  process.stdout.write(`${formatGitHubOutputs(selection, docsOnly)}\n`);
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
