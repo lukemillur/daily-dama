@@ -29,7 +29,8 @@ Backend selection and release selection are explicit owner gates. T230/T231 prep
 
 - **Area:** Feedback authorization
 - **Priority:** High
-- **Status:** Not started
+- **Status:** In progress
+- **Checkpoint:** Awaiting owner action
 - **Planning:** Required
 - **Execution:** External gate
 - **Owner gates:** Identify the affected hosted build/backend; authorize any remaining migration deployment; provide privileged readback access or redacted evidence.
