@@ -29,7 +29,7 @@ Backend selection and release selection are explicit owner gates. T230/T231 prep
 
 - **Area:** Web observability boundary
 - **Priority:** Medium
-- **Status:** Not started
+- **Status:** In progress (Checkpoint: Awaiting owner action — see `outputs/guided-tickets/T229.md`)
 - **Planning:** Required
 - **Execution:** External gate
 - **Owner gates:** Supply the intended Sentry project/DSN through appropriate configuration and dashboard access; authorize deployment and a safe test event.
