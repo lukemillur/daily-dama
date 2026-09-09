@@ -161,6 +161,12 @@ Scheduled, release, `main`-push, and manual runs ignore paths and run all three,
 so newly published advisories and external scanner drift are still detected even
 when the repository has not changed.
 
+The same selector also gates the `verify` job (`yarn test`/`lint`/`tsc`/`expo
+export`): a pull-request or push diff consisting entirely of `.md` files skips
+it, since none of those tools read Markdown content and the result cannot
+depend on it. Any non-Markdown file in the diff runs `verify` as normal;
+scheduled/release/manual runs always run it.
+
 - `dependency-audit` -- first runs `yarn security:verify-dependency-audit-gate`, the
   offline `node:test` self-test for the gate script itself, then
   `yarn security:check-dependency-audit` (`security/scripts/check-dependency-audit.mjs`)
