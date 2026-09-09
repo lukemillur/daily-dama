@@ -25,19 +25,6 @@ T221 already has remote claim `task/T221-diagnose-and-fix-the-feedback-form-s` (
 
 Backend selection and release selection are explicit owner gates. T230/T231 preparation may occur before individual fix tickets close: a fix can supply a verified preparation commit for the owner to deploy, then record hosted evidence afterward. Do not invent a circular dependency requiring every hosted-verification ticket to be complete before deploying the code needed to verify it.
 
-### [T255] Brand production Supabase Auth emails as Daily Dama
-
-- **Area:** Auth email templates
-- **Priority:** Medium
-- **Status:** Not started
-- **Planning:** Required
-- **Execution:** Owner-in-loop
-- **Owner gates:** Confirm the production Supabase project; approve final template copy/branding; apply the templates in the Supabase dashboard (or authorize a CLI/config-based deploy if the project supports it); confirm the redirect target each template link should use.
-- **Automation boundary:** Draft signup-confirmation, password-reset, and email-change template copy/HTML matching Daily Dama's visual identity; identify exactly what needs to change in the Supabase Auth email-template settings; verify the deployed templates render and their links resolve correctly once applied.
-- **Description:** Confirmed on production: signup, password-reset, and email-change emails from dailydama.com still use the generic default Supabase Auth template, not Daily Dama branding/copy. Supabase Auth email templates are dashboard (or project-config) configuration, not application code — no template content exists in this repository today (`supabase/README.md` only documents local Auth CLI setup).
-- **Exit criteria:** Signup confirmation, password reset, and email-change emails sent from the production Supabase project render with Daily Dama branding/copy instead of the default template, and every link in each template resolves to its intended screen rather than a 404 or error page. Evidence names the deployed project/environment and includes a real received email for each of the three template types.
-- **Notes:** From S125 in `BACKLOG_STORIES.md` (2026-09-08 production QA pass). Sequence after `T231` ("Align and deploy the selected web release with hosted Auth settings," currently in progress in a separate session) — template links should point at a working redirect target before this ships, otherwise branded emails would still 404. No new backend, migration, or persistence domain; this is dashboard configuration plus drafted copy.
-
 ### [T226] Close the signed-in feedback permission and hosted acknowledgment gap
 
 - **Area:** Feedback authorization
