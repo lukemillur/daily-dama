@@ -25,20 +25,6 @@ T221 already has remote claim `task/T221-diagnose-and-fix-the-feedback-form-s` (
 
 Backend selection and release selection are explicit owner gates. T230/T231 preparation may occur before individual fix tickets close: a fix can supply a verified preparation commit for the owner to deploy, then record hosted evidence afterward. Do not invent a circular dependency requiring every hosted-verification ticket to be complete before deploying the code needed to verify it.
 
-### [T226] Close the signed-in feedback permission and hosted acknowledgment gap
-
-- **Area:** Feedback authorization
-- **Priority:** High
-- **Status:** In progress
-- **Checkpoint:** Awaiting owner action
-- **Planning:** Required
-- **Execution:** External gate
-- **Owner gates:** Identify the affected hosted build/backend; authorize any remaining migration deployment; provide privileged readback access or redacted evidence.
-- **Automation boundary:** Inspect T221's result, reproduce locally, implement only residual permission defects with focused database tests, and prepare deployment/verification steps.
-- **Description:** Reconcile T221's outcome with the audit's signed-in `403 / 42501` reproduction. If still needed, add the authenticated role's narrow insert grant and validated policy while preserving guest inserts and denying ordinary-client reads/updates/deletes; verify both submission paths on the selected hosted environment.
-- **Exit criteria:** Guest and signed-in message-only feedback both persist and show acknowledgment on the identified hosted build; privileged readback confirms the test submissions, and dedicated permission/validation checks confirm both ordinary roles cannot read, edit or delete submissions and invalid payloads are rejected. Evidence names the deployed migration/build and distinguishes local negative tests from hosted checks.
-- **Notes:** From A2; audit section 1. Depends on T225 and T221. Preserve T221's existing claim; no parallel reimplementation. If its merged work already satisfies this criterion, verify and record reuse without another code fix. See `src/features/feedback/persistence/submit-feedback.ts`, `supabase/migrations/20260902000000_add_feedback_table_with_anon_insert.sql` and `supabase/README.md`.
-
 ### [T229] Verify safe Sentry delivery through the deployed CSP
 
 - **Area:** Web observability boundary
