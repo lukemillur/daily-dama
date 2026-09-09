@@ -46,6 +46,13 @@
     "jest-expo": "~57.0.3",
     "typescript": "~6.0.3"
   },
+  "resolutions": {
+    "expo/@expo/cli/@expo/plist/@xmldom/xmldom": "^0.8.15",
+    "expo/@expo/config-plugins/xcode/simple-plist/plist/@xmldom/xmldom": "^0.9.12",
+    "eslint/@eslint/eslintrc/js-yaml": "^4.3.2",
+    "expo/@expo/cli/@expo/xcpretty/js-yaml": "^4.3.2",
+    "**/@istanbuljs/load-nyc-config/js-yaml": "^3.15.2"
+  },
   "scripts": {
     "start": "expo start",
     "android": "expo start --android",
