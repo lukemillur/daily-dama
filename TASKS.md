@@ -131,18 +131,6 @@ _Raw ideas land here — a name and a one-line description, nothing more. Discus
 
 ---
 
-### [T260] Fix dependency-audit CI gate blocked by expo's xmldom/js-yaml advisories
-
-- **Area:** dependencies
-- **Priority:** High
-- **Status:** In progress
-- **Planning:** Required
-- **Description:** `security/scripts/check-dependency-audit.mjs` now fails on a clean `development` checkout with zero code changes, blocking every open and future PR (currently blocking PR #352 / T229). A fresh batch of HIGH-severity `@xmldom/xmldom` advisories (e.g. GHSA-c7q8-3ch8-vqpv, GHSA-27p8-2357-5qqv, GHSA-8344-3jmq-59r6, GHSA-965w-775f-mr7g, GHSA-93r5-fhx6-vmg9, and roughly a dozen more — run the script for the current full list) plus one `js-yaml` advisory (GHSA-2883-xcg3-v3hh) are unaccepted in `security/accepted-dependency-advisories.json`. `yarn why @xmldom/xmldom` traces both hits to Expo SDK 57's own transitive tree, not app code: `expo > @expo/cli > @expo/plist` (`@xmldom/xmldom@0.8.13`) and `expo > @expo/config-plugins > xcode > simple-plist > plist` (`@xmldom/xmldom@0.9.10`); `js-yaml` traces to `expo > @expo/cli > @expo/xcpretty` and separately to eslint's `@eslint/eslintrc`.
-- **Exit criteria:** `node security/scripts/check-dependency-audit.mjs` exits 0 on `development` HEAD. Resolution is one of, in preference order: (1) an `@expo/cli`/`@expo/config-plugins` patch-version bump within Expo SDK 57 (not a major SDK upgrade) that resolves the advisories upstream; (2) a `yarn resolutions` override to a patched `@xmldom/xmldom`, verified not to break Expo's plist/xcode native-config-plugin tooling and verified that no web build-path code parses untrusted XML through this dependency; (3) only if neither fix exists, dated and reasoned `accepted-dependency-advisories.json` entries following the file's existing format (e.g. the nanoid/image-size entries), gated on explicit owner sign-off given the advisory volume — not a rubber-stamp.
-- **Notes:** Full SDK major upgrade is out of scope for this fix. This project's active platform scope is web-only (AGENTS.md), which is relevant to judging real exposure from the native-config-plugin-related xcode/plist path but does not by itself justify blanket acceptance. Investigation starting point: `expo@57.0.10` currently pins `@expo/cli: ^57.0.12` per npm — check whether a newer 57.x `@expo/cli` patch already bumps its `xmldom` dependency.
-
----
-
 ### [T261] Allowlist local Supabase demo anon key in gitleaks config
 
 - **Area:** security
