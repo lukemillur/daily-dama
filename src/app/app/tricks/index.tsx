@@ -477,10 +477,12 @@ function FocusedTrickToggle({
 
 export function DeleteConfirmation({
   trick,
+  referencingSequenceCount = 0,
   onCancel,
   onDeleted,
 }: {
   readonly trick: CustomTrick;
+  readonly referencingSequenceCount?: number;
   readonly onCancel: () => void;
   readonly onDeleted: () => void;
 }) {
@@ -501,6 +503,13 @@ export function DeleteConfirmation({
       <CenteredCopy>
         It will leave your trick library and current practice list. Completed Sesh records and Stats history will stay intact.
       </CenteredCopy>
+      {referencingSequenceCount > 0 ? (
+        <CenteredCopy>
+          {referencingSequenceCount === 1
+            ? 'It is also used as a step in 1 sequence. That sequence will keep its saved step name.'
+            : `It is also used as a step in ${referencingSequenceCount} sequences. Those sequences will keep their saved step names.`}
+        </CenteredCopy>
+      ) : null}
       <DeleteActions>
         <Button fill onPress={confirmDelete}>Delete custom trick</Button>
         <Button fill variant="secondary" onPress={onCancel}>Keep this trick</Button>

@@ -5,6 +5,7 @@ import {
   createCustomTrickId,
   customTrickReducer,
   INITIAL_CUSTOM_TRICKS,
+  selectReferencingSequenceCount,
   selectSequenceStepCandidates,
   validateCustomTrickDraft,
 } from '@/features/custom-tricks/model/custom-trick';
@@ -108,6 +109,49 @@ describe('custom tricks', () => {
     );
 
     expect(candidates.map((trick) => trick.id)).toEqual(['big-cup', 'custom-solo']);
+  });
+
+  it('counts sequences referencing a trick id as a source step', () => {
+    const standalone = { id: 'custom-solo', kind: 'standalone' as const, name: 'Moon catch', updatedAt: 1 };
+    const sequenceReferencingOnce = {
+      id: 'custom-sequence-1',
+      kind: 'sequence' as const,
+      name: 'Sunrise line',
+      steps: [
+        { kind: 'existingTrick' as const, sourceTrickId: 'custom-solo', name: 'Moon catch' },
+        { kind: 'customText' as const, name: 'Nightmare turn' },
+      ],
+      updatedAt: 1,
+    };
+    const sequenceReferencingTwice = {
+      id: 'custom-sequence-2',
+      kind: 'sequence' as const,
+      name: 'Evening line',
+      steps: [
+        { kind: 'existingTrick' as const, sourceTrickId: 'custom-solo', name: 'Moon catch' },
+        { kind: 'customText' as const, name: 'Airplane variation' },
+      ],
+      updatedAt: 1,
+    };
+    const sequenceNotReferencing = {
+      id: 'custom-sequence-3',
+      kind: 'sequence' as const,
+      name: 'Other line',
+      steps: [
+        { kind: 'customText' as const, name: 'First' },
+        { kind: 'customText' as const, name: 'Second' },
+      ],
+      updatedAt: 1,
+    };
+
+    expect(selectReferencingSequenceCount([standalone], 'custom-solo')).toBe(0);
+    expect(selectReferencingSequenceCount([standalone, sequenceReferencingOnce], 'custom-solo')).toBe(1);
+    expect(
+      selectReferencingSequenceCount(
+        [standalone, sequenceReferencingOnce, sequenceReferencingTwice, sequenceNotReferencing],
+        'custom-solo',
+      ),
+    ).toBe(2);
   });
 
   it('uses a stable generated identifier that does not contain the editable name', () => {
