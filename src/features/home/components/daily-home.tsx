@@ -1,5 +1,5 @@
 import { Link } from 'expo-router';
-import { Pressable, ScrollView } from 'react-native';
+import { Platform, Pressable, ScrollView } from 'react-native';
 import { styled } from 'styled-components/native';
 
 import { Button } from '@/components/ui/button';
@@ -240,7 +240,15 @@ function getTrickContext(trick: HomePracticeTrick) {
 }
 
 const HomeScroll = styled(ScrollView)`flex: 1; width: 100%;`;
-const HomeContent = styled.View`width: 100%; max-width: 820px; align-self: center; padding: 28px 20px 0;`;
+// Web-only top clearance mirrors the Tricks tab: Screen's `includeWebHeaderInset`
+// is off here so scrolled content shows through behind the floating web nav
+// instead of being blocked by a static reserved bar (see screen.tsx).
+const HomeContent = styled.View`
+  width: 100%;
+  max-width: 820px;
+  align-self: center;
+  padding: ${Platform.OS === 'web' ? 28 + 88 : 28}px 20px 0;
+`;
 const HomeHeader = styled.View`flex-direction: row; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 24px;`;
 const BrandBlock = styled.View`gap: 4px;`;
 const Brand = styled.Text`color: ${AppColors.ink}; font-size: 18px; font-weight: 900; letter-spacing: -0.4px;`;

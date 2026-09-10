@@ -97,6 +97,7 @@ export default function HomeScreen() {
           : (profile.themeBackgroundColor ?? AppColors.yellow)
       }
       edges={['top', 'left', 'right']}
+      includeWebHeaderInset={false}
       webBottomInset={24}>
       {blockingOnboardingRender ? null : profile.hasCompletedOnboarding && profile.kenteiRank ? (
         <DailyHome summary={summary} />

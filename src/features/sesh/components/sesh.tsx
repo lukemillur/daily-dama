@@ -2,7 +2,7 @@ import { useAudioPlayer } from 'expo-audio';
 import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
 import { Link, useRouter } from 'expo-router';
 import { useEffect, useLayoutEffect, useMemo, useReducer, useRef, useState, type ReactNode } from 'react';
-import { Animated, Pressable, ScrollView, TextInput } from 'react-native';
+import { Animated, Platform, Pressable, ScrollView, TextInput } from 'react-native';
 import { styled } from 'styled-components/native';
 
 import { Button } from '@/components/ui/button';
@@ -61,6 +61,14 @@ import { selectNotesForTrick, type Note } from '@/features/notes/model/note';
 import { useNoteActions, useNotes } from '@/features/notes/state/note-provider';
 
 const SESH_KEEP_AWAKE_TAG = 'sesh-active';
+
+/**
+ * Sesh renders its own web-only top clearance (mirroring the Tricks tab)
+ * instead of Screen's `includeWebHeaderInset`, so scrolled content shows
+ * through behind the floating web nav rather than being blocked by a static
+ * reserved bar. See `src/components/ui/screen.tsx` for the inset it replaces.
+ */
+const SCROLL_CONTENT_PADDING = Platform.OS === 'web' ? { padding: 24, paddingTop: 24 + 88 } : { padding: 24 };
 
 interface SeshProps {
   readonly selectedTrickIds: readonly string[];
@@ -378,7 +386,7 @@ function TrickPicker({
   const hasAnyPersonalBest = personalBestsByTrickId.size > 0;
 
   return (
-    <ScrollArea contentContainerStyle={{ padding: 24 }}>
+    <ScrollArea contentContainerStyle={SCROLL_CONTENT_PADDING}>
       <PickerContent>
         {isDirectPractice ? (
           <>
@@ -690,7 +698,7 @@ export function ActiveSesh({
   }, [elapsedMs, isPaused, onTimerElapsed, plan]);
 
   return (
-    <ScrollArea contentContainerStyle={{ padding: 24 }}>
+    <ScrollArea contentContainerStyle={SCROLL_CONTENT_PADDING}>
       <ActiveContent>
         {countGoalCelebrations.map((baseline) => (
           <GoalCelebrationBanner key={baseline.goal.id} goal={baseline.goal} tense="inSesh" />
@@ -1023,7 +1031,7 @@ export function CompletedSesh({
 
   return (
     <>
-      <ScrollArea contentContainerStyle={{ padding: 24 }}>
+      <ScrollArea contentContainerStyle={SCROLL_CONTENT_PADDING}>
         <ActiveContent>
           {isFirstLace ? <FirstLaceBanner trickName={summary.trick.name} tense="wrapUp" /> : null}
           {justAchievedGoals.map((goal) => (
