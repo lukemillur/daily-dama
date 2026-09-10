@@ -1,6 +1,6 @@
 import { Link } from 'expo-router';
-import { type ReactElement, useMemo, useState } from 'react';
-import { Pressable, SectionList, type SectionListData } from 'react-native';
+import { type ReactElement, useCallback, useMemo, useState } from 'react';
+import { type LayoutChangeEvent, Platform, Pressable, SectionList, type SectionListData } from 'react-native';
 import { css, styled } from 'styled-components/native';
 
 import { TextField } from '@/components/ui/text-field';
@@ -68,6 +68,16 @@ const DEFAULT_HEADER = {
 
 const NO_SELECTED_TRICKS: readonly string[] = [];
 
+// react-native-web implements `stickySectionHeadersEnabled` with CSS `position: sticky` applied to
+// each section header individually, not to a wrapper spanning the whole section. A stuck header
+// never truly hands off to the next one — it stays glued to the top and is simply painted over once
+// a later header also becomes stuck — so a section's own trailing row can still be laid out in the
+// same on-screen band its still-stuck header occupies. Right at a section boundary that produces a
+// visibly squeezed frame: the outgoing header covering the last row's text while the incoming
+// header is already visible just below. Reserving a boundary gap at least as tall as a header
+// guarantees the outgoing row has fully scrolled clear before the incoming header comes into view.
+const DEFAULT_SECTION_BOUNDARY_HEIGHT = 56;
+
 export function TrickDirectory({
   tricks,
   selection,
@@ -103,6 +113,24 @@ export function TrickDirectory({
     [tricks, search?.query, showFocusedSection, sectioningTrickIds],
   );
   const selectedTrickIdSet = useMemo(() => new Set(selectedTrickIds), [selectedTrickIds]);
+  const [sectionBoundaryHeight, setSectionBoundaryHeight] = useState(DEFAULT_SECTION_BOUNDARY_HEIGHT);
+  const handleSectionHeaderLayout = useCallback((event: LayoutChangeEvent) => {
+    const measuredHeight = event.nativeEvent.layout.height;
+    setSectionBoundaryHeight((current) => (Math.abs(current - measuredHeight) > 0.5 ? measuredHeight : current));
+  }, []);
+  const renderSectionSeparator = useCallback(
+    () => <SectionSeparator style={{ height: sectionBoundaryHeight }} />,
+    [sectionBoundaryHeight],
+  );
+  // Web-only: `scroll-snap-type` + `scroll-padding-top` (offset by the sticky header's height)
+  // is the standard CSS pairing for combining scroll snapping with a sticky header — it keeps a
+  // released scroll from ever coming to rest with a row's text only partially visible beneath the
+  // still-active header. `scroll-snap-align: start` on each row (below) is the matching snap
+  // target. React Native's `ViewStyle` type doesn't know these web CSS properties.
+  const scrollSnapListStyle =
+    Platform.OS === 'web'
+      ? ({ scrollPaddingTop: sectionBoundaryHeight, scrollSnapType: 'y proximity' } as object)
+      : undefined;
   const directoryHeader = (
     <DirectoryHeader $compact={fixedHeader}>
       <Eyebrow>{header?.eyebrow ?? DEFAULT_HEADER.eyebrow}</Eyebrow>
@@ -136,6 +164,7 @@ export function TrickDirectory({
       }}
       keyExtractor={(trick) => trick.id}
       stickySectionHeadersEnabled
+      style={scrollSnapListStyle}
       // Always hidden. On web react-native-web turns `showsVerticalScrollIndicator={false}`
       // into a real CSS hide on the scrolling element (`scrollbar-width: none` plus
       // `::-webkit-scrollbar { display: none }`), so no extra web-only CSS is needed here.
@@ -144,7 +173,9 @@ export function TrickDirectory({
       contentContainerStyle={{ paddingBottom: fixedFooter ? 0 : 24 }}
       ListHeaderComponent={fixedHeader ? undefined : directoryHeader}
       ListFooterComponent={fixedFooter ? undefined : footer}
-      renderSectionHeader={({ section }) => <SectionHeader section={section} />}
+      renderSectionHeader={({ section }) => (
+        <SectionHeader onLayout={handleSectionHeaderLayout} section={section} />
+      )}
       renderSectionFooter={({ section }) =>
         section.kind === 'focused' && section.data.length === 0 ? <FocusedEmptyState /> : null
       }
@@ -168,7 +199,7 @@ export function TrickDirectory({
       )}
       ListEmptyComponent={search?.query.trim() ? <SearchEmptyState>No tricks match your search.</SearchEmptyState> : null}
       ItemSeparatorComponent={ItemSeparator}
-      SectionSeparatorComponent={SectionSeparator}
+      SectionSeparatorComponent={renderSectionSeparator}
     />
   );
 
@@ -183,10 +214,16 @@ export function TrickDirectory({
   );
 }
 
-function SectionHeader({ section }: { readonly section: SectionListData<DirectoryTrick, TrickSection> }) {
+function SectionHeader({
+  section,
+  onLayout,
+}: {
+  readonly section: SectionListData<DirectoryTrick, TrickSection>;
+  readonly onLayout: (event: LayoutChangeEvent) => void;
+}) {
   const isCustom = section.kind === 'custom';
   return (
-    <SectionHeaderContainer $custom={isCustom}>
+    <SectionHeaderContainer $custom={isCustom} onLayout={onLayout}>
       <RankLabel $custom={isCustom}>
         {section.kind === 'custom' ? 'Custom' : section.kind === 'focused' ? 'Focused tricks' : `Rank ${section.rank}`}
       </RankLabel>
@@ -487,6 +524,7 @@ const trickRowLayout = css<{ readonly $selected: boolean; readonly $laced: boole
   background-color: ${({ $selected, $laced }) => ($selected || $laced ? '#e5edcf' : '#f8f1dd')};
   border-left-width: ${({ $laced }) => ($laced ? '4px' : '0px')};
   border-left-color: ${({ $laced }) => ($laced ? '#274137' : 'transparent')};
+  ${Platform.OS === 'web' ? 'scroll-snap-align: start;' : ''}
 `;
 
 const TrickRowContainer = styled.View<{ readonly $selected: boolean; readonly $laced: boolean }>`
