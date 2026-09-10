@@ -133,7 +133,7 @@ _Raw ideas land here — a name and a one-line description, nothing more. Discus
 
 - **Area:** Custom tricks
 - **Priority:** Low
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Implementer
 - **Description:** `DeleteConfirmation` (`src/app/app/tricks/index.tsx`) only mentions practice-list/Stats-history effects when deleting a custom trick, even when that trick is referenced as a sequence step's `sourceTrickId` elsewhere. Add a small selector alongside `selectSequenceStepCandidates` in `src/features/custom-tricks/model/custom-trick.ts` that counts sequences referencing a given trick id, and surface a one-line heads-up in the confirmation copy when that count is nonzero.
 - **Exit criteria:** A `custom-trick.ts` model test covers the new selector (zero, one, and multiple referencing sequences); a check on `DeleteConfirmation` confirms the heads-up line renders only when the count is greater than zero, naming the count without naming individual sequences.
