@@ -4,6 +4,16 @@ Completed entries move here from `TASKS.md`'s `Backlog`, in the same commit that
 
 Entries keep their content as it was at completion. Don't retroactively edit a description or exit criteria after the fact; if something about a completed task turns out to be wrong or misleading, note that in a new entry or in code, not by rewriting history here.
 
+### [T270] Warn when deleting a custom trick that's referenced by a sequence step
+
+- **Area:** Custom tricks
+- **Priority:** Low
+- **Status:** Done
+- **Planning:** Implementer
+- **Description:** `DeleteConfirmation` (`src/app/app/tricks/index.tsx`) only mentions practice-list/Stats-history effects when deleting a custom trick, even when that trick is referenced as a sequence step's `sourceTrickId` elsewhere. Add a small selector alongside `selectSequenceStepCandidates` in `src/features/custom-tricks/model/custom-trick.ts` that counts sequences referencing a given trick id, and surface a one-line heads-up in the confirmation copy when that count is nonzero.
+- **Exit criteria:** A `custom-trick.ts` model test covers the new selector (zero, one, and multiple referencing sequences); a check on `DeleteConfirmation` confirms the heads-up line renders only when the count is greater than zero, naming the count without naming individual sequences. Met: added `selectReferencingSequenceCount` in `custom-trick.ts` with three new model-test cases; `DeleteConfirmation` now takes an optional `referencingSequenceCount` prop rendered as a heads-up line only when greater than zero (singular/plural copy, count named, no sequence names), computed via the new selector in the `delete.tsx` route rather than duplicated inline; a new `delete-confirmation.test.tsx` covers all three states.
+- **Notes:** From S135 (`outputs/qa-pass-2026-09-10.md` finding 5, autonomous QA pass). Not a correctness bug — the name-snapshot invariant already holds correctly after deletion — purely additive UX copy.
+
 ### [T265] Diagnose and fix the landing header bar still blocking content after scroll
 
 - **Area:** Landing page

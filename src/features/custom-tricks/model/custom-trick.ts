@@ -39,6 +39,17 @@ export function selectSequenceStepCandidates<StandardTrick extends PracticeTrick
   ];
 }
 
+export function selectReferencingSequenceCount(
+  customTricks: readonly CustomTrick[],
+  trickId: string,
+): number {
+  return customTricks.filter(
+    (trick) =>
+      trick.kind === 'sequence' &&
+      trick.steps.some((step) => step.kind === 'existingTrick' && step.sourceTrickId === trickId),
+  ).length;
+}
+
 export type CustomTrickDraft =
   | {
       readonly kind: 'standalone';
