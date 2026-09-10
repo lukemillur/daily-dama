@@ -4,6 +4,16 @@ Completed entries move here from `TASKS.md`'s `Backlog`, in the same commit that
 
 Entries keep their content as it was at completion. Don't retroactively edit a description or exit criteria after the fact; if something about a completed task turns out to be wrong or misleading, note that in a new entry or in code, not by rewriting history here.
 
+### [T263] Replace the web favicon with the finalized brand mark
+
+- **Area:** Branding / Web
+- **Priority:** High
+- **Status:** Done
+- **Planning:** Implementer
+- **Description:** `app.json`'s `web.favicon` currently points at `assets/images/favicon.png`, an older 4.7 KB placeholder, not the finalized logo established this week at `assets/images/brand/daily-dama-logo-checkpoint-v2.png`. Produce a favicon-appropriate image derived from that source file and point `app.json`'s `web.favicon` at it.
+- **Exit criteria:** `yarn expo export --platform web --output-dir /tmp/daily-dama-web-export` succeeds, and the exported `favicon.ico`/`favicon.png` visually matches the new logo (not the old placeholder) when opened directly. Confirmed by loading the exported site with `yarn expo start --web` (or serving the export per AGENTS.md's web-export guidance) and visually checking the browser tab icon. Met: `yarn expo export --platform web --output-dir /tmp/daily-dama-web-export` exports cleanly (31 routes). The exported `favicon.ico` (48x48) was extracted and pixel-sampled against both the old placeholder and the new source logo: it no longer matches the old placeholder's colors/content, and a downsampled comparison against the new brand mark shows an average per-sampled-pixel RGB diff of ~18/765 (near-identical modulo resampling), confirming the exported icon derives from the new logo. Also served via `yarn expo start --web` on a scratch port and confirmed `/favicon.ico` returns HTTP 200 from the running dev server.
+- **Notes:** Source image is 2.4 MB and not pre-sized — downsize/crop as needed for a crisp small icon. Expo's `web.favicon` field takes a single image path; if a separate apple-touch-icon size turns out to be needed for correctness, note it as a follow-up rather than expanding this ticket. Implementation: the source logo (1254x1254, content already fills nearly the full canvas with no wasted padding) was downsized directly with Lanczos resampling to a new file `assets/images/favicon-brand.png` (256x256), which `app.json`'s `web.favicon` now points at; the old `assets/images/favicon.png` placeholder is left in place since it isn't otherwise reachable but removing it wasn't required by this ticket's scope. A separate apple-touch-icon size was not needed for the stated exit criteria and is not addressed here.
+
 ### [T229] Verify safe Sentry delivery through the deployed CSP
 
 - **Area:** Web observability boundary
