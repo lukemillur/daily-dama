@@ -129,7 +129,69 @@ _Raw ideas land here — a name and a one-line description, nothing more. Discus
 
 ## Backlog
 
-_No entries currently._
+### [T266] Fix spurious lace logged when skipping the Sesh "get ready" countdown
+
+- **Area:** Sesh
+- **Priority:** High
+- **Status:** Not started
+- **Planning:** Required
+- **Description:** Skipping the "Get ready" countdown while advancing to a new trick mid-Sesh can register a spurious lace at 00:00 on the new trick before any tap on Laced, over-counting that trick's total in the completion summary. `sesh.tsx` renders `Countdown` and `ActiveSesh` as fully separate components swapped on `state.status`, with `Skip` and `Laced` each wired to their own `onPress`/`dispatch`. Confirm the actual bleed-through mechanism at runtime before writing a fix — per AGENTS.md, the reducer must stay the sole authority for these transitions, and timestamps must keep flowing through actions rather than being derived from ambient UI state.
+- **Exit criteria:** A test extending `sesh.test.tsx`/`multi-trick-sesh.test.tsx` reproduces skipping the countdown both for the first trick and after advancing from a prior one, and asserts zero `trickLaced` dispatches / zero recorded landings until an explicit tap on Laced, for both single-trick and multi-trick Seshes; full `yarn tsc --noEmit` passes.
+- **Notes:** From S131 (`outputs/qa-pass-2026-09-10.md` finding 1, autonomous QA pass). QA's working theory is that Skip and Laced render in the same screen position across the countdown→active transition frame, bleeding the tap through — confirm the exact mechanism before assuming that's the fix.
+
+### [T267] Fix nested `<button>` elements in Goal rows
+
+- **Area:** Trick goals
+- **Priority:** High
+- **Status:** Not started
+- **Planning:** Implementer
+- **Description:** `GoalRow` (`src/features/goals/components/trick-goals-screen.tsx`, reused by `all-trick-goals-screen.tsx`) renders its "Delete goal" `Pressable` (`accessibilityRole="button"`) nested inside the row's own "Practice `<trick>`" `Pressable` (`accessibilityRole="button"`) — invalid HTML that trips a React hydration-nesting error on every render and leaves Delete unreachable/ambiguous to assistive tech. Restructure the card so Practice and Delete are sibling controls, not parent/child.
+- **Exit criteria:** A test on `trick-goals-screen`/`all-trick-goals-screen` asserts no nested interactive roles in the rendered `GoalRow` tree; manual verification in the dev server confirms the React nesting-violation console error is gone from both the per-trick Goals view and the aggregate Trick goals view, with Practice and Delete each independently clickable and keyboard/screen-reader reachable.
+- **Notes:** From S132 (`outputs/qa-pass-2026-09-10.md` finding 2, autonomous QA pass). One shared component backs both goal views, so one fix covers both.
+
+### [T268] Fix sticky rank-section header overlapping the previous section during scroll
+
+- **Area:** Tricks
+- **Priority:** Medium
+- **Status:** Not started
+- **Planning:** Implementer
+- **Description:** `TrickDirectory`'s `SectionList` (`src/features/tricks/components/trick-directory.tsx`, `stickySectionHeadersEnabled`) lets the incoming sticky `SectionHeader` visually overlap the last row(s) of the section above it at certain scroll offsets (e.g. obscuring a "CUSTOM SEQUENCE" label), even though `SectionHeaderContainer` already has an opaque background. This picker backs both the persisted single-trick Sesh flow and the ad hoc `MultiTrickSeshEntry` selection screen, so the fix benefits both.
+- **Exit criteria:** Manual scroll verification in the dev server across the custom/sequence section boundary at multiple scroll offsets shows no row text or type label obscured by the incoming sticky header.
+- **Notes:** From S133 (`outputs/qa-pass-2026-09-10.md` finding 3, autonomous QA pass). Visual-only — QA confirmed underlying DOM/tap targets are unaffected. Confirm the precise cause (row/section spacing not accounting for sticky header height, vs. a stacking-order gap) before choosing the fix.
+
+### [T269] Don't show a goal-creation validation error before the user interacts with the field
+
+- **Area:** Trick goals
+- **Priority:** Low
+- **Status:** Not started
+- **Planning:** Implementer
+- **Description:** `GoalForm`'s "Target lace count" `TextField` (`src/features/goals/components/trick-goals-screen.tsx`) always passes its `validateGoalCreation` error into `error`, so an untouched empty field shows a red error the instant the form opens. Gate the error behind the field having been blurred or a submit having been attempted.
+- **Exit criteria:** A `GoalForm` test confirms no rendered error text on initial mount with an empty field, and that the error appears after the field is blurred or after a submit attempt with an invalid value.
+- **Notes:** From S134 (`outputs/qa-pass-2026-09-10.md` finding 4, autonomous QA pass).
+
+### [T270] Warn when deleting a custom trick that's referenced by a sequence step
+
+- **Area:** Custom tricks
+- **Priority:** Low
+- **Status:** Not started
+- **Planning:** Implementer
+- **Description:** `DeleteConfirmation` (`src/app/app/tricks/index.tsx`) only mentions practice-list/Stats-history effects when deleting a custom trick, even when that trick is referenced as a sequence step's `sourceTrickId` elsewhere. Add a small selector alongside `selectSequenceStepCandidates` in `src/features/custom-tricks/model/custom-trick.ts` that counts sequences referencing a given trick id, and surface a one-line heads-up in the confirmation copy when that count is nonzero.
+- **Exit criteria:** A `custom-trick.ts` model test covers the new selector (zero, one, and multiple referencing sequences); a check on `DeleteConfirmation` confirms the heads-up line renders only when the count is greater than zero, naming the count without naming individual sequences.
+- **Notes:** From S135 (`outputs/qa-pass-2026-09-10.md` finding 5, autonomous QA pass). Not a correctness bug — the name-snapshot invariant already holds correctly after deletion — purely additive UX copy.
+
+### [T271] Correct AGENTS.md's description of the Profile route's current scope
+
+- **Area:** Repository documentation
+- **Priority:** Low
+- **Status:** Not started
+- **Planning:** Implementer
+- **Description:** AGENTS.md calls Profile "intentionally only a placeholder," but the live route includes assessed Kentei rank display, Account sign-up/sign-in, a Kentei assessment entry point, theme customization with contrast ratios, a daily-streak setting, and a feedback link. Rewrite that description to match Profile's actual current scope while preserving the one substantive rule it exists to state — that the trick directory does not belong there.
+- **Exit criteria:** Inspect the AGENTS.md diff: the "intentionally only a placeholder" mischaracterization is gone, the trick-directory exclusion rule is still explicitly stated, and no application code changes accompany it.
+- **Notes:** From S136 (`outputs/qa-pass-2026-09-10.md` finding 6, autonomous QA pass). Documentation-only.
+
+---
+
+_T266–T271 come from stories S131–S136 in [BACKLOG_STORIES.md](BACKLOG_STORIES.md) — an autonomous exploratory QA pass on 2026-09-10 (an agent driving the local dev server, not the user directly; see `outputs/qa-pass-2026-09-10.md`), not a reviewed PR/commit range. T266 (S131) and T267 (S132) are `Required`/high severity: T266 is a Sesh-reducer-adjacent interaction bug whose exact bleed-through mechanism QA could not confirm from the browser session alone, matching this project's established precedent (T212, T221) for a runtime-diagnosis-first fix; T267 is `Implementer` despite being high severity because the nesting defect and its fix are fully local to one shared component, with no diagnosis ambiguity. T268 (S133) is `Implementer`: a CSS/layout-only sticky-header overlap in one existing file, visual-only per QA. T269 (S134) and T270 (S135) are `Implementer`: local, low-risk UX corrections (validation-timing gate; an additive selector plus confirmation copy) with no open product question. T271 (S136) is `Implementer` documentation-only. S137 was left `Proposed` per its own notes (low-confidence, non-reproducible) and was not scoped in this pass._
 
 ---
 

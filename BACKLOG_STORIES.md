@@ -28,6 +28,18 @@ _S123–S128 came from the user's 2026-09-08 QA pass on the first live productio
 
 _S129–S130 were refined on 2026-09-10 from the user's pre-launch task list (new favicon from the finalized logo; an SEO pass). Both were scoped and removed from this file: S129→T263, S130→T264 (an umbrella split into T264.1/T264.2)._
 
+_S131–S137 came from an autonomous exploratory QA pass on 2026-09-10 (run by an agent driving the local dev server as a user, not the user directly — see `outputs/qa-pass-2026-09-10.md`) while the user was away, covering Home/Sesh/Tricks/Stats/Profile plus persistence and the custom-trick/sequence invariants. Two are confirmed functional/accessibility bugs (S131, S132), one is a visual bug (S133), three are minor UX/documentation corrections (S134–S136), and one is a low-confidence, non-reproducible observation held back for confirmation (S137). All core AGENTS.md invariants under test (custom-trick sort order, sequence step name-snapshot authority, exclusion of sequences from `selectSequenceStepCandidates`, Stats derived from history, hydration-safe reload) were verified intact and did not generate stories. S131–S136 were scoped into `TASKS.md` and removed from this file: S131→T266, S132→T267, S133→T268, S134→T269, S135→T270, S136→T271. S137 remains `Proposed`._
+
+### [S137] Investigate occasional empty page title after a custom-trick save
+
+- **As a:** any user
+- **I want:** the page title to stay stable through custom-trick form submissions
+- **So that:** the browser tab/history always shows a meaningful title
+- **Evidence:** `outputs/qa-pass-2026-09-10.md` finding 7 (low, low-confidence). One observation of an empty `<title>` immediately after saving a new custom trick, before the Tricks list re-rendered; did not reproduce reliably and had no confirmed user-visible effect in a screenshot.
+- **Priority:** Low
+- **Status:** Proposed
+- **Notes:** Deliberately left at `Proposed`, not `Ready for scoping` — reproduction was inconsistent and severity/user impact is unconfirmed. Worth a quick reproduction attempt before committing scoping effort; may be a transient render-order artifact rather than a real defect.
+
 ### [S105] Improve application performance and initial load time
 
 - **As a:** any user
