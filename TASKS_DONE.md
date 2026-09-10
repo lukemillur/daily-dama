@@ -4,6 +4,16 @@ Completed entries move here from `TASKS.md`'s `Backlog`, in the same commit that
 
 Entries keep their content as it was at completion. Don't retroactively edit a description or exit criteria after the fact; if something about a completed task turns out to be wrong or misleading, note that in a new entry or in code, not by rewriting history here.
 
+### [T271] Correct AGENTS.md's description of the Profile route's current scope
+
+- **Area:** Repository documentation
+- **Priority:** Low
+- **Status:** Done
+- **Planning:** Implementer
+- **Description:** AGENTS.md calls Profile "intentionally only a placeholder," but the live route includes assessed Kentei rank display, Account sign-up/sign-in, a Kentei assessment entry point, theme customization with contrast ratios, a daily-streak setting, and a feedback link. Rewrite that description to match Profile's actual current scope while preserving the one substantive rule it exists to state — that the trick directory does not belong there.
+- **Exit criteria:** Inspect the AGENTS.md diff: the "intentionally only a placeholder" mischaracterization is gone, the trick-directory exclusion rule is still explicitly stated, and no application code changes accompany it. Met: the "Current product shape" sentence now lists Profile's actual sections (assessed Kentei rank display, Account sign-up/sign-in, Kentei assessment entry point, theme customization, daily-streak setting, feedback link) and keeps the "do not restore the trick directory there" rule; verified against `src/app/app/profile/index.tsx`; no application code changed.
+- **Notes:** From S136 (`outputs/qa-pass-2026-09-10.md` finding 6, autonomous QA pass). Documentation-only.
+
 ### [T270] Warn when deleting a custom trick that's referenced by a sequence step
 
 - **Area:** Custom tricks

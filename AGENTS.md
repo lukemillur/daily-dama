@@ -32,7 +32,7 @@ At the start of a meaningful chunk of work, say what "good enough for this itera
 
 Daily Dama is a local-first Expo prototype for choosing Kendama tricks, running open-ended or timed practice sessions ("Seshes"), and reviewing accumulated practice Stats.
 
-The primary web navigation order is Home, Sesh, Tricks, Stats, Profile. Tricks is the authoritative route for browsing, selecting, creating, editing, and deleting tricks. Profile is intentionally only a placeholder; do not restore the trick directory there unless the product direction changes.
+The primary web navigation order is Home, Sesh, Tricks, Stats, Profile. Tricks is the authoritative route for browsing, selecting, creating, editing, and deleting tricks. Profile covers assessed Kentei rank display, Account sign-up/sign-in, a Kentei assessment entry point, theme customization with contrast ratios, a daily-streak setting, and a feedback link; do not restore the trick directory there unless the product direction changes.
 
 Standard Kentei data lives in `src/features/tricks/data/kendama-kentei-tricks.ts`. The checked-in CSV and review artifacts under `data/` and `outputs/` are source/review material, not runtime state.
 
