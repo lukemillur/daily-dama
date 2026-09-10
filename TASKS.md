@@ -133,7 +133,7 @@ _Raw ideas land here — a name and a one-line description, nothing more. Discus
 
 - **Area:** Tricks
 - **Priority:** Medium
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Implementer
 - **Description:** `TrickDirectory`'s `SectionList` (`src/features/tricks/components/trick-directory.tsx`, `stickySectionHeadersEnabled`) lets the incoming sticky `SectionHeader` visually overlap the last row(s) of the section above it at certain scroll offsets (e.g. obscuring a "CUSTOM SEQUENCE" label), even though `SectionHeaderContainer` already has an opaque background. This picker backs both the persisted single-trick Sesh flow and the ad hoc `MultiTrickSeshEntry` selection screen, so the fix benefits both.
 - **Exit criteria:** Manual scroll verification in the dev server across the custom/sequence section boundary at multiple scroll offsets shows no row text or type label obscured by the incoming sticky header.
