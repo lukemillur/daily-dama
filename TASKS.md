@@ -143,7 +143,7 @@ _No entries currently._
 
 - **Area:** Landing / Web
 - **Priority:** High
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Implementer
 - **Description:** Add a `<Head>` (from `expo-router/head`, the same import already used in `src/app/app/_layout.tsx`) to the public landing route (`src/app/index.tsx` or `LandingPage`) with a `<meta name="description">`, a canonical `<link rel="canonical">`, and Open Graph/Twitter card tags (`og:title`, `og:description`, `og:image`, `twitter:card`), using `assets/images/brand/branding-assets/daily-dama-og-share-card.png` as the share image.
 - **Exit criteria:** `yarn expo export --platform web --output-dir /tmp/daily-dama-web-export` produces a root `index.html` whose `<head>` contains a non-empty `<meta name="description">` and `og:title`/`og:description`/`og:image`/`twitter:card` tags, confirmed by grepping the exported HTML.
