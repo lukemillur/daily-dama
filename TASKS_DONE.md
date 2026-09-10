@@ -4,6 +4,18 @@ Completed entries move here from `TASKS.md`'s `Backlog`, in the same commit that
 
 Entries keep their content as it was at completion. Don't retroactively edit a description or exit criteria after the fact; if something about a completed task turns out to be wrong or misleading, note that in a new entry or in code, not by rewriting history here.
 
+### [T229] Verify safe Sentry delivery through the deployed CSP
+
+- **Area:** Web observability boundary
+- **Priority:** Medium
+- **Status:** Done
+- **Checkpoint:** Complete
+- **Planning:** Required
+- **Execution:** External gate
+- **Description:** Complete T218's outstanding hosted-delivery evidence and correct CSP for the configured ingest origin. Keep Sentry enabled as intended and check the actual event for credentials and sensitive callback parameters.
+- **Exit criteria:** A deliberate nonsensitive error from the identified deployment reaches the intended Sentry project under actual response headers; the recorded sanitized event inspection shows no credentials or sensitive callback parameters, and unrelated external connection origins remain denied. Met: owner added `EXPO_PUBLIC_SENTRY_DSN` (Sentry project `daily-dama`, `4512057182453760`) to Vercel Production; the preparation PR (#352) merged to `development` on 2026-09-09 and was promoted through `main`/`production` the same window — confirmed by `git merge-base --is-ancestor` showing the merge commit (`469952c`) as an ancestor of `origin/main` and `origin/production`. A deliberate `throw new Error('T229 production verification test event')` run from the live `https://www.dailydama.com` console on 2026-09-10 was captured by Sentry's automatic global handler and confirmed by the owner directly in the `daily-dama` project's Issues view. The event's breadcrumbs (owner-provided) show only an internal navigation entry, a `_vercel/insights/view` analytics POST, and the deliberate exception itself — no cookies, tokens, auth headers, or callback query parameters. `curl -sI https://www.dailydama.com` on 2026-09-10 confirms the deployed `content-security-policy`'s `connect-src` is `'self' https://*.supabase.co https://o4512057108922368.ingest.us.sentry.io` — no other external origins allowed.
+- **Notes:** From A5; audit section 1. Depended on T225. See `src/shared/observability/sentry-client.ts`, `vercel.json`, `security/README.md`, T218, and the full execution record at `outputs/guided-tickets/T229.md`. Source-map upload was kept in scope by explicit owner decision during this ticket (reversing T218's original deferral); tracing, session replay, and `Sentry.wrap()` remain out of scope. The original Sentry project (`4512057128583168`) is an orphaned duplicate from an earlier wizard run, safe to delete at the owner's convenience — not acted on here. A gitleaks-allowlist gap found while re-verifying the bundle-secret scan during this ticket was filed separately (already closed as T261). A stuck ~30s "loading user data" screen on a fresh signed-in production load, traced to a Supabase `504` on `POST /auth/v1/token?grant_type=refresh_token`, was discovered incidentally while verifying this ticket and is unrelated to Sentry/CSP scope — flagged as its own follow-up rather than fixed here.
+
 ### [T258] Remove the feedback form's manual email field; auto-associate signed-in users' email server-side
 
 - **Area:** Feedback
