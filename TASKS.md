@@ -131,24 +131,6 @@ _Raw ideas land here — a name and a one-line description, nothing more. Discus
 
 _No entries currently._
 
-### [T264] Improve public-page SEO metadata and crawlability
-
-- **Area:** Landing / Web
-- **Priority:** High
-- **Status:** Not started
-- **Description:** Umbrella for S130: today `src/app/+html.tsx` sets no `<meta name="description">`, no Open Graph/Twitter card tags, and no canonical URL; the public landing route (`src/app/index.tsx`) has no `<Head>` at all (per-route `<title>` only exists inside the authenticated `/app/*` shell, `src/app/app/_layout.tsx`); and there is no `robots.txt` or search-engine `sitemap.xml` in the web export (Expo Router's own `_sitemap.html` is a debug route listing, not an SEO sitemap). Split into two independent children below rather than one commit, since metadata tags and static-file serving are different mechanisms.
-- **Notes:** No exit criteria of its own — done when T264.1 and T264.2 are both `Done`. An unused Open Graph share-card image already exists at `assets/images/brand/branding-assets/daily-dama-og-share-card.png` — reuse it rather than producing a new one.
-
-### [T264.2] Serve robots.txt and a sitemap.xml with the deployed site
-
-- **Area:** Deployment / Web
-- **Priority:** High
-- **Status:** In progress
-- **Planning:** Required
-- **Description:** Ensure the deployed site serves a `robots.txt` that allows indexing of the public landing page, and a `sitemap.xml` listing the public route(s), so search engines can discover and are not discouraged from crawling the site. This repo has no existing precedent for adding arbitrary static files to Expo's static web export or to the Vercel deployment (`vercel.json`), so the planning pass needs to establish the mechanism before implementing.
-- **Exit criteria:** Requesting `/robots.txt` and `/sitemap.xml` against the local static export (served per AGENTS.md's web-export verification guidance, not a generic file server) returns 200 with the expected content, and `robots.txt` does not disallow the public landing route.
-- **Notes:** Only the public landing page needs active promotion in the sitemap; the authenticated `/app/*` routes sit behind a client-side auth gate rather than a server-side one, so this ticket doesn't need to (and shouldn't try to) enforce crawler exclusion of them beyond simply not listing them in the sitemap.
-
 ---
 
 _T253–T254, T256–T257 come from stories S123, S124, S127, S128 in [BACKLOG_STORIES.md](BACKLOG_STORIES.md) (the user's 2026-09-08 QA pass on the first live dailydama.com production deployment). S125 (email template branding) was scoped as T255 in `TASKS_COLLABORATIVE.md` instead, since it's Supabase-dashboard configuration rather than application code. S126 was intentionally never created — the reported broken auth redirect is already covered by `T231` in `TASKS_COLLABORATIVE.md`, which the user is actively working in a separate session; nothing here touches it. All four are `Implementer`: each is a local fix inside a single existing component, matching this project's established precedent (T237, T238) for a QA-reported symptom that needs a browser-only diagnosis first but is genuinely local in scope once found — none of them touch a persistence domain, state machine, or architectural boundary._

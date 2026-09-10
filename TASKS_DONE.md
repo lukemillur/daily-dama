@@ -2676,6 +2676,24 @@ Entries keep their content as it was at completion. Don't retroactively edit a d
 
 Completed entries live in [TASKS_DONE.md](TASKS_DONE.md) — not part of the top-to-bottom read above; see step 5 under _Completing a task_.
 
+### [T264] Improve public-page SEO metadata and crawlability
+
+- **Area:** Landing / Web
+- **Priority:** High
+- **Status:** Done
+- **Description:** Umbrella for S130: today `src/app/+html.tsx` sets no `<meta name="description">`, no Open Graph/Twitter card tags, and no canonical URL; the public landing route (`src/app/index.tsx`) has no `<Head>` at all (per-route `<title>` only exists inside the authenticated `/app/*` shell, `src/app/app/_layout.tsx`); and there is no `robots.txt` or search-engine `sitemap.xml` in the web export (Expo Router's own `_sitemap.html` is a debug route listing, not an SEO sitemap). Split into two independent children below rather than one commit, since metadata tags and static-file serving are different mechanisms.
+- **Notes:** No exit criteria of its own — done when T264.1 and T264.2 are both `Done`. An unused Open Graph share-card image already exists at `assets/images/brand/branding-assets/daily-dama-og-share-card.png` — reuse it rather than producing a new one. Both children are Done.
+
+### [T264.2] Serve robots.txt and a sitemap.xml with the deployed site
+
+- **Area:** Deployment / Web
+- **Priority:** High
+- **Status:** Done
+- **Planning:** Required
+- **Description:** Ensure the deployed site serves a `robots.txt` that allows indexing of the public landing page, and a `sitemap.xml` listing the public route(s), so search engines can discover and are not discouraged from crawling the site. This repo has no existing precedent for adding arbitrary static files to Expo's static web export or to the Vercel deployment (`vercel.json`), so the planning pass needs to establish the mechanism before implementing.
+- **Exit criteria:** Requesting `/robots.txt` and `/sitemap.xml` against the local static export (served per AGENTS.md's web-export verification guidance, not a generic file server) returns 200 with the expected content, and `robots.txt` does not disallow the public landing route.
+- **Notes:** Only the public landing page needs active promotion in the sitemap; the authenticated `/app/*` routes sit behind a client-side auth gate rather than a server-side one, so this ticket doesn't need to (and shouldn't try to) enforce crawler exclusion of them beyond simply not listing them in the sitemap. Confirmed Expo's static web export copies a root `public/` directory verbatim (proven by T264.1's OG image), so added `public/robots.txt` (allow-all plus `Sitemap:` pointer) and `public/sitemap.xml` (single `<url>` entry for `https://dailydama.com`); no `vercel.json`/`app.json` changes needed. Verified: `yarn expo export --platform web --output-dir /tmp/daily-dama-web-export` produced `robots.txt` and `sitemap.xml` at the export root with exactly the authored content; `yarn expo start --web --port 8082` plus `curl -i http://localhost:8082/robots.txt` and `.../sitemap.xml` both returned HTTP 200 with the expected bodies; `robots.txt` contains `Allow: /` and no `Disallow` line, so the public landing route is not disallowed.
+
 ### [T264.1] Add meta description and Open Graph/Twitter tags to the landing page
 
 - **Area:** Landing / Web
