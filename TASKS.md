@@ -129,16 +129,6 @@ _Raw ideas land here — a name and a one-line description, nothing more. Discus
 
 ## Backlog
 
-### [T269] Don't show a goal-creation validation error before the user interacts with the field
-
-- **Area:** Trick goals
-- **Priority:** Low
-- **Status:** Not started
-- **Planning:** Implementer
-- **Description:** `GoalForm`'s "Target lace count" `TextField` (`src/features/goals/components/trick-goals-screen.tsx`) always passes its `validateGoalCreation` error into `error`, so an untouched empty field shows a red error the instant the form opens. Gate the error behind the field having been blurred or a submit having been attempted.
-- **Exit criteria:** A `GoalForm` test confirms no rendered error text on initial mount with an empty field, and that the error appears after the field is blurred or after a submit attempt with an invalid value.
-- **Notes:** From S134 (`outputs/qa-pass-2026-09-10.md` finding 4, autonomous QA pass).
-
 ### [T270] Warn when deleting a custom trick that's referenced by a sequence step
 
 - **Area:** Custom tricks
