@@ -1,9 +1,9 @@
-import { createContext, type PropsWithChildren, useContext, useEffect, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { createContext, type PropsWithChildren, useCallback, useContext, useEffect, useState } from 'react';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { AppColors } from '@/constants/theme';
+import { AppColors, Spacing } from '@/constants/theme';
 import { deriveIdentityFromAuthState } from '@/features/auth/model/identity-from-auth-state';
-import { useAuthState } from '@/features/auth/state/auth-provider';
+import { useAuthActions, useAuthState } from '@/features/auth/state/auth-provider';
 import { createIdentityContext, type IdentityContext } from '@/shared/persistence/identity-context';
 import { GUEST_IDENTITY, type Identity } from '@/shared/persistence/identity';
 
@@ -75,7 +75,88 @@ export function IdentityProvider({ children }: PropsWithChildren) {
     );
   }
 
+  if (authState.status === 'refreshFailed') {
+    return <RefreshFailedRecovery />;
+  }
+
   return <IdentityHandleContext.Provider value={handle}>{children}</IdentityHandleContext.Provider>;
+}
+
+/**
+ * Recovery screen for a genuine refresh failure with no usable cached session (T262). This is
+ * the one visible case per the ticket's owner-approved direction -- destructive/identity-changing
+ * transitions must fail closed, so this stays up until "Try again" reloads the page or
+ * "Continue as guest" durably succeeds.
+ */
+function RefreshFailedRecovery() {
+  const { abandonAuthAndContinueAsGuest } = useAuthActions();
+  const [isContinuing, setIsContinuing] = useState(false);
+  const [continueError, setContinueError] = useState<string | undefined>(undefined);
+
+  const handleTryAgain = useCallback(() => {
+    if (typeof window !== 'undefined') {
+      window.location.reload();
+    }
+  }, []);
+
+  const handleContinueAsGuest = useCallback(async () => {
+    setIsContinuing(true);
+    setContinueError(undefined);
+    try {
+      const { error } = await abandonAuthAndContinueAsGuest();
+      if (error) {
+        setContinueError('Could not continue as guest. Check your connection and try again.');
+      }
+    } finally {
+      setIsContinuing(false);
+    }
+  }, [abandonAuthAndContinueAsGuest]);
+
+  return (
+    <View style={styles.recoveryContainer} accessibilityRole="alert">
+      <Text style={styles.wordmark}>Daily Dama</Text>
+      <Text accessibilityRole="header" style={styles.recoveryHeading}>
+        We couldn&apos;t confirm your sign-in
+      </Text>
+      <Text style={styles.recoveryBody}>
+        Your practice data already saved on this device is safe. We just couldn&apos;t reach the
+        server to confirm your sign-in right now.
+      </Text>
+      {continueError ? (
+        <Text
+          style={styles.recoveryError}
+          accessibilityRole="alert"
+          accessibilityLiveRegion="assertive"
+        >
+          {continueError}
+        </Text>
+      ) : null}
+      <Pressable
+        accessibilityRole="button"
+        onPress={handleTryAgain}
+        style={({ pressed }) => [styles.recoveryButton, pressed && styles.recoveryButtonPressed]}
+      >
+        <Text style={styles.recoveryButtonText}>Try again</Text>
+      </Pressable>
+      <Pressable
+        accessibilityRole="button"
+        disabled={isContinuing}
+        accessibilityState={{ disabled: isContinuing, busy: isContinuing }}
+        onPress={() => {
+          void handleContinueAsGuest();
+        }}
+        style={({ pressed }) => [
+          styles.recoveryButton,
+          styles.recoverySecondaryButton,
+          pressed && styles.recoveryButtonPressed,
+        ]}
+      >
+        <Text style={styles.recoveryButtonText}>
+          {isContinuing ? 'Continuing...' : 'Continue as guest'}
+        </Text>
+      </Pressable>
+    </View>
+  );
 }
 
 export function useIdentityHandle(): IdentityHandle {
@@ -101,5 +182,51 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: 700,
     marginTop: 8,
+  },
+  recoveryContainer: {
+    flex: 1,
+    width: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: AppColors.yellow,
+    paddingHorizontal: Spacing.four,
+    gap: Spacing.two,
+  },
+  recoveryHeading: {
+    color: AppColors.ink,
+    fontSize: 18,
+    fontWeight: '700',
+    textAlign: 'center',
+    marginTop: Spacing.two,
+  },
+  recoveryBody: {
+    color: AppColors.inkSoft,
+    fontSize: 14,
+    textAlign: 'center',
+  },
+  recoveryError: {
+    color: AppColors.red,
+    fontSize: 13,
+    fontWeight: '700',
+    textAlign: 'center',
+  },
+  recoveryButton: {
+    borderWidth: 1,
+    borderColor: AppColors.ink,
+    borderRadius: Spacing.two,
+    paddingVertical: Spacing.two,
+    paddingHorizontal: Spacing.four,
+    marginTop: Spacing.two,
+  },
+  recoverySecondaryButton: {
+    borderColor: AppColors.inkSoft,
+  },
+  recoveryButtonPressed: {
+    opacity: 0.7,
+  },
+  recoveryButtonText: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: AppColors.ink,
   },
 });

@@ -17,6 +17,11 @@ describe('deriveIdentityFromAuthState', () => {
     expect(deriveIdentityFromAuthState(state)).toBeUndefined();
   });
 
+  it('maps refreshFailed to undefined, same as initializing', () => {
+    const state: AuthState = { status: 'refreshFailed' };
+    expect(deriveIdentityFromAuthState(state)).toBeUndefined();
+  });
+
   it('maps guest (any reason) to GUEST_IDENTITY', () => {
     const signedOut: AuthState = { status: 'guest', reason: 'signedOut' };
     const unconfigured: AuthState = { status: 'guest', reason: 'unconfigured' };

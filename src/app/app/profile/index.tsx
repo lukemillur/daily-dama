@@ -1,6 +1,6 @@
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import { ScrollView } from "react-native";
+import { Platform, ScrollView } from "react-native";
 import { styled } from "styled-components/native";
 
 import { Button } from "@/components/ui/button";
@@ -33,7 +33,7 @@ export default function ProfileScreen() {
   if (!isOnboardingComplete || !kenteiRank) return null;
 
   return (
-    <Screen edges={["top", "left", "right"]}>
+    <Screen edges={["top", "left", "right"]} includeWebHeaderInset={false}>
       <ProfileScroll
         contentContainerStyle={{ paddingBottom: 120 + BottomTabInset }}
       >
@@ -142,11 +142,14 @@ const ProfileScroll = styled(ScrollView)`
   flex: 1;
   width: 100%;
 `;
+// Web-only top clearance mirrors the Tricks tab: Screen's `includeWebHeaderInset`
+// is off here so scrolled content shows through behind the floating web nav
+// instead of being blocked by a static reserved bar (see screen.tsx).
 const Content = styled.View`
   width: 100%;
   max-width: 760px;
   align-self: center;
-  padding: 40px 22px 0;
+  padding: ${Platform.OS === "web" ? 40 + 88 : 40}px 22px 0;
 `;
 const RankLine = styled.View`
   flex-direction: row;
