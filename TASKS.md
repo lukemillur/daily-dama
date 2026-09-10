@@ -143,7 +143,7 @@ _No entries currently._
 
 - **Area:** Deployment / Web
 - **Priority:** High
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** Ensure the deployed site serves a `robots.txt` that allows indexing of the public landing page, and a `sitemap.xml` listing the public route(s), so search engines can discover and are not discouraged from crawling the site. This repo has no existing precedent for adding arbitrary static files to Expo's static web export or to the Vercel deployment (`vercel.json`), so the planning pass needs to establish the mechanism before implementing.
 - **Exit criteria:** Requesting `/robots.txt` and `/sitemap.xml` against the local static export (served per AGENTS.md's web-export verification guidance, not a generic file server) returns 200 with the expected content, and `robots.txt` does not disallow the public landing route.
