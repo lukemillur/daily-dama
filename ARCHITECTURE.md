@@ -150,6 +150,8 @@ The providers also skip the first persistence effect after restoration. The rest
 
 One consequence is that nested providers currently hydrate serially: a child provider is not mounted until its parent renders children. With small local documents this is acceptable, but it is a startup-cost consideration if more domains or much larger data are added.
 
+Identity hydration sits above all five domain providers (`AuthProvider` → `IdentityProvider`, both in `src/features/auth/state` and `src/shared/persistence`) and is itself bounded rather than able to hang indefinitely: `AuthProvider` reads a persisted Supabase session directly from storage in parallel with the SDK's own refresh, so a returning user with a valid locally-cached session is authenticated immediately and never blocked behind a slow or hung background refresh. A client-side timeout forces an explicit `refreshFailed` status if neither a real auth event nor a cached session resolves in time; `IdentityProvider` renders a distinct recovery screen for that one case, with a retry action and a sign-out/guest escape hatch, rather than gating every domain provider behind the plain hydration fallback forever.
+
 ## Navigation architecture
 
 Expo Router route files are deliberately thin where possible. They read URL parameters and providers, calculate route-specific inputs, enforce access rules, and hand work to feature components.
