@@ -182,6 +182,7 @@ export function GoalForm({
 }) {
   const [kind, setKind] = useState<'count' | 'time'>('count');
   const [targetText, setTargetText] = useState('');
+  const [targetTouched, setTargetTouched] = useState(false);
 
   const input: GoalCreationInput = useMemo(() => {
     const targetValue = Number(targetText);
@@ -191,9 +192,13 @@ export function GoalForm({
   }, [kind, targetText, trickId, trickName]);
 
   const validation = validateGoalCreation(input);
+  const showTargetError = targetTouched && validation.status === 'invalid';
 
   const save = () => {
-    if (validation.status !== 'valid') return;
+    if (validation.status !== 'valid') {
+      setTargetTouched(true);
+      return;
+    }
     onSave(input);
   };
 
@@ -229,9 +234,10 @@ export function GoalForm({
 
         <TextField
           accessibilityLabel={kind === 'count' ? 'Target lace count' : 'Target minutes'}
-          error={validation.status === 'invalid' ? validation.errors.target : undefined}
+          error={showTargetError ? validation.errors.target : undefined}
           keyboardType="number-pad"
           label={kind === 'count' ? 'Target lace count' : 'Target minutes'}
+          onBlur={() => setTargetTouched(true)}
           onChangeText={setTargetText}
           placeholder={kind === 'count' ? 'e.g. 50' : 'e.g. 30'}
           value={targetText}

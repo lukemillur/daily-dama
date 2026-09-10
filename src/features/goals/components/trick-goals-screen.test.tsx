@@ -83,6 +83,45 @@ describe('TrickGoalsScreen', () => {
     expect(findButton(root, 'Add goal')).toBeDefined();
   });
 
+  it('hides the target-count error until the field is blurred or a submit is attempted', () => {
+    let root!: ReactTestRenderer;
+    act(() => {
+      root = create(<TrickGoalsScreen trickId="big-cup" trickName="Big Cup" onBack={jest.fn()} />);
+    });
+
+    act(() => {
+      findButton(root, 'Add goal').props.onPress();
+    });
+
+    expect(findText(root, 'Enter a whole number of laces from 1 to 100000.').length).toBe(0);
+
+    act(() => {
+      root.root.findByProps({ accessibilityLabel: 'Target lace count' }).props.onBlur();
+    });
+
+    expect(findText(root, 'Enter a whole number of laces from 1 to 100000.').length).toBeGreaterThan(0);
+  });
+
+  it('shows the target-count error after a submit attempt with an invalid value', () => {
+    let root!: ReactTestRenderer;
+    act(() => {
+      root = create(<TrickGoalsScreen trickId="big-cup" trickName="Big Cup" onBack={jest.fn()} />);
+    });
+
+    act(() => {
+      findButton(root, 'Add goal').props.onPress();
+    });
+
+    expect(findText(root, 'Enter a whole number of laces from 1 to 100000.').length).toBe(0);
+
+    act(() => {
+      root.root.findByProps({ accessibilityLabel: 'Save goal' }).props.onPress();
+    });
+
+    expect(findText(root, 'Enter a whole number of laces from 1 to 100000.').length).toBeGreaterThan(0);
+    expect(mockAddGoal).not.toHaveBeenCalled();
+  });
+
   it('shows no trick-goals heading when the trick has exactly one goal', () => {
     mockGoals = [
       { id: 'goal-1', trickId: 'big-cup', trickName: 'Big Cup', kind: 'count', targetCount: 10, createdAt: 0, updatedAt: 0 },
