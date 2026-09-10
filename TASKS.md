@@ -143,7 +143,7 @@ _Raw ideas land here — a name and a one-line description, nothing more. Discus
 
 - **Area:** Branding / Web
 - **Priority:** High
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Implementer
 - **Description:** `app.json`'s `web.favicon` currently points at `assets/images/favicon.png`, an older 4.7 KB placeholder, not the finalized logo established this week at `assets/images/brand/daily-dama-logo-checkpoint-v2.png`. Produce a favicon-appropriate image derived from that source file and point `app.json`'s `web.favicon` at it.
 - **Exit criteria:** `yarn expo export --platform web --output-dir /tmp/daily-dama-web-export` succeeds, and the exported `favicon.ico`/`favicon.png` visually matches the new logo (not the old placeholder) when opened directly. Confirmed by loading the exported site with `yarn expo start --web` (or serving the export per AGENTS.md's web-export guidance) and visually checking the browser tab icon.
