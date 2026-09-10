@@ -25,6 +25,21 @@ export const MAX_TIMED_SESH_MINUTES = 60;
 export const MIN_SESH_TARGET_LANDING_COUNT = 1;
 export const MAX_SESH_TARGET_LANDING_COUNT = 999;
 
+/**
+ * Countdown's "Skip" control and Active's "Laced" button can occupy the same
+ * on-screen position across the countdown-to-active transition frame
+ * (confirmed at runtime: react-native-web's Pressable resolves a press's
+ * release phase against whatever element now sits under the pointer, not the
+ * element under it at press-start, so a single tap that lands the transition
+ * can bleed straight into a lace on the freshly rendered Active screen).
+ * `trickLaced` discards any lace claimed within this window of `startedAt`.
+ * This is a UX judgment call, not an architectural constant: it must be long
+ * enough to swallow a same-position continuation tap but short enough that no
+ * real kendama trick could plausibly land faster than that from a cold start.
+ * Flag any increase past ~500ms for owner sign-off before landing it.
+ */
+export const LACE_INPUT_LOCKOUT_MS = 300;
+
 export function isValidTimedSeshMinutes(durationMinutes: number) {
   return (
     Number.isInteger(durationMinutes) &&
@@ -145,7 +160,7 @@ export function seshReducer(state: SeshState, action: SeshAction): SeshState {
       if (state.status !== 'active' || state.pausedAt !== undefined) return state;
 
       if (
-        action.now < state.startedAt ||
+        action.now < state.startedAt + LACE_INPUT_LOCKOUT_MS ||
         (state.plan.kind === 'timed' &&
           action.now >= state.startedAt + state.plan.durationMs + state.pausedDurationMs)
       ) {
