@@ -29,7 +29,8 @@ Backend selection and release selection are explicit owner gates. T230/T231 prep
 
 - **Area:** Hosted account acceptance
 - **Priority:** High
-- **Status:** Not started
+- **Status:** In progress
+- **Checkpoint:** Awaiting owner action
 - **Planning:** Required
 - **Execution:** Owner-in-loop
 - **Owner gates:** Confirm the target deployment and disposable accounts/inboxes; assist with real delivered links where access is unavailable; confirm the precise disposable account to delete.
