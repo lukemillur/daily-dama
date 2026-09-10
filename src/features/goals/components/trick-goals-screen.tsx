@@ -136,38 +136,36 @@ export function GoalRow({
   }
 
   return (
-    <GoalCardPressable
-      $pressed={pressed}
-      accessibilityLabel={`Practice ${goal.trickName}`}
-      accessibilityRole="button"
-      style={{ boxShadow: `8px 8px 0 ${AppColors.ink}` }}
-      onPress={() => router.push({ pathname: '/app/sesh', params: { trickId: goal.trickId, mode: 'practice' } })}
-      onPressIn={() => setPressed(true)}
-      onPressOut={() => setPressed(false)}>
-      <GoalHeaderRow>
-        <GoalInfoColumn>
-          <GoalMetaRow>
-            <GoalMeta>{goal.kind === 'count' ? 'Lace count goal' : 'Practice time goal'}</GoalMeta>
-            {progress.achieved ? <AchievedBadge>Achieved</AchievedBadge> : null}
-          </GoalMetaRow>
-          <GoalBody>{formatGoalTarget(goal)}</GoalBody>
-          <ProgressText>{formatGoalProgress(progress)}</ProgressText>
-        </GoalInfoColumn>
-        <GoalTrickName numberOfLines={2}>{goal.trickName}</GoalTrickName>
-      </GoalHeaderRow>
+    <GoalCard style={{ boxShadow: `8px 8px 0 ${AppColors.ink}` }}>
+      <PracticeArea
+        $pressed={pressed}
+        accessibilityLabel={`Practice ${goal.trickName}`}
+        accessibilityRole="button"
+        onPress={() => router.push({ pathname: '/app/sesh', params: { trickId: goal.trickId, mode: 'practice' } })}
+        onPressIn={() => setPressed(true)}
+        onPressOut={() => setPressed(false)}>
+        <GoalHeaderRow>
+          <GoalInfoColumn>
+            <GoalMetaRow>
+              <GoalMeta>{goal.kind === 'count' ? 'Lace count goal' : 'Practice time goal'}</GoalMeta>
+              {progress.achieved ? <AchievedBadge>Achieved</AchievedBadge> : null}
+            </GoalMetaRow>
+            <GoalBody>{formatGoalTarget(goal)}</GoalBody>
+            <ProgressText>{formatGoalProgress(progress)}</ProgressText>
+          </GoalInfoColumn>
+          <GoalTrickName numberOfLines={2}>{goal.trickName}</GoalTrickName>
+        </GoalHeaderRow>
+      </PracticeArea>
       <GoalActionsRow>
         <PracticeHintText>Practice toward this goal</PracticeHintText>
         <GoalAction
           accessibilityLabel="Delete goal"
           accessibilityRole="button"
-          onPress={(event) => {
-            event?.stopPropagation?.();
-            setConfirmingDelete(true);
-          }}>
+          onPress={() => setConfirmingDelete(true)}>
           <DeleteActionText>Delete</DeleteActionText>
         </GoalAction>
       </GoalActionsRow>
-    </GoalCardPressable>
+    </GoalCard>
   );
 }
 
@@ -278,11 +276,7 @@ const GoalCard = styled.View`
   border-radius: ${Radii.panel}px;
   padding: 16px;
 `;
-const GoalCardPressable = styled(Pressable)<{ readonly $pressed: boolean }>`
-  background-color: ${AppColors.paper};
-  border: 2px solid ${AppColors.ink};
-  border-radius: ${Radii.panel}px;
-  padding: 16px;
+const PracticeArea = styled(Pressable)<{ readonly $pressed: boolean }>`
   opacity: ${({ $pressed }) => ($pressed ? 0.7 : 1)};
 `;
 const GoalHeaderRow = styled.View`flex-direction: row; align-items: flex-start; justify-content: space-between; gap: 14px;`;
