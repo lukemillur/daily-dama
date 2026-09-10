@@ -139,6 +139,46 @@ _Raw ideas land here — a name and a one-line description, nothing more. Discus
 - **Exit criteria:** New/updated tests in `src/features/auth/state/__tests__/auth-provider.test.tsx` and `src/shared/persistence/identity-provider.test.tsx` (or equivalents) proving: (a) a returning user with a valid persisted session is never gated behind the fallback merely because the background refresh is slow or times out; (b) the refresh call is bounded by a client-side timeout (fault-injected as a call that never resolves); (c) a genuine refresh failure with no usable cached session reaches a distinct, testable `AuthStatus` that renders a message, a retry action, and a sign-out/guest escape hatch, per AGENTS.md's destructive/identity-transition fault-injection requirement. Full `yarn tsc --noEmit` plus the affected auth/persistence suites pass (see AGENTS.md's Persistence/sync verification tier — this crosses hydration/identity/provider-hierarchy boundaries, so escalate to the complete app suite before completion).
 - **Notes:** Investigation and the invisible-vs-visible UX tradeoff were already resolved with the owner in the 2026-09-10 session that filed this ticket — do not re-litigate; see this entry's Description for the agreed direction. The planning pass still needs to pin down, against the installed supabase-js version (see AGENTS.md's version-sensitive-dependency-documentation rule, applied here to supabase-js rather than Expo): whether GoTrue's `onAuthStateChange`/`INITIAL_SESSION` sequence already surfaces a persisted session before an in-flight refresh resolves, or whether "trust the cached session optimistically" requires reading the persisted session directly (e.g. via the `AsyncStorage` key `supabase.auth.token`-equivalent) ahead of/independent from waiting on any GoTrue event — this determines whether the fix lives entirely in `AuthProvider`'s event handling or needs a parallel read path. Pick a specific timeout duration during planning (existing precedent: `CALLBACK_MIN_VISIBLE_MS` in `auth-callback-screen.tsx` from T224/T236 is a *minimum*-visible-duration pattern, not a network timeout — don't reuse it as one). Existing tests (`auth-provider.test.tsx` "renders children immediately while Auth is still initializing", `identity-provider.test.tsx` "gates children behind a fallback while Auth is initializing") currently assert indefinite-hang as correct behavior for a never-emitting client; those need updating to reflect the new bounded/failure-state behavior rather than being left contradicting it.
 
+### [T263] Replace the web favicon with the finalized brand mark
+
+- **Area:** Branding / Web
+- **Priority:** High
+- **Status:** Not started
+- **Planning:** Implementer
+- **Description:** `app.json`'s `web.favicon` currently points at `assets/images/favicon.png`, an older 4.7 KB placeholder, not the finalized logo established this week at `assets/images/brand/daily-dama-logo-checkpoint-v2.png`. Produce a favicon-appropriate image derived from that source file and point `app.json`'s `web.favicon` at it.
+- **Exit criteria:** `yarn expo export --platform web --output-dir /tmp/daily-dama-web-export` succeeds, and the exported `favicon.ico`/`favicon.png` visually matches the new logo (not the old placeholder) when opened directly. Confirmed by loading the exported site with `yarn expo start --web` (or serving the export per AGENTS.md's web-export guidance) and visually checking the browser tab icon.
+- **Notes:** Source image is 2.4 MB and not pre-sized — downsize/crop as needed for a crisp small icon. Expo's `web.favicon` field takes a single image path; if a separate apple-touch-icon size turns out to be needed for correctness, note it as a follow-up rather than expanding this ticket.
+
+### [T264] Improve public-page SEO metadata and crawlability
+
+- **Area:** Landing / Web
+- **Priority:** High
+- **Status:** Not started
+- **Planning:** (umbrella — no planning of its own; see children)
+- **Description:** Umbrella for S130: today `src/app/+html.tsx` sets no `<meta name="description">`, no Open Graph/Twitter card tags, and no canonical URL; the public landing route (`src/app/index.tsx`) has no `<Head>` at all (per-route `<title>` only exists inside the authenticated `/app/*` shell, `src/app/app/_layout.tsx`); and there is no `robots.txt` or search-engine `sitemap.xml` in the web export (Expo Router's own `_sitemap.html` is a debug route listing, not an SEO sitemap). Split into two independent children below rather than one commit, since metadata tags and static-file serving are different mechanisms.
+- **Exit criteria:** N/A — done when T264.1 and T264.2 are both `Done`.
+- **Notes:** An unused Open Graph share-card image already exists at `assets/images/brand/branding-assets/daily-dama-og-share-card.png` — reuse it rather than producing a new one.
+
+#### [T264.1] Add meta description and Open Graph/Twitter tags to the landing page
+
+- **Area:** Landing / Web
+- **Priority:** High
+- **Status:** Not started
+- **Planning:** Implementer
+- **Description:** Add a `<Head>` (from `expo-router/head`, the same import already used in `src/app/app/_layout.tsx`) to the public landing route (`src/app/index.tsx` or `LandingPage`) with a `<meta name="description">`, a canonical `<link rel="canonical">`, and Open Graph/Twitter card tags (`og:title`, `og:description`, `og:image`, `twitter:card`), using `assets/images/brand/branding-assets/daily-dama-og-share-card.png` as the share image.
+- **Exit criteria:** `yarn expo export --platform web --output-dir /tmp/daily-dama-web-export` produces a root `index.html` whose `<head>` contains a non-empty `<meta name="description">` and `og:title`/`og:description`/`og:image`/`twitter:card` tags, confirmed by grepping the exported HTML.
+- **Notes:** `og:image` (and `og:url`/canonical) need absolute URLs — confirm `dailydama.com` as the production host before hardcoding it, consistent with `DEPLOYMENT_HANDOFF.md`.
+
+#### [T264.2] Serve robots.txt and a sitemap.xml with the deployed site
+
+- **Area:** Deployment / Web
+- **Priority:** High
+- **Status:** Not started
+- **Planning:** Required
+- **Description:** Ensure the deployed site serves a `robots.txt` that allows indexing of the public landing page, and a `sitemap.xml` listing the public route(s), so search engines can discover and are not discouraged from crawling the site. This repo has no existing precedent for adding arbitrary static files to Expo's static web export or to the Vercel deployment (`vercel.json`), so the planning pass needs to establish the mechanism before implementing.
+- **Exit criteria:** Requesting `/robots.txt` and `/sitemap.xml` against the local static export (served per AGENTS.md's web-export verification guidance, not a generic file server) returns 200 with the expected content, and `robots.txt` does not disallow the public landing route.
+- **Notes:** Only the public landing page needs active promotion in the sitemap; the authenticated `/app/*` routes sit behind a client-side auth gate rather than a server-side one, so this ticket doesn't need to (and shouldn't try to) enforce crawler exclusion of them beyond simply not listing them in the sitemap.
+
 ---
 
 _T253–T254, T256–T257 come from stories S123, S124, S127, S128 in [BACKLOG_STORIES.md](BACKLOG_STORIES.md) (the user's 2026-09-08 QA pass on the first live dailydama.com production deployment). S125 (email template branding) was scoped as T255 in `TASKS_COLLABORATIVE.md` instead, since it's Supabase-dashboard configuration rather than application code. S126 was intentionally never created — the reported broken auth redirect is already covered by `T231` in `TASKS_COLLABORATIVE.md`, which the user is actively working in a separate session; nothing here touches it. All four are `Implementer`: each is a local fix inside a single existing component, matching this project's established precedent (T237, T238) for a QA-reported symptom that needs a browser-only diagnosis first but is genuinely local in scope once found — none of them touch a persistence domain, state machine, or architectural boundary._
