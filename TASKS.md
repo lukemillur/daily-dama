@@ -141,7 +141,7 @@ _No entries currently._
 - **Exit criteria:** N/A — done when T264.1 and T264.2 are both `Done`.
 - **Notes:** An unused Open Graph share-card image already exists at `assets/images/brand/branding-assets/daily-dama-og-share-card.png` — reuse it rather than producing a new one.
 
-#### [T264.1] Add meta description and Open Graph/Twitter tags to the landing page
+### [T264.1] Add meta description and Open Graph/Twitter tags to the landing page
 
 - **Area:** Landing / Web
 - **Priority:** High
@@ -151,7 +151,7 @@ _No entries currently._
 - **Exit criteria:** `yarn expo export --platform web --output-dir /tmp/daily-dama-web-export` produces a root `index.html` whose `<head>` contains a non-empty `<meta name="description">` and `og:title`/`og:description`/`og:image`/`twitter:card` tags, confirmed by grepping the exported HTML.
 - **Notes:** `og:image` (and `og:url`/canonical) need absolute URLs — confirm `dailydama.com` as the production host before hardcoding it, consistent with `DEPLOYMENT_HANDOFF.md`.
 
-#### [T264.2] Serve robots.txt and a sitemap.xml with the deployed site
+### [T264.2] Serve robots.txt and a sitemap.xml with the deployed site
 
 - **Area:** Deployment / Web
 - **Priority:** High
