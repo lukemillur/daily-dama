@@ -177,15 +177,25 @@ function useHasEnteredViewport(
   ref: { current: ComponentRef<typeof Animated.View> | null },
   skipObserver: boolean,
 ) {
-  // The first screenshot plays its entrance animation unconditionally on mount rather than
-  // waiting on the observer: it is the section's lead-in and should never depend on the
-  // visitor already having it in view (or scrolling to it) the way later screenshots do.
-  const [hasEntered, setHasEntered] = useState(
-    () => skipObserver || Platform.OS !== 'web' || typeof IntersectionObserver === 'undefined',
-  );
+  const isWeb = Platform.OS === 'web' && typeof IntersectionObserver !== 'undefined';
+  const [hasEntered, setHasEntered] = useState(() => !isWeb);
 
   useEffect(() => {
     if (hasEntered) return;
+
+    // The first screenshot plays its entrance animation unconditionally rather than waiting
+    // on the observer: it is the section's lead-in and should never depend on the visitor
+    // already having it in view (or scrolling to it) the way later screenshots do. Deferring
+    // that trigger to a rAF tick (rather than setting it synchronously during the initial
+    // render) matters on web: the static export's window-dimension read can still be settling
+    // into its real desktop/mobile value on first paint, and starting the entrance animation
+    // before that settles bakes the wrong (often near-collapsed) layout into the animated
+    // element permanently.
+    if (skipObserver) {
+      const frame = requestAnimationFrame(() => setHasEntered(true));
+      return () => cancelAnimationFrame(frame);
+    }
+
     const node = ref.current;
     if (!node) return;
 
@@ -207,7 +217,7 @@ function useHasEnteredViewport(
     );
     observer.observe(node as unknown as Element);
     return () => observer.disconnect();
-  }, [hasEntered, ref]);
+  }, [hasEntered, ref, skipObserver]);
 
   return hasEntered;
 }
