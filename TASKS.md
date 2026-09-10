@@ -129,16 +129,6 @@ _Raw ideas land here — a name and a one-line description, nothing more. Discus
 
 ## Backlog
 
-### [T271] Correct AGENTS.md's description of the Profile route's current scope
-
-- **Area:** Repository documentation
-- **Priority:** Low
-- **Status:** Not started
-- **Planning:** Implementer
-- **Description:** AGENTS.md calls Profile "intentionally only a placeholder," but the live route includes assessed Kentei rank display, Account sign-up/sign-in, a Kentei assessment entry point, theme customization with contrast ratios, a daily-streak setting, and a feedback link. Rewrite that description to match Profile's actual current scope while preserving the one substantive rule it exists to state — that the trick directory does not belong there.
-- **Exit criteria:** Inspect the AGENTS.md diff: the "intentionally only a placeholder" mischaracterization is gone, the trick-directory exclusion rule is still explicitly stated, and no application code changes accompany it.
-- **Notes:** From S136 (`outputs/qa-pass-2026-09-10.md` finding 6, autonomous QA pass). Documentation-only.
-
 ---
 
 _T266–T271 come from stories S131–S136 in [BACKLOG_STORIES.md](BACKLOG_STORIES.md) — an autonomous exploratory QA pass on 2026-09-10 (an agent driving the local dev server, not the user directly; see `outputs/qa-pass-2026-09-10.md`), not a reviewed PR/commit range. T266 (S131) and T267 (S132) are `Required`/high severity: T266 is a Sesh-reducer-adjacent interaction bug whose exact bleed-through mechanism QA could not confirm from the browser session alone, matching this project's established precedent (T212, T221) for a runtime-diagnosis-first fix; T267 is `Implementer` despite being high severity because the nesting defect and its fix are fully local to one shared component, with no diagnosis ambiguity. T268 (S133) is `Implementer`: a CSS/layout-only sticky-header overlap in one existing file, visual-only per QA. T269 (S134) and T270 (S135) are `Implementer`: local, low-risk UX corrections (validation-timing gate; an additive selector plus confirmation copy) with no open product question. T271 (S136) is `Implementer` documentation-only. S137 was left `Proposed` per its own notes (low-confidence, non-reproducible) and was not scoped in this pass._
