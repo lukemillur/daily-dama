@@ -133,7 +133,7 @@ _Raw ideas land here — a name and a one-line description, nothing more. Discus
 
 - **Area:** Trick goals
 - **Priority:** High
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Implementer
 - **Description:** `GoalRow` (`src/features/goals/components/trick-goals-screen.tsx`, reused by `all-trick-goals-screen.tsx`) renders its "Delete goal" `Pressable` (`accessibilityRole="button"`) nested inside the row's own "Practice `<trick>`" `Pressable` (`accessibilityRole="button"`) — invalid HTML that trips a React hydration-nesting error on every render and leaves Delete unreachable/ambiguous to assistive tech. Restructure the card so Practice and Delete are sibling controls, not parent/child.
 - **Exit criteria:** A test on `trick-goals-screen`/`all-trick-goals-screen` asserts no nested interactive roles in the rendered `GoalRow` tree; manual verification in the dev server confirms the React nesting-violation console error is gone from both the per-trick Goals view and the aggregate Trick goals view, with Practice and Delete each independently clickable and keyboard/screen-reader reachable.
