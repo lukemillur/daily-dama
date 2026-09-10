@@ -12,11 +12,18 @@ import {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AuthError } from '@supabase/supabase-js';
 
+import { parseCachedSession } from '@/features/auth/model/cached-session';
 import { deriveAuthState, INITIALIZING_AUTH_STATE, type AuthState } from '@/features/auth/model/auth-state';
 import { logAuthWarning } from '@/features/auth/observability/auth-observability';
 import { purgeIdentityNamespace } from '@/shared/persistence/account-purge';
 import { createUserIdentity } from '@/shared/persistence/identity';
-import { getSupabaseClient } from '@/shared/supabase/supabase-client';
+import { getGoTrueStorageKey, getSupabaseClient } from '@/shared/supabase/supabase-client';
+
+// Comfortably above any realistic successful refresh round-trip, well under GoTrue's own
+// internal ~30s retry ceiling (`AUTO_REFRESH_TICK_DURATION_MS`, auth-js 2.112.3
+// `lib/constants.js`, confirmed against installed source -- see T262's plan). The goal is
+// actionable feedback well before that ceiling, not racing it.
+export const AUTH_INIT_TIMEOUT_MS = 10_000;
 
 interface AuthActions {
   readonly signInWithPassword: (
@@ -43,6 +50,12 @@ interface AuthActions {
     currentPassword: string,
     confirmation: string,
   ) => Promise<{ error: unknown }>;
+  // Escape hatch for the `refreshFailed` recovery screen (identity-provider.tsx). Deliberately
+  // does NOT call `client.auth.signOut()` -- that also awaits GoTrue's `initializePromise`,
+  // which is exactly what's stuck in this scenario, so it would hang identically. Instead this
+  // removes the persisted session directly so the app proceeds as guest. Designed for the
+  // `refreshFailed` screen but harmless to call from other states too.
+  readonly abandonAuthAndContinueAsGuest: () => Promise<{ error: Error | null }>;
 }
 
 const AuthStateContext = createContext<AuthState | undefined>(undefined);
@@ -67,13 +80,59 @@ export function AuthProvider({ children }: PropsWithChildren) {
     }
 
     try {
+      // Flips true the moment a real `onAuthStateChange` event fires. Both the optimistic-read
+      // branch below and the timeout branch check it before calling `setState`, so a
+      // late-arriving real event is never clobbered by either -- and neither of them can stomp a
+      // state the real subscription already resolved another way.
+      let settled = false;
+      // Declared before subscribing (as `let`, forward-assigned below) because some SDK/test
+      // clients invoke the `onAuthStateChange` callback synchronously during subscription --
+      // referencing a `const` declared after this point would hit the temporal dead zone.
+      let timeoutId: ReturnType<typeof setTimeout> | undefined;
+
       const {
         data: { subscription },
       } = client.auth.onAuthStateChange((event, session) => {
+        settled = true;
+        clearTimeout(timeoutId);
         setState((current) => deriveAuthState(event, session, current));
       });
 
+      // Optimistic direct read (exit criterion a): resolves in effectively one microtask tick,
+      // fully independent of GoTrue's `initializePromise` / network refresh -- see T262's plan
+      // for why this is the only way to surface a cached session ahead of a hung refresh.
+      const storageKey = getGoTrueStorageKey();
+      if (storageKey) {
+        AsyncStorage.getItem(storageKey)
+          .then((raw) => {
+            if (settled) return;
+            const cached = parseCachedSession(raw);
+            if (!cached) return;
+            setState((current) =>
+              current.status === 'initializing'
+                ? { status: 'authenticated', session: cached, lastEvent: 'INITIAL_SESSION' }
+                : current,
+            );
+          })
+          .catch((error) => {
+            logAuthWarning('Unable to read the cached Supabase session.', error);
+          });
+      }
+
+      // Bounded app-level timeout (exit criterion b): if neither a real event nor the optimistic
+      // read has moved AuthState off 'initializing' by the deadline, force a visible recovery
+      // state instead of hanging indefinitely. Never tears down `subscription` -- it keeps
+      // listening for the rest of the component's lifetime, so a later real event still
+      // self-corrects `refreshFailed` away, exactly like `deriveAuthState` already handles a
+      // SIGNED_OUT arriving after an optimistic authenticated guess.
+      timeoutId = setTimeout(() => {
+        if (settled) return;
+        setState((current) => (current.status === 'initializing' ? { status: 'refreshFailed' } : current));
+      }, AUTH_INIT_TIMEOUT_MS);
+
       return () => {
+        settled = true;
+        clearTimeout(timeoutId);
         subscription.unsubscribe();
       };
     } catch (error) {
@@ -81,6 +140,25 @@ export function AuthProvider({ children }: PropsWithChildren) {
       Promise.resolve().then(() => setState({ status: 'guest', reason: 'error' }));
       return undefined;
     }
+  }, []);
+
+  // Escape hatch for the `refreshFailed` recovery screen -- fails closed per AGENTS.md's
+  // destructive/identity-transition rule: on failure, state is left unchanged so the user stays
+  // on the visible recovery screen with actionable copy rather than the app silently pretending
+  // the transition happened.
+  const abandonAuthAndContinueAsGuest = useCallback(async () => {
+    const storageKey = getGoTrueStorageKey();
+
+    try {
+      if (storageKey) {
+        await AsyncStorage.removeItem(storageKey);
+      }
+    } catch (error) {
+      return { error: error instanceof Error ? error : new Error('Unable to clear the local session.') };
+    }
+
+    setState({ status: 'guest', reason: 'error' });
+    return { error: null };
   }, []);
 
   const signInWithPassword = useCallback(async (email: string, password: string) => {
@@ -332,6 +410,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
       changePassword,
       changeEmail,
       deleteAccount,
+      abandonAuthAndContinueAsGuest,
     }),
     [
       signInWithPassword,
@@ -344,6 +423,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
       changePassword,
       changeEmail,
       deleteAccount,
+      abandonAuthAndContinueAsGuest,
     ],
   );
 

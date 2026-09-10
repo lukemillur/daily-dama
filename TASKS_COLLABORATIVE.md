@@ -25,19 +25,6 @@ T221 already has remote claim `task/T221-diagnose-and-fix-the-feedback-form-s` (
 
 Backend selection and release selection are explicit owner gates. T230/T231 preparation may occur before individual fix tickets close: a fix can supply a verified preparation commit for the owner to deploy, then record hosted evidence afterward. Do not invent a circular dependency requiring every hosted-verification ticket to be complete before deploying the code needed to verify it.
 
-### [T229] Verify safe Sentry delivery through the deployed CSP
-
-- **Area:** Web observability boundary
-- **Priority:** Medium
-- **Status:** In progress (Checkpoint: Awaiting owner action — see `outputs/guided-tickets/T229.md`)
-- **Planning:** Required
-- **Execution:** External gate
-- **Owner gates:** Supply the intended Sentry project/DSN through appropriate configuration and dashboard access; authorize deployment and a safe test event.
-- **Automation boundary:** Inspect DSN resolution/transport and CSP, prepare the narrow ingest-origin allowance and focused header/privacy checks.
-- **Description:** Complete T218's outstanding hosted-delivery evidence and correct CSP for the configured ingest origin. Keep Sentry enabled as intended and check the actual event for credentials and sensitive callback parameters.
-- **Exit criteria:** A deliberate nonsensitive error from the identified deployment reaches the intended Sentry project under actual response headers; the recorded sanitized event inspection shows no credentials or sensitive callback parameters, and unrelated external connection origins remain denied.
-- **Notes:** From A5; audit section 1. Depends on T225. See `src/shared/observability/sentry-client.ts`, `vercel.json`, `security/README.md` and T218 in `TASKS_DONE.md`. If no release DSN exists, pause at configuration rather than claiming success or removing Sentry. Source-map upload, tracing and replay remain outside scope.
-
 ### [T232] Verify the hosted account lifecycle and account isolation
 
 - **Area:** Hosted account acceptance
@@ -76,3 +63,4 @@ Backend selection and release selection are explicit owner gates. T230/T231 prep
 - **Description:** Correct the deployment instructions that still describe an app without a backend and add a short accessible privacy/data explanation covering guest versus account storage, receiving services and deletion limits. Record how the owner reads feedback/errors and the chosen backend/release settings, reusing the other guides.
 - **Exit criteria:** Deployment documentation matches the selected configuration and provides reproducible steps with working references; the deployed user-facing explanation accurately describes current storage/services and account deletion without claiming previously submitted feedback is deleted. The owner confirms feedback/error access and records actual plan recovery guarantees with accepted limitations, without unsupported recovery promises.
 - **Notes:** From A11; audit sections 2 and 5. Depends on T225. Use the chosen configuration and verified evidence from T230/T231 when available; do not invent those decisions or require their closure before drafting. Confirm current plan facts at execution time. No backup automation, paid-plan purchase, legal certification, new support platform, or broad documentation overhaul is included.
+

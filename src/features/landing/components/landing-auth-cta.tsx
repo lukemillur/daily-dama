@@ -10,14 +10,6 @@ import { LOG_OUT_ERROR_COPY } from '@/features/auth/model/log-out-error-copy';
 import { logAuthWarning, trackAuthEvent } from '@/features/auth/observability/auth-observability';
 import { useAuthActions, useAuthState } from '@/features/auth/state/auth-provider';
 
-interface LandingAuthCtaProps {
-  /**
-   * Whether the header bar is currently shown. Defaults to true so existing callers/tests
-   * that dont pass it keep the bar visible. LandingPage drives this from scroll position.
-   */
-  readonly visible?: boolean;
-}
-
 /**
  * A persistent, scroll-aware header bar holding the sign-up/sign-in entry points for a
  * not-yet-onboarded guest visitor on the landing page.
@@ -37,12 +29,16 @@ interface LandingAuthCtaProps {
  * so the unsynced-changes prompt is structurally unavailable here and Profile remains the
  * guarded logout surface.
  *
- * Rendered as a sibling of the landing pages scrollable content (not inside it), absolutely
- * positioned across the top of the Screen. LandingPage toggles visible once the visitor
- * scrolls past a small threshold near the top, so the bar stays out of the way of the hero
- * content below it once scrolling begins.
+ * Rendered as the first element inside the landing page's own scrollable content (not
+ * absolutely positioned above it), so it scrolls away with the rest of the page under normal
+ * browser scrolling. The original T254 version used position: absolute plus a JS scroll
+ * listener toggling opacity/display instead; T265 replaced it with this simpler in-flow
+ * version, since normal document flow needs no scroll-position-driven show/hide logic at all.
+ * (T265's actual reported bug turned out to be unrelated to this component -- see
+ * `includeWebHeaderInset` on LandingPage's `Screen` -- but this simplification stands on its
+ * own merits.)
  */
-export function LandingAuthCta({ visible = true }: LandingAuthCtaProps) {
+export function LandingAuthCta() {
   const authState = useAuthState();
   const router = useRouter();
   const { signOut } = useAuthActions();
@@ -73,7 +69,7 @@ export function LandingAuthCta({ visible = true }: LandingAuthCtaProps) {
   };
 
   return (
-    <HeaderBar testID="landing-header-bar" $visible={visible} pointerEvents={visible ? "auto" : "none"}>
+    <HeaderBar testID="landing-header-bar">
       <Brand>Daily Dama</Brand>
       <ButtonRow>
         {isGuest ? (
@@ -112,12 +108,8 @@ export function LandingAuthCta({ visible = true }: LandingAuthCtaProps) {
   );
 }
 
-const HeaderBar = styled.View<{ readonly $visible: boolean }>`
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: 10;
+const HeaderBar = styled.View`
+  align-self: stretch;
   flex-direction: row;
   align-items: center;
   justify-content: space-between;
@@ -126,9 +118,6 @@ const HeaderBar = styled.View<{ readonly $visible: boolean }>`
   background-color: ${AppColors.paper};
   border-bottom-width: 2px;
   border-bottom-color: ${AppColors.ink};
-  opacity: ${({ $visible }) => ($visible ? 1 : 0)};
-  display: ${({ $visible }) => ($visible ? 'flex' : 'none')};
-  transition: opacity 150ms ease;
 `;
 
 const Brand = styled.Text`

@@ -40,7 +40,7 @@ export default function SeshScreen() {
   if (!isOnboardingComplete) return null;
 
   return (
-    <Screen edges={['top', 'left', 'right']}>
+    <Screen edges={['top', 'left', 'right']} includeWebHeaderInset={false}>
       <Sesh
         availableTricks={availableTricks}
         initialPlan={initialPlan}

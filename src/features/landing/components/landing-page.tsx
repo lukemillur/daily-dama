@@ -1,6 +1,6 @@
 import { Image } from 'expo-image';
 import { useEffect, useRef, useState, type ComponentRef } from 'react';
-import { Platform, ScrollView, useWindowDimensions, type NativeSyntheticEvent, type NativeScrollEvent } from 'react-native';
+import { Platform, ScrollView, useWindowDimensions } from 'react-native';
 import Animated, { FadeInUp } from 'react-native-reanimated';
 import { styled } from 'styled-components/native';
 
@@ -9,8 +9,6 @@ import { BodyText, DisplayTitle, Eyebrow } from '@/components/ui/typography';
 import { AppColors, Radii } from '@/constants/theme';
 import { LandingAuthCta } from '@/features/landing/components/landing-auth-cta';
 import { LandingCta } from '@/features/landing/components/landing-cta';
-
-export const HEADER_BAR_SCROLL_HIDE_THRESHOLD = 24;
 
 interface Feature {
   readonly heading: string;
@@ -125,20 +123,11 @@ export function LandingPage() {
   const { width } = useWindowDimensions();
   const isWebLayout = Platform.OS === 'web' && width >= 768;
   const screenshots = isWebLayout ? WEB_SCREENSHOTS : MOBILE_SCREENSHOTS;
-  const [headerVisible, setHeaderVisible] = useState(true);
-
-  const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
-    const scrollY = event.nativeEvent.contentOffset.y;
-    setHeaderVisible(scrollY <= HEADER_BAR_SCROLL_HIDE_THRESHOLD);
-  };
 
   return (
-    <Screen background={AppColors.paper}>
-      <LandingAuthCta visible={headerVisible} />
-      <LandingScroll
-        contentContainerStyle={{ paddingBottom: 80 }}
-        onScroll={handleScroll}
-        scrollEventThrottle={16}>
+    <Screen background={AppColors.paper} includeWebHeaderInset={false}>
+      <LandingScroll contentContainerStyle={{ paddingBottom: 80 }}>
+        <LandingAuthCta />
         <Content testID="landing-content" $isWebLayout={isWebLayout}>
           {/* <LandingHero /> */}
           <Eyebrow>Why Daily Dama</Eyebrow>
@@ -188,15 +177,25 @@ function useHasEnteredViewport(
   ref: { current: ComponentRef<typeof Animated.View> | null },
   skipObserver: boolean,
 ) {
-  // The first screenshot plays its entrance animation unconditionally on mount rather than
-  // waiting on the observer: it is the section's lead-in and should never depend on the
-  // visitor already having it in view (or scrolling to it) the way later screenshots do.
-  const [hasEntered, setHasEntered] = useState(
-    () => skipObserver || Platform.OS !== 'web' || typeof IntersectionObserver === 'undefined',
-  );
+  const isWeb = Platform.OS === 'web' && typeof IntersectionObserver !== 'undefined';
+  const [hasEntered, setHasEntered] = useState(() => !isWeb);
 
   useEffect(() => {
     if (hasEntered) return;
+
+    // The first screenshot plays its entrance animation unconditionally rather than waiting
+    // on the observer: it is the section's lead-in and should never depend on the visitor
+    // already having it in view (or scrolling to it) the way later screenshots do. Deferring
+    // that trigger to a rAF tick (rather than setting it synchronously during the initial
+    // render) matters on web: the static export's window-dimension read can still be settling
+    // into its real desktop/mobile value on first paint, and starting the entrance animation
+    // before that settles bakes the wrong (often near-collapsed) layout into the animated
+    // element permanently.
+    if (skipObserver) {
+      const frame = requestAnimationFrame(() => setHasEntered(true));
+      return () => cancelAnimationFrame(frame);
+    }
+
     const node = ref.current;
     if (!node) return;
 
@@ -218,7 +217,7 @@ function useHasEnteredViewport(
     );
     observer.observe(node as unknown as Element);
     return () => observer.disconnect();
-  }, [hasEntered, ref]);
+  }, [hasEntered, ref, skipObserver]);
 
   return hasEntered;
 }
