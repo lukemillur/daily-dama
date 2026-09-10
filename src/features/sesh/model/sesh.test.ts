@@ -7,6 +7,7 @@ import {
   getSeshTargetLandingCount,
   INITIAL_SESH_STATE,
   isSeshTargetMet,
+  LACE_INPUT_LOCKOUT_MS,
   type Landing,
   OPEN_ENDED_SESH_PLAN,
   selectSeshPracticeTricks,
@@ -119,6 +120,32 @@ describe('sesh reducer', () => {
     const active = startSesh(createTimedSeshPlan(1));
 
     expect(seshReducer(active, { type: 'trickLaced', now: 61_000 })).toBe(active);
+  });
+
+  it('discards a lace bled through from the countdown-to-active transition (T266)', () => {
+    const active = startSesh();
+
+    // A tap that resolves to a lace at or just after `startedAt` — the
+    // signature of Skip/Laced occupying the same screen position across the
+    // transition frame — must not register.
+    expect(seshReducer(active, { type: 'trickLaced', now: 1_000 })).toBe(active);
+    expect(
+      seshReducer(active, { type: 'trickLaced', now: 1_000 + LACE_INPUT_LOCKOUT_MS - 1 }),
+    ).toBe(active);
+  });
+
+  it('records a lace once the input lockout window has cleared (T266)', () => {
+    const active = startSesh();
+
+    const withLace = seshReducer(active, {
+      type: 'trickLaced',
+      now: 1_000 + LACE_INPUT_LOCKOUT_MS,
+    });
+
+    expect(withLace).toMatchObject({
+      status: 'active',
+      landings: [{ landedAt: 1_000 + LACE_INPUT_LOCKOUT_MS }],
+    });
   });
 
   it('excludes paused time from elapsed and pace, and extends a timed deadline', () => {

@@ -129,16 +129,6 @@ _Raw ideas land here — a name and a one-line description, nothing more. Discus
 
 ## Backlog
 
-### [T266] Fix spurious lace logged when skipping the Sesh "get ready" countdown
-
-- **Area:** Sesh
-- **Priority:** High
-- **Status:** Not started
-- **Planning:** Required
-- **Description:** Skipping the "Get ready" countdown while advancing to a new trick mid-Sesh can register a spurious lace at 00:00 on the new trick before any tap on Laced, over-counting that trick's total in the completion summary. `sesh.tsx` renders `Countdown` and `ActiveSesh` as fully separate components swapped on `state.status`, with `Skip` and `Laced` each wired to their own `onPress`/`dispatch`. Confirm the actual bleed-through mechanism at runtime before writing a fix — per AGENTS.md, the reducer must stay the sole authority for these transitions, and timestamps must keep flowing through actions rather than being derived from ambient UI state.
-- **Exit criteria:** A test extending `sesh.test.tsx`/`multi-trick-sesh.test.tsx` reproduces skipping the countdown both for the first trick and after advancing from a prior one, and asserts zero `trickLaced` dispatches / zero recorded landings until an explicit tap on Laced, for both single-trick and multi-trick Seshes; full `yarn tsc --noEmit` passes.
-- **Notes:** From S131 (`outputs/qa-pass-2026-09-10.md` finding 1, autonomous QA pass). QA's working theory is that Skip and Laced render in the same screen position across the countdown→active transition frame, bleeding the tap through — confirm the exact mechanism before assuming that's the fix.
-
 ### [T267] Fix nested `<button>` elements in Goal rows
 
 - **Area:** Trick goals
