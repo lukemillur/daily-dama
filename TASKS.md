@@ -131,16 +131,6 @@ _Raw ideas land here — a name and a one-line description, nothing more. Discus
 
 _No entries currently._
 
-### [T263] Replace the web favicon with the finalized brand mark
-
-- **Area:** Branding / Web
-- **Priority:** High
-- **Status:** Not started
-- **Planning:** Implementer
-- **Description:** `app.json`'s `web.favicon` currently points at `assets/images/favicon.png`, an older 4.7 KB placeholder, not the finalized logo established this week at `assets/images/brand/daily-dama-logo-checkpoint-v2.png`. Produce a favicon-appropriate image derived from that source file and point `app.json`'s `web.favicon` at it.
-- **Exit criteria:** `yarn expo export --platform web --output-dir /tmp/daily-dama-web-export` succeeds, and the exported `favicon.ico`/`favicon.png` visually matches the new logo (not the old placeholder) when opened directly. Confirmed by loading the exported site with `yarn expo start --web` (or serving the export per AGENTS.md's web-export guidance) and visually checking the browser tab icon.
-- **Notes:** Source image is 2.4 MB and not pre-sized — downsize/crop as needed for a crisp small icon. Expo's `web.favicon` field takes a single image path; if a separate apple-touch-icon size turns out to be needed for correctness, note it as a follow-up rather than expanding this ticket.
-
 ### [T264] Improve public-page SEO metadata and crawlability
 
 - **Area:** Landing / Web
