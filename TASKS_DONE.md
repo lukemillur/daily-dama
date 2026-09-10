@@ -2676,6 +2676,16 @@ Entries keep their content as it was at completion. Don't retroactively edit a d
 
 Completed entries live in [TASKS_DONE.md](TASKS_DONE.md) — not part of the top-to-bottom read above; see step 5 under _Completing a task_.
 
+### [T264.1] Add meta description and Open Graph/Twitter tags to the landing page
+
+- **Area:** Landing / Web
+- **Priority:** High
+- **Status:** Done
+- **Planning:** Implementer
+- **Description:** Add a `<Head>` (from `expo-router/head`, the same import already used in `src/app/app/_layout.tsx`) to the public landing route (`src/app/index.tsx` or `LandingPage`) with a `<meta name="description">`, a canonical `<link rel="canonical">`, and Open Graph/Twitter card tags (`og:title`, `og:description`, `og:image`, `twitter:card`), using `assets/images/brand/branding-assets/daily-dama-og-share-card.png` as the share image.
+- **Exit criteria:** `yarn expo export --platform web --output-dir /tmp/daily-dama-web-export` produces a root `index.html` whose `<head>` contains a non-empty `<meta name="description">` and `og:title`/`og:description`/`og:image`/`twitter:card` tags, confirmed by grepping the exported HTML.
+- **Notes:** `og:image` (and `og:url`/canonical) need absolute URLs — confirm `dailydama.com` as the production host before hardcoding it, consistent with `DEPLOYMENT_HANDOFF.md`. Confirmed `dailydama.com` against `DEPLOYMENT_HANDOFF.md`. Added an `expo-router/head` `<Head>` to `src/app/index.tsx` (`RootRoute`), rendered unconditionally before the `shouldRedirect` check so it's present during static export and first paint regardless of redirect state — mirrors the rendering-order note already in `src/app/app/_layout.tsx`. Copied the share card into `public/images/daily-dama-og-share-card.png` so Expo's static web export serves it at a stable path (Expo's `public/` directory is copied verbatim to the export root, unlike `require()`-referenced assets under `assets/`, which get content-hashed filenames); `og:image`/`twitter:image` reference `https://dailydama.com/images/daily-dama-og-share-card.png`. Verified: `yarn eslint src/app/index.tsx` and `yarn tsc --noEmit` clean; `yarn expo export --platform web --output-dir /tmp/daily-dama-web-export` then grepping `/tmp/daily-dama-web-export/index.html` confirmed non-empty `<meta name="description">`, `og:title`, `og:description`, `og:image`, `og:url`, `og:type`, `twitter:card`, `twitter:title`, `twitter:description`, `twitter:image`, and `<link rel="canonical">`, all with real `dailydama.com`-absolute content, plus the share-card PNG present at `/tmp/daily-dama-web-export/images/daily-dama-og-share-card.png`.
+
 ### [T246] Remove the extra divider above Profile's account section
 
 - **Area:** Profile

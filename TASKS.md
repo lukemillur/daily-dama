@@ -139,16 +139,6 @@ _No entries currently._
 - **Description:** Umbrella for S130: today `src/app/+html.tsx` sets no `<meta name="description">`, no Open Graph/Twitter card tags, and no canonical URL; the public landing route (`src/app/index.tsx`) has no `<Head>` at all (per-route `<title>` only exists inside the authenticated `/app/*` shell, `src/app/app/_layout.tsx`); and there is no `robots.txt` or search-engine `sitemap.xml` in the web export (Expo Router's own `_sitemap.html` is a debug route listing, not an SEO sitemap). Split into two independent children below rather than one commit, since metadata tags and static-file serving are different mechanisms.
 - **Notes:** No exit criteria of its own — done when T264.1 and T264.2 are both `Done`. An unused Open Graph share-card image already exists at `assets/images/brand/branding-assets/daily-dama-og-share-card.png` — reuse it rather than producing a new one.
 
-### [T264.1] Add meta description and Open Graph/Twitter tags to the landing page
-
-- **Area:** Landing / Web
-- **Priority:** High
-- **Status:** Not started
-- **Planning:** Implementer
-- **Description:** Add a `<Head>` (from `expo-router/head`, the same import already used in `src/app/app/_layout.tsx`) to the public landing route (`src/app/index.tsx` or `LandingPage`) with a `<meta name="description">`, a canonical `<link rel="canonical">`, and Open Graph/Twitter card tags (`og:title`, `og:description`, `og:image`, `twitter:card`), using `assets/images/brand/branding-assets/daily-dama-og-share-card.png` as the share image.
-- **Exit criteria:** `yarn expo export --platform web --output-dir /tmp/daily-dama-web-export` produces a root `index.html` whose `<head>` contains a non-empty `<meta name="description">` and `og:title`/`og:description`/`og:image`/`twitter:card` tags, confirmed by grepping the exported HTML.
-- **Notes:** `og:image` (and `og:url`/canonical) need absolute URLs — confirm `dailydama.com` as the production host before hardcoding it, consistent with `DEPLOYMENT_HANDOFF.md`.
-
 ### [T264.2] Serve robots.txt and a sitemap.xml with the deployed site
 
 - **Area:** Deployment / Web
