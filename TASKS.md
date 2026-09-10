@@ -133,7 +133,7 @@ _Raw ideas land here — a name and a one-line description, nothing more. Discus
 
 - **Area:** Repository documentation
 - **Priority:** Low
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Implementer
 - **Description:** AGENTS.md calls Profile "intentionally only a placeholder," but the live route includes assessed Kentei rank display, Account sign-up/sign-in, a Kentei assessment entry point, theme customization with contrast ratios, a daily-streak setting, and a feedback link. Rewrite that description to match Profile's actual current scope while preserving the one substantive rule it exists to state — that the trick directory does not belong there.
 - **Exit criteria:** Inspect the AGENTS.md diff: the "intentionally only a placeholder" mischaracterization is gone, the trick-directory exclusion rule is still explicitly stated, and no application code changes accompany it.
