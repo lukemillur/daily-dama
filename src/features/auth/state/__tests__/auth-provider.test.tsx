@@ -12,14 +12,17 @@ jest.mock('@react-native-async-storage/async-storage', () =>
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import {
+  AUTH_INIT_TIMEOUT_MS,
   AuthProvider,
   useAuthActions,
   useAuthState,
 } from '@/features/auth/state/auth-provider';
 
+const STORAGE_KEY = 'sb-example-auth-token';
 const mockGetSupabaseClient = jest.fn();
 jest.mock('@/shared/supabase/supabase-client', () => ({
   getSupabaseClient: () => mockGetSupabaseClient(),
+  getGoTrueStorageKey: () => 'sb-example-auth-token',
 }));
 
 const DELETION_USER_ID = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa';
@@ -116,9 +119,11 @@ describe('AuthProvider', () => {
     captured.state = undefined;
     captured.actions = undefined;
     await AsyncStorage.clear();
+    jest.useRealTimers();
   });
 
-  it('renders children immediately while Auth is still initializing, with no hydration-gate fallback', async () => {
+  it('renders children immediately while Auth is still initializing, with no hydration-gate fallback, then bounds it to refreshFailed with no cached session', async () => {
+    jest.useFakeTimers();
     // A client that never fires an auth event, so state stays 'initializing'
     // after mount -- proving children render without waiting for it to settle.
     const fake = createFakeClient();
@@ -130,6 +135,175 @@ describe('AuthProvider', () => {
     expect(captured.state).toEqual({ status: 'initializing' });
     expect(captured.actions).toBeDefined();
 
+    // Just under the bound: still initializing.
+    await act(async () => {
+      await jest.advanceTimersByTimeAsync(AUTH_INIT_TIMEOUT_MS - 1);
+    });
+    expect(captured.state).toEqual({ status: 'initializing' });
+
+    // At the bound, with no real event and no cached session: refreshFailed.
+    await act(async () => {
+      await jest.advanceTimersByTimeAsync(1);
+    });
+    expect(captured.state).toEqual({ status: 'refreshFailed' });
+
+    act(() => {
+      root.unmount();
+    });
+    jest.useRealTimers();
+  });
+
+  it('optimistically resolves to authenticated from a cached session promptly, without waiting for any event, using a client that never emits', async () => {
+    const cachedSession = { access_token: 'cached', refresh_token: 'r', user: { id: 'u1' } } as unknown as Session;
+    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(cachedSession));
+
+    const fake = createFakeClient(); // never emits
+    mockGetSupabaseClient.mockReturnValue(fake.client);
+
+    let root!: ReturnType<typeof create>;
+    await act(async () => {
+      root = create(
+        <AuthProvider>
+          <Harness />
+        </AuthProvider>,
+      );
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(captured.state).toEqual({
+      status: 'authenticated',
+      session: cachedSession,
+      lastEvent: 'INITIAL_SESSION',
+    });
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  it('a late real event arriving after the optimistic cached-session read still overrides it correctly', async () => {
+    const cachedSession = { access_token: 'cached', refresh_token: 'r', user: { id: 'u1' } } as unknown as Session;
+    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(cachedSession));
+
+    const fake = createFakeClient();
+    mockGetSupabaseClient.mockReturnValue(fake.client);
+
+    let root!: ReturnType<typeof create>;
+    await act(async () => {
+      root = create(
+        <AuthProvider>
+          <Harness />
+        </AuthProvider>,
+      );
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(captured.state).toEqual({
+      status: 'authenticated',
+      session: cachedSession,
+      lastEvent: 'INITIAL_SESSION',
+    });
+
+    act(() => {
+      fake.emit('SIGNED_OUT', null);
+    });
+    expect(captured.state).toEqual({ status: 'guest', reason: 'signedOut' });
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  it('bounds a hung refresh to refreshFailed when there is no cached session (fault injection: onAuthStateChange callback captured but never invoked)', async () => {
+    jest.useFakeTimers();
+    const fake = createFakeClient(); // captures the callback but never calls it
+    mockGetSupabaseClient.mockReturnValue(fake.client);
+
+    const root = await mount();
+    expect(captured.state).toEqual({ status: 'initializing' });
+
+    await act(async () => {
+      await jest.advanceTimersByTimeAsync(AUTH_INIT_TIMEOUT_MS - 1);
+    });
+    expect(captured.state).toEqual({ status: 'initializing' });
+
+    await act(async () => {
+      await jest.advanceTimersByTimeAsync(1);
+    });
+    expect(captured.state).toEqual({ status: 'refreshFailed' });
+
+    act(() => {
+      root.unmount();
+    });
+    jest.useRealTimers();
+  });
+
+  it('a real event arriving after refreshFailed was already reached still corrects state (subscription never torn down)', async () => {
+    jest.useFakeTimers();
+    const fake = createFakeClient();
+    mockGetSupabaseClient.mockReturnValue(fake.client);
+
+    const root = await mount();
+
+    await act(async () => {
+      await jest.advanceTimersByTimeAsync(AUTH_INIT_TIMEOUT_MS);
+    });
+    expect(captured.state).toEqual({ status: 'refreshFailed' });
+
+    const session = { access_token: 'a' } as unknown as Session;
+    act(() => {
+      fake.emit('SIGNED_IN', session);
+    });
+    expect(captured.state).toEqual({ status: 'authenticated', session, lastEvent: 'SIGNED_IN' });
+
+    act(() => {
+      root.unmount();
+    });
+    jest.useRealTimers();
+  });
+
+  it('abandonAuthAndContinueAsGuest removes the cached session and transitions to guest/error', async () => {
+    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify({ access_token: 'cached' }));
+    const fake = createFakeClient();
+    mockGetSupabaseClient.mockReturnValue(fake.client);
+
+    const root = await mount();
+
+    let result: { error: Error | null } | undefined;
+    await act(async () => {
+      result = await captured.actions!.abandonAuthAndContinueAsGuest();
+    });
+
+    expect(result).toEqual({ error: null });
+    expect(captured.state).toEqual({ status: 'guest', reason: 'error' });
+    expect(await AsyncStorage.getItem(STORAGE_KEY)).toBeNull();
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  it('abandonAuthAndContinueAsGuest fails closed and leaves state unchanged when clearing storage fails', async () => {
+    const fake = createFakeClient();
+    mockGetSupabaseClient.mockReturnValue(fake.client);
+
+    const root = await mount();
+
+    const removeItemSpy = jest
+      .spyOn(AsyncStorage, 'removeItem')
+      .mockRejectedValueOnce(new Error('storage unavailable'));
+
+    let result: { error: Error | null } | undefined;
+    await act(async () => {
+      result = await captured.actions!.abandonAuthAndContinueAsGuest();
+    });
+
+    expect(result?.error).toBeInstanceOf(Error);
+    expect(captured.state).toEqual({ status: 'initializing' });
+
+    removeItemSpy.mockRestore();
     act(() => {
       root.unmount();
     });
