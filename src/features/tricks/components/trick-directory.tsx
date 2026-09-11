@@ -1,6 +1,6 @@
 import { Link } from 'expo-router';
-import { type ReactElement, useCallback, useMemo, useState } from 'react';
-import { type LayoutChangeEvent, Pressable, SectionList, type SectionListData } from 'react-native';
+import { type ReactElement, useMemo, useState } from 'react';
+import { Pressable, SectionList, type SectionListData } from 'react-native';
 import { css, styled } from 'styled-components/native';
 
 import { TextField } from '@/components/ui/text-field';
@@ -72,11 +72,11 @@ const NO_SELECTED_TRICKS: readonly string[] = [];
 // each section header individually, not to a wrapper spanning the whole section. A stuck header
 // never truly hands off to the next one — it stays glued to the top and is simply painted over once
 // a later header also becomes stuck — so a section's own trailing row can still be laid out in the
-// same on-screen band its still-stuck header occupies. Right at a section boundary that produces a
-// visibly squeezed frame: the outgoing header covering the last row's text while the incoming
-// header is already visible just below. Reserving a boundary gap at least as tall as a header
-// guarantees the outgoing row has fully scrolled clear before the incoming header comes into view.
-const DEFAULT_SECTION_BOUNDARY_HEIGHT = 56;
+// same on-screen band its still-stuck header occupies. Right at a section boundary that can produce
+// a visibly squeezed frame: the outgoing header covering the last row's text while the incoming
+// header is already visible just below. This gap is intentionally kept shorter than a header
+// (visual compactness over fully eliminating that scroll-transition overlap).
+const SECTION_BOUNDARY_HEIGHT = 8;
 
 export function TrickDirectory({
   tricks,
@@ -113,15 +113,6 @@ export function TrickDirectory({
     [tricks, search?.query, showFocusedSection, sectioningTrickIds],
   );
   const selectedTrickIdSet = useMemo(() => new Set(selectedTrickIds), [selectedTrickIds]);
-  const [sectionBoundaryHeight, setSectionBoundaryHeight] = useState(DEFAULT_SECTION_BOUNDARY_HEIGHT);
-  const handleSectionHeaderLayout = useCallback((event: LayoutChangeEvent) => {
-    const measuredHeight = event.nativeEvent.layout.height;
-    setSectionBoundaryHeight((current) => (Math.abs(current - measuredHeight) > 0.5 ? measuredHeight : current));
-  }, []);
-  const renderSectionSeparator = useCallback(
-    () => <SectionSeparator style={{ height: sectionBoundaryHeight }} />,
-    [sectionBoundaryHeight],
-  );
   const directoryHeader = (
     <DirectoryHeader $compact={fixedHeader}>
       <Eyebrow>{header?.eyebrow ?? DEFAULT_HEADER.eyebrow}</Eyebrow>
@@ -163,9 +154,7 @@ export function TrickDirectory({
       contentContainerStyle={{ paddingBottom: fixedFooter ? 0 : 24 }}
       ListHeaderComponent={fixedHeader ? undefined : directoryHeader}
       ListFooterComponent={fixedFooter ? undefined : footer}
-      renderSectionHeader={({ section }) => (
-        <SectionHeader onLayout={handleSectionHeaderLayout} section={section} />
-      )}
+      renderSectionHeader={({ section }) => <SectionHeader section={section} />}
       renderSectionFooter={({ section }) =>
         section.kind === 'focused' && section.data.length === 0 ? <FocusedEmptyState /> : null
       }
@@ -189,7 +178,7 @@ export function TrickDirectory({
       )}
       ListEmptyComponent={search?.query.trim() ? <SearchEmptyState>No tricks match your search.</SearchEmptyState> : null}
       ItemSeparatorComponent={ItemSeparator}
-      SectionSeparatorComponent={renderSectionSeparator}
+      SectionSeparatorComponent={SectionSeparator}
     />
   );
 
@@ -206,14 +195,12 @@ export function TrickDirectory({
 
 function SectionHeader({
   section,
-  onLayout,
 }: {
   readonly section: SectionListData<DirectoryTrick, TrickSection>;
-  readonly onLayout: (event: LayoutChangeEvent) => void;
 }) {
   const isCustom = section.kind === 'custom';
   return (
-    <SectionHeaderContainer $custom={isCustom} onLayout={onLayout}>
+    <SectionHeaderContainer $custom={isCustom}>
       <RankLabel $custom={isCustom}>
         {section.kind === 'custom' ? 'Custom' : section.kind === 'focused' ? 'Focused tricks' : `Rank ${section.rank}`}
       </RankLabel>
@@ -640,6 +627,6 @@ const ItemSeparator = styled.View`
 `;
 
 const SectionSeparator = styled.View`
-  height: 18px;
-  background-color: #efe5ca;
+  height: ${SECTION_BOUNDARY_HEIGHT}px;
+  background-color: #f8f1dd;
 `;
