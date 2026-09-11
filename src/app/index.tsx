@@ -22,13 +22,13 @@ export default function RootRoute() {
       <Head>
         <meta name="description" content={LANDING_PAGE_DESCRIPTION} />
         <link rel="canonical" href={PRODUCTION_HOST} />
-        <meta property="og:title" content="Daily Dama — Kendama Practice Tracker" />
+        <meta property="og:title" content="Daily Dama - Kendama Practice Tracker" />
         <meta property="og:description" content={LANDING_PAGE_DESCRIPTION} />
         <meta property="og:image" content={OG_SHARE_IMAGE_URL} />
         <meta property="og:url" content={PRODUCTION_HOST} />
         <meta property="og:type" content="website" />
         <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content="Daily Dama — Kendama Practice Tracker" />
+        <meta name="twitter:title" content="Daily Dama - Kendama Practice Tracker" />
         <meta name="twitter:description" content={LANDING_PAGE_DESCRIPTION} />
         <meta name="twitter:image" content={OG_SHARE_IMAGE_URL} />
       </Head>

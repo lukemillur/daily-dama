@@ -71,17 +71,17 @@ const SCREENSHOT_TITLES_AND_CAPTIONS: ReadonlyArray<{ title: string; caption: st
       'Open the app and the loop is right there: what you last practiced, what’s next, and how the streak is going.',
   },
   {
-    title: 'Set the terms of the sesh',
+    title: 'Customize your sesh',
     caption:
       'Run the clock down, chase a lace count, or line up several tricks and work the whole set in one sesh.',
   },
   {
-    title: 'Your move, your rank',
+    title: 'Custom tricks',
     caption: 'Got a move that’s not in the standard Kentei set? Name it, rank it, and it joins your rotation.',
   },
   {
     title: 'Progress you can point to',
-    caption: 'Climb the ladder on purpose — set a target per trick and watch the progress add up.',
+    caption: 'Improve your consistency - set a lace or time target per trick and watch your lace rate climb over time.',
   },
 ];
 
@@ -105,7 +105,7 @@ describe('LandingPage', () => {
     const allText = textNodes.map((node) => node.props.children as string);
 
     const ctaIndex = allText.findIndex((text) => text === 'Start your first Sesh');
-    const featureHeadingIndex = allText.findIndex((text) => text === 'Pick one trick and stick to it');
+    const featureHeadingIndex = allText.findIndex((text) => text === 'Level up faster');
 
     expect(ctaIndex).toBeGreaterThanOrEqual(0);
     expect(featureHeadingIndex).toBeGreaterThanOrEqual(0);
