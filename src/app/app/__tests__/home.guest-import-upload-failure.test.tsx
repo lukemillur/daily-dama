@@ -130,7 +130,7 @@ function findByText(root: ReactTestRenderer, text: string | RegExp) {
 // painting, so that's what this checks instead.
 function isRenderingNeitherOnboardingNorHome(root: ReactTestRenderer): boolean {
   const onboarding = findByText(root, 'Get started').length > 0;
-  const dailyHome = findByText(root, 'Showing up, in three numbers.').length > 0;
+  const dailyHome = findByText(root, "You're putting in the work.").length > 0;
   return !onboarding && !dailyHome;
 }
 

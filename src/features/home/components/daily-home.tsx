@@ -47,7 +47,7 @@ function PrimaryPractice({ summary }: { readonly summary: HomeSummary }) {
         <HeroMarker>Today’s practice</HeroMarker>
         <HeroTitle>Start your{`\n`}first sesh.</HeroTitle>
         <HeroCopy>
-          Your practice list is ready when you are. A little focused work is enough to begin.
+          Your practice list is ready when you are. A little focused practice is enough to begin.
         </HeroCopy>
         <Link href="/app/sesh" asChild>
           <HeroButton accessibilityRole="link">Start a sesh</HeroButton>
@@ -70,12 +70,12 @@ function PrimaryPractice({ summary }: { readonly summary: HomeSummary }) {
         <Link
           href={{ pathname: '/app/sesh', params: { trickId: recent.availableTrick.id, mode: 'practice' } }}
           asChild>
-          <HeroButton accessibilityRole="link">Practice again</HeroButton>
+          <HeroButton accessibilityRole="link">Run it back</HeroButton>
         </Link>
       ) : (
         <UnavailableAction>
           <UnavailableCopy>
-            This trick is no longer in your library, but the work still counts.
+            This trick is no longer in your library.
           </UnavailableCopy>
           <Link href="/app/sesh" asChild>
             <HeroButton accessibilityRole="link">Start a sesh</HeroButton>
@@ -97,7 +97,7 @@ function NextKenteiTrick({ trick }: { readonly trick?: HomePracticeTrick }) {
     <Section>
       <SectionHeading>
         <SectionHeadingCopy>
-          <SectionEyebrow>Next up in Kentei</SectionEyebrow>
+          <SectionEyebrow>Next up in your rank</SectionEyebrow>
           <SectionTitle>Learn your next trick</SectionTitle>
         </SectionHeadingCopy>
       </SectionHeading>
@@ -185,7 +185,7 @@ function TimeLogged({ summary }: { readonly summary: HomeSummary }) {
 
   return (
     <TimeLoggedSection>
-      <SectionEyebrow>Time on the string</SectionEyebrow>
+      <SectionEyebrow>Time on the grind</SectionEyebrow>
       <TimeLoggedIntro>How much you’ve logged.</TimeLoggedIntro>
       <TimeLoggedGrid>
         {timeLoggedWindows.map((window) => (
@@ -205,7 +205,7 @@ function Momentum({ summary }: { readonly summary: HomeSummary }) {
   return (
     <MomentumSection>
       <SectionEyebrow>Last seven days</SectionEyebrow>
-      <MomentumIntro>Showing up, in three numbers.</MomentumIntro>
+      <MomentumIntro>You&apos;re putting in the work.</MomentumIntro>
       <MomentumStrip>
         <MomentumMetric>
           <MomentumValue>{momentum.sessionCount}</MomentumValue>

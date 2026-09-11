@@ -317,7 +317,7 @@ describe('StatsScreen never flashes EmptyStats after a guest import completes (T
       await flush(1);
       expect(findByText(root, 'Get started').length).toBe(0);
     }
-    expect(findByText(root, 'Showing up, in three numbers.').length).toBeGreaterThan(0);
+    expect(findByText(root, "You're putting in the work.").length).toBeGreaterThan(0);
 
     // Now simulate navigating from Home to Stats: same provider instances
     // (identity/profile/practice-history state all persists), but Home's
