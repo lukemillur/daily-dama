@@ -54,9 +54,9 @@ export default function ProfileScreen() {
           <GuestAccountSection />
           <Divider />
           <SectionLabel>Kentei assessment</SectionLabel>
-          <Title>Put it to{`\n`}the test.</Title>
+          <Title>See where you stand.</Title>
           <Copy>
-            Run a real, timed assessment through your tricks. Every landing
+            Work through the Kentei ladder to find your rank. Every lace
             counts as practice history, so a full pass through a rank promotes
             you automatically.
           </Copy>
@@ -78,8 +78,8 @@ export default function ProfileScreen() {
           <SectionLabel>Feedback</SectionLabel>
           <Title>Something{`\n`}feel off?</Title>
           <Copy>
-            Daily Dama is a work in progress. Bug reports, trick corrections,
-            and feature requests all help.
+            Daily Dama is a work in progress. Bug reports, feature requests,
+            and general feedback all help.
           </Copy>
           <RetakeButton onPress={() => router.push("/feedback")}>
             Send feedback
