@@ -30,6 +30,8 @@ _S129–S130 were refined on 2026-09-10 from the user's pre-launch task list (ne
 
 _S131–S137 came from an autonomous exploratory QA pass on 2026-09-10 (run by an agent driving the local dev server as a user, not the user directly — see `outputs/qa-pass-2026-09-10.md`) while the user was away, covering Home/Sesh/Tricks/Stats/Profile plus persistence and the custom-trick/sequence invariants. Two are confirmed functional/accessibility bugs (S131, S132), one is a visual bug (S133), three are minor UX/documentation corrections (S134–S136), and one is a low-confidence, non-reproducible observation held back for confirmation (S137). All core AGENTS.md invariants under test (custom-trick sort order, sequence step name-snapshot authority, exclusion of sequences from `selectSequenceStepCandidates`, Stats derived from history, hydration-safe reload) were verified intact and did not generate stories. S131–S136 were scoped into `TASKS.md` and removed from this file: S131→T266, S132→T267, S133→T268, S134→T269, S135→T270, S136→T271. S137 remains `Proposed`._
 
+_S138–S139 came from the user's 2026-09-11 QA pass on T267–T271 (the batch closed by the 2026-09-10 autonomous pass, S131–S136). Both are follow-up gaps on already-`Done` tickets: T267's fix left the goal card's own practice affordance unpressable in the area it visually occupies, and T268's fix introduced a scroll behavior the user finds worse than the overlap it fixed. T269–T271 were confirmed with no follow-up gap. Both were scoped into `TASKS.md` and removed from this file: S138→T272, S139→T273._
+
 ### [S137] Investigate occasional empty page title after a custom-trick save
 
 - **As a:** any user
