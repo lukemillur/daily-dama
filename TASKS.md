@@ -133,7 +133,7 @@ _Raw ideas land here — a name and a one-line description, nothing more. Discus
 
 - **Area:** landing page
 - **Priority:** Low
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Implementer
 - **Description:** The landing page's intro copy and CTA block render wider than the max-width used by the screenshots section below it, breaking the page's visual alignment. Discovered incidentally during T232's hosted acceptance pass.
 - **Exit criteria:** The copy/CTA block's rendered max-width matches or stays within the screenshots section's defined max-width across the supported breakpoints (320px and desktop).
