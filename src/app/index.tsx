@@ -20,9 +20,11 @@ export default function RootRoute() {
   return (
     <>
       <Head>
+        <title>Daily Dama - Kendama Practice Tracker</title>
         <meta name="description" content={LANDING_PAGE_DESCRIPTION} />
         <link rel="canonical" href={PRODUCTION_HOST} />
         <meta property="og:title" content="Daily Dama - Kendama Practice Tracker" />
+        <meta property="og:site_name" content="Daily Dama" />
         <meta property="og:description" content={LANDING_PAGE_DESCRIPTION} />
         <meta property="og:image" content={OG_SHARE_IMAGE_URL} />
         <meta property="og:url" content={PRODUCTION_HOST} />
