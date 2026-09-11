@@ -155,9 +155,9 @@ export function GoalRow({
           </GoalInfoColumn>
           <GoalTrickName numberOfLines={2}>{goal.trickName}</GoalTrickName>
         </GoalHeaderRow>
+        <PracticeHintText>Practice toward this goal</PracticeHintText>
       </PracticeArea>
       <GoalActionsRow>
-        <PracticeHintText>Practice toward this goal</PracticeHintText>
         <GoalAction
           accessibilityLabel="Delete goal"
           accessibilityRole="button"
