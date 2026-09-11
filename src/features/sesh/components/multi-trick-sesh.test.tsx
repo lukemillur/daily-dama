@@ -7,7 +7,12 @@ import { act, create } from 'react-test-renderer';
 
 import { NoteProvider } from '@/features/notes/state/note-provider';
 import { MultiTrickSesh } from '@/features/sesh/components/multi-trick-sesh';
-import { createTimedSeshPlan, OPEN_ENDED_SESH_PLAN, type SeshPlan } from '@/features/sesh/model/sesh';
+import {
+  createTimedSeshPlan,
+  LACE_INPUT_LOCKOUT_MS,
+  OPEN_ENDED_SESH_PLAN,
+  type SeshPlan,
+} from '@/features/sesh/model/sesh';
 import {
   PracticeHistoryProvider,
   usePracticeHistory,
@@ -67,6 +72,13 @@ function advanceThroughCountdown() {
   });
   act(() => {
     jest.advanceTimersByTime(1000);
+  });
+  // Clears T266's countdown-to-active lace input lockout so a subsequent, genuinely later
+  // "Laced" press in these tests records normally instead of being discarded as a bled-through
+  // tap. Tests that specifically want to land inside the lockout window (T266 regression
+  // coverage) advance the countdown manually instead of using this helper.
+  act(() => {
+    jest.advanceTimersByTime(LACE_INPUT_LOCKOUT_MS);
   });
 }
 
@@ -862,6 +874,78 @@ describe('MultiTrickSesh countdown Skip (T075)', () => {
 
     expect(findByAccessibilityLabel(root, 'Skip countdown')).toHaveLength(0);
     expect(findByText(root, 'Cancel')).toHaveLength(0);
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  // T266 regression: Skip and Laced can occupy the same on-screen position across the
+  // countdown-to-active transition frame, so a tap that resolves a Skip can bleed straight into
+  // a lace on the freshly rendered Active screen. Covers both the first trick's countdown and a
+  // later trick's countdown reached mid-run, per the ticket's exit criteria.
+  it('discards a lace bled through immediately after skipping the first trick\'s countdown', async () => {
+    const onFinished = jest.fn();
+    const root = await mountMultiTrickSesh({ onFinished });
+
+    act(() => {
+      pressByAccessibilityLabel(root, 'Skip countdown');
+    });
+    // A stray press landing on Laced in the very same instant the screen flips to Active.
+    act(() => {
+      pressByAccessibilityLabel(root, 'Laced');
+    });
+
+    expect(root.root.findAll((node) => node.props.children === 0).length).toBeGreaterThan(0);
+
+    act(() => {
+      pressByVisibleText(root, 'End Sesh');
+    });
+
+    expect(findByAccessibilityLabel(root, 'session-count:1').length).toBeGreaterThan(0);
+    expect(findByAccessibilityLabel(root, 'session-0-lace-count:0').length).toBeGreaterThan(0);
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  it('discards a lace bled through immediately after skipping a later trick\'s countdown, mid-Sesh', async () => {
+    const onFinished = jest.fn();
+    const root = await mountMultiTrickSesh({ onFinished });
+
+    act(() => {
+      pressByAccessibilityLabel(root, 'Skip countdown');
+    });
+    act(() => {
+      jest.advanceTimersByTime(LACE_INPUT_LOCKOUT_MS);
+    });
+    act(() => {
+      pressByAccessibilityLabel(root, 'Laced');
+    });
+    act(() => {
+      pressByVisibleText(root, 'Next trick');
+    });
+
+    expect(findByText(root, TRICKS[1].name).length).toBeGreaterThan(0);
+    expect(findByAccessibilityLabel(root, 'session-0-lace-count:1').length).toBeGreaterThan(0);
+
+    act(() => {
+      pressByAccessibilityLabel(root, 'Skip countdown');
+    });
+    // The stray bleed-through press on trick 2's freshly rendered Active screen.
+    act(() => {
+      pressByAccessibilityLabel(root, 'Laced');
+    });
+
+    expect(root.root.findAll((node) => node.props.children === 0).length).toBeGreaterThan(0);
+
+    act(() => {
+      pressByVisibleText(root, 'End Sesh');
+    });
+
+    expect(findByAccessibilityLabel(root, 'session-count:2').length).toBeGreaterThan(0);
+    expect(findByAccessibilityLabel(root, 'session-1-lace-count:0').length).toBeGreaterThan(0);
 
     act(() => {
       root.unmount();

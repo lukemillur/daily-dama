@@ -83,6 +83,45 @@ describe('TrickGoalsScreen', () => {
     expect(findButton(root, 'Add goal')).toBeDefined();
   });
 
+  it('hides the target-count error until the field is blurred or a submit is attempted', () => {
+    let root!: ReactTestRenderer;
+    act(() => {
+      root = create(<TrickGoalsScreen trickId="big-cup" trickName="Big Cup" onBack={jest.fn()} />);
+    });
+
+    act(() => {
+      findButton(root, 'Add goal').props.onPress();
+    });
+
+    expect(findText(root, 'Enter a whole number of laces from 1 to 100000.').length).toBe(0);
+
+    act(() => {
+      root.root.findByProps({ accessibilityLabel: 'Target lace count' }).props.onBlur();
+    });
+
+    expect(findText(root, 'Enter a whole number of laces from 1 to 100000.').length).toBeGreaterThan(0);
+  });
+
+  it('shows the target-count error after a submit attempt with an invalid value', () => {
+    let root!: ReactTestRenderer;
+    act(() => {
+      root = create(<TrickGoalsScreen trickId="big-cup" trickName="Big Cup" onBack={jest.fn()} />);
+    });
+
+    act(() => {
+      findButton(root, 'Add goal').props.onPress();
+    });
+
+    expect(findText(root, 'Enter a whole number of laces from 1 to 100000.').length).toBe(0);
+
+    act(() => {
+      root.root.findByProps({ accessibilityLabel: 'Save goal' }).props.onPress();
+    });
+
+    expect(findText(root, 'Enter a whole number of laces from 1 to 100000.').length).toBeGreaterThan(0);
+    expect(mockAddGoal).not.toHaveBeenCalled();
+  });
+
   it('shows no trick-goals heading when the trick has exactly one goal', () => {
     mockGoals = [
       { id: 'goal-1', trickId: 'big-cup', trickName: 'Big Cup', kind: 'count', targetCount: 10, createdAt: 0, updatedAt: 0 },
@@ -170,6 +209,65 @@ describe('TrickGoalsScreen', () => {
 
     expect(mockRouter.push).not.toHaveBeenCalled();
     expect(root.root.findByProps({ accessibilityLabel: 'Confirm delete goal' })).toBeDefined();
+  });
+
+  it('does not nest the Delete button inside the Practice button', () => {
+    mockGoals = [
+      { id: 'goal-1', trickId: 'big-cup', trickName: 'Big Cup', kind: 'count', targetCount: 10, createdAt: 0, updatedAt: 0 },
+    ];
+    let root!: ReactTestRenderer;
+    act(() => {
+      root = create(<TrickGoalsScreen trickId="big-cup" trickName="Big Cup" onBack={() => {}} />);
+    });
+
+    const practiceButton = root.root.findByProps({ accessibilityLabel: 'Practice Big Cup' });
+    expect(practiceButton.props.accessibilityRole).toBe('button');
+
+    // A styled Pressable re-appears at several fiber layers (styled-components wrapper,
+    // Pressable itself, host node) all sharing the same props, so only a *different*
+    // accessibilityLabel with role "button" underneath it would indicate an invalid nested
+    // interactive control (e.g. Delete rendered inside Practice).
+    const nestedOtherButtons = practiceButton.findAll(
+      (node) =>
+        node.props.accessibilityRole === 'button' &&
+        node.props.accessibilityLabel !== 'Practice Big Cup',
+    );
+    expect(nestedOtherButtons).toHaveLength(0);
+
+    // Delete remains reachable as an independent sibling control, not a descendant of Practice.
+    const deleteButton = root.root.findByProps({ accessibilityLabel: 'Delete goal' });
+    expect(deleteButton.props.accessibilityRole).toBe('button');
+  });
+
+  it('renders the practice hint text inside the Practice button, not the Delete button', () => {
+    mockGoals = [
+      { id: 'goal-1', trickId: 'big-cup', trickName: 'Big Cup', kind: 'count', targetCount: 10, createdAt: 0, updatedAt: 0 },
+    ];
+    let root!: ReactTestRenderer;
+    act(() => {
+      root = create(<TrickGoalsScreen trickId="big-cup" trickName="Big Cup" onBack={() => {}} />);
+    });
+
+    const practiceButton = root.root.findByProps({ accessibilityLabel: 'Practice Big Cup' });
+    const hintInPractice = practiceButton.findAll(
+      (node) => typeof node.type === 'string' && node.props.children === 'Practice toward this goal',
+    );
+    expect(hintInPractice.length).toBeGreaterThan(0);
+
+    const deleteButton = root.root.findByProps({ accessibilityLabel: 'Delete goal' });
+    const hintInDelete = deleteButton.findAll(
+      (node) => typeof node.type === 'string' && node.props.children === 'Practice toward this goal',
+    );
+    expect(hintInDelete).toHaveLength(0);
+
+    // Pressing the hint text's row triggers the same practice navigation as the header row.
+    act(() => {
+      practiceButton.props.onPress();
+    });
+    expect(mockRouter.push).toHaveBeenCalledWith({
+      pathname: '/app/sesh',
+      params: { trickId: 'big-cup', mode: 'practice' },
+    });
   });
 
   it('renders the goal card trick title large and right-aligned in the same row as the progress info', () => {

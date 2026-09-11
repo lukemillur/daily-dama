@@ -131,7 +131,7 @@ describe('HomeScreen onboarding gate: guest-import awareness (T186.1)', () => {
 
     expect(findByText(root, 'Get started').length).toBe(0);
     // DailyHome-only content confirming the real home screen rendered.
-    expect(findByText(root, 'Showing up, in three numbers.').length).toBeGreaterThan(0);
+    expect(findByText(root, "You're putting in the work.").length).toBeGreaterThan(0);
 
     await act(async () => {
       root.unmount();
