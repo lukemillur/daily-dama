@@ -1,6 +1,6 @@
 import { Link } from 'expo-router';
 import { type ReactElement, useCallback, useMemo, useState } from 'react';
-import { type LayoutChangeEvent, Platform, Pressable, SectionList, type SectionListData } from 'react-native';
+import { type LayoutChangeEvent, Pressable, SectionList, type SectionListData } from 'react-native';
 import { css, styled } from 'styled-components/native';
 
 import { TextField } from '@/components/ui/text-field';
@@ -122,15 +122,6 @@ export function TrickDirectory({
     () => <SectionSeparator style={{ height: sectionBoundaryHeight }} />,
     [sectionBoundaryHeight],
   );
-  // Web-only: `scroll-snap-type` + `scroll-padding-top` (offset by the sticky header's height)
-  // is the standard CSS pairing for combining scroll snapping with a sticky header — it keeps a
-  // released scroll from ever coming to rest with a row's text only partially visible beneath the
-  // still-active header. `scroll-snap-align: start` on each row (below) is the matching snap
-  // target. React Native's `ViewStyle` type doesn't know these web CSS properties.
-  const scrollSnapListStyle =
-    Platform.OS === 'web'
-      ? ({ scrollPaddingTop: sectionBoundaryHeight, scrollSnapType: 'y proximity' } as object)
-      : undefined;
   const directoryHeader = (
     <DirectoryHeader $compact={fixedHeader}>
       <Eyebrow>{header?.eyebrow ?? DEFAULT_HEADER.eyebrow}</Eyebrow>
@@ -164,7 +155,6 @@ export function TrickDirectory({
       }}
       keyExtractor={(trick) => trick.id}
       stickySectionHeadersEnabled
-      style={scrollSnapListStyle}
       // Always hidden. On web react-native-web turns `showsVerticalScrollIndicator={false}`
       // into a real CSS hide on the scrolling element (`scrollbar-width: none` plus
       // `::-webkit-scrollbar { display: none }`), so no extra web-only CSS is needed here.
@@ -524,7 +514,6 @@ const trickRowLayout = css<{ readonly $selected: boolean; readonly $laced: boole
   background-color: ${({ $selected, $laced }) => ($selected || $laced ? '#e5edcf' : '#f8f1dd')};
   border-left-width: ${({ $laced }) => ($laced ? '4px' : '0px')};
   border-left-color: ${({ $laced }) => ($laced ? '#274137' : 'transparent')};
-  ${Platform.OS === 'web' ? 'scroll-snap-align: start;' : ''}
 `;
 
 const TrickRowContainer = styled.View<{ readonly $selected: boolean; readonly $laced: boolean }>`
