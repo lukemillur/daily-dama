@@ -157,14 +157,14 @@ export function GoalRow({
         </GoalHeaderRow>
         <PracticeHintText>Practice toward this goal</PracticeHintText>
       </PracticeArea>
-      <GoalActionsRow>
+      <GoalActionsFooter>
         <GoalAction
           accessibilityLabel="Delete goal"
           accessibilityRole="button"
           onPress={() => setConfirmingDelete(true)}>
           <DeleteActionText>Delete</DeleteActionText>
         </GoalAction>
-      </GoalActionsRow>
+      </GoalActionsFooter>
     </GoalCard>
   );
 }
@@ -284,6 +284,7 @@ const GoalCard = styled.View`
 `;
 const PracticeArea = styled(Pressable)<{ readonly $pressed: boolean }>`
   opacity: ${({ $pressed }) => ($pressed ? 0.7 : 1)};
+  padding-bottom: 32px;
 `;
 const GoalHeaderRow = styled.View`flex-direction: row; align-items: flex-start; justify-content: space-between; gap: 14px;`;
 const GoalInfoColumn = styled.View`flex: 1;`;
@@ -299,10 +300,19 @@ const AchievedBadge = styled.Text`overflow: hidden; padding: 4px 8px; color: ${A
 const GoalBody = styled.Text`color: ${AppColors.ink}; font-size: 16px; font-weight: 650; line-height: 23px; margin-top: 8px;`;
 const ProgressText = styled.Text`color: ${AppColors.inkSoft}; font-size: 13px; font-weight: 700; margin-top: 6px;`;
 const GoalActionsRow = styled.View`flex-direction: row; gap: 14px; margin-top: 12px;`;
+const GoalActionsFooter = styled.View`position: absolute; right: 16px; bottom: 16px; flex-direction: row; gap: 14px;`;
 const GoalAction = styled(Pressable)`min-height: 36px; justify-content: center;`;
 const GoalActionText = styled.Text`color: ${AppColors.ink}; font-size: 12px; font-weight: 900; text-transform: uppercase;`;
 const DeleteActionText = styled(GoalActionText)`color: ${AppColors.red};`;
-const PracticeHintText = styled.Text`flex: 1; color: ${AppColors.inkSoft}; font-size: 12px; font-weight: 800; text-transform: uppercase; align-self: center;`;
+const PracticeHintText = styled.Text`
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  color: ${AppColors.inkSoft};
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+`;
 const Field = styled.View`margin-top: 28px;`;
 const FieldLabel = styled.Text`color: ${AppColors.ink}; font-size: 13px; font-weight: 900; letter-spacing: 1px; text-transform: uppercase;`;
 const KindPicker = styled.View`flex-direction: row; gap: 10px; margin-top: 8px;`;
