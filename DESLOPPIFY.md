@@ -4,6 +4,8 @@ Reviewed 2026-09-04 against local `development` at `7bdeb7f`.
 
 Critical-ticket reconciliation was repeated 2026-09-04 on clean, up-to-date `development` at `8979dca`. D001/D002 and the existing ownership of T226–T229 were rechecked for this ticketing pass; medium and nice-to-have findings retain the original scan's evidence and caveats until a full refresh.
 
+Bundle/dependency evidence was refreshed 2026-09-11 against clean local `development` at `059a13b` (one commit ahead of `origin/development`). This was a deliberately narrow refresh of D014/D015 plus new D019/D020, not a revalidation of every older finding.
+
 This is an audit and cleanup queue, not evidence that every existing product ticket has been completed. The original scan checkout was four commits behind `origin/development` and already contained user-owned changes in `.vscode/settings.json`, `src/app/app/tricks/index.tsx`, and `src/features/notes/components/all-notes-screen.tsx`; those changes were preserved and were not treated as cleanup work. Before implementing any item, refresh/reconcile the branch and re-check the cited code.
 
 ## How to use this backlog
@@ -64,6 +66,14 @@ Status values: `Ready`, `Wait`, `Existing ticket`, `Done`.
 - **Timing:** Wait for the guided hosted check. Keep the DSN unset until the full path is verified.
 
 ## 2. Medium cleanup items
+
+### [D015] Exclude dev-only sandbox routes from the release bundle
+
+- **Status:** Wait for the trick-visualization decision
+- **Where:** `src/app/app/stats/sesh-sequence-sandbox.tsx`, `src/app/app/stats/trick-viz-sandbox.tsx`, the `__DEV__` links in `src/app/app/home.tsx:107-115`, and the otherwise-unreachable `src/features/trick-viz/` graph.
+- **Why it matters:** Both routes are exported even though production renders a redirect. More importantly, Expo Router's web export includes the trick-viz route module and all of its static imports in the one production entry bundle. On 2026-09-11, the real export was 8,927,589 bytes minified / 2,405,214 bytes gzip. In an isolated copy where only `trick-viz-sandbox.tsx` was replaced by a redirect-only route, it fell to 3,893,799 bytes / 971,096 bytes gzip: 5,033,790 bytes minified and 1,434,118 bytes gzip removed (56.4% and 59.6%). The source map attributes most of the difference to `three-stdlib`, `three`, `@react-three/drei`, `@react-three/fiber`, and their helpers. `LandingHero` is not a production consumer: its JSX has been commented out since commit `c953c2c`, so the sandbox route is currently the only application import that makes trick-viz reachable.
+- **Recommended change:** For the release, remove the trick-viz sandbox from the Expo Router route graph and its Home dev link, or move the harness to a separate developer entry point that is not statically imported by a production route. The Sesh-sequence sandbox is much smaller but should be removed from the production route graph for the same ownership reason. Preserve `src/features/trick-viz/` and its tests if the subsystem is still planned; deleting that source and the four direct 3D dependencies (`@react-three/drei`, `@react-three/fiber`, `three`, `expo-gl`) is a separate product decision governed by `TRICK_VIZ_HANDOFF.md`.
+- **Timing:** Resolve before shipping because the measured transfer/parse saving is material. The safe default is to preserve the subsystem source but exclude the two developer routes from the release graph.
 
 ### [D003] Make Auth actions total and submission state exception-safe
 
@@ -158,18 +168,10 @@ Status values: `Ready`, `Wait`, `Existing ticket`, `Done`.
 ### [D014] Remove confirmed Expo-starter remnants
 
 - **Status:** Ready after one reference audit
-- **Where:** `src/components/themed-text.tsx`, `src/components/themed-view.tsx`, and `src/hooks/use-theme.ts` reference only one another and have no application consumers; `assets/images/tabIcons/explore*.png` are unreferenced.
-- **Why it matters:** They expose a second, unused theme abstraction beside styled-components and make the repository look like it supports UI paths it does not. The unused icon files add small but misleading asset inventory.
-- **Recommended change:** Re-run reference checks, remove only confirmed unused files, and run typecheck plus web export. Keep `use-color-scheme` and the Home tab icon because they are active.
+- **Where:** `src/components/themed-text.tsx`, `src/components/themed-view.tsx`, and `src/hooks/use-theme.ts` reference only one another and have no application consumers; `assets/images/tabIcons/explore.png`, `explore@2x.png`, and `explore@3x.png` are unreferenced. The named `AnimatedIcon` export in both `src/components/animated-icon.tsx` and `.web.tsx` also has no consumer, but shares its module with the active `AnimatedSplashOverlay`.
+- **Why it matters:** The unused theme files expose a second abstraction beside styled-components, and the Explore icons add a misleading inventory. Unlike the other unreachable files, `AnimatedIcon` currently has a measurable export cost: Metro preserves its module-level asset requires and emits `logo-glow.png` (331,624 bytes) and `expo-logo.png` (3,317 bytes) into the web output even though the current web splash renders only a text wordmark and never renders either image.
+- **Recommended change:** Remove the unused `AnimatedIcon` exports and their private animation/style code from both platform modules, then remove `logo-glow.png`. Keep `expo-logo.png` while the native `AnimatedSplashOverlay` still requires it; platform resolution should stop emitting it in the web export once the unused `.web.tsx` consumer is gone. Remove the other confirmed unused files and run typecheck plus web export, asserting that both image artifacts disappear from web output. Keep `use-color-scheme` and the Home tab icon family: `home.png` is explicitly required and React Native resolves the `@2x`/`@3x` variants implicitly.
 - **Timing:** Safe now. Do not fold the intentionally retained brand-source images under `assets/images/brand/` into this deletion.
-
-### [D015] Decide whether old dev-only sandbox routes remain supported tools
-
-- **Status:** Wait for the trick-visualization decision
-- **Where:** `src/app/app/stats/sesh-sequence-sandbox.tsx`, `trick-viz-sandbox.tsx`, and the `__DEV__` links in `src/app/app/home.tsx:106-115`.
-- **Why it matters:** Both routes are exported into `dist` even though production renders a redirect, and the Sesh sandbox still carries T012-era placement rationale. They are not dead—the dev Home links reach them—but their maintenance ownership and intended lifetime are unclear.
-- **Recommended change:** If they remain useful, document them as supported developer harnesses and keep focused smoke coverage. If not, remove the route, link, and route-specific assets/tests together. Do not remove trick-viz work while `TRICK_VIZ_HANDOFF.md` remains an active separate subsystem.
-- **Timing:** Wait for an explicit keep/remove decision; this is not urgent.
 
 ### [D016] Centralize repeated hydration fallback presentation
 
@@ -195,6 +197,22 @@ Status values: `Ready`, `Wait`, `Existing ticket`, `Done`.
 - **Recommended change:** While touching a file, rewrite stale comments around current invariants and link to durable architecture docs for long explanations. Keep ticket references only where they add traceability that the current code cannot explain itself.
 - **Timing:** Safe as touch-local cleanup; do not launch a standalone mass comment rewrite.
 
+### [D019] Remove unused direct dependency declarations
+
+- **Status:** Ready
+- **Where:** `package.json` dependencies `expo-status-bar`, `expo-system-ui`, and `react-native-gesture-handler`.
+- **Why it matters:** A repository-wide import/config scan found no consumer for any of the three. `yarn why` reports each exists only because it is declared directly (gesture-handler is an optional Expo Router peer). None appears in the 2026-09-11 web bundle source map, so removal will reduce install surface and lockfile/native dependency inventory rather than the current web transfer size. `expo-font` and `react-native-screens` also have no direct app import but are transitive dependencies of `expo`/`expo-router`; deleting only their top-level declarations is manifest hygiene, not a real package or bundle saving. `expo-constants` and `expo-linking` satisfy Expo Router peers, while `expo-asset` is configured and also required transitively; keep those.
+- **Recommended change:** Remove only the three confirmed standalone declarations with Yarn, then run the configuration/dependency verification tier. Re-run `yarn why` and inspect the lockfile diff so a transitive consumer or native autolinking requirement is not silently lost. Treat `expo-font`/`react-native-screens` declaration cleanup separately and only if aligning the manifest with Expo's recommended dependency contract is worthwhile.
+- **Timing:** Safe for the active web target, but because dependency changes affect eventual native projects, perform this only while mobile remains explicitly deferred and record that native validation was not run.
+
+### [D020] Archive unused source artwork without claiming bundle savings
+
+- **Status:** Wait for owner archive/delete decision
+- **Where:** Nine unused brand exploration/source PNGs under `assets/images/brand/` (18.42 MiB total), plus `assets/images/landing/kendama-photo.jpg`, `assets/images/landing/landing-hero-fallback.png`, `assets/images/favicon.png`, and `assets/images/share-card.png` (0.30 MiB with the three `explore*` icons already owned by D014).
+- **Why it matters:** Static reference checks and a fresh export show these files are not emitted into the web build, so deleting them would shrink the checkout/repository, not the shipped JavaScript or initial network payload. The 460,643-byte `assets/images/brand/branding-assets/daily-dama-og-share-card.png` is a source duplicate of the active `public/images/daily-dama-og-share-card.png`; only the public copy is deployed. `landing-hero-fallback.png` becomes relevant again only if the currently disabled `LandingHero` returns. The brand files were intentionally retained as concept/source material, so absence from runtime is not by itself permission to delete them.
+- **Recommended change:** Keep them if Git is the intentional design-source archive. Otherwise move the accepted source originals to an explicit design archive outside the application repository and remove the duplicate/unselected exports here. Do not remove `home@2x`/`home@3x` merely because they have no textual reference; React Native selects them implicitly from `home.png`. Keep configured icon/splash/favicon assets.
+- **Timing:** No release urgency because there is no measured web-bundle saving. Decide after D015 so the trick-viz fallback's future is clear.
+
 ## Recommended execution order
 
 1. T247 (D001) — prevent discarded outboxes from surviving a failed durable write.
@@ -206,6 +224,7 @@ Status values: `Ready`, `Wait`, `Existing ticket`, `Done`.
 7. D005, then D004 — type the cross-domain merge before consolidating sync machinery.
 8. D006/D007/D008 after overlapping feature work is clear.
 9. D013-D018 as focused polish.
+10. For release-size work: decide D015 first, then D019 and D014; handle D020 only as repository hygiene.
 
 ## Scan evidence and limits
 
@@ -214,3 +233,4 @@ Status values: `Ready`, `Wait`, `Existing ticket`, `Done`.
 - Inspected route/provider composition, all five persistence and sync paths, Auth/feedback, guest import, SQL constraints/RLS, CSP/Sentry, hosting rewrites, largest source files, unused starter references, tracked outputs/assets, and current task queues.
 - Did not run the full Jest suite, web export, local Supabase, or browser acceptance: this was a documentation-only audit on a dirty, behind checkout, and those runs would not resolve the hosted findings already assigned to T225-T229.
 - Existing T236-T246 UI tickets were not copied into this backlog. They remain the authoritative queue for already-reported product polish.
+- 2026-09-11 bundle refresh: searched package imports/configuration and every tracked `assets/`/`public/` filename; inspected Expo Router/React Three peer/transitive ownership with `yarn why` and installed manifests; generated a fresh production web export with external source maps; attributed generated bytes by source-map segment; and built an isolated `/tmp` scenario replacing only the trick-viz sandbox route with a redirect to measure D015. No repository source/config/package/assets were changed and no browser, hosted, iOS, or Android verification was performed.

@@ -25,19 +25,6 @@ T221 already has remote claim `task/T221-diagnose-and-fix-the-feedback-form-s` (
 
 Backend selection and release selection are explicit owner gates. T230/T231 preparation may occur before individual fix tickets close: a fix can supply a verified preparation commit for the owner to deploy, then record hosted evidence afterward. Do not invent a circular dependency requiring every hosted-verification ticket to be complete before deploying the code needed to verify it.
 
-### [T232] Verify the hosted account lifecycle and account isolation
-
-- **Area:** Hosted account acceptance
-- **Priority:** High
-- **Status:** Not started
-- **Planning:** Required
-- **Execution:** Owner-in-loop
-- **Owner gates:** Confirm the target deployment and disposable accounts/inboxes; assist with real delivered links where access is unavailable; confirm the precise disposable account to delete.
-- **Automation boundary:** Prepare fixtures and steps, run authorized browser/API checks, compare against existing backend security tests, and collect sanitized results.
-- **Description:** On the prepared release, verify signup/verification, newly created guest-data import, sign-out/in with saved data restored, password recovery, email change and account deletion. Use two disposable accounts to confirm that neither can read/change the other's records and deletion affects only its owner.
-- **Exit criteria:** A recorded hosted acceptance pass covers the complete lifecycle using actual delivered emails and two identified disposable fixtures, demonstrates guest import and saved-data return, proves cross-account read/write denial, and confirms deletion removes the selected owner's data while the other account remains intact. Missing access or delivery keeps the affected criterion open.
-- **Notes:** From A8; audit sections 3–4. Depends on T225. Environment prerequisites are a prepared T230 backend and deployed T231 build, not closure of those tickets. Reuse existing data/API and deletion checks where applicable; never run the local reset-based database test harness against a hosted project. No legacy-data migration or branded-email requirement.
-
 ### [T234] Verify hosted synchronization and release-browser usability
 
 - **Area:** Hosted web acceptance
