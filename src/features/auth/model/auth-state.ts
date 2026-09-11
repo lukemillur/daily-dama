@@ -28,7 +28,11 @@ export const INITIALIZING_AUTH_STATE: AuthState = { status: 'initializing' };
  * `previous` lets a `PASSWORD_RECOVERY` session survive a later `TOKEN_REFRESHED`
  * for the same session (autoRefreshToken is on) without being silently promoted
  * to plain `authenticated` mid password-reset flow. `SIGNED_OUT` and a null
- * session both still unconditionally win over that carry-forward.
+ * session both still unconditionally win over that carry-forward. `USER_UPDATED`
+ * is the deliberate exception that *does* promote out of `passwordRecovery` --
+ * GoTrue emits it when `updateUser()` succeeds, which is how the recovery flow
+ * itself completes, so it must resolve to `authenticated` rather than being
+ * swallowed by the carry-forward.
  */
 export function deriveAuthState(
   event: AuthChangeEvent,
@@ -45,6 +49,10 @@ export function deriveAuthState(
 
   if (event === 'PASSWORD_RECOVERY') {
     return { status: 'passwordRecovery', session };
+  }
+
+  if (event === 'USER_UPDATED') {
+    return { status: 'authenticated', session, lastEvent: event };
   }
 
   if (previous.status === 'passwordRecovery') {

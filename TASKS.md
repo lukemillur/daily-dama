@@ -129,16 +129,6 @@ _Raw ideas land here — a name and a one-line description, nothing more. Discus
 
 ## Backlog
 
-### [T274] Fix header bar disappearing after password-reset redirect to landing page
-
-- **Area:** navigation
-- **Priority:** Medium
-- **Status:** Not started
-- **Planning:** Required
-- **Description:** After a user successfully resets their password and is redirected to the landing page, the header/nav bar renders hidden; a manual refresh restores it. Discovered during T232's hosted password-recovery acceptance pass on production. Root cause is unconfirmed — a refresh alone fixing it points to a hydration or post-redirect render-state gap rather than a missing element.
-- **Exit criteria:** Completing password reset and landing on the redirected screen shows the header/nav bar immediately, with no manual refresh required, verified at 320px and desktop.
-- **Notes:** From T232 (hosted account-lifecycle acceptance, 2026-09-11). Does not include changing the reset flow's redirect *destination* (currently the landing page, not sign-in) — that's a separate UX decision, not scoped here.
-
 ### [T275] Fix landing page copy/CTA max-width exceeding the screenshots section width
 
 - **Area:** landing page

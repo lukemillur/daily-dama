@@ -504,6 +504,35 @@ describe('AuthProvider', () => {
     });
   });
 
+  it('promotes to authenticated when the real USER_UPDATED event follows completePasswordRecovery (T274)', async () => {
+    const fake = createFakeClient();
+    mockGetSupabaseClient.mockReturnValue(fake.client);
+
+    const root = await mount();
+    act(() => {
+      fake.emit('PASSWORD_RECOVERY', { access_token: 'recovery' } as unknown as Session);
+    });
+
+    await act(async () => {
+      await captured.actions!.completePasswordRecovery('new-password-123');
+    });
+    expect(captured.state).toEqual({ status: 'passwordRecovery', session: { access_token: 'recovery' } });
+
+    const updatedSession = { access_token: 'updated' } as unknown as Session;
+    act(() => {
+      fake.emit('USER_UPDATED', updatedSession);
+    });
+
+    expect(captured.state).toEqual({
+      status: 'authenticated',
+      session: updatedSession,
+      lastEvent: 'USER_UPDATED',
+    });
+    act(() => {
+      root.unmount();
+    });
+  });
+
   it('completePasswordRecovery forwards a failure error from updateUser', async () => {
     const fake = createFakeClient();
     const updateError = { message: 'weak password', code: 'weak_password' };
