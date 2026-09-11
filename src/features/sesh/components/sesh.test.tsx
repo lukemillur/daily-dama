@@ -17,6 +17,7 @@ import {
   createTimedSeshPlan,
   formatDuration,
   formatRemainingDuration,
+  LACE_INPUT_LOCKOUT_MS,
   type Landing,
   type SeshSummary,
 } from '@/features/sesh/model/sesh';
@@ -1959,6 +1960,12 @@ describe('Sesh wiring - goal celebration ordering (regression)', () => {
         jest.advanceTimersByTime(1000);
       });
 
+      // Each lace is a genuinely distinct, later tap — clear T266's countdown-to-active input
+      // lockout window before every press so this test exercises 3 real landings, not the
+      // bled-through-tap scenario the lockout exists to discard.
+      act(() => {
+        jest.advanceTimersByTime(LACE_INPUT_LOCKOUT_MS);
+      });
       act(() => {
         pressByAccessibilityLabel(root, 'Laced');
       });
@@ -2663,6 +2670,95 @@ describe('Sesh wiring - countdown cancel (T047)', () => {
       expect(findByAccessibilityLabel(root, `Start a sesh with ${TRICK.name}`).length).toBeGreaterThan(0);
       expect(root.root.findAll((node) => node.props.children === 'Get ready')).toHaveLength(0);
       expect(findByAccessibilityLabel(root, 'session-count:0').length).toBeGreaterThan(0);
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+});
+
+describe('Sesh wiring - countdown-to-active lace input lockout (T266)', () => {
+  // Countdown's natural 3-2-1 completion and Active's "Laced" button can occupy the same
+  // on-screen position across the transition frame, so a tap that resolves the transition can
+  // bleed straight into a lace on the freshly rendered Active screen before the user ever means
+  // to tap Laced. Regression coverage for the spurious-lace bug reported in QA finding 1
+  // (outputs/qa-pass-2026-09-10.md).
+
+  function Harness() {
+    const { sessions } = usePracticeHistory();
+    const lastSession = sessions.at(-1);
+    return (
+      <>
+        <Text accessibilityLabel={`session-count:${sessions.length}`} />
+        <Text accessibilityLabel={`last-session-landings:${lastSession?.laceCount ?? 'none'}`} />
+        <Sesh availableTricks={[TRICK]} selectedTrickIds={[TRICK.id]} />
+      </>
+    );
+  }
+
+  async function mountHarness() {
+    let root!: ReactTestRenderer;
+    await act(async () => {
+      root = create(
+        <UserProfileProvider>
+          <NoteProvider>
+            <GoalProvider>
+              <PracticeHistoryProvider>
+                <Harness />
+              </PracticeHistoryProvider>
+            </GoalProvider>
+          </NoteProvider>
+        </UserProfileProvider>,
+      );
+    });
+    return root;
+  }
+
+  it('discards a lace bled through immediately after the countdown naturally completes, until a later explicit tap', async () => {
+    await AsyncStorage.clear();
+    jest.useFakeTimers();
+    try {
+      const root = await mountHarness();
+
+      act(() => {
+        pressByAccessibilityLabel(root, `Start a sesh with ${TRICK.name}`);
+      });
+
+      // Countdown ticks down from 3, one setTimeout(1000ms) step at a time, naturally completing
+      // to 'active' on the final tick.
+      act(() => {
+        jest.advanceTimersByTime(1000);
+      });
+      act(() => {
+        jest.advanceTimersByTime(1000);
+      });
+      act(() => {
+        jest.advanceTimersByTime(1000);
+      });
+
+      // A stray press landing on Laced in the very same instant the screen flips to Active —
+      // this is the bled-through tap, not a deliberate one.
+      act(() => {
+        pressByAccessibilityLabel(root, 'Laced');
+      });
+
+      expect(root.root.findAll((node) => node.props.children === 0).length).toBeGreaterThan(0);
+
+      // Once the lockout window clears, an explicit tap on Laced records normally.
+      act(() => {
+        jest.advanceTimersByTime(LACE_INPUT_LOCKOUT_MS);
+      });
+      act(() => {
+        pressByAccessibilityLabel(root, 'Laced');
+      });
+
+      expect(root.root.findAll((node) => node.props.children === 1).length).toBeGreaterThan(0);
+
+      act(() => {
+        pressByVisibleText(root, 'End Sesh');
+      });
+
+      expect(findByAccessibilityLabel(root, 'session-count:1').length).toBeGreaterThan(0);
+      expect(findByAccessibilityLabel(root, 'last-session-landings:1').length).toBeGreaterThan(0);
     } finally {
       jest.useRealTimers();
     }

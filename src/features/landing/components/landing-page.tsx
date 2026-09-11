@@ -17,16 +17,16 @@ interface Feature {
 
 const FEATURES: readonly Feature[] = [
   {
-    heading: 'Pick one trick and stick to it',
-    body: 'It’s easy to say “just whirlwind for 20 minutes” and drift back to what you already know. Daily Dama keeps your goal trick on screen so a sesh stays a sesh.',
+    heading: 'Level up faster',
+    body: 'It’s easy to say “just whirlwind for 20 minutes” and drift back to what you already know. Daily Dama keeps your goal trick on screen so a sesh stays focused.',
   },
   {
-    heading: 'See the grind, not just the miss',
-    body: 'Five minutes without a lace can feel like nothing is happening. Daily Dama logs the time between lands, so a rough sesh today reads next to the three hours it took last time.',
+    heading: 'Focus on growth, not failure',
+    body: 'Ten minutes without a lace can feel like nothing is happening. Ten days without a lace can be demoralizing. Daily dama tracks time spent dedicated to landing a trick the first time and follows it up with time between laces once you’ve got it down.',
   },
   {
-    heading: 'Climb the Kentei ladder on purpose',
-    body: 'A quick skill check places you on the ladder, and every sesh points you at the next rung instead of leaving you to guess what to work on.',
+    heading: 'Challenge your personal bests',
+    body: 'The first lace takes 30 minutes, the second takes 15, and the third takes 5. Before you know it you’re aiming to hit a new PB of 10 laces in five minutes.',
   },
 ];
 
@@ -49,17 +49,17 @@ const SCREENSHOT_CONTENT: readonly ScreenshotContent[] = [
     caption: 'Open the app and the loop is right there: what you last practiced, what’s next, and how the streak is going.',
   },
   {
-    title: 'Set the terms of the sesh',
+    title: 'Customize your sesh',
     caption:
       'Run the clock down, chase a lace count, or line up several tricks and work the whole set in one sesh.',
   },
   {
-    title: 'Your move, your rank',
+    title: 'Custom tricks',
     caption: 'Got a move that’s not in the standard Kentei set? Name it, rank it, and it joins your rotation.',
   },
   {
     title: 'Progress you can point to',
-    caption: 'Climb the ladder on purpose — set a target per trick and watch the progress add up.',
+    caption: 'Improve your consistency - set a lace or time target per trick and watch your lace rate climb over time.',
   },
 ];
 
@@ -131,12 +131,12 @@ export function LandingPage() {
         <Content testID="landing-content" $isWebLayout={isWebLayout}>
           {/* <LandingHero /> */}
           <Eyebrow>Why Daily Dama</Eyebrow>
-          <Headline>Play with{`\n`}intention.</Headline>
+          <Headline>Play with intention.</Headline>
           <Lede>
-            Kendama is a flow toy — most of the time, that’s the whole point. But flow is great
-            for enjoying the tricks you already know, and rough for landing the ones you don’t.
-            Daily Dama is the deliberate-practice half of your play: a place to bring a goal
-            trick, hold your focus on it, and see the work add up.
+            There’s nothing better than a great kendama flow. The problem, however, is that the
+            flow state lends itself to landing the tricks you already know rather than learning
+            tricks you have yet to land. Daily Dama is here to help you along the new trick
+            grind. Define a goal, hold your focus, and watch yourself improve.
           </Lede>
 
           <LandingCta />
@@ -163,9 +163,9 @@ export function LandingPage() {
           </ScreenshotSection>
 
           <Closing>
-            Kendama is also one of the best excuses to put your phone down. Daily Dama isn’t
-            trying to take that away — it’s here for the seshes where you already decided to
-            get better, not the ones where you just want to play.
+            Kendama is one of the best ways to get away from screens. Daily Dama isn’t here to
+            ruin that - it’s here for the times where you want to grind new tricks and collect
+            the effort you’ve put forth while doing so.
           </Closing>
         </Content>
       </LandingScroll>

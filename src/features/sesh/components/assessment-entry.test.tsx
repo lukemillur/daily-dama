@@ -17,6 +17,7 @@ import {
 } from '@/features/stats/state/practice-history-provider';
 import { PRACTICE_HISTORY_STORAGE_KEY } from '@/features/stats/persistence/practice-history-persistence';
 import { KENDAMA_KENTEI_TRICKS } from '@/features/tricks/data/kendama-kentei-tricks';
+import { LACE_INPUT_LOCKOUT_MS } from '@/features/sesh/model/sesh';
 
 // AssessmentEntry (transitively, via MultiTrickSesh/practice-history-provider/user-profile-provider)
 // pulls in AsyncStorage. Mock it the same way multi-trick-sesh.test.tsx and
@@ -96,6 +97,11 @@ function advanceThroughCountdown() {
   });
   act(() => {
     jest.advanceTimersByTime(1000);
+  });
+  // Clears T266's countdown-to-active lace input lockout so a subsequent "Laced" press in these
+  // tests records normally instead of being discarded as a bled-through tap.
+  act(() => {
+    jest.advanceTimersByTime(LACE_INPUT_LOCKOUT_MS);
   });
 }
 
@@ -229,6 +235,13 @@ describe('AssessmentEntry result copy', () => {
     // "Next trick"/"End assessment" press needed).
     advanceThroughCountdown();
     for (let index = 0; index < RANK_1_TRICK_IDS.length; index += 1) {
+      // skipCountdownBetweenTricks means each subsequent trick's `startedAt` lands right at the
+      // moment the prior trick advanced, with no real countdown in between — clear T266's
+      // countdown-to-active lace input lockout before each press so this represents a genuinely
+      // later tap on the newly active trick, not a bled-through one.
+      act(() => {
+        jest.advanceTimersByTime(LACE_INPUT_LOCKOUT_MS);
+      });
       act(() => {
         pressByAccessibilityLabel(root, 'Laced');
       });
@@ -441,6 +454,13 @@ describe('AssessmentEntry gap notice (T060)', () => {
 
     advanceThroughCountdown();
     for (let index = 0; index < RANK_1_TRICK_IDS.length; index += 1) {
+      // skipCountdownBetweenTricks means each subsequent trick's `startedAt` lands right at the
+      // moment the prior trick advanced, with no real countdown in between — clear T266's
+      // countdown-to-active lace input lockout before each press so this represents a genuinely
+      // later tap on the newly active trick, not a bled-through one.
+      act(() => {
+        jest.advanceTimersByTime(LACE_INPUT_LOCKOUT_MS);
+      });
       act(() => {
         pressByAccessibilityLabel(root, 'Laced');
       });

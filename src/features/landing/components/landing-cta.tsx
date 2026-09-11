@@ -18,7 +18,7 @@ interface CtaCopy {
 const FIRST_TIME_COPY: CtaCopy = {
   tag: 'Ready when you are',
   headline: 'Start your first sesh.',
-  body: 'Pick one trick, hold your focus on it, and see what a deliberate ten minutes does.',
+  body: 'Pick one trick, hold your focus on it, and see what ten minutes of deliberate practice can do.',
   action: 'Start your first Sesh',
 };
 

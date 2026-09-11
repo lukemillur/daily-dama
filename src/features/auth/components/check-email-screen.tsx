@@ -13,7 +13,7 @@ import { usePendingVerificationEmail } from '@/features/auth/state/pending-verif
 
 const SAME_BROWSER_GUIDANCE =
   'Open the email on this same browser, on this device, to finish creating your account. ' +
-  'Supabase cannot complete the confirmation if you open the link somewhere else.';
+  'Daily Dama cannot complete the confirmation if you open the link somewhere else.';
 
 const CONFIRMATION_COPY =
   'If that email is available, we have sent a link to confirm your account.';

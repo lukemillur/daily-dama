@@ -390,9 +390,9 @@ function TrickPicker({
       <PickerContent>
         {isDirectPractice ? (
           <>
-            <Eyebrow>Direct practice</Eyebrow>
+            <Eyebrow>Practice</Eyebrow>
             <DisplayTitle>{tricks[0]?.name}</DisplayTitle>
-            <BodyCopy>Adjust the format below, then start whenever you&apos;re ready.</BodyCopy>
+            <BodyCopy>Adjust the sesh, then start whenever you&apos;re ready.</BodyCopy>
           </>
         ) : (
           <>
@@ -417,7 +417,7 @@ function TrickPicker({
             $selected={planKind === 'openEnded'}
             onPress={() => setPlanKind('openEnded')}>
             <PlanChoiceTitle $selected={planKind === 'openEnded'}>Open-ended</PlanChoiceTitle>
-            <PlanChoiceCopy $selected={planKind === 'openEnded'}>Count up until you end the sesh.</PlanChoiceCopy>
+            <PlanChoiceCopy $selected={planKind === 'openEnded'}>Count your laces</PlanChoiceCopy>
           </PlanChoice>
         </PlanChoices>
         {planKind === 'timed' ? (
@@ -452,7 +452,7 @@ function TrickPicker({
             />
             <DurationHint $invalid={!hasValidTargetLandingCount}>
               {hasValidTargetLandingCount
-                ? 'Leave blank to just count up, or set a lace count to hit.'
+                ? 'Leave empty to just count up, or set a lace count to hit.'
                 : 'Enter a whole number from 1 to 999, or leave it blank.'}
             </DurationHint>
           </DurationField>
@@ -943,7 +943,7 @@ function FirstLaceBanner({
   return (
     <CelebrationBanner
       accessibilityLabel={`First lace ever on ${trickName}`}
-      eyebrow="First lace ever"
+      eyebrow="First lace"
       title={
         <>
           {tense === 'inSesh' ? 'You just landed' : 'You landed'}
@@ -1077,7 +1077,7 @@ function InlineSignupInvite() {
     <InlineInviteCard accessibilityLabel="Guest signup invitation">
       <InviteTitle>Save this sesh for good.</InviteTitle>
       <InviteCopy>
-        Right now your practice history only lives on this device. Sign up free to keep it if you
+        Right now your practice history only lives on this device. Sign up to keep it if you
         switch devices or clear your browser.
       </InviteCopy>
       <InviteActions>
@@ -1109,7 +1109,7 @@ function PostSeshSignupInvite() {
       <InviteCard>
         <InviteTitle>Save this sesh for good.</InviteTitle>
         <InviteCopy>
-          Right now your practice history only lives on this device. Sign up free to keep it if you
+          Right now your practice history only lives on this device. Sign up to keep it if you
           switch devices or clear your browser.
         </InviteCopy>
         <InviteActions>
