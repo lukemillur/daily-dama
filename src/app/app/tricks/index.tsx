@@ -88,7 +88,7 @@ export default function TricksScreen() {
           }}
           practiceAction
           header={{
-            eyebrow: 'Your trick lab',
+            eyebrow: 'Your trick library',
             title: 'What\'s up next?',
             introduction:
               selectedTrickIds.length === 0
@@ -125,8 +125,7 @@ export function ChoiceScreen({
   return (
     <CenteredContent>
       <Eyebrow>Define new trick</Eyebrow>
-      <CenteredTitle>What are you{`\n`}building?</CenteredTitle>
-      <CenteredCopy>Choose the shape first. You can add an optional perceived Kentei rank next.</CenteredCopy>
+      <CenteredTitle>Standalone or sequence?</CenteredTitle>
       <TypeChoices>
         <TypeChoice accessibilityRole="button" onPress={() => onChoose('standalone')}>
           <TypeNumber>01</TypeNumber>
@@ -137,7 +136,7 @@ export function ChoiceScreen({
         <TypeChoice accessibilityRole="button" onPress={() => onChoose('sequence')}>
           <TypeNumber>02</TypeNumber>
           <TypeTitle>Sequence</TypeTitle>
-          <TypeCopy>Two or more ordered, free-text movements practiced as one line.</TypeCopy>
+          <TypeCopy>Two or more ordered tricks practiced as one line.</TypeCopy>
           <TypeArrow>→</TypeArrow>
         </TypeChoice>
       </TypeChoices>
@@ -247,11 +246,11 @@ export function CustomTrickForm({
     <FormScroll keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: 24 }}>
       <FormContent>
         <Eyebrow>{initialTrick ? 'Edit' : 'New'} {kind === 'sequence' ? 'sequence' : 'standalone trick'}</Eyebrow>
-        <PageTitle>{initialTrick ? 'Refine the work.' : 'Name the work.'}</PageTitle>
+        <PageTitle>{initialTrick ? 'Refine the trick.' : 'Name the trick.'}</PageTitle>
         <Introduction>
           {kind === 'sequence'
             ? 'Build the line in the exact order you want to practice it.'
-            : 'Give this movement a clear name you will recognize during a sesh.'}
+            : 'Give this trick a clear name you will recognize during a sesh.'}
         </Introduction>
 
         <TextField
@@ -261,7 +260,7 @@ export function CustomTrickForm({
           label={kind === 'sequence' ? 'Sequence name' : 'Trick name'}
           maxLength={80}
           onChangeText={setName}
-          placeholder={kind === 'sequence' ? 'e.g. Morning line' : 'e.g. Stilt flip'}
+          placeholder={kind === 'sequence' ? 'e.g. Daily Dama Special' : 'e.g. Stilt flip'}
           value={name}
         />
 
