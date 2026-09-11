@@ -131,20 +131,6 @@ _Raw ideas land here — a name and a one-line description, nothing more. Discus
 
 ---
 
-_T272–T273 come from stories S138–S139 in [BACKLOG_STORIES.md](BACKLOG_STORIES.md) (the user's 2026-09-11 QA pass on T267/T268, both follow-up gaps on already-`Done` tickets). Both are `Implementer`: T272 is a local restyle of the existing shared `GoalRow` component in `trick-goals-screen.tsx` (T267's own recent change, fully local, no diagnosis ambiguity); T273 is a CSS-only change to the same single file T268 itself edited, matching that ticket's own `Implementer` rating for a visual/layout-only sticky-header change on `TrickDirectory`._
-
-### [T273] Remove scroll-snap-induced auto-scroll from the trick list
-
-- **Area:** Tricks
-- **Priority:** High
-- **Status:** Not started
-- **Planning:** Implementer
-- **Description:** T268 (`4d1243e`) fixed the sticky rank header overlapping the previous section's last row by both (a) reserving a section-boundary gap sized to the header's measured height, and (b) adding web-only `scroll-snap-type`/`scroll-padding-top`/`scroll-snap-align` CSS in `trick-directory.tsx` to force a released scroll to always settle clear of the header. Per the user's QA comment, (b) itself now automatically re-positions or hides a rank header when scrolling back up to read it, which is worse than the overlap it closes. Remove the scroll-snap CSS (`scrollSnapListStyle`, the `Platform.OS === 'web'` scroll-snap-align line in `trickRowLayout`) while keeping (a), the section-boundary gap, which independently addresses the original overlap.
-- **Exit criteria:** In the running Expo web dev server on `/tricks`: (1) scrolling the trick list up and down, including a released/flicked momentum scroll, never moves the list beyond the user's own scroll input and never hides or obscures a rank header once it has scrolled back into view; (2) scrolling to the boundary just above a custom-sequence row (T268's original repro case) still shows the full row — trick name and "Custom sequence" label — unobscured by the sticky header once scrolling settles, confirming the boundary-gap fix alone still holds without the snap CSS. `yarn tsc --noEmit` passes.
-- **Notes:** The user's stated preference was a full revert of T268, which would also reintroduce the original overlap defect. Try removing only the scroll-snap CSS first (per S139's acceptance criteria, which requires both no-unwanted-motion and no-overlap). If that reintroduces a narrow overlap edge case the boundary gap alone doesn't catch, stop and flag the tradeoff back to the user rather than silently choosing between accepting the edge case or a full revert.
-
----
-
 _T266–T271 come from stories S131–S136 in [BACKLOG_STORIES.md](BACKLOG_STORIES.md) — an autonomous exploratory QA pass on 2026-09-10 (an agent driving the local dev server, not the user directly; see `outputs/qa-pass-2026-09-10.md`), not a reviewed PR/commit range. T266 (S131) and T267 (S132) are `Required`/high severity: T266 is a Sesh-reducer-adjacent interaction bug whose exact bleed-through mechanism QA could not confirm from the browser session alone, matching this project's established precedent (T212, T221) for a runtime-diagnosis-first fix; T267 is `Implementer` despite being high severity because the nesting defect and its fix are fully local to one shared component, with no diagnosis ambiguity. T268 (S133) is `Implementer`: a CSS/layout-only sticky-header overlap in one existing file, visual-only per QA. T269 (S134) and T270 (S135) are `Implementer`: local, low-risk UX corrections (validation-timing gate; an additive selector plus confirmation copy) with no open product question. T271 (S136) is `Implementer` documentation-only. S137 was left `Proposed` per its own notes (low-confidence, non-reproducible) and was not scoped in this pass._
 
 ---
