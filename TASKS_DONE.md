@@ -4,6 +4,20 @@ Completed entries move here from `TASKS.md`'s `Backlog`, in the same commit that
 
 Entries keep their content as it was at completion. Don't retroactively edit a description or exit criteria after the fact; if something about a completed task turns out to be wrong or misleading, note that in a new entry or in code, not by rewriting history here.
 
+### [T232] Verify the hosted account lifecycle and account isolation
+
+- **Area:** Hosted account acceptance
+- **Priority:** High
+- **Status:** Done
+- **Checkpoint:** Complete
+- **Planning:** Required
+- **Execution:** Owner-in-loop
+- **Owner gates:** Confirm the target deployment and disposable accounts/inboxes; assist with real delivered links where access is unavailable; confirm the precise disposable account to delete.
+- **Automation boundary:** Prepare fixtures and steps, run authorized browser/API checks, compare against existing backend security tests, and collect sanitized results.
+- **Description:** On the prepared release, verify signup/verification, newly created guest-data import, sign-out/in with saved data restored, password recovery, email change and account deletion. Use two disposable accounts to confirm that neither can read/change the other's records and deletion affects only its owner.
+- **Exit criteria:** A recorded hosted acceptance pass covers the complete lifecycle using actual delivered emails and two identified disposable fixtures, demonstrates guest import and saved-data return, proves cross-account read/write denial, and confirms deletion removes the selected owner's data while the other account remains intact. Missing access or delivery keeps the affected criterion open. Met: on production (`www.dailydama.com`, backend `lnudjcpotidplbjqcfcx`), the owner performed the complete lifecycle with two disposable accounts on 2026-09-11 — signup/verification, guest-data import (custom trick + practice-history record carried into the new account), sign-out/in with data restored, password recovery, email change, and deletion of account A with account B's data confirmed intact and account A confirmed removed from both sign-in and Supabase's Users list. Cross-account isolation was confirmed by owner UI observation (each account showed only its own data) plus reuse of T155.7's existing `Done` pgTAP/Data-API suite as RLS-layer backend evidence. Full evidence table and step-by-step record at `outputs/guided-tickets/T232.md`.
+- **Notes:** From A8; audit sections 3–4. Depended on T225, T230, T231 (all `Done`). A first signup attempt used the owner's real personal address (`luke@lukemiller.tech`) rather than a disposable fixture; its confirmation link showed "expired" with no resend delivered, yet Supabase's Users list showed it confirmed anyway — an unresolved, low-severity discrepancy, not reused as a test fixture, and not filed further. The password-recovery step surfaced a real defect (header bar hidden after the post-reset redirect to the landing page until a manual refresh) filed as **T274**, and testing incidentally surfaced a landing-page layout defect (copy/CTA max-width exceeding the screenshots section's width) filed as **T275** — both to `TASKS.md` Backlog rather than fixed inline, since this ticket verifies behavior rather than implementing fixes. Whether the password-reset link should redirect to sign-in instead of the landing page remains an open, undecided product question. Git delivery (branch push/PR/merge) not yet authorized or performed.
+
 ### [T271] Correct AGENTS.md's description of the Profile route's current scope
 
 - **Area:** Repository documentation
