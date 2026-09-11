@@ -137,7 +137,7 @@ _T272–T273 come from stories S138–S139 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 - **Area:** Tricks
 - **Priority:** High
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Implementer
 - **Description:** T268 (`4d1243e`) fixed the sticky rank header overlapping the previous section's last row by both (a) reserving a section-boundary gap sized to the header's measured height, and (b) adding web-only `scroll-snap-type`/`scroll-padding-top`/`scroll-snap-align` CSS in `trick-directory.tsx` to force a released scroll to always settle clear of the header. Per the user's QA comment, (b) itself now automatically re-positions or hides a rank header when scrolling back up to read it, which is worse than the overlap it closes. Remove the scroll-snap CSS (`scrollSnapListStyle`, the `Platform.OS === 'web'` scroll-snap-align line in `trickRowLayout`) while keeping (a), the section-boundary gap, which independently addresses the original overlap.
 - **Exit criteria:** In the running Expo web dev server on `/tricks`: (1) scrolling the trick list up and down, including a released/flicked momentum scroll, never moves the list beyond the user's own scroll input and never hides or obscures a rank header once it has scrolled back into view; (2) scrolling to the boundary just above a custom-sequence row (T268's original repro case) still shows the full row — trick name and "Custom sequence" label — unobscured by the sticky header once scrolling settles, confirming the boundary-gap fix alone still holds without the snap CSS. `yarn tsc --noEmit` passes.
