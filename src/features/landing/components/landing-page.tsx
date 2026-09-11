@@ -177,11 +177,14 @@ export function LandingPage() {
             ))}
           </ScreenshotSection>
 
-          <Closing>
-            Kendama is one of the best ways to get away from screens. Daily Dama isn’t here to
-            ruin that - it’s here for the times where you want to grind new tricks and collect
-            the effort you’ve put forth while doing so.
-          </Closing>
+          <ClosingSection>
+            <ClosingHeading>Screen time, on your terms</ClosingHeading>
+            <Closing>
+              Kendama is one of the best ways to get away from screens. Daily Dama isn’t here to
+              ruin that - it’s here for the times where you want to grind new tricks and collect
+              the effort you’ve put forth while doing so.
+            </Closing>
+          </ClosingSection>
         </Content>
       </LandingScroll>
     </Screen>
@@ -214,13 +217,8 @@ function useHasEnteredViewport(
     const node = ref.current;
     if (!node) return;
 
-    // Shrinking the bottom edge of the (default, root: null) viewport by one-third makes the
-    // *effective* observed region the top two-thirds of the viewport, so `isIntersecting` only
-    // flips true once the element scrolls into that band. Computed once at observer-creation
-    // time from window.innerHeight (not a CSS percentage rootMargin, which is less consistently
-    // supported against the implicit root) -- this is a one-shot trigger, not a live breakpoint,
-    // so no resize listener keeps it current.
-    const bottomMargin = Math.round(window.innerHeight / 4);
+    // No rootMargin shrink: the entrance should fire the moment any part of the element
+    // crosses into the viewport, not once it has scrolled further up into view.
     const observer = new IntersectionObserver(
       (entries) => {
         const entry = entries[0];
@@ -228,7 +226,7 @@ function useHasEnteredViewport(
           setHasEntered(true);
         }
       },
-      { rootMargin: `0px 0px -${bottomMargin}px 0px`, threshold: 0 },
+      { rootMargin: '0px', threshold: 0 },
     );
     observer.observe(node as unknown as Element);
     return () => observer.disconnect();
@@ -253,7 +251,7 @@ function ScreenshotEntry({ screenshot, index, isWebLayout }: ScreenshotEntryProp
       ref={itemRef}
       testID="screenshot-item"
       $isWebLayout={isWebLayout}
-      entering={hasEntered ? FadeInUp.duration(1200).springify().delay(index * 100) : undefined}
+      entering={hasEntered ? FadeInUp.duration(450).delay(index * 40) : undefined}
       style={hasEntered ? { boxShadow: `8px 8px 0 ${AppColors.ink}` } : { boxShadow: `8px 8px 0 ${AppColors.ink}`, opacity: 0 }}
     >
       <Image
@@ -357,9 +355,20 @@ const ScreenshotCaption = styled(BodyText)<{ readonly $isWebLayout: boolean }>`
   color: ${AppColors.textMuted};
 `;
 
+const ClosingSection = styled.View`
+  margin-top: 40px;
+  gap: 8px;
+`;
+
+const ClosingHeading = styled.Text`
+  color: ${AppColors.ink};
+  font-size: 17px;
+  font-weight: 900;
+`;
+
 const Closing = styled(BodyText)`
-  max-width: 520px;
-  margin-top: 32px;
   color: ${AppColors.textSubtle};
+  font-size: 22px;
+  line-height: 30px;
 `;
 
