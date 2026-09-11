@@ -133,7 +133,7 @@ _Raw ideas land here — a name and a one-line description, nothing more. Discus
 
 - **Area:** navigation
 - **Priority:** Medium
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** After a user successfully resets their password and is redirected to the landing page, the header/nav bar renders hidden; a manual refresh restores it. Discovered during T232's hosted password-recovery acceptance pass on production. Root cause is unconfirmed — a refresh alone fixing it points to a hydration or post-redirect render-state gap rather than a missing element.
 - **Exit criteria:** Completing password reset and landing on the redirected screen shows the header/nav bar immediately, with no manual refresh required, verified at 320px and desktop.
