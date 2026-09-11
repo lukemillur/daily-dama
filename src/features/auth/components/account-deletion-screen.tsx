@@ -112,7 +112,7 @@ export function AccountDeletionScreen() {
           </BackLink>
 
           <Introduction>
-            Deleting your account happens immediately and permanently. Your account and cloud data will be removed.
+            Deleting your account happens immediately and permanently. Your account and sesh data will be removed.
           </Introduction>
           <Warning>There is no export or recovery step in this flow.</Warning>
 

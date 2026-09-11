@@ -136,38 +136,36 @@ export function GoalRow({
   }
 
   return (
-    <GoalCardPressable
-      $pressed={pressed}
-      accessibilityLabel={`Practice ${goal.trickName}`}
-      accessibilityRole="button"
-      style={{ boxShadow: `8px 8px 0 ${AppColors.ink}` }}
-      onPress={() => router.push({ pathname: '/app/sesh', params: { trickId: goal.trickId, mode: 'practice' } })}
-      onPressIn={() => setPressed(true)}
-      onPressOut={() => setPressed(false)}>
-      <GoalHeaderRow>
-        <GoalInfoColumn>
-          <GoalMetaRow>
-            <GoalMeta>{goal.kind === 'count' ? 'Lace count goal' : 'Practice time goal'}</GoalMeta>
-            {progress.achieved ? <AchievedBadge>Achieved</AchievedBadge> : null}
-          </GoalMetaRow>
-          <GoalBody>{formatGoalTarget(goal)}</GoalBody>
-          <ProgressText>{formatGoalProgress(progress)}</ProgressText>
-        </GoalInfoColumn>
-        <GoalTrickName numberOfLines={2}>{goal.trickName}</GoalTrickName>
-      </GoalHeaderRow>
-      <GoalActionsRow>
+    <GoalCard style={{ boxShadow: `8px 8px 0 ${AppColors.ink}` }}>
+      <PracticeArea
+        $pressed={pressed}
+        accessibilityLabel={`Practice ${goal.trickName}`}
+        accessibilityRole="button"
+        onPress={() => router.push({ pathname: '/app/sesh', params: { trickId: goal.trickId, mode: 'practice' } })}
+        onPressIn={() => setPressed(true)}
+        onPressOut={() => setPressed(false)}>
+        <GoalHeaderRow>
+          <GoalInfoColumn>
+            <GoalMetaRow>
+              <GoalMeta>{goal.kind === 'count' ? 'Lace count goal' : 'Practice time goal'}</GoalMeta>
+              {progress.achieved ? <AchievedBadge>Achieved</AchievedBadge> : null}
+            </GoalMetaRow>
+            <GoalBody>{formatGoalTarget(goal)}</GoalBody>
+            <ProgressText>{formatGoalProgress(progress)}</ProgressText>
+          </GoalInfoColumn>
+          <GoalTrickName numberOfLines={2}>{goal.trickName}</GoalTrickName>
+        </GoalHeaderRow>
         <PracticeHintText>Practice toward this goal</PracticeHintText>
+      </PracticeArea>
+      <GoalActionsFooter>
         <GoalAction
           accessibilityLabel="Delete goal"
           accessibilityRole="button"
-          onPress={(event) => {
-            event?.stopPropagation?.();
-            setConfirmingDelete(true);
-          }}>
+          onPress={() => setConfirmingDelete(true)}>
           <DeleteActionText>Delete</DeleteActionText>
         </GoalAction>
-      </GoalActionsRow>
-    </GoalCardPressable>
+      </GoalActionsFooter>
+    </GoalCard>
   );
 }
 
@@ -184,6 +182,7 @@ export function GoalForm({
 }) {
   const [kind, setKind] = useState<'count' | 'time'>('count');
   const [targetText, setTargetText] = useState('');
+  const [targetTouched, setTargetTouched] = useState(false);
 
   const input: GoalCreationInput = useMemo(() => {
     const targetValue = Number(targetText);
@@ -193,9 +192,13 @@ export function GoalForm({
   }, [kind, targetText, trickId, trickName]);
 
   const validation = validateGoalCreation(input);
+  const showTargetError = targetTouched && validation.status === 'invalid';
 
   const save = () => {
-    if (validation.status !== 'valid') return;
+    if (validation.status !== 'valid') {
+      setTargetTouched(true);
+      return;
+    }
     onSave(input);
   };
 
@@ -231,9 +234,10 @@ export function GoalForm({
 
         <TextField
           accessibilityLabel={kind === 'count' ? 'Target lace count' : 'Target minutes'}
-          error={validation.status === 'invalid' ? validation.errors.target : undefined}
+          error={showTargetError ? validation.errors.target : undefined}
           keyboardType="number-pad"
           label={kind === 'count' ? 'Target lace count' : 'Target minutes'}
+          onBlur={() => setTargetTouched(true)}
           onChangeText={setTargetText}
           placeholder={kind === 'count' ? 'e.g. 50' : 'e.g. 30'}
           value={targetText}
@@ -278,12 +282,9 @@ const GoalCard = styled.View`
   border-radius: ${Radii.panel}px;
   padding: 16px;
 `;
-const GoalCardPressable = styled(Pressable)<{ readonly $pressed: boolean }>`
-  background-color: ${AppColors.paper};
-  border: 2px solid ${AppColors.ink};
-  border-radius: ${Radii.panel}px;
-  padding: 16px;
+const PracticeArea = styled(Pressable)<{ readonly $pressed: boolean }>`
   opacity: ${({ $pressed }) => ($pressed ? 0.7 : 1)};
+  padding-bottom: 32px;
 `;
 const GoalHeaderRow = styled.View`flex-direction: row; align-items: flex-start; justify-content: space-between; gap: 14px;`;
 const GoalInfoColumn = styled.View`flex: 1;`;
@@ -299,10 +300,19 @@ const AchievedBadge = styled.Text`overflow: hidden; padding: 4px 8px; color: ${A
 const GoalBody = styled.Text`color: ${AppColors.ink}; font-size: 16px; font-weight: 650; line-height: 23px; margin-top: 8px;`;
 const ProgressText = styled.Text`color: ${AppColors.inkSoft}; font-size: 13px; font-weight: 700; margin-top: 6px;`;
 const GoalActionsRow = styled.View`flex-direction: row; gap: 14px; margin-top: 12px;`;
+const GoalActionsFooter = styled.View`position: absolute; right: 16px; bottom: 16px; flex-direction: row; gap: 14px;`;
 const GoalAction = styled(Pressable)`min-height: 36px; justify-content: center;`;
 const GoalActionText = styled.Text`color: ${AppColors.ink}; font-size: 12px; font-weight: 900; text-transform: uppercase;`;
 const DeleteActionText = styled(GoalActionText)`color: ${AppColors.red};`;
-const PracticeHintText = styled.Text`flex: 1; color: ${AppColors.inkSoft}; font-size: 12px; font-weight: 800; text-transform: uppercase; align-self: center;`;
+const PracticeHintText = styled.Text`
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  color: ${AppColors.inkSoft};
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+`;
 const Field = styled.View`margin-top: 28px;`;
 const FieldLabel = styled.Text`color: ${AppColors.ink}; font-size: 13px; font-weight: 900; letter-spacing: 1px; text-transform: uppercase;`;
 const KindPicker = styled.View`flex-direction: row; gap: 10px; margin-top: 8px;`;

@@ -2,7 +2,7 @@ import { useAudioPlayer } from 'expo-audio';
 import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
 import { Link, useRouter } from 'expo-router';
 import { useEffect, useLayoutEffect, useMemo, useReducer, useRef, useState, type ReactNode } from 'react';
-import { Animated, Pressable, ScrollView, TextInput } from 'react-native';
+import { Animated, Platform, Pressable, ScrollView, TextInput } from 'react-native';
 import { styled } from 'styled-components/native';
 
 import { Button } from '@/components/ui/button';
@@ -61,6 +61,14 @@ import { selectNotesForTrick, type Note } from '@/features/notes/model/note';
 import { useNoteActions, useNotes } from '@/features/notes/state/note-provider';
 
 const SESH_KEEP_AWAKE_TAG = 'sesh-active';
+
+/**
+ * Sesh renders its own web-only top clearance (mirroring the Tricks tab)
+ * instead of Screen's `includeWebHeaderInset`, so scrolled content shows
+ * through behind the floating web nav rather than being blocked by a static
+ * reserved bar. See `src/components/ui/screen.tsx` for the inset it replaces.
+ */
+const SCROLL_CONTENT_PADDING = Platform.OS === 'web' ? { padding: 24, paddingTop: 24 + 88 } : { padding: 24 };
 
 interface SeshProps {
   readonly selectedTrickIds: readonly string[];
@@ -378,13 +386,13 @@ function TrickPicker({
   const hasAnyPersonalBest = personalBestsByTrickId.size > 0;
 
   return (
-    <ScrollArea contentContainerStyle={{ padding: 24 }}>
+    <ScrollArea contentContainerStyle={SCROLL_CONTENT_PADDING}>
       <PickerContent>
         {isDirectPractice ? (
           <>
-            <Eyebrow>Direct practice</Eyebrow>
+            <Eyebrow>Practice</Eyebrow>
             <DisplayTitle>{tricks[0]?.name}</DisplayTitle>
-            <BodyCopy>Adjust the format below, then start whenever you&apos;re ready.</BodyCopy>
+            <BodyCopy>Adjust the sesh, then start whenever you&apos;re ready.</BodyCopy>
           </>
         ) : (
           <>
@@ -409,7 +417,7 @@ function TrickPicker({
             $selected={planKind === 'openEnded'}
             onPress={() => setPlanKind('openEnded')}>
             <PlanChoiceTitle $selected={planKind === 'openEnded'}>Open-ended</PlanChoiceTitle>
-            <PlanChoiceCopy $selected={planKind === 'openEnded'}>Count up until you end the sesh.</PlanChoiceCopy>
+            <PlanChoiceCopy $selected={planKind === 'openEnded'}>Count your laces</PlanChoiceCopy>
           </PlanChoice>
         </PlanChoices>
         {planKind === 'timed' ? (
@@ -444,7 +452,7 @@ function TrickPicker({
             />
             <DurationHint $invalid={!hasValidTargetLandingCount}>
               {hasValidTargetLandingCount
-                ? 'Leave blank to just count up, or set a lace count to hit.'
+                ? 'Leave empty to just count up, or set a lace count to hit.'
                 : 'Enter a whole number from 1 to 999, or leave it blank.'}
             </DurationHint>
           </DurationField>
@@ -690,7 +698,7 @@ export function ActiveSesh({
   }, [elapsedMs, isPaused, onTimerElapsed, plan]);
 
   return (
-    <ScrollArea contentContainerStyle={{ padding: 24 }}>
+    <ScrollArea contentContainerStyle={SCROLL_CONTENT_PADDING}>
       <ActiveContent>
         {countGoalCelebrations.map((baseline) => (
           <GoalCelebrationBanner key={baseline.goal.id} goal={baseline.goal} tense="inSesh" />
@@ -935,7 +943,7 @@ function FirstLaceBanner({
   return (
     <CelebrationBanner
       accessibilityLabel={`First lace ever on ${trickName}`}
-      eyebrow="First lace ever"
+      eyebrow="First lace"
       title={
         <>
           {tense === 'inSesh' ? 'You just landed' : 'You landed'}
@@ -1023,7 +1031,7 @@ export function CompletedSesh({
 
   return (
     <>
-      <ScrollArea contentContainerStyle={{ padding: 24 }}>
+      <ScrollArea contentContainerStyle={SCROLL_CONTENT_PADDING}>
         <ActiveContent>
           {isFirstLace ? <FirstLaceBanner trickName={summary.trick.name} tense="wrapUp" /> : null}
           {justAchievedGoals.map((goal) => (
@@ -1069,7 +1077,7 @@ function InlineSignupInvite() {
     <InlineInviteCard accessibilityLabel="Guest signup invitation">
       <InviteTitle>Save this sesh for good.</InviteTitle>
       <InviteCopy>
-        Right now your practice history only lives on this device. Sign up free to keep it if you
+        Right now your practice history only lives on this device. Sign up to keep it if you
         switch devices or clear your browser.
       </InviteCopy>
       <InviteActions>
@@ -1101,7 +1109,7 @@ function PostSeshSignupInvite() {
       <InviteCard>
         <InviteTitle>Save this sesh for good.</InviteTitle>
         <InviteCopy>
-          Right now your practice history only lives on this device. Sign up free to keep it if you
+          Right now your practice history only lives on this device. Sign up to keep it if you
           switch devices or clear your browser.
         </InviteCopy>
         <InviteActions>

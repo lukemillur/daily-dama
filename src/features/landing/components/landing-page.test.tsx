@@ -8,8 +8,9 @@ import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const ReactNative = require('react-native') as typeof import('react-native');
 
+import { AppColors } from '@/constants/theme';
 import type { AuthState } from '@/features/auth/model/auth-state';
-import { HEADER_BAR_SCROLL_HIDE_THRESHOLD, LandingPage, MOBILE_SCREENSHOTS, WEB_SCREENSHOTS } from '@/features/landing/components/landing-page';
+import { LandingPage, MOBILE_SCREENSHOTS, WEB_SCREENSHOTS } from '@/features/landing/components/landing-page';
 import type { CachedOnboardingStatus } from '@/features/profile/persistence/read-cached-onboarding-status';
 
 const mockRouter = { push: jest.fn() };
@@ -70,17 +71,17 @@ const SCREENSHOT_TITLES_AND_CAPTIONS: ReadonlyArray<{ title: string; caption: st
       'Open the app and the loop is right there: what you last practiced, what’s next, and how the streak is going.',
   },
   {
-    title: 'Set the terms of the sesh',
+    title: 'Customize your sesh',
     caption:
       'Run the clock down, chase a lace count, or line up several tricks and work the whole set in one sesh.',
   },
   {
-    title: 'Your move, your rank',
+    title: 'Custom tricks',
     caption: 'Got a move that’s not in the standard Kentei set? Name it, rank it, and it joins your rotation.',
   },
   {
     title: 'Progress you can point to',
-    caption: 'Climb the ladder on purpose — set a target per trick and watch the progress add up.',
+    caption: 'Improve your consistency - set a lace or time target per trick and watch your lace rate climb over time.',
   },
 ];
 
@@ -104,7 +105,7 @@ describe('LandingPage', () => {
     const allText = textNodes.map((node) => node.props.children as string);
 
     const ctaIndex = allText.findIndex((text) => text === 'Start your first Sesh');
-    const featureHeadingIndex = allText.findIndex((text) => text === 'Pick one trick and stick to it');
+    const featureHeadingIndex = allText.findIndex((text) => text === 'Level up faster');
 
     expect(ctaIndex).toBeGreaterThanOrEqual(0);
     expect(featureHeadingIndex).toBeGreaterThanOrEqual(0);
@@ -141,19 +142,37 @@ describe('LandingPage sign-up/sign-in entry points', () => {
 
 describe('LandingPage header bar', () => {
   function findHeaderBar(root: ReactTestRenderer) {
-    return root.root.findAllByProps({ testID: 'landing-header-bar' })[0]!;
+    return root.root.findAllByProps({ testID: 'landing-header-bar' })[0];
   }
 
-  function findScrollView(root: ReactTestRenderer) {
-    return root.root.findAllByType(ReactNative.ScrollView)[0]!;
-  }
+  // The reported T265 bug -- a persistent gap blocking content at the top of the page,
+  // reproducing on every load regardless of scroll position -- turned out to be unrelated to
+  // the header bar entirely: `Screen`'s `includeWebHeaderInset` defaults to `true`, adding an
+  // 88px top padding reserved for the app's persistent web navigation on /app/* routes, which
+  // LandingPage's `<Screen>` never opted out of even though the landing route has no such
+  // persistent header. Asserting the resolved padding is what actually pins the real defect
+  // down, rather than any header-bar visibility assertion.
+  it('does not reserve the app web-header inset space above its own content', async () => {
+    const root = await mount();
 
-  async function scrollTo(root: ReactTestRenderer, y: number) {
-    await act(async () => {
-      findScrollView(root).props.onScroll({ nativeEvent: { contentOffset: { y } } });
-    });
-  }
+    const screenRoot = root.root.findAll((node) => {
+      const style = (ReactNative.StyleSheet.flatten(node.props.style) ?? {}) as {
+        paddingTop?: number;
+        backgroundColor?: string;
+      };
+      return style.backgroundColor === AppColors.paper && typeof style.paddingTop === 'number';
+    })[0]!;
+    const style = ReactNative.StyleSheet.flatten(screenRoot.props.style) as { paddingTop?: number };
 
+    expect(style.paddingTop).toBe(0);
+  });
+
+  // The header bar renders as the first element inside the page's own scrollable content
+  // (not an absolutely positioned overlay toggled by scroll position), so it scrolls away
+  // with the rest of the page under ordinary browser scrolling instead of needing
+  // scroll-position-driven show/hide logic (see T265). These tests only cover that the bar
+  // exists and precedes the scrollable content; there's no scroll-driven visibility state
+  // left to test.
   it('renders the header bar with sign up/sign in controls above the scrollable content', async () => {
     const root = await mount();
 
@@ -166,64 +185,11 @@ describe('LandingPage header bar', () => {
     expect(testIds.indexOf('landing-content')).toBeGreaterThanOrEqual(0);
     expect(testIds.indexOf('landing-header-bar')).toBeLessThan(testIds.indexOf('landing-content'));
 
-    const headerBar = findHeaderBar(root);
+    const headerBar = findHeaderBar(root)!;
     const signUp = headerBar.findAll((node) => node.props.accessibilityLabel === 'Sign up');
     const signIn = headerBar.findAll((node) => node.props.accessibilityLabel === 'Sign in');
     expect(signUp.length).toBeGreaterThan(0);
     expect(signIn.length).toBeGreaterThan(0);
-  });
-
-  it('shows the header bar while near the top of the scroll position', async () => {
-    const root = await mount();
-
-    expect(findHeaderBar(root).props.pointerEvents).toBe('auto');
-  });
-
-  function headerBarDisplay(root: ReactTestRenderer) {
-    const matches = root.root.findAllByProps({ testID: 'landing-header-bar' });
-    const styledMatch = matches.find((node) => node.props.style !== undefined);
-    const style = ReactNative.StyleSheet.flatten(styledMatch?.props.style) as {
-      display?: string;
-    };
-    return style.display;
-  }
-
-  it('hides the header bar once scroll position passes the threshold', async () => {
-    const root = await mount();
-
-    await scrollTo(root, HEADER_BAR_SCROLL_HIDE_THRESHOLD + 40);
-
-    expect(findHeaderBar(root).props.pointerEvents).toBe('none');
-  });
-
-  it('shows the header bar again once scroll position returns near the top', async () => {
-    const root = await mount();
-
-    await scrollTo(root, HEADER_BAR_SCROLL_HIDE_THRESHOLD + 40);
-    expect(findHeaderBar(root).props.pointerEvents).toBe('none');
-
-    await scrollTo(root, 0);
-    expect(findHeaderBar(root).props.pointerEvents).toBe('auto');
-  });
-
-  it('fully hides the header bar container (not just pointer events) once scroll position passes the threshold', async () => {
-    const root = await mount();
-
-    expect(headerBarDisplay(root)).toBe('flex');
-
-    await scrollTo(root, HEADER_BAR_SCROLL_HIDE_THRESHOLD + 40);
-
-    expect(headerBarDisplay(root)).toBe('none');
-  });
-
-  it('restores the header bar container once scroll position returns near the top', async () => {
-    const root = await mount();
-
-    await scrollTo(root, HEADER_BAR_SCROLL_HIDE_THRESHOLD + 40);
-    expect(headerBarDisplay(root)).toBe('none');
-
-    await scrollTo(root, 0);
-    expect(headerBarDisplay(root)).toBe('flex');
   });
 });
 

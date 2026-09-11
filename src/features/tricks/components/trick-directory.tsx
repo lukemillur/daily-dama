@@ -68,6 +68,16 @@ const DEFAULT_HEADER = {
 
 const NO_SELECTED_TRICKS: readonly string[] = [];
 
+// react-native-web implements `stickySectionHeadersEnabled` with CSS `position: sticky` applied to
+// each section header individually, not to a wrapper spanning the whole section. A stuck header
+// never truly hands off to the next one — it stays glued to the top and is simply painted over once
+// a later header also becomes stuck — so a section's own trailing row can still be laid out in the
+// same on-screen band its still-stuck header occupies. Right at a section boundary that can produce
+// a visibly squeezed frame: the outgoing header covering the last row's text while the incoming
+// header is already visible just below. This gap is intentionally kept shorter than a header
+// (visual compactness over fully eliminating that scroll-transition overlap).
+const SECTION_BOUNDARY_HEIGHT = 8;
+
 export function TrickDirectory({
   tricks,
   selection,
@@ -183,7 +193,11 @@ export function TrickDirectory({
   );
 }
 
-function SectionHeader({ section }: { readonly section: SectionListData<DirectoryTrick, TrickSection> }) {
+function SectionHeader({
+  section,
+}: {
+  readonly section: SectionListData<DirectoryTrick, TrickSection>;
+}) {
   const isCustom = section.kind === 'custom';
   return (
     <SectionHeaderContainer $custom={isCustom}>
@@ -613,6 +627,6 @@ const ItemSeparator = styled.View`
 `;
 
 const SectionSeparator = styled.View`
-  height: 18px;
-  background-color: #efe5ca;
+  height: ${SECTION_BOUNDARY_HEIGHT}px;
+  background-color: #f8f1dd;
 `;

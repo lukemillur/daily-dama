@@ -152,7 +152,7 @@ export function AssessmentEntry() {
       <Eyebrow>Kentei assessment</Eyebrow>
       <Title>How do you{`\n`}want to test?</Title>
       <Copy>
-        Every landing you record here counts as real practice history, so a full pass through
+        Every lace you record here counts as real practice history, so a full pass through
         a rank promotes you automatically.
       </Copy>
       <FlowButton

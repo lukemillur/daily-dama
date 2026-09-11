@@ -1,6 +1,6 @@
 import type { AuthChangeEvent, Session } from '@supabase/supabase-js';
 
-export type AuthStatus = 'initializing' | 'guest' | 'authenticated' | 'passwordRecovery';
+export type AuthStatus = 'initializing' | 'guest' | 'authenticated' | 'passwordRecovery' | 'refreshFailed';
 
 export type GuestReason = 'signedOut' | 'unconfigured' | 'error';
 
@@ -12,7 +12,12 @@ export type AuthState =
       readonly session: Session;
       readonly lastEvent: AuthChangeEvent;
     }
-  | { readonly status: 'passwordRecovery'; readonly session: Session };
+  | { readonly status: 'passwordRecovery'; readonly session: Session }
+  // Purely a local, timeout-driven transition owned by `AuthProvider` -- GoTrue never reports
+  // this status, so `deriveAuthState` below (which only maps real `onAuthStateChange` events)
+  // deliberately does not produce or handle it. See AuthProvider's init effect for how a bound
+  // client-side timeout with no usable cached session reaches this state.
+  | { readonly status: 'refreshFailed' };
 
 export const INITIALIZING_AUTH_STATE: AuthState = { status: 'initializing' };
 

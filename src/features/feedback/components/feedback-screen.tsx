@@ -74,7 +74,7 @@ export function FeedbackScreen() {
           <Eyebrow>Feedback</Eyebrow>
           <PageTitle>Something feel off?</PageTitle>
           <Introduction>
-            Daily Dama is a work in progress. Bug reports, trick corrections, and feature requests all
+            Daily Dama is a work in progress. Bug reports, feature requests, and general feedback all
             help. Name is optional -- leave it blank to stay anonymous.
           </Introduction>
 
