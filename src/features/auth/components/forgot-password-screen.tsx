@@ -33,7 +33,7 @@ const SUBMIT_ERROR_COPY: Record<AuthErrorCategory, string> = {
 
 const SAME_BROWSER_GUIDANCE =
   'Open the email on this same browser, on this device, to finish resetting your password. ' +
-  "Supabase can't complete the reset if you open the link somewhere else.";
+  "Daily Dama can't complete the reset if you open the link somewhere else.";
 
 const CONFIRMATION_COPY =
   "If an account exists for that email, we've sent a link to reset the password.";
