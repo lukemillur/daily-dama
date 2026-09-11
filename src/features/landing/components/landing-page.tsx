@@ -1,5 +1,5 @@
 import { Image } from 'expo-image';
-import { useEffect, useRef, useState, type ComponentRef } from 'react';
+import { useEffect, useRef, useState, useSyncExternalStore, type ComponentRef } from 'react';
 import { Platform, ScrollView, useWindowDimensions } from 'react-native';
 import Animated, { FadeInUp } from 'react-native-reanimated';
 import { styled } from 'styled-components/native';
@@ -119,9 +119,24 @@ export const WEB_SCREENSHOTS: readonly Screenshot[] = SCREENSHOT_CONTENT.map((co
   ...WEB_SCREENSHOT_ASSETS[index],
 }));
 
+const emptySubscribe = () => () => {};
+
 export function LandingPage() {
   const { width } = useWindowDimensions();
-  const isWebLayout = Platform.OS === 'web' && width >= 768;
+  // In the static web export, the prerendered HTML is built by a Node process with no real
+  // window, so `useWindowDimensions()` resolves some fallback width there -- different from
+  // the browser's actual first-paint value. Deriving `isWebLayout` straight from `width` made
+  // that mismatch a genuine hydration divergence: the mobile/desktop-conditional `max-width`
+  // and `padding` baked into the prerendered `Content` markup could permanently stick at the
+  // server's guess even once `width` itself read correctly on the very first client render,
+  // because that render is a hydration *adoption* of the existing server DOM rather than an
+  // ordinary patch. `hasHydrated` intentionally renders the server-matching (mobile, `false`)
+  // layout through hydration and only switches once past that boundary -- the same
+  // `useSyncExternalStore` gate `useCachedOnboardingStatus` and `useCachedGuestTheme` already
+  // use for this identical prerender/first-paint mismatch, which resolves before the browser
+  // paints so there is no visible flip (see use-cached-onboarding-status.ts).
+  const hasHydrated = useSyncExternalStore(emptySubscribe, () => true, () => false);
+  const isWebLayout = hasHydrated && Platform.OS === 'web' && width >= 768;
   const screenshots = isWebLayout ? WEB_SCREENSHOTS : MOBILE_SCREENSHOTS;
 
   return (
