@@ -64,4 +64,22 @@ describe('deriveAuthState', () => {
     const previous = deriveAuthState('PASSWORD_RECOVERY', fakeSession);
     expect(deriveAuthState('TOKEN_REFRESHED', null, previous)).toEqual({ status: 'guest', reason: 'signedOut' });
   });
+
+  it('maps USER_UPDATED to authenticated with no previous state', () => {
+    expect(deriveAuthState('USER_UPDATED', fakeSession)).toEqual({
+      status: 'authenticated',
+      session: fakeSession,
+      lastEvent: 'USER_UPDATED',
+    });
+  });
+
+  it('promotes passwordRecovery to authenticated on USER_UPDATED (T274)', () => {
+    const previous = deriveAuthState('PASSWORD_RECOVERY', fakeSession);
+    const updated = { ...fakeSession, access_token: 'updated-token' } as unknown as Session;
+    expect(deriveAuthState('USER_UPDATED', updated, previous)).toEqual({
+      status: 'authenticated',
+      session: updated,
+      lastEvent: 'USER_UPDATED',
+    });
+  });
 });
