@@ -239,6 +239,37 @@ describe('TrickGoalsScreen', () => {
     expect(deleteButton.props.accessibilityRole).toBe('button');
   });
 
+  it('renders the practice hint text inside the Practice button, not the Delete button', () => {
+    mockGoals = [
+      { id: 'goal-1', trickId: 'big-cup', trickName: 'Big Cup', kind: 'count', targetCount: 10, createdAt: 0, updatedAt: 0 },
+    ];
+    let root!: ReactTestRenderer;
+    act(() => {
+      root = create(<TrickGoalsScreen trickId="big-cup" trickName="Big Cup" onBack={() => {}} />);
+    });
+
+    const practiceButton = root.root.findByProps({ accessibilityLabel: 'Practice Big Cup' });
+    const hintInPractice = practiceButton.findAll(
+      (node) => typeof node.type === 'string' && node.props.children === 'Practice toward this goal',
+    );
+    expect(hintInPractice.length).toBeGreaterThan(0);
+
+    const deleteButton = root.root.findByProps({ accessibilityLabel: 'Delete goal' });
+    const hintInDelete = deleteButton.findAll(
+      (node) => typeof node.type === 'string' && node.props.children === 'Practice toward this goal',
+    );
+    expect(hintInDelete).toHaveLength(0);
+
+    // Pressing the hint text's row triggers the same practice navigation as the header row.
+    act(() => {
+      practiceButton.props.onPress();
+    });
+    expect(mockRouter.push).toHaveBeenCalledWith({
+      pathname: '/app/sesh',
+      params: { trickId: 'big-cup', mode: 'practice' },
+    });
+  });
+
   it('renders the goal card trick title large and right-aligned in the same row as the progress info', () => {
     mockGoals = [
       { id: 'goal-1', trickId: 'big-cup', trickName: 'Big Cup', kind: 'count', targetCount: 10, createdAt: 0, updatedAt: 0 },

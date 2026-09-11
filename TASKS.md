@@ -133,16 +133,6 @@ _Raw ideas land here — a name and a one-line description, nothing more. Discus
 
 _T272–T273 come from stories S138–S139 in [BACKLOG_STORIES.md](BACKLOG_STORIES.md) (the user's 2026-09-11 QA pass on T267/T268, both follow-up gaps on already-`Done` tickets). Both are `Implementer`: T272 is a local restyle of the existing shared `GoalRow` component in `trick-goals-screen.tsx` (T267's own recent change, fully local, no diagnosis ambiguity); T273 is a CSS-only change to the same single file T268 itself edited, matching that ticket's own `Implementer` rating for a visual/layout-only sticky-header change on `TrickDirectory`._
 
-### [T272] Restore the practice affordance on goal cards
-
-- **Area:** Goals
-- **Priority:** High
-- **Status:** Not started
-- **Planning:** Implementer
-- **Description:** T267 (`a0a2672`) fixed a nested-`<button>` defect in `GoalRow` (`src/features/goals/components/trick-goals-screen.tsx`) by narrowing the card's pressable practice area (`PracticeArea`) to wrap only `GoalHeaderRow`, leaving the `GoalActionsRow` — including the `PracticeHintText` reading "Practice toward this goal" — outside any pressable and therefore dead space. Restructure the card so the hint-text row is also part of the practice affordance, while keeping the Delete control (`GoalAction` in `GoalActionsRow`) a separate, non-nested sibling pressable, preserving T267's fix.
-- **Exit criteria:** `trick-goals-screen.test.tsx` gains an assertion that `PracticeHintText` ("Practice toward this goal") renders as a descendant of the `accessibilityLabel="Practice <trick name>"` pressable, not the separate Delete pressable — i.e. pressing that row triggers the same navigation as pressing the header row. The existing `does not nest the Delete button inside the Practice button` test in the same file continues to pass unmodified, proving T267's fix isn't reverted. Full `trick-goals-screen.test.tsx` suite passes.
-- **Notes:** `GoalRow` is the one shared component rendered by both `TrickGoalsScreen` (single-trick) and `AllTrickGoalsScreen` (aggregate "Trick goals" screen) — see `all-trick-goals-screen.tsx:102` — so one component-level test fix covers both screens named in S138's acceptance criteria; no separate per-screen verification is needed.
-
 ### [T273] Remove scroll-snap-induced auto-scroll from the trick list
 
 - **Area:** Tricks
