@@ -137,7 +137,7 @@ _T272–T273 come from stories S138–S139 in [BACKLOG_STORIES.md](BACKLOG_STORI
 
 - **Area:** Goals
 - **Priority:** High
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Implementer
 - **Description:** T267 (`a0a2672`) fixed a nested-`<button>` defect in `GoalRow` (`src/features/goals/components/trick-goals-screen.tsx`) by narrowing the card's pressable practice area (`PracticeArea`) to wrap only `GoalHeaderRow`, leaving the `GoalActionsRow` — including the `PracticeHintText` reading "Practice toward this goal" — outside any pressable and therefore dead space. Restructure the card so the hint-text row is also part of the practice affordance, while keeping the Delete control (`GoalAction` in `GoalActionsRow`) a separate, non-nested sibling pressable, preserving T267's fix.
 - **Exit criteria:** `trick-goals-screen.test.tsx` gains an assertion that `PracticeHintText` ("Practice toward this goal") renders as a descendant of the `accessibilityLabel="Practice <trick name>"` pressable, not the separate Delete pressable — i.e. pressing that row triggers the same navigation as pressing the header row. The existing `does not nest the Delete button inside the Practice button` test in the same file continues to pass unmodified, proving T267's fix isn't reverted. Full `trick-goals-screen.test.tsx` suite passes.
