@@ -346,7 +346,7 @@ describe('StatsScreen never flashes EmptyStats after a guest import completes (T
       expect(
         findByText(
           root,
-          'Complete a focused practice session and your time, laces, and trick history will collect here.',
+          'Complete a sesh and your time, laces, and trick history will collect here.',
         ).length,
       ).toBe(0);
     }

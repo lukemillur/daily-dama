@@ -114,7 +114,7 @@ function EmptyStats() {
       <StyledEyebrow>Practice history</StyledEyebrow>
       <CenteredTitle>Your progress{`\n`}starts with a sesh.</CenteredTitle>
       <CenteredBody>
-        Complete a focused practice session and your time, laces, and trick history will collect here.
+        Complete a sesh and your time, laces, and trick history will collect here.
       </CenteredBody>
       <Link href="/app/sesh" asChild>
         <StartButton accessibilityRole="link">Start a sesh</StartButton>
@@ -138,7 +138,7 @@ function PopulatedStats({
     <StatsScroll contentContainerStyle={{ paddingBottom: 24 }}>
       <StatsContent>
         <StyledEyebrow>Practice history</StyledEyebrow>
-        <Title>Your work,{`\n`}adding up.</Title>
+        <Title>You&apos;re putting in the work.</Title>
 
         <Overview>
           <OverviewMetric>
