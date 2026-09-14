@@ -133,7 +133,7 @@ _Raw ideas land here — a name and a one-line description, nothing more. Discus
 
 - **Area:** Documentation
 - **Priority:** Medium
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Implementer
 - **Description:** DEPLOYMENT_HANDOFF.md still describes a client-only app with no backend, database, or API. That's false — Supabase Auth/Postgres, Sentry, and a feedback table are live in production. Correct the doc to match reality. Carries forward the documentation half of the retired T235 collaborative ticket (see T282); the standalone user-facing privacy-page half is dropped as unneeded for now (owner call, 2026-09-14).
 - **Exit criteria:** DEPLOYMENT_HANDOFF.md's description of backend, storage, and third-party services matches the current production configuration, with reproducible deployment steps referencing real paths/commands. No "no backend" or equivalent false claim remains.
