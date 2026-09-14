@@ -129,13 +129,3 @@ _Raw ideas land here — a name and a one-line description, nothing more. Discus
 
 ## Backlog
 
-### [T282] Retire the collaborative queue's remaining open tickets
-
-- **Area:** Documentation
-- **Priority:** Low
-- **Status:** Not started
-- **Planning:** Implementer
-- **Description:** TASKS_COLLABORATIVE.md's two open entries (T234, T235) are no longer relevant. T235's still-useful piece (correcting DEPLOYMENT_HANDOFF.md) is carried forward as T281.
-- **Exit criteria:** The T234 and T235 entries are removed from `TASKS_COLLABORATIVE.md`. The file's working-agreement scaffold (queue mechanics, `guided-ticket` skill instructions) stays intact for any future collaborative ticket. Other docs' references to T234 or T235 as open items are updated or removed (check `TASKS_BACKLOG.md`'s S032–S039/S041 note and any other active cross-reference; historical mentions in `TASKS_DONE.md` are untouched).
-- **Notes:** Do not delete `TASKS_COLLABORATIVE.md` itself or the `guided-ticket` skill — only these two stale entries. Retiring the collaborative-execution mechanism entirely is a separate, explicit call the owner hasn't made.
-
