@@ -129,16 +129,6 @@ _Raw ideas land here — a name and a one-line description, nothing more. Discus
 
 ## Backlog
 
-### [T281] Correct DEPLOYMENT_HANDOFF.md's stale "no backend" description
-
-- **Area:** Documentation
-- **Priority:** Medium
-- **Status:** Not started
-- **Planning:** Implementer
-- **Description:** DEPLOYMENT_HANDOFF.md still describes a client-only app with no backend, database, or API. That's false — Supabase Auth/Postgres, Sentry, and a feedback table are live in production. Correct the doc to match reality. Carries forward the documentation half of the retired T235 collaborative ticket (see T282); the standalone user-facing privacy-page half is dropped as unneeded for now (owner call, 2026-09-14).
-- **Exit criteria:** DEPLOYMENT_HANDOFF.md's description of backend, storage, and third-party services matches the current production configuration, with reproducible deployment steps referencing real paths/commands. No "no backend" or equivalent false claim remains.
-- **Notes:** Reuse the facts already gathered in `outputs/guided-tickets/T235.md` (backend project ref, hosting plan, what's stored/deleted per domain, third-party services, feedback's non-deletion caveat) rather than re-deriving them — verify they still hold rather than re-investigating from scratch. Feedback and error-review destinations are already owner-confirmed (2026-09-14): Supabase Studio's `api.feedback` table and the Sentry `daily-dama` dashboard respectively — state them as fact. Confirm the Supabase project's plan tier (Free vs. Pro) at execution time before stating any backup/recovery guarantee, rather than guessing. Out of scope: a standalone user-facing privacy/data page, backup automation, paid-plan purchases, legal certification, a new support platform.
-
 ### [T282] Retire the collaborative queue's remaining open tickets
 
 - **Area:** Documentation

@@ -1,6 +1,6 @@
 # Daily Dama — Deployment Handoff (dailydama.com)
 
-Written 2026-08-06, updated 2026-08-10 once deployment actually happened. **This is no longer prep** — Vercel is connected and a live Production deployment exists. The rest of this document is still accurate about build/gate mechanics, but §4, §5, and §7 have been corrected to match what's actually live rather than what was originally planned.
+Written 2026-08-06, updated 2026-08-10 once deployment actually happened, updated again 2026-09-14 to correct §1's stale "no backend" claim once Supabase Auth/Postgres, Sentry, and the feedback table went live in production. **This is no longer prep** — Vercel is connected and a live Production deployment exists. The rest of this document is still accurate about build/gate mechanics, but §1, §4, §5, and §7 have been corrected to match what's actually live rather than what was originally planned.
 
 ## Current deploy model — read this first
 
@@ -12,9 +12,17 @@ This was configured directly in the Vercel dashboard, not from anything in this 
 
 ## 1. What this project is
 
-Daily Dama is a local-first Expo Router app (Kendama trick practice tracker). Repo: `github.com/lukemillur/daily-dama`, local clone at `/Users/luke/Personal Projects/kendama-project`, branch `main`, working tree clean and in sync with `origin/main` as of commit `b0cf894`.
+Daily Dama is a local-first Expo Router app (Kendama trick practice tracker). Repo: `github.com/lukemillur/daily-dama`, local clone at `/Users/luke/Personal Projects/kendama-project`, branch `main`.
 
-All state is client-side (AsyncStorage → `localStorage` on web, keys prefixed `daily-dama:`). There is no backend, database, or API. That makes static hosting sufficient — no server runtime is required for the app itself.
+The app is **not** client-only. Every guest's state starts client-side (AsyncStorage → `localStorage` on web, keys prefixed `daily-dama:`), covering the five persistent domains in [AGENTS.md](AGENTS.md)'s state/persistence boundaries — but production is also backed by a real, live hosted Supabase project (Postgres + Auth + Edge Functions), a feedback table, and third-party error/email services. Concretely, as of 2026-09-14:
+
+- **Backend:** Supabase project `lnudjcpotidplbjqcfcx` (`us-east-2`), backing `www.dailydama.com`. A separate project, `ylyoqswauqyesuwmetnl`, backs `development`/staging deploys and is not touched by production traffic. Once a user signs up, their profile, custom tricks/sequences, practice history, goals, and notes sync to Postgres tables scoped by `user_id` with `on delete cascade` FKs to `auth.users`; deleting an account (`supabase/functions/delete-account`, an Edge Function) permanently removes all of that data along with the Auth user itself. Guests who never sign up never reach Supabase at all, except through the guest-import path if/when they do sign up.
+- **Feedback:** the in-app Feedback screen writes to a standalone `api.feedback` table that has **no** `user_id` or foreign key to `auth.users` at all (`supabase/migrations/20260902000000_add_feedback_table_with_anon_insert.sql`) — submissions aren't linked to an account and are **not** deleted when the submitting user later deletes their account, because there's no FK to cascade through. Feedback is reviewed manually via Supabase Studio's Table Editor/SQL Editor against `api.feedback` on the production project; there is no in-app or automated read path.
+- **Error monitoring:** Sentry project `daily-dama` (org `luke-miller-technologies`) captures uncaught web errors and unhandled promise rejections automatically (no manual `captureException`, tracing, or replay). Reviewed manually via the Sentry `daily-dama` project's Issues dashboard.
+- **Transactional email:** Resend delivers Auth email (signup confirmation, password reset, email change) via Supabase's built-in SMTP integration; the app doesn't call Resend directly and doesn't retain email content beyond delivery.
+- **Backup/recovery posture:** confirmed live on 2026-09-14 via `npx supabase backups list --project-ref lnudjcpotidplbjqcfcx` — PITR is disabled (`pitr_enabled: false`) and no physical backups are on file for either the production or development project. Today, a hard database failure on either project has no Supabase-managed backup to restore from; don't assume otherwise without re-checking that command, since plan/entitlement changes could change this silently.
+
+None of the above requires an app-owned server runtime — the Expo Router build itself is still static assets, so static hosting remains sufficient for serving the app. But the app talks to real backend and third-party services at runtime; "no backend, database, or API" is no longer an accurate description of production.
 
 Full project context (state boundaries, product shape, collaboration style) lives in [AGENTS.md](AGENTS.md) at the repo root — read that first if anything here is ambiguous.
 
@@ -55,7 +63,7 @@ dist/
 - **Vercel** (`vercel.json`): a `rewrites` entry mapping `/app/stats/:trickId` → `/app/stats/[trickId].html`
 - **Cloudflare Pages**: same idea via a `_redirects` file
 
-`vercel.json` now exists in the repo with exactly this rewrite (`/app/stats/:trickId` → `/app/stats/[trickId].html`), plus the build command and output directory. Still worth verifying post-deploy (see checklist below) rather than trusting the config alone.
+`vercel.json` now exists in the repo with this rewrite (`/app/stats/:trickId` → `/app/stats/[trickId]`) plus equivalent rewrites for every other dynamic route added since (`/app/tricks/:trickId/notes`, `/app/tricks/:trickId/goals`, `/app/tricks/custom/:trickId/edit`, `/app/tricks/custom/:trickId/delete`), the build command, and the output directory. Still worth verifying post-deploy (see checklist below) rather than trusting the config alone.
 
 ## 3. (Removed) The access gate
 
@@ -64,16 +72,16 @@ The password-gate feature this section used to describe (`src/features/access-ga
 ## 4. What's genuinely undecided (needs your input, not mine)
 
 - **Hosting provider — decided.** Vercel, connected via its GitHub App, with `vercel.json` in the repo. See *Current deploy model* above.
-- **DNS for dailydama.com.** Still not independently verified from this side — I haven't confirmed the custom domain is actually pointed at Vercel and resolving, as opposed to a deployment simply existing at Vercel's own `*.vercel.app` URL. Check before assuming `dailydama.com` itself is live.
+- **DNS for dailydama.com — confirmed live.** `https://dailydama.com` redirects (`308`) to the canonical `https://www.dailydama.com`, which returns `200` with valid HTTPS (verified 2026-09-08 in T231, and again live on 2026-09-14). Nothing left to check here; kept as a heading only because §5/§7 below used to point back to it.
 
 ## 5. Suggested next steps
 
 1. ~~Pick a host~~ — done, Vercel.
 2. ~~Connect the GitHub repo, set build command and output directory~~ — done, see `vercel.json`.
 3. ~~Confirm `EXPO_PUBLIC_ACCESS_PASSWORD` is set on Vercel~~ — moot, the access gate was removed in T111 (see §3). Worth removing the now-unused env var from Vercel's dashboard.
-4. ~~Add the `/app/stats/*` rewrite rule~~ — done, in `vercel.json`.
-5. Confirm `dailydama.com` DNS actually points at Vercel and HTTPS is provisioned — not independently verified, see §4.
-6. Run the verification checklist below against the live domain — not yet done from this side.
+4. ~~Add the `/app/stats/*` rewrite rule~~ — done, in `vercel.json`, along with the other dynamic-route rewrites added since (§2).
+5. ~~Confirm `dailydama.com` DNS actually points at Vercel and HTTPS is provisioned~~ — done, see §4.
+6. ~~Run the verification checklist below against the live domain~~ — done in T231/T232's live acceptance passes; the checklist below still applies to any future redeploy.
 
 ## 6. Post-deploy verification checklist
 
@@ -90,4 +98,4 @@ Beyond the project's standard local verification sequence (in AGENTS.md — `yar
 - The hosting account, `vercel.json`, the `production` branch, and the Vercel Production Branch setting were all set up directly by the project owner, not by an agent — none of it came from work in this repo.
 - The access gate itself was later removed entirely (T111, see §3) rather than having its password changed.
 - Did not add `generateStaticParams` for `/app/stats/[trickId]` — the rewrite rule in `vercel.json` covers the direct-hit 404 case (§2), but per-trick static generation for that route still isn't implemented.
-- Have not independently verified DNS or the build-time env var are actually correct in Vercel (see §4) — flagging rather than assuming.
+- Have not independently re-verified every build-time env var in Vercel beyond what T231 confirmed live (Supabase URL/key, Sentry DSN embedded correctly) — re-check the Vercel dashboard if a variable is ever suspected of drifting.
