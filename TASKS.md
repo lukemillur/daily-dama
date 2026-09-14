@@ -129,16 +129,6 @@ _Raw ideas land here — a name and a one-line description, nothing more. Discus
 
 ## Backlog
 
-### [T277] Remove SHIP_READINESS_AUDIT.md now that its findings are reconciled
-
-- **Area:** Documentation
-- **Priority:** Low
-- **Status:** Not started
-- **Planning:** Implementer
-- **Description:** SHIP_READINESS_AUDIT.md is a 2026-09-04 snapshot; every actionable finding already became a tracked ticket (T225, T228, T233, and the T234/T235 entries retired by T282). Delete the file.
-- **Exit criteria:** `SHIP_READINESS_AUDIT.md` no longer exists. `grep -rl "SHIP_READINESS_AUDIT.md" --include="*.md" .` returns nothing outside `TASKS_DONE.md` and `outputs/` (archived evidence, left as historical record).
-- **Notes:** Do after T282 so the `TASKS_COLLABORATIVE.md` reference to this doc is already gone; if run first, remove that reference here instead of leaving it dangling.
-
 ### [T278] Remove V1_LAUNCH_PLAN.md now that the plan shipped
 
 - **Area:** Documentation

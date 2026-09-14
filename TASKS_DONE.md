@@ -3841,3 +3841,12 @@ Completed entries live in [TASKS_DONE.md](TASKS_DONE.md) — not part of the top
 - **Exit criteria:** `BACKEND_ROADMAP.md` no longer exists. `supabase/README.md`'s reference to "`BACKEND_ROADMAP.md` Phase 1 policy" (~line 303) is rewritten to state that policy directly instead of citing the removed doc. `grep -rl "BACKEND_ROADMAP.md" --include="*.md" .` returns nothing outside `TASKS_DONE.md`. Met: deleted `BACKEND_ROADMAP.md`; rewrote `supabase/README.md`'s JWT-expiry bullet to state the one-hour-expiry rationale directly instead of citing the removed doc; also updated the two other now-dangling references in `BACKLOG_STORIES.md` and `TASKS_BACKLOG.md` (historical provenance notes citing the same removed doc) to describe the analysis in prose instead of linking/naming the file. `grep -rl "BACKEND_ROADMAP.md" --include="*.md" .` returns only `TASKS_DONE.md`.
 - **Notes:** Historical mentions inside this file's own already-`Done` entries (T153.1, etc.) were left untouched, per this task's own notes.
 
+### [T277] Remove SHIP_READINESS_AUDIT.md now that its findings are reconciled
+
+- **Area:** Documentation
+- **Priority:** Low
+- **Status:** Done
+- **Planning:** Implementer
+- **Description:** SHIP_READINESS_AUDIT.md is a 2026-09-04 snapshot; every actionable finding already became a tracked ticket (T225, T228, T233, and the T234/T235 entries retired by T282). Delete the file.
+- **Exit criteria:** `SHIP_READINESS_AUDIT.md` no longer exists. `grep -rl "SHIP_READINESS_AUDIT.md" --include="*.md" .` returns nothing outside `TASKS_DONE.md` and `outputs/` (archived evidence, left as historical record). Met: deleted `SHIP_READINESS_AUDIT.md`; T282 hadn't landed yet, so also rewrote `TASKS_COLLABORATIVE.md`'s "Ship-readiness batch" intro to describe the source as "a ship-readiness audit (source doc retired; see T277 in `TASKS_DONE.md`)" instead of linking the now-deleted file. `grep -rl "SHIP_READINESS_AUDIT.md" --include="*.md" .` returns only `TASKS_DONE.md` and `outputs/ship-readiness/T225.md`.
+- **Notes:** Ran before T282, per the task's own contingency note, so the `TASKS_COLLABORATIVE.md` reference was rewritten here rather than left dangling for T282 to clean up.
