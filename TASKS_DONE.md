@@ -3868,3 +3868,12 @@ Completed entries live in [TASKS_DONE.md](TASKS_DONE.md) — not part of the top
 - **Planning:** Implementer
 - **Description:** LANDING_PAGE_BRAINDUMP.md is raw founder source material captured 2026-08-19 for landing-page copy/tone. The landing page has since shipped and iterated (T253, T254, T265, T275). Delete the file.
 - **Exit criteria:** Confirm no open `BACKLOG_STORIES.md` entry references this doc before deleting (none did as of 2026-09-14). `LANDING_PAGE_BRAINDUMP.md` no longer exists. `grep -rl "LANDING_PAGE_BRAINDUMP.md" --include="*.md" .` returns nothing outside `TASKS_DONE.md`. Met: confirmed `BACKLOG_STORIES.md` had no reference; deleted `LANDING_PAGE_BRAINDUMP.md`. `grep -rl "LANDING_PAGE_BRAINDUMP.md" --include="*.md" .` returns only `TASKS_DONE.md`.
+
+### [T280] True up PRODUCT_CAPABILITIES.md against the current app
+
+- **Area:** Documentation
+- **Priority:** Low
+- **Status:** Done
+- **Planning:** Implementer
+- **Description:** Unlike the other root planning docs, this one is a living capability inventory worth keeping — but it needs to describe what's actually shipped, not a point-in-time snapshot. Verify it against current code rather than assuming it's still accurate.
+- **Exit criteria:** Every listed capability is checked against current `src/app` and feature code (not memory or prior doc content) and corrected where inaccurate, renamed, or removed; anything shipped since the doc's last update that changes user-visible capability is added. The doc keeps its existing inventory format. Met: cross-checked every bullet against `src/app` and the relevant feature modules. Replaced the stale password-access-gate bullets (that feature no longer exists) with the current public-landing/guest-entry flow, and added a new "Account, authentication, and sync" section covering sign-up/sign-in, email verification, password reset, guest-to-account data import, sync status/retry, password/email change, guarded logout, and account deletion — none of which the doc previously mentioned. Corrected the onboarding/Profile theme-preset list (was missing the shipped Pink and Raw presets) and the feedback capability (now an in-app form, not an email link). Added matching bullets to the condensed feature set. Existing bullet-list-under-`###`-heading inventory format preserved throughout.
