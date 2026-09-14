@@ -129,16 +129,6 @@ _Raw ideas land here — a name and a one-line description, nothing more. Discus
 
 ## Backlog
 
-### [T276] Remove BACKEND_ROADMAP.md now that its recommendation is implemented
-
-- **Area:** Documentation
-- **Priority:** Low
-- **Status:** Not started
-- **Planning:** Implementer
-- **Description:** BACKEND_ROADMAP.md is a pre-decision analysis recommending Supabase; that decision is long since implemented (Auth, Postgres, and sync are all live in production). Delete the file.
-- **Exit criteria:** `BACKEND_ROADMAP.md` no longer exists. `supabase/README.md`'s reference to "`BACKEND_ROADMAP.md` Phase 1 policy" (~line 303) is rewritten to state that policy directly instead of citing the removed doc. `grep -rl "BACKEND_ROADMAP.md" --include="*.md" .` returns nothing outside `TASKS_DONE.md`.
-- **Notes:** Leave historical mentions inside `TASKS_DONE.md`'s completed-task entries untouched — that file is an immutable archive, not living documentation.
-
 ### [T277] Remove SHIP_READINESS_AUDIT.md now that its findings are reconciled
 
 - **Area:** Documentation

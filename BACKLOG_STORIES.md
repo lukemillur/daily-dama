@@ -6,7 +6,7 @@ Product outcomes, technical enablers, security controls, and launch gates awaiti
 
 _S001–S022 came from the user's 2026-08-21 QA pass on T122–T131 (landing page and trick goals), compiled via the `qa-handoff` artifact and refined by `product-manager`. S001–S005 and S007–S022 were scoped in this pass into T132–T152 (see `TASKS.md`) and removed from this file per the usual promotion cleanup. S006 was held back pending confirmation and later closed (see the S042–S062 note below)._
 
-_S032–S041 were refined from [BACKEND_ROADMAP.md](BACKEND_ROADMAP.md) on 2026-08-21 using the Codex `product-manager` workflow. S032–S039 and S041 were scoped into umbrellas T153–T162 and removed from this file; T153 was later activated in [TASKS.md](TASKS.md), while T154–T162 remain in [TASKS_BACKLOG.md](TASKS_BACKLOG.md). S040 remains proposed because mobile hardening is explicitly deferred by [AGENTS.md](AGENTS.md)._
+_S032–S041 were refined from a pre-decision backend analysis (since removed; Supabase was selected and is now live in production) on 2026-08-21 using the Codex `product-manager` workflow. S032–S039 and S041 were scoped into umbrellas T153–T162 and removed from this file; T153 was later activated in [TASKS.md](TASKS.md), while T154–T162 remain in [TASKS_BACKLOG.md](TASKS_BACKLOG.md). S040 remains proposed because mobile hardening is explicitly deferred by [AGENTS.md](AGENTS.md)._
 
 _S042–S062 came from the user's 2026-08-25 QA pass on the Full-Batch of PR #158–223 (three items were follow-up gaps on already-`Done` tickets T144/T146/T153.12; the rest were general feedback, mostly Auth/Account UI). 19 were scoped into T163–T181 (see `TASKS.md`) and removed from this file. S051 and S006 were confirmed working in the live app by the user on 2026-08-26 and removed per the usual promotion cleanup. S057 was rejected by the user on 2026-08-26 — see [V1_LAUNCH_PLAN.md](V1_LAUNCH_PLAN.md) Stage 1._
 
@@ -63,7 +63,7 @@ _S138–S139 came from the user's 2026-09-11 QA pass on T267–T271 (the batch c
 - **Type:** User outcome
 - **Beneficiary:** Mobile practitioners
 - **Outcome:** The same account, callback, secure credential storage, offline sync, conflicts, logout, and deletion behavior works across web, iOS, and Android.
-- **Evidence:** `BACKEND_ROADMAP.md` Phase 5.
+- **Evidence:** Cross-platform hardening was scoped as the final phase of the original backend rollout, covering native PKCE callbacks, SecureStore-backed Auth storage, and cross-platform offline sync/conflict verification.
 - **Priority:** Medium
 - **Status:** Proposed
 - **Acceptance criteria:** Independent platform verification covers native PKCE callbacks, SecureStore-backed Auth storage, Auth email links, offline mutation and reconnection, account isolation, and active-Sesh safety on both iOS and Android.
