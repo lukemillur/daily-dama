@@ -133,7 +133,7 @@ _Raw ideas land here — a name and a one-line description, nothing more. Discus
 
 - **Area:** Documentation
 - **Priority:** Low
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Implementer
 - **Description:** LANDING_PAGE_BRAINDUMP.md is raw founder source material captured 2026-08-19 for landing-page copy/tone. The landing page has since shipped and iterated (T253, T254, T265, T275). Delete the file.
 - **Exit criteria:** Confirm no open `BACKLOG_STORIES.md` entry references this doc before deleting (none did as of 2026-09-14). `LANDING_PAGE_BRAINDUMP.md` no longer exists. `grep -rl "LANDING_PAGE_BRAINDUMP.md" --include="*.md" .` returns nothing outside `TASKS_DONE.md`.
