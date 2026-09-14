@@ -4,6 +4,16 @@ Completed entries move here from `TASKS.md`'s `Backlog`, in the same commit that
 
 Entries keep their content as it was at completion. Don't retroactively edit a description or exit criteria after the fact; if something about a completed task turns out to be wrong or misleading, note that in a new entry or in code, not by rewriting history here.
 
+### [T281] Correct DEPLOYMENT_HANDOFF.md's stale "no backend" description
+
+- **Area:** Documentation
+- **Priority:** Medium
+- **Status:** Done
+- **Planning:** Implementer
+- **Description:** DEPLOYMENT_HANDOFF.md still describes a client-only app with no backend, database, or API. That's false — Supabase Auth/Postgres, Sentry, and a feedback table are live in production. Correct the doc to match reality. Carries forward the documentation half of the retired T235 collaborative ticket (see T282); the standalone user-facing privacy-page half is dropped as unneeded for now (owner call, 2026-09-14).
+- **Exit criteria:** DEPLOYMENT_HANDOFF.md's description of backend, storage, and third-party services matches the current production configuration, with reproducible deployment steps referencing real paths/commands. No "no backend" or equivalent false claim remains. Met: §1 now states the live Supabase backend (`lnudjcpotidplbjqcfcx`), the `api.feedback` table and its non-cascading deletion caveat, Sentry (`daily-dama`) and Resend, and a backup/recovery posture confirmed live via `npx supabase backups list --project-ref lnudjcpotidplbjqcfcx` (PITR disabled, no physical backups on file for either project, as of 2026-09-14) rather than a guessed plan-tier label. §4/§5/§7's stale "DNS not independently verified" claims were also corrected against T231/T232's existing live evidence plus a fresh `curl` (`dailydama.com` → `308` → `www.dailydama.com` → `200`, 2026-09-14), and §2's rewrite description was updated to list all five `vercel.json` rewrites now present, not just the original stats one.
+- **Notes:** Reused the facts already gathered in `outputs/guided-tickets/T235.md` (backend project ref, hosting plan, per-domain storage/deletion behavior, third-party services, feedback's non-deletion caveat) rather than re-deriving them from scratch; verified against current migrations and the T230/T231/T232 guided-ticket records. Feedback and error-review destinations stated as fact per the owner-confirmed note (Supabase Studio's `api.feedback` table, the Sentry `daily-dama` dashboard). Supabase plan tier itself (Free vs. Pro) was not directly discoverable through the authenticated `supabase` CLI available in this environment (no billing/plan subcommand exists); rather than guess a label, the doc states the directly-observed backup/PITR facts instead, which is what the backup/recovery guarantee actually depends on. Left `ARCHITECTURE.md`'s own separate "no backend" line untouched — out of this ticket's explicit `DEPLOYMENT_HANDOFF.md` scope; flagged for a possible future entry. Did not touch the standalone privacy-page half (dropped per the task's own note) or any backup automation, paid-plan purchase, or support-platform work.
+
 ### [T232] Verify the hosted account lifecycle and account isolation
 
 - **Area:** Hosted account acceptance
