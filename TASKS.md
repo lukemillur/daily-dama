@@ -129,3 +129,70 @@ _Raw ideas land here — a name and a one-line description, nothing more. Discus
 
 ## Backlog
 
+### [T276] Remove BACKEND_ROADMAP.md now that its recommendation is implemented
+
+- **Area:** Documentation
+- **Priority:** Low
+- **Status:** Not started
+- **Planning:** Implementer
+- **Description:** BACKEND_ROADMAP.md is a pre-decision analysis recommending Supabase; that decision is long since implemented (Auth, Postgres, and sync are all live in production). Delete the file.
+- **Exit criteria:** `BACKEND_ROADMAP.md` no longer exists. `supabase/README.md`'s reference to "`BACKEND_ROADMAP.md` Phase 1 policy" (~line 303) is rewritten to state that policy directly instead of citing the removed doc. `grep -rl "BACKEND_ROADMAP.md" --include="*.md" .` returns nothing outside `TASKS_DONE.md`.
+- **Notes:** Leave historical mentions inside `TASKS_DONE.md`'s completed-task entries untouched — that file is an immutable archive, not living documentation.
+
+### [T277] Remove SHIP_READINESS_AUDIT.md now that its findings are reconciled
+
+- **Area:** Documentation
+- **Priority:** Low
+- **Status:** Not started
+- **Planning:** Implementer
+- **Description:** SHIP_READINESS_AUDIT.md is a 2026-09-04 snapshot; every actionable finding already became a tracked ticket (T225, T228, T233, and the T234/T235 entries retired by T282). Delete the file.
+- **Exit criteria:** `SHIP_READINESS_AUDIT.md` no longer exists. `grep -rl "SHIP_READINESS_AUDIT.md" --include="*.md" .` returns nothing outside `TASKS_DONE.md` and `outputs/` (archived evidence, left as historical record).
+- **Notes:** Do after T282 so the `TASKS_COLLABORATIVE.md` reference to this doc is already gone; if run first, remove that reference here instead of leaving it dangling.
+
+### [T278] Remove V1_LAUNCH_PLAN.md now that the plan shipped
+
+- **Area:** Documentation
+- **Priority:** Low
+- **Status:** Not started
+- **Planning:** Implementer
+- **Description:** V1_LAUNCH_PLAN.md is a 2026-08-26 direction-setting doc reconciling the backlog against product-differentiation decisions; those decisions shipped. Delete the file.
+- **Exit criteria:** `BACKLOG_STORIES.md`'s S057 note (~line 11), which currently cites "[V1_LAUNCH_PLAN.md](V1_LAUNCH_PLAN.md) Stage 1" for the rejection rationale, is rewritten to state that rationale directly. `V1_LAUNCH_PLAN.md` no longer exists. `grep -rl "V1_LAUNCH_PLAN.md" --include="*.md" .` returns nothing outside `TASKS_DONE.md`.
+
+### [T279] Remove LANDING_PAGE_BRAINDUMP.md now that the landing copy it fed has shipped
+
+- **Area:** Documentation
+- **Priority:** Low
+- **Status:** Not started
+- **Planning:** Implementer
+- **Description:** LANDING_PAGE_BRAINDUMP.md is raw founder source material captured 2026-08-19 for landing-page copy/tone. The landing page has since shipped and iterated (T253, T254, T265, T275). Delete the file.
+- **Exit criteria:** Confirm no open `BACKLOG_STORIES.md` entry references this doc before deleting (none did as of 2026-09-14). `LANDING_PAGE_BRAINDUMP.md` no longer exists. `grep -rl "LANDING_PAGE_BRAINDUMP.md" --include="*.md" .` returns nothing outside `TASKS_DONE.md`.
+
+### [T280] True up PRODUCT_CAPABILITIES.md against the current app
+
+- **Area:** Documentation
+- **Priority:** Low
+- **Status:** Not started
+- **Planning:** Implementer
+- **Description:** Unlike the other root planning docs, this one is a living capability inventory worth keeping — but it needs to describe what's actually shipped, not a point-in-time snapshot. Verify it against current code rather than assuming it's still accurate.
+- **Exit criteria:** Every listed capability is checked against current `src/app` and feature code (not memory or prior doc content) and corrected where inaccurate, renamed, or removed; anything shipped since the doc's last update that changes user-visible capability is added. The doc keeps its existing inventory format.
+
+### [T281] Correct DEPLOYMENT_HANDOFF.md's stale "no backend" description
+
+- **Area:** Documentation
+- **Priority:** Medium
+- **Status:** Not started
+- **Planning:** Implementer
+- **Description:** DEPLOYMENT_HANDOFF.md still describes a client-only app with no backend, database, or API. That's false — Supabase Auth/Postgres, Sentry, and a feedback table are live in production. Correct the doc to match reality. Carries forward the documentation half of the retired T235 collaborative ticket (see T282); the standalone user-facing privacy-page half is dropped as unneeded for now (owner call, 2026-09-14).
+- **Exit criteria:** DEPLOYMENT_HANDOFF.md's description of backend, storage, and third-party services matches the current production configuration, with reproducible deployment steps referencing real paths/commands. No "no backend" or equivalent false claim remains.
+- **Notes:** Reuse the facts already gathered in `outputs/guided-tickets/T235.md` (backend project ref, hosting plan, what's stored/deleted per domain, third-party services, feedback's non-deletion caveat) rather than re-deriving them — verify they still hold rather than re-investigating from scratch. Feedback and error-review destinations are already owner-confirmed (2026-09-14): Supabase Studio's `api.feedback` table and the Sentry `daily-dama` dashboard respectively — state them as fact. Confirm the Supabase project's plan tier (Free vs. Pro) at execution time before stating any backup/recovery guarantee, rather than guessing. Out of scope: a standalone user-facing privacy/data page, backup automation, paid-plan purchases, legal certification, a new support platform.
+
+### [T282] Retire the collaborative queue's remaining open tickets
+
+- **Area:** Documentation
+- **Priority:** Low
+- **Status:** Not started
+- **Planning:** Implementer
+- **Description:** TASKS_COLLABORATIVE.md's two open entries (T234, T235) are no longer relevant. T235's still-useful piece (correcting DEPLOYMENT_HANDOFF.md) is carried forward as T281.
+- **Exit criteria:** The T234 and T235 entries are removed from `TASKS_COLLABORATIVE.md`. The file's working-agreement scaffold (queue mechanics, `guided-ticket` skill instructions) stays intact for any future collaborative ticket. Other docs' references to T234 or T235 as open items are updated or removed (check `TASKS_BACKLOG.md`'s S032–S039/S041 note and any other active cross-reference; historical mentions in `TASKS_DONE.md` are untouched).
+- **Notes:** Do not delete `TASKS_COLLABORATIVE.md` itself or the `guided-ticket` skill — only these two stale entries. Retiring the collaborative-execution mechanism entirely is a separate, explicit call the owner hasn't made.
+
