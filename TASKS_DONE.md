@@ -3859,3 +3859,12 @@ Completed entries live in [TASKS_DONE.md](TASKS_DONE.md) — not part of the top
 - **Planning:** Implementer
 - **Description:** V1_LAUNCH_PLAN.md is a 2026-08-26 direction-setting doc reconciling the backlog against product-differentiation decisions; those decisions shipped. Delete the file.
 - **Exit criteria:** `BACKLOG_STORIES.md`'s S057 note (~line 11), which currently cites "[V1_LAUNCH_PLAN.md](V1_LAUNCH_PLAN.md) Stage 1" for the rejection rationale, is rewritten to state that rationale directly. `V1_LAUNCH_PLAN.md` no longer exists. `grep -rl "V1_LAUNCH_PLAN.md" --include="*.md" .` returns nothing outside `TASKS_DONE.md`. Met: deleted `V1_LAUNCH_PLAN.md`; rewrote `BACKLOG_STORIES.md`'s S057 note to state the anti-enumeration rejection rationale directly instead of citing the removed doc. `grep -rl "V1_LAUNCH_PLAN.md" --include="*.md" .` returns only `TASKS_DONE.md`.
+
+### [T279] Remove LANDING_PAGE_BRAINDUMP.md now that the landing copy it fed has shipped
+
+- **Area:** Documentation
+- **Priority:** Low
+- **Status:** Done
+- **Planning:** Implementer
+- **Description:** LANDING_PAGE_BRAINDUMP.md is raw founder source material captured 2026-08-19 for landing-page copy/tone. The landing page has since shipped and iterated (T253, T254, T265, T275). Delete the file.
+- **Exit criteria:** Confirm no open `BACKLOG_STORIES.md` entry references this doc before deleting (none did as of 2026-09-14). `LANDING_PAGE_BRAINDUMP.md` no longer exists. `grep -rl "LANDING_PAGE_BRAINDUMP.md" --include="*.md" .` returns nothing outside `TASKS_DONE.md`. Met: confirmed `BACKLOG_STORIES.md` had no reference; deleted `LANDING_PAGE_BRAINDUMP.md`. `grep -rl "LANDING_PAGE_BRAINDUMP.md" --include="*.md" .` returns only `TASKS_DONE.md`.
