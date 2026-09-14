@@ -133,7 +133,7 @@ _Raw ideas land here — a name and a one-line description, nothing more. Discus
 
 - **Area:** Documentation
 - **Priority:** Low
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Implementer
 - **Description:** Unlike the other root planning docs, this one is a living capability inventory worth keeping — but it needs to describe what's actually shipped, not a point-in-time snapshot. Verify it against current code rather than assuming it's still accurate.
 - **Exit criteria:** Every listed capability is checked against current `src/app` and feature code (not memory or prior doc content) and corrected where inaccurate, renamed, or removed; anything shipped since the doc's last update that changes user-visible capability is added. The doc keeps its existing inventory format.
