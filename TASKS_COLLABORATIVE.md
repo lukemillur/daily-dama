@@ -42,7 +42,7 @@ Backend selection and release selection are explicit owner gates. T230/T231 prep
 
 - **Area:** Release documentation
 - **Priority:** Medium
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Implementer
 - **Execution:** External gate
 - **Owner gates:** Confirm support/feedback and error-review destinations, chosen service-plan recovery guarantees and acceptable durability expectations; confirm the user-facing privacy/data explanation.
