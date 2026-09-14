@@ -19,7 +19,7 @@ Tickets requiring owner decisions, dashboard actions, or external verification. 
 
 ## Ship-readiness batch
 
-Approved 2026-09-04 from [SHIP_READINESS_AUDIT.md](SHIP_READINESS_AUDIT.md). A1 → T225, A4 → T228 and A9 → T233 are in `TASKS.md`; the eight remaining proposals are below. The audit's findings require reconciliation against current code. Do not recreate Phase 6, legacy migrations, native hardening, mandatory CAPTCHA/distributed throttling, backup automation, a second hosted project, performance targets, or a waiting-period gate.
+Approved 2026-09-04 from a ship-readiness audit (source doc retired; see T277 in `TASKS_DONE.md`). A1 → T225, A4 → T228 and A9 → T233 are in `TASKS.md`; the eight remaining proposals are below. The audit's findings require reconciliation against current code. Do not recreate Phase 6, legacy migrations, native hardening, mandatory CAPTCHA/distributed throttling, backup automation, a second hosted project, performance targets, or a waiting-period gate.
 
 T221 already has remote claim `task/T221-diagnose-and-fix-the-feedback-form-s` (observed 2026-09-04; no PR returned at that check). Its entry remains in `TASKS.md` to preserve that workflow. T226 owns only the remaining signed-in permission/hosted evidence gap after T221, and must reuse any completed work.
 
