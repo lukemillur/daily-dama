@@ -299,8 +299,9 @@ sanity check that the harness still fails closed.
 - Email confirmations are required (`enable_confirmations = true`) — unverified
   users cannot sign in.
 - Minimum password length is 10 characters (`minimum_password_length = 10`).
-- JWTs expire after one hour (`jwt_expiry = 3600`), pinned explicitly per
-  `BACKEND_ROADMAP.md` Phase 1 policy.
+- JWTs expire after one hour (`jwt_expiry = 3600`), pinned explicitly so
+  session lifetime is a deliberate, known value rather than Supabase's
+  changeable default.
 - The only local redirect origin is `http://localhost:8081/auth/callback`
   (`site_url` and `additional_redirect_urls`). Use `localhost`, not
   `127.0.0.1`, everywhere in this workflow — browsers treat these as different
