@@ -4,6 +4,16 @@ Completed entries move here from `TASKS.md`'s `Backlog`, in the same commit that
 
 Entries keep their content as it was at completion. Don't retroactively edit a description or exit criteria after the fact; if something about a completed task turns out to be wrong or misleading, note that in a new entry or in code, not by rewriting history here.
 
+### [T282] Retire the collaborative queue's remaining open tickets
+
+- **Area:** Documentation
+- **Priority:** Low
+- **Status:** Done
+- **Planning:** Implementer
+- **Description:** TASKS_COLLABORATIVE.md's two open entries (T234, T235) are no longer relevant. T235's still-useful piece (correcting DEPLOYMENT_HANDOFF.md) is carried forward as T281.
+- **Exit criteria:** The T234 and T235 entries are removed from `TASKS_COLLABORATIVE.md`. The file's working-agreement scaffold (queue mechanics, `guided-ticket` skill instructions) stays intact for any future collaborative ticket. Other docs' references to T234 or T235 as open items are updated or removed (check `TASKS_BACKLOG.md`'s S032–S039/S041 note and any other active cross-reference; historical mentions in `TASKS_DONE.md` are untouched). Met: both entries removed; the entire completed "Ship-readiness batch" section (T234/T235 plus its now-stale "eight remaining proposals" intro prose, now that T221/T225–T233 are all `Done`) was removed with them, leaving only the `Working agreement` scaffold. `TASKS_BACKLOG.md`'s S032–S039/S041 note does not mention T234/T235. `outputs/ship-readiness/T233.md` and `outputs/guided-tickets/T231.md` mention T234 as historical context from when those tickets closed (like `TASKS_DONE.md` mentions, left untouched); no other active doc references either ID as open.
+- **Notes:** Confirmed T281 (merged) already carried forward T235's DEPLOYMENT_HANDOFF.md correction before removing T235's entry. Did not delete `TASKS_COLLABORATIVE.md` or the `guided-ticket` skill, and did not otherwise retire the collaborative-execution mechanism, per the task's own notes.
+
 ### [T281] Correct DEPLOYMENT_HANDOFF.md's stale "no backend" description
 
 - **Area:** Documentation
