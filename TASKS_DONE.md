@@ -3850,3 +3850,12 @@ Completed entries live in [TASKS_DONE.md](TASKS_DONE.md) — not part of the top
 - **Description:** SHIP_READINESS_AUDIT.md is a 2026-09-04 snapshot; every actionable finding already became a tracked ticket (T225, T228, T233, and the T234/T235 entries retired by T282). Delete the file.
 - **Exit criteria:** `SHIP_READINESS_AUDIT.md` no longer exists. `grep -rl "SHIP_READINESS_AUDIT.md" --include="*.md" .` returns nothing outside `TASKS_DONE.md` and `outputs/` (archived evidence, left as historical record). Met: deleted `SHIP_READINESS_AUDIT.md`; T282 hadn't landed yet, so also rewrote `TASKS_COLLABORATIVE.md`'s "Ship-readiness batch" intro to describe the source as "a ship-readiness audit (source doc retired; see T277 in `TASKS_DONE.md`)" instead of linking the now-deleted file. `grep -rl "SHIP_READINESS_AUDIT.md" --include="*.md" .` returns only `TASKS_DONE.md` and `outputs/ship-readiness/T225.md`.
 - **Notes:** Ran before T282, per the task's own contingency note, so the `TASKS_COLLABORATIVE.md` reference was rewritten here rather than left dangling for T282 to clean up.
+
+### [T278] Remove V1_LAUNCH_PLAN.md now that the plan shipped
+
+- **Area:** Documentation
+- **Priority:** Low
+- **Status:** Done
+- **Planning:** Implementer
+- **Description:** V1_LAUNCH_PLAN.md is a 2026-08-26 direction-setting doc reconciling the backlog against product-differentiation decisions; those decisions shipped. Delete the file.
+- **Exit criteria:** `BACKLOG_STORIES.md`'s S057 note (~line 11), which currently cites "[V1_LAUNCH_PLAN.md](V1_LAUNCH_PLAN.md) Stage 1" for the rejection rationale, is rewritten to state that rationale directly. `V1_LAUNCH_PLAN.md` no longer exists. `grep -rl "V1_LAUNCH_PLAN.md" --include="*.md" .` returns nothing outside `TASKS_DONE.md`. Met: deleted `V1_LAUNCH_PLAN.md`; rewrote `BACKLOG_STORIES.md`'s S057 note to state the anti-enumeration rejection rationale directly instead of citing the removed doc. `grep -rl "V1_LAUNCH_PLAN.md" --include="*.md" .` returns only `TASKS_DONE.md`.
