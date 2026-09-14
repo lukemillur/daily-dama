@@ -129,15 +129,6 @@ _Raw ideas land here — a name and a one-line description, nothing more. Discus
 
 ## Backlog
 
-### [T278] Remove V1_LAUNCH_PLAN.md now that the plan shipped
-
-- **Area:** Documentation
-- **Priority:** Low
-- **Status:** In progress
-- **Planning:** Implementer
-- **Description:** V1_LAUNCH_PLAN.md is a 2026-08-26 direction-setting doc reconciling the backlog against product-differentiation decisions; those decisions shipped. Delete the file.
-- **Exit criteria:** `BACKLOG_STORIES.md`'s S057 note (~line 11), which currently cites "[V1_LAUNCH_PLAN.md](V1_LAUNCH_PLAN.md) Stage 1" for the rejection rationale, is rewritten to state that rationale directly. `V1_LAUNCH_PLAN.md` no longer exists. `grep -rl "V1_LAUNCH_PLAN.md" --include="*.md" .` returns nothing outside `TASKS_DONE.md`.
-
 ### [T279] Remove LANDING_PAGE_BRAINDUMP.md now that the landing copy it fed has shipped
 
 - **Area:** Documentation
