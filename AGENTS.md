@@ -182,7 +182,7 @@ Web is the only active implementation and verification target. iOS and Android a
 
 ## Active work
 
-Core-functionality work in progress is tracked in [TASKS.md](TASKS.md) — check it before starting session work in this area. It's the checkpoint mechanism across context compaction and new sessions: read it top to bottom, verify a task's exit criteria before touching code, and update it in the same commit that closes a task. Trick visualization is deliberately excluded from it; see below.
+Core-functionality work in progress is tracked in [TASKS.md](TASKS.md) — check it before starting session work in this area. It's the checkpoint mechanism across context compaction and new sessions: scan it top to bottom at summary depth (entry title and status) to find the right entry, then read that entry's full description, exit criteria, and notes before touching code — don't load every entry's full body just to triage which one to work on. Update the file in the same commit that closes a task. Trick visualization is deliberately excluded from it; see below.
 
 Tasks requiring owner decisions or external verification live in [TASKS_COLLABORATIVE.md](TASKS_COLLABORATIVE.md), outside automatic claiming. Use the repository's [guided-ticket skill](.agents/skills/guided-ticket/SKILL.md) for one such ticket at a time, retaining its step-by-step execution guide at `outputs/guided-tickets/<ID>.md`. These tickets follow the existing Git authority rules; the new queue does not extend the automatic push/merge exception below. Allocate task IDs across this queue, `TASKS.md`, `TASKS_BACKLOG.md`, and `TASKS_DONE.md`.
 

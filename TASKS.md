@@ -12,9 +12,9 @@ Working backlog for Daily Dama **core-functionality** work. This file is the che
 
 **Picking up work:**
 
-1. Read this file top to bottom before touching code.
-2. Take the first `Backlog` entry with status `Not started` or `In progress`. Before claiming it, follow the branch-check protocol in _Working across multiple agents_ below — this file's status field is a human-readable picture, not the authoritative claim signal.
-3. Read its exit criteria before writing anything — that's the definition of done, not a vibe check.
+1. Scan this file top to bottom by entry title and status only — not full bodies — to find the first `Backlog` entry with status `Not started` or `In progress`.
+2. Before claiming it, follow the branch-check protocol in _Working across multiple agents_ below — this file's status field is a human-readable picture, not the authoritative claim signal.
+3. Once claimed, read that entry's full description and exit criteria before writing anything — that's the definition of done, not a vibe check.
 4. If the exit criteria depend on something no longer true (file moved, API changed, decision superseded), stop and flag it rather than guessing.
 
 **Completing a task:**
