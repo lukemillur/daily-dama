@@ -4,6 +4,26 @@ Completed entries move here from `TASKS.md`'s `Backlog`, in the same commit that
 
 Entries keep their content as it was at completion. Don't retroactively edit a description or exit criteria after the fact; if something about a completed task turns out to be wrong or misleading, note that in a new entry or in code, not by rewriting history here.
 
+### [T282] Retire the collaborative queue's remaining open tickets
+
+- **Area:** Documentation
+- **Priority:** Low
+- **Status:** Done
+- **Planning:** Implementer
+- **Description:** TASKS_COLLABORATIVE.md's two open entries (T234, T235) are no longer relevant. T235's still-useful piece (correcting DEPLOYMENT_HANDOFF.md) is carried forward as T281.
+- **Exit criteria:** The T234 and T235 entries are removed from `TASKS_COLLABORATIVE.md`. The file's working-agreement scaffold (queue mechanics, `guided-ticket` skill instructions) stays intact for any future collaborative ticket. Other docs' references to T234 or T235 as open items are updated or removed (check `TASKS_BACKLOG.md`'s S032–S039/S041 note and any other active cross-reference; historical mentions in `TASKS_DONE.md` are untouched). Met: both entries removed; the entire completed "Ship-readiness batch" section (T234/T235 plus its now-stale "eight remaining proposals" intro prose, now that T221/T225–T233 are all `Done`) was removed with them, leaving only the `Working agreement` scaffold. `TASKS_BACKLOG.md`'s S032–S039/S041 note does not mention T234/T235. `outputs/ship-readiness/T233.md` and `outputs/guided-tickets/T231.md` mention T234 as historical context from when those tickets closed (like `TASKS_DONE.md` mentions, left untouched); no other active doc references either ID as open.
+- **Notes:** Confirmed T281 (merged) already carried forward T235's DEPLOYMENT_HANDOFF.md correction before removing T235's entry. Did not delete `TASKS_COLLABORATIVE.md` or the `guided-ticket` skill, and did not otherwise retire the collaborative-execution mechanism, per the task's own notes.
+
+### [T281] Correct DEPLOYMENT_HANDOFF.md's stale "no backend" description
+
+- **Area:** Documentation
+- **Priority:** Medium
+- **Status:** Done
+- **Planning:** Implementer
+- **Description:** DEPLOYMENT_HANDOFF.md still describes a client-only app with no backend, database, or API. That's false — Supabase Auth/Postgres, Sentry, and a feedback table are live in production. Correct the doc to match reality. Carries forward the documentation half of the retired T235 collaborative ticket (see T282); the standalone user-facing privacy-page half is dropped as unneeded for now (owner call, 2026-09-14).
+- **Exit criteria:** DEPLOYMENT_HANDOFF.md's description of backend, storage, and third-party services matches the current production configuration, with reproducible deployment steps referencing real paths/commands. No "no backend" or equivalent false claim remains. Met: §1 now states the live Supabase backend (`lnudjcpotidplbjqcfcx`), the `api.feedback` table and its non-cascading deletion caveat, Sentry (`daily-dama`) and Resend, and a backup/recovery posture confirmed live via `npx supabase backups list --project-ref lnudjcpotidplbjqcfcx` (PITR disabled, no physical backups on file for either project, as of 2026-09-14) rather than a guessed plan-tier label. §4/§5/§7's stale "DNS not independently verified" claims were also corrected against T231/T232's existing live evidence plus a fresh `curl` (`dailydama.com` → `308` → `www.dailydama.com` → `200`, 2026-09-14), and §2's rewrite description was updated to list all five `vercel.json` rewrites now present, not just the original stats one.
+- **Notes:** Reused the facts already gathered in `outputs/guided-tickets/T235.md` (backend project ref, hosting plan, per-domain storage/deletion behavior, third-party services, feedback's non-deletion caveat) rather than re-deriving them from scratch; verified against current migrations and the T230/T231/T232 guided-ticket records. Feedback and error-review destinations stated as fact per the owner-confirmed note (Supabase Studio's `api.feedback` table, the Sentry `daily-dama` dashboard). Supabase plan tier itself (Free vs. Pro) was not directly discoverable through the authenticated `supabase` CLI available in this environment (no billing/plan subcommand exists); rather than guess a label, the doc states the directly-observed backup/PITR facts instead, which is what the backup/recovery guarantee actually depends on. Left `ARCHITECTURE.md`'s own separate "no backend" line untouched — out of this ticket's explicit `DEPLOYMENT_HANDOFF.md` scope; flagged for a possible future entry. Did not touch the standalone privacy-page half (dropped per the task's own note) or any backup automation, paid-plan purchase, or support-platform work.
+
 ### [T232] Verify the hosted account lifecycle and account isolation
 
 - **Area:** Hosted account acceptance
@@ -3830,3 +3850,50 @@ Completed entries live in [TASKS_DONE.md](TASKS_DONE.md) — not part of the top
 - **Description:** T268 (`4d1243e`) fixed the sticky rank header overlapping the previous section's last row by both (a) reserving a section-boundary gap sized to the header's measured height, and (b) adding web-only `scroll-snap-type`/`scroll-padding-top`/`scroll-snap-align` CSS in `trick-directory.tsx` to force a released scroll to always settle clear of the header. Per the user's QA comment, (b) itself now automatically re-positions or hides a rank header when scrolling back up to read it, which is worse than the overlap it closes. Remove the scroll-snap CSS (`scrollSnapListStyle`, the `Platform.OS === 'web'` scroll-snap-align line in `trickRowLayout`) while keeping (a), the section-boundary gap, which independently addresses the original overlap.
 - **Exit criteria:** In the running Expo web dev server on `/tricks`: (1) scrolling the trick list up and down, including a released/flicked momentum scroll, never moves the list beyond the user's own scroll input and never hides or obscures a rank header once it has scrolled back into view; (2) scrolling to the boundary just above a custom-sequence row (T268's original repro case) still shows the full row — trick name and "Custom sequence" label — unobscured by the sticky header once scrolling settles, confirming the boundary-gap fix alone still holds without the snap CSS. `yarn tsc --noEmit` passes. Met: removed `scrollSnapListStyle` (and the now-unused `Platform` import) and the `Platform.OS === 'web' ? 'scroll-snap-align: start;' : ''` line in `trickRowLayout`. Verified on the Expo web dev server's `/app/tricks` route via headless-browser DOM measurement (a seeded custom-sequence row plus the standard Kentei tricks): no element carries a `scroll-snap-type`/`scroll-snap-align` computed style; stepping the list's `scrollTop` in small increments near the boundary above the custom-sequence row shows no post-settle repositioning (measured `scrollTop` is identical immediately after each set and 400ms later at every step); the custom row's name and "Custom sequence" label render fully, with a persistent, non-overlapping gap between the sticky header's bottom edge and the row's top edge at every scroll position tested — confirming the boundary-gap fix alone still holds without the snap CSS. `yarn tsc --noEmit` and `yarn eslint` on the changed file are clean.
 - **Notes:** The user's stated preference was a full revert of T268, which would also reintroduce the original overlap defect. Try removing only the scroll-snap CSS first (per S139's acceptance criteria, which requires both no-unwanted-motion and no-overlap). If that reintroduces a narrow overlap edge case the boundary gap alone doesn't catch, stop and flag the tradeoff back to the user rather than silently choosing between accepting the edge case or a full revert.
+
+### [T276] Remove BACKEND_ROADMAP.md now that its recommendation is implemented
+
+- **Area:** Documentation
+- **Priority:** Low
+- **Status:** Done
+- **Planning:** Implementer
+- **Description:** BACKEND_ROADMAP.md is a pre-decision analysis recommending Supabase; that decision is long since implemented (Auth, Postgres, and sync are all live in production). Delete the file.
+- **Exit criteria:** `BACKEND_ROADMAP.md` no longer exists. `supabase/README.md`'s reference to "`BACKEND_ROADMAP.md` Phase 1 policy" (~line 303) is rewritten to state that policy directly instead of citing the removed doc. `grep -rl "BACKEND_ROADMAP.md" --include="*.md" .` returns nothing outside `TASKS_DONE.md`. Met: deleted `BACKEND_ROADMAP.md`; rewrote `supabase/README.md`'s JWT-expiry bullet to state the one-hour-expiry rationale directly instead of citing the removed doc; also updated the two other now-dangling references in `BACKLOG_STORIES.md` and `TASKS_BACKLOG.md` (historical provenance notes citing the same removed doc) to describe the analysis in prose instead of linking/naming the file. `grep -rl "BACKEND_ROADMAP.md" --include="*.md" .` returns only `TASKS_DONE.md`.
+- **Notes:** Historical mentions inside this file's own already-`Done` entries (T153.1, etc.) were left untouched, per this task's own notes.
+
+### [T277] Remove SHIP_READINESS_AUDIT.md now that its findings are reconciled
+
+- **Area:** Documentation
+- **Priority:** Low
+- **Status:** Done
+- **Planning:** Implementer
+- **Description:** SHIP_READINESS_AUDIT.md is a 2026-09-04 snapshot; every actionable finding already became a tracked ticket (T225, T228, T233, and the T234/T235 entries retired by T282). Delete the file.
+- **Exit criteria:** `SHIP_READINESS_AUDIT.md` no longer exists. `grep -rl "SHIP_READINESS_AUDIT.md" --include="*.md" .` returns nothing outside `TASKS_DONE.md` and `outputs/` (archived evidence, left as historical record). Met: deleted `SHIP_READINESS_AUDIT.md`; T282 hadn't landed yet, so also rewrote `TASKS_COLLABORATIVE.md`'s "Ship-readiness batch" intro to describe the source as "a ship-readiness audit (source doc retired; see T277 in `TASKS_DONE.md`)" instead of linking the now-deleted file. `grep -rl "SHIP_READINESS_AUDIT.md" --include="*.md" .` returns only `TASKS_DONE.md` and `outputs/ship-readiness/T225.md`.
+- **Notes:** Ran before T282, per the task's own contingency note, so the `TASKS_COLLABORATIVE.md` reference was rewritten here rather than left dangling for T282 to clean up.
+
+### [T278] Remove V1_LAUNCH_PLAN.md now that the plan shipped
+
+- **Area:** Documentation
+- **Priority:** Low
+- **Status:** Done
+- **Planning:** Implementer
+- **Description:** V1_LAUNCH_PLAN.md is a 2026-08-26 direction-setting doc reconciling the backlog against product-differentiation decisions; those decisions shipped. Delete the file.
+- **Exit criteria:** `BACKLOG_STORIES.md`'s S057 note (~line 11), which currently cites "[V1_LAUNCH_PLAN.md](V1_LAUNCH_PLAN.md) Stage 1" for the rejection rationale, is rewritten to state that rationale directly. `V1_LAUNCH_PLAN.md` no longer exists. `grep -rl "V1_LAUNCH_PLAN.md" --include="*.md" .` returns nothing outside `TASKS_DONE.md`. Met: deleted `V1_LAUNCH_PLAN.md`; rewrote `BACKLOG_STORIES.md`'s S057 note to state the anti-enumeration rejection rationale directly instead of citing the removed doc. `grep -rl "V1_LAUNCH_PLAN.md" --include="*.md" .` returns only `TASKS_DONE.md`.
+
+### [T279] Remove LANDING_PAGE_BRAINDUMP.md now that the landing copy it fed has shipped
+
+- **Area:** Documentation
+- **Priority:** Low
+- **Status:** Done
+- **Planning:** Implementer
+- **Description:** LANDING_PAGE_BRAINDUMP.md is raw founder source material captured 2026-08-19 for landing-page copy/tone. The landing page has since shipped and iterated (T253, T254, T265, T275). Delete the file.
+- **Exit criteria:** Confirm no open `BACKLOG_STORIES.md` entry references this doc before deleting (none did as of 2026-09-14). `LANDING_PAGE_BRAINDUMP.md` no longer exists. `grep -rl "LANDING_PAGE_BRAINDUMP.md" --include="*.md" .` returns nothing outside `TASKS_DONE.md`. Met: confirmed `BACKLOG_STORIES.md` had no reference; deleted `LANDING_PAGE_BRAINDUMP.md`. `grep -rl "LANDING_PAGE_BRAINDUMP.md" --include="*.md" .` returns only `TASKS_DONE.md`.
+
+### [T280] True up PRODUCT_CAPABILITIES.md against the current app
+
+- **Area:** Documentation
+- **Priority:** Low
+- **Status:** Done
+- **Planning:** Implementer
+- **Description:** Unlike the other root planning docs, this one is a living capability inventory worth keeping — but it needs to describe what's actually shipped, not a point-in-time snapshot. Verify it against current code rather than assuming it's still accurate.
+- **Exit criteria:** Every listed capability is checked against current `src/app` and feature code (not memory or prior doc content) and corrected where inaccurate, renamed, or removed; anything shipped since the doc's last update that changes user-visible capability is added. The doc keeps its existing inventory format. Met: cross-checked every bullet against `src/app` and the relevant feature modules. Replaced the stale password-access-gate bullets (that feature no longer exists) with the current public-landing/guest-entry flow, and added a new "Account, authentication, and sync" section covering sign-up/sign-in, email verification, password reset, guest-to-account data import, sync status/retry, password/email change, guarded logout, and account deletion — none of which the doc previously mentioned. Corrected the onboarding/Profile theme-preset list (was missing the shipped Pink and Raw presets) and the feedback capability (now an in-app form, not an email link). Added matching bullets to the condensed feature set. Existing bullet-list-under-`###`-heading inventory format preserved throughout.

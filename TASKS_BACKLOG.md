@@ -78,6 +78,6 @@ Tickets selected for owner participation or external verification live separatel
 
 ---
 
-_T153–T162 came from S032–S039 and S041, refined from [BACKEND_ROADMAP.md](BACKEND_ROADMAP.md) and initially scoped into this formal backlog on 2026-08-21. Every currently actionable backend-roadmap workstream has now moved phase by phase into the automated queue in [TASKS.md](TASKS.md), where T154 is ordered as the Phase 1/Phase 4 shared prerequisite for T158. No T153–T162 ticket remains in this file. S040 (native account hardening) remains `Proposed` in [BACKLOG_STORIES.md](BACKLOG_STORIES.md) because mobile hardening is explicitly deferred._
+_T153–T162 came from S032–S039 and S041, refined from a pre-decision backend analysis (since removed; Supabase was selected and is now live in production) and initially scoped into this formal backlog on 2026-08-21. Every currently actionable backend-roadmap workstream has now moved phase by phase into the automated queue in [TASKS.md](TASKS.md), where T154 is ordered as the Phase 1/Phase 4 shared prerequisite for T158. No T153–T162 ticket remains in this file. S040 (native account hardening) remains `Proposed` in [BACKLOG_STORIES.md](BACKLOG_STORIES.md) because mobile hardening is explicitly deferred._
 
 _Phase 5 consideration: no ticket is added here or to [TASKS.md](TASKS.md). S040 remains `Proposed`, and its native PKCE, SecureStore, and iOS/Android verification scope stays deferred until the user explicitly resumes mobile hardening._

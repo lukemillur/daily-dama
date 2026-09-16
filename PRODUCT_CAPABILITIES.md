@@ -8,10 +8,27 @@ The exhaustive inventory is intentionally more detailed than the condensed featu
 
 ### Application access and navigation
 
-- Enter a password to unlock the application when the access gate is enabled.
-- Receive an error after an incorrect password attempt and try again.
+- Land on a public marketing page at the root URL before onboarding.
+- Continue as a guest without creating an account.
 - Navigate between Home, Sesh, Tricks, Stats, and Profile after onboarding.
+- Automatically return to Home on a repeat visit once onboarding is complete.
+- Leave the app from the navigation footer back to the landing page without signing out.
 - Retain user data locally between visits.
+
+### Account, authentication, and sync
+
+- Sign up or sign in from the landing page or from Profile as a guest.
+- Create an account with an email address and password.
+- Verify a new account's email address before signing in.
+- Sign in to an existing account.
+- Request a password-reset email and complete the reset from the emailed link.
+- Automatically move locally saved guest progress onto an account created or signed into on the same device.
+- See synchronization status, pending-change and conflict counts, and the last successful sync time from Profile.
+- Retry a failed, offline, or queued sync.
+- Change the account password from account security in Profile.
+- Change the account email address, confirmed from both the previous and new inbox.
+- Sign out, with a warning and the choice to retry syncing or discard unsynced local changes first.
+- Delete the account after confirming the current password and typing a literal confirmation phrase.
 
 ### Initial onboarding and skill placement
 
@@ -23,7 +40,7 @@ The exhaustive inventory is intentionally more detailed than the condensed featu
 - See an animated rank reveal.
 - Choose one or more tricks from the assessed rank as an initial practice list.
 - Select or deselect tricks before completing onboarding.
-- Choose an initial theme from Red, Orange, Yellow, Green, Blue, Indigo, or Violet presets.
+- Choose an initial theme from Red, Orange, Yellow, Green, Blue, Indigo, Violet, Pink, or Raw presets.
 - Skip theme selection and use the default appearance.
 - Finish onboarding and proceed to Sesh.
 - Seed initial laced state from tricks marked as landed during onboarding.
@@ -225,6 +242,8 @@ The exhaustive inventory is intentionally more detailed than the condensed featu
 
 ### Profile and personalization
 
+- View synchronization status and account details when signed in.
+- See sign-up and sign-in entry points when using the app as a guest.
 - View assessed Kentei rank and focused-trick count.
 - Start another Kentei assessment.
 - Select a preset theme.
@@ -235,13 +254,20 @@ The exhaustive inventory is intentionally more detailed than the condensed featu
 - Save each color independently.
 - Reset background and accent colors.
 - Reset text color.
-- Send feedback through an email link.
+- Send anonymous or named feedback through an in-app form.
 
 ### Developer-only surfaces
 
 Development builds expose a procedural trick-visualization sandbox and a Sesh-sequence sandbox. These are not normal user-facing product features and should not be used as evidence of the primary product promise.
 
 ## Condensed primary feature set
+
+### Account and sync
+
+- Continue as a guest, or create and sign into an account.
+- Carry local guest progress onto a newly created or signed-in account.
+- Track sync status and retry from Profile.
+- Manage account password, email, and deletion.
 
 ### Onboarding and progression
 
@@ -304,7 +330,7 @@ Development builds expose a procedural trick-visualization sandbox and a Sesh-se
 - Re-run an assessment.
 - Customize themes and colors.
 - Configure streak requirements.
-- Send feedback.
+- Send in-app feedback.
 
 ## Player-facing pitch
 
