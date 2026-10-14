@@ -8,7 +8,7 @@ Full project context (state boundaries, product shape, collaboration style) live
 
 ## 1. What this is
 
-Procedural 3D kendama trick visualizations — built from primitives, no licensed or imported assets, keyframed rather than physics-simulated. Rendered with `react-three-fiber` + `expo-gl`. Currently a standalone dev sandbox at `src/app/stats/trick-viz-sandbox.tsx`.
+Procedural 3D kendama trick visualizations — built from primitives, no licensed or imported assets, keyframed rather than physics-simulated. Rendered with `react-three-fiber` + `expo-gl`. Viewable in a dev-only sandbox route at `src/app/app/stats/trick-viz-sandbox.tsx`. `LandingHero` also wraps `LoopingHeroScene` for the landing page, but its JSX is currently commented out of `landing-page.tsx`.
 
 Web is the only surface exercised. The `expo-gl` path is **untested on native**.
 
@@ -41,7 +41,10 @@ src/features/trick-viz/
     Tama.tsx              tama, pose-free — real opening, cavity, knot, paint
     String.tsx            rope-driven string
     TrickScene.tsx        Canvas composition, playback, camera rig
-src/app/stats/trick-viz-sandbox.tsx   dev-only viewer with picker + scrubber
+    TrickVizSandboxScreen.tsx  dev-only viewer with picker + scrubber
+    FreeLookControls.tsx  orbit camera for the sandbox's free-look mode
+    trick-viz-chunk.ts    the one module app code may import() — see trap 13
+src/app/app/stats/trick-viz-sandbox.tsx   lazy route entry + production redirect
 ```
 
 Tests — 85 across `mate`, `ballistics`, `timeline`, `ken-profile`, `tama-geometry` and `tricks/tricks`. These are pure functions and they are where the geometry bugs that cost days on Big Cup actually live. Run them before trusting a screenshot.
@@ -196,7 +199,7 @@ What matters is that it is *a* gravity rather than a set of typed durations — 
 
 The view direction is sampled per beat and eased with a longer τ (0.6s) than the position follow (0.32s), so a grip change pans instead of whipping. The rig **snaps on the first frame of a run**, both so the opening shot is framed and because the real viewport aspect is not known until there is a frame.
 
-`followAction` hands the camera to `canvasExtras` (OrbitControls) when false; the rig and the controls would otherwise both write the camera every frame.
+`followAction` hands the camera to `canvasExtras` (`FreeLookControls`) when false; the rig and the controls would otherwise both write the camera every frame.
 
 **Lighting is three lights, not one.** A single key against heavy ambient flattens a turned object into a silhouette, and the beads, cup rims and grip taper are all read from how the shading falls across them. Key from above-front, a cool fill opposite so shadows do not go black, and a low warm back light so the model separates from the dark background.
 
@@ -222,6 +225,7 @@ The string always runs ken-hole ↔ tama-hole, so `String.tsx` needs no per-tric
 10. **Sandbox access is gated.** Set `localStorage['daily-dama:user-profile']` to `{"version":1,"profile":{"hasCompletedOnboarding":true,"kenteiRank":1,"selectedTrickIds":[]}}` — the versioned wrapper is required and `kenteiRank` is a **number** 1–12. The route is nested under `/stats/` because the web tab router silently redirects unregistered top-level routes to Home.
 11. **`eslint.config.js` has a scoped `react/no-unknown-property` override** for `src/features/trick-viz/**/*.tsx`, needed because eslint-plugin-react does not know r3f's JSX intrinsics.
 12. **The colliders are coarser than the mesh.** `saradoBarRadius` is 0.08 while the lathed hub swells to ~0.10, so the string can graze the hub's widest point. Harmless at string thickness; widen the collider if a trick ever routes the string tightly across the sarado.
+13. **Keep the 3D stack out of the web entry bundle.** Metro does not tree-shake, so a package-root import (`from '@react-three/drei'`, `from 'three-stdlib'`) ships that whole package — the drei and three-stdlib barrels once made the entry bundle 8.9 MB. Import drei and three addons by file path (`@react-three/drei/core/Text`, `three/addons/controls/OrbitControls.js`). App code reaches trick-viz only through `import()` of `trick-viz-chunk.ts`: two dynamic imports of *different* trick-viz modules make Metro hoist their shared dependencies into an eagerly loaded `__common` chunk, which undoes the split. After touching any of this, check that the export's `_expo/static/js/web/` has only `entry-*` and `trick-viz-chunk-*`, and that the entry has no `three`.
 
 ## 13. Adding a trick
 

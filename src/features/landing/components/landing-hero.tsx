@@ -1,11 +1,11 @@
 import { Image } from 'expo-image';
-import { useSyncExternalStore } from 'react';
+import { Suspense, useSyncExternalStore } from 'react';
 import { styled } from 'styled-components/native';
 
 import { AppColors, Radii } from '@/constants/theme';
-import { LoopingHeroScene } from '@/features/trick-viz/components/LoopingHeroScene';
 
 import { isWebGLAvailable } from '../utils/webgl-availability';
+import { LazyLoopingHeroScene } from './lazy-looping-hero-scene';
 
 const HERO_ASPECT_RATIO = 4 / 3;
 
@@ -39,18 +39,27 @@ export function LandingHero() {
     <HeroPanel testID="landing-hero" style={{ boxShadow: `8px 8px 0 ${AppColors.ink}` }}>
       {webglOk ? (
         <SceneFrame>
-          <LoopingHeroScene />
+          {/* The fallback image covers the panel while the scene chunk downloads. */}
+          <Suspense fallback={<HeroFallbackImage />}>
+            <LazyLoopingHeroScene />
+          </Suspense>
         </SceneFrame>
       ) : (
-        <Image
-          source={require('@/assets/images/landing/landing-hero-fallback.png')}
-          accessibilityLabel="A kendama mid-catch in its cup, with the Daily Dama wordmark"
-          alt="A kendama mid-catch in its cup, with the Daily Dama wordmark"
-          contentFit="cover"
-          style={{ width: '100%', aspectRatio: HERO_ASPECT_RATIO, borderRadius: Radii.panel }}
-        />
+        <HeroFallbackImage />
       )}
     </HeroPanel>
+  );
+}
+
+function HeroFallbackImage() {
+  return (
+    <Image
+      source={require('@/assets/images/landing/landing-hero-fallback.png')}
+      accessibilityLabel="A kendama mid-catch in its cup, with the Daily Dama wordmark"
+      alt="A kendama mid-catch in its cup, with the Daily Dama wordmark"
+      contentFit="cover"
+      style={{ width: '100%', aspectRatio: HERO_ASPECT_RATIO, borderRadius: Radii.panel }}
+    />
   );
 }
 

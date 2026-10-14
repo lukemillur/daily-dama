@@ -11,10 +11,18 @@ jest.mock('expo-image', () => {
   return { Image: (props: Record<string, unknown>) => React.createElement(View, props) };
 });
 
-jest.mock('@/features/trick-viz/components/LoopingHeroScene', () => {
+// Set to a never-settling promise to hold the scene in its Suspense state,
+// standing in for the lazily loaded 3D chunk still downloading.
+let mockSceneSuspension: Promise<never> | undefined;
+jest.mock('./lazy-looping-hero-scene', () => {
   const React = require('react');
   const { View } = require('react-native');
-  return { LoopingHeroScene: () => React.createElement(View, { testID: 'looping-hero-scene-stub' }) };
+  return {
+    LazyLoopingHeroScene: () => {
+      if (mockSceneSuspension) throw mockSceneSuspension;
+      return React.createElement(View, { testID: 'looping-hero-scene-stub' });
+    },
+  };
 });
 
 const mockIsWebGLAvailable = jest.fn<() => boolean>();
@@ -47,6 +55,7 @@ async function mount() {
 
 beforeEach(() => {
   mockIsWebGLAvailable.mockReset();
+  mockSceneSuspension = undefined;
 });
 
 afterEach(async () => {
@@ -72,6 +81,16 @@ describe('LandingHero', () => {
     const root = await mount();
 
     expect(countByProp(root.toJSON(), 'testID', 'looping-hero-scene-stub')).toBe(1);
+  });
+
+  it('shows the static fallback image while the 3D scene is still loading', async () => {
+    mockIsWebGLAvailable.mockReturnValue(true);
+    mockSceneSuspension = new Promise<never>(() => {});
+    const root = await mount();
+    const json = root.toJSON();
+
+    expect(countByProp(json, 'testID', 'looping-hero-scene-stub')).toBe(0);
+    expect(countByProp(json, 'alt', 'A kendama mid-catch in its cup, with the Daily Dama wordmark')).toBe(1);
   });
 
   it('renders the static fallback image when WebGL is unavailable', async () => {
