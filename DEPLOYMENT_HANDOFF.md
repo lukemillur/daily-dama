@@ -65,6 +65,8 @@ dist/
 
 `vercel.json` now exists in the repo with this rewrite (`/app/stats/:trickId` → `/app/stats/[trickId]`) plus equivalent rewrites for every other dynamic route added since (`/app/tricks/:trickId/notes`, `/app/tricks/:trickId/goals`, `/app/tricks/custom/:trickId/edit`, `/app/tricks/custom/:trickId/delete`), the build command, and the output directory. Still worth verifying post-deploy (see checklist below) rather than trusting the config alone.
 
+`vercel.json` also marks `/_expo/static/*` and `/assets/*` as `public, max-age=31536000, immutable`. That is safe only because Expo's export puts a content hash in every file name under those paths; HTML and unhashed `public/` files keep Vercel's revalidating default. Do not extend the rule to a path whose file names are not content-hashed.
+
 ## 3. (Removed) The access gate
 
 The password-gate feature this section used to describe (`src/features/access-gate/`, gated on `EXPO_PUBLIC_ACCESS_PASSWORD`) was removed entirely in T111. The app is now reachable without a password prompt on every route, in every environment. `EXPO_PUBLIC_ACCESS_PASSWORD` is no longer read anywhere in the codebase — it's an unused, safe-to-delete env var on Vercel.

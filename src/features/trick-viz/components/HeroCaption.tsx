@@ -1,4 +1,6 @@
-import { Text } from '@react-three/drei';
+// By file path: the package root re-exports all of drei (hls.js, MediaPipe,
+// camera-controls, ...), and Metro does not tree-shake that barrel.
+import { Text } from '@react-three/drei/core/Text';
 import { useFrame, useThree } from '@react-three/fiber';
 import { useRef } from 'react';
 import { Group, Vector3 } from 'three';
