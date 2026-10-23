@@ -26,7 +26,7 @@ const PORCELAIN = [
   'HEAD 4444444444444444444444444444444444444444',
   'branch refs/heads/task/T100-something',
   '',
-  'worktree /Users/luke/elsewhere/manual-worktree',
+  'worktree /Users/dev/elsewhere/manual-worktree',
   'HEAD 5555555555555555555555555555555555555555',
   'detached',
   '',

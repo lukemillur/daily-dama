@@ -12,7 +12,7 @@ This was configured directly in the Vercel dashboard, not from anything in this 
 
 ## 1. What this project is
 
-Daily Dama is a local-first Expo Router app (Kendama trick practice tracker). Repo: `github.com/lukemillur/daily-dama`, local clone at `/Users/luke/Personal Projects/kendama-project`, branch `main`.
+Daily Dama is a local-first Expo Router app (Kendama trick practice tracker). Repo: `github.com/lukemillur/daily-dama`, branch `main`.
 
 The app is **not** client-only. Every guest's state starts client-side (AsyncStorage → `localStorage` on web, keys prefixed `daily-dama:`), covering the five persistent domains in [AGENTS.md](AGENTS.md)'s state/persistence boundaries — but production is also backed by a real, live hosted Supabase project (Postgres + Auth + Edge Functions), a feedback table, and third-party error/email services. Concretely, as of 2026-09-14:
 
