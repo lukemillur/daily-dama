@@ -1,9 +1,8 @@
-// T155.10: pure mapping + runtime response validation between `UserProfile`
+// Pure mapping + runtime response validation between `UserProfile`
 // (plus its focused trick-selection/manual-unlock state) and the
-// `profiles`/`user_trick_states` cloud rows. Explicitly does NOT wire into
-// the provider, reducer, or any synchronization/diff logic -- see T157.3
-// for deciding which trick-state rows to delete when a trick is
-// deselected, and the profile-cloud-repository.ts header for why row
+// `profiles`/`user_trick_states` cloud rows. Pure: it does not touch the
+// provider, reducer, or sync/diff logic (deciding which trick-state rows to
+// delete when a trick is deselected belongs to the sync layer). See the profile-cloud-repository.ts header for why row
 // shape and mapping are deliberately kept in separate files.
 //
 // Row -> domain direction returns a discriminated Result-style type
@@ -369,8 +368,8 @@ export function mapUserProfileToProfileUpsertInput(profile: UserProfile, userId:
  * Maps a trusted `UserProfile`'s two trick-id arrays to one
  * `user_trick_states` upsert input per referenced trick id. Does NOT
  * compute deletions for trick ids that were previously selected/unlocked
- * and no longer are -- that diff belongs to the future sync layer
- * (T157.3), not this mapping.
+ * and no longer are -- that diff belongs to the sync layer, not this
+ * mapping.
  */
 export function mapUserProfileToTrickStateUpsertInputs(
   profile: UserProfile,

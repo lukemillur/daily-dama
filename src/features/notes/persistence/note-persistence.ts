@@ -38,7 +38,7 @@ function isNote(value: unknown): value is Note {
   return updatedAt >= createdAt;
 }
 
-// T157.8: validates an in-memory (already-parsed) value as a
+// Validates an in-memory (already-parsed) value as a
 // `NoteCollection`, unlike `deserializeNotes` which only operates on a JSON
 // *string*. Used as the `SyncEnvelopeCodec<NoteSyncSnapshot>.isState`
 // predicate's `collection` field check, mirroring `isGoalCollection` exactly.

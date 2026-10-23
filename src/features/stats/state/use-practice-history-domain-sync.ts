@@ -1,19 +1,18 @@
-// T157.6: the practice-history-domain-local sync driver. Owns pull-then-push
+// The practice-history-domain-local sync driver. Owns pull-then-push
 // cycles against an injected transport and the parallel
 // `SyncEnvelope<PracticeHistorySyncSnapshot>` domain, while the PRIMARY
 // `PracticeHistory` reducer (owned by `practice-history-provider.tsx`) stays
 // the sole source of truth rendered by the app. Structurally a near-
-// mechanical adaptation of `use-custom-trick-domain-sync.ts` (T157.5),
-// simplified per "Why this domain is simpler" in `.claude/plans/T157.6.md`
-// -- no revision cache, no `outboxIsEmpty` gate on pull-adopt (union-merge
+// mechanical adaptation of `use-custom-trick-domain-sync.ts`, simplified
+// because practice history is insert-only: no revision cache, no `outboxIsEmpty` gate on pull-adopt (union-merge
 // unconditionally: practice-session records are immutable and content-
 // addressed by their own id, so a duplicate id occurring in both local
 // state and a pulled row is guaranteed to be the *same* record, never a
 // competing edit).
 //
-// Deliberately NOT the shared `syncCoordinatorReducer` (T157.9's job). This
-// hook's `runSync` return value is already shaped like `DomainSyncRecord` so
-// T157.9 can plug it in later with no reshaping.
+// This hook does not decide when to sync. `runSync` returns a
+// `DomainSyncRecord`, and the shared `syncCoordinatorReducer`
+// (`use-sync-coordinator.ts`) schedules runs and aggregates all five domains.
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
@@ -124,7 +123,7 @@ export function usePracticeHistoryDomainSync(
   const [lastResult, setLastResult] = useState<DomainSyncRecord | undefined>(undefined);
   const inFlightRef = useRef<Promise<DomainSyncRecord> | undefined>(undefined);
   // Bumped once per enqueued local-mutation diff below -- the shared sync
-  // coordinator (T157.9) debounces on this counter instead of the whole
+  // coordinator debounces on this counter instead of the whole
   // domain state object, so its effect dependency stays a stable scalar.
   const [localMutationTick, setLocalMutationTick] = useState(0);
 
@@ -229,7 +228,7 @@ export function usePracticeHistoryDomainSync(
       // `runSync()` call bypassing the shared coordinator (some tests do
       // this deliberately). The real single-flight authority in production
       // is now the shared `syncCoordinatorReducer` driven by
-      // `use-sync-coordinator.ts` (T157.9).
+      // `use-sync-coordinator.ts`.
       if (inFlightRef.current) return inFlightRef.current;
 
       setIsSyncing(true);
@@ -298,7 +297,7 @@ export function usePracticeHistoryDomainSync(
 
   // Login triggering (and every other cross-domain trigger: foreground,
   // reconnect, local-mutation debouncing, manual retry) now lives in the
-  // shared driver, `use-sync-coordinator.ts` (T157.9), which owns firing
+  // shared driver, `use-sync-coordinator.ts`, which owns firing
   // `runSync('login')` once per identity generation across all five
   // domains via `syncCoordinatorReducer`. This hook only surfaces the two
   // scalar facts that driver needs (`hasHydrated`, `localMutationTick`).

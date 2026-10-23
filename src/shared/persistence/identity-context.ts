@@ -24,7 +24,7 @@ export function createIdentityContext(initial: Identity = GUEST_IDENTITY): Ident
   };
 }
 
-// Convenience wrapper for the exact pattern T156.2 needs in every provider's
+// Convenience wrapper for the exact pattern every provider needs in its
 // hydration effect: capture the generation before starting async work, then
 // discard the result if the identity moved on while it was in flight.
 export type GenerationGuardedResult<T> =

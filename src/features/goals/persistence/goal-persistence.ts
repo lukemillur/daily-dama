@@ -48,7 +48,7 @@ export function isGoal(value: unknown): value is Goal {
   return false;
 }
 
-// T157.7: validates an in-memory (already-parsed) value as a
+// Validates an in-memory (already-parsed) value as a
 // `GoalCollection`, unlike `deserializeGoals` which only operates on a JSON
 // *string*. Used as the `SyncEnvelopeCodec<GoalSyncSnapshot>.isState`
 // predicate's `collection` field check, mirroring

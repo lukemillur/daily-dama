@@ -27,8 +27,7 @@ const ERROR_COPY: Record<AuthErrorCategory, string> = {
 // default-branch (just-verified new account) redirect to Home, measured from when the effect
 // starts processing the code -- not added on top of an already-slow exchange. A fast
 // exchangeCodeForSession resolution can otherwise flash this screen for a single frame. Modeled
-// on sesh.tsx's CELEBRATION_VISIBLE_MS. Scoped to this one redirect only; see the description in
-// TASKS.md/TASKS_DONE.md for T224.
+// on sesh.tsx's CELEBRATION_VISIBLE_MS. Scoped to this one redirect only.
 const CALLBACK_MIN_VISIBLE_MS = 2000;
 
 type CallbackParams = {

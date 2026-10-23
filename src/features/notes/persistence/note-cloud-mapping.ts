@@ -1,7 +1,6 @@
-// T155.13: pure mapping + runtime response validation between the local
-// `Note` domain shape and the `notes` cloud rows. Explicitly does NOT wire
-// into the provider, reducer, or any synchronization logic -- that's T157's
-// job, same as T155.10/T155.11/T155.12 deferred their own wiring. Same
+// Pure mapping + runtime response validation between the local
+// `Note` domain shape and the `notes` cloud rows. Pure: it does not touch
+// the provider, reducer, or sync state. Same
 // tombstone-entry and revision-handling design as
 // `goal-cloud-mapping.ts` -- see that file's header comment for the full
 // rationale; not re-derived verbatim here.
@@ -310,7 +309,7 @@ export type NoteCollectionMappingResult =
   | { readonly status: 'valid'; readonly collection: NoteCollection };
 
 /**
- * T157.8: composes a `NoteCollection` (active notes only) from pulled
+ * Composes a `NoteCollection` (active notes only) from pulled
  * `notes` rows, for the driver hook's pull-adopt branch. Mirrors
  * `mapGoalRowsToDomainCollection` exactly -- delegates to
  * `mapNoteRowsToDomainEntries` for validation, then filters to `'active'`
@@ -332,7 +331,7 @@ export function mapNoteRowsToDomainCollection(
 }
 
 /**
- * T157.8: pure diff between a `NoteCollection` before and after a local
+ * Pure diff between a `NoteCollection` before and after a local
  * mutation, emitting the outbox operations that would bring the server up
  * to date. Mirrors `diffGoalsForOutboxOperations` exactly: key both sides
  * by id, sorted-union id order for determinism, missing in `next` ->

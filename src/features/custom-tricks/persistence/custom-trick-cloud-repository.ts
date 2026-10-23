@@ -1,7 +1,7 @@
-// T155.9: cloud repository for the custom-tricks domain (`api.custom_tricks`,
+// Cloud repository for the custom-tricks domain (`api.custom_tricks`,
 // full CRUD). Speaks only in generated row types
 // (src/shared/supabase/database-types.ts) -- mapping to/from the local
-// CustomTrick domain model is explicitly out of scope here (T155.11).
+// CustomTrick domain model is explicitly out of scope here.
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 
@@ -47,7 +47,7 @@ export function createCustomTrickCloudRepository(
       }
     },
 
-    // Not a native `.upsert()` call: T155.5's column-level grants only
+    // Not a native `.upsert()` call: the column-level grants only
     // UPDATE-grant name/kentei_rank/steps -- never user_id/id (the conflict
     // target, this row's identity) or kind (pinned immutable by the
     // mutation-invariant trigger). Postgrest's generated `INSERT ... ON

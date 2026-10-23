@@ -1,4 +1,4 @@
-// T155.13: compile-time-only proof that the mapping layer's discriminated
+// Compile-time-only proof that the mapping layer's discriminated
 // union types leave no ambiguous empty-object stand-in for "invalid" vs
 // "valid" branches, that `'active'`/`'deleted'` `NoteCloudEntry` variants
 // gate `meta.deletedAt` access correctly, and that the insert mapper's

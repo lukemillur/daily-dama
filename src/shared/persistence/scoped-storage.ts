@@ -25,7 +25,7 @@ export function createScopedKeyValueStorage(
 
 /**
  * Wraps `createScopedKeyValueStorage` with a one-time backward-compat fallback for guest data
- * written before T156.2 introduced identity namespacing, when every domain lived at the bare
+ * written before identity namespacing existed, when every domain lived at the bare
  * logical key (e.g. `daily-dama:user-profile`) instead of `guest:daily-dama:user-profile`.
  *
  * On a scoped miss while the current identity is `guest`, falls back to the legacy bare key on
@@ -33,7 +33,7 @@ export function createScopedKeyValueStorage(
  * uses the namespaced key going forward -- the fallback path is only ever exercised once per
  * domain per device. The legacy key itself is deliberately left in place (no forensic erasure).
  *
- * `user:<uuid>` identities never had legacy data (that namespace didn't exist pre-T156.1), so the
+ * `user:<uuid>` identities never had legacy data (that namespace didn't exist before scoping), so the
  * fallback is skipped entirely for them -- they never touch the bare key.
  */
 export function createGuestMigratingStorage(

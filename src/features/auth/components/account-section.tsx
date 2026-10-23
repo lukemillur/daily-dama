@@ -15,7 +15,7 @@ export function AccountSection() {
   const router = useRouter();
   const { state, pendingCount, handleLogOutPress, handleRetry, handleDiscard, handleCancel } = useLogoutGuard();
 
-  // T175: useLogoutGuard is deliberately UI-agnostic (see its own comments), so
+  // UseLogoutGuard is deliberately UI-agnostic (see its own comments), so
   // the completed-sign-out -> "/" redirect lives here instead. Watch for the
   // signingOut -> idle transition with no error, which only happens once
   // signOut() itself has actually succeeded (a failed signOut also returns to

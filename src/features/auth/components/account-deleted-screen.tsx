@@ -8,7 +8,7 @@ import { BodyText, DisplayTitle, Eyebrow } from '@/components/ui/typography';
 const REDIRECT_DELAY_MS = 3000;
 
 /**
- * Terminal confirmation for a completed account deletion (T188). Deliberately
+ * Terminal confirmation for a completed account deletion. Deliberately
  * a top-level route outside the `/app/*` tabs tree, not a render branch
  * inside `AccountDeletionScreen`: the tab-hiding logic in
  * `AppTabs`/`AppTabs.web` conditionally unregisters every non-Home
@@ -18,7 +18,7 @@ const REDIRECT_DELAY_MS = 3000;
  * message rendered inside a `/app/profile/...` route before a user could
  * ever see it. Living outside the tabs navigator sidesteps that entirely.
  *
- * Auto-redirects to the landing page after a brief delay (T222) since there
+ * Auto-redirects to the landing page after a brief delay since there
  * is otherwise no way to leave this screen.
  */
 export function AccountDeletedScreen() {

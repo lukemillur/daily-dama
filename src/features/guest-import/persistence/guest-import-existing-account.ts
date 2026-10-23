@@ -108,8 +108,8 @@ export interface ExistingMergePlan {
 }
 
 /**
- * T186.2: the single resolution primitive for guest-import's own
- * profile-preference and record conflicts, reusing T187.2's
+ * The single resolution primitive for guest-import's own
+ * profile-preference and record conflicts, reusing the shared
  * `resolveUpdatedAtConflict` rather than a bespoke comparison. A guest side
  * with no provable `updatedAt` (e.g. `practiceHistory`, which never carries
  * one) falls through to `-Infinity`, which `resolveUpdatedAtConflict`
@@ -176,9 +176,9 @@ export function planExistingAccountMerge(options: PlanExistingMergeOptions): Exi
   const counts = {} as Record<SyncDomain, { creates: number; deduplicated: number }>;
   for (const domain of SYNC_DOMAINS) counts[domain] = { creates: 0, deduplicated: 0 };
 
-  // T186.2: profile-preference conflict resolved automatically by
-  // `updatedAt` rather than parked for a manual guest-vs-cloud choice (see
-  // .claude/plans/T186.2.md). A cloud profile that doesn't exist yet always
+  // Profile-preference conflict resolved automatically by
+  // `updatedAt` rather than parked for a manual guest-vs-cloud choice. A
+  // cloud profile that doesn't exist yet always
   // takes the guest's -- there's nothing to compare against.
   const guestScalar = extractScalarFields(options.guest.profile);
   const guestProfileUpdatedAt = options.guest.profile.updatedAt;
@@ -212,7 +212,7 @@ export function planExistingAccountMerge(options: PlanExistingMergeOptions): Exi
     }
   }
 
-  // T186.2: per-record `updatedAt` accessors, one pair per domain, since the
+  // Per-record `updatedAt` accessors, one pair per domain, since the
   // guest and cloud shapes differ (raw domain object vs. `GoalCloudEntry`/
   // `NoteCloudEntry` wrapper). A tombstone's "last modified" time is its
   // `deletedAt`, not the pre-deletion `updatedAt` still sitting on the

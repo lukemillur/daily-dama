@@ -29,7 +29,7 @@ export default function TrickVizSandbox() {
   const [scrub, setScrub] = useState<number | null>(null);
   // Swaps the whole scrubber/free-look view for the decorative looping
   // hero, so it can be watched cycling continuously in isolation before
-  // any landing-page wiring (T123.1).
+  // any landing-page wiring.
   const [heroLoop, setHeroLoop] = useState(false);
 
   if (!__DEV__) {

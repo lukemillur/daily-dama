@@ -1,12 +1,11 @@
-// T157.4: a `SyncTransportRepository`-shaped adapter over the real
+// A `SyncTransportRepository`-shaped adapter over the real
 // `profiles`/`user_trick_states` tables, built directly on `supabase-js`
 // rather than wrapping `createProfileCloudRepository` -- that repository's
 // `upsertProfile`/`upsertTrickState`/`deleteTrickState` methods don't (and
-// per T157.3's plan, deliberately shouldn't) support revision-guarded
+// deliberately shouldn't) support revision-guarded
 // conditional updates or route on operationType, which is this file's whole
-// job. See `.claude/plans/T157.4.md` "The adapter" section for the full
-// design and the "Key finding" section for why the DB's own unique
-// constraint (not a new idempotency ledger) is what makes retries safe.
+// job. The DB's own unique constraint (not a new idempotency ledger) is what
+// makes retries safe.
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 
@@ -102,7 +101,7 @@ export function createProfileSyncTransportAdapter(
   ): Promise<SyncTransportPushResult<ProfileRow>> {
     if (request.operationType !== 'upsert') {
       // This domain never deletes the whole profile row -- that's account
-      // deletion (T161.5), out of scope here.
+      // deletion, out of scope here.
       return { status: 'failed', error: validationError('The profile row can only be upserted, never deleted.') };
     }
 

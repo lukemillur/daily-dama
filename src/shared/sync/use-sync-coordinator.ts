@@ -1,5 +1,5 @@
-// T157.9: the shared, cross-domain sync driver. Wraps the pure
-// syncCoordinatorReducer (T157.2, src/shared/sync/coordinator.ts) in a
+// The shared, cross-domain sync driver. Wraps the pure
+// syncCoordinatorReducer (src/shared/sync/coordinator.ts) in a
 // React hook that wires login, foreground, local-mutation, reconnection,
 // and manual-retry triggers into it, with per-trigger debouncing/coalescing
 // and an explicit guard against ever touching Sesh state (this hook never

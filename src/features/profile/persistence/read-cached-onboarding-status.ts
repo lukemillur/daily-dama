@@ -25,7 +25,7 @@ const GUEST_SCOPED_KEY = physicalKey(GUEST_IDENTITY, USER_PROFILE_STORAGE_KEY);
  * Reads the identity-scoped guest key first, falling back to the bare legacy key only if the
  * scoped read is empty -- mirroring `read-cached-guest-theme.ts`'s `readCachedGuestTheme`, which
  * documents why this order matters (in short: `UserProfileProvider` has persisted through
- * `createGuestMigratingStorage` since T156.2, so the bare key can hold a stale snapshot from a
+ * `createGuestMigratingStorage`, so the bare key can hold a stale snapshot from a
  * different identity, e.g. right after logout).
  */
 export function readCachedOnboardingStatus(

@@ -33,7 +33,7 @@ type MultiTrickSeshEntryStep =
 /**
  * Entry point for a casual, ad hoc multi-trick practice run: the user picks
  * any set of tricks (no rank ordering, no assessment rules) and steps through
- * them one after another via T012's shared sequencing core (`MultiTrickSesh`).
+ * them one after another via the shared sequencing core (`MultiTrickSesh`).
  *
  * The selection here is deliberately local component state, not the
  * persisted "focused tricks" list on the user profile (`selectedTrickIds` /

@@ -1,10 +1,10 @@
 /**
- * Signal contract between the root landing route (`/`) and T112.6's in-app
+ * Signal contract between the root landing route (`/`) and the in-app
  * "exit to landing" link.
  *
  * `useRedirectOnboardedVisitorHome` (see redirect-onboarded-visitor-home.ts)
  * redirects a fully-onboarded, fresh arrival at `/` straight to `/app/home`.
- * T112.6's link is the one deliberate exception: it navigates back to `/`
+ * That link is the one deliberate exception: it navigates back to `/`
  * from inside the app and must set this param so that redirect is skipped,
  * letting an already-onboarded visitor see the landing page again.
  *

@@ -38,7 +38,7 @@ export interface UseIdentityScopedDomainResult<State, Action> {
   readonly durability: LocalDurabilityStatus<State>;
   // Thin wrapper around the same internal enqueueWrite queue the
   // hydration/write effect below already uses -- an explicit imperative
-  // save for a caller (T158's discard-pending-outbox flow) that needs to
+  // save for a caller (the logout discard-pending-outbox flow) that needs to
   // know whether a specific write was durably written, failed, or was
   // superseded by an identity change before proceeding (e.g. to signOut()),
   // without opening a second, independent write path that could race the

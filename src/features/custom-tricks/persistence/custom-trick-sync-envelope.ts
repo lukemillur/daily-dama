@@ -1,8 +1,8 @@
-// T157.5: the custom-tricks domain's sync bookkeeping envelope -- a second,
+// The custom-tricks domain's sync bookkeeping envelope -- a second,
 // parallel identity-scoped domain instance alongside the primary
 // `customTrickReducer` (src/features/custom-tricks/model/custom-trick.ts),
-// not a replacement for it. Mirrors `profile-sync-envelope.ts` structurally
-// (T157.4); see `.claude/plans/T157.5.md` for the full design. The primary
+// not a replacement for it. Mirrors `profile-sync-envelope.ts` structurally.
+// The primary
 // reducer stays the sole source of truth for the live `CustomTrickCollection`
 // shown in the UI; this file only tracks "what has this device told the
 // server, and what does it still owe the server."

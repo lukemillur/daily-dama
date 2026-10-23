@@ -1,8 +1,7 @@
-// T157.8: the notes domain's sync bookkeeping envelope -- a second,
+// The notes domain's sync bookkeeping envelope -- a second,
 // parallel identity-scoped domain instance alongside the primary
 // `noteReducer` (src/features/notes/model/note.ts), not a replacement for
-// it. Mirrors `goal-sync-envelope.ts` structurally (T157.7); see
-// `.claude/plans/T157.8.md` for the full design. The primary reducer stays
+// it. Mirrors `goal-sync-envelope.ts` structurally. The primary reducer stays
 // the sole source of truth for the live `NoteCollection` shown in the UI;
 // this file only tracks "what has this device told the server, and what
 // does it still owe the server."

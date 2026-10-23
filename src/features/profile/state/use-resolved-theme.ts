@@ -64,7 +64,7 @@ export function deriveAutomaticButtonBackgrounds(background: string): {
  * user's explicit `themeTextColor` override, since it only operates on the two already-resolved
  * colors. Weighted 65% text / 35% background -- enough separation to read as a distinct
  * secondary tone while staying legible against `background` across the default theme and all
- * T087 rainbow presets (verified in use-resolved-theme.test.ts).
+ * rainbow presets (verified in use-resolved-theme.test.ts).
  */
 export function deriveMutedTextColor(text: string, background: string): string {
   return blendHexColors(text, background, 0.65);

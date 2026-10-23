@@ -25,18 +25,15 @@ import { useAuthActions, useAuthState } from '@/features/auth/state/auth-provide
  * LANDING_ARRIVAL_PARAM. For an authenticated visitor the same bar shows the brand plus a
  * Log out action; logout calls useAuthActions().signOut() directly rather than
  * useLogoutGuard, because SyncCoordinatorProvider and the five domain providers are mounted
- * only under /app and T145 forbids mounting persistence providers above the landing route --
+ * only under /app and persistence providers must never mount above the landing route --
  * so the unsynced-changes prompt is structurally unavailable here and Profile remains the
  * guarded logout surface.
  *
  * Rendered as the first element inside the landing page's own scrollable content (not
  * absolutely positioned above it), so it scrolls away with the rest of the page under normal
- * browser scrolling. The original T254 version used position: absolute plus a JS scroll
- * listener toggling opacity/display instead; T265 replaced it with this simpler in-flow
- * version, since normal document flow needs no scroll-position-driven show/hide logic at all.
- * (T265's actual reported bug turned out to be unrelated to this component -- see
- * `includeWebHeaderInset` on LandingPage's `Screen` -- but this simplification stands on its
- * own merits.)
+ * browser scrolling. Normal document flow needs no scroll-position-driven show/hide logic, so
+ * do not reintroduce absolute positioning with a JS scroll listener. Header overlap at the top
+ * of the page is handled by `includeWebHeaderInset` on LandingPage's `Screen`, not here.
  */
 export function LandingAuthCta() {
   const authState = useAuthState();

@@ -112,7 +112,7 @@ export function createGoal(id: string, value: GoalCreationValidValue, createdAt:
       };
 }
 
-// T157.7: a goal's `kind` (and its trick attachment) never changes in
+// A goal's `kind` (and its trick attachment) never changes in
 // place -- editing only ever changes the numeric target within the same
 // kind, matching the DB UPDATE grant's shape (target_count/target_ms only,
 // never trick_id/trick_name/kind). Reuses the same target validators

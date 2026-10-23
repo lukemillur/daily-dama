@@ -24,7 +24,7 @@ export const IdentityHandleContext = createContext<IdentityHandle | undefined>(u
 
 // Used only when a consumer isn't wrapped in <IdentityProvider> -- e.g. component/unit tests that
 // mount a single domain provider directly and don't exercise identity switching at all. Always
-// guest, generation 0, forever: this matches this app's pre-T156.2 behavior for those call sites.
+// guest, generation 0, forever: the same behavior those call sites had before identity scoping.
 // The real app (src/app/app/_layout.tsx) always wraps every domain provider in <IdentityProvider>
 // and never hits this fallback.
 const DEFAULT_HANDLE: IdentityHandle = {
@@ -83,7 +83,7 @@ export function IdentityProvider({ children }: PropsWithChildren) {
 }
 
 /**
- * Recovery screen for a genuine refresh failure with no usable cached session (T262). This is
+ * Recovery screen for a genuine refresh failure with no usable cached session. This is
  * the one visible case per the ticket's owner-approved direction -- destructive/identity-changing
  * transitions must fail closed, so this stays up until "Try again" reloads the page or
  * "Continue as guest" durably succeeds.

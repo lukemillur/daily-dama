@@ -22,7 +22,7 @@ const emptySubscribe = () => () => {};
 /**
  * Resolves the onboarding-completion flag and assessed Kentei rank synchronously, without
  * waiting on UserProfileProvider's async AsyncStorage hydration -- for use on the landing route
- * (`/`), which must not block its first paint on any persistence provider (see T145).
+ * (`/`), which must not block its first paint on any persistence provider.
  *
  * On web, `localStorage` is synchronous, so this reads it directly once past the
  * server/first-client-render hydration boundary (the same `useSyncExternalStore` gate

@@ -1,18 +1,14 @@
-// T157.4: the profile-domain-local sync driver. Owns pull-then-push cycles
+// The profile-domain-local sync driver. Owns pull-then-push cycles
 // against an injected transport and the parallel `SyncEnvelope<ProfileSyncSnapshot>`
 // domain, while the PRIMARY `UserProfile` reducer (owned by
 // `user-profile-provider.tsx`) stays the sole source of truth rendered by
-// the app. See `.claude/plans/T157.4.md` "The driver hook" for the full
-// design.
+// the app.
 //
-// Deliberately NOT the shared `syncCoordinatorReducer` (T157.9's job -- that
-// reducer only reaches `idle` once all five SYNC_DOMAINS report settled,
-// and only `profile` is wired today). This hook's `runSync` return value is
-// already shaped like `DomainSyncRecord` so T157.9 can plug it in later
-// with no reshaping.
+// This hook does not decide when to sync. `runSync` returns a
+// `DomainSyncRecord`, and the shared `syncCoordinatorReducer`
+// (`use-sync-coordinator.ts`) schedules runs and aggregates all five domains.
 //
-// Deviations from the plan's illustrative option shape, both required to
-// make the design actually work and noted here rather than silently:
+// Two option-shape choices are deliberate:
 // - `identity`/`generation` are derived internally via `useIdentityHandle()`
 //   rather than accepted as a caller-supplied `identity` option -- a single
 //   internal read avoids the caller and this hook's own parallel envelope
@@ -21,7 +17,7 @@
 //   values for the same render.
 // - `dispatchProfile` was added: the driver must dispatch the PRIMARY
 //   reducer's own `profileRestored` action to perform the "second-browser
-//   rehydrate" pull-adopt described in the plan, which requires the
+//   rehydrate" pull-adopt, which requires the
 //   caller's dispatch function.
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
@@ -112,7 +108,7 @@ export function useProfileDomainSync(options: UseProfileDomainSyncOptions): UseP
   const [lastResult, setLastResult] = useState<DomainSyncRecord | undefined>(undefined);
   const inFlightRef = useRef<Promise<DomainSyncRecord> | undefined>(undefined);
   // Bumped once per enqueued local-mutation diff below -- the shared sync
-  // coordinator (T157.9) debounces on this counter instead of the whole
+  // coordinator debounces on this counter instead of the whole
   // domain state object, so its effect dependency stays a stable scalar.
   const [localMutationTick, setLocalMutationTick] = useState(0);
 
@@ -177,8 +173,8 @@ export function useProfileDomainSync(options: UseProfileDomainSyncOptions): UseP
         // primary reducer nor the revision cache are touched; a malformed
         // server response must never clobber good local state.
       } else {
-        // Pending local writes stay authoritative locally (no auto-resolve,
-        // per T160.2) -- only refresh the revision cache for records with
+        // Pending local writes stay authoritative locally (no auto-resolve)
+        // -- only refresh the revision cache for records with
         // no pending operation, so their *next* push uses a fresh
         // expectedRevision.
         const pendingRecordIds = new Set(envelopeAtPushStart.outbox.map((op) => op.recordId));
@@ -232,7 +228,7 @@ export function useProfileDomainSync(options: UseProfileDomainSyncOptions): UseP
         }
 
         // 'conflict' resolves automatically, in this same run, by keeping
-        // whichever snapshot has the later `updatedAt` (T187.2) -- there is
+        // whichever snapshot has the later `updatedAt` -- there is
         // no pending attempt/error state left to record for it. 'failed' is
         // still parked (not acknowledged, not retried automatically this
         // run) -- unrelated records' outcomes are unaffected
@@ -324,7 +320,7 @@ export function useProfileDomainSync(options: UseProfileDomainSyncOptions): UseP
       // `runSync()` call bypassing the shared coordinator (some tests do
       // this deliberately). The real single-flight authority in production
       // is now the shared `syncCoordinatorReducer` driven by
-      // `use-sync-coordinator.ts` (T157.9).
+      // `use-sync-coordinator.ts`.
       if (inFlightRef.current) return inFlightRef.current;
 
       setIsSyncing(true);
@@ -398,7 +394,7 @@ export function useProfileDomainSync(options: UseProfileDomainSyncOptions): UseP
 
   // Login triggering (and every other cross-domain trigger: foreground,
   // reconnect, local-mutation debouncing, manual retry) now lives in the
-  // shared driver, `use-sync-coordinator.ts` (T157.9), which owns firing
+  // shared driver, `use-sync-coordinator.ts`, which owns firing
   // `runSync('login')` once per identity generation across all five
   // domains via `syncCoordinatorReducer`. This hook only surfaces the two
   // scalar facts that driver needs (`hasHydrated`, `localMutationTick`).

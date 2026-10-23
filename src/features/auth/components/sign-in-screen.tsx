@@ -24,8 +24,8 @@ const SUBMIT_ERROR_COPY: Record<AuthErrorCategory, string> = {
   unverifiedEmail: 'Verify your email before signing in. Check your inbox for the confirmation link.',
   offline: "You're offline. Check your connection and try again.",
   rateLimited: 'Too many attempts. Wait a moment and try again.',
-  // Sign-in specific interpretation of the shared "expired session" category -- see T153.9's
-  // plan for why this reuses expiredOrInvalidLink rather than adding new model surface.
+  // Sign-in specific interpretation of the shared "expired session" category. Reuses
+  // expiredOrInvalidLink deliberately rather than adding new model surface.
   expiredOrInvalidLink: 'Your session has expired. Sign in again to continue.',
   missingVerifier: 'Something went wrong. Please try again.',
   weakPassword: 'Something went wrong. Please try again.',
