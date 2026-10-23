@@ -1,9 +1,8 @@
-// T157.7: the goals domain's sync bookkeeping envelope -- a second,
+// The goals domain's sync bookkeeping envelope -- a second,
 // parallel identity-scoped domain instance alongside the primary
 // `goalReducer` (src/features/goals/model/goal.ts), not a replacement for
-// it. Mirrors `custom-trick-sync-envelope.ts` structurally (T157.5, itself
-// mirroring `profile-sync-envelope.ts` from T157.4); see
-// `.claude/plans/T157.7.md` for the full design. The primary reducer stays
+// it. Mirrors `custom-trick-sync-envelope.ts` structurally (itself
+// mirroring `profile-sync-envelope.ts`). The primary reducer stays
 // the sole source of truth for the live `GoalCollection` shown in the UI;
 // this file only tracks "what has this device told the server, and what
 // does it still owe the server."

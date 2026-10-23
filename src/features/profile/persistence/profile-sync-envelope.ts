@@ -1,8 +1,7 @@
-// T157.4: the profile domain's sync bookkeeping envelope -- a second,
+// The profile domain's sync bookkeeping envelope -- a second,
 // parallel identity-scoped domain instance alongside the primary
 // `userProfileReducer` (src/features/profile/model/user-profile.ts), not a
-// replacement for it. See `.claude/plans/T157.4.md` for the full design:
-// the primary reducer stays the sole source of truth for the live
+// replacement for it. The primary reducer stays the sole source of truth for the live
 // `UserProfile` shown in the UI; this file only tracks "what has this
 // device told the server, and what does it still owe the server."
 

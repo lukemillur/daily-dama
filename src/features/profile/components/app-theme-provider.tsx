@@ -36,8 +36,8 @@ export function DefaultAppThemeProvider({ children }: PropsWithChildren) {
  * Mounts a styled-components theme resolved from a synchronous, pre-hydration cache read of the
  * guest-scoped user profile (see `useCachedGuestTheme`), for the auth route group (sign-up,
  * sign-in, forgot-password, reset-password). Those screens render entirely outside
- * `IdentityProvider`/`UserProfileProvider` and must not gate first paint on their hydration (see
- * T145), so this cannot use `useResolvedTheme()` the way `AppThemeProvider` does. See
+ * `IdentityProvider`/`UserProfileProvider` and must not gate first paint on their hydration, so
+ * this cannot use `useResolvedTheme()` the way `AppThemeProvider` does. See
  * `useCachedGuestTheme`'s doc comment for the guest-scoping rationale and the documented
  * reset-password approximation.
  */

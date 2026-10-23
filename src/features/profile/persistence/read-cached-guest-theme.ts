@@ -10,19 +10,19 @@ const GUEST_SCOPED_KEY = physicalKey(GUEST_IDENTITY, USER_PROFILE_STORAGE_KEY);
  * Synchronously resolves the full theme (background/accent/text and their derived fields) from a
  * raw key/value read, for use before any provider (`IdentityProvider`, `UserProfileProvider`)
  * hydration path completes -- specifically the `/auth/*` route group, which renders outside both
- * of those providers and must not gate first paint on their hydration (see T145; reintroducing
- * that gate here is explicitly forbidden by T170's notes).
+ * of those providers and must not gate first paint on their hydration. Do not reintroduce that
+ * gate here.
  *
  * Unlike `read-cached-theme-background.ts` and `read-cached-onboarding-status.ts` (the two
- * existing pre-hydration cache readers, both older than T156.2's identity namespacing), this
+ * existing pre-hydration cache readers, both older than identity-scoped storage), this
  * reads the *identity-scoped* guest key (`guest:daily-dama:user-profile`) first, falling back to
  * the bare legacy key only if the scoped read is empty -- mirroring
  * `createGuestMigratingStorage`'s own read order. Do not "simplify" this back to a bare-key read
  * to match those two older helpers: `UserProfileProvider` has persisted through
- * `createGuestMigratingStorage` since T156.2, which writes every value to the scoped physical
+ * `createGuestMigratingStorage`, which writes every value to the scoped physical
  * key and only ever falls back to the bare key as a one-time migration read. Reading only the
  * bare key here would silently show the default palette for any user who onboarded after
- * T156.2 shipped, which is exactly the scenario this ticket's exit criteria checks in-browser.
+ * identity-scoped storage shipped.
  * This is a read-only mirror of that fallback order -- it must never write anything back; that
  * stays `UserProfileProvider`'s job once it eventually mounts under `/app/*`.
  *

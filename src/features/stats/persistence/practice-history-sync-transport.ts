@@ -1,9 +1,8 @@
-// T157.6: a `SyncTransportRepository<PracticeSessionRow>`-shaped adapter over
+// A `SyncTransportRepository<PracticeSessionRow>`-shaped adapter over
 // the real `practice_sessions` table. Built directly on `supabase-js` for
 // the push side (rather than wrapping `createPracticeHistoryCloudRepository`'s
 // `insert`) because idempotent-retry-as-success handling is this file's own
-// job; pull delegates straight to the existing repository's `list`. See
-// `.claude/plans/T157.6.md` "The adapter" for the full design.
+// job; pull delegates straight to the existing repository's `list`.
 //
 // Structurally much simpler than `custom-trick-sync-transport.ts`:
 // `practice_sessions` has no revision column and no UPDATE/DELETE grant at
@@ -107,7 +106,7 @@ export function createPracticeHistorySyncTransportAdapter(
       // actually landed server-side. No update grant exists at all for this
       // table, so unlike custom-tricks/profile there is no update fallback
       // -- re-fetch the existing row by (user_id, id) and treat it as a
-      // success (T155.9's insert-then-handle-23505-as-success pattern,
+      // success (the cloud repositories' insert-then-handle-23505 pattern,
       // adapted for a table with no update path).
       const { data: existing, error: fetchError } = await client
         .from('practice_sessions')

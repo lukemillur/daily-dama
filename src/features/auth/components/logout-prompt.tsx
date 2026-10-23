@@ -1,4 +1,4 @@
-// T158: full-screen overlay shown while a current-device logout is
+// Full-screen overlay shown while a current-device logout is
 // gated behind unsynced local changes. Follows RankUpCelebrationModal's
 // precedent (no React Native <Modal> in this codebase) -- an
 // absolute-fill <View> styled with the app's own Button/BodyText

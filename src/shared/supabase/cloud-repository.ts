@@ -1,11 +1,11 @@
-// T155.9: shared cloud-repository vocabulary. Every domain repository under
+// Shared cloud-repository vocabulary. Every domain repository under
 // `src/features/*/persistence/*-cloud-repository.ts` is built from these
 // types and helpers, so "typed paginated reads and mutation results" is one
 // vocabulary, not five ad hoc shapes. This file (and the domain repository
 // files built on it) speaks only in generated row types
 // (`src/shared/supabase/database-types.ts`) -- mapping to/from local domain
-// models (UserProfile, CustomTrick, etc.) is explicitly out of scope here;
-// see T155.10-T155.13.
+// models (UserProfile, CustomTrick, etc.) lives in each domain's
+// `*-cloud-mapping.ts`.
 
 export type CloudRepositoryErrorKind = 'notFound' | 'authorization' | 'validation' | 'network' | 'unknown';
 

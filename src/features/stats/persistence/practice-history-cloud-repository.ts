@@ -1,9 +1,8 @@
-// T155.9: cloud repository for the practice-history domain
+// Cloud repository for the practice-history domain
 // (`api.practice_sessions`, insert-only/immutable -- no update/remove method
 // at all, matching the table's actual grants). Speaks only in generated row
 // types (src/shared/supabase/database-types.ts) -- mapping to/from the
-// local PracticeSessionRecord domain model is explicitly out of scope here
-// (T155.12).
+// local PracticeSessionRecord domain model is explicitly out of scope here.
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 

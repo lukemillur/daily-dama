@@ -1,11 +1,11 @@
-// T155.9: cloud repository for the goals domain (`api.goals`,
+// Cloud repository for the goals domain (`api.goals`,
 // select/insert/update-only, tombstoned). Speaks only in generated row types
 // (src/shared/supabase/database-types.ts) -- mapping to/from the local Goal
-// domain model is explicitly out of scope here (T155.13).
+// domain model is explicitly out of scope here.
 //
 // `list` deliberately does NOT filter out tombstoned (deleted_at is not
 // null) rows. The migration's whole point is that other devices need to
-// observe the deletion fact during future sync (T157); filtering belongs to
+// observe the deletion fact during future sync; filtering belongs to
 // a future sync/selector layer, not this data-access boundary. Do not "fix"
 // this into a silent filter.
 
@@ -26,7 +26,7 @@ export type GoalRow = Database['api']['Tables']['goals']['Row'];
 export type GoalInsert = TablesInsert<{ schema: 'api' }, 'goals'>;
 export type GoalUpdate = TablesUpdate<{ schema: 'api' }, 'goals'>;
 
-// The T155.5 column-level UPDATE grant on api.goals only covers deleted_at
+// The column-level UPDATE grant on api.goals only covers deleted_at
 // (tombstoning) -- the public patch type mirrors that exactly, so an
 // attempt to patch any other column fails at compile time, not only at
 // runtime with a 42501.

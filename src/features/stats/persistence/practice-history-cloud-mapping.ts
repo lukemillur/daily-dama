@@ -1,8 +1,7 @@
-// T155.12: pure mapping + runtime response validation between the local
+// Pure mapping + runtime response validation between the local
 // `PracticeSessionRecord`/`PracticeHistory` domain shapes and the
-// `practice_sessions` cloud rows. Explicitly does NOT wire into the
-// provider, reducer, or any synchronization logic -- that's T157.6, same as
-// T155.10/T155.11 deferred their own wiring.
+// `practice_sessions` cloud rows. Pure: it does not touch the provider,
+// reducer, or sync state.
 //
 // Row -> domain direction returns a discriminated Result-style type because
 // incoming rows are an untrusted runtime boundary (already successfully
@@ -12,9 +11,8 @@
 // because `PracticeSessionRecord`/`PracticeHistory` are already trusted,
 // reducer-constructed shapes by the time anything calls these mappers.
 //
-// The T155.3 migration's `practice_sessions_duration_matches_timing` CHECK
-// constraint was fixed by T157.6 to match the permissive, domain-correct
-// invariant this mapper's row->domain validation already used
+// The `practice_sessions_duration_matches_timing` CHECK constraint matches
+// the permissive, domain-correct invariant this mapper's row->domain validation already used
 // (`durationMs <= completedAt - startedAt`, matching
 // `practice-history-persistence.ts`'s local storage validator) -- a
 // genuinely-valid paused session (`sesh.tsx`/`sesh.ts`'s reducer supports
@@ -327,11 +325,10 @@ export function mapPracticeHistoryToInsertInputs(
 }
 
 /**
- * T157.6: the pure diff from a `PracticeHistory` change to outbox
+ * The pure diff from a `PracticeHistory` change to outbox
  * operations, mirroring `diffCustomTricksForOutboxOperations`
  * (custom-trick-cloud-mapping.ts) but simplified for an immutable,
- * insert-only domain -- see `.claude/plans/T157.6.md` "The pure diff" for
- * the full design.
+ * insert-only domain.
  *
  * Only sessions newly present in `next` (by id, not in `previous`) emit an
  * `upsert` operation. No delete branch: nothing in this domain ever removes

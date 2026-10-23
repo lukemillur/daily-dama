@@ -33,7 +33,7 @@ export function identitiesEqual(a: Identity, b: Identity): boolean {
 }
 
 // Physical-namespace prefix for a logical key. Exported so a future migration
-// wrapper (T156.2) can compute both the new scoped key and the old unscoped
+// wrapper can compute both the new scoped key and the old unscoped
 // legacy key without duplicating this scheme.
 export function identityNamespace(identity: Identity): string {
   return identity.kind === 'guest' ? 'guest' : `user:${identity.userId}`;

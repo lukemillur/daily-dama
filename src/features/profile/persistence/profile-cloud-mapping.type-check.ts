@@ -1,4 +1,4 @@
-// T155.10: compile-time-only proof that the mapping layer's discriminated
+// Compile-time-only proof that the mapping layer's discriminated
 // union types leave no ambiguous empty-object stand-in for "absent"/
 // "invalid" branches, and that the `absent`/`invalid` branches of
 // `ProfileRowMappingResult` do not expose a `fields` property without

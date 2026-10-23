@@ -54,7 +54,7 @@ export function isCustomTrick(value: unknown): value is CustomTrick {
   return steps.every(isSequenceStep);
 }
 
-// T157.5: validates an in-memory (already-parsed) value as a
+// Validates an in-memory (already-parsed) value as a
 // `CustomTrickCollection`, unlike `deserializeCustomTricks` which only
 // operates on a JSON *string*. Used as the `SyncEnvelopeCodec<
 // CustomTrickSyncSnapshot>.isState` predicate's `collection` field check --

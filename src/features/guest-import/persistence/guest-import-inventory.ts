@@ -1,4 +1,4 @@
-// T159.1: read-only inventory step -- counts local guest records vs. cloud
+// Read-only inventory step -- counts local guest records vs. cloud
 // records per domain, without mutating anything. No reducer/React
 // involvement; this is a pure-async data-gathering module the driver hook
 // (state/use-guest-import.ts) calls into.
@@ -89,8 +89,8 @@ export interface GuestImportTransports {
 
 /**
  * Thin factory over the five already-built createXSyncTransportAdapter
- * functions (T157.4-T157.8) -- no new adapters, just a bundle for this
- * ticket's read-only cloud counting.
+ * functions -- no new adapters, just a bundle for guest import's read-only
+ * cloud counting.
  */
 export function buildGuestImportTransports(
   client: SupabaseClient<Database, 'api'>,

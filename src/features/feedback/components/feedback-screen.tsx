@@ -1,4 +1,4 @@
-// T217.2: standalone feedback form. Deliberately outside the `/app/*` tabs
+// Standalone feedback form. Deliberately outside the `/app/*` tabs
 // tree (see src/app/feedback.tsx) so it never appears in the five-link web
 // nav -- Profile only links to it (see src/app/app/profile/index.tsx),
 // matching the "Profile stays a placeholder" boundary in AGENTS.md.
@@ -17,7 +17,7 @@ import { submitFeedback } from '@/features/feedback/persistence/submit-feedback'
 
 const SUBMIT_ERROR_COPY = 'Something went wrong sending your feedback. Please try again.';
 
-// T258: mirrors the server's own feedback_message_length CHECK constraint
+// Mirrors the server's own feedback_message_length CHECK constraint
 // (supabase/migrations/20260902000000_add_feedback_table_with_anon_insert.sql)
 // and its RLS WITH CHECK counterparts. Keep this number equal to that bound
 // -- it exists so the limit is surfaced client-side instead of round-tripping

@@ -142,7 +142,7 @@ export function getTricksForRank(rank: number) {
 // rank, not its entrance rank. If the very first trick at the entrance rank is failed, the
 // resolved rank drops one below the entrance rank (see `trickNotLanded` above) — using the
 // entrance rank here would then seed the entire resolved rank as already-laced, even though it
-// was never verified, and immediately trigger an unearned rank-up on first load (T032).
+// was never verified, and immediately trigger an unearned rank-up on first load.
 export function getSeedLacedTrickIds(
   rank: number,
   landedTrickIds: readonly string[],

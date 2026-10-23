@@ -1,15 +1,13 @@
-// T159.1: the thin React driver wrapping guestImportReducer, mirroring
+// The thin React driver wrapping guestImportReducer, mirroring
 // use-logout-guard.ts's own reducer+driver split and
 // use-profile-domain-sync.ts's use of useIdentityScopedDomain for durable
 // persistence. All effects/clocks/network calls live here, never in the
 // reducer.
 //
-// Deliberate deviation from the plan's illustrative "dispatch
-// resumeRequested on hydration" wording: createRestoreAction below wires
+// Hydration does not dispatch resumeRequested: createRestoreAction below wires
 // hydration to `stateRestored`, which unconditionally adopts whatever was
 // persisted (including a mid-flight status) directly as the live status --
-// exactly as step 2 of .claude/plans/T159.1.md's own design specifies for
-// `stateRestored`. Given that, resuming is simply "the restored status IS
+// by design. Given that, resuming is simply "the restored status IS
 // the current status" -- no second dispatch is needed or reachable
 // (`resumeRequested`'s reducer guard is `status !== 'idle'`, which a
 // mid-flight restored status already fails). `resumeRequested` stays fully
@@ -63,7 +61,7 @@ function mergeCounts(
   return merged as GuestImportDomainCounts;
 }
 
-// T206: normalizes the `error`/`conflict` payload `runEmptyGuestImport` can
+// Normalizes the `error`/`conflict` payload `runEmptyGuestImport` can
 // resolve with (see the `'paused'` branch above) into a single human-readable
 // string for `uploadFailed`'s `errorMessage`. Never throws.
 function describeGuestImportPauseError(error: unknown): string {
@@ -211,13 +209,13 @@ export function useGuestImport(): UseGuestImportResult {
     };
   }, [hasHydrated, identity, state.status, state.importId]);
 
-  // T186.1: auto-confirm as soon as awaitingConfirmation is reached with
+  // Auto-confirm as soon as awaitingConfirmation is reached with
   // any local data present -- no user decision required. Gated per
   // importId (mirrors inventoryStartedRef/importStartedRef above) so a
   // completed/rejected dispatch doesn't re-fire on every render, and
   // driven off state.status/state.importId/state.inventory rather than
   // which action produced them, so a resumed (remounted) awaitingConfirmation
-  // record continues automatically too -- see .claude/plans/T186.1.md step 2.
+  // record continues automatically too.
   // An all-zero inventory is intentionally left parked; see
   // isGuestImportPendingResolution's own doc comment for why the caller
   // (home.tsx) treats that case as non-blocking instead.
@@ -293,7 +291,7 @@ export function useGuestImport(): UseGuestImportResult {
         // The hook remains inert when a test/dry-run inventory supplies no
         // mutation-capable transport; production adapters always expose push.
         if (typeof transports.profile?.push !== 'function') return;
-        // T186.2: both targetKinds are fully resolved by planning time now
+        // Both targetKinds are fully resolved by planning time now
         // (empty accounts trivially, existing accounts via
         // planExistingAccountMerge's automatic updatedAt resolution), so
         // there is nothing left for a separate "existing" run path to add
@@ -304,7 +302,7 @@ export function useGuestImport(): UseGuestImportResult {
           destinationUserId: destinationIdentity.userId,
           progress,
           repositories: transports,
-          // T206: read fresh via latestRef, never the closure-captured
+          // Read fresh via latestRef, never the closure-captured
           // `state.deduplications` -- see the dependency-array comment
           // below for why `state.deduplications` must not be a dependency
           // of this effect (the closure value here would be stale for the
@@ -319,7 +317,7 @@ export function useGuestImport(): UseGuestImportResult {
           now: () => Date.now(),
         });
         if (cancelled || latestRef.current.state.importId !== importId) return;
-        // T206: `runEmptyGuestImport` never throws on an ordinary push
+        // `runEmptyGuestImport` never throws on an ordinary push
         // failure or conflict -- it *resolves* with `{ status: 'paused',
         // progress, error }` instead (see guest-import-empty-account.ts).
         // Silently `return`ing here on any non-'completed' result (the
@@ -345,7 +343,7 @@ export function useGuestImport(): UseGuestImportResult {
       } catch (error) {
         if (cancelled || latestRef.current.state.importId !== importId) return;
         const message = error instanceof Error ? error.message : 'Guest import could not be completed.';
-        // T206: a mid-upload exception (thrown before or during
+        // A mid-upload exception (thrown before or during
         // readExistingAccountSnapshot/planExistingAccountMerge, or from the
         // push executor itself) is not a single domain's outcome -- forcing
         // it through domainUploadSettled for just 'profile' left the other
@@ -358,7 +356,7 @@ export function useGuestImport(): UseGuestImportResult {
       }
     })();
     return () => { cancelled = true; };
-  // T206: `state.deduplications` is deliberately NOT a dependency here --
+  // `state.deduplications` is deliberately NOT a dependency here --
   // it changes mid-flight (via the `existingMergePrepared` dispatch inside
   // this very effect's own async body), and `importStartedRef`'s guard
   // only prevents a *second* async closure from starting, not the effect

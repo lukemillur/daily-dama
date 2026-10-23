@@ -43,7 +43,7 @@ export function ForgotPasswordScreen() {
   const { requestPasswordReset } = useAuthActions();
   const router = useRouter();
   const params = useLocalSearchParams<{ from?: string }>();
-  // T191: account-security-screen.tsx's gated "Forgot password?" link (T180) signs the user out
+  // Account-security-screen.tsx's gated "Forgot password?" link signs the user out
   // before navigating here, so `authState` is already back to guest by the time this renders --
   // the *origin* of the navigation, not the live auth status, is what distinguishes "came from the
   // authenticated Profile flow" from "a guest arrived here directly from sign-in".

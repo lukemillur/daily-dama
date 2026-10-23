@@ -1,11 +1,10 @@
-// T157.8: a `SyncTransportRepository<NoteRow>`-shaped adapter over the real
+// A `SyncTransportRepository<NoteRow>`-shaped adapter over the real
 // `notes` table, built directly on `supabase-js` rather than wrapping
 // `createNoteCloudRepository` -- that repository's own `update` method is
 // typed to only ever patch `body`/`deleted_at` (`NoteCloudPatch`), and
 // neither it nor `insert` support revision-guarded conditional updates or an
 // operation-id-based idempotency mechanism, which is this file's whole job
-// (same reasoning as `goal-sync-transport.ts`). See `.claude/plans/T157.8.md`
-// "The adapter" section for the full design.
+// (same reasoning as `goal-sync-transport.ts`).
 //
 // One table, no `recordId === userId` routing in `push` (every `recordId`
 // here is a note id, never the user's own uuid) -- same shape as
@@ -250,7 +249,7 @@ export function createNoteSyncTransportAdapter(
       return { status: 'failed', error: validationError('Malformed note upsert payload.') };
     }
 
-    // `body` is the only UPDATE-grantable column (T157.8) --
+    // `body` is the only UPDATE-grantable column --
     // trick_id/trick_name/practice_session_id are never legitimately
     // editable in place.
     const patch = { body: input.body };

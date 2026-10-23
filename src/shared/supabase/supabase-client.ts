@@ -77,7 +77,7 @@ export function getSupabaseClient(): SupabaseClient<Database, 'api'> | null {
  * This is an undocumented supabase-js internal default, deliberately not
  * overridden via an explicit `storageKey` (doing so would force a local
  * sign-out for every currently-authenticated production user on next deploy
- * -- see `AuthProvider`'s init effect / T262's plan for the full reasoning).
+ * -- see `AuthProvider`'s init effect for the full reasoning).
  * If a future supabase-js upgrade changes that default algorithm, this
  * derivation silently stops matching and callers relying on it (the
  * optimistic cached-session read) silently degrade back to today's

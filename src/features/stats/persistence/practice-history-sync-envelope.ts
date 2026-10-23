@@ -1,9 +1,8 @@
-// T157.6: the practice-history domain's sync bookkeeping envelope -- a
+// The practice-history domain's sync bookkeeping envelope -- a
 // second, parallel identity-scoped domain instance alongside the primary
 // `practiceHistoryReducer` (src/features/stats/model/practice-history.ts),
 // not a replacement for it. Mirrors `custom-trick-sync-envelope.ts`
-// structurally (T157.5); see `.claude/plans/T157.6.md` for the full design.
-// The primary reducer stays the sole source of truth for the live
+// structurally. The primary reducer stays the sole source of truth for the live
 // `PracticeHistory` shown in Stats; this file only tracks "what has this
 // device told the server, and what does it still owe the server."
 //

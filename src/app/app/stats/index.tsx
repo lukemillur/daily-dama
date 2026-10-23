@@ -39,11 +39,11 @@ export default function StatsScreen() {
   const { state: guestImportState } = useGuestImport();
   const { runSync: runPracticeHistorySync } = usePracticeHistorySync();
 
-  // T186.1-style gate: never render EmptyStats while a guest import is
+  // Same gate as home.tsx: never render EmptyStats while a guest import is
   // still inventorying/uploading/awaiting confirmation.
   const importPending = identity.kind === 'user' && isGuestImportPendingResolution(guestImportState);
 
-  // T215: mirrors home.tsx's T199 resync effect, but targets the
+  // Mirrors home.tsx's post-import resync effect, but targets the
   // practiceHistory domain instead of profile. The guest import's upload
   // phase pushes imported practice-history rows straight to the cloud
   // practice-history repository, bypassing this component's own

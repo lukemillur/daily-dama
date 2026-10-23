@@ -1,10 +1,9 @@
-// T158: pure reducer for the current-device logout UI flow -- mirrors
+// Pure reducer for the current-device logout UI flow -- mirrors
 // coordinator.tss syncCoordinatorReducer/use-sync-coordinator.ts pairing:
 // this file owns only the state machine (no React, no signOut()/sync
 // calls, no Date.now()/timers); the thin driver hook lives in
-// use-logout-guard.ts. See .claude/plans/T158.md decision 5 for the full
-// transition table this mirrors, and .claude/plans/T247.md for the
-// discard-failure additions (D7/D8).
+// use-logout-guard.ts. A failed or superseded discard never reaches
+// `signingOut` (see DESLOPPIFY.md D001).
 
 import type { AuthErrorCategory } from "@/features/auth/model/auth-errors";
 import type { SyncDomain } from "@/shared/sync/domain";
@@ -23,7 +22,7 @@ export interface LogoutGuardState {
   // is freshly (re-)opened.
   readonly retryFailed: boolean;
   // Set only when the terminal signOut() call itself fails (offline/
-  // unknown per T154.2s own trace) -- rendered the same way
+  // unknown in practice) -- rendered the same way
   // account-section.tsx already renders it today.
   readonly errorCategory: AuthErrorCategory | undefined;
   // Set only when a discard attempt left at least one domain's pending

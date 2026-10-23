@@ -65,7 +65,7 @@ export function SyncCoordinatorProvider({ children }: PropsWithChildren) {
   const pendingCount = profile.pendingCount + customTricks.pendingCount + practiceHistory.pendingCount + goals.pendingCount + notes.pendingCount;
   const hasHydrated = profile.hasHydrated && customTricks.hasHydrated && practiceHistory.hasHydrated && goals.hasHydrated && notes.hasHydrated;
   // Conflicts are now resolved automatically inside each domain's own push
-  // loop (T187.2) and never surface here -- this fact is kept as a literal
+  // loop and never surface here -- this fact is kept as a literal
   // zero (rather than removed) so deriveSyncStatus/SyncStatus stay
   // structurally unchanged.
   const conflictCount = 0;

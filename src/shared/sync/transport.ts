@@ -2,18 +2,17 @@ import type { CloudPageRequest, CloudRepositoryError } from '@/shared/supabase/c
 import type { OutboxOperation, OutboxOperationType } from '@/shared/sync/outbox-operation';
 
 /**
- * T157.3: repository-agnostic transport orchestration -- stable ordered
+ * Repository-agnostic transport orchestration -- stable ordered
  * pagination, mutation-id-based idempotent retries, optimistic revision
  * checks, tombstones, and application of server-returned revisions/
  * timestamps. Pure, storage-free, Supabase-free, exactly like
  * `coordinator.ts`: no `Date.now()`, no network calls, everything injected.
  *
  * This is deliberately its own abstract contract, not a wrapper around the
- * concrete T155.9 `*-cloud-repository.ts` files -- see `.claude/plans/
- * T157.3.md` for why (none of those repositories currently support
- * revision-guarded conditional updates or an operation_id-keyed idempotency
- * mechanism). Wiring a real adapter that satisfies `SyncTransportRepository`
- * is deferred to T157.4+.
+ * concrete `*-cloud-repository.ts` files, because none of those
+ * repositories support revision-guarded conditional updates or an
+ * operation_id-keyed idempotency mechanism. Each domain's
+ * `*-sync-transport.ts` implements `SyncTransportRepository`.
  */
 
 export interface SyncTransportPage<Row> {
@@ -113,9 +112,8 @@ export async function pullAllPages<Row>(
 
 export interface PushOutboxOperationsOptions {
   // Caller-supplied because "expected revision" is not part of
-  // OutboxOperation. A real per-domain driver (T157.4+) is expected to close
-  // over its own local revision cache here, not parse it out of
-  // `operation.payload` -- `payload` is `null` for deletes by
+  // OutboxOperation. Each per-domain driver closes over its own local
+  // revision cache here rather than parsing it out of `operation.payload` -- `payload` is `null` for deletes by
   // `outbox-operation.ts`'s own validation.
   readonly getExpectedRevision: (operation: OutboxOperation) => number | null;
 }

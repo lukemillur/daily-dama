@@ -22,7 +22,7 @@ export type AuthErrorCategory =
 // (that dual mapping IS the enumeration defense for sign-in).
 const INVALID_CREDENTIALS_CODES = new Set(['invalid_credentials', 'user_not_found']);
 const UNVERIFIED_EMAIL_CODES = new Set(['email_not_confirmed']);
-// NOTE for T153.8 (future ticket): accountAlreadyExists is intentionally its own category,
+// accountAlreadyExists is intentionally its own category,
 // not folded into invalidCredentials, so a signup call site can detect it and render the
 // identical check-your-email UI a successful signup would show. Do not surface a distinct
 // account-already-exists message at the call site or this category becomes an enumeration
@@ -34,13 +34,13 @@ const EXPIRED_OR_INVALID_LINK_CODES = new Set([
   'flow_state_expired',
   'bad_oauth_callback',
   'bad_oauth_state',
-  // T153.6: a password-recovery session that has expired or no longer exists (e.g. the
+  // A password-recovery session that has expired or no longer exists (e.g. the
   // reset-password route revisited after the recovery link's session is gone) collapses
   // into the same "this link is no longer valid" copy as the OAuth/OTP cases above.
   'session_not_found',
   'session_expired',
 ]);
-// T153.10: distinct from plain expiry above -- these two codes mean the PKCE code verifier
+// Distinct from plain expiry above -- these two codes mean the PKCE code verifier
 // Supabase needed to complete the exchange isn't present in this browser's storage, which
 // happens when a recovery/confirmation link is opened in a different browser or device than the
 // one that requested it. That's an actionable, different instruction ("open it in the same
@@ -48,7 +48,7 @@ const EXPIRED_OR_INVALID_LINK_CODES = new Set([
 const MISSING_VERIFIER_CODES = new Set([
   'bad_code_verifier',
   'flow_state_not_found',
-  // Live-probed against local GoTrue (T153.13): fires for both a reused one-time callback
+  // Live-probed against local GoTrue: fires for both a reused one-time callback
   // link and a verifier-mismatched callback (a different browser/device completing the
   // exchange than the one that started it). Without this code in the closed set, both cases
   // fell through to 'unknown' and showed a generic error instead of the actionable

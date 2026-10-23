@@ -1,12 +1,12 @@
-// T217.2/T221/T258: submits a feedback row directly to `api.feedback` using
+// Submits a feedback row directly to `api.feedback` using
 // the shared, session-persisting Supabase client (see
 // src/shared/supabase/supabase-client.ts). No server route or
 // service-role key is involved. Because that client has
 // `persistSession: true`, it attaches the caller's own JWT once a session
 // exists, so this call reaches PostgREST as `anon` for signed-out visitors
 // and as `authenticated` for signed-in ones -- both roles need their own
-// INSERT grant and WITH CHECK policy (T217.1 for anon, T221's migration for
-// authenticated) for this call to succeed either way. `email` is not part
+// INSERT grant and WITH CHECK policy (see the feedback migrations under
+// supabase/migrations/) for this call to succeed either way. `email` is not part
 // of this submission at all: a server-owned BEFORE INSERT trigger
 // (20260909000000_enforce_feedback_email_server_owned.sql) derives it from
 // the caller's own JWT when signed in, and forces it null otherwise --

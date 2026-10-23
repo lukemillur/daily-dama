@@ -1,4 +1,4 @@
-// T155.9: compile-time-only proof that no repository's public signature
+// Compile-time-only proof that no repository's public signature
 // leaks a Supabase query-builder type. Deliberately NOT named `*.test.ts`
 // and NOT under `__tests__/`, so jest never collects it (jest would fail on
 // an empty test suite) but `yarn tsc --noEmit` still type-checks it via

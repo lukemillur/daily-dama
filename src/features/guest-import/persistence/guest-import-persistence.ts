@@ -1,9 +1,9 @@
-// T159.1: version-tagged durable record wrapping GuestImportState, mirroring
+// Version-tagged durable record wrapping GuestImportState, mirroring
 // src/features/profile/persistence/user-profile-persistence.ts's shape
 // (version + runtime validator + serialize/deserialize + load/save). This
 // is a plain versioned document, not a SyncEnvelope -- guest import has no
 // outbox of its own; the domains it eventually mutates each own their own
-// envelope/outbox already (T157.4-T157.8).
+// envelope/outbox already.
 
 import {
   INITIAL_GUEST_IMPORT_STATE,
@@ -22,11 +22,11 @@ import type {
 } from '@/shared/persistence/storage';
 
 export const GUEST_IMPORT_STORAGE_KEY = 'daily-dama:guest-import';
-// T186.2: bumped from 1 to 2 -- the awaitingProfileChoice/conflicts states
+// Bumped from 1 to 2 -- the awaitingProfileChoice/conflicts states
 // and their carried fields no longer exist. A pre-existing v1 record
 // mid-flight across this deploy falls back cleanly to
 // INITIAL_GUEST_IMPORT_STATE via loadGuestImportState's version-mismatch
-// path (see .claude/plans/T186.2.md step 4): worst case, their import
+// path: worst case, their import
 // silently restarts from idle and re-inventories/re-resolves automatically.
 export const GUEST_IMPORT_SCHEMA_VERSION = 2;
 

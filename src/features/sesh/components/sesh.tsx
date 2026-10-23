@@ -999,7 +999,7 @@ export function CompletedSesh({
   readonly justAchievedGoals?: readonly Goal[];
   readonly showSignupInvite?: boolean;
   /**
-   * T201: the first-ever eligible occurrence renders inline on the wrap-up
+   * The first-ever eligible occurrence renders inline on the wrap-up
    * screen (less aggressive for a brand-new guest); every 5th occurrence
    * after that (the 6th, 11th, ...) renders as the translucent PostSeshSignupInvite
    * overlay. Ignored when showSignupInvite is false.
@@ -1067,7 +1067,7 @@ export function CompletedSesh({
   );
 }
 
-// T201: the original pre-T183 inline presentation, restored for the guest's first-ever eligible
+// Inline presentation for the guest's first-ever eligible
 // occurrence only -- rendered as ordinary wrap-up content inside the ScrollView, not an overlay.
 function InlineSignupInvite() {
   const [dismissed, setDismissed] = useState(false);
@@ -1094,10 +1094,10 @@ function InlineSignupInvite() {
   );
 }
 
-// T183: dismissible modal overlay, not inline wrap-up content. Follows RankUpCelebrationModal and
+// Dismissible modal overlay, not inline wrap-up content. Follows RankUpCelebrationModal and
 // LogoutPrompt's precedent (no React Native <Modal> in this codebase) -- an absolute-fill <View>
-// covering the wrap-up screen (translucent, T201) until the guest signs up or dismisses it. T201
-// restricts this presentation to every 5th occurrence after the first (the 6th, 11th, ...); the
+// covering the wrap-up screen (translucent) until the guest signs up or dismisses it. This
+// presentation is restricted to every 5th occurrence after the first (the 6th, 11th, ...); the
 // first-ever occurrence renders InlineSignupInvite instead.
 function PostSeshSignupInvite() {
   const [dismissed, setDismissed] = useState(false);
@@ -1388,7 +1388,7 @@ const NotePromptButton = styled(Pressable)<{ $disabled?: boolean }>`min-height: 
 const NotePromptButtonText = styled.Text`color: ${({ theme }) => theme.accent}; font-size: 14px; font-weight: 900;`;
 const NotePromptSecondaryButton = styled(Pressable)`min-height: 44px; flex: 1; align-items: center; justify-content: center; padding: 10px 18px; border: 2px solid ${AppColors.ink}; border-radius: 5px;`;
 const NotePromptSecondaryButtonText = styled.Text`color: ${({ theme }) => theme.text}; font-size: 14px; font-weight: 900;`;
-// T211: derives the overlay's background from theme.accent (following RankUpCelebrationModal's
+// Derives the overlay's background from theme.accent (following RankUpCelebrationModal's
 // precedent) at a low opacity so the wrap-up content behind it stays legible, rather than the
 // prior hardcoded mustard yellow that ignored the user's selected theme.
 const InviteOverlay = styled.View`position: absolute; top: 0; right: 0; bottom: 0; left: 0; background-color: ${({ theme }) => hexToRgba(theme.accent ?? AppColors.yellow, 0.35)}; align-items: center; justify-content: center; padding: 24px; z-index: 1000;`;

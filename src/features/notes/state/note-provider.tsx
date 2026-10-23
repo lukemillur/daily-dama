@@ -77,7 +77,7 @@ export function NoteProvider({ children }: PropsWithChildren) {
   });
 
   // Additive: a second, parallel identity-scoped domain instance tracking
-  // sync bookkeeping (T157.8). The primary reducer above stays completely
+  // sync bookkeeping. The primary reducer above stays completely
   // untouched and remains the sole source of truth for the rendered
   // `NoteCollection` -- this hook only pulls/pushes in the background and,
   // on a safe pull-adopt, dispatches the same `notesRestored` action
@@ -162,7 +162,7 @@ export function useNoteActions() {
   return actions;
 }
 
-// Exposed for a future manual-retry affordance (T160.1) and for tests --
+// Exposed for a future manual-retry affordance and for tests --
 // deliberately no UI consumes this yet.
 export function useNoteSync(): NoteSync {
   const sync = useContext(NoteSyncContext);

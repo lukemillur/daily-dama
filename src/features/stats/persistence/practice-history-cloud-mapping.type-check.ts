@@ -1,4 +1,4 @@
-// T155.12: compile-time-only proof that the mapping layer's discriminated
+// Compile-time-only proof that the mapping layer's discriminated
 // union types leave no ambiguous empty-object stand-in for "invalid" vs
 // "valid" branches, and that the `invalid` branches of
 // `PracticeSessionRowMappingResult`/`PracticeHistoryRowsMappingResult` do

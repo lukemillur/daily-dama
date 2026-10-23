@@ -8,8 +8,8 @@ export interface Landing {
 
 /**
  * A target the user optionally sets before starting an open-ended sesh: land
- * the trick being practiced this many times. Purely a stored intent at this
- * stage — gating the end action on it is T005.2's concern, not this one's.
+ * the trick being practiced this many times. The reducer only stores it;
+ * reacting to a met target is the UI's job (see `isSeshTargetMet`).
  */
 export interface SeshTarget {
   readonly landingCount: number;

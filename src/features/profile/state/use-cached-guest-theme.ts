@@ -17,8 +17,8 @@ const emptySubscribe = () => () => {};
  * Resolves the theme background, accent, and text colors synchronously, without waiting on
  * IdentityProvider or UserProfileProvider's async hydration. Used by the auth route group
  * (sign-up, sign-in, forgot-password, reset-password), which renders entirely outside both of
- * those providers and must not gate first paint on their hydration (see T145; reintroducing that
- * gate here is explicitly forbidden by T170's notes).
+ * those providers and must not gate first paint on their hydration. Do not reintroduce that gate
+ * here.
  *
  * Mirrors useCachedOnboardingStatus's pattern exactly: on web, localStorage is synchronous, so
  * this reads it directly once past the server or first-client-render hydration boundary (the

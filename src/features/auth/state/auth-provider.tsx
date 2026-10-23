@@ -21,7 +21,7 @@ import { getGoTrueStorageKey, getSupabaseClient } from '@/shared/supabase/supaba
 
 // Comfortably above any realistic successful refresh round-trip, well under GoTrue's own
 // internal ~30s retry ceiling (`AUTO_REFRESH_TICK_DURATION_MS`, auth-js 2.112.3
-// `lib/constants.js`, confirmed against installed source -- see T262's plan). The goal is
+// `lib/constants.js`, confirmed against installed source). The goal is
 // actionable feedback well before that ceiling, not racing it.
 export const AUTH_INIT_TIMEOUT_MS = 10_000;
 
@@ -98,9 +98,9 @@ export function AuthProvider({ children }: PropsWithChildren) {
         setState((current) => deriveAuthState(event, session, current));
       });
 
-      // Optimistic direct read (exit criterion a): resolves in effectively one microtask tick,
-      // fully independent of GoTrue's `initializePromise` / network refresh -- see T262's plan
-      // for why this is the only way to surface a cached session ahead of a hung refresh.
+      // Optimistic direct read: resolves in effectively one microtask tick, fully independent
+      // of GoTrue's `initializePromise` / network refresh. This is the only way to surface a
+      // cached session ahead of a hung refresh.
       const storageKey = getGoTrueStorageKey();
       if (storageKey) {
         AsyncStorage.getItem(storageKey)
@@ -230,7 +230,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
     // Fixed, non-attacker-influenceable redirect -- never accept a destination from a route
     // param or query string here (see the task's enumeration/redirect-safety requirement and
     // BACKEND_ROADMAP.md's "no wildcard production redirects" rule). Supabase's own server-side
-    // redirect allowlist (T153.2) is the second layer of defense.
+    // redirect allowlist is the second layer of defense.
     const redirectTo = `${window.location.origin}/auth/callback`;
     const { error } = await client.auth.resetPasswordForEmail(email, { redirectTo });
     return { error };
