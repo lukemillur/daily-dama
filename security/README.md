@@ -191,10 +191,11 @@ scheduled/release/manual runs always run it.
   mask (e.g. moderate-only findings) is not itself a failure. Accepted advisories live in
   `security/accepted-dependency-advisories.json`, a small, dated, reasoned allowlist keyed
   by advisory id, package, severity, `reason`, and `reviewedAsOf` (`YYYY-MM-DD`) --
-  currently the four Metro/bundler-devDependency advisories (`image-size` x2, `nanoid`,
-  `uuid`). Two of those four now have a reachable upstream patch per live advisory data
-  (`nanoid` and `uuid`) but resolve to an older transitive version pinned by the lockfile;
-  bumping that lockfile resolution is a separate change, tracked outside this file.
+  currently three gated build-time advisories plus one moderate entry kept as
+  documentation. `image-size` x2 is patched only in the 2.x line, which metro@0.84 cannot
+  use (it calls image-size with a file path, which 2.x no longer accepts). `node-forge`
+  (via `@expo/cli`) has no upstream patch. `uuid` (moderate, below the gate) has a patch
+  but resolves to an older transitive version.
   Revisit the allowlist on the next Expo/Metro upgrade; prefer bumping the dependency and
   removing the entry over leaving it stale.
 - `secret-scan` -- `gitleaks/gitleaks-action@v3` scans the full checked-out git history
