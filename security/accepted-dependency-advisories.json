@@ -1,30 +1,30 @@
 [
   {
-    "id": 1138808,
+    "id": 1239765,
     "package": "image-size",
     "severity": "high",
-    "reason": "Metro/bundler build-time devDependency (transitive via expo), not shipped in the web bundle. Live advisory data as of 2026-09-04 still reports patched_versions \"<0.0.0\" -- no upstream patch exists. Revisit on next Expo/Metro upgrade.",
-    "reviewedAsOf": "2026-09-04"
+    "reason": "Metro/bundler build-time dependency (expo > @expo/metro > metro@0.84 > image-size@^1.0.2), not shipped in the web bundle; it only parses this repository's own checked-in image assets. The only patch is image-size >=2.0.3, and no 1.x release is patched. A resolution to 2.x is not viable: metro's Assets.js calls the default export with a file path, which image-size 2.x no longer accepts (it takes a Uint8Array; file input moved to the async imageSizeFromFile), so forcing it would break asset processing in `expo export`. Revisit on the next Expo SDK upgrade (metro 0.87 no longer depends on image-size).",
+    "reviewedAsOf": "2026-10-23"
   },
   {
-    "id": 1138809,
+    "id": 1239766,
     "package": "image-size",
     "severity": "high",
-    "reason": "Metro/bundler build-time devDependency (transitive via expo), not shipped in the web bundle. Live advisory data as of 2026-09-04 still reports patched_versions \"<0.0.0\" -- no upstream patch exists. Revisit on next Expo/Metro upgrade.",
-    "reviewedAsOf": "2026-09-04"
+    "reason": "Same dependency chain and constraint as 1239765: the patch exists only in the API-incompatible image-size 2.x line, and metro@0.84 requires ^1.0.2 and calls it with a file path. Build-time only, and it parses only first-party assets. Revisit on the next Expo SDK upgrade.",
+    "reviewedAsOf": "2026-10-23"
   },
   {
-    "id": 1139427,
-    "package": "nanoid",
+    "id": 1240912,
+    "package": "node-forge",
     "severity": "high",
-    "reason": "An upstream patch now exists (patched_versions \">=3.3.18\"), but the tree resolves nanoid@3.3.17 transitively through expo-router and postcss (Metro/bundler build-time only, not shipped in the web bundle). Bumping the resolved version is a yarn.lock change and is deliberately out of scope for this review; tracked as a follow-up dependency bump rather than closed here.",
-    "reviewedAsOf": "2026-09-04"
+    "reason": "No upstream patch exists: live advisory data as of 2026-10-23 reports patched_versions \"<0.0.0\", and 1.4.0 is the latest release. It is pulled in by expo > @expo/cli (and @expo/code-signing-certificates) for development-time code signing, is not shipped in the web bundle, and this project does not use Expo Updates code signing. Revisit when node-forge publishes a fix or on the next Expo SDK upgrade.",
+    "reviewedAsOf": "2026-10-23"
   },
   {
     "id": 1119441,
     "package": "uuid",
     "severity": "moderate",
-    "reason": "Documentation only -- moderate is below this gate's high/critical threshold and does not affect pass/fail. An upstream patch exists (patched_versions \">=11.1.1\"); the tree resolves uuid@7.0.3 transitively through the same build-time dependency chain as the other entries here.",
+    "reason": "Documentation only -- moderate is below this gate's high/critical threshold and does not affect pass/fail. An upstream patch exists (patched_versions \">=11.1.1\"); the tree resolves uuid@7.0.3 transitively through the Expo build-time dependency chain.",
     "reviewedAsOf": "2026-09-04"
   }
 ]
