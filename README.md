@@ -6,6 +6,9 @@ A practice companion for kendama players. Pick tricks from the standard Kendama 
 
 Built with Expo SDK 57, Expo Router, React 19, TypeScript (strict), styled-components, and Supabase. Web is the active platform; the code stays React Native–portable for later iOS and Android hardening.
 
+> **Reviewing this repository? Start with [How I work with AI](HOW_I_WORK_WITH_AI.md).**
+> AI agents wrote most of this code. That page explains what I own (product direction, architecture, invariants, and the gates that decide whether generated work is trustworthy), how the agent pipeline runs, and four real incidents where those gates caught mistakes. It's a five-minute read.
+
 ## Architecture in one paragraph
 
 Daily Dama is **local-first with optional cloud sync**. Guests use the app fully offline: state lives in AsyncStorage (`localStorage` on web). Signing up imports guest data into Supabase, and later changes sync through per-domain outboxes. State is split into five independent persistent domains (user profile, custom tricks, practice history, goals, notes). Each one owns its reducer, runtime validation, storage adapter, cloud mapping, and conflict policy. Shared infrastructure (identity-scoped storage, sync envelopes, outboxes, a sync coordinator) wraps those domains but holds no domain rules. Practice history is an immutable log, and every Stat, streak, personal best, and rank promotion is derived from it rather than stored as a counter. Destructive and identity-changing flows (logout with pending changes, account deletion, guest import) fail closed: they advance only after the writes they depend on succeed.
