@@ -1,18 +1,16 @@
-// T157.7: the goals-domain-local sync driver. Owns pull-then-push cycles
+// The goals-domain-local sync driver. Owns pull-then-push cycles
 // against an injected transport and the parallel
 // `SyncEnvelope<GoalSyncSnapshot>` domain, while the PRIMARY `GoalCollection`
 // reducer (owned by `goal-provider.tsx`) stays the sole source of truth
 // rendered by the app. Structurally a near-mechanical adaptation of
-// `use-custom-trick-domain-sync.ts` (T157.5), with one required addition:
+// `use-custom-trick-domain-sync.ts`, with one required addition:
 // pull-composition must filter out tombstoned entries before adopting into
 // the primary reducer (custom-tricks has no tombstone concept to filter;
-// goals does). See `.claude/plans/T157.7.md` "The driver hook" for the full
-// design.
+// goals does).
 //
-// Deliberately NOT the shared `syncCoordinatorReducer` (T157.9's job -- that
-// reducer only reaches `idle` once all five SYNC_DOMAINS report settled).
-// This hook's `runSync` return value is already shaped like
-// `DomainSyncRecord` so T157.9 can plug it in later with no reshaping.
+// This hook does not decide when to sync. `runSync` returns a
+// `DomainSyncRecord`, and the shared `syncCoordinatorReducer`
+// (`use-sync-coordinator.ts`) schedules runs and aggregates all five domains.
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
@@ -104,7 +102,7 @@ export function useGoalDomainSync(options: UseGoalDomainSyncOptions): UseGoalDom
   const [lastResult, setLastResult] = useState<DomainSyncRecord | undefined>(undefined);
   const inFlightRef = useRef<Promise<DomainSyncRecord> | undefined>(undefined);
   // Bumped once per enqueued local-mutation diff below -- the shared sync
-  // coordinator (T157.9) debounces on this counter instead of the whole
+  // coordinator debounces on this counter instead of the whole
   // domain state object, so its effect dependency stays a stable scalar.
   const [localMutationTick, setLocalMutationTick] = useState(0);
 
@@ -164,8 +162,8 @@ export function useGoalDomainSync(options: UseGoalDomainSyncOptions): UseGoalDom
         // primary reducer nor the revision cache are touched; a malformed
         // server response must never clobber good local state.
       } else {
-        // Pending local writes stay authoritative locally (no auto-resolve,
-        // per T160.2) -- only refresh the revision cache for records with
+        // Pending local writes stay authoritative locally (no auto-resolve)
+        // -- only refresh the revision cache for records with
         // no pending operation, so their *next* push uses a fresh
         // expectedRevision.
         const pendingRecordIds = new Set(envelopeAtPushStart.outbox.map((op) => op.recordId));
@@ -209,7 +207,7 @@ export function useGoalDomainSync(options: UseGoalDomainSyncOptions): UseGoalDom
         }
 
         // 'conflict' resolves automatically, in this same run, by keeping
-        // whichever snapshot has the later `updatedAt` (T187.2). 'failed'
+        // whichever snapshot has the later `updatedAt`. 'failed'
         // is still parked (not acknowledged, not retried automatically
         // this run) -- unrelated records' outcomes are unaffected
         // (pushOutboxOperations' own "continue after one conflict/failure"
@@ -289,7 +287,7 @@ export function useGoalDomainSync(options: UseGoalDomainSyncOptions): UseGoalDom
       // `runSync()` call bypassing the shared coordinator (some tests do
       // this deliberately). The real single-flight authority in production
       // is now the shared `syncCoordinatorReducer` driven by
-      // `use-sync-coordinator.ts` (T157.9).
+      // `use-sync-coordinator.ts`.
       if (inFlightRef.current) return inFlightRef.current;
 
       setIsSyncing(true);
@@ -363,7 +361,7 @@ export function useGoalDomainSync(options: UseGoalDomainSyncOptions): UseGoalDom
 
   // Login triggering (and every other cross-domain trigger: foreground,
   // reconnect, local-mutation debouncing, manual retry) now lives in the
-  // shared driver, `use-sync-coordinator.ts` (T157.9), which owns firing
+  // shared driver, `use-sync-coordinator.ts`, which owns firing
   // `runSync('login')` once per identity generation across all five
   // domains via `syncCoordinatorReducer`. This hook only surfaces the two
   // scalar facts that driver needs (`hasHydrated`, `localMutationTick`).

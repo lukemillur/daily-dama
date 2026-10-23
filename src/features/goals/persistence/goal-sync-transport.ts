@@ -1,11 +1,10 @@
-// T157.7: a `SyncTransportRepository<GoalRow>`-shaped adapter over the real
+// A `SyncTransportRepository<GoalRow>`-shaped adapter over the real
 // `goals` table, built directly on `supabase-js` rather than wrapping
 // `createGoalCloudRepository` -- that repository's own `update` method is
 // typed to only ever patch `deleted_at` (`GoalCloudPatch`), and neither it
 // nor `insert` support revision-guarded conditional updates or an
 // operation-id-based idempotency mechanism, which is this file's whole job
-// (same reasoning as `custom-trick-sync-transport.ts`). See
-// `.claude/plans/T157.7.md` "The adapter" section for the full design.
+// (same reasoning as `custom-trick-sync-transport.ts`).
 //
 // One table, no `recordId === userId` routing in `push` (every `recordId`
 // here is a goal id, never the user's own uuid) -- same shape as
@@ -264,7 +263,7 @@ export function createGoalSyncTransportAdapter(
       return { status: 'failed', error: validationError('Malformed goal upsert payload.') };
     }
 
-    // Only target_count/target_ms are UPDATE-grantable columns (T157.7) --
+    // Only target_count/target_ms are UPDATE-grantable columns --
     // trick_id/trick_name/kind are never legitimately editable in place.
     const patch = { target_count: input.target_count, target_ms: input.target_ms };
 

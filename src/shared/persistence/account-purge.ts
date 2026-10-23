@@ -27,8 +27,7 @@ export interface NamespacePurgeStorage {
  * mirrors the "only sanctioned way" pattern `createUserIdentity` already
  * uses for constructing a user identity in the first place.
  *
- * Accepted prototype cleanup, not claimed forensic erasure (see T161.5's
- * Notes) -- this is an ordinary AsyncStorage removal, not secure wiping.
+ * Accepted prototype cleanup, not claimed forensic erasure -- this is an ordinary AsyncStorage removal, not secure wiping.
  */
 export async function purgeIdentityNamespace(
   storage: NamespacePurgeStorage,

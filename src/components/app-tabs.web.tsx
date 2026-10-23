@@ -99,7 +99,7 @@ export function CustomTabList({ hidden, children, ...props }: TabListProps & { r
  * `useResolvedTheme`), falling back to the default resolved theme when no
  * custom colors are set.
  *
- * Carries the T112.5 in-app-arrival signal so `useRedirectOnboardedVisitorHome`
+ * Carries the in-app-arrival signal so `useRedirectOnboardedVisitorHome`
  * skips its redirect-to-`/app/home` behavior and the landing page actually
  * renders, instead of bouncing the visitor straight back into the app.
  */

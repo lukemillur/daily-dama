@@ -1,15 +1,11 @@
-// T159.1: pure reducer/state-machine for resumable guest-to-account import.
+// Pure reducer/state-machine for resumable guest-to-account import.
 // Mirrors src/shared/sync/coordinator.ts's style and doc-comment
 // conventions closely: no React, no Supabase/network calls, no timers, no
-// Date.now() -- every timestamp/id is supplied by the caller. A future
-// driver (state/use-guest-import.ts) wraps this the way use-sync-coordinator.ts
-// wraps syncCoordinatorReducer.
-//
-// This ticket only models the state machine end-to-end. Later tickets
-// (T159.2-T159.5) plug a real inventory/upload/conflict-resolution effect
-// into an already-correct set of transitions -- notably, nothing in this
-// file ever drives 'uploading' to completion with real data; that's the
-// driver hook (and later tickets') job.
+// Date.now() -- every timestamp/id is supplied by the caller. The driver
+// (state/use-guest-import.ts) wraps this the way use-sync-coordinator.ts
+// wraps syncCoordinatorReducer and owns the inventory, upload, and
+// conflict-resolution effects. Nothing in this file drives 'uploading' to
+// completion with real data.
 
 import { SYNC_DOMAINS, type SyncDomain } from '@/shared/sync/domain';
 import type { OutboxOperationType } from '@/shared/sync/outbox-operation';
@@ -249,7 +245,7 @@ export function guestImportReducer(state: GuestImportState, action: GuestImportA
     // upload phase (mid-upload exception, not a per-domain outcome) resets
     // to idle rather than being force-fit into domainUploadSettled's
     // per-domain vocabulary -- see use-guest-import.ts's upload effect
-    // catch block and .claude/plans/T206.md's Step 2 for why a
+    // catch block for why a
     // domainUploadSettled shortcut here would be a worse, silent bug
     // (operationsSettled vacuously true on an empty/never-populated
     // operations list).
@@ -299,7 +295,7 @@ export function createGuestImportId(now = Date.now(), random = Math.random()): s
   return `guest-import-${now.toString(36)}-${Math.floor(random * 0x100000000).toString(36)}`;
 }
 
-// T186.1: centralizes the "does this inventory have any local-only data
+// Centralizes the "does this inventory have any local-only data
 // worth importing" check that both the auto-confirm effect
 // (state/use-guest-import.ts) and the onboarding gate (app/app/home.tsx)
 // need, so it isn't duplicated ad hoc the way GuestImportPreview's own
@@ -308,13 +304,12 @@ export function hasAnyLocalGuestData(inventory: GuestImportDomainCounts): boolea
   return SYNC_DOMAINS.some((domain) => inventory[domain].local > 0);
 }
 
-// T186.1: true whenever a guest import is either actively running or
+// True whenever a guest import is either actively running or
 // parked at awaitingConfirmation with local data still to auto-confirm --
 // i.e. whenever home.tsx's onboarding gate must wait rather than risk
 // showing onboarding a second time to someone with existing local data.
 // An awaitingConfirmation record with an all-zero inventory is
-// permanently parked (see .claude/plans/T186.1.md's "Key design
-// decision") and must NOT be treated as pending here, or the gate would
+// permanently parked and must NOT be treated as pending here, or the gate would
 // wedge forever.
 export function isGuestImportPendingResolution(state: GuestImportState): boolean {
   switch (state.status) {

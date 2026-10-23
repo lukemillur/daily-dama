@@ -1,7 +1,7 @@
-// T155.13: pure mapping + runtime response validation between the local
-// `Goal` domain shape and the `goals` cloud rows. Explicitly does NOT wire
-// into the provider, reducer, or any synchronization logic -- that's T157's
-// job, same as T155.10/T155.11/T155.12 deferred their own wiring.
+// Pure mapping + runtime response validation between the local
+// `Goal` domain shape and the `goals` cloud rows. Pure: it does not touch
+// the provider, reducer, or sync state; the sync transport and envelope call
+// into it.
 //
 // Row -> domain direction returns a discriminated Result-style type because
 // incoming rows are an untrusted runtime boundary (already successfully
@@ -20,8 +20,8 @@
 // a first-class valid representation, not an absent/invalid one.
 //
 // "STALE OR MALFORMED REVISION" is two narrow, distinct checks, not a
-// fabricated revision-comparison/conflict-resolution scheme (that's T157's
-// job). "Malformed" = row->domain: `revision` isn't a sane positive integer.
+// revision-comparison/conflict-resolution scheme (conflicts are resolved in
+// src/shared/sync/conflict-resolution.ts). "Malformed" = row->domain: `revision` isn't a sane positive integer.
 // "Stale" = domain->mutation-payload preparation: the caller's own
 // known-entry is already tombstoned, mirroring the DB trigger's
 // unconditional rejection of any UPDATE against an already-deleted row
@@ -375,7 +375,7 @@ export type GoalCollectionMappingResult =
   | { readonly status: 'valid'; readonly collection: GoalCollection };
 
 /**
- * T157.7: composes a `GoalCollection` (active goals only) from pulled
+ * Composes a `GoalCollection` (active goals only) from pulled
  * `goals` rows, for the driver hook's pull-adopt branch. Delegates entirely
  * to `mapGoalRowsToDomainEntries` for validation (same "one malformed row
  * invalidates the whole batch" posture), then filters to `'active'` entries
@@ -398,7 +398,7 @@ export function mapGoalRowsToDomainCollection(
 }
 
 /**
- * T157.7: pure diff between a `GoalCollection` before and after a local
+ * Pure diff between a `GoalCollection` before and after a local
  * mutation, emitting the outbox operations that would bring the server up
  * to date. Copies `diffCustomTricksForOutboxOperations`'s shape exactly:
  * key both sides by id, sorted-union id order for determinism, missing in

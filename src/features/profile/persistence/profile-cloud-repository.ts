@@ -1,7 +1,7 @@
-// T155.9: cloud repository for the profile domain (`api.profiles` +
+// Cloud repository for the profile domain (`api.profiles` +
 // `api.user_trick_states`). Speaks only in generated row types
 // (src/shared/supabase/database-types.ts) -- mapping to/from the local
-// UserProfile domain model is explicitly out of scope here (T155.10).
+// UserProfile domain model is explicitly out of scope here.
 //
 // The injected client is always already constructed and scoped to the
 // `api` schema (see src/shared/supabase/supabase-client.ts); this file
@@ -49,7 +49,7 @@ export function createProfileCloudRepository(
       }
     },
 
-    // Not a native `.upsert()` call: T155.5's column-level grants only
+    // Not a native `.upsert()` call: the column-level grants only
     // UPDATE-grant profiles' editable fields, never `user_id` (pinned by
     // the mutation-invariant trigger). Postgrest's generated `INSERT ...
     // ON CONFLICT DO UPDATE` includes the conflict target column itself in
@@ -96,8 +96,7 @@ export function createProfileCloudRepository(
 
     // Same insert-first-then-update-on-conflict pattern as upsertProfile
     // above, for the same reason: `user_id`/`trick_id` (the conflict
-    // target) are never UPDATE-granted (T155.5 pins them as this row's
-    // identity), so a native `.upsert()` fails 42501 against a real
+    // target) are never UPDATE-granted (they are this row's identity), so a native `.upsert()` fails 42501 against a real
     // conflict.
     async upsertTrickState(input) {
       try {

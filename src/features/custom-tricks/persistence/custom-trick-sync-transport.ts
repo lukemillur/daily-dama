@@ -1,10 +1,8 @@
-// T157.5: a `SyncTransportRepository<CustomTrickRow>`-shaped adapter over
+// A `SyncTransportRepository<CustomTrickRow>`-shaped adapter over
 // the real `custom_tricks` table, built directly on `supabase-js` rather
 // than wrapping `createCustomTrickCloudRepository` -- that repository's
-// `upsert`/`remove` methods don't (and per T157.3's plan, deliberately
-// shouldn't) support revision-guarded conditional updates or an
+// `upsert`/`remove` methods don't (and deliberately shouldn't) support revision-guarded conditional updates or an
 // operation-id-based idempotency mechanism, which is this file's whole job.
-// See `.claude/plans/T157.5.md` "The adapter" section for the full design.
 //
 // Structurally simpler than `profile-sync-transport.ts` in the two ways
 // that plan calls out: one table (so `pull` is a single method, typed
@@ -155,7 +153,7 @@ export function createCustomTrickSyncTransportAdapter(
       return { status: 'failed', error: validationError('Malformed custom-trick upsert payload.') };
     }
 
-    // Only name/kentei_rank/steps are UPDATE-grantable columns (T155.5) --
+    // Only name/kentei_rank/steps are UPDATE-grantable columns --
     // the same set `createCustomTrickCloudRepository().upsert()`'s
     // conflict-fallback patch uses.
     const patch = { name: input.name, kentei_rank: input.kentei_rank, steps: input.steps };

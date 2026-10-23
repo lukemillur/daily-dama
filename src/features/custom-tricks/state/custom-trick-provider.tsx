@@ -78,7 +78,7 @@ export function CustomTrickProvider({ children }: PropsWithChildren) {
   });
 
   // Additive: a second, parallel identity-scoped domain instance tracking
-  // sync bookkeeping (T157.5). The primary reducer above stays completely
+  // sync bookkeeping. The primary reducer above stays completely
   // untouched and remains the sole source of truth for the rendered
   // `CustomTrickCollection` -- this hook only pulls/pushes in the background
   // and, on a safe pull-adopt, dispatches the same `customTricksRestored`
@@ -164,7 +164,7 @@ export function useCustomTrickActions() {
   return actions;
 }
 
-// Exposed for a future manual-retry affordance (T160.1) and for tests --
+// Exposed for a future manual-retry affordance and for tests --
 // deliberately no UI consumes this yet.
 export function useCustomTrickSync(): CustomTrickSync {
   const sync = useContext(CustomTrickSyncContext);

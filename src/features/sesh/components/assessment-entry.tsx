@@ -33,9 +33,9 @@ type AssessmentEntryStep =
  * Entry point for a real, timed Kentei assessment run: lets the user pick
  * which slice of the rank ladder to be tested on, builds the ordered trick
  * list for that choice, and hands it to `MultiTrickSesh` (the shared
- * multi-trick practice core from T012). Landings recorded during the run go
- * through the same practice-history path as regular practice, so T007's
- * auto-promotion logic fires naturally on a full rank pass.
+ * multi-trick practice core). Landings recorded during the run go
+ * through the same practice-history path as regular practice, so Kentei rank
+ * auto-promotion fires naturally on a full rank pass.
  *
  * Not to be confused with the self-declared placement quiz in
  * `src/features/onboarding/model/kentei-assessment.ts` — that's a one-time

@@ -4,7 +4,7 @@ import { SYNC_DOMAINS, type SyncDomain } from '@/shared/sync/domain';
  * Pure reducer/state-machine for a single-flight, identity-aware sync run.
  * No React, no Supabase/network calls, no timers, no `Date.now()` -- every
  * timestamp/id/generation is supplied by the caller, exactly like
- * `src/features/sesh/model/sesh.ts`. A future driver (T157.9) is expected to
+ * `src/features/sesh/model/sesh.ts`. A future driver is expected to
  * wrap this in a hook the way `useIdentityScopedDomain`
  * (`src/shared/persistence/use-identity-scoped-domain.ts`) wraps a domain
  * reducer around `useIdentityHandle()` -- that hook is *not* built here.
@@ -55,7 +55,7 @@ export type SyncCoordinatorState =
       readonly identityGeneration: number;
       readonly lastRun: FinishedSyncRun | undefined;
       // Set when the run that produced `lastRun` had a coalesced trigger
-      // queued. A future driver (T157.9) should notice this is defined on
+      // queued. A future driver should notice this is defined on
       // the idle state and immediately dispatch a fresh `syncRequested` for
       // it; this reducer only surfaces the fact, it never starts the rerun
       // itself (no clock/id generation happens inside the reducer). The

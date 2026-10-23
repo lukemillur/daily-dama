@@ -1,8 +1,8 @@
-// T158: the thin React driver wrapping logoutGuardReducer, mirroring
+// The thin React driver wrapping logoutGuardReducer, mirroring
 // use-sync-coordinator.tss own reducer+driver split. Consumes
 // useAuthActions().signOut, useSyncCoordinatorStatus() (state,
 // requestManualSync, pendingCount, discardAllPending), and
-// useIdentityHandle() (generation). See .claude/plans/T158.md decision 6.
+// useIdentityHandle() (generation).
 
 import { useCallback, useEffect, useReducer, useRef } from "react";
 
@@ -21,8 +21,8 @@ import type { DiscardAllPendingResult } from "@/shared/sync/discard-outcome";
 
 // Non-exported: maps the shared coordinator's aggregate discard result to
 // the guard's own, smaller outcome vocabulary (only domain identity, not
-// the raw error -- copy is chosen from the domain list, and raw errors are
-// T248 concerns).
+// the raw error -- copy is chosen from the domain list, and raw errors
+// belong to the app-level local-save warning).
 function toGuardOutcome(result: DiscardAllPendingResult): LogoutGuardDiscardOutcome {
   if (result.status === "failed") {
     return { status: "failed", domains: result.failures.map((failure) => failure.domain) };

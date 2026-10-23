@@ -1,6 +1,5 @@
-// T187.2: automatic most-recent-wins conflict resolution. Replaces the
-// manual `SyncConflictRecord` flow (see `.claude/plans/T187.2.md`) -- every
-// domain sync driver now resolves a detected write conflict inline, in the
+// Automatic most-recent-wins conflict resolution. Every
+// domain sync driver resolves a detected write conflict inline, in the
 // same push loop that discovered it, instead of parking it for a user to
 // choose between in a dedicated screen.
 

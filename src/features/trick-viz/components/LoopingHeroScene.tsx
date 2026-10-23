@@ -9,8 +9,7 @@ import { TrickScene } from './TrickScene';
  * No `children` render prop (no HUD) and no `canvasExtras`-driven
  * OrbitControls -- this is purely for looking at, per the resolved product
  * decision that the hero has no drag/orbit/tap interaction. Used both by
- * the landing-page hero (T123.2) and the sandbox's isolated preview
- * (T123.1), so it's validated once and reused rather than rebuilt.
+ * the landing-page hero and the sandbox's isolated preview, so it's validated once and reused rather than rebuilt.
  */
 export function LoopingHeroScene() {
   return (

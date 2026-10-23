@@ -33,15 +33,14 @@ SplashScreen.preventAutoHideAsync();
 // stay context-free.
 export { FatalErrorFallback as ErrorBoundary };
 
-// T208: a one-time signal auth-callback-screen.tsx's default branch (post-signup-email-
+// A one-time signal auth-callback-screen.tsx's default branch (post-signup-email-
 // verification redirect) attaches to its redirect (`newAccount=1`) -- never set by
 // sign-in-screen.tsx's routine sign-in redirect. Read via useGlobalSearchParams, since this
 // lives above every route and no route-scoped useLocalSearchParams read is available above
 // <Slot />, to show a full-screen, auto-dismissing acknowledgment, then strip it from the URL
-// so a refresh/back-nav doesn't re-show it. Replaces home.tsx's route-scoped T207
-// NewAccountBanner.
+// so a refresh/back-nav doesn't re-show it.
 //
-// T249: this root layout mounts exactly once per browser page load and never remounts on
+// This root layout mounts exactly once per browser page load and never remounts on
 // in-app navigation (<Slot /> just swaps the subtree beneath it). auth-callback-screen.tsx's
 // redirect into this param is a client-side router.replace, not a full page load, so the param
 // almost always arrives *after* this layout has already mounted without it -- the lazy
@@ -82,7 +81,7 @@ export default function TabLayout() {
     if (firstStringOrUndefined(params.newAccount) !== '1') return;
     hasHandledNewAccountParamRef.current = true;
     // This effect is itself the subscription to an external system (the router's params
-    // changing after this component already mounted, per the T249 comment above) -- there is no
+    // changing after this component already mounted, per the comment above) -- there is no
     // synchronous alternative, since render-time params reads can't distinguish "present at
     // mount" from "arrived later" the way this ref-guarded effect does.
     // eslint-disable-next-line react-hooks/set-state-in-effect -- syncing from an external params change, guarded to run once.

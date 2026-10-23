@@ -6,8 +6,7 @@ import { styled, ThemeContext } from 'styled-components/native';
 import { BodyText, Eyebrow } from '@/components/ui/typography';
 import { AppColors } from '@/constants/theme';
 
-// T208: replaces home.tsx's route-scoped T207 NewAccountBanner with a full-screen,
-// auto-dismissing acknowledgment mounted at the root layout, above every route. Reuses
+// A full-screen, auto-dismissing acknowledgment mounted at the root layout, above every route. Reuses
 // RankUpCelebrationModal's presentation mechanism (theme-derived full-bleed overlay,
 // OnboardingRankRevealStep-style layout rhythm) with this feature's own welcome/verified
 // copy -- not the trick-lace celebration copy or component instance -- and sesh.tsx's

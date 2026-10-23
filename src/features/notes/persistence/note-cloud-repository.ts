@@ -1,7 +1,7 @@
-// T155.9: cloud repository for the notes domain (`api.notes`, same shape as
+// Cloud repository for the notes domain (`api.notes`, same shape as
 // goals plus editable `body`). Speaks only in generated row types
 // (src/shared/supabase/database-types.ts) -- mapping to/from the local Note
-// domain model is explicitly out of scope here (T155.13).
+// domain model is explicitly out of scope here.
 //
 // `list` deliberately does NOT filter out tombstoned (deleted_at is not
 // null) rows -- see goal-cloud-repository.ts's comment; the same reasoning
@@ -24,7 +24,7 @@ export type NoteRow = Database['api']['Tables']['notes']['Row'];
 export type NoteInsert = TablesInsert<{ schema: 'api' }, 'notes'>;
 export type NoteUpdate = TablesUpdate<{ schema: 'api' }, 'notes'>;
 
-// The T155.5 column-level UPDATE grant on api.notes covers body and
+// The column-level UPDATE grant on api.notes covers body and
 // deleted_at only -- the public patch type mirrors that exactly.
 export type NoteCloudPatch = Pick<NoteUpdate, 'body' | 'deleted_at'>;
 

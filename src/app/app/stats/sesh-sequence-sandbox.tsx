@@ -10,7 +10,7 @@ import { KENDAMA_KENTEI_TRICKS } from '@/features/tricks/data/kendama-kentei-tri
 import { selectAvailablePracticeTricks } from '@/features/tricks/model/trick-directory';
 
 /**
- * Dev-only sandbox for T012's multi-trick sequencing layer. Nested under
+ * Dev-only sandbox for the multi-trick sequencing layer (`MultiTrickSesh`). Nested under
  * the stats route for the same reason trick-viz-sandbox.tsx is: it already
  * has a Stack layout, whereas the NativeTabs/Tabs root only hosts routes
  * tied to a registered tab trigger. Not linked from the tab nav; only

@@ -91,8 +91,7 @@ export function selectRegularSessions(
   return sessions.filter((session) => session.origin === undefined);
 }
 
-// Guest sign-up invite eligibility (T166, extends the earlier isFirstEverRegularSession from
-// T153.12): true on the guest's first-ever completed regular (non-assessment) Sesh, then again
+// Guest sign-up invite eligibility: true on the guest's first-ever completed regular (non-assessment) Sesh, then again
 // every 5th regular Sesh after that (the 6th, 11th, 16th, ...) so guests who declined the first
 // invite keep getting re-invited on a steady cadence rather than only once. `priorSessions` must
 // be the history as it stood BEFORE this summary was recorded (mirrors isFirstLaceForTrick's

@@ -7,9 +7,9 @@ export type OutboxFailureKind = 'retryable' | 'conflict';
  * One durable, serializable sync operation queued against a domain's
  * outbox. `payload` is intentionally a plain `Record<string, unknown>`, not
  * an imported `CustomTrickInsert`/`GoalInsert`/etc. -- that keeps
- * `shared/sync` decoupled from `features/*`. Future integration tickets
- * (T157.4+) are expected to pass the already-mapped `*Insert` shape from
- * each domain's `*-cloud-mapping.ts` as `payload`.
+ * `shared/sync` decoupled from `features/*`. Each domain's sync driver
+ * passes the already-mapped `*Insert` shape from its `*-cloud-mapping.ts`
+ * as `payload`.
  */
 export interface OutboxOperation {
   readonly operationId: string; // stable across retries; the idempotency key

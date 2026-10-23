@@ -71,7 +71,7 @@ export function PracticeHistoryProvider({ children }: PropsWithChildren) {
   });
 
   // Additive: a second, parallel identity-scoped domain instance tracking
-  // sync bookkeeping (T157.6). The primary reducer above stays completely
+  // sync bookkeeping. The primary reducer above stays completely
   // untouched and remains the sole source of truth for the rendered
   // `PracticeHistory` -- this hook only pulls/pushes in the background and,
   // on a pull-adopt merge, dispatches the same `historyRestored` action
@@ -133,7 +133,7 @@ export function usePracticeHistoryActions() {
   return actions;
 }
 
-// Exposed for a future manual-retry affordance (T160.1) and for tests --
+// Exposed for a future manual-retry affordance and for tests --
 // deliberately no UI consumes this yet.
 export function usePracticeHistorySync(): PracticeHistorySync {
   const sync = useContext(PracticeHistorySyncContext);

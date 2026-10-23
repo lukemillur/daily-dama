@@ -24,7 +24,7 @@ export default function HomeScreen() {
   const { identity } = useIdentityHandle();
   const { state: guestImportState } = useGuestImport();
   const { runSync } = useUserProfileSync();
-  // T186.1: a signed-in identity with a pending or in-progress guest
+  // A signed-in identity with a pending or in-progress guest
   // import (nonzero-local awaitingConfirmation, or anything past it) must
   // never see onboarding a second time -- the import may still be writing
   // hasCompletedOnboarding/kenteiRank. See isGuestImportPendingResolution's
@@ -32,7 +32,7 @@ export default function HomeScreen() {
   // deliberately excluded (it's permanently parked, not pending).
   const importPending = identity.kind === 'user' && isGuestImportPendingResolution(guestImportState);
 
-  // T199: the guest import's upload phase pushes the imported profile
+  // The guest import's upload phase pushes the imported profile
   // (hasCompletedOnboarding/kenteiRank) straight to the cloud profile row
   // via its own outbox push, never through the primary UserProfile
   // reducer's own sync/hydration path. Once the import reaches

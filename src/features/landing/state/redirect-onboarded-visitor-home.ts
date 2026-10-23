@@ -7,7 +7,7 @@ import { useCachedOnboardingStatus } from './use-cached-onboarding-status';
 /**
  * Redirects a fresh arrival at `/` straight to `/app/home` when onboarding is
  * already complete. Skipped when the visit carries the in-app "exit to
- * landing" signal (see landing-navigation.ts) so T112.6's link isn't a dead
+ * landing" signal (see landing-navigation.ts) so that link isn't a dead
  * end.
  */
 export function useRedirectOnboardedVisitorHome() {

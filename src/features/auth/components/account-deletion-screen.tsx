@@ -64,7 +64,7 @@ export function AccountDeletionScreen() {
     }
 
     setSucceeded(true);
-    // T188: navigate out of the `/app/*` tabs tree immediately rather than
+    // Navigate out of the `/app/*` tabs tree immediately rather than
     // relying on staying mounted here. The post-sign-out guest identity's
     // own (unrelated) onboarding status flips AppTabs/AppTabs.web's tab
     // visibility, which unregisters every non-Home tab -- including this

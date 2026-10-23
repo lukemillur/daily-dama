@@ -1,8 +1,7 @@
-// T155.11: pure mapping + runtime response validation between the local
+// Pure mapping + runtime response validation between the local
 // `CustomTrick`/`CustomTrickCollection` domain shapes and the
-// `custom_tricks` cloud rows. Explicitly does NOT wire into the provider,
-// reducer, or any synchronization/diff logic -- that's a later ticket, same
-// as T155.10 deferred profile wiring.
+// `custom_tricks` cloud rows. Pure: it does not touch the provider,
+// reducer, or sync state; the sync transport and envelope call into it.
 //
 // Row -> domain direction returns a discriminated Result-style type
 // because incoming rows are an untrusted runtime boundary (already
@@ -331,7 +330,7 @@ export function mapCustomTrickCollectionToUpsertInputs(
 }
 
 /**
- * T157.5: pure diff between a `CustomTrickCollection` before and after a
+ * Pure diff between a `CustomTrickCollection` before and after a
  * local mutation, emitting the outbox operations that would bring the
  * server up to date. Unlike `diffProfileForOutboxOperations`, there is only
  * one row type here (no scalar/child-table split) so there is no "scalar op

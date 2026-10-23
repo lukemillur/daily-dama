@@ -7,8 +7,8 @@ import { createUserIdentity, GUEST_IDENTITY, type Identity } from '@/shared/pers
  * Returns `undefined` for `'initializing'` and `'refreshFailed'` — the
  * identity is genuinely unresolved in both (Supabase hasn't reported a
  * session yet, or a bounded refresh attempt failed with no usable cached
- * session), not safely assumed to be `guest`. T156.2 decides what a provider
- * does with an unresolved identity; this function only refuses to guess. A
+ * session), not safely assumed to be `guest`. Each provider decides what to
+ * do with an unresolved identity; this function only refuses to guess. A
  * domain provider must keep blocking under `refreshFailed` so nothing
  * hydrates under a guessed identity while the user is on the recovery screen.
  *
