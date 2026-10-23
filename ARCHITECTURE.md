@@ -2,6 +2,8 @@
 
 > An as-built guide to the application as of August 14, 2026.
 >
+> **Out of date for the backend:** since this snapshot, the app gained Supabase Auth, per-domain cloud sync (`src/shared/sync/`), guest import, and account deletion. This guide still describes the pre-sync, local-only system. [`AGENTS.md`](AGENTS.md) § State and persistence boundaries holds the current invariants.
+>
 > This document is primarily a briefing for the repository owner: it explains what the system does, where responsibilities live, why the important boundaries exist, and which tradeoffs are intentional. It is not an instruction file that agents are expected to discover implicitly.
 
 ## Scope
