@@ -5,7 +5,8 @@ import { stringHoleInsideLocal, TAMA_STRING_INSIDE } from './stringing';
 import { rotate } from './vec';
 import { MM } from './views';
 
-export type StrungLayout = 'hanging' | 'drop';
+/** How a run starts: hanging still, dropped from the hand, or a Big Cup attempt. */
+export type StrungLayout = 'hanging' | 'drop' | 'big-cup';
 
 /** Where the ball is held before a drop: in front of the player, past the base cup. */
 export const DROP_TAMA_CENTRE = [0, 30, 140] as const;

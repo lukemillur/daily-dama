@@ -3,6 +3,7 @@ import { Canvas, useFrame, type ThreeEvent } from '@react-three/fiber';
 import { useRef, useState } from 'react';
 import { Group, Mesh, Plane, TubeGeometry, Vector3 } from 'three';
 
+import { advanceBigCupRun, createBigCupRun, type BigCupPhase, type BigCupRun } from '../model/big-cup';
 import { createStringSim, stepStringSim, type StringSim } from '../model/string-sim';
 import { bigCupGripPose, STRING_RADIUS, type Handedness } from '../model/stringing';
 import { DROP_TAMA_CENTRE, followHand, stringCurve, type StrungLayout } from '../model/strung-render';
@@ -15,12 +16,18 @@ type StrungKendamaSceneProps = {
   /** Changes to restart the simulation from `layout`. */
   runToken: string;
   slowMotion?: boolean;
+  /** Reports each Big Cup phase change while an attempt runs. */
+  onTrickPhase?: (phase: BigCupPhase['kind']) => void;
 };
 
 const BACKGROUND = '#efe9df';
-/** Behind the player's right shoulder, looking where they look. */
-const CAMERA_POSITION = [2.2, 0.3, 10.5] as const;
-const CAMERA_TARGET = [-0.2, -2.1, 0] as const;
+/**
+ * Behind the player's right shoulder, looking where they look, and far
+ * enough back to keep both the hanging ball and a Big Cup's flight above
+ * the hand in frame.
+ */
+const CAMERA_POSITION = [2.9, 1.9, 13.6] as const;
+const CAMERA_TARGET = [-0.2, -0.6, 0] as const;
 /** Below the hanging ball, so its shadow grounds the scene. */
 const FLOOR_Y = -4.4;
 
@@ -33,11 +40,21 @@ type RigProps = StrungKendamaSceneProps & {
  * lives in a ref, not React state: it changes 480 times a second and nothing
  * outside this frame loop needs to re-render when it does.
  */
-function StrungRig({ handedness, layout, runToken, slowMotion = false, onDragChange }: RigProps) {
+function StrungRig({
+  handedness,
+  layout,
+  runToken,
+  slowMotion = false,
+  onTrickPhase,
+  onDragChange,
+}: RigProps) {
   const kenRef = useRef<Group>(null);
   const tamaRef = useRef<Group>(null);
   const stringRef = useRef<Mesh>(null);
   const simRef = useRef<StringSim | null>(null);
+  /** Set while a trick drives the hand; the pointer then has no say. */
+  const trickRef = useRef<BigCupRun | null>(null);
+  const lastPhase = useRef<BigCupPhase['kind'] | null>(null);
   const lastRunToken = useRef<string | null>(null);
 
   // The hand, in mm. `handTarget` follows the pointer; `hand` trails it.
@@ -59,20 +76,37 @@ function StrungRig({ handedness, layout, runToken, slowMotion = false, onDragCha
       lastRunToken.current = runToken;
       hand.current.set(0, 0, 0);
       handTarget.current.set(0, 0, 0);
-      simRef.current = createStringSim(
-        handedness,
-        bigCupGripPose([0, 0, 0]),
-        layout === 'drop' ? { kind: 'held', tamaCentre: DROP_TAMA_CENTRE } : { kind: 'hanging' },
-      );
+      lastPhase.current = null;
+      if (layout === 'big-cup') {
+        trickRef.current = createBigCupRun(handedness);
+        simRef.current = trickRef.current.sim;
+      } else {
+        trickRef.current = null;
+        simRef.current = createStringSim(
+          handedness,
+          bigCupGripPose([0, 0, 0]),
+          layout === 'drop' ? { kind: 'held', tamaCentre: DROP_TAMA_CENTRE } : { kind: 'hanging' },
+        );
+      }
     }
 
     // A long frame (tab in the background) should not fling everything.
     const delta = Math.min(frameDelta, 1 / 20) * (slowMotion ? 0.25 : 1);
-    followHand(hand.current, handTarget.current, delta);
-    const pose = bigCupGripPose([hand.current.x, hand.current.y, hand.current.z]);
-
     const sim = simRef.current;
-    stepStringSim(sim, pose, delta);
+    const trick = trickRef.current;
+    if (trick) {
+      advanceBigCupRun(trick, delta);
+      const [x, y, z] = trick.attempt.hand.position;
+      hand.current.set(x, y, z);
+      handTarget.current.copy(hand.current);
+      if (trick.attempt.phase.kind !== lastPhase.current) {
+        lastPhase.current = trick.attempt.phase.kind;
+        onTrickPhase?.(lastPhase.current);
+      }
+    } else {
+      followHand(hand.current, handTarget.current, delta);
+      stepStringSim(sim, bigCupGripPose([hand.current.x, hand.current.y, hand.current.z]), delta);
+    }
 
     ken.position.set(sim.kenPosition[0] * MM, sim.kenPosition[1] * MM, sim.kenPosition[2] * MM);
     ken.quaternion.set(sim.kenQuaternion[0], sim.kenQuaternion[1], sim.kenQuaternion[2], sim.kenQuaternion[3]);
@@ -90,6 +124,7 @@ function StrungRig({ handedness, layout, runToken, slowMotion = false, onDragCha
   });
 
   const startDrag = (event: ThreeEvent<PointerEvent>) => {
+    if (trickRef.current) return;
     event.stopPropagation();
     (event.target as Element).setPointerCapture(event.pointerId);
 

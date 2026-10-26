@@ -4,11 +4,22 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { KendamaModelScene } from '@/features/kendama-model/components/KendamaModelScene';
 import { StrungKendamaScene } from '@/features/kendama-model/components/StrungKendamaScene';
+import type { BigCupPhase } from '@/features/kendama-model/model/big-cup';
 import type { Handedness } from '@/features/kendama-model/model/stringing';
 import type { StrungLayout } from '@/features/kendama-model/model/strung-render';
 import { MODEL_VIEWS, type ModelView } from '@/features/kendama-model/model/views';
 
 type Mode = 'anatomy' | 'strung';
+
+const PHASE_LABELS: Record<BigCupPhase['kind'], string> = {
+  settle: 'Big Cup · steadying the ball',
+  pull: 'Big Cup · pull',
+  rise: 'Big Cup · ball rising, cup moving under',
+  catch: 'Big Cup · meeting the ball',
+  absorb: 'Big Cup · cushioning',
+  landed: 'Big Cup · landed',
+  missed: 'Big Cup · missed',
+};
 
 type ChipProps = {
   label: string;
@@ -45,6 +56,7 @@ export default function KendamaModelSandbox() {
   const [layout, setLayout] = useState<StrungLayout>('hanging');
   const [slowMotion, setSlowMotion] = useState(false);
   const [runCount, setRunCount] = useState(0);
+  const [trickPhase, setTrickPhase] = useState<BigCupPhase['kind'] | null>(null);
 
   if (!__DEV__) {
     return <Redirect href="/app/home" />;
@@ -52,6 +64,7 @@ export default function KendamaModelSandbox() {
 
   const restart = (next: StrungLayout) => {
     setLayout(next);
+    setTrickPhase(null);
     setRunCount((count) => count + 1);
   };
 
@@ -65,6 +78,7 @@ export default function KendamaModelSandbox() {
           layout={layout}
           runToken={`${handedness}:${layout}:${runCount}`}
           slowMotion={slowMotion}
+          onTrickPhase={setTrickPhase}
         />
       )}
 
@@ -89,6 +103,7 @@ export default function KendamaModelSandbox() {
           </View>
         ) : (
           <View style={styles.row}>
+            <Chip label="Big Cup" onPress={() => restart('big-cup')} />
             <Chip label="Drop" onPress={() => restart('drop')} />
             <Chip label="Reset" onPress={() => restart('hanging')} />
             <Chip
@@ -108,9 +123,11 @@ export default function KendamaModelSandbox() {
           <Chip label="Anatomy" active={mode === 'anatomy'} onPress={() => setMode('anatomy')} />
         </View>
         <Text style={styles.readout}>
-          {mode === 'strung'
-            ? 'Big-cup grip, seen from behind you · drag the ken to move your hand'
-            : 'Drag to orbit · scroll to zoom'}
+          {mode === 'anatomy'
+            ? 'Drag to orbit · scroll to zoom'
+            : layout === 'big-cup' && trickPhase
+              ? PHASE_LABELS[trickPhase]
+              : 'Big-cup grip, seen from behind you · drag the ken to move your hand'}
         </Text>
       </View>
     </View>

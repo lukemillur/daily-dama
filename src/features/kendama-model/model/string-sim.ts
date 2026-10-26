@@ -83,6 +83,8 @@ export type StringSim = {
   kenPreviousPosition: Float64Array;
   /** Which particles touched the ken on the last collision pass. */
   touching: Uint8Array;
+  /** Whether the ball touched the ken during the last substep: what the hand feels. */
+  tamaTouching: boolean;
   /** Unconsumed time from the last call, carried so playback stays fixed-step. */
   accumulator: number;
 };
@@ -131,6 +133,7 @@ export function createStringSim(handedness: Handedness, ken: Pose, layout: Initi
     kenQuaternion: new Float64Array(ken.quaternion),
     kenPreviousPosition: new Float64Array(ken.position),
     touching: new Uint8Array(PARTICLES),
+    tamaTouching: false,
     accumulator: 0,
   };
 
@@ -413,6 +416,7 @@ function substep(sim: StringSim, h: number) {
   w[1] = (2 * sign * scratchQuat[1]) / h;
   w[2] = (2 * sign * scratchQuat[2]) / h;
 
+  sim.tamaTouching = tamaContact;
   if (tamaContact) resolveTamaContactVelocity(sim, tamaNormal, h);
 }
 
@@ -472,11 +476,7 @@ function resolveTamaContactVelocity(sim: StringSim, n: Float64Array, h: number) 
  * not depend on the display's frame rate.
  */
 export function stepStringSim(sim: StringSim, ken: Pose, dt: number): void {
-  sim.accumulator += dt;
-  // The epsilon absorbs float drift, so 1/60 s is exactly 8 substeps every
-  // frame rather than occasionally 7.
-  const steps = Math.min(Math.floor(sim.accumulator / SUBSTEP + 1e-6), MAX_SUBSTEPS_PER_CALL);
-  sim.accumulator = steps === MAX_SUBSTEPS_PER_CALL ? 0 : Math.max(sim.accumulator - steps * SUBSTEP, 0);
+  const steps = takeSubsteps(sim, dt);
   if (steps === 0) return;
 
   const startPosition = Float64Array.from(sim.kenPosition);
@@ -493,6 +493,39 @@ export function stepStringSim(sim: StringSim, ken: Pose, dt: number): void {
     substep(sim, SUBSTEP);
   }
   sim.kenPreviousPosition.set(sim.kenPosition);
+}
+
+/**
+ * Advances by `dt` seconds with the hand driven at the substep rate:
+ * `drive` sees the simulation as it stands before each substep and returns
+ * the ken's pose for it. A controller that reacts to the ball needs this;
+ * one pose per display frame would make its reactions depend on the frame
+ * rate.
+ */
+export function stepStringSimDriven(
+  sim: StringSim,
+  dt: number,
+  drive: (sim: StringSim, h: number) => Pose,
+): void {
+  const steps = takeSubsteps(sim, dt);
+  for (let step = 0; step < steps; step += 1) {
+    const pose = drive(sim, SUBSTEP);
+    sim.kenPreviousPosition.set(sim.kenPosition);
+    sim.kenPosition.set(pose.position);
+    sim.kenQuaternion.set(pose.quaternion);
+    substep(sim, SUBSTEP);
+  }
+  sim.kenPreviousPosition.set(sim.kenPosition);
+}
+
+/** Whole substeps owed for `dt`, carrying the remainder in the accumulator. */
+function takeSubsteps(sim: StringSim, dt: number): number {
+  sim.accumulator += dt;
+  // The epsilon absorbs float drift, so 1/60 s is exactly 8 substeps every
+  // frame rather than occasionally 7.
+  const steps = Math.min(Math.floor(sim.accumulator / SUBSTEP + 1e-6), MAX_SUBSTEPS_PER_CALL);
+  sim.accumulator = steps === MAX_SUBSTEPS_PER_CALL ? 0 : Math.max(sim.accumulator - steps * SUBSTEP, 0);
+  return steps;
 }
 
 /** The rope as world points, hole to ball, for rendering. */
