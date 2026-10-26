@@ -8,6 +8,8 @@ Full project context (state boundaries, product shape, collaboration style) live
 
 **A replacement model exists but is not wired in.** `src/features/kendama-model/` is an anatomically measured kendama (handle, separate hourglass sarado, tama), in millimetres, measured from a 3D scan of a Sweets "Boost". View it at `/app/stats/kendama-model-sandbox`. Its proportions differ from `KENDAMA_LAYOUT`: the sarado is a separate crosspiece, not cups on arms. Adopting it here is therefore a geometry change, and the trick tests are the gate.
 
+It is also strung, right-handed by default, with simulated string physics (`model/string-sim.ts`): a kinematic ken, a 20-point string solved directly as a tridiagonal chain each step, and a rigid tama tied at its string hole. Collision uses the ken's own lathe profiles (`model/collision.ts`). Read the comments on `PARTICLE_MASS` and `solveString` before changing either: lighter string particles or an iterative solve make the string stretch and bounce.
+
 ## 1. What this is
 
 Procedural 3D kendama trick visualizations — built from primitives, no licensed or imported assets, keyframed rather than physics-simulated. Rendered with `react-three-fiber` + `expo-gl`. Currently a standalone dev sandbox at `src/app/stats/trick-viz-sandbox.tsx`.

@@ -3,48 +3,115 @@ import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { KendamaModelScene } from '@/features/kendama-model/components/KendamaModelScene';
+import { StrungKendamaScene } from '@/features/kendama-model/components/StrungKendamaScene';
+import type { Handedness } from '@/features/kendama-model/model/stringing';
+import type { StrungLayout } from '@/features/kendama-model/model/strung-render';
 import { MODEL_VIEWS, type ModelView } from '@/features/kendama-model/model/views';
 
+type Mode = 'anatomy' | 'strung';
+
+type ChipProps = {
+  label: string;
+  active?: boolean;
+  role?: 'button' | 'switch';
+  onPress: () => void;
+};
+
+function Chip({ label, active = false, role = 'button', onPress }: ChipProps) {
+  return (
+    <Pressable
+      accessibilityRole={role}
+      accessibilityState={role === 'switch' ? { checked: active } : { selected: active }}
+      onPress={onPress}
+      style={[styles.chip, active && styles.chipActive]}
+    >
+      <Text style={styles.chipLabel}>{label}</Text>
+    </Pressable>
+  );
+}
+
 /**
- * Dev-only turntable for the anatomical kendama model, independent of the
- * trick visualization. Nested under stats for the same reason as the trick
- * sandbox: the tab router only hosts routes with a registered tab trigger.
+ * Dev-only sandbox for the anatomical kendama model, independent of the
+ * trick visualization: a static turntable of the parts, and the kendama
+ * strung with simulated string physics. Nested under stats for the same
+ * reason as the trick sandbox: the tab router only hosts routes with a
+ * registered tab trigger.
  */
 export default function KendamaModelSandbox() {
+  const [mode, setMode] = useState<Mode>('strung');
   const [view, setView] = useState<ModelView>('spike');
   const [spinning, setSpinning] = useState(false);
+  const [handedness, setHandedness] = useState<Handedness>('right');
+  const [layout, setLayout] = useState<StrungLayout>('hanging');
+  const [slowMotion, setSlowMotion] = useState(false);
+  const [runCount, setRunCount] = useState(0);
 
   if (!__DEV__) {
     return <Redirect href="/app/home" />;
   }
 
+  const restart = (next: StrungLayout) => {
+    setLayout(next);
+    setRunCount((count) => count + 1);
+  };
+
   return (
     <View style={styles.root}>
-      <KendamaModelScene view={view} autoRotate={spinning} />
+      {mode === 'anatomy' ? (
+        <KendamaModelScene view={view} autoRotate={spinning} />
+      ) : (
+        <StrungKendamaScene
+          handedness={handedness}
+          layout={layout}
+          runToken={`${handedness}:${layout}:${runCount}`}
+          slowMotion={slowMotion}
+        />
+      )}
+
       {/* Bottom stack: the web tab nav's hit area covers the top of the route. */}
       <View style={styles.hud}>
+        {mode === 'anatomy' ? (
+          <View style={styles.row}>
+            {MODEL_VIEWS.map((option) => (
+              <Chip
+                key={option.id}
+                label={option.label}
+                active={option.id === view}
+                onPress={() => setView(option.id)}
+              />
+            ))}
+            <Chip
+              label="Turntable"
+              role="switch"
+              active={spinning}
+              onPress={() => setSpinning((on) => !on)}
+            />
+          </View>
+        ) : (
+          <View style={styles.row}>
+            <Chip label="Drop" onPress={() => restart('drop')} />
+            <Chip label="Reset" onPress={() => restart('hanging')} />
+            <Chip
+              label={handedness === 'right' ? 'Right-handed' : 'Left-handed'}
+              onPress={() => setHandedness((side) => (side === 'right' ? 'left' : 'right'))}
+            />
+            <Chip
+              label="Slow-mo"
+              role="switch"
+              active={slowMotion}
+              onPress={() => setSlowMotion((on) => !on)}
+            />
+          </View>
+        )}
         <View style={styles.row}>
-          {MODEL_VIEWS.map((option) => (
-            <Pressable
-              key={option.id}
-              accessibilityRole="button"
-              accessibilityState={{ selected: option.id === view }}
-              onPress={() => setView(option.id)}
-              style={[styles.chip, option.id === view && styles.chipActive]}
-            >
-              <Text style={styles.chipLabel}>{option.label}</Text>
-            </Pressable>
-          ))}
-          <Pressable
-            accessibilityRole="switch"
-            accessibilityState={{ checked: spinning }}
-            onPress={() => setSpinning((on) => !on)}
-            style={[styles.chip, spinning && styles.chipActive]}
-          >
-            <Text style={styles.chipLabel}>Turntable</Text>
-          </Pressable>
+          <Chip label="Strung" active={mode === 'strung'} onPress={() => setMode('strung')} />
+          <Chip label="Anatomy" active={mode === 'anatomy'} onPress={() => setMode('anatomy')} />
         </View>
-        <Text style={styles.readout}>Drag to orbit · scroll to zoom</Text>
+        <Text style={styles.readout}>
+          {mode === 'strung'
+            ? 'Big-cup grip, seen from behind you · drag the ken to move your hand'
+            : 'Drag to orbit · scroll to zoom'}
+        </Text>
       </View>
     </View>
   );
@@ -89,5 +156,7 @@ const styles = StyleSheet.create({
   readout: {
     color: '#8a7a66',
     fontSize: 12,
+    textAlign: 'center',
+    paddingHorizontal: 16,
   },
 });
