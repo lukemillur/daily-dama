@@ -6,6 +6,8 @@ Full project context (state boundaries, product shape, collaboration style) live
 
 **Changing how the kendama looks?** §5, §6 and §16. The last of those lists what is still weak and the rules a change must not break.
 
+**A replacement model exists but is not wired in.** `src/features/kendama-model/` is an anatomically measured kendama (handle, separate hourglass sarado, tama), in millimetres, measured from a 3D scan of a Sweets "Boost". View it at `/app/stats/kendama-model-sandbox`. Its proportions differ from `KENDAMA_LAYOUT`: the sarado is a separate crosspiece, not cups on arms. Adopting it here is therefore a geometry change, and the trick tests are the gate.
+
 ## 1. What this is
 
 Procedural 3D kendama trick visualizations — built from primitives, no licensed or imported assets, keyframed rather than physics-simulated. Rendered with `react-three-fiber` + `expo-gl`. Currently a standalone dev sandbox at `src/app/stats/trick-viz-sandbox.tsx`.
