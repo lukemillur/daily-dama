@@ -78,15 +78,41 @@ export const BIG_CUP_GRIP_QUATERNION: Quat = [
 ];
 
 /**
- * The ken in the big-cup grip with its sarado centred on `hand`. The hand is
- * modelled at the sarado so dragging moves the part the player watches.
+ * Spike up, tipped back from the big-cup grip by a quarter turn of the
+ * wrist: the spike rises from pointing away to pointing up, and the big cup
+ * turns from up to face the player.
  */
-export function bigCupGripPose(hand: Vec3): Pose {
+export const SPIKE_UP_GRIP_QUATERNION: Quat = (() => {
+  const q = new Quaternion()
+    .setFromAxisAngle(new Vector3(1, 0, 0), Math.PI / 2)
+    .multiply(BIG_CUP_GRIP_ROTATION);
+  return [q.x, q.y, q.z, q.w];
+})();
+
+/** The grips a player can hold the ken in, by the orientation they give it. */
+export type Grip = 'big-cup' | 'spike-up';
+
+export const GRIP_QUATERNIONS: Record<Grip, Quat> = {
+  'big-cup': BIG_CUP_GRIP_QUATERNION,
+  'spike-up': SPIKE_UP_GRIP_QUATERNION,
+};
+
+/**
+ * The ken held at `quaternion` with its sarado centred on `hand`. The hand
+ * is modelled at the sarado so dragging moves the part the player watches,
+ * and so tilting the ken turns it about the sarado rather than the base cup.
+ */
+export function gripPose(hand: Vec3, quaternion: Quat): Pose {
   const saradoOffset = new Vector3(0, SARADO.heightOnHandle, 0).applyQuaternion(
-    BIG_CUP_GRIP_ROTATION,
+    new Quaternion(quaternion[0], quaternion[1], quaternion[2], quaternion[3]),
   );
   return {
     position: [hand[0] - saradoOffset.x, hand[1] - saradoOffset.y, hand[2] - saradoOffset.z],
-    quaternion: BIG_CUP_GRIP_QUATERNION,
+    quaternion,
   };
+}
+
+/** The ken in the big-cup grip with its sarado centred on `hand`. */
+export function bigCupGripPose(hand: Vec3): Pose {
+  return gripPose(hand, BIG_CUP_GRIP_QUATERNION);
 }

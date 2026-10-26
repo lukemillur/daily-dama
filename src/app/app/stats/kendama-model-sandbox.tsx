@@ -5,7 +5,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { KendamaModelScene } from '@/features/kendama-model/components/KendamaModelScene';
 import { StrungKendamaScene } from '@/features/kendama-model/components/StrungKendamaScene';
 import type { BigCupPhase } from '@/features/kendama-model/model/big-cup';
-import type { Handedness } from '@/features/kendama-model/model/stringing';
+import type { Grip, Handedness } from '@/features/kendama-model/model/stringing';
 import type { StrungLayout } from '@/features/kendama-model/model/strung-render';
 import { MODEL_VIEWS, type ModelView } from '@/features/kendama-model/model/views';
 
@@ -53,6 +53,7 @@ export default function KendamaModelSandbox() {
   const [view, setView] = useState<ModelView>('spike');
   const [spinning, setSpinning] = useState(false);
   const [handedness, setHandedness] = useState<Handedness>('right');
+  const [grip, setGrip] = useState<Grip>('big-cup');
   const [layout, setLayout] = useState<StrungLayout>('hanging');
   const [slowMotion, setSlowMotion] = useState(false);
   const [runCount, setRunCount] = useState(0);
@@ -76,6 +77,7 @@ export default function KendamaModelSandbox() {
         <StrungKendamaScene
           handedness={handedness}
           layout={layout}
+          grip={grip}
           runToken={`${handedness}:${layout}:${runCount}`}
           slowMotion={slowMotion}
           onTrickPhase={setTrickPhase}
@@ -111,6 +113,10 @@ export default function KendamaModelSandbox() {
               onPress={() => setHandedness((side) => (side === 'right' ? 'left' : 'right'))}
             />
             <Chip
+              label={grip === 'big-cup' ? 'Big-cup grip' : 'Spike up'}
+              onPress={() => setGrip((held) => (held === 'big-cup' ? 'spike-up' : 'big-cup'))}
+            />
+            <Chip
               label="Slow-mo"
               role="switch"
               active={slowMotion}
@@ -127,7 +133,7 @@ export default function KendamaModelSandbox() {
             ? 'Drag to orbit · scroll to zoom'
             : layout === 'big-cup' && trickPhase
               ? PHASE_LABELS[trickPhase]
-              : 'Big-cup grip, seen from behind you · drag the ken to move your hand'}
+              : 'Seen from behind you · drag the ken to move your hand · Shift-drag to tilt it'}
         </Text>
       </View>
     </View>

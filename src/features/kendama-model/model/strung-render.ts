@@ -1,4 +1,4 @@
-import { CatmullRomCurve3, Vector3 } from 'three';
+import { CatmullRomCurve3, Quaternion, Vector3 } from 'three';
 
 import { stringPoints, type StringSim } from './string-sim';
 import { stringHoleInsideLocal, TAMA_STRING_INSIDE } from './stringing';
@@ -60,4 +60,26 @@ export function stringCurve(sim: StringSim): CatmullRomCurve3 {
  */
 export function followHand(current: Vector3, target: Vector3, delta: number, tau = 0.04): void {
   current.lerp(target, 1 - Math.exp(-delta / tau));
+}
+
+/** `followHand` for the wrist: the ken turns after the pointer over about `tau` seconds. */
+export function followOrientation(current: Quaternion, target: Quaternion, delta: number, tau = 0.06): void {
+  current.slerp(target, 1 - Math.exp(-delta / tau));
+}
+
+/** Radians of turn per pixel of a tilt drag. */
+const TURN_PER_PIXEL = 0.01;
+const WORLD_UP = new Vector3(0, 1, 0);
+const turnAboutUp = new Quaternion();
+const turnAboutRight = new Quaternion();
+
+/**
+ * The orientation a tilt drag asks for: sideways pointer motion turns the
+ * ken about the vertical, and up-and-down motion tips it toward or away from
+ * the camera, about the camera's own right-hand axis.
+ */
+export function dragTurn(start: Quaternion, dx: number, dy: number, cameraRight: Vector3, out: Quaternion): void {
+  turnAboutUp.setFromAxisAngle(WORLD_UP, dx * TURN_PER_PIXEL);
+  turnAboutRight.setFromAxisAngle(cameraRight, dy * TURN_PER_PIXEL);
+  out.copy(turnAboutUp).multiply(turnAboutRight).multiply(start);
 }

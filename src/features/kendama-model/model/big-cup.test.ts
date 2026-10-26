@@ -10,10 +10,10 @@ import {
   type BigCupPhase,
   type BigCupRun,
 } from './big-cup';
-import { HAND_MAX_ACCELERATION } from './hand';
+import { HAND_MAX_ACCELERATION, restingHand } from './hand';
 import { collideWithKen, createKenContact } from './collision';
 import { GRAVITY, SUBSTEP, stringPathLength } from './string-sim';
-import { STRING_LENGTH, type Handedness } from './stringing';
+import { BIG_CUP_GRIP_QUATERNION, STRING_LENGTH, type Handedness } from './stringing';
 import type { Vec3 } from './views';
 
 type Outcome = {
@@ -163,7 +163,7 @@ describe('the Big Cup controller', () => {
   it('calls a miss once the ball falls out of reach, instead of chasing it', () => {
     const catching: BigCupAttempt = {
       phase: { kind: 'catch' },
-      hand: { position: [0, 0, 0], velocity: [0, 0, 0] },
+      hand: restingHand([0, 0, 0], BIG_CUP_GRIP_QUATERNION),
       home: [0, 0, 0],
       time: 1,
     };
@@ -178,7 +178,7 @@ describe('the Big Cup controller', () => {
   it('starts absorbing only when it feels the ball arrive at the seat', () => {
     const catching: BigCupAttempt = {
       phase: { kind: 'catch' },
-      hand: { position: [0, 0, 0], velocity: [0, -1300, 0] },
+      hand: { ...restingHand([0, 0, 0], BIG_CUP_GRIP_QUATERNION), velocity: [0, -1300, 0] },
       home: [0, 0, 0],
       time: 1,
     };

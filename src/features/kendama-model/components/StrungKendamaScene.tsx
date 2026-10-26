@@ -1,18 +1,27 @@
 import { ContactShadows, Environment, Lightformer, OrbitControls } from '@react-three/drei';
 import { Canvas, useFrame, type ThreeEvent } from '@react-three/fiber';
 import { useRef, useState } from 'react';
-import { Group, Mesh, Plane, TubeGeometry, Vector3 } from 'three';
+import { Group, Mesh, Plane, Quaternion, TubeGeometry, Vector3 } from 'three';
 
 import { advanceBigCupRun, createBigCupRun, type BigCupPhase, type BigCupRun } from '../model/big-cup';
 import { createStringSim, stepStringSim, type StringSim } from '../model/string-sim';
-import { bigCupGripPose, STRING_RADIUS, type Handedness } from '../model/stringing';
-import { DROP_TAMA_CENTRE, followHand, stringCurve, type StrungLayout } from '../model/strung-render';
+import { GRIP_QUATERNIONS, gripPose, STRING_RADIUS, type Grip, type Handedness } from '../model/stringing';
+import {
+  dragTurn,
+  DROP_TAMA_CENTRE,
+  followHand,
+  followOrientation,
+  stringCurve,
+  type StrungLayout,
+} from '../model/strung-render';
 import { MM } from '../model/views';
 import { KenModel, TamaModel } from './KendamaParts';
 
 type StrungKendamaSceneProps = {
   handedness: Handedness;
   layout: StrungLayout;
+  /** How the hand holds the ken. Changing it turns the ken without a restart. */
+  grip: Grip;
   /** Changes to restart the simulation from `layout`. */
   runToken: string;
   slowMotion?: boolean;
@@ -43,6 +52,7 @@ type RigProps = StrungKendamaSceneProps & {
 function StrungRig({
   handedness,
   layout,
+  grip,
   runToken,
   slowMotion = false,
   onTrickPhase,
@@ -64,6 +74,14 @@ function StrungRig({
   const grabOffset = useRef(new Vector3());
   const hit = useRef(new Vector3());
 
+  // The wrist. `orientationTarget` follows a tilt drag or a grip change;
+  // `orientation` trails it.
+  const orientation = useRef(new Quaternion());
+  const orientationTarget = useRef(new Quaternion());
+  const lastGrip = useRef<Grip | null>(null);
+  const turning = useRef(false);
+  const turnStart = useRef({ x: 0, y: 0, orientation: new Quaternion() });
+
   useFrame((_, frameDelta) => {
     const ken = kenRef.current;
     const tama = tamaRef.current;
@@ -76,6 +94,9 @@ function StrungRig({
       lastRunToken.current = runToken;
       hand.current.set(0, 0, 0);
       handTarget.current.set(0, 0, 0);
+      orientation.current.set(...GRIP_QUATERNIONS[grip]);
+      orientationTarget.current.copy(orientation.current);
+      lastGrip.current = grip;
       lastPhase.current = null;
       if (layout === 'big-cup') {
         trickRef.current = createBigCupRun(handedness);
@@ -84,7 +105,7 @@ function StrungRig({
         trickRef.current = null;
         simRef.current = createStringSim(
           handedness,
-          bigCupGripPose([0, 0, 0]),
+          gripPose([0, 0, 0], GRIP_QUATERNIONS[grip]),
           layout === 'drop' ? { kind: 'held', tamaCentre: DROP_TAMA_CENTRE } : { kind: 'hanging' },
         );
       }
@@ -94,18 +115,26 @@ function StrungRig({
     const delta = Math.min(frameDelta, 1 / 20) * (slowMotion ? 0.25 : 1);
     const sim = simRef.current;
     const trick = trickRef.current;
+    if (lastGrip.current !== grip) {
+      lastGrip.current = grip;
+      orientationTarget.current.set(...GRIP_QUATERNIONS[grip]);
+    }
     if (trick) {
       advanceBigCupRun(trick, delta);
       const [x, y, z] = trick.attempt.hand.position;
       hand.current.set(x, y, z);
       handTarget.current.copy(hand.current);
+      orientation.current.set(...trick.attempt.hand.orientation);
+      orientationTarget.current.copy(orientation.current);
       if (trick.attempt.phase.kind !== lastPhase.current) {
         lastPhase.current = trick.attempt.phase.kind;
         onTrickPhase?.(lastPhase.current);
       }
     } else {
       followHand(hand.current, handTarget.current, delta);
-      stepStringSim(sim, bigCupGripPose([hand.current.x, hand.current.y, hand.current.z]), delta);
+      followOrientation(orientation.current, orientationTarget.current, delta);
+      const q = orientation.current;
+      stepStringSim(sim, gripPose([hand.current.x, hand.current.y, hand.current.z], [q.x, q.y, q.z, q.w]), delta);
     }
 
     ken.position.set(sim.kenPosition[0] * MM, sim.kenPosition[1] * MM, sim.kenPosition[2] * MM);
@@ -127,6 +156,16 @@ function StrungRig({
     if (trickRef.current) return;
     event.stopPropagation();
     (event.target as Element).setPointerCapture(event.pointerId);
+    onDragChange(true);
+
+    // Shift-drag turns the wrist instead of moving the hand.
+    turning.current = event.nativeEvent.shiftKey;
+    if (turning.current) {
+      turnStart.current.x = event.nativeEvent.clientX;
+      turnStart.current.y = event.nativeEvent.clientY;
+      turnStart.current.orientation.copy(orientationTarget.current);
+      return;
+    }
 
     // Drag in the plane facing the camera through the hand, so the ken
     // moves under the pointer whichever way the view is orbited.
@@ -137,11 +176,21 @@ function StrungRig({
     if (event.ray.intersectPlane(dragPlane.current, hit.current)) {
       grabOffset.current.copy(handScene).sub(hit.current);
     }
-    onDragChange(true);
   };
 
   const moveDrag = (event: ThreeEvent<PointerEvent>) => {
     if (!(event.target as Element).hasPointerCapture(event.pointerId)) return;
+    if (turning.current) {
+      const cameraRight = new Vector3(1, 0, 0).applyQuaternion(event.camera.quaternion);
+      dragTurn(
+        turnStart.current.orientation,
+        event.nativeEvent.clientX - turnStart.current.x,
+        event.nativeEvent.clientY - turnStart.current.y,
+        cameraRight,
+        orientationTarget.current,
+      );
+      return;
+    }
     if (event.ray.intersectPlane(dragPlane.current, hit.current)) {
       handTarget.current.copy(hit.current).add(grabOffset.current).divideScalar(MM);
     }

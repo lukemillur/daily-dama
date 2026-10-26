@@ -8,7 +8,7 @@ import {
   type Handedness,
   type Pose,
 } from './stringing';
-import { addRotation, multiply, normalizeQuat, rotate, slerpInto } from './vec';
+import { addRotation, multiply, normalizeQuat, rotate, rotateInverse, slerpInto } from './vec';
 
 /**
  * A strung kendama: the ken is held (kinematic, posed by the hand), the
@@ -65,7 +65,12 @@ const TAMA_FRICTION = 0.35;
 const TAMA_RESTITUTION = 0.3;
 /** Below this approach speed a contact does not bounce, so a resting ball stays put. */
 const BOUNCE_THRESHOLD = 250;
-const STRING_FRICTION = 0.6;
+/**
+ * Coulomb friction of string on wood. Bounded by how hard the string
+ * presses, so a loaded wrap grips (capstan) while slack string draped over
+ * the ken slides off as soon as the ball pulls it.
+ */
+const STRING_FRICTION = 0.5;
 
 export type StringSim = {
   handedness: Handedness;
@@ -80,7 +85,9 @@ export type StringSim = {
   tamaSpin: Float64Array;
   kenPosition: Float64Array;
   kenQuaternion: Float64Array;
+  /** The ken's pose one substep ago, so contacts know how its surface moved. */
   kenPreviousPosition: Float64Array;
+  kenPreviousQuaternion: Float64Array;
   /** Which particles touched the ken on the last collision pass. */
   touching: Uint8Array;
   /** Whether the ball touched the ken during the last substep: what the hand feels. */
@@ -132,6 +139,7 @@ export function createStringSim(handedness: Handedness, ken: Pose, layout: Initi
     kenPosition: new Float64Array(ken.position),
     kenQuaternion: new Float64Array(ken.quaternion),
     kenPreviousPosition: new Float64Array(ken.position),
+    kenPreviousQuaternion: new Float64Array(ken.quaternion),
     touching: new Uint8Array(PARTICLES),
     tamaTouching: false,
     accumulator: 0,
@@ -373,7 +381,7 @@ function substep(sim: StringSim, h: number) {
         p[a] += n[0] * contact.depth;
         p[a + 1] += n[1] * contact.depth;
         p[a + 2] += n[2] * contact.depth;
-        applyStringFriction(sim, a, n);
+        applyStringFriction(sim, a, n, contact.depth);
       }
       if (i < PARTICLES - 3) {
         const dx = p[a] - sim.tamaPosition[0];
@@ -420,31 +428,64 @@ function substep(sim: StringSim, h: number) {
   if (tamaContact) resolveTamaContactVelocity(sim, tamaNormal, h);
 }
 
-/** Drags a string particle along with the ken where they touch. */
-function applyStringFriction(sim: StringSim, a: number, n: Float64Array) {
+const surfaceLocal = new Float64Array(3);
+const surfaceMotion = new Float64Array(3);
+
+/**
+ * How far the ken's surface at world point `(x, y, z)` moved over the last
+ * substep: the point is carried back through the ken's previous pose, so a
+ * turning ken moves its rim faster than its axis, exactly as a rigid body.
+ */
+export function kenSurfaceDisplacement(sim: StringSim, x: number, y: number, z: number, out: Float64Array): void {
+  rotateInverse(sim.kenQuaternion, x - sim.kenPosition[0], y - sim.kenPosition[1], z - sim.kenPosition[2], surfaceLocal);
+  rotate(sim.kenPreviousQuaternion, surfaceLocal[0], surfaceLocal[1], surfaceLocal[2], out);
+  out[0] = x - (out[0] + sim.kenPreviousPosition[0]);
+  out[1] = y - (out[1] + sim.kenPreviousPosition[1]);
+  out[2] = z - (out[2] + sim.kenPreviousPosition[2]);
+}
+
+/**
+ * Position-based Coulomb friction: the slip cancelled is at most mu times
+ * the penetration just corrected, the position-level stand-in for the
+ * normal force. Slip within that sticks the particle to the ken's moving
+ * surface.
+ */
+function applyStringFriction(sim: StringSim, a: number, n: Float64Array, depth: number) {
   const p = sim.positions;
   const prev = sim.previous;
-  const kx = sim.kenPosition[0] - sim.kenPreviousPosition[0];
-  const ky = sim.kenPosition[1] - sim.kenPreviousPosition[1];
-  const kz = sim.kenPosition[2] - sim.kenPreviousPosition[2];
-  const dx = p[a] - prev[a] - kx;
-  const dy = p[a + 1] - prev[a + 1] - ky;
-  const dz = p[a + 2] - prev[a + 2] - kz;
+  kenSurfaceDisplacement(sim, p[a], p[a + 1], p[a + 2], surfaceMotion);
+  const dx = p[a] - prev[a] - surfaceMotion[0];
+  const dy = p[a + 1] - prev[a + 1] - surfaceMotion[1];
+  const dz = p[a + 2] - prev[a + 2] - surfaceMotion[2];
   const normal = dx * n[0] + dy * n[1] + dz * n[2];
-  prev[a] += STRING_FRICTION * (dx - normal * n[0]);
-  prev[a + 1] += STRING_FRICTION * (dy - normal * n[1]);
-  prev[a + 2] += STRING_FRICTION * (dz - normal * n[2]);
+  const tx = dx - normal * n[0];
+  const ty = dy - normal * n[1];
+  const tz = dz - normal * n[2];
+  const slip = Math.hypot(tx, ty, tz);
+  if (slip < 1e-12) return;
+  const share = Math.min(1, (STRING_FRICTION * depth) / slip);
+  prev[a] += share * tx;
+  prev[a + 1] += share * ty;
+  prev[a + 2] += share * tz;
 }
 
 /**
  * Bounce and friction for the ball against the ken, relative to the ken's
- * own motion so a moving cup carries the ball with it.
+ * surface where they touch, so a moving or tilting cup carries the ball.
  */
 function resolveTamaContactVelocity(sim: StringSim, n: Float64Array, h: number) {
   const v = sim.tamaVelocity;
-  const rx = v[0] - (sim.kenPosition[0] - sim.kenPreviousPosition[0]) / h;
-  const ry = v[1] - (sim.kenPosition[1] - sim.kenPreviousPosition[1]) / h;
-  const rz = v[2] - (sim.kenPosition[2] - sim.kenPreviousPosition[2]) / h;
+  const c = sim.tamaPosition;
+  kenSurfaceDisplacement(
+    sim,
+    c[0] - n[0] * TAMA.radius,
+    c[1] - n[1] * TAMA.radius,
+    c[2] - n[2] * TAMA.radius,
+    surfaceMotion,
+  );
+  const rx = v[0] - surfaceMotion[0] / h;
+  const ry = v[1] - surfaceMotion[1] / h;
+  const rz = v[2] - surfaceMotion[2] / h;
   const normalSpeed = rx * n[0] + ry * n[1] + rz * n[2];
   const tx = rx - normalSpeed * n[0];
   const ty = ry - normalSpeed * n[1];
@@ -484,7 +525,7 @@ export function stepStringSim(sim: StringSim, ken: Pose, dt: number): void {
 
   for (let step = 1; step <= steps; step += 1) {
     const t = step / steps;
-    sim.kenPreviousPosition.set(sim.kenPosition);
+    rememberKenPose(sim);
     for (let k = 0; k < 3; k += 1) {
       sim.kenPosition[k] = startPosition[k] + (ken.position[k] - startPosition[k]) * t;
     }
@@ -492,7 +533,7 @@ export function stepStringSim(sim: StringSim, ken: Pose, dt: number): void {
     normalizeQuat(sim.kenQuaternion);
     substep(sim, SUBSTEP);
   }
-  sim.kenPreviousPosition.set(sim.kenPosition);
+  rememberKenPose(sim);
 }
 
 /**
@@ -510,12 +551,17 @@ export function stepStringSimDriven(
   const steps = takeSubsteps(sim, dt);
   for (let step = 0; step < steps; step += 1) {
     const pose = drive(sim, SUBSTEP);
-    sim.kenPreviousPosition.set(sim.kenPosition);
+    rememberKenPose(sim);
     sim.kenPosition.set(pose.position);
     sim.kenQuaternion.set(pose.quaternion);
     substep(sim, SUBSTEP);
   }
+  rememberKenPose(sim);
+}
+
+function rememberKenPose(sim: StringSim) {
   sim.kenPreviousPosition.set(sim.kenPosition);
+  sim.kenPreviousQuaternion.set(sim.kenQuaternion);
 }
 
 /** Whole substeps owed for `dt`, carrying the remainder in the accumulator. */

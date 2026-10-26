@@ -73,3 +73,27 @@ export function slerpInto(a: ReadVec, b: ReadVec, t: number, out: Q4): void {
   const sb = (sign * Math.sin(t * angle)) / Math.sin(angle);
   for (let i = 0; i < 4; i += 1) out[i] = a[i] * sa + b[i] * sb;
 }
+
+const relative = new Float64Array(4);
+
+/**
+ * The rotation vector (axis × angle, radians) that turns `from` into `to`
+ * the short way round, in world axes: the log of `to ⊗ from⁻¹`.
+ */
+export function rotationBetween(from: ReadVec, to: ReadVec, out: V3): void {
+  conjugate[0] = -from[0];
+  conjugate[1] = -from[1];
+  conjugate[2] = -from[2];
+  conjugate[3] = from[3];
+  multiply(to, conjugate, relative);
+  // q and -q are the same rotation; the positive-w one is the short way.
+  const sign = relative[3] < 0 ? -1 : 1;
+  const x = sign * relative[0], y = sign * relative[1], z = sign * relative[2];
+  const w = Math.min(sign * relative[3], 1);
+  const sine = Math.hypot(x, y, z);
+  // angle / sin(angle / 2), which tends to 2 as the rotation vanishes.
+  const scale = sine < 1e-9 ? 2 : (2 * Math.atan2(sine, w)) / sine;
+  out[0] = x * scale;
+  out[1] = y * scale;
+  out[2] = z * scale;
+}

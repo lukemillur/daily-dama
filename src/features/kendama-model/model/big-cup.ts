@@ -1,7 +1,14 @@
 import { cupSeatOffset, SARADO, TAMA } from './anatomy';
-import { HAND_MAX_ACCELERATION, moveHand, restingHand, trackAxis, type Hand } from './hand';
+import {
+  HAND_MAX_ACCELERATION,
+  moveHand,
+  restingHand,
+  trackAxis,
+  trackOrientation,
+  type Hand,
+} from './hand';
 import { createStringSim, GRAVITY, stepStringSimDriven, type StringSim } from './string-sim';
-import { bigCupGripPose, type Handedness } from './stringing';
+import { BIG_CUP_GRIP_QUATERNION, bigCupGripPose, gripPose, type Handedness } from './stringing';
 import type { Vec3 } from './views';
 
 /**
@@ -83,6 +90,8 @@ const MIN_INTERCEPT_TIME = 0.03;
  */
 const ALIGN_ROOM = 1.2;
 const ABSORB_OMEGA = 14;
+/** The wrist holds the grip steady against the string's tug. */
+const GRIP_OMEGA = 60;
 
 /** Within this of the seat, at this relative speed, for this long: landed. */
 const SEATED_DISTANCE = 4;
@@ -98,7 +107,7 @@ const BOUNCED_OUT_DISTANCE = 20;
 const FELL_PAST = 250;
 
 export function startBigCup(home: Vec3): BigCupAttempt {
-  return { phase: { kind: 'settle' }, hand: restingHand(home), home, time: 0 };
+  return { phase: { kind: 'settle' }, hand: restingHand(home, BIG_CUP_GRIP_QUATERNION), home, time: 0 };
 }
 
 /**
@@ -127,7 +136,11 @@ export function stepBigCup(attempt: BigCupAttempt, ball: BallObservation, h: num
 
   const advance = (phase: BigCupPhase, acceleration: Vec3): BigCupAttempt => ({
     phase,
-    hand: moveHand(hand, acceleration, h),
+    hand: moveHand(
+      hand,
+      { linear: acceleration, angular: trackOrientation(hand, BIG_CUP_GRIP_QUATERNION, GRIP_OMEGA) },
+      h,
+    ),
     home,
     time,
   });
@@ -273,6 +286,6 @@ export function createBigCupRun(handedness: Handedness, home: Vec3 = [0, 0, 0]):
 export function advanceBigCupRun(run: BigCupRun, dt: number): void {
   stepStringSimDriven(run.sim, dt, (sim, h) => {
     run.attempt = stepBigCup(run.attempt, sim, h);
-    return bigCupGripPose(run.attempt.hand.position);
+    return gripPose(run.attempt.hand.position, run.attempt.hand.orientation);
   });
 }
