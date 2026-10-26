@@ -112,9 +112,17 @@ describe.each([BIG_CUP, SPIKE])('$name from a ball hanging at rest', (trick) => 
   });
 
   it('mirrors between stringings', () => {
-    expect(left.run.attempt.hand.position[0]).toBeCloseTo(-right.run.attempt.hand.position[0], 0);
-    // Within a few frames: float noise can tip the calm check a substep early.
-    expect(Math.abs(left.seconds - right.seconds)).toBeLessThan(0.06);
+    // Positions, not finishing times: float noise can tip a threshold, such
+    // as when the ball first reads calm or seated, a few substeps apart.
+    // Each run stops when its own attempt does, so compare the ball where
+    // it sits on the ken rather than where the still-easing hand has it.
+    const onKen = ({ run }: Outcome) =>
+      [0, 1, 2].map((k) => run.sim.tamaPosition[k] - run.attempt.hand.position[k]);
+    const [lx, ly, lz] = onKen(left);
+    const [rx, ry, rz] = onKen(right);
+    expect(Math.abs(lx + rx)).toBeLessThan(1);
+    expect(Math.abs(ly - ry)).toBeLessThan(1);
+    expect(Math.abs(lz - rz)).toBeLessThan(1);
   });
 
   it('keeps the physics honest throughout', () => {

@@ -55,6 +55,8 @@ const PARTICLE_MASS = 0.1;
 const TAMA_INERTIA = 0.4 * TAMA_MASS * TAMA.radius ** 2;
 
 const TAMA_INV_MASS = 1 / TAMA_MASS;
+/** Share of a surface slip that a friction impulse takes out of the centre's velocity. */
+const SURFACE_SHARE = 1 / (1 + TAMA_MASS * TAMA.radius ** 2 / TAMA_INERTIA);
 const TAMA_INV_INERTIA = 1 / TAMA_INERTIA;
 const PARTICLE_INV_MASS = 1 / PARTICLE_MASS;
 
@@ -559,27 +561,34 @@ function applyStringFriction(sim: StringSim, a: number, n: Float64Array, depth: 
 }
 
 /**
- * Bounce and friction for the ball against the ken, relative to the ken's
- * surface where they touch, so a moving or tilting cup carries the ball.
+ * Bounce and friction for the ball against the ken, at the contact point.
+ *
+ * Slip is the ball's surface velocity there, its centre's velocity plus
+ * spin × lever, relative to the ken's surface, so a moving or tilting cup
+ * carries the ball. Friction acts at that point, so it changes the ball's
+ * spin as well as its speed: a ball rolls rather than slides, and one
+ * seated on a rim cannot be turned by a light tug of its string without
+ * the rim slipping under it.
  */
 function resolveTamaContactVelocity(sim: StringSim, n: Float64Array, h: number) {
   const v = sim.tamaVelocity;
+  const w = sim.tamaSpin;
   const c = sim.tamaPosition;
-  kenSurfaceDisplacement(
-    sim,
-    c[0] - n[0] * TAMA.radius,
-    c[1] - n[1] * TAMA.radius,
-    c[2] - n[2] * TAMA.radius,
-    surfaceMotion,
-  );
-  const rx = v[0] - surfaceMotion[0] / h;
-  const ry = v[1] - surfaceMotion[1] / h;
-  const rz = v[2] - surfaceMotion[2] / h;
+  // Lever from the ball's centre to its surface at the contact.
+  const lx = -n[0] * TAMA.radius;
+  const ly = -n[1] * TAMA.radius;
+  const lz = -n[2] * TAMA.radius;
+  kenSurfaceDisplacement(sim, c[0] + lx, c[1] + ly, c[2] + lz, surfaceMotion);
+  const rx = v[0] + (w[1] * lz - w[2] * ly) - surfaceMotion[0] / h;
+  const ry = v[1] + (w[2] * lx - w[0] * lz) - surfaceMotion[1] / h;
+  const rz = v[2] + (w[0] * ly - w[1] * lx) - surfaceMotion[2] / h;
+  // Spin moves the surface across the normal only, so this is the
+  // centre's approach speed.
   const normalSpeed = rx * n[0] + ry * n[1] + rz * n[2];
   const tx = rx - normalSpeed * n[0];
   const ty = ry - normalSpeed * n[1];
   const tz = rz - normalSpeed * n[2];
-  const tangentSpeed = Math.hypot(tx, ty, tz);
+  const slip = Math.hypot(tx, ty, tz);
 
   if (normalSpeed < 0) {
     const restitution = -normalSpeed > BOUNCE_THRESHOLD ? TAMA_RESTITUTION : 0;
@@ -592,11 +601,21 @@ function resolveTamaContactVelocity(sim: StringSim, n: Float64Array, h: number) 
   // Coulomb friction caps the tangential change at mu times the normal
   // change. A resting ball's normal change per substep is about g·h, which
   // the approach speed alone misses once projection has already stopped it.
-  if (tangentSpeed > 1e-6) {
-    const reduction = Math.min(1, (TAMA_FRICTION * Math.abs(normalSpeed) + GRAVITY * h * TAMA_FRICTION) / tangentSpeed);
-    v[0] -= tx * reduction;
-    v[1] -= ty * reduction;
-    v[2] -= tz * reduction;
+  if (slip > 1e-6) {
+    // Stopping slip at a sphere's surface takes a centre-velocity change of
+    // slip / (1 + mR²/I): the rest of the slip goes as spin.
+    const stops = slip * SURFACE_SHARE;
+    const allowed = TAMA_FRICTION * Math.abs(normalSpeed) + GRAVITY * h * TAMA_FRICTION;
+    const scale = -SURFACE_SHARE * Math.min(1, allowed / stops);
+    const dvx = tx * scale, dvy = ty * scale, dvz = tz * scale;
+    v[0] += dvx;
+    v[1] += dvy;
+    v[2] += dvz;
+    // The same impulse at the lever turns the ball: Δω = I⁻¹ (r × m Δv).
+    const k = TAMA_MASS * TAMA_INV_INERTIA;
+    w[0] += k * (ly * dvz - lz * dvy);
+    w[1] += k * (lz * dvx - lx * dvz);
+    w[2] += k * (lx * dvy - ly * dvx);
   }
 }
 
