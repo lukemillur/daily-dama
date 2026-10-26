@@ -1,4 +1,5 @@
 import {
+  HANDLE,
   HANDLE_BODY,
   HANDLE_DISH,
   sampleProfile,
@@ -6,7 +7,11 @@ import {
   SARADO_BIG_BOWL,
   SARADO_BODY,
   SARADO_SMALL_BOWL,
+  saradoRadiusAt,
+  TAMA_BORE,
+  TAMA_SHELL,
   type ProfilePiece,
+  type ProfilePoint,
 } from './anatomy';
 import { rotate, rotateInverse, type ReadVec } from './vec';
 
@@ -38,13 +43,25 @@ type LatheCollider = {
 /** Collision resolution in mm. Finer buys nothing a 0.9mm string can feel. */
 const KEEP_EVERY = 3;
 
-function buildCollider(pieces: readonly ProfilePiece[]): LatheCollider {
+/**
+ * `cutAt` keeps only the part below that height, capping it across with an
+ * interior edge, so one shape can be split between two collision models.
+ */
+function buildCollider(pieces: readonly ProfilePiece[], cutAt = Infinity): LatheCollider {
   const sampled = sampleProfile(pieces);
-  const kept = sampled.filter(
-    (_, index) => index % KEEP_EVERY === 0 || index === sampled.length - 1,
+  const kept: ProfilePoint[] = sampled.filter(
+    (point, index) =>
+      point[1] <= cutAt && (index % KEEP_EVERY === 0 || index === sampled.length - 1),
   );
+  // Edge i joins point i to i + 1. The sampled run is surface, and so is
+  // its continuation up to the cut; the cap across the cut and the edge
+  // closing the polygon back along the axis are interior.
+  let surfaceEdges = kept.length - 1;
+  if (cutAt !== Infinity) {
+    kept.push([saradoRadiusAt(cutAt, sampled), cutAt], [0, cutAt]);
+    surfaceEdges += 1;
+  }
 
-  // Close the polygon back along the axis from the last point to the first.
   const count = kept.length;
   const r = new Float64Array(count);
   const h = new Float64Array(count);
@@ -52,7 +69,7 @@ function buildCollider(pieces: readonly ProfilePiece[]): LatheCollider {
   for (const [index, [pr, ph]] of kept.entries()) {
     r[index] = pr;
     h[index] = ph;
-    surface[index] = index < count - 1 ? 1 : 0;
+    surface[index] = index < surfaceEdges ? 1 : 0;
   }
 
   return {
@@ -65,7 +82,15 @@ function buildCollider(pieces: readonly ProfilePiece[]): LatheCollider {
   };
 }
 
+/**
+ * Where the spike begins, up the handle: inside the sarado's waist, so the
+ * cut is hidden in wood. Above it the tama meets the spike through its bore
+ * (`collideSpikeWithTama`), not as a solid ball.
+ */
+export const SPIKE_FROM = 100;
+
 const HANDLE_COLLIDER = buildCollider([...HANDLE_DISH, ...HANDLE_BODY]);
+const HANDLE_BELOW_SPIKE_COLLIDER = buildCollider([...HANDLE_DISH, ...HANDLE_BODY], SPIKE_FROM);
 const SARADO_COLLIDER = buildCollider([...SARADO_SMALL_BOWL, ...SARADO_BODY, ...SARADO_BIG_BOWL]);
 
 type ProfileHit = { distance: number; nr: number; nh: number };
@@ -148,6 +173,10 @@ const hit: ProfileHit = { distance: 0, nr: 0, nh: 0 };
 /**
  * Tests a sphere of `radius` at world `point` against the ken posed at
  * `kenPosition`/`kenQuaternion`. Writes the deepest overlap into `out`.
+ *
+ * `exceptSpike` leaves out the handle above `SPIKE_FROM`, for the tama: a
+ * ball with a bore must meet the spike through `collideSpikeWithTama`, or
+ * the spike would push it away instead of entering the hole.
  */
 export function collideWithKen(
   kenPosition: ReadVec,
@@ -156,6 +185,7 @@ export function collideWithKen(
   pointOffset: number,
   radius: number,
   out: KenContact,
+  exceptSpike = false,
 ): boolean {
   rotateInverse(
     kenQuaternion,
@@ -170,7 +200,8 @@ export function collideWithKen(
   {
     const x = local[0], y = local[1], z = local[2];
     const radial = Math.hypot(x, z);
-    if (queryProfile(HANDLE_COLLIDER, radial, y, radius, hit)) {
+    const handle = exceptSpike ? HANDLE_BELOW_SPIKE_COLLIDER : HANDLE_COLLIDER;
+    if (queryProfile(handle, radial, y, radius, hit)) {
       const depth = radius - hit.distance;
       if (depth > deepest) {
         deepest = depth;
@@ -204,4 +235,79 @@ export function collideWithKen(
   out.depth = deepest;
   rotate(kenQuaternion, localNormal[0], localNormal[1], localNormal[2], out.normal);
   return true;
+}
+
+/**
+ * The tama as the solid it is: shell, countersink, bore and string hole, a
+ * lathe about its local +Y with the bore opening at -Y.
+ */
+const TAMA_COLLIDER = buildCollider([...TAMA_SHELL, ...TAMA_BORE]);
+
+/**
+ * Tests a sphere of `radius` at world `point` against the tama's solid.
+ * The normal in `out` points out of the tama, toward the sphere.
+ */
+export function collideWithTama(
+  tamaPosition: ReadVec,
+  tamaQuaternion: ReadVec,
+  point: ReadVec,
+  pointOffset: number,
+  radius: number,
+  out: KenContact,
+): boolean {
+  rotateInverse(
+    tamaQuaternion,
+    point[pointOffset] - tamaPosition[0],
+    point[pointOffset + 1] - tamaPosition[1],
+    point[pointOffset + 2] - tamaPosition[2],
+    local,
+  );
+  const x = local[0], y = local[1], z = local[2];
+  const radial = Math.hypot(x, z);
+  if (!queryProfile(TAMA_COLLIDER, radial, y, radius, hit)) return false;
+  const depth = radius - hit.distance;
+  if (depth <= 0) return false;
+  const ux = radial > 1e-9 ? x / radial : 0;
+  const uz = radial > 1e-9 ? z / radial : 1;
+  out.depth = depth;
+  rotate(tamaQuaternion, hit.nr * ux, hit.nh, hit.nr * uz, out.normal);
+  return true;
+}
+
+/**
+ * The spike as a chain of spheres along the handle axis, each as wide as
+ * the handle where it sits. Close spacing keeps the scallops between them
+ * far below the bore's clearance.
+ */
+const SPIKE_SPACING = 1.5;
+const HANDLE_SAMPLES = sampleProfile(HANDLE_BODY);
+const SPIKE_HEIGHTS: number[] = [];
+const SPIKE_RADII: number[] = [];
+for (let h = SPIKE_FROM; h < HANDLE.height; h += SPIKE_SPACING) {
+  const r = saradoRadiusAt(h, HANDLE_SAMPLES);
+  if (r < 0.5) break;
+  SPIKE_HEIGHTS.push(h);
+  SPIKE_RADII.push(r);
+}
+export const SPIKE_SPHERE_COUNT = SPIKE_HEIGHTS.length;
+/** The widest spike sphere, for broad-phase rejection. */
+export const SPIKE_MAX_RADIUS = Math.max(...SPIKE_RADII);
+
+/** Writes spike sphere `index`'s world centre into `out` and returns its radius. */
+export function spikeSphere(kenPosition: ReadVec, kenQuaternion: ReadVec, index: number, out: Float64Array): number {
+  rotate(kenQuaternion, 0, SPIKE_HEIGHTS[index], 0, out);
+  out[0] += kenPosition[0];
+  out[1] += kenPosition[1];
+  out[2] += kenPosition[2];
+  return SPIKE_RADII[index];
+}
+
+/**
+ * Distance from a world point to the spike's axis, between its base and
+ * tip: anything further than the ball's radius plus the spike's cannot touch.
+ */
+export function distanceToSpikeAxis(kenPosition: ReadVec, kenQuaternion: ReadVec, point: ReadVec): number {
+  rotateInverse(kenQuaternion, point[0] - kenPosition[0], point[1] - kenPosition[1], point[2] - kenPosition[2], local);
+  const along = Math.min(Math.max(local[1], SPIKE_FROM), HANDLE.height);
+  return Math.hypot(local[0], local[1] - along, local[2]);
 }

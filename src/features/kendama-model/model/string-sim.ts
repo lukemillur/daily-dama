@@ -1,5 +1,13 @@
 import { SARADO, TAMA } from './anatomy';
-import { collideWithKen, createKenContact } from './collision';
+import {
+  collideWithKen,
+  collideWithTama,
+  createKenContact,
+  distanceToSpikeAxis,
+  SPIKE_MAX_RADIUS,
+  SPIKE_SPHERE_COUNT,
+  spikeSphere,
+} from './collision';
 import {
   STRING_LENGTH,
   STRING_RADIUS,
@@ -100,7 +108,12 @@ export type InitialLayout =
   /** Hanging at rest below the string hole. */
   | { kind: 'hanging' }
   /** Held still at a world point, string slack, ready to be let go. */
-  | { kind: 'held'; tamaCentre: readonly [number, number, number] };
+  | {
+      kind: 'held';
+      tamaCentre: readonly [number, number, number];
+      /** How the ball is turned; upright (string hole up) when left out. */
+      tamaQuaternion?: readonly [number, number, number, number];
+    };
 
 export const PARTICLE_COUNT = PARTICLES;
 
@@ -172,30 +185,51 @@ export function createStringSim(handedness: Handedness, ken: Pose, layout: Initi
     sim.tamaPosition[2] = sim.positions[last + 2];
   } else {
     sim.tamaPosition.set(layout.tamaCentre);
-    // Slack: out of the hole past the cup band, then straight to the ball.
-    // That path is shorter than the string, which only resists stretching,
-    // so the spare length simply falls. Laying it straight from the hole
-    // instead would run it through the sarado.
+    if (layout.tamaQuaternion) sim.tamaQuaternion.set(layout.tamaQuaternion);
+    sim.tamaPreviousQuaternion.set(sim.tamaQuaternion);
+    // Slack: out of the hole past the cup band, round the ball's shoulder on
+    // the near side, then into its string hole. That path is shorter than
+    // the string, which only resists stretching, so the spare length simply
+    // falls. A straight lay would run through the sarado, or through the
+    // ball when it is held above the ken, and the collisions pushing it out
+    // would snap the string taut.
     const attach = new Float64Array(3);
     tamaAttachWorld(sim, attach);
     const lead = SARADO_BAND_RADIUS - SARADO.waistRadius + 2;
     const clear = [anchor[0] + exit[0] * lead, anchor[1] + exit[1] * lead, anchor[2] + exit[2] * lead];
-    const first = lead;
-    const second = Math.hypot(attach[0] - clear[0], attach[1] - clear[1], attach[2] - clear[2]);
-    for (let i = 0; i < PARTICLES; i += 1) {
-      const along = ((first + second) * i) / PARTICLES;
-      for (let k = 0; k < 3; k += 1) {
-        sim.positions[i * 3 + k] =
-          along <= first
-            ? anchor[k] + exit[k] * along
-            : clear[k] + ((attach[k] - clear[k]) * (along - first)) / second;
-      }
-    }
+    const c = sim.tamaPosition;
+    const pole = [0, 0, 0];
+    rotate(sim.tamaQuaternion, 0, 1, 0, pole);
+    const toward = [clear[0] - c[0], clear[1] - c[1], clear[2] - c[2]];
+    const along = toward[0] * pole[0] + toward[1] * pole[1] + toward[2] * pole[2];
+    const side = [toward[0] - along * pole[0], toward[1] - along * pole[1], toward[2] - along * pole[2]];
+    const sideLength = Math.hypot(side[0], side[1], side[2]) || 1;
+    const offset = TAMA.radius + 4;
+    const shoulder = [0, 1, 2].map((k) => c[k] + (side[k] / sideLength) * offset + pole[k] * offset);
+    layPolyline(sim.positions, [Array.from(anchor), clear, shoulder, Array.from(attach)]);
   }
 
   sim.previous.set(sim.positions);
   sim.tamaPrevious.set(sim.tamaPosition);
   return sim;
+}
+
+/** Spaces the particles evenly along a polyline, the first on its start. */
+function layPolyline(positions: Float64Array, points: readonly (readonly number[])[]) {
+  const lengths = points.slice(1).map((p, i) => Math.hypot(p[0] - points[i][0], p[1] - points[i][1], p[2] - points[i][2]));
+  const total = lengths.reduce((sum, length) => sum + length, 0);
+  for (let i = 0; i < PARTICLES; i += 1) {
+    let along = (total * i) / PARTICLES;
+    let leg = 0;
+    while (leg < lengths.length - 1 && along > lengths[leg]) {
+      along -= lengths[leg];
+      leg += 1;
+    }
+    const t = lengths[leg] > 0 ? along / lengths[leg] : 0;
+    for (let k = 0; k < 3; k += 1) {
+      positions[i * 3 + k] = points[leg][k] + (points[leg + 1][k] - points[leg][k]) * t;
+    }
+  }
 }
 
 /** One constraint per segment: particle i to i+1, and the last particle to the ball. */
@@ -368,6 +402,7 @@ function substep(sim: StringSim, h: number) {
 
   // Project.
   let tamaContact = false;
+  let spikeContact = false;
   for (let iteration = 0; iteration < ITERATIONS; iteration += 1) {
     solveString(sim);
 
@@ -399,7 +434,7 @@ function substep(sim: StringSim, h: number) {
     }
 
     // Ball against the ken. The ken is held, so it takes no correction.
-    if (collideWithKen(sim.kenPosition, sim.kenQuaternion, sim.tamaPosition, 0, TAMA.radius, contact)) {
+    if (collideWithKen(sim.kenPosition, sim.kenQuaternion, sim.tamaPosition, 0, TAMA.radius, contact, true)) {
       const n = contact.normal;
       sim.tamaPosition[0] += n[0] * contact.depth;
       sim.tamaPosition[1] += n[1] * contact.depth;
@@ -407,6 +442,7 @@ function substep(sim: StringSim, h: number) {
       tamaNormal.set(n);
       tamaContact = true;
     }
+    if (collideSpikeWithTama(sim)) spikeContact = true;
   }
 
   // Velocities from what actually happened.
@@ -424,8 +460,52 @@ function substep(sim: StringSim, h: number) {
   w[1] = (2 * sign * scratchQuat[1]) / h;
   w[2] = (2 * sign * scratchQuat[2]) / h;
 
-  sim.tamaTouching = tamaContact;
+  sim.tamaTouching = tamaContact || spikeContact;
   if (tamaContact) resolveTamaContactVelocity(sim, tamaNormal, h);
+}
+
+const spikeCentre = new Float64Array(3);
+
+/**
+ * The spike against the ball's real solid, bore and all. Each contact is
+ * off the ball's centre, so it is resolved like the string's pull on the
+ * ball: the correction weighs the ball's mass and its inertia about the
+ * contact's lever, and turns the ball as well as moving it. That is what
+ * lets a countersink or bore wall struck off-axis tip the hole into line.
+ *
+ * Frictionless: a spike slides freely into a bore.
+ */
+function collideSpikeWithTama(sim: StringSim): boolean {
+  const reach = TAMA.radius + SPIKE_MAX_RADIUS;
+  if (distanceToSpikeAxis(sim.kenPosition, sim.kenQuaternion, sim.tamaPosition) > reach) return false;
+
+  const c = sim.tamaPosition;
+  let touched = false;
+  for (let i = 0; i < SPIKE_SPHERE_COUNT; i += 1) {
+    const radius = spikeSphere(sim.kenPosition, sim.kenQuaternion, i, spikeCentre);
+    if (!collideWithTama(c, sim.tamaQuaternion, spikeCentre, 0, radius, contact)) continue;
+    touched = true;
+    const n = contact.normal;
+    // Lever from the ball's centre to where its surface meets the sphere.
+    const rx = spikeCentre[0] - n[0] * radius - c[0];
+    const ry = spikeCentre[1] - n[1] * radius - c[1];
+    const rz = spikeCentre[2] - n[2] * radius - c[2];
+    const tx = ry * n[2] - rz * n[1];
+    const ty = rz * n[0] - rx * n[2];
+    const tz = rx * n[1] - ry * n[0];
+    const lambda = contact.depth / (TAMA_INV_MASS + TAMA_INV_INERTIA * (tx * tx + ty * ty + tz * tz));
+    // The ball is pushed along -n, out of the spike, at the lever r.
+    c[0] -= TAMA_INV_MASS * lambda * n[0];
+    c[1] -= TAMA_INV_MASS * lambda * n[1];
+    c[2] -= TAMA_INV_MASS * lambda * n[2];
+    addRotation(
+      sim.tamaQuaternion,
+      -TAMA_INV_INERTIA * lambda * tx,
+      -TAMA_INV_INERTIA * lambda * ty,
+      -TAMA_INV_INERTIA * lambda * tz,
+    );
+  }
+  return touched;
 }
 
 const surfaceLocal = new Float64Array(3);
