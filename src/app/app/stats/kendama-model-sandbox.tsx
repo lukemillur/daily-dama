@@ -5,7 +5,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { KendamaModelScene } from '@/features/kendama-model/components/KendamaModelScene';
 import { StrungKendamaScene } from '@/features/kendama-model/components/StrungKendamaScene';
 import type { CatchPhase } from '@/features/kendama-model/model/catch-trick';
-import { TRICKS } from '@/features/kendama-model/model/tricks';
+
 import type { Grip, Handedness } from '@/features/kendama-model/model/stringing';
 import type { StrungLayout } from '@/features/kendama-model/model/strung-render';
 import { MODEL_VIEWS, type ModelView } from '@/features/kendama-model/model/views';
@@ -58,7 +58,7 @@ export default function KendamaModelSandbox() {
   const [layout, setLayout] = useState<StrungLayout>('hanging');
   const [slowMotion, setSlowMotion] = useState(false);
   const [runCount, setRunCount] = useState(0);
-  const [trickPhase, setTrickPhase] = useState<CatchPhase['kind'] | null>(null);
+  const [trickPhase, setTrickPhase] = useState<{ trick: string; phase: CatchPhase['kind'] } | null>(null);
 
   if (!__DEV__) {
     return <Redirect href="/app/home" />;
@@ -81,7 +81,7 @@ export default function KendamaModelSandbox() {
           grip={grip}
           runToken={`${handedness}:${layout}:${runCount}`}
           slowMotion={slowMotion}
-          onTrickPhase={setTrickPhase}
+          onTrickPhase={(trick, phase) => setTrickPhase({ trick, phase })}
         />
       )}
 
@@ -108,6 +108,7 @@ export default function KendamaModelSandbox() {
           <View style={styles.row}>
             <Chip label="Big Cup" onPress={() => restart('big-cup')} />
             <Chip label="Spike" onPress={() => restart('spike')} />
+            <Chip label="Big Cup to Spike" onPress={() => restart('big-cup-to-spike')} />
             <Chip label="Drop" onPress={() => restart('drop')} />
             <Chip label="Reset" onPress={() => restart('hanging')} />
             <Chip
@@ -134,7 +135,7 @@ export default function KendamaModelSandbox() {
           {mode === 'anatomy'
             ? 'Drag to orbit · scroll to zoom'
             : layout !== 'hanging' && layout !== 'drop' && trickPhase
-              ? `${TRICKS[layout].name} · ${PHASE_LABELS[trickPhase]}`
+              ? `${trickPhase.trick} · ${PHASE_LABELS[trickPhase.phase]}`
               : 'Seen from behind you · drag the ken to move your hand · Shift-drag to tilt it'}
         </Text>
       </View>

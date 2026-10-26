@@ -103,7 +103,7 @@ function offSeat(sim: StringSim, hand: Hand): number {
 }
 
 function landedBigCup() {
-  const run = createTrickRun(BIG_CUP, 'right');
+  const run = createTrickRun([BIG_CUP], 'right');
   while (!isFinished(run.attempt)) advanceTrickRun(run, 1 / 60);
   expect(run.attempt.phase).toEqual({ kind: 'landed' });
   return run;

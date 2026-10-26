@@ -38,7 +38,7 @@ function attempt(
     duration,
   }: { swing?: Vec3; home?: Vec3; frame?: number; duration?: number } = {},
 ): Outcome {
-  const run = createTrickRun(trick, handedness, home);
+  const run = createTrickRun([trick], handedness, home);
   // A ball already swinging when the attempt starts.
   run.sim.tamaVelocity.set(swing);
   for (let k = 0; k < 3; k += 1) run.sim.tamaPrevious[k] = run.sim.tamaPosition[k] - swing[k] * SUBSTEP;
@@ -181,6 +181,7 @@ describe('the catch controller', () => {
       hand: restingHand([0, 0, 0], BIG_CUP_GRIP_QUATERNION),
       home: [0, 0, 0],
       time: 1,
+      heldGrip: BIG_CUP_GRIP_QUATERNION,
     };
     const next = stepCatch(
       BIG_CUP,
@@ -202,6 +203,7 @@ describe('the catch controller', () => {
       hand: { ...restingHand([0, 0, 0], BIG_CUP_GRIP_QUATERNION), velocity: [0, -1300, 0] },
       home: [0, 0, 0],
       time: 1,
+      heldGrip: BIG_CUP_GRIP_QUATERNION,
     };
     const atSeat = {
       tamaPosition: [0, BIG_CUP.seatHeight, 0],

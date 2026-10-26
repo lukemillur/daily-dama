@@ -29,5 +29,16 @@ export const SPIKE: CatchTrick = {
   followsHole: true,
 };
 
-export const TRICKS = { 'big-cup': BIG_CUP, spike: SPIKE } as const;
-export type TrickId = keyof typeof TRICKS;
+/** A named run of tricks from a hanging ball, each leading on from the last. */
+export type Routine = { name: string; tricks: readonly [CatchTrick, ...CatchTrick[]] };
+
+export const ROUTINES = {
+  'big-cup': { name: 'Big Cup', tricks: [BIG_CUP] },
+  spike: { name: 'Spike', tricks: [SPIKE] },
+  // The turn from one grip to the other pivots about the sarado's centre,
+  // which carries the spike up under the cup's seat: a ball popped straight
+  // up out of the cup comes down onto it, hole first if it sat hole down.
+  'big-cup-to-spike': { name: 'Big Cup to Spike', tricks: [BIG_CUP, SPIKE] },
+} as const satisfies Record<string, Routine>;
+
+export type RoutineId = keyof typeof ROUTINES;

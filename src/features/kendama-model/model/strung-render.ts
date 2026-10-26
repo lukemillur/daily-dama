@@ -1,13 +1,13 @@
 import { CatmullRomCurve3, Quaternion, Vector3 } from 'three';
 
 import { stringPoints, type StringSim } from './string-sim';
-import type { TrickId } from './tricks';
+import type { RoutineId } from './tricks';
 import { stringHoleInsideLocal, TAMA_STRING_INSIDE } from './stringing';
 import { rotate } from './vec';
 import { MM } from './views';
 
-/** How a run starts: hanging still, dropped from the hand, or an attempt at a trick. */
-export type StrungLayout = 'hanging' | 'drop' | TrickId;
+/** How a run starts: hanging still, dropped from the hand, or a routine of tricks. */
+export type StrungLayout = 'hanging' | 'drop' | RoutineId;
 
 /** Where the ball is held before a drop: in front of the player, past the base cup. */
 export const DROP_TAMA_CENTRE = [0, 30, 140] as const;

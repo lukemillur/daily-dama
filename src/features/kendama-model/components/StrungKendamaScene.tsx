@@ -3,7 +3,13 @@ import { Canvas, useFrame, type ThreeEvent } from '@react-three/fiber';
 import { useRef, useState } from 'react';
 import { Group, Mesh, Plane, Quaternion, TubeGeometry, Vector3 } from 'three';
 
-import { advanceTrickRun, createTrickRun, type CatchPhase, type TrickRun } from '../model/catch-trick';
+import {
+  advanceTrickRun,
+  createTrickRun,
+  currentTrick,
+  type CatchPhase,
+  type TrickRun,
+} from '../model/catch-trick';
 import { createStringSim, stepStringSim, type StringSim } from '../model/string-sim';
 import { GRIP_QUATERNIONS, gripPose, STRING_RADIUS, type Grip, type Handedness } from '../model/stringing';
 import {
@@ -14,7 +20,7 @@ import {
   stringCurve,
   type StrungLayout,
 } from '../model/strung-render';
-import { TRICKS } from '../model/tricks';
+import { ROUTINES } from '../model/tricks';
 import { MM } from '../model/views';
 import { KenModel, TamaModel } from './KendamaParts';
 
@@ -26,8 +32,8 @@ type StrungKendamaSceneProps = {
   /** Changes to restart the simulation from `layout`. */
   runToken: string;
   slowMotion?: boolean;
-  /** Reports each phase change while a trick attempt runs. */
-  onTrickPhase?: (phase: CatchPhase['kind']) => void;
+  /** Reports each phase change while a routine runs, with the trick it belongs to. */
+  onTrickPhase?: (trick: string, phase: CatchPhase['kind']) => void;
 };
 
 const BACKGROUND = '#efe9df';
@@ -65,7 +71,7 @@ function StrungRig({
   const simRef = useRef<StringSim | null>(null);
   /** Set while a trick drives the hand; the pointer then has no say. */
   const trickRef = useRef<TrickRun | null>(null);
-  const lastPhase = useRef<CatchPhase['kind'] | null>(null);
+  const lastPhase = useRef<string | null>(null);
   const lastRunToken = useRef<string | null>(null);
 
   // The hand, in mm. `handTarget` follows the pointer; `hand` trails it.
@@ -100,7 +106,7 @@ function StrungRig({
       lastGrip.current = grip;
       lastPhase.current = null;
       if (layout !== 'hanging' && layout !== 'drop') {
-        trickRef.current = createTrickRun(TRICKS[layout], handedness);
+        trickRef.current = createTrickRun(ROUTINES[layout].tricks, handedness);
         simRef.current = trickRef.current.sim;
       } else {
         trickRef.current = null;
@@ -127,9 +133,11 @@ function StrungRig({
       handTarget.current.copy(hand.current);
       orientation.current.set(...trick.attempt.hand.orientation);
       orientationTarget.current.copy(orientation.current);
-      if (trick.attempt.phase.kind !== lastPhase.current) {
-        lastPhase.current = trick.attempt.phase.kind;
-        onTrickPhase?.(lastPhase.current);
+      const { name } = currentTrick(trick);
+      const phase = trick.attempt.phase.kind;
+      if (`${trick.step}:${phase}` !== lastPhase.current) {
+        lastPhase.current = `${trick.step}:${phase}`;
+        onTrickPhase?.(name, phase);
       }
     } else {
       followHand(hand.current, handTarget.current, delta);

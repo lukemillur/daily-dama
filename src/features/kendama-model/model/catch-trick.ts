@@ -1,6 +1,6 @@
 import { Quaternion, Vector3 } from 'three';
 
-import { TAMA } from './anatomy';
+import { sampleProfile, SARADO_BODY, TAMA } from './anatomy';
 import {
   HAND_MAX_ACCELERATION,
   moveHand,
@@ -74,12 +74,19 @@ export type BallObservation = {
 export type CatchPhase =
   /** Steadying the hanging ball: the hand follows its swing until it stops. */
   | { kind: 'settle'; calmFor: number }
-  | { kind: 'pull'; launchSpeed: number }
-  | { kind: 'rise' }
+  | { kind: 'pull'; launchSpeed: number; from: LaunchFrom }
+  /** `free` latches once the ball has left the ken it was launched from. */
+  | { kind: 'rise'; from: LaunchFrom; free: boolean }
   | { kind: 'catch'; blockedFor: number }
   | { kind: 'absorb'; seatedFor: number }
   | { kind: 'landed' }
   | { kind: 'missed'; reason: MissReason };
+
+/**
+ * Where a launch sends the ball from: up past the ken from hanging below
+ * it, or up off a seat on it, as when one trick leads into the next.
+ */
+export type LaunchFrom = 'below' | 'seat';
 
 export type MissReason =
   /** Fell below the ken, beyond a cushioning arm's reach. */
@@ -98,6 +105,12 @@ export type CatchAttempt = {
   home: Vec3;
   /** Seconds since the attempt began. */
   time: number;
+  /**
+   * How the wrist holds the ken until the ball is free of it. In a fresh
+   * attempt that is the trick's own grip; leading on from another trick it
+   * is the grip the ball is sitting in, which must not turn under the ball.
+   */
+  heldGrip: Quat;
 };
 
 /** Let the hanging ball come to rest before pulling: at least this long, */
@@ -129,11 +142,8 @@ const REACH = 350;
 const BLOCKED_TIME = 0.4;
 /** The pull is the hardest the hand can lift. */
 const PULL_ACCELERATION = HAND_MAX_ACCELERATION;
-/**
- * Sideways gap, centre to axis, that lets the rising ball pass the ken: the
- * ball's radius, the sarado's widest band, and a little room.
- */
-const CLEARANCE = TAMA.radius + 24.65 + 14;
+/** Room left between a ball passing beside the ken and the sarado's furthest point that way. */
+const PASSING_ROOM = 14;
 const CLEAR_ABOVE = 12;
 
 const RETURN_OMEGA = 22;
@@ -150,6 +160,16 @@ const MIN_INTERCEPT_TIME = 0.03;
 const ABSORB_OMEGA = 14;
 /** The wrist holds the grip steady against the string's tug. */
 const GRIP_OMEGA = 60;
+const SARADO_PROFILE = sampleProfile(SARADO_BODY);
+/**
+ * The sarado's furthest point from its centre, which is the hand: as the
+ * wrist turns, its rims sweep a sphere this big about the hand.
+ */
+const SARADO_REACH = Math.max(...SARADO_PROFILE.map(([r, h]) => Math.hypot(r, h)));
+/** A ball this far from the hand is clear of everything a turning sarado can sweep. */
+const CLEAR_OF_TURN = SARADO_REACH + TAMA.radius + 6;
+/** How far a popped ball's centre rises past what it must clear: time for the wrist to turn. */
+const POP_CLEARANCE = 15;
 /** The furthest the wrist tilts to follow a ball's hole, in radians. */
 const MAX_FOLLOW_TILT = 0.6;
 
@@ -167,20 +187,45 @@ const BOUNCED_OUT_DISTANCE = 20;
 const FELL_PAST = 250;
 
 export function startCatch(trick: CatchTrick, home: Vec3): CatchAttempt {
-  return { phase: { kind: 'settle', calmFor: 0 }, hand: restingHand(home, GRIP_QUATERNIONS[trick.grip]), home, time: 0 };
+  const grip = GRIP_QUATERNIONS[trick.grip];
+  return { phase: { kind: 'settle', calmFor: 0 }, hand: restingHand(home, grip), home, time: 0, heldGrip: grip };
+}
+
+/**
+ * Leads on into `trick` from an attempt whose ball is sitting in its seat:
+ * the hand pops the ball up off it, holding the ken as it is until the ball
+ * is clear, then turns to the new grip while the ball is in the air.
+ */
+export function continueCatch(trick: CatchTrick, previous: CatchAttempt, ball: BallObservation): CatchAttempt {
+  const launchSpeed = launchSpeedFor(trick, previous.hand.position[1] - ball.tamaPosition[1], 'seat');
+  return {
+    phase: { kind: 'pull', launchSpeed, from: 'seat' },
+    hand: previous.hand,
+    home: previous.home,
+    time: 0,
+    heldGrip: previous.hand.orientation,
+  };
 }
 
 /**
  * Launch speed for a pull at `PULL_ACCELERATION` that lifts the ball from
- * `drop` below the hand until its underside clears the ken's top by the
- * trick's `apexClearance`.
+ * `drop` below the hand (negative when it starts above it, on a seat).
  *
- * The ball rides the taut string through the pull, covering v² / 2a, then
- * flies to its apex, v² / 2g. The two together must cover the whole rise.
+ * From below, the ball rides the taut string through the pull, covering
+ * v² / 2a, then flies to its apex, v² / 2g: the two together must lift its
+ * underside the trick's `apexClearance` above the ken's top.
  */
-export function launchSpeedFor(trick: CatchTrick, drop: number): number {
-  const rise = drop + trick.kenTop + TAMA.radius + trick.apexClearance;
-  return Math.sqrt((2 * rise) / (1 / GRAVITY + 1 / PULL_ACCELERATION));
+export function launchSpeedFor(trick: CatchTrick, drop: number, from: LaunchFrom = 'below'): number {
+  if (from === 'below') {
+    const rise = drop + trick.kenTop + TAMA.radius + trick.apexClearance;
+    return Math.sqrt((2 * rise) / (1 / GRAVITY + 1 / PULL_ACCELERATION));
+  }
+  // A pop off a seat goes just high enough to clear the new catching part
+  // and the sweep of the turn toward it. Every mm higher draws more slack
+  // string up over the ken it lies draped across, and a string dragged
+  // that way tugs on the string hole and turns the ball.
+  const rise = drop + Math.max(trick.kenTop + TAMA.radius, CLEAR_OF_TURN) + POP_CLEARANCE;
+  return Math.sqrt(2 * GRAVITY * rise);
 }
 
 export function isFinished(attempt: CatchAttempt): boolean {
@@ -205,6 +250,7 @@ export function stepCatch(
     hand: moveHand(hand, { linear: acceleration, angular: trackOrientation(hand, wrist, GRIP_OMEGA) }, h),
     home,
     time,
+    heldGrip: attempt.heldGrip,
   });
   const hold = (): Vec3 => [
     trackAxis(hand.position[0], hand.velocity[0], home[0], 0, RETURN_OMEGA),
@@ -227,36 +273,51 @@ export function stepCatch(
       const calmFor = Math.hypot(swingX, swingZ) < STEADY_SPEED ? attempt.phase.calmFor + h : 0;
       const steady = time >= SETTLE_TIME && calmFor >= CALM_TIME;
       if (!steady && time < MAX_SETTLE_TIME) {
-        return advance({ kind: 'settle', calmFor }, [
+        return advance(
+          { kind: 'settle', calmFor },
+          [
           trackAxis(hand.position[0], hand.velocity[0], home[0], 0, SETTLE_HOME_OMEGA) + STEADY_GAIN * swingX,
           trackAxis(hand.position[1], hand.velocity[1], home[1], 0, RETURN_OMEGA),
           trackAxis(hand.position[2], hand.velocity[2], home[2], 0, SETTLE_HOME_OMEGA) + STEADY_GAIN * swingZ,
-        ]);
+          ],
+          attempt.heldGrip,
+        );
       }
       const launchSpeed = launchSpeedFor(trick, hand.position[1] - p[1]);
-      return advance({ kind: 'pull', launchSpeed }, [0, PULL_ACCELERATION, 0]);
+      return advance({ kind: 'pull', launchSpeed, from: 'below' }, [0, PULL_ACCELERATION, 0], attempt.heldGrip);
     }
 
     case 'pull': {
-      if (hand.velocity[1] < attempt.phase.launchSpeed) {
-        return advance(attempt.phase, [0, PULL_ACCELERATION, 0]);
+      const { launchSpeed, from } = attempt.phase;
+      if (hand.velocity[1] < launchSpeed) {
+        return advance(attempt.phase, [0, PULL_ACCELERATION, 0], attempt.heldGrip);
       }
-      return advance({ kind: 'rise' }, hold());
+      return advance({ kind: 'rise', from, free: false }, hold(), attempt.heldGrip);
     }
 
     case 'rise': {
       if (outOfReach(hand, home)) return advance({ kind: 'missed', reason: 'out-of-reach' }, hold());
       if (v[1] <= 0) return catching({ kind: 'catch', blockedFor: 0 });
 
-      // Below the top of the ken, the ball must pass beside it; above, the
-      // ken can slide under.
-      const passing = p[1] - TAMA.radius < hand.position[1] + trick.kenTop + CLEAR_ABOVE;
-      const [x, z] = passing ? besideBall(hand, p) : aimPoint(trick, hand, ball);
-      return advance(attempt.phase, [
-        trackAxis(hand.position[0], hand.velocity[0], x, v[0], HORIZONTAL_OMEGA),
-        trackAxis(hand.position[1], hand.velocity[1], home[1], 0, RETURN_OMEGA),
-        trackAxis(hand.position[2], hand.velocity[2], z, v[2], HORIZONTAL_OMEGA),
-      ]);
+      // Turning the ken while the ball is near it would sweep a rim into
+      // it, so the wrist holds the old grip until the ball is clear of
+      // everything the turn can reach, then turns to the trick's grip.
+      const { from } = attempt.phase;
+      const reach = Math.hypot(p[0] - hand.position[0], p[1] - hand.position[1], p[2] - hand.position[2]);
+      const free = attempt.phase.free || (!ball.tamaTouching && reach > CLEAR_OF_TURN);
+      // A ball rising from below must pass beside the ken until it is above
+      // its top; one popped off a seat is above it already.
+      const passing = from === 'below' && p[1] - TAMA.radius < hand.position[1] + trick.kenTop + CLEAR_ABOVE;
+      const [x, z, vx, vz]: Aim = passing ? [...besideBall(hand, p), v[0], v[2]] : aimPoint(trick, hand, ball);
+      return advance(
+        { kind: 'rise', from, free },
+        [
+          trackAxis(hand.position[0], hand.velocity[0], x, vx, HORIZONTAL_OMEGA),
+          trackAxis(hand.position[1], hand.velocity[1], home[1], 0, RETURN_OMEGA),
+          trackAxis(hand.position[2], hand.velocity[2], z, vz, HORIZONTAL_OMEGA),
+        ],
+        free ? grip : attempt.heldGrip,
+      );
     }
 
     case 'catch': {
@@ -301,7 +362,15 @@ function outOfReach(hand: Hand, home: Vec3): boolean {
   return Math.hypot(hand.position[0] - home[0], hand.position[2] - home[2]) > REACH;
 }
 
-/** Where the hand steps to let the rising ball pass the ken: directly away from it, by `CLEARANCE`. */
+const saradoAxis = [0, 0, 0];
+
+/**
+ * Where the hand steps to let the rising ball pass the ken: directly away
+ * from it, far enough that the ball clears the sarado's furthest point
+ * toward it. The sarado stands upright in the big-cup grip, so that is its
+ * band, but it lies across in the spike-up grip, where a cup reaches out
+ * much further toward a ball passing off its end.
+ */
 function besideBall(hand: Hand, p: ArrayLike<number>): [number, number] {
   const awayX = hand.position[0] - p[0];
   const awayZ = hand.position[2] - p[2];
@@ -310,23 +379,45 @@ function besideBall(hand: Hand, p: ArrayLike<number>): [number, number] {
   // other way is the short way round.
   const ux = away > 1e-6 ? awayX / away : 1;
   const uz = away > 1e-6 ? awayZ / away : 0;
-  return [p[0] + ux * CLEARANCE, p[2] + uz * CLEARANCE];
+  // The sarado is a lathe about its axis, ken-local +X; its extent along a
+  // direction u is the most any profile point reaches, h (a·u) + r √(1 − (a·u)²).
+  rotate(hand.orientation, 1, 0, 0, saradoAxis);
+  const along = Math.abs(saradoAxis[0] * ux + saradoAxis[2] * uz);
+  const across = Math.sqrt(Math.max(1 - along * along, 0));
+  let extent = 0;
+  for (const [r, h] of SARADO_PROFILE) extent = Math.max(extent, Math.abs(h) * along + r * across);
+  const clearance = extent + TAMA.radius + PASSING_ROOM;
+  return [p[0] + ux * clearance, p[2] + uz * clearance];
 }
 
 const holeAxis = [0, 0, 0];
+
+/** Where the hand aims across, and how fast that point moves: `[x, z, vx, vz]`. */
+type Aim = [number, number, number, number];
 
 /**
  * Where the hand should be, across, to catch the ball: under its centre,
  * or for a hole trick on the hole's own axis line at the hand's height, so
  * a tilted ball's hole still comes down onto the spike.
+ *
+ * That point slides along the tilted line as the hand and ball close
+ * vertically, so its velocity carries the slide as well as the ball's own:
+ * tracking the ball's velocity alone leaves the hand lagging off the line.
  */
-function aimPoint(trick: CatchTrick, hand: Hand, ball: BallObservation): [number, number] {
+function aimPoint(trick: CatchTrick, hand: Hand, ball: BallObservation): Aim {
   const p = ball.tamaPosition;
-  if (!trick.followsHole) return [p[0], p[2]];
+  const v = ball.tamaVelocity;
+  if (!trick.followsHole) return [p[0], p[2], v[0], v[2]];
   rotate(ball.tamaQuaternion, 0, 1, 0, holeAxis);
-  if (holeAxis[1] < Math.cos(MAX_FOLLOW_TILT)) return [p[0], p[2]];
+  if (holeAxis[1] < Math.cos(MAX_FOLLOW_TILT)) return [p[0], p[2], v[0], v[2]];
   const along = (hand.position[1] - p[1]) / holeAxis[1];
-  return [p[0] + holeAxis[0] * along, p[2] + holeAxis[2] * along];
+  const closing = (hand.velocity[1] - v[1]) / holeAxis[1];
+  return [
+    p[0] + holeAxis[0] * along,
+    p[2] + holeAxis[2] * along,
+    v[0] + holeAxis[0] * closing,
+    v[2] + holeAxis[2] * closing,
+  ];
 }
 
 const WORLD_UP = new Vector3(0, 1, 0);
@@ -363,7 +454,7 @@ function followHole(grip: Quat, tamaQuaternion: ArrayLike<number>): Quat {
 function catchAcceleration(trick: CatchTrick, hand: Hand, home: Vec3, ball: BallObservation): Vec3 {
   const p = ball.tamaPosition;
   const v = ball.tamaVelocity;
-  const [x, z] = aimPoint(trick, hand, ball);
+  const [x, z, vx, vz] = aimPoint(trick, hand, ball);
   const misalignment = Math.hypot(x - hand.position[0], z - hand.position[2]);
   const meetY = home[1] - trick.alignRoom * misalignment;
   const drop = p[1] - (meetY + trick.seatHeight);
@@ -377,9 +468,9 @@ function catchAcceleration(trick: CatchTrick, hand: Hand, home: Vec3, ball: Ball
   const targetVy = CATCH_SPEED_MATCH * (v[1] - GRAVITY * until);
 
   return [
-    trackAxis(hand.position[0], hand.velocity[0], x, v[0], HORIZONTAL_OMEGA),
+    trackAxis(hand.position[0], hand.velocity[0], x, vx, HORIZONTAL_OMEGA),
     hermiteStartAcceleration(hand.position[1], hand.velocity[1], targetY, targetVy, horizon),
-    trackAxis(hand.position[2], hand.velocity[2], z, v[2], HORIZONTAL_OMEGA),
+    trackAxis(hand.position[2], hand.velocity[2], z, vz, HORIZONTAL_OMEGA),
   ];
 }
 
@@ -410,21 +501,63 @@ export function seatDistance(trick: CatchTrick, hand: Hand, p: ArrayLike<number>
   );
 }
 
-/** An attempt bound to its own simulation, from a ball hanging at rest. */
-export type TrickRun = { trick: CatchTrick; sim: StringSim; attempt: CatchAttempt };
+/**
+ * Attempts bound to their own simulation, one trick after another from a
+ * ball hanging at rest: each leads on from the last once its ball has
+ * settled in its seat, with no reset in between.
+ */
+export type TrickRun = {
+  tricks: readonly CatchTrick[];
+  /** Which of `tricks` the current attempt is at. */
+  step: number;
+  sim: StringSim;
+  attempt: CatchAttempt;
+};
 
-export function createTrickRun(trick: CatchTrick, handedness: Handedness, home: Vec3 = [0, 0, 0]): TrickRun {
+/**
+ * How long the ball sits settled in its seat before a run leads on into
+ * the next trick: long enough that the pop starts from a ball at rest in
+ * the cup, short enough to read as one motion.
+ */
+const LEAD_ON_SEATED_TIME = 0.15;
+
+export function createTrickRun(
+  tricks: readonly [CatchTrick, ...CatchTrick[]],
+  handedness: Handedness,
+  home: Vec3 = [0, 0, 0],
+): TrickRun {
   return {
-    trick,
-    sim: createStringSim(handedness, gripPose(home, GRIP_QUATERNIONS[trick.grip]), { kind: 'hanging' }),
-    attempt: startCatch(trick, home),
+    tricks,
+    step: 0,
+    sim: createStringSim(handedness, gripPose(home, GRIP_QUATERNIONS[tricks[0].grip]), { kind: 'hanging' }),
+    attempt: startCatch(tricks[0], home),
   };
+}
+
+export function currentTrick(run: TrickRun): CatchTrick {
+  return run.tricks[run.step];
+}
+
+/** Done: missed somewhere, or landed the last trick. */
+export function isRunFinished(run: TrickRun): boolean {
+  const { phase } = run.attempt;
+  return phase.kind === 'missed' || (phase.kind === 'landed' && run.step === run.tricks.length - 1);
+}
+
+function readyToLeadOn(run: TrickRun): boolean {
+  if (run.step === run.tricks.length - 1) return false;
+  const { phase } = run.attempt;
+  return phase.kind === 'landed' || (phase.kind === 'absorb' && phase.seatedFor >= LEAD_ON_SEATED_TIME);
 }
 
 /** Advances the run by `dt` seconds, the controller stepping with the physics. */
 export function advanceTrickRun(run: TrickRun, dt: number): void {
   stepStringSimDriven(run.sim, dt, (sim, h) => {
-    run.attempt = stepCatch(run.trick, run.attempt, sim, h);
+    if (readyToLeadOn(run)) {
+      run.step += 1;
+      run.attempt = continueCatch(currentTrick(run), run.attempt, sim);
+    }
+    run.attempt = stepCatch(currentTrick(run), run.attempt, sim, h);
     return gripPose(run.attempt.hand.position, run.attempt.hand.orientation);
   });
 }

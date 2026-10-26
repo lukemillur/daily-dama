@@ -106,6 +106,8 @@ export type StringSim = {
   kenPreviousQuaternion: Float64Array;
   /** Which particles touched the ken on the last collision pass. */
   touching: Uint8Array;
+  /** For each touching particle, the ken's outward surface normal there. */
+  contactNormals: Float64Array;
   /** Whether the ball touched the ken during the last substep: what the hand feels. */
   tamaTouching: boolean;
   /** Unconsumed time from the last call, carried so playback stays fixed-step. */
@@ -162,6 +164,7 @@ export function createStringSim(handedness: Handedness, ken: Pose, layout: Initi
     kenPreviousPosition: new Float64Array(ken.position),
     kenPreviousQuaternion: new Float64Array(ken.quaternion),
     touching: new Uint8Array(PARTICLES),
+    contactNormals: new Float64Array(PARTICLES * 3),
     tamaTouching: false,
     accumulator: 0,
   };
@@ -260,19 +263,42 @@ const SLACK_TOLERANCE = 0.3;
 const attach = new Float64Array(3);
 
 /**
- * A particle pressed against the ken solves as if heavy.
+ * A particle pressed against the ken solves as if heavy, most of all into
+ * the wood.
  *
  * The solve does not see the wood. Where the string bends over the sarado,
  * the cheapest way to take up a stretch is to pull those light particles
- * sideways, into the wood, rather than lift a 68g ball; collisions push them
- * back out and the stretch is never resolved. Pinning contact particles
- * this way, much as friction does, leaves lifting the ball as the cheap fix.
+ * into the wood rather than lift a 68g ball; collisions push them back out
+ * and the stretch is never resolved. So along the contact normal a touching
+ * particle weighs as much as the ball, as the wood behind it effectively
+ * does. Along the surface it is lighter (`CONTACT_SLIDE_INV_MASS`): string
+ * slides over wood, and a particle ball-heavy every way is a knot tied to
+ * the ken.
  */
 const CONTACT_INV_MASS = TAMA_INV_MASS;
+/**
+ * Along the surface a touching particle weighs about 20g: enough to hold a
+ * string draped over the sarado through the jolt of a dropped ball snapping
+ * it taut (lighter, and the snap stretches it), light enough that the string
+ * slides off a cup moving under it (ball-heavy, and the cup yanks the ball
+ * on its string hole hard enough to spin it at 15 rad/s).
+ */
+const CONTACT_SLIDE_INV_MASS = 0.05;
 
-function particleWeight(sim: StringSim, i: number): number {
-  if (i === 0) return 0;
-  return sim.touching[i] ? CONTACT_INV_MASS : PARTICLE_INV_MASS;
+/**
+ * `aᵀ W_k b` for particle k's inverse-mass matrix: its own weight every
+ * way, or for a touching particle `CONTACT_INV_MASS` along its contact
+ * normal and `CONTACT_SLIDE_INV_MASS` across it. `a` and `b` are offsets of unit vectors in `normals`.
+ */
+function weighted(sim: StringSim, k: number, a: number, b: number): number {
+  if (k === 0) return 0;
+  const dot = normals[a] * normals[b] + normals[a + 1] * normals[b + 1] + normals[a + 2] * normals[b + 2];
+  if (!sim.touching[k]) return PARTICLE_INV_MASS * dot;
+  const W = CONTACT_SLIDE_INV_MASS;
+  const c = sim.contactNormals;
+  const ca = c[k * 3] * normals[a] + c[k * 3 + 1] * normals[a + 1] + c[k * 3 + 2] * normals[a + 2];
+  const cb = c[k * 3] * normals[b] + c[k * 3 + 1] * normals[b + 1] + c[k * 3 + 2] * normals[b + 2];
+  return W * dot + (CONTACT_INV_MASS - W) * ca * cb;
 }
 
 /**
@@ -326,18 +352,13 @@ function solveString(sim: StringSim) {
       rhs[i] = 0;
       continue;
     }
-    const downstream = i === CONSTRAINTS - 1 ? tamaWeight : particleWeight(sim, i + 1);
-    diagonal[i] = particleWeight(sim, i) + downstream;
+    const own = i * 3;
+    const downstream = i === CONSTRAINTS - 1 ? tamaWeight : weighted(sim, i + 1, own, own);
+    diagonal[i] = weighted(sim, i, own, own) + downstream;
     rhs[i] = -violation[i];
     // Coupling through particle i + 1, shared with the next segment.
     const next = i + 1;
-    upper[i] =
-      next < CONSTRAINTS && active[next]
-        ? -particleWeight(sim, next) *
-          (normals[i * 3] * normals[next * 3] +
-            normals[i * 3 + 1] * normals[next * 3 + 1] +
-            normals[i * 3 + 2] * normals[next * 3 + 2])
-        : 0;
+    upper[i] = next < CONSTRAINTS && active[next] ? -weighted(sim, next, own, next * 3) : 0;
   }
 
   // Thomas algorithm for the symmetric tridiagonal system.
@@ -351,14 +372,24 @@ function solveString(sim: StringSim) {
     lambda[i] = (rhs[i] - upper[i] * lambda[i + 1]) / diagonal[i];
   }
 
-  // Δx_k = w_k (λ_{k-1} n_{k-1} − λ_k n_k)
+  // Δx_k = W_k (λ_{k-1} n_{k-1} − λ_k n_k)
+  const c = sim.contactNormals;
   for (let k = 1; k < PARTICLES; k += 1) {
-    const w = particleWeight(sim, k);
     const a = k * 3, b = a - 3;
     const before = lambda[k - 1], after = lambda[k];
-    p[a] += w * (before * normals[b] - after * normals[a]);
-    p[a + 1] += w * (before * normals[b + 1] - after * normals[a + 1]);
-    p[a + 2] += w * (before * normals[b + 2] - after * normals[a + 2]);
+    const dx = before * normals[b] - after * normals[a];
+    const dy = before * normals[b + 1] - after * normals[a + 1];
+    const dz = before * normals[b + 2] - after * normals[a + 2];
+    const W = sim.touching[k] ? CONTACT_SLIDE_INV_MASS : PARTICLE_INV_MASS;
+    p[a] += W * dx;
+    p[a + 1] += W * dy;
+    p[a + 2] += W * dz;
+    if (sim.touching[k]) {
+      const along = (CONTACT_INV_MASS - W) * (c[a] * dx + c[a + 1] * dy + c[a + 2] * dz);
+      p[a] += along * c[a];
+      p[a + 1] += along * c[a + 1];
+      p[a + 2] += along * c[a + 2];
+    }
   }
 
   const l = lambda[CONSTRAINTS - 1];
@@ -421,6 +452,7 @@ function substep(sim: StringSim, h: number) {
       if (collideWithKen(sim.kenPosition, sim.kenQuaternion, p, a, STRING_RADIUS, contact)) {
         sim.touching[i] = 1;
         const n = contact.normal;
+        sim.contactNormals.set(n, a);
         p[a] += n[0] * contact.depth;
         p[a + 1] += n[1] * contact.depth;
         p[a + 2] += n[2] * contact.depth;
