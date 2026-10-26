@@ -8,6 +8,7 @@ import {
   SARADO_BODY,
   SARADO_SMALL_BOWL,
   saradoRadiusAt,
+  TAMA,
   TAMA_BORE,
   TAMA_SHELL,
   type ProfilePiece,
@@ -38,7 +39,18 @@ type LatheCollider = {
   hMin: number;
   hMax: number;
   rMax: number;
+  /**
+   * Edges bucketed by height, `binEdges[binStart[b]..binStart[b + 1]]` for
+   * bin b, each listed in every bin its height span touches. A query only
+   * needs the edges near its own height, which is a handful of the hundreds
+   * in the profile.
+   */
+  binStart: Int32Array;
+  binEdges: Int32Array;
 };
+
+/** Height of one edge bin, in mm. */
+const BIN = 2;
 
 /** Collision resolution in mm. Finer buys nothing a 0.9mm string can feel. */
 const KEEP_EVERY = 3;
@@ -72,14 +84,33 @@ function buildCollider(pieces: readonly ProfilePiece[], cutAt = Infinity): Lathe
     surface[index] = index < surfaceEdges ? 1 : 0;
   }
 
+  const hMin = Math.min(...h);
+  const hMax = Math.max(...h);
+  const bins: number[][] = Array.from({ length: Math.floor((hMax - hMin) / BIN) + 1 }, () => []);
+  for (let i = 0; i < count; i += 1) {
+    const j = i + 1 === count ? 0 : i + 1;
+    const from = Math.floor((Math.min(h[i], h[j]) - hMin) / BIN);
+    const to = Math.floor((Math.max(h[i], h[j]) - hMin) / BIN);
+    for (let b = from; b <= to; b += 1) bins[b].push(i);
+  }
+  const binStart = new Int32Array(bins.length + 1);
+  for (const [b, edges] of bins.entries()) binStart[b + 1] = binStart[b] + edges.length;
+
   return {
     r,
     h,
     surface,
-    hMin: Math.min(...h),
-    hMax: Math.max(...h),
+    hMin,
+    hMax,
     rMax: Math.max(...r),
+    binStart,
+    binEdges: Int32Array.from(bins.flat()),
   };
+}
+
+function binOf(collider: LatheCollider, height: number): number {
+  const last = collider.binStart.length - 2;
+  return Math.min(Math.max(Math.floor((height - collider.hMin) / BIN), 0), last);
 }
 
 /**
@@ -111,34 +142,37 @@ function queryProfile(
     return false;
   }
 
-  const { r, h, surface } = collider;
+  const { r, h, surface, binStart, binEdges } = collider;
   const count = r.length;
-  let best = Infinity;
-  let bestR = 0;
-  let bestH = 0;
+  nearest.best = Infinity;
+
+  // Even-odd crossing test along +r. Only edges spanning qh can cross, and
+  // they all sit in qh's own bin; each is listed there once.
   let inside = false;
-
-  for (let i = 0; i < count; i += 1) {
-    const j = i + 1 === count ? 0 : i + 1;
-    const r0 = r[i], h0 = h[i], r1 = r[j], h1 = h[j];
-
-    // Even-odd crossing test along +r.
-    if (h0 > qh !== h1 > qh && qr < r0 + ((qh - h0) * (r1 - r0)) / (h1 - h0)) {
-      inside = !inside;
-    }
-
-    if (!surface[i]) continue;
-    const er = r1 - r0, eh = h1 - h0;
-    const lengthSq = er * er + eh * eh;
-    const t = lengthSq === 0 ? 0 : Math.min(Math.max(((qr - r0) * er + (qh - h0) * eh) / lengthSq, 0), 1);
-    const cr = r0 + er * t, ch = h0 + eh * t;
-    const distanceSq = (qr - cr) ** 2 + (qh - ch) ** 2;
-    if (distanceSq < best) {
-      best = distanceSq;
-      bestR = cr;
-      bestH = ch;
+  if (qh >= collider.hMin && qh <= collider.hMax) {
+    const b = binOf(collider, qh);
+    for (let k = binStart[b]; k < binStart[b + 1]; k += 1) {
+      const i = binEdges[k];
+      const j = i + 1 === count ? 0 : i + 1;
+      const h0 = h[i], h1 = h[j];
+      if (h0 > qh !== h1 > qh && qr < r[i] + ((qh - h0) * (r[j] - r[i])) / (h1 - h0)) inside = !inside;
     }
   }
+
+  // Any edge within `margin` of the point lies within `margin` of its
+  // height. Listing an edge in several bins only repeats a distance.
+  const first = binOf(collider, qh - margin);
+  const last = binOf(collider, qh + margin);
+  for (let k = binStart[first]; k < binStart[last + 1]; k += 1) {
+    nearestOnEdge(r, h, surface, count, binEdges[k], qr, qh, nearest);
+  }
+  // Deep in the wood, the nearest surface can be further than the window.
+  if (inside && nearest.best > margin * margin) {
+    for (let i = 0; i < count; i += 1) nearestOnEdge(r, h, surface, count, i, qr, qh, nearest);
+  }
+  const best = nearest.best;
+  const bestR = nearest.r;
+  const bestH = nearest.h;
 
   const distance = Math.sqrt(best);
   if (distance > margin && !inside) return false;
@@ -153,6 +187,34 @@ function queryProfile(
     out.nh = (sign * (qh - bestH)) / distance;
   }
   return true;
+}
+
+/** The closest surface point found so far by a query; reused, as queries never nest. */
+const nearest = { best: Infinity, r: 0, h: 0 };
+
+function nearestOnEdge(
+  r: Float64Array,
+  h: Float64Array,
+  surface: Uint8Array,
+  count: number,
+  i: number,
+  qr: number,
+  qh: number,
+  nearest: { best: number; r: number; h: number },
+) {
+  if (!surface[i]) return;
+  const j = i + 1 === count ? 0 : i + 1;
+  const r0 = r[i], h0 = h[i];
+  const er = r[j] - r0, eh = h[j] - h0;
+  const lengthSq = er * er + eh * eh;
+  const t = lengthSq === 0 ? 0 : Math.min(Math.max(((qr - r0) * er + (qh - h0) * eh) / lengthSq, 0), 1);
+  const cr = r0 + er * t, ch = h0 + eh * t;
+  const distanceSq = (qr - cr) ** 2 + (qh - ch) ** 2;
+  if (distanceSq < nearest.best) {
+    nearest.best = distanceSq;
+    nearest.r = cr;
+    nearest.h = ch;
+  }
 }
 
 export type KenContact = {
@@ -310,4 +372,20 @@ export function distanceToSpikeAxis(kenPosition: ReadVec, kenQuaternion: ReadVec
   rotateInverse(kenQuaternion, point[0] - kenPosition[0], point[1] - kenPosition[1], point[2] - kenPosition[2], local);
   const along = Math.min(Math.max(local[1], SPIKE_FROM), HANDLE.height);
   return Math.hypot(local[0], local[1] - along, local[2]);
+}
+
+/**
+ * How far above the sarado's axis a spiked tama's centre comes to rest, as
+ * this collision model rests it: the ball's shell on the sarado's waist.
+ * The real ball sits a few mm lower, on its countersink's rim
+ * (`spikedMouthRestHeight`), which the solid-sphere sarado test cannot see.
+ */
+export function spikedTamaRestHeight(): number {
+  const contact = createKenContact();
+  const point = [0, 0, 0];
+  for (let h = 0; h < 80; h += 0.01) {
+    point[1] = SARADO.heightOnHandle + h;
+    if (!collideWithKen([0, 0, 0], [0, 0, 0, 1], point, 0, TAMA.radius, contact, true)) return h;
+  }
+  throw new Error('[kendama-model] a spiked tama never clears the sarado');
 }

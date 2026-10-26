@@ -1,7 +1,8 @@
 import { Quaternion, Vector3 } from 'three';
 
 import { cupMouthRadius, cupSeatOffset, SARADO, TAMA } from './anatomy';
-import { advanceBigCupRun, BIG_CUP_SEAT_HEIGHT, createBigCupRun, isFinished } from './big-cup';
+import { advanceTrickRun, createTrickRun, isFinished } from './catch-trick';
+import { BIG_CUP } from './tricks';
 import { collideWithKen, createKenContact } from './collision';
 import {
   moveHand,
@@ -93,7 +94,7 @@ function turnWrist(sim: StringSim, start: Hand, target: Quat, seconds: number): 
 function offSeat(sim: StringSim, hand: Hand): number {
   // The big cup is ken-local +X, on the sarado's axis through the hand.
   const seat = [0, 0, 0];
-  rotate(hand.orientation, BIG_CUP_SEAT_HEIGHT, 0, 0, seat);
+  rotate(hand.orientation, BIG_CUP.seatHeight, 0, 0, seat);
   return Math.hypot(
     sim.tamaPosition[0] - (hand.position[0] + seat[0]),
     sim.tamaPosition[1] - (hand.position[1] + seat[1]),
@@ -102,8 +103,8 @@ function offSeat(sim: StringSim, hand: Hand): number {
 }
 
 function landedBigCup() {
-  const run = createBigCupRun('right');
-  while (!isFinished(run.attempt)) advanceBigCupRun(run, 1 / 60);
+  const run = createTrickRun(BIG_CUP, 'right');
+  while (!isFinished(run.attempt)) advanceTrickRun(run, 1 / 60);
   expect(run.attempt.phase).toEqual({ kind: 'landed' });
   return run;
 }

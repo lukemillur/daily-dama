@@ -3,7 +3,7 @@ import { Canvas, useFrame, type ThreeEvent } from '@react-three/fiber';
 import { useRef, useState } from 'react';
 import { Group, Mesh, Plane, Quaternion, TubeGeometry, Vector3 } from 'three';
 
-import { advanceBigCupRun, createBigCupRun, type BigCupPhase, type BigCupRun } from '../model/big-cup';
+import { advanceTrickRun, createTrickRun, type CatchPhase, type TrickRun } from '../model/catch-trick';
 import { createStringSim, stepStringSim, type StringSim } from '../model/string-sim';
 import { GRIP_QUATERNIONS, gripPose, STRING_RADIUS, type Grip, type Handedness } from '../model/stringing';
 import {
@@ -14,6 +14,7 @@ import {
   stringCurve,
   type StrungLayout,
 } from '../model/strung-render';
+import { TRICKS } from '../model/tricks';
 import { MM } from '../model/views';
 import { KenModel, TamaModel } from './KendamaParts';
 
@@ -25,8 +26,8 @@ type StrungKendamaSceneProps = {
   /** Changes to restart the simulation from `layout`. */
   runToken: string;
   slowMotion?: boolean;
-  /** Reports each Big Cup phase change while an attempt runs. */
-  onTrickPhase?: (phase: BigCupPhase['kind']) => void;
+  /** Reports each phase change while a trick attempt runs. */
+  onTrickPhase?: (phase: CatchPhase['kind']) => void;
 };
 
 const BACKGROUND = '#efe9df';
@@ -63,8 +64,8 @@ function StrungRig({
   const stringRef = useRef<Mesh>(null);
   const simRef = useRef<StringSim | null>(null);
   /** Set while a trick drives the hand; the pointer then has no say. */
-  const trickRef = useRef<BigCupRun | null>(null);
-  const lastPhase = useRef<BigCupPhase['kind'] | null>(null);
+  const trickRef = useRef<TrickRun | null>(null);
+  const lastPhase = useRef<CatchPhase['kind'] | null>(null);
   const lastRunToken = useRef<string | null>(null);
 
   // The hand, in mm. `handTarget` follows the pointer; `hand` trails it.
@@ -98,8 +99,8 @@ function StrungRig({
       orientationTarget.current.copy(orientation.current);
       lastGrip.current = grip;
       lastPhase.current = null;
-      if (layout === 'big-cup') {
-        trickRef.current = createBigCupRun(handedness);
+      if (layout !== 'hanging' && layout !== 'drop') {
+        trickRef.current = createTrickRun(TRICKS[layout], handedness);
         simRef.current = trickRef.current.sim;
       } else {
         trickRef.current = null;
@@ -120,7 +121,7 @@ function StrungRig({
       orientationTarget.current.set(...GRIP_QUATERNIONS[grip]);
     }
     if (trick) {
-      advanceBigCupRun(trick, delta);
+      advanceTrickRun(trick, delta);
       const [x, y, z] = trick.attempt.hand.position;
       hand.current.set(x, y, z);
       handTarget.current.copy(hand.current);

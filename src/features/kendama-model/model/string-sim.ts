@@ -40,17 +40,17 @@ const SEGMENT = STRING_LENGTH / PARTICLES;
 
 const TAMA_MASS = 68;
 /**
- * Per particle, so 30g of string in all, against about 1g in life.
+ * Per particle, so 2g of string in all, against about 1g in life.
  *
- * Deliberate. Lumping a gram of string into a handful of points puts a
- * 1000:1 mass ratio against the ball, and a position-based solve then
- * "fixes" stretch by swinging the near-weightless points sideways, which
- * only shortens the string at second order: it stretches, then bounces like
- * a spring. At about 45:1 per point the string holds its length, even as a
- * dropped ball snaps it taut. The cost is a string that carries a little
- * more momentum and settles a little faster than real string.
+ * Light matters. A heavy string drags on the ball through its string hole,
+ * off the ball's centre, so a ball flying above the hand with slack string
+ * behind it gets turned over: harmless in a cup, fatal to a spike. A light
+ * one is harder to solve: lumping it into a few points puts a 680:1 mass
+ * ratio against the ball, where one solve per pass leaves a snapped-taut
+ * string stretched by a quarter. `STRING_SOLVES` repeats the exact solve
+ * to converge it; halving the mass again breaks even that.
  */
-const PARTICLE_MASS = 1.5;
+const PARTICLE_MASS = 0.1;
 /** Solid-sphere inertia. A real tama is a little hollower; close enough. */
 const TAMA_INERTIA = 0.4 * TAMA_MASS * TAMA.radius ** 2;
 
@@ -58,9 +58,15 @@ const TAMA_INV_MASS = 1 / TAMA_MASS;
 const TAMA_INV_INERTIA = 1 / TAMA_INERTIA;
 const PARTICLE_INV_MASS = 1 / PARTICLE_MASS;
 
-/** Fixed step. Each iteration re-solves the string exactly, then collisions. */
+/** Fixed step. Each iteration re-solves the string, then collisions. */
 export const SUBSTEP = 1 / 480;
 const ITERATIONS = 3;
+/**
+ * Exact solves of the string per iteration. Each one linearises the
+ * segment directions, so a light string under a sudden load needs several
+ * to converge; they are cheap next to the collision pass they precede.
+ */
+const STRING_SOLVES = 5;
 /** Caps catch-up work after a long frame (tab switch, breakpoint) so it cannot spiral. */
 const MAX_SUBSTEPS_PER_CALL = 64;
 
@@ -404,7 +410,7 @@ function substep(sim: StringSim, h: number) {
   let tamaContact = false;
   let spikeContact = false;
   for (let iteration = 0; iteration < ITERATIONS; iteration += 1) {
-    solveString(sim);
+    for (let solve = 0; solve < STRING_SOLVES; solve += 1) solveString(sim);
 
     // String against the ken and the ball.
     for (let i = 1; i < PARTICLES; i += 1) {
@@ -483,6 +489,9 @@ function collideSpikeWithTama(sim: StringSim): boolean {
   let touched = false;
   for (let i = 0; i < SPIKE_SPHERE_COUNT; i += 1) {
     const radius = spikeSphere(sim.kenPosition, sim.kenQuaternion, i, spikeCentre);
+    // Most of the spike is out of the ball's reach; skip the profile query.
+    const dx = spikeCentre[0] - c[0], dy = spikeCentre[1] - c[1], dz = spikeCentre[2] - c[2];
+    if (dx * dx + dy * dy + dz * dz > (TAMA.radius + radius) ** 2) continue;
     if (!collideWithTama(c, sim.tamaQuaternion, spikeCentre, 0, radius, contact)) continue;
     touched = true;
     const n = contact.normal;
