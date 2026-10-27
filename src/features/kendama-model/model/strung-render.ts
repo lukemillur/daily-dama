@@ -1,6 +1,8 @@
 import { CatmullRomCurve3, Quaternion, TubeGeometry, Vector3, type Mesh, type Object3D } from 'three';
 
-import { STRING_RADIUS, stringHoleInsideLocal, TAMA_STRING_INSIDE, type Handedness } from './stringing';
+import { TAMA } from './anatomy';
+import { collideWithKen, createKenContact } from './collision';
+import { STRING_RADIUS, stringHoleInsideLocal, TAMA_STRING_ATTACH, TAMA_STRING_INSIDE, type Handedness } from './stringing';
 import type { RoutineId } from './tricks';
 import { rotate } from './vec';
 import { MM } from './views';
@@ -9,7 +11,7 @@ import { MM } from './views';
  * How a run starts: hanging still, dropped from the hand, a routine of
  * tricks, or Airplane, the one trick where the hand holds the tama.
  */
-export type StrungLayout = 'hanging' | 'drop' | RoutineId | 'airplane';
+export type StrungLayout = 'hanging' | 'drop' | RoutineId | 'airplane' | 'hole-up-to-spike';
 
 /** Both bodies' poses, whichever one the hand holds. */
 export type StrungPoses = {
@@ -50,7 +52,7 @@ export const BASE_CUP_FRAMING: Framing = { position: [4.1, 3.5, 19], target: [-0
 
 export function framingFor(layout: StrungLayout): Framing {
   if (layout === 'airplane') return HELD_TAMA_FRAMING;
-  if (layout === 'base-cup') return BASE_CUP_FRAMING;
+  if (layout === 'base-cup' || layout === 'base-cup-to-spike' || layout === 'hole-up-to-spike') return BASE_CUP_FRAMING;
   return HELD_KEN_FRAMING;
 }
 
@@ -82,40 +84,89 @@ const scratch = [0, 0, 0];
  * The string as a render curve, in scene units, from `points` running ken
  * hole to ball hole. Starts and ends a few mm inside the two holes so it
  * visibly disappears into the wood rather than stopping on the surface.
+ *
+ * The simulated string is 20 particles 17 mm apart, and only the particles
+ * meet the wood: a span between two can cut through a thin part of the ken,
+ * and the last few, which lead into the ball's string hole, are left free
+ * to pass through the ball (see `stepStringSim`). Drawn as simulated, the
+ * string clips through both. So the drawn curve is sampled finely and each
+ * sample pushed out of the ken and the ball, except where it enters a hole.
+ * This changes only the picture; the physics still runs on the particles.
  */
 export function stringCurve(sim: StrungPoses, points: readonly number[][]): CatmullRomCurve3 {
-  const curve: Vector3[] = [];
+  const path: Vector3[] = [];
 
   const inside = stringHoleInsideLocal(sim.handedness);
   rotate(sim.kenQuaternion, inside[0], inside[1], inside[2], scratch);
-  curve.push(
-    new Vector3(
-      (scratch[0] + sim.kenPosition[0]) * MM,
-      (scratch[1] + sim.kenPosition[1]) * MM,
-      (scratch[2] + sim.kenPosition[2]) * MM,
-    ),
-  );
+  path.push(new Vector3(scratch[0] + sim.kenPosition[0], scratch[1] + sim.kenPosition[1], scratch[2] + sim.kenPosition[2]));
 
-  let last: Vector3 | undefined;
   for (const [x, y, z] of points) {
-    const next = new Vector3(x * MM, y * MM, z * MM);
+    const next = new Vector3(x, y, z);
     // A slack string can fold particles onto each other, and a zero-length
     // span gives the tube a NaN tangent.
-    if (last && last.distanceToSquared(next) < 1e-10) continue;
-    curve.push(next);
-    last = next;
+    if (path[path.length - 1].distanceToSquared(next) < 1e-4) continue;
+    path.push(next);
   }
 
   rotate(sim.tamaQuaternion, TAMA_STRING_INSIDE[0], TAMA_STRING_INSIDE[1], TAMA_STRING_INSIDE[2], scratch);
-  curve.push(
-    new Vector3(
-      (scratch[0] + sim.tamaPosition[0]) * MM,
-      (scratch[1] + sim.tamaPosition[1]) * MM,
-      (scratch[2] + sim.tamaPosition[2]) * MM,
-    ),
-  );
+  const tamaHole = new Vector3(scratch[0] + sim.tamaPosition[0], scratch[1] + sim.tamaPosition[1], scratch[2] + sim.tamaPosition[2]);
+  path.push(tamaHole);
 
-  return new CatmullRomCurve3(curve, false, 'centripetal');
+  rotate(sim.tamaQuaternion, TAMA_STRING_ATTACH[0], TAMA_STRING_ATTACH[1], TAMA_STRING_ATTACH[2], scratch);
+  const tamaMouth = new Vector3(scratch[0] + sim.tamaPosition[0], scratch[1] + sim.tamaPosition[1], scratch[2] + sim.tamaPosition[2]);
+  const kenMouth = path[1] ?? path[0];
+
+  const simulated = new CatmullRomCurve3(path, false, 'centripetal');
+  const drawn: Vector3[] = [];
+  let last: Vector3 | undefined;
+  for (let k = 0; k <= DRAWN_SAMPLES; k += 1) {
+    const point = simulated.getPoint(k / DRAWN_SAMPLES);
+    // The ends run into the holes, inside the wood by design.
+    if (k > 0 && k < DRAWN_SAMPLES) keepOutside(sim, point, tamaMouth, kenMouth);
+    if (last && last.distanceToSquared(point) < 1e-4) continue;
+    drawn.push(point);
+    last = point;
+  }
+  for (const point of drawn) point.multiplyScalar(MM);
+  return new CatmullRomCurve3(drawn, false, 'centripetal');
+}
+
+/** How finely the drawn string is checked against the wood. */
+const DRAWN_SAMPLES = 200;
+/** Within this of a hole's mouth, the drawn string is entering it and may go inside. */
+const MOUTH_ROOM = 6;
+const surfaceContact = createKenContact();
+const sample = [0, 0, 0];
+
+/**
+ * Pushes one drawn point of string out of the ball and the ken. Where the
+ * string runs between them, as over a cup's rim into a seated ball, leaving
+ * one can enter the other, so the pushes alternate a few times.
+ */
+function keepOutside(sim: StrungPoses, point: Vector3, tamaMouth: Vector3, kenMouth: Vector3): void {
+  for (let pass = 0; pass < OUTSIDE_PASSES; pass += 1) pushOutside(sim, point, tamaMouth, kenMouth);
+}
+
+const OUTSIDE_PASSES = 4;
+
+function pushOutside(sim: StrungPoses, point: Vector3, tamaMouth: Vector3, kenMouth: Vector3): void {
+  if (point.distanceTo(tamaMouth) > MOUTH_ROOM) {
+    const dx = point.x - sim.tamaPosition[0];
+    const dy = point.y - sim.tamaPosition[1];
+    const dz = point.z - sim.tamaPosition[2];
+    const distance = Math.hypot(dx, dy, dz);
+    const minimum = TAMA.radius + STRING_RADIUS;
+    if (distance < minimum && distance > 1e-9) point.addScaledVector(new Vector3(dx, dy, dz), (minimum - distance) / distance);
+  }
+  if (point.distanceTo(kenMouth) > MOUTH_ROOM) {
+    sample[0] = point.x;
+    sample[1] = point.y;
+    sample[2] = point.z;
+    if (collideWithKen(sim.kenPosition, sim.kenQuaternion, sample, 0, STRING_RADIUS, surfaceContact)) {
+      const n = surfaceContact.normal;
+      point.set(point.x + n[0] * surfaceContact.depth, point.y + n[1] * surfaceContact.depth, point.z + n[2] * surfaceContact.depth);
+    }
+  }
 }
 
 /** Writes both bodies' simulated poses, in mm, into their scene groups. */
