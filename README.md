@@ -24,7 +24,8 @@ The invariants that changes must preserve are in [`AGENTS.md`](AGENTS.md). [`ARC
 | Fault-injection and convergence tests | [`two-browser-convergence.integration.test.tsx`](src/shared/sync/two-browser-convergence.integration.test.tsx), [`cross-domain-conflict-fault-injection.integration.test.tsx`](src/shared/sync/cross-domain-conflict-fault-injection.integration.test.tsx), [`logout-guard.discard-isolation.test.tsx`](src/shared/sync/logout-guard.discard-isolation.test.tsx) |
 | Database authorization: RLS, grants, server-owned fields | [`supabase/migrations/`](supabase/migrations/) and the DB/Data API suites in [`supabase/README.md`](supabase/README.md) |
 | CI and security gates: pinned actions, secret scanning, dependency audit, CSP | [`.github/workflows/ci.yml`](.github/workflows/ci.yml), [`security/README.md`](security/README.md) |
-| Procedural 3D trick animation (react-three-fiber) | [`src/features/trick-viz/`](src/features/trick-viz/), [`TRICK_VIZ_HANDOFF.md`](TRICK_VIZ_HANDOFF.md) |
+| Physics trick visualizer (react-three-fiber) | [`src/features/kendama-model/`](src/features/kendama-model/), [`PHYSICS_VIZ_HANDOFF.md`](PHYSICS_VIZ_HANDOFF.md) |
+| Older keyframed trick animation (react-three-fiber) | [`src/features/trick-viz/`](src/features/trick-viz/), [`TRICK_VIZ_HANDOFF.md`](TRICK_VIZ_HANDOFF.md) |
 | How the project is built with AI agents | [`HOW_I_WORK_WITH_AI.md`](HOW_I_WORK_WITH_AI.md) |
 
 ## Setup
