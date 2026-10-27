@@ -137,29 +137,29 @@ const STEADY_GAIN = 10;
  */
 const SETTLE_HOME_OMEGA = 1.5;
 /** The hand's reach from where it started, across. */
-const REACH = 350;
+export const REACH = 350;
 /** Resting on the ken away from the seat for this long is a miss, not a catch in progress. */
-const BLOCKED_TIME = 0.4;
+export const BLOCKED_TIME = 0.4;
 /** The pull is the hardest the hand can lift. */
-const PULL_ACCELERATION = HAND_MAX_ACCELERATION;
+export const PULL_ACCELERATION = HAND_MAX_ACCELERATION;
 /** Room left between a ball passing beside the ken and the sarado's furthest point that way. */
 const PASSING_ROOM = 14;
 const CLEAR_ABOVE = 12;
 
-const RETURN_OMEGA = 22;
-const HORIZONTAL_OMEGA = 40;
+export const RETURN_OMEGA = 22;
+export const HORIZONTAL_OMEGA = 40;
 /**
  * The ken meets the ball moving down at this fraction of the ball's speed.
  * The difference, about 150 mm/s, is under the contact's bounce threshold,
  * so the ball lands rather than bounces, and the arm has the rest of the
  * speed to absorb.
  */
-const CATCH_SPEED_MATCH = 0.9;
+export const CATCH_SPEED_MATCH = 0.9;
 /** Shortest planning horizon: an intercept due sooner than this is chased, not planned. */
-const MIN_INTERCEPT_TIME = 0.03;
+export const MIN_INTERCEPT_TIME = 0.03;
 const ABSORB_OMEGA = 14;
 /** The wrist holds the grip steady against the string's tug. */
-const GRIP_OMEGA = 60;
+export const GRIP_OMEGA = 60;
 const SARADO_PROFILE = sampleProfile(SARADO_BODY);
 /**
  * The sarado's furthest point from its centre, which is the hand: as the
@@ -171,20 +171,20 @@ const CLEAR_OF_TURN = SARADO_REACH + TAMA.radius + 6;
 /** How far a popped ball's centre rises past what it must clear: time for the wrist to turn. */
 const POP_CLEARANCE = 15;
 /** The furthest the wrist tilts to follow a ball's hole, in radians. */
-const MAX_FOLLOW_TILT = 0.6;
+export const MAX_FOLLOW_TILT = 0.6;
 
 /** Within this of the seat, at this relative speed, for this long: landed. */
-const SEATED_DISTANCE = 4;
+export const SEATED_DISTANCE = 4;
 /** Touching the ken this close to the seat is the ball arriving. */
-const ARRIVAL_DISTANCE = 8;
-const SEATED_SPEED = 60;
-const SEATED_TIME = 0.5;
-const BOUNCED_OUT_DISTANCE = 20;
+export const ARRIVAL_DISTANCE = 8;
+export const SEATED_SPEED = 60;
+export const SEATED_TIME = 0.5;
+export const BOUNCED_OUT_DISTANCE = 20;
 /**
  * The ball has fallen this far below where the seat sits at home: no catch
  * is in reach of a cushioning arm.
  */
-const FELL_PAST = 250;
+export const FELL_PAST = 250;
 
 export function startCatch(trick: CatchTrick, home: Vec3): CatchAttempt {
   const grip = GRIP_QUATERNIONS[trick.grip];
@@ -266,23 +266,8 @@ export function stepCatch(
 
   switch (attempt.phase.kind) {
     case 'settle': {
-      // The swing is the ball's motion relative to the hand. Following the
-      // ball's absolute velocity would chase the drift the hand itself causes.
-      const swingX = v[0] - hand.velocity[0];
-      const swingZ = v[2] - hand.velocity[2];
-      const calmFor = Math.hypot(swingX, swingZ) < STEADY_SPEED ? attempt.phase.calmFor + h : 0;
-      const steady = time >= SETTLE_TIME && calmFor >= CALM_TIME;
-      if (!steady && time < MAX_SETTLE_TIME) {
-        return advance(
-          { kind: 'settle', calmFor },
-          [
-          trackAxis(hand.position[0], hand.velocity[0], home[0], 0, SETTLE_HOME_OMEGA) + STEADY_GAIN * swingX,
-          trackAxis(hand.position[1], hand.velocity[1], home[1], 0, RETURN_OMEGA),
-          trackAxis(hand.position[2], hand.velocity[2], home[2], 0, SETTLE_HOME_OMEGA) + STEADY_GAIN * swingZ,
-          ],
-          attempt.heldGrip,
-        );
-      }
+      const settling = settle(hand, home, v, attempt.phase.calmFor, time, h);
+      if (settling) return advance({ kind: 'settle', calmFor: settling.calmFor }, settling.acceleration, attempt.heldGrip);
       const launchSpeed = launchSpeedFor(trick, hand.position[1] - p[1]);
       return advance({ kind: 'pull', launchSpeed, from: 'below' }, [0, PULL_ACCELERATION, 0], attempt.heldGrip);
     }
@@ -358,7 +343,38 @@ export function stepCatch(
   }
 }
 
-function outOfReach(hand: Hand, home: Vec3): boolean {
+/**
+ * One substep of steadying whatever hangs from the hand, from the velocity
+ * of what swings: the hand follows the swing to take energy out of it, and
+ * drifts home slowly. Null once it has been calm long enough, or the
+ * player's patience has run out.
+ */
+export function settle(
+  hand: Hand,
+  home: Vec3,
+  swinging: ArrayLike<number>,
+  calmFor: number,
+  time: number,
+  h: number,
+): { calmFor: number; acceleration: Vec3 } | null {
+  // The swing is the motion relative to the hand. Following the absolute
+  // velocity would chase the drift the hand itself causes.
+  const swingX = swinging[0] - hand.velocity[0];
+  const swingZ = swinging[2] - hand.velocity[2];
+  const calm = Math.hypot(swingX, swingZ) < STEADY_SPEED ? calmFor + h : 0;
+  const steady = time >= SETTLE_TIME && calm >= CALM_TIME;
+  if (steady || time >= MAX_SETTLE_TIME) return null;
+  return {
+    calmFor: calm,
+    acceleration: [
+      trackAxis(hand.position[0], hand.velocity[0], home[0], 0, SETTLE_HOME_OMEGA) + STEADY_GAIN * swingX,
+      trackAxis(hand.position[1], hand.velocity[1], home[1], 0, RETURN_OMEGA),
+      trackAxis(hand.position[2], hand.velocity[2], home[2], 0, SETTLE_HOME_OMEGA) + STEADY_GAIN * swingZ,
+    ],
+  };
+}
+
+export function outOfReach(hand: Hand, home: Vec3): boolean {
   return Math.hypot(hand.position[0] - home[0], hand.position[2] - home[2]) > REACH;
 }
 
@@ -475,12 +491,12 @@ function catchAcceleration(trick: CatchTrick, hand: Hand, home: Vec3, ball: Ball
 }
 
 /** Starting acceleration of the cubic from (y0, v0) to (y1, v1) over `t` seconds. */
-function hermiteStartAcceleration(y0: number, v0: number, y1: number, v1: number, t: number): number {
+export function hermiteStartAcceleration(y0: number, v0: number, y1: number, v1: number, t: number): number {
   return (6 * (y1 - y0)) / (t * t) - (4 * v0 + 2 * v1) / t;
 }
 
 /** Bring the hand, and the ball it caught, gently to rest. */
-function absorbAcceleration(hand: Hand): Vec3 {
+export function absorbAcceleration(hand: Hand): Vec3 {
   return [
     -ABSORB_OMEGA * hand.velocity[0],
     -ABSORB_OMEGA * hand.velocity[1],

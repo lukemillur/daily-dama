@@ -12,6 +12,17 @@ import { MODEL_VIEWS, type ModelView } from '@/features/kendama-model/model/view
 
 type Mode = 'anatomy' | 'strung';
 
+/** Airplane swaps the bodies: the ken is what flies, and the ball meets it. */
+const AIRPLANE_PHASE_LABELS: Record<CatchPhase['kind'], string> = {
+  settle: 'steadying the ken',
+  pull: 'pull and sweep',
+  rise: 'ken turning over',
+  catch: 'bringing the ball under',
+  absorb: 'cushioning',
+  landed: 'landed',
+  missed: 'missed',
+};
+
 const PHASE_LABELS: Record<CatchPhase['kind'], string> = {
   settle: 'steadying the ball',
   pull: 'pull',
@@ -109,6 +120,7 @@ export default function KendamaModelSandbox() {
             <Chip label="Big Cup" onPress={() => restart('big-cup')} />
             <Chip label="Spike" onPress={() => restart('spike')} />
             <Chip label="Big Cup to Spike" onPress={() => restart('big-cup-to-spike')} />
+            <Chip label="Airplane" onPress={() => restart('airplane')} />
             <Chip label="Drop" onPress={() => restart('drop')} />
             <Chip label="Reset" onPress={() => restart('hanging')} />
             <Chip
@@ -135,7 +147,7 @@ export default function KendamaModelSandbox() {
           {mode === 'anatomy'
             ? 'Drag to orbit · scroll to zoom'
             : layout !== 'hanging' && layout !== 'drop' && trickPhase
-              ? `${trickPhase.trick} · ${PHASE_LABELS[trickPhase.phase]}`
+              ? `${trickPhase.trick} · ${(trickPhase.trick === 'Airplane' ? AIRPLANE_PHASE_LABELS : PHASE_LABELS)[trickPhase.phase]}`
               : 'Seen from behind you · drag the ken to move your hand · Shift-drag to tilt it'}
         </Text>
       </View>

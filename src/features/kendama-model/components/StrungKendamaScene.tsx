@@ -1,8 +1,9 @@
 import { ContactShadows, Environment, Lightformer, OrbitControls } from '@react-three/drei';
-import { Canvas, useFrame, type ThreeEvent } from '@react-three/fiber';
+import { Canvas, useFrame, useThree, type ThreeEvent } from '@react-three/fiber';
 import { useRef, useState } from 'react';
-import { Group, Mesh, Plane, Quaternion, TubeGeometry, Vector3 } from 'three';
+import { Group, Mesh, Plane, Quaternion, Vector3 } from 'three';
 
+import { advanceAirplaneRun, createAirplaneRun, type AirplaneRun } from '../model/airplane';
 import {
   advanceTrickRun,
   createTrickRun,
@@ -10,16 +11,23 @@ import {
   type CatchPhase,
   type TrickRun,
 } from '../model/catch-trick';
-import { createStringSim, stepStringSim, type StringSim } from '../model/string-sim';
-import { GRIP_QUATERNIONS, gripPose, STRING_RADIUS, type Grip, type Handedness } from '../model/stringing';
+import { createStringSim, stepStringSim, stringPoints, type StringSim } from '../model/string-sim';
+import { GRIP_QUATERNIONS, gripPose, type Grip, type Handedness } from '../model/stringing';
 import {
+  applyFraming,
   dragTurn,
   DROP_TAMA_CENTRE,
+  framingFor,
+  HELD_KEN_FRAMING,
   followHand,
   followOrientation,
+  placeBodies,
+  replaceString,
   stringCurve,
+  type Framing,
   type StrungLayout,
 } from '../model/strung-render';
+import { tamaHeldStringPoints } from '../model/tama-held-sim';
 import { ROUTINES } from '../model/tricks';
 import { MM } from '../model/views';
 import { KenModel, TamaModel } from './KendamaParts';
@@ -37,13 +45,6 @@ type StrungKendamaSceneProps = {
 };
 
 const BACKGROUND = '#efe9df';
-/**
- * Behind the player's right shoulder, looking where they look, and far
- * enough back to keep both the hanging ball and a Big Cup's flight above
- * the hand in frame.
- */
-const CAMERA_POSITION = [2.9, 1.9, 13.6] as const;
-const CAMERA_TARGET = [-0.2, -0.6, 0] as const;
 /** Below the hanging ball, so its shadow grounds the scene. */
 const FLOOR_Y = -4.4;
 
@@ -71,8 +72,13 @@ function StrungRig({
   const simRef = useRef<StringSim | null>(null);
   /** Set while a trick drives the hand; the pointer then has no say. */
   const trickRef = useRef<TrickRun | null>(null);
+  /** Set while Airplane runs: the hand holds the tama, so it has its own simulation. */
+  const airplaneRef = useRef<AirplaneRun | null>(null);
   const lastPhase = useRef<string | null>(null);
   const lastRunToken = useRef<string | null>(null);
+  const lastFraming = useRef<Framing | null>(null);
+  const camera = useThree((state) => state.camera);
+  const controls = useThree((state) => state.controls);
 
   // The hand, in mm. `handTarget` follows the pointer; `hand` trails it.
   const hand = useRef(new Vector3());
@@ -97,7 +103,7 @@ function StrungRig({
 
     // Restarts happen here rather than in render: refs must not be touched
     // during render, and keying the Canvas would lose the WebGL context.
-    if (lastRunToken.current !== runToken || !simRef.current) {
+    if (lastRunToken.current !== runToken || (!simRef.current && !airplaneRef.current)) {
       lastRunToken.current = runToken;
       hand.current.set(0, 0, 0);
       handTarget.current.set(0, 0, 0);
@@ -105,7 +111,13 @@ function StrungRig({
       orientationTarget.current.copy(orientation.current);
       lastGrip.current = grip;
       lastPhase.current = null;
-      if (layout !== 'hanging' && layout !== 'drop') {
+      airplaneRef.current = null;
+
+      if (layout === 'airplane') {
+        trickRef.current = null;
+        simRef.current = null;
+        airplaneRef.current = createAirplaneRun(handedness);
+      } else if (layout !== 'hanging' && layout !== 'drop') {
         trickRef.current = createTrickRun(ROUTINES[layout].tricks, handedness);
         simRef.current = trickRef.current.sim;
       } else {
@@ -118,9 +130,31 @@ function StrungRig({
       }
     }
 
+    // The framing changes only between kinds of trick, so an orbit the
+    // viewer chose survives rerunning the same one. This owns the orbit's
+    // centre; the controls take none of their own.
+    const framing = framingFor(layout);
+    if (framing !== lastFraming.current && applyFraming(camera, controls, framing)) {
+      lastFraming.current = framing;
+    }
+
     // A long frame (tab in the background) should not fling everything.
     const delta = Math.min(frameDelta, 1 / 20) * (slowMotion ? 0.25 : 1);
+    const airplane = airplaneRef.current;
+    if (airplane) {
+      advanceAirplaneRun(airplane, delta);
+      const phase = airplane.attempt.phase.kind;
+      if (phase !== lastPhase.current) {
+        lastPhase.current = phase;
+        onTrickPhase?.('Airplane', phase);
+      }
+      placeBodies(ken, tama, airplane.sim);
+      replaceString(string, stringCurve(airplane.sim, tamaHeldStringPoints(airplane.sim)));
+      return;
+    }
+
     const sim = simRef.current;
+    if (!sim) return;
     const trick = trickRef.current;
     if (lastGrip.current !== grip) {
       lastGrip.current = grip;
@@ -146,23 +180,12 @@ function StrungRig({
       stepStringSim(sim, gripPose([hand.current.x, hand.current.y, hand.current.z], [q.x, q.y, q.z, q.w]), delta);
     }
 
-    ken.position.set(sim.kenPosition[0] * MM, sim.kenPosition[1] * MM, sim.kenPosition[2] * MM);
-    ken.quaternion.set(sim.kenQuaternion[0], sim.kenQuaternion[1], sim.kenQuaternion[2], sim.kenQuaternion[3]);
-    tama.position.set(sim.tamaPosition[0] * MM, sim.tamaPosition[1] * MM, sim.tamaPosition[2] * MM);
-    tama.quaternion.set(
-      sim.tamaQuaternion[0],
-      sim.tamaQuaternion[1],
-      sim.tamaQuaternion[2],
-      sim.tamaQuaternion[3],
-    );
-
-    const next = new TubeGeometry(stringCurve(sim), 160, STRING_RADIUS * MM, 6, false);
-    string.geometry.dispose();
-    string.geometry = next;
+    placeBodies(ken, tama, sim);
+    replaceString(string, stringCurve(sim, stringPoints(sim)));
   });
 
   const startDrag = (event: ThreeEvent<PointerEvent>) => {
-    if (trickRef.current) return;
+    if (trickRef.current || airplaneRef.current) return;
     event.stopPropagation();
     (event.target as Element).setPointerCapture(event.pointerId);
     onDragChange(true);
@@ -244,7 +267,7 @@ export function StrungKendamaScene(props: StrungKendamaSceneProps) {
   const [dragging, setDragging] = useState(false);
 
   return (
-    <Canvas camera={{ position: [...CAMERA_POSITION], fov: 32 }} dpr={[1, 2]}>
+    <Canvas camera={{ position: [...HELD_KEN_FRAMING.position], fov: 32 }} dpr={[1, 2]}>
       <color attach="background" args={[BACKGROUND]} />
       <ambientLight intensity={0.15} />
       <directionalLight position={[2.5, 4, 3]} intensity={1.6} />
@@ -271,10 +294,9 @@ export function StrungKendamaScene(props: StrungKendamaSceneProps) {
       <OrbitControls
         makeDefault
         enabled={!dragging}
-        target={[...CAMERA_TARGET]}
         enableDamping
         minDistance={1}
-        maxDistance={14}
+        maxDistance={26}
       />
     </Canvas>
   );

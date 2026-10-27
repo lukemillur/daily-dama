@@ -89,6 +89,12 @@ export const SPIKE_UP_GRIP_QUATERNION: Quat = (() => {
   return [q.x, q.y, q.z, q.w];
 })();
 
+/**
+ * The tama held hole up, as for Airplane: half a turn about X puts its
+ * hole (local -Y) on top and its string hole underneath, in the palm.
+ */
+export const TAMA_HOLE_UP_QUATERNION: Quat = [1, 0, 0, 0];
+
 /** The grips a player can hold the ken in, by the orientation they give it. */
 export type Grip = 'big-cup' | 'spike-up';
 

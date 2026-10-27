@@ -4,19 +4,19 @@ import { addRotation, rotationBetween } from './vec';
 import type { Vec3 } from './views';
 
 /**
- * The player's hand as a rigid body with human limits: where it holds the
- * ken (at the sarado) and how the wrist turns it. A trick controller decides
- * a linear and an angular acceleration; the hand clamps both and integrates.
- * That keeps every trick honest: a controller cannot teleport the ken under
- * the ball or snap it to a new angle, only move it as fast as an arm, a
- * knee bend and a wrist can.
+ * The player's hand as a rigid body with human limits: where it holds what
+ * it holds (the ken at its sarado, or the tama at its centre) and how the
+ * wrist turns it. A trick controller decides a linear and an angular
+ * acceleration; the hand clamps both and integrates. That keeps every trick
+ * honest: a controller cannot teleport the ken under the ball or snap it to
+ * a new angle, only move it as fast as an arm, a knee bend and a wrist can.
  *
  * Millimetres, radians and seconds, like the string simulation.
  */
 export type Hand = {
   position: Vec3;
   velocity: Vec3;
-  /** The ken's orientation, as held. */
+  /** The held body's orientation. */
   orientation: Quat;
   /** World-axis angular velocity, rad/s. */
   angularVelocity: Vec3;
