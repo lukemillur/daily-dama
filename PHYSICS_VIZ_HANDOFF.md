@@ -26,10 +26,10 @@ All paths under `src/features/kendama-model/`.
 | `model/collision.ts` | Sphere-versus-lathe collision from the parts' own profiles; `collideSpikeWithTama` meets the tama's real bore. |
 | `model/mass.ts` | Ken and tama mass properties integrated from the profiles (ken 79 g, centre of mass 31 mm below the string hole). |
 | `model/stringing.ts` | Grips (`big-cup`, `spike-up`, `spike-down`), handedness, string length (340 mm hole to hole), `gripPose`. |
-| `model/catch-trick.ts` | The shared ball-catch kernel: phases, intercept planners, the rise turn, `TrickRun` for chaining tricks. |
+| `model/catch-trick.ts` | The shared ball-catch kernel: phases, intercept planners, the rise turn, `TrickRun` for chaining tricks, seat pops and turnovers, `createSeatedRun` for starting with the ball placed in a seat. |
 | `model/tricks.ts` | Each ball trick as data, and `ROUTINES`, the runs the sandbox offers. |
 | `model/airplane.ts` | Airplane's own controller (the bodies are swapped, so the ball kernel does not apply). |
-| `model/strung-render.ts` | Framings per kind of trick, string render curves. |
+| `model/strung-render.ts` | Framings per kind of trick, string render curves. The drawn string is pushed out of the ken and tama (`keepOutside`); this is cosmetic only and never feeds back into the simulation. |
 | `components/StrungKendamaScene.tsx` | The frame loop: steps the run, places bodies, owns the camera framing. |
 | `src/app/app/stats/kendama-model-sandbox.tsx` | The sandbox route: chips, phase readout. |
 
@@ -41,7 +41,7 @@ All paths under `src/features/kendama-model/`.
 
 **The hand is the honesty constraint.** A controller decides accelerations; the hand clamps and integrates them. Do not raise the hand limits to make a trick land. Every lesson in §5 comes from respecting them.
 
-**Collision.** The string runs against the parts' lathe profiles. The ball's shell meets the ken through `collideWithKen`, which resolves the **single deepest contact**. The spike meets the bore through `collideSpikeWithTama`. Contacts below 250 mm/s approach speed do not bounce. Read the comments on `PARTICLE_MASS` and `solveString` before changing either: lighter particles or an iterative solve make the string stretch and bounce.
+**Collision.** The string runs against the parts' lathe profiles. The ball's shell meets the ken through `collideWithKen`, which resolves the **single deepest contact**, with one exception: inside the base cup's mouth it blends in the far side of the rim ring (`RING_SHARE`), so a ball resting on the ring is held from both sides. The spike meets the bore through `collideSpikeWithTama`. A spike that strikes the ball's outer shell, clear of the bore's lip (`LIP_ROOM`), bounces with friction like any other contact rather than pinning the ball on its tip (`spikeOnShell` in `string-sim.ts`). Contacts below 250 mm/s approach speed do not bounce. Read the comments on `PARTICLE_MASS` and `solveString` before changing either: lighter particles or an iterative solve make the string stretch and bounce.
 
 ## 4. The tricks, and what each taught
 
@@ -51,7 +51,9 @@ The kernel in its plain form. The pull is sized open-loop from ballistics (`laun
 
 ### Big Cup to Spike
 
-A pop off the big cup, turning to the spike-up grip in the air. The grip turn waits until the ball is clear of everything the turning sarado can sweep (`CLEAR_OF_TURN`), and the pop goes only as high as that needs: every extra millimetre draws slack string over the ken, which tugs the string hole and turns the ball. Lands 5 of 8 from swinging starts, because Big Cup seats the ball 22–26° off hole-down.
+A pop off the big cup, turning to the spike-up grip in the air. The grip turn waits until the ball is clear of everything the turning sarado can sweep (`CLEAR_OF_TURN`), and the pop goes only as high as that needs: every extra millimetre draws slack string over the ken, which tugs the string hole and turns the ball. Big Cup seats the ball 22–26° off hole-down, so it is the least reliable chained trick: 12 of 16 in the fingerprint set (§5.11).
+
+**Seat pops, shared by every chained trick.** `continueCatch` sizes the pop so the ball stays up for the wrist's quickest turn to the next grip (`turnTime`, from the hand's wrist limits) plus `POP_TURN_SLACK`, and never lower than clearing the ken (`launchSpeedFor` from `'seat'`). After a seat pop the hand brakes hard instead of homing gently, so the ken does not ride up under the ball and carry it.
 
 ### Airplane
 
@@ -72,6 +74,25 @@ Onto the shallow dish at the bottom of the handle, in the `spike-down` grip. Two
 - **`intercept: 'dive'`**: wait, then dive at a steady 2 g, arriving at 0.9 of the ball's speed. The `cubic` failed here (§5.2). Spike regresses under the dive, so Big Cup and Spike keep `cubic`.
 
 `apexClearance` is 135 mm, in the middle of a broad window (80–230 mm all land from rest), and the cushion is about 100 mm. The sandbox frames it wider (`BASE_CUP_FRAMING`) so the turn stays in view.
+
+### Base Cup to Spike
+
+Base Cup, then a pop onto the spike. Lands 4 of 16 in the fingerprint set: Base Cup seats the ball with its hole wherever it happened to land, mostly well off the hole-down that Spike needs. The fix is hole control (§5.12), not tuning the pop.
+
+When the spike misses the hole and strikes the shell, the ball now bounces and rolls off. Two changes made that honest: the spike-on-shell contact (§3), and the catch stops steering under a ball that touches the ken further than `BOUNCED_OUT_DISTANCE` from the seat. Before them, the hand kept chasing the ball and balanced it on the tip as no hand could.
+
+### Hole-up to Spike (paused, does not land)
+
+The sandbox's "Hole-up to Spike" chip starts the ball seated hole up on the base cup (`createSeatedRun` with `TAMA_HOLE_UP_QUATERNION`), the hole-control setup a player would use for Base Cup to Spike. The hole must turn half over in the air, which the wrist cannot follow (`MAX_FOLLOW_TILT`), so `continueCatch` plans a **turnover**:
+
+- **The pop swings the ken about the ball's centre**, hand velocity ω × (hand − ball), with the wrist turning at the swing speed over the radius. The cup carries the ball round by friction instead of sliding under it.
+- **The spin axis unwinds the string** (`turnoverFor`): it rolls the ball's string hole toward the ken's string hole, d × up. Turning the other way wraps the string half round the ball, and at the apex it runs out and pulls the ball down, which looks like a different trick (pulling the ball onto the spike with the string).
+- **Release only once the ball is clear of the seat** (`RELEASE_GAP`). Releasing at the first gap let the wrist turn on ahead and the seat's trailing rim rub the spin back off. If the spin never comes up to `SPUN_SHARE`, the pop releases when the lift ends rather than hanging.
+- **The catch plans from the observed spin** (`meetWhenHoleDown`): it predicts when the hole will face down and meets the ball at the height it will have fallen to by then, within `MEET_BELOW_HOME` / `MEET_ABOVE_HOME`.
+
+It lands 0 times. The cause is structural, not tuning: on a hole-up seat the string leaves from under the ball, over the base cup's rim and along the handle, with up to 17 of 20 particles resting on the wood. The pop's sideways swing (up to 1.7 m/s) drags that draped string and tugs the ball at about 20 g, killing the spin within milliseconds. After release, the wrist turning to the catch grip at its 30 rad/s limit whips the same string and has spun one ball to 78 rad/s the wrong way. A softer post-release turn and the spin-based catch each fixed some starts and broke others, with no landings.
+
+**Next step if resumed:** run the turnover with the string cut (or held clear) to prove whether the pop, spin and catch land on their own. If they do, the work is a pop that does not drag draped string: a smaller sideways swing with more spin from the lift, or lifting the string off the handle before the swing. If they do not, the turnover technique itself is wrong.
 
 ## 5. Catch principles
 
@@ -117,7 +138,7 @@ The pull is sized from ballistics. Everything after it watches the body: steadyi
 
 **Hazard:** a moving hand drags the string, and the string drags the flying body. That is why Airplane brakes its lift gently and why a chained pop goes no higher than it must. **Tool:** rotation can come from the string. Airplane's flip is the string turning during a sideways sweep, at sideways speed over string length.
 
-**For a new trick:** turn the wrist about an axis through the string hole (Base Cup), and list every hand move that tugs slack string.
+**For a new trick:** turn the wrist about an axis through the string hole (Base Cup), and list every hand move that tugs slack string. **String draped on the ken moves with the ken**: friction holds it, so any sideways move or fast turn drags it and tugs the ball (Hole-up to Spike). Check where the string lies at the start of each move, not only whether it is slack.
 
 ### 5.8 Turn only where the turn cannot hit anything
 
@@ -146,7 +167,14 @@ Seated after Airplane, a wrist that follows the ken's lean makes it lean further
 - **Sweep before tuning.** Run a grid of parameters against several starts (rest, either stringing, three frame rates, a moved home, swinging starts). A broad window means the approach is sound. Outcomes flipping case to case mean something structural is wrong: stop tuning and find it.
 - **Measure at the moment of contact.** The relative velocity one substep before first contact found Base Cup's cause in one run.
 - **Fingerprint shared changes.** Before changing the kernel, a planner or the physics, record exact final positions for every landing trick from several starts; after the change, diff them. A new behaviour belongs behind an opt-in field until the existing tricks are proven unchanged.
+- **Measure tautness by its effect.** `stringPathLength` sums the segments and reads near 340 mm whether or not the string is taut. A taut string shows as the flying ball's acceleration departing from gravity.
 - **Keep scratch diagnostics out of the commit.** A throwaway `__diag.test.ts` beside the model is the quickest probe; delete it before committing.
+
+### 5.12 Hole control
+
+A player lands each trick with the hole where the next one needs it: for a spike after the base cup, hole up, so a lift and half turn drops it on. A chained trick into a hole catch is only as reliable as the hole the previous seat leaves. The ken may also track the hole in the air within a reasonable margin, moving with it, but it must not chase a ball it has thrown off line.
+
+**For a new chained trick:** decide which way the previous seat must leave the hole, and plan that landing, before tuning the pop. Not built yet: the kernel lands each trick without regard to the next.
 
 ## 6. Adding a trick
 
@@ -178,7 +206,10 @@ Seated after Airplane, a wrist that follows the ken's lean makes it lean further
 
 - **What the visualizer is for** is undecided: teaching a learner a trick, a sandbox, or illustrating Kentei entries. The answer decides between more tricks and app integration.
 - **The wind-up** (§5.5) is the most likely fix for Airplane's fragility and the main tool for future high throws.
-- **Single-contact collision** (§5.9) misrepresents a ball resting on a ring. A symmetric ring contact would be more faithful, but it changes every trick's numbers and would need re-verifying them all.
+- **Single-contact collision** (§5.9) still applies everywhere but the base cup's ring (§3). The big cup and small cup rims would need the same blend if a trick rests the ball on them.
+- **The string pushes the ball one way.** A string particle pushed out of the tama moves; the ball does not. Pushing the particles near the string hole out of the ball injects spin through the tie, so the last three particles skip tama collision, and the drawn string is only pushed out at render time. A two-way string–ball contact solve would remove this; it is the likely prerequisite for any trick where the string wraps the ball.
+- **The string's 17 mm spans** pass through thin wood between particles. Colliding spans with the ken stretched the string to 402 mm and failed the stretch tests, so it was reverted.
+- **Hole-up to Spike is paused** (§4), and hole control (§5.12) is not built.
 - **Contacts on the free ken are frictionless**, so a seated ken can rock in the bore.
 - **The spike-up grip orientation** has not been confirmed by the owner.
 - **Not started:** Moshikame (§5.1, §5.4 on every catch), Lighthouse (§5.9, §5.10), Trapeze (§5.7), compound Kentei sequences.

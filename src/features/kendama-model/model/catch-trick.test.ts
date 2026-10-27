@@ -14,7 +14,7 @@ import {
 import { collideWithKen, createKenContact } from './collision';
 import { HAND_MAX_ACCELERATION, restingHand } from './hand';
 import { GRAVITY, SUBSTEP, stringPathLength } from './string-sim';
-import { BIG_CUP_GRIP_QUATERNION, STRING_LENGTH, type Handedness } from './stringing';
+import { BIG_CUP_GRIP_QUATERNION, SPIKE_UP_GRIP_QUATERNION, STRING_LENGTH, type Handedness } from './stringing';
 import { BASE_CUP, BIG_CUP, SPIKE } from './tricks';
 import type { Vec3 } from './views';
 
@@ -219,5 +219,27 @@ describe('the catch controller', () => {
     };
     expect(stepCatch(BIG_CUP, catching, { ...atSeat, tamaTouching: false }, SUBSTEP).phase.kind).toBe('catch');
     expect(stepCatch(BIG_CUP, catching, { ...atSeat, tamaTouching: true }, SUBSTEP).phase.kind).toBe('absorb');
+  });
+
+  it('stops steering under a ball that strikes the ken away from its seat', () => {
+    // Steering on under a ball perched on the spike's tip balances it there,
+    // which no player's hand could; the player feels the miss and lets it go.
+    const catching: CatchAttempt = {
+      phase: { kind: 'catch', blockedFor: 0 },
+      hand: { ...restingHand([0, 0, 0], SPIKE_UP_GRIP_QUATERNION), velocity: [200, 0, 0] },
+      home: [0, 0, 0],
+      time: 1,
+      heldGrip: SPIKE_UP_GRIP_QUATERNION,
+    };
+    const onTheTip = {
+      tamaPosition: [30, SPIKE.seatHeight + 40, 0],
+      tamaVelocity: [0, -500, 0],
+      tamaQuaternion: [0, 0, 0, 1],
+    };
+    const steering = stepCatch(SPIKE, catching, { ...onTheTip, tamaTouching: false }, SUBSTEP);
+    const struck = stepCatch(SPIKE, catching, { ...onTheTip, tamaTouching: true }, SUBSTEP);
+    expect(steering.hand.velocity[0]).toBeGreaterThan(200);
+    expect(struck.hand.velocity[0]).toBeLessThan(200);
+    expect(struck.phase.kind).toBe('catch');
   });
 });

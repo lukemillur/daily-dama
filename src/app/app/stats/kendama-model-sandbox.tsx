@@ -121,6 +121,8 @@ export default function KendamaModelSandbox() {
             <Chip label="Spike" onPress={() => restart('spike')} />
             <Chip label="Big Cup to Spike" onPress={() => restart('big-cup-to-spike')} />
             <Chip label="Base Cup" onPress={() => restart('base-cup')} />
+            <Chip label="Base Cup to Spike" onPress={() => restart('base-cup-to-spike')} />
+            <Chip label="Hole-up to Spike" onPress={() => restart('hole-up-to-spike')} />
             <Chip label="Airplane" onPress={() => restart('airplane')} />
             <Chip label="Drop" onPress={() => restart('drop')} />
             <Chip label="Reset" onPress={() => restart('hanging')} />

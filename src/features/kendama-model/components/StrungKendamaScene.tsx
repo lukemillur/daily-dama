@@ -6,13 +6,14 @@ import { Group, Mesh, Plane, Quaternion, Vector3 } from 'three';
 import { advanceAirplaneRun, createAirplaneRun, type AirplaneRun } from '../model/airplane';
 import {
   advanceTrickRun,
+  createSeatedRun,
   createTrickRun,
   currentTrick,
   type CatchPhase,
   type TrickRun,
 } from '../model/catch-trick';
 import { createStringSim, stepStringSim, stringPoints, type StringSim } from '../model/string-sim';
-import { GRIP_QUATERNIONS, gripPose, type Grip, type Handedness } from '../model/stringing';
+import { GRIP_QUATERNIONS, gripPose, TAMA_HOLE_UP_QUATERNION, type Grip, type Handedness } from '../model/stringing';
 import {
   applyFraming,
   dragTurn,
@@ -28,7 +29,7 @@ import {
   type StrungLayout,
 } from '../model/strung-render';
 import { tamaHeldStringPoints } from '../model/tama-held-sim';
-import { ROUTINES } from '../model/tricks';
+import { BASE_CUP, ROUTINES, SPIKE } from '../model/tricks';
 import { MM } from '../model/views';
 import { KenModel, TamaModel } from './KendamaParts';
 
@@ -117,6 +118,9 @@ function StrungRig({
         trickRef.current = null;
         simRef.current = null;
         airplaneRef.current = createAirplaneRun(handedness);
+      } else if (layout === 'hole-up-to-spike') {
+        trickRef.current = createSeatedRun([BASE_CUP, SPIKE], handedness, TAMA_HOLE_UP_QUATERNION);
+        simRef.current = trickRef.current.sim;
       } else if (layout !== 'hanging' && layout !== 'drop') {
         trickRef.current = createTrickRun(ROUTINES[layout].tricks, handedness);
         simRef.current = trickRef.current.sim;

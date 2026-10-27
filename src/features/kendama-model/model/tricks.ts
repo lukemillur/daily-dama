@@ -64,6 +64,7 @@ export const ROUTINES = {
   // which carries the spike up under the cup's seat: a ball popped straight
   // up out of the cup comes down onto it, hole first if it sat hole down.
   'big-cup-to-spike': { name: 'Big Cup to Spike', tricks: [BIG_CUP, SPIKE] },
+  'base-cup-to-spike': { name: 'Base Cup to Spike', tricks: [BASE_CUP, SPIKE] },
 } as const satisfies Record<string, Routine>;
 
 export type RoutineId = keyof typeof ROUTINES;
