@@ -144,6 +144,12 @@ export type CatchAttempt = {
    * with it.
    */
   turnover?: Turnover;
+  /**
+   * Where the ball sat when a pop off a seat began, in the ken's own frame
+   * from the hand. The wrist holds the ken still until the ball has lifted
+   * clear of it.
+   */
+  seat?: Vec3;
 };
 
 /**
@@ -152,9 +158,8 @@ export type CatchAttempt = {
  * of sliding under it, and the ball leaves spinning about `axis` at `spin`.
  * `grip` is the ken turned half over about the same axis: the catching
  * grip, which may face the sarado the other way from the trick's own.
- * `seat` is where the ball sat, in the ken's own frame from the hand.
  */
-export type Turnover = { axis: Vec3; spin: number; grip: Quat; seat: Vec3 };
+export type Turnover = { axis: Vec3; spin: number; grip: Quat };
 
 /** Let the hanging ball come to rest before pulling: at least this long, */
 const SETTLE_TIME = 0.35;
@@ -225,9 +230,10 @@ const TURNOVER_TURN_SLACK = 0.3;
 /** A turnover's pop has spun the ball up once the swing reaches this share of its planned speed. */
 const SPUN_SHARE = 0.9;
 /**
- * How far the ball must have lifted off its seat, mm, before the turnover
- * stops swinging: releasing at the first gap lets the seat's trailing rim
- * rub the spin back off.
+ * How far the ball must have lifted off its seat, mm, before the wrist may
+ * turn the seat away under it, or a turnover stop swinging. A ball that has
+ * merely stopped pressing is still within reach of the rim, and a rim turned
+ * against it rubs a spin onto it.
  */
 const RELEASE_GAP = 8;
 /** The hole counts as facing down within this of straight down, radians. */
@@ -283,7 +289,27 @@ export function continueCatch(
     time: 0,
     heldGrip: previous.hand.orientation,
     turnover: turnsOver ? turnoverFor(trick, previous.hand, ball, kenStringHole, (launchSpeed + Math.sqrt(launchSpeed ** 2 + 2 * GRAVITY * Math.max(fall, 0))) / GRAVITY) : undefined,
+    seat: seatFrom(previous.hand, ball.tamaPosition),
   };
+}
+
+/** Where the ball sits, in the ken's own frame from the hand. */
+function seatFrom(hand: Hand, p: ArrayLike<number>): Vec3 {
+  const seat = [0, 0, 0];
+  rotateInverse(hand.orientation, p[0] - hand.position[0], p[1] - hand.position[1], p[2] - hand.position[2], seat);
+  return [seat[0], seat[1], seat[2]];
+}
+
+const seatNow = [0, 0, 0];
+
+/** How far the ball has lifted off where it sat, wherever the ken has moved it. */
+function gapFromSeat(hand: Hand, p: ArrayLike<number>, seat: Vec3): number {
+  rotate(hand.orientation, seat[0], seat[1], seat[2], seatNow);
+  return Math.hypot(
+    p[0] - hand.position[0] - seatNow[0],
+    p[1] - hand.position[1] - seatNow[1],
+    p[2] - hand.position[2] - seatNow[2],
+  );
 }
 
 const seatHole = [0, 0, 0];
@@ -333,18 +359,13 @@ function turnoverFor(
   const turn = [ax * Math.sin(half), 0, az * Math.sin(half), Math.cos(half)];
   const grip = [0, 0, 0, 1];
   multiply(turn, kenFrom, grip);
-  const seat = [0, 0, 0];
-  const p = ball.tamaPosition;
-  rotateInverse(kenFrom, p[0] - hand.position[0], p[1] - hand.position[1], p[2] - hand.position[2], seat);
   return {
     axis: [ax, 0, az],
     spin: angle / airtime,
     grip: [grip[0], grip[1], grip[2], grip[3]],
-    seat: [seat[0], seat[1], seat[2]],
   };
 }
 
-const seatNow = [0, 0, 0];
 const holeNow = [0, 0, 0];
 
 /**
@@ -432,6 +453,7 @@ export function stepCatch(
     time,
     heldGrip: attempt.heldGrip,
     turnover: attempt.turnover,
+    seat: attempt.seat,
   });
   const hold = (): Vec3 => [
     trackAxis(hand.position[0], hand.velocity[0], home[0], 0, RETURN_OMEGA),
@@ -480,12 +502,7 @@ export function stepCatch(
         // seat: turning on ahead of the ball tilts the seat, and its trailing
         // rim rises into the ball and rubs its spin back off. A ball that
         // has merely stopped pressing is not clear.
-        rotate(hand.orientation, turnover.seat[0], turnover.seat[1], turnover.seat[2], seatNow);
-        const gap = Math.hypot(
-          p[0] - hand.position[0] - seatNow[0],
-          p[1] - hand.position[1] - seatNow[1],
-          p[2] - hand.position[2] - seatNow[2],
-        );
+        const gap = attempt.seat ? gapFromSeat(hand, p, attempt.seat) : Infinity;
         // Once the hand has stopped rising the pop is over, spun up or not.
         const popOver = !lifting && hand.velocity[1] <= 0;
         const released = (!lifting && spun && gap > RELEASE_GAP) || popOver;
@@ -512,6 +529,7 @@ export function stepCatch(
           time,
           heldGrip: attempt.heldGrip,
           turnover,
+          seat: attempt.seat,
         };
         return next;
       }
@@ -528,10 +546,13 @@ export function stepCatch(
 
       // Turning the ken while the ball is near it would sweep a rim into
       // it, so the wrist holds the old grip until the ball is clear of
-      // everything the turn can reach, then turns to the trick's grip.
+      // everything the turn can reach, then turns to the trick's grip. The
+      // sarado's sweep is not enough on its own: a ball on the base cup sits
+      // beyond it already, at the end of the handle, and must lift off first.
       const { from, climb } = attempt.phase;
       const reach = Math.hypot(p[0] - hand.position[0], p[1] - hand.position[1], p[2] - hand.position[2]);
-      const free = attempt.phase.free || (!ball.tamaTouching && reach > CLEAR_OF_TURN);
+      const offSeat = !attempt.seat || gapFromSeat(hand, p, attempt.seat) > RELEASE_GAP;
+      const free = attempt.phase.free || (!ball.tamaTouching && reach > CLEAR_OF_TURN && offSeat);
       // A ball rising from below must pass beside the ken until it is above
       // its top; one popped off a seat is above it already.
       const passing = from === 'below' && p[1] - TAMA.radius < hand.position[1] + trick.kenTop + CLEAR_ABOVE;

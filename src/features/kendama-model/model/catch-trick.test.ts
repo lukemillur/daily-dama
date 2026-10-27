@@ -1,8 +1,10 @@
 import { TAMA } from './anatomy';
 import {
   advanceTrickRun,
+  createSeatedRun,
   createTrickRun,
   isFinished,
+  isRunFinished,
   launchSpeedFor,
   seatDistance,
   stepCatch,
@@ -14,7 +16,13 @@ import {
 import { collideWithKen, createKenContact } from './collision';
 import { HAND_MAX_ACCELERATION, restingHand } from './hand';
 import { GRAVITY, SUBSTEP, stringPathLength } from './string-sim';
-import { BIG_CUP_GRIP_QUATERNION, SPIKE_UP_GRIP_QUATERNION, STRING_LENGTH, type Handedness } from './stringing';
+import {
+  BIG_CUP_GRIP_QUATERNION,
+  SPIKE_DOWN_GRIP_QUATERNION,
+  SPIKE_UP_GRIP_QUATERNION,
+  STRING_LENGTH,
+  type Handedness,
+} from './stringing';
 import { BASE_CUP, BIG_CUP, SPIKE } from './tricks';
 import type { Vec3 } from './views';
 
@@ -241,5 +249,46 @@ describe('the catch controller', () => {
     expect(steering.hand.velocity[0]).toBeGreaterThan(200);
     expect(struck.hand.velocity[0]).toBeLessThan(200);
     expect(struck.phase.kind).toBe('catch');
+  });
+});
+
+describe('a pop off the base cup', () => {
+  // The ball sits at the end of the handle, beyond the sarado's sweep, so
+  // being clear of the sarado says nothing about being clear of the cup.
+  const popping = (): CatchAttempt => {
+    const seat: Vec3 = [0, -BASE_CUP.seatHeight, 0];
+    return {
+      phase: { kind: 'rise', from: 'seat', free: false, climb: { from: BASE_CUP.seatHeight, to: 260 } },
+      hand: { ...restingHand([0, 0, 0], SPIKE_DOWN_GRIP_QUATERNION), velocity: [0, 900, 0] },
+      home: [0, 0, 0],
+      time: 1,
+      heldGrip: SPIKE_DOWN_GRIP_QUATERNION,
+      seat,
+    };
+  };
+  const ball = (lifted: number) => ({
+    tamaPosition: [0, BASE_CUP.seatHeight + lifted, 0],
+    tamaVelocity: [0, 1200, 0],
+    tamaQuaternion: [0, 0, 0, 1],
+    tamaTouching: false,
+  });
+
+  it('holds the cup still under a ball that has only just stopped pressing on it', () => {
+    const next = stepCatch(SPIKE, popping(), ball(2), SUBSTEP);
+    expect(Math.hypot(...next.hand.angularVelocity)).toBeLessThan(1e-6);
+    expect(next.phase).toMatchObject({ kind: 'rise', free: false });
+  });
+
+  it('turns toward the spike once the ball has lifted clear', () => {
+    const next = stepCatch(SPIKE, popping(), ball(20), SUBSTEP);
+    expect(Math.hypot(...next.hand.angularVelocity)).toBeGreaterThan(0.1);
+    expect(next.phase).toMatchObject({ kind: 'rise', free: true });
+  });
+
+  it.each<Handedness>(['right', 'left'])('lands a ball sitting hole down on the spike (%s)', (handedness) => {
+    const run = createSeatedRun([BASE_CUP, SPIKE], handedness, [0, 0, 0, 1]);
+    for (let t = 0; t < 4 && !isRunFinished(run); t += 1 / 60) advanceTrickRun(run, 1 / 60);
+    expect(run.step).toBe(1);
+    expect(run.attempt.phase).toEqual({ kind: 'landed' });
   });
 });

@@ -10,7 +10,7 @@ This is the visualizer going forward. The older keyframed system in `src/feature
 
 It lives only in the dev sandbox at `/app/stats/kendama-model-sandbox` (Strung and Anatomy modes). It is not wired into the app's Tricks or Sesh UI, and what it is for is still an open product question (§9).
 
-Landing: Big Cup, Spike, Big Cup to Spike, Airplane and Base Cup.
+Landing: Big Cup, Spike, Big Cup to Spike, Airplane and Base Cup. Base Cup to Spike lands 2 of 16 (§4).
 
 ## 2. Where things live
 
@@ -77,7 +77,18 @@ Onto the shallow dish at the bottom of the handle, in the `spike-down` grip. Two
 
 ### Base Cup to Spike
 
-Base Cup, then a pop onto the spike. Lands 4 of 16 in the fingerprint set: Base Cup seats the ball with its hole wherever it happened to land, mostly well off the hole-down that Spike needs. The fix is hole control (§5.12), not tuning the pop.
+Base Cup, then a pop onto the spike. Lands 2 of 16 in the fingerprint set. It does not land reliably yet; the diagnosis below is measured, and the open direction is in §9.
+
+**Fixed: the wrist waited for the sarado, not the cup.** A seat pop holds the old grip until the ball is clear of everything the turn can sweep. `CLEAR_OF_TURN` measures only the sarado, and a ball on the base cup already sits beyond it at the end of the handle. So the half turn began the moment the ball stopped pressing, and the cup's rim rubbed up to 7 rad/s of spin onto a ball still resting on it. The turn now also waits until the ball is `RELEASE_GAP` off the seat it left (`seat`, `gapFromSeat`). Every other trick is bit-identical: a ball beyond the sarado's sweep is always well off the big cup. The count fell from 4 to 2 because two starts had landed only when that rub happened to turn the hole the right way. With the gate, a ball placed hole down on the base cup lands the spike for both stringings (`catch-trick.test.ts`), and the gap window is broad (3–20 mm all land).
+
+**Measured, not yet fixed:**
+
+- **Where the hole goes.** The pull leaves the hole within 6° of down. About 1 rad/s of residual spin adds 10–25° by the apex. Base Cup's catch adds about 30° more: the `dive` waits about 46 mm above home, so a hand still coming down from the pull's overshoot reverses upward at the apex and tugs the string. Seats end 21–149° off down; `MAX_FOLLOW_TILT` is 34°.
+- **The pop disturbs the hole as well.** In the first 0.25 s, string pulls of 4–20 g reach the free ball. Three sources were found, and a scratch fix for each cleaned some starts but not others:
+  - The early lurch onto the hole line scrubs the rim across a ball that has not yet lifted. Riding under the ball until it is clear fixes that.
+  - The wrist retraces Base Cup's rise turn, which can swing the handle into string draped along it. Choosing the direction from where the string lies up the handle helps; the string's exit at the sarado is the wrong guide in the spike-down grip.
+  - Hole-down seats amplify every tug (§5.7).
+- **Why the scratch fixes were not kept.** Stacked, they landed 0 of 16, and outcomes flipped from start to start (§5.11). The cleanest pops still let the hole drift 7–76°.
 
 When the spike misses the hole and strikes the shell, the ball now bounces and rolls off. Two changes made that honest: the spike-on-shell contact (§3), and the catch stops steering under a ball that touches the ken further than `BOUNCED_OUT_DISTANCE` from the seat. Before them, the hand kept chasing the ball and balanced it on the tip as no hand could.
 
@@ -92,7 +103,7 @@ The sandbox's "Hole-up to Spike" chip starts the ball seated hole up on the base
 
 It lands 0 times. The cause is structural, not tuning: on a hole-up seat the string leaves from under the ball, over the base cup's rim and along the handle, with up to 17 of 20 particles resting on the wood. The pop's sideways swing (up to 1.7 m/s) drags that draped string and tugs the ball at about 20 g, killing the spin within milliseconds. After release, the wrist turning to the catch grip at its 30 rad/s limit whips the same string and has spun one ball to 78 rad/s the wrong way. A softer post-release turn and the spin-based catch each fixed some starts and broke others, with no landings.
 
-**Next step if resumed:** run the turnover with the string cut (or held clear) to prove whether the pop, spin and catch land on their own. If they do, the work is a pop that does not drag draped string: a smaller sideways swing with more spin from the lift, or lifting the string off the handle before the swing. If they do not, the turnover technique itself is wrong.
+**String-cut result.** The isolation run (string solve switched off at the pop) does not land either. From a placed hole-up seat the ball releases at the same 5.9 rad/s with or without the string, so the pop's swing is not what kills the spin. With the string cut it arrives 35° off down, just past `MAX_FOLLOW_TILT`; with the string, 83°. The string's harm comes after release, and the turnover's spin and catch timing are also slightly short on their own. From Base Cup's real, tilted seats the turnover hardly spins the ball (about 1.8 rad/s). Its axis is chosen to unwind the string, not to bring a tilted hole round; only a seat that is exactly hole up leaves the axis free.
 
 ## 5. Catch principles
 
@@ -140,11 +151,13 @@ The pull is sized from ballistics. Everything after it watches the body: steadyi
 
 **For a new trick:** turn the wrist about an axis through the string hole (Base Cup), and list every hand move that tugs slack string. **String draped on the ken moves with the ken**: friction holds it, so any sideways move or fast turn drags it and tugs the ball (Hole-up to Spike). Check where the string lies at the start of each move, not only whether it is slack.
 
+**Which way the hole faces sets how much a tug spins the ball.** The string pulls at the string hole, opposite the hole. With the hole down, the string hole is on top, the string leaves over the ball's side, and a tug acts with nearly the full radius as its lever. The angular acceleration is about 2.5·a/R, so a 3 g tug for 3 ms adds about 7 rad/s. With the hole up, the string leaves from the bottom toward the ken, nearly through the centre, and the same tug barely turns the ball. A hole that must stay put through a pop needs well under 2 rad/s of disturbance in total (Base Cup to Spike).
+
 ### 5.8 Turn only where the turn cannot hit anything
 
 A turning ken sweeps its cups and handle through space. Big Cup to Spike waits until the ball is beyond everything the turn can reach; Base Cup turns in a plane the ball never enters.
 
-**For a new trick:** for every turn, either wait for clearance or choose an axis whose swept plane avoids the body.
+**For a new trick:** for every turn, either wait for clearance or choose an axis whose swept plane avoids the body. "Clear" means clear of the part the ball is sitting on, not only of the sarado: a seat at the end of the handle is already beyond the sarado's sweep (`gapFromSeat`, Base Cup to Spike).
 
 ### 5.9 The catch target sets the tolerances
 
@@ -174,7 +187,7 @@ Seated after Airplane, a wrist that follows the ken's lean makes it lean further
 
 A player lands each trick with the hole where the next one needs it: for a spike after the base cup, hole up, so a lift and half turn drops it on. A chained trick into a hole catch is only as reliable as the hole the previous seat leaves. The ken may also track the hole in the air within a reasonable margin, moving with it, but it must not chase a ball it has thrown off line.
 
-**For a new chained trick:** decide which way the previous seat must leave the hole, and plan that landing, before tuning the pop. Not built yet: the kernel lands each trick without regard to the next.
+**For a new chained trick:** decide which way the previous seat must leave the hole, and plan that landing, before tuning the pop. Not built yet: the kernel lands each trick without regard to the next. Weigh hole down against hole up with §5.7's lever in mind. Hole down needs no turnover but makes the ball sensitive to every string tug through the pop. Hole up shrugs off tugs but needs a half turn in the air. Base Cup's flight naturally carries the hole down; throwing it higher so the string turns it over gives scattered 93–175°, not control.
 
 ## 6. Adding a trick
 
@@ -210,6 +223,7 @@ A player lands each trick with the hole where the next one needs it: for a spike
 - **The string pushes the ball one way.** A string particle pushed out of the tama moves; the ball does not. Pushing the particles near the string hole out of the ball injects spin through the tie, so the last three particles skip tama collision, and the drawn string is only pushed out at render time. A two-way string–ball contact solve would remove this; it is the likely prerequisite for any trick where the string wraps the ball.
 - **The string's 17 mm spans** pass through thin wood between particles. Colliding spans with the ken stretched the string to 402 mm and failed the stretch tests, so it was reverted.
 - **Hole-up to Spike is paused** (§4), and hole control (§5.12) is not built.
+- **Base Cup to Spike (2 of 16) needs a direction decision** (§4). The owner first chose hole up, then hole down on the evidence in §4. The later string-lever finding (§5.7) favours hole up again for the pop, at the price of a turnover. The candidates: (a) hole up, with a turnover planned now that the string-cut run shows its own errors (spin short, about 35° off); (b) hole down, with a pop that keeps every string tug off the ball (all three §4 sources at once) and a Base Cup catch that does not reverse at the apex; (c) first review whether the string's friction and one-way push (below) exaggerate tugs at the string hole. The scratch versions of (b)'s fixes were not committed; §4 describes each. Rebuild them behind an opt-in field.
 - **Contacts on the free ken are frictionless**, so a seated ken can rock in the bore.
 - **The spike-up grip orientation** has not been confirmed by the owner.
 - **Not started:** Moshikame (§5.1, §5.4 on every catch), Lighthouse (§5.9, §5.10), Trapeze (§5.7), compound Kentei sequences.
