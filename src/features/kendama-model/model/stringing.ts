@@ -90,17 +90,38 @@ export const SPIKE_UP_GRIP_QUATERNION: Quat = (() => {
 })();
 
 /**
+ * Spike down, base cup up: the spike-up grip turned half a turn further
+ * about the player's left-right axis, the spike going away and down. That
+ * axis runs through the sarado's waist, so the string barely moves as the
+ * wrist turns between the two.
+ */
+export const SPIKE_DOWN_GRIP_QUATERNION: Quat = (() => {
+  const q = new Quaternion()
+    .setFromAxisAngle(new Vector3(1, 0, 0), -Math.PI)
+    .multiply(
+      new Quaternion(
+        SPIKE_UP_GRIP_QUATERNION[0],
+        SPIKE_UP_GRIP_QUATERNION[1],
+        SPIKE_UP_GRIP_QUATERNION[2],
+        SPIKE_UP_GRIP_QUATERNION[3],
+      ),
+    );
+  return [q.x, q.y, q.z, q.w];
+})();
+
+/**
  * The tama held hole up, as for Airplane: half a turn about X puts its
  * hole (local -Y) on top and its string hole underneath, in the palm.
  */
 export const TAMA_HOLE_UP_QUATERNION: Quat = [1, 0, 0, 0];
 
 /** The grips a player can hold the ken in, by the orientation they give it. */
-export type Grip = 'big-cup' | 'spike-up';
+export type Grip = 'big-cup' | 'spike-up' | 'spike-down';
 
 export const GRIP_QUATERNIONS: Record<Grip, Quat> = {
   'big-cup': BIG_CUP_GRIP_QUATERNION,
   'spike-up': SPIKE_UP_GRIP_QUATERNION,
+  'spike-down': SPIKE_DOWN_GRIP_QUATERNION,
 };
 
 /**

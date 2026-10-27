@@ -15,7 +15,7 @@ import { collideWithKen, createKenContact } from './collision';
 import { HAND_MAX_ACCELERATION, restingHand } from './hand';
 import { GRAVITY, SUBSTEP, stringPathLength } from './string-sim';
 import { BIG_CUP_GRIP_QUATERNION, STRING_LENGTH, type Handedness } from './stringing';
-import { BIG_CUP, SPIKE } from './tricks';
+import { BASE_CUP, BIG_CUP, SPIKE } from './tricks';
 import type { Vec3 } from './views';
 
 type Outcome = {
@@ -86,9 +86,16 @@ function phaseOf(run: TrickRun): CatchPhase['kind'] {
  * frictionless bore and clicks onto the sarado; the spike holds it through
  * the half-millimetre hop that follows.
  */
-const ARRIVAL_LIMIT = { [BIG_CUP.name]: 250, [SPIKE.name]: 450 };
+const ARRIVAL_LIMIT = { [BIG_CUP.name]: 250, [SPIKE.name]: 450, [BASE_CUP.name]: 250 };
 
-describe.each([BIG_CUP, SPIKE])('$name from a ball hanging at rest', (trick) => {
+/**
+ * How far below home the hand may finish. Base Cup's ball falls further, so
+ * it arrives faster and the same absorb takes longer to stop it: a deeper
+ * knee bend, still nowhere near the 250 mm that would mean chasing it.
+ */
+const CUSHION_LIMIT = { [BIG_CUP.name]: 40, [SPIKE.name]: 40, [BASE_CUP.name]: 120 };
+
+describe.each([BIG_CUP, SPIKE, BASE_CUP])('$name from a ball hanging at rest', (trick) => {
   const right = attempt(trick, 'right');
   const left = attempt(trick, 'left');
 
@@ -104,7 +111,7 @@ describe.each([BIG_CUP, SPIKE])('$name from a ball hanging at rest', (trick) => 
   });
 
   it('catches near home height, with a short cushion rather than a dive', () => {
-    expect(Math.abs(right.run.attempt.hand.position[1])).toBeLessThan(40);
+    expect(Math.abs(right.run.attempt.hand.position[1])).toBeLessThan(CUSHION_LIMIT[trick.name]);
   });
 
   it('arrives gently enough to stay', () => {
@@ -131,7 +138,7 @@ describe.each([BIG_CUP, SPIKE])('$name from a ball hanging at rest', (trick) => 
   });
 });
 
-describe.each([BIG_CUP, SPIKE])('$name is repeatable', (trick) => {
+describe.each([BIG_CUP, SPIKE, BASE_CUP])('$name is repeatable', (trick) => {
   it('lands the same way at any display frame rate', () => {
     const at60 = attempt(trick, 'right', { frame: 1 / 60, duration: 2.2 });
     expect(at60.run.attempt.phase).toEqual({ kind: 'landed' });

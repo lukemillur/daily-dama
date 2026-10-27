@@ -41,8 +41,17 @@ export const HELD_KEN_FRAMING: Framing = { position: [2.9, 1.9, 13.6], target: [
  */
 export const HELD_TAMA_FRAMING: Framing = { position: [5.1, 3.1, 21.1], target: [-0.2, -1.1, -2] };
 
+/**
+ * The same view, further back and aimed higher: Base Cup's pull carries the
+ * hand about 300 mm up while the ken turns over, with the base cup 105 mm
+ * above it, and that turn is the part worth seeing.
+ */
+export const BASE_CUP_FRAMING: Framing = { position: [4.1, 3.5, 19], target: [-0.2, 0, 0] };
+
 export function framingFor(layout: StrungLayout): Framing {
-  return layout === 'airplane' ? HELD_TAMA_FRAMING : HELD_KEN_FRAMING;
+  if (layout === 'airplane') return HELD_TAMA_FRAMING;
+  if (layout === 'base-cup') return BASE_CUP_FRAMING;
+  return HELD_KEN_FRAMING;
 }
 
 /** The parts of drei's OrbitControls a framing change touches. */
