@@ -282,6 +282,7 @@ function substep(sim: StringSim, h: number) {
   // Project.
   let tamaContact = false;
   let spikeContact = false;
+  spikeOnShell.depth = 0;
   for (let iteration = 0; iteration < ITERATIONS; iteration += 1) {
     for (let solve = 0; solve < STRING_SOLVES; solve += 1) solveString(sim);
 
@@ -342,9 +343,25 @@ function substep(sim: StringSim, h: number) {
 
   sim.tamaTouching = tamaContact || spikeContact;
   if (tamaContact) resolveTamaContactVelocity(sim, tamaNormal, h);
+  else if (spikeOnShell.depth > 0) resolveTamaContactVelocity(sim, spikeOnShell.normal, h);
 }
 
 const spikeCentre = new Float64Array(3);
+const shellPoint = new Float64Array(3);
+/**
+ * The deepest spike contact this substep on the ball's painted outside,
+ * with its normal pointing out of the spike: struck there, the ball
+ * bounces and rubs as it does on any wood, rather than stopping dead on
+ * the tip.
+ */
+const spikeOnShell = { depth: 0, normal: new Float64Array(3) };
+/** A contact point this close to the ball's radius is on its outside, not in its hole, */
+const ON_SHELL = 0.5;
+/**
+ * and this far beyond the countersink's lip: a spike landing a little off
+ * centre rides the lip into the hole, which friction or a bounce would stop.
+ */
+const LIP_ROOM = 1;
 
 /**
  * The spike against the ball's real solid, bore and all. Each contact is
@@ -353,7 +370,9 @@ const spikeCentre = new Float64Array(3);
  * contact's lever, and turns the ball as well as moving it. That is what
  * lets a countersink or bore wall struck off-axis tip the hole into line.
  *
- * Frictionless: a spike slides freely into a bore.
+ * Frictionless here, so a spike slides freely into a bore. A spike that
+ * strikes the outside instead is noted in `spikeOnShell` for the velocity
+ * step, which gives it the bounce and friction of any wood.
  */
 function collideSpikeWithTama(sim: StringSim): boolean {
   const reach = TAMA.radius + SPIKE_MAX_RADIUS;
@@ -376,6 +395,16 @@ function collideSpikeWithTama(sim: StringSim): boolean {
     const tx = ry * n[2] - rz * n[1];
     const ty = rz * n[0] - rx * n[2];
     const tz = rx * n[1] - ry * n[0];
+    rotateInverse(sim.tamaQuaternion, rx, ry, rz, shellPoint);
+    const onShell =
+      Math.hypot(shellPoint[0], shellPoint[2]) > TAMA.bevelOuterRadius + LIP_ROOM &&
+      Math.hypot(shellPoint[0], shellPoint[1], shellPoint[2]) > TAMA.radius - ON_SHELL;
+    if (onShell && contact.depth > spikeOnShell.depth) {
+      spikeOnShell.depth = contact.depth;
+      spikeOnShell.normal[0] = -n[0];
+      spikeOnShell.normal[1] = -n[1];
+      spikeOnShell.normal[2] = -n[2];
+    }
     const lambda = contact.depth / (TAMA_INV_MASS + TAMA_INV_INERTIA * (tx * tx + ty * ty + tz * tz));
     // The ball is pushed along -n, out of the spike, at the lever r.
     c[0] -= TAMA_INV_MASS * lambda * n[0];

@@ -231,6 +231,13 @@ export function createKenContact(): KenContact {
 const local = new Float64Array(3);
 const localNormal = new Float64Array(3);
 const hit: ProfileHit = { distance: 0, nr: 0, nh: 0 };
+const far: ProfileHit = { distance: 0, nr: 0, nh: 0 };
+/**
+ * How far short of touching, in mm, the far side of the base cup's rim
+ * still takes a share of a push: a ring this close all round is one the
+ * ball rests on all round.
+ */
+const RING_SHARE = 0.5;
 
 /**
  * Tests a sphere of `radius` at world `point` against the ken posed at
@@ -269,9 +276,28 @@ export function collideWithKen(
         deepest = depth;
         const ux = radial > 1e-9 ? x / radial : 0;
         const uz = radial > 1e-9 ? z / radial : 1;
-        localNormal[0] = hit.nr * ux;
-        localNormal[1] = hit.nh;
-        localNormal[2] = hit.nr * uz;
+        let nr = hit.nr;
+        let nh = hit.nh;
+        // A ball over the base cup rests on its rim, a ring that touches it
+        // all round. The nearest point alone would push it about half
+        // sideways, so a firm push, a landing or a pop, kicks it off the
+        // dish. The far side of the ring, the profile mirrored across the
+        // axis, shares the push by how near it is to touching: centred, the
+        // two cancel to a push along the axis; off centre, the nearer side
+        // wins and moves the ball back toward the middle.
+        if (y < 0 && radial < HANDLE.baseCup.mouthRadius && queryProfile(handle, -radial, y, radius, far)) {
+          const near = depth + RING_SHARE;
+          const across = Math.max(radius - far.distance + RING_SHARE, 0);
+          // Mirrored, the far side's outward radial direction is -u.
+          nr = (near * hit.nr - across * far.nr) / (near + across);
+          nh = (near * hit.nh + across * far.nh) / (near + across);
+          const length = Math.hypot(nr, nh);
+          nr /= length;
+          nh /= length;
+        }
+        localNormal[0] = nr * ux;
+        localNormal[1] = nh;
+        localNormal[2] = nr * uz;
       }
     }
   }

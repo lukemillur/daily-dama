@@ -29,6 +29,18 @@ describe('collideWithKen', () => {
     expect(pressed.normal[0]).toBeCloseTo(cupSeatOffset(bigCup) / TAMA.radius, 1);
   });
 
+  it('holds a ball on the base cup by its whole rim ring', () => {
+    // Sunk 0.5 mm into the ring at the dish's mouth, below the handle.
+    const below = Math.sqrt((TAMA.radius - 0.5) ** 2 - HANDLE.baseCup.mouthRadius ** 2);
+    // Centred, both sides of the ring touch and the push runs along the axis,
+    // where the nearest point alone would push it half sideways off the dish.
+    const centred = contactAt([0.01, -below, 0], TAMA.radius);
+    expect(centred.normal[1]).toBeLessThan(-0.99);
+    // Off centre, the nearer side wins and pushes it back toward the middle.
+    const offCentre = contactAt([2, -below, 0], TAMA.radius);
+    expect(offCentre.normal[0]).toBeLessThan(-0.2);
+  });
+
   it('pushes a point inside the handle back out radially', () => {
     const { depth, normal } = contactAt([3, 120, 0], 0.5);
     expect(depth).toBeGreaterThan(2);
