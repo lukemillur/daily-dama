@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Screen } from "@/components/ui/screen";
 import { TextField } from "@/components/ui/text-field";
 import { BodyText, DisplayTitle, Eyebrow } from "@/components/ui/typography";
-import { AppColors, BottomTabInset } from "@/constants/theme";
+import { AppColors } from "@/constants/theme";
 import { AccountSection } from "@/features/auth/components/account-section";
 import { GuestAccountSection } from "@/features/auth/components/guest-account-section";
 import { useRequireOnboarding } from "@/features/onboarding/state/require-onboarding";
@@ -35,7 +35,7 @@ export default function ProfileScreen() {
   return (
     <Screen edges={["top", "left", "right"]} includeWebHeaderInset={false}>
       <ProfileScroll
-        contentContainerStyle={{ paddingBottom: 120 + BottomTabInset }}
+        contentContainerStyle={{ paddingBottom: Platform.OS === "web" ? 120 : 24 }}
       >
         <Content>
           <Eyebrow>Your profile</Eyebrow>
