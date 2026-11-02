@@ -4,7 +4,7 @@ A practice companion for kendama players. Pick tricks from the standard Kendama 
 
 **Live:** [www.dailydama.com](https://www.dailydama.com)
 
-Built with Expo SDK 57, Expo Router, React 19, TypeScript (strict), styled-components, and Supabase. Web is the active platform; the code stays React Native–portable for later iOS and Android hardening.
+Built with Expo SDK 57, Expo Router, React 19, TypeScript (strict), styled-components, and Supabase. Web, iOS and Android are all active platforms.
 
 > **Reviewing this repository? Start with [How I work with AI](HOW_I_WORK_WITH_AI.md).**
 > AI agents wrote most of this code. That page explains what I own (product direction, architecture, invariants, and the gates that decide whether generated work is trustworthy), how the agent pipeline runs, and four real incidents where those gates caught mistakes. It's a five-minute read.

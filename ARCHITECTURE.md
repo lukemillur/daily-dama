@@ -12,8 +12,8 @@ This guide covers the Daily Dama product application: onboarding, Home, Sesh, Tr
 
 ### iOS development setup (October 29, 2026)
 
-iOS hardening has resumed with a simulator-first milestone; Android remains
-deferred. Local builds use Xcode 27.1 and Expo SDK 57 with
+Web, iOS and Android are all active targets. iOS has a working simulator
+development build; Android does not yet have a verified development build. Local iOS builds use Xcode 27.1 and Expo SDK 57 with
 `expo-build-properties`'s `ios.enableSceneSupport` enabled. This generates the
 UIKit scene lifecycle required by the iOS 27 SDK without maintaining native
 project files manually. The generated `/ios` directory remains ignored.
@@ -608,7 +608,7 @@ yarn expo export --platform web --output-dir /tmp/daily-dama-web-export
 
 `.claude/scripts/verify.mjs` runs these steps in order. Workflow-tooling tests under `.claude/scripts/` are separate from the product application's Jest suite.
 
-The tests are strongest around domain logic and Sesh behavior. They do not replace deliberate browser checks for layout, route interaction, timer experience, or narrow viewport fit. iOS and Android validation is intentionally deferred under the current platform scope.
+The tests are strongest around domain logic and Sesh behavior. They do not replace deliberate browser checks for layout, route interaction, timer experience, or narrow viewport fit. Native behavior needs iOS Simulator and Android Emulator evidence on the affected platform; see the active platform scope in `AGENTS.md`.
 
 ## Architectural decisions and how to explain them
 
@@ -682,7 +682,7 @@ The reducer is cleanly isolated, but `sesh.tsx` owns a large amount of presentat
 
 ### 9. Current platform confidence is asymmetric
 
-React Native primitives and platform-specific navigation preserve an eventual cross-platform path, but web is the only deliberately verified target. Native tab behavior, keyboard handling, background Sesh behavior, and layout remain explicit hardening work rather than proven architecture guarantees.
+React Native primitives and platform-specific navigation give one code path across web, iOS and Android, and all three are active targets. Web has the longest verification history. Native tab behavior, keyboard handling, background Sesh behavior, and layout are active hardening work on iOS and Android rather than proven architecture guarantees.
 
 ## Safe extension rules
 

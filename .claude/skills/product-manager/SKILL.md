@@ -98,7 +98,7 @@ A story is not a ticket. Keep it in product and user-behavior language; leave ar
 - One story = one coherent user outcome. If it needs "and" to describe the outcome, it's probably two stories.
 - Acceptance criteria describe what the user can now do or perceive, not how it's built.
 - `Status` starts at `Proposed`. Move it to `Ready for scoping` only once you and the user agree the product decision is settled — no open question that would change what gets built.
-- Respect the repository's web-only active scope: don't write a story whose only fulfillment is native work, unless the user has explicitly resumed mobile hardening.
+- Web, iOS and Android are all active targets; a story may be fulfilled by native work alone.
 - Do not assign task IDs (`T###`) or reference `TASKS.md` formatting — that happens downstream.
 
 Use this format when drafting a story:
