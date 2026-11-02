@@ -144,16 +144,6 @@ _Preparation prerequisite for native execution: the uncommitted simulator-enable
 - **Exit criteria:** On small and large iPhone simulators, at maximum scroll every final row and primary action in Home, Sesh setup/completion, Stats, Tricks, custom forms, notes and goals is fully above the tab bar and tappable; focused layout coverage protects the shared convention, web layout remains unchanged, and full typechecking passes.
 - **Notes:** Source: DESLOPPIFY.md D023. Inspect the installed Expo Router native-tab behavior before choosing insets; avoid scattered fixed spacers or duplicating automatic safe-area padding. This ticket covers keyboard-closed layout; T044 owns keyboard-visible behavior. Audit automation's failed scroll attempts did not establish that user scrolling is broken. Native lifecycle/providers/persistence remain unchanged.
 
-### [T286] Contain Sesh celebration banners on phone screens
-
-- **Area:** Sesh / celebration presentation
-- **Priority:** Medium
-- **Status:** In progress
-- **Planning:** Required
-- **Description:** Bound the animated celebration wrapper to its parent content width and allow long messages to wrap without clipping. First-lace banners for “Moshikame x10 or more, Spike” visibly extended beyond both sides during practice and completion.
-- **Exit criteria:** In small and large iPhone simulators, first-lace, personal-best and achieved-goal banners with long trick/sequence names show the complete message within screen bounds during animation and at rest; focused regression coverage and full typechecking pass, with web celebrations preserved.
-- **Notes:** Source: DESLOPPIFY.md D025. Reproduce and inspect wrapper/card measurements before changing animation; overshoot is a possible contributor rather than a proven sole cause. Preserve event eligibility, counters and Sesh transitions.
-
 ### [T287] Provide an honest native feedback unavailable state and exit
 
 - **Area:** Feedback

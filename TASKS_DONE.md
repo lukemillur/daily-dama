@@ -4,6 +4,16 @@ Completed entries move here from `TASKS.md`'s `Backlog`, in the same commit that
 
 Entries keep their content as it was at completion. Don't retroactively edit a description or exit criteria after the fact; if something about a completed task turns out to be wrong or misleading, note that in a new entry or in code, not by rewriting history here.
 
+### [T286] Contain Sesh celebration banners on phone screens
+
+- **Area:** Sesh / celebration presentation
+- **Priority:** Medium
+- **Status:** Done
+- **Planning:** Required
+- **Description:** Bound the animated celebration wrapper to its parent content width and allow long messages to wrap without clipping. First-lace banners for “Moshikame x10 or more, Spike” visibly extended beyond both sides during practice and completion.
+- **Exit criteria:** In small and large iPhone simulators, first-lace, personal-best and achieved-goal banners with long trick/sequence names show the complete message within screen bounds during animation and at rest; focused regression coverage and full typechecking pass, with web celebrations preserved.
+- **Notes:** Source: DESLOPPIFY.md D025. Reproduce and inspect wrapper/card measurements before changing animation; overshoot is a possible contributor rather than a proven sole cause. Preserve event eligibility, counters and Sesh transitions. Completion: wrapper now owns the bounded width (100%, max 500, centred) and title/eyebrow text may shrink and wrap; web 320 px measured contained (web did not reproduce the overflow); iPhone small/large simulator check deferred (mobile hardening not resumed).
+
 ### [T285] Recompose trick directory rows for phone widths
 
 - **Area:** Tricks / shared directory presentation

@@ -858,6 +858,10 @@ function LandingHistory({ landings }: { readonly landings: readonly Landing[] })
 const CELEBRATION_VISIBLE_MS = 4000;
 const CELEBRATION_FADE_MS = 250;
 
+// The animated wrapper sits in a centring column, so without its own bounded width it shrink-wraps
+// to the unbroken title line and the card's percentage width has nothing to resolve against.
+export const celebrationBannerFrameStyle = { width: '100%', maxWidth: 500, alignSelf: 'center' } as const;
+
 function CelebrationBanner({
   accessibilityLabel,
   eyebrow,
@@ -901,7 +905,7 @@ function CelebrationBanner({
   if (dismissed) return null;
 
   return (
-    <Animated.View style={{ opacity, transform: [{ scale }] }}>
+    <Animated.View style={[celebrationBannerFrameStyle, { opacity, transform: [{ scale }] }]}>
       <CelebrationBannerCard accessibilityLabel={accessibilityLabel}>
         <CelebrationBannerEyebrow>{eyebrow}</CelebrationBannerEyebrow>
         <CelebrationBannerTitle>{title}</CelebrationBannerTitle>
@@ -1369,9 +1373,9 @@ const MultiTrickActionTitle = styled.Text`color: ${({ theme }) => theme.text}; f
 const MultiTrickActionCopy = styled.Text`color: ${({ theme }) => theme.text}; font-size: 13px; font-weight: 650; line-height: 18px; margin-top: 4px;`;
 const TargetStatus = styled.Text<{ $met: boolean }>`width: 100%; text-align: center; margin-top: 12px; color: ${({ $met }) => ($met ? AppColors.red : AppColors.ink)}; font-size: 15px; font-weight: 900;`;
 const ResultBanner = styled.Text<{ $beaten: boolean }>`width: 100%; text-align: center; margin-top: 18px; padding: 12px 16px; background-color: ${({ $beaten }) => ($beaten ? '#e5edcf' : '#f8f1dd')}; border-left-width: 5px; border-left-color: ${({ $beaten }) => ($beaten ? AppColors.red : AppColors.ink)}; color: ${AppColors.ink}; font-size: 15px; font-weight: 900;`;
-const CelebrationBannerCard = styled.View`width: 100%; max-width: 500px; align-items: center; background-color: ${({ theme }) => theme.accent}; border: 3px solid ${AppColors.ink}; border-radius: 6px; padding: 18px 20px; margin-bottom: 20px;`;
-const CelebrationBannerEyebrow = styled.Text`color: ${({ theme }) => theme.text}; font-size: 12px; font-weight: 900; letter-spacing: 1.6px; text-transform: uppercase;`;
-const CelebrationBannerTitle = styled.Text`color: ${({ theme }) => theme.text}; font-size: 20px; font-weight: 900; text-align: center; margin-top: 6px; line-height: 26px;`;
+const CelebrationBannerCard = styled.View`width: 100%; align-items: center; background-color: ${({ theme }) => theme.accent}; border: 3px solid ${AppColors.ink}; border-radius: 6px; padding: 18px 20px; margin-bottom: 20px;`;
+const CelebrationBannerEyebrow = styled.Text`color: ${({ theme }) => theme.text}; font-size: 12px; font-weight: 900; letter-spacing: 1.6px; text-transform: uppercase; max-width: 100%; text-align: center; flex-shrink: 1;`;
+const CelebrationBannerTitle = styled.Text`color: ${({ theme }) => theme.text}; font-size: 20px; font-weight: 900; text-align: center; margin-top: 6px; line-height: 26px; max-width: 100%; flex-shrink: 1;`;
 const TrickNotesCard = styled.View`width: 100%; max-width: 500px; background-color: ${AppColors.paper}; border: 2px solid ${AppColors.ink}; padding: 16px 18px; margin-top: 16px;`;
 const TrickNotesTitle = styled.Text`color: ${({ theme }) => theme.text}; font-size: 11px; font-weight: 900; letter-spacing: 1.2px; margin-bottom: 8px; text-transform: uppercase;`;
 const TrickNoteBody = styled.Text`color: ${({ theme }) => theme.text}; font-size: 14px; font-weight: 650; line-height: 20px; margin-bottom: 8px;`;
