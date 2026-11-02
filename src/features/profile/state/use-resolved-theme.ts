@@ -1,7 +1,7 @@
 import { AppColors } from '@/constants/theme';
 import { useUserProfile } from '@/features/profile/state/user-profile-provider';
 import { blendHexColors } from '@/shared/color/blend';
-import { contrastRatio } from '@/shared/color/contrast';
+import { WCAG_AA_MIN_CONTRAST_RATIO, contrastRatio } from '@/shared/color/contrast';
 
 export interface ResolvedTheme {
   readonly background: string;
@@ -10,6 +10,12 @@ export interface ResolvedTheme {
   readonly textMuted: string;
   readonly buttonBackground: string;
   readonly buttonBackgroundSecondary: string;
+  /** Label/value color for `buttonBackground` surfaces (primary Button, Laced control). */
+  readonly onButton: string;
+  /** Label color for `buttonBackgroundSecondary` surfaces. */
+  readonly onButtonSecondary: string;
+  /** Label/value color for fixed `AppColors.ink` surfaces (Stats values, selected Sesh choices). */
+  readonly onInk: string;
 }
 
 interface ThemeColorPreferences {
@@ -71,6 +77,25 @@ export function deriveMutedTextColor(text: string, background: string): string {
 }
 
 /**
+ * Returns `preferred` when it already meets `minRatio` against the actual control `surface`, so a
+ * legible decorative color (e.g. the accent) is kept. Otherwise falls back to whichever of cream
+ * or ink contrasts more with the surface. Invalid hex input falls back the same way.
+ */
+export function deriveReadableForeground(
+  surface: string,
+  preferred: string,
+  minRatio: number = WCAG_AA_MIN_CONTRAST_RATIO,
+): string {
+  const preferredRatio = contrastRatio(preferred, surface);
+  if (preferredRatio !== undefined && preferredRatio >= minRatio) {
+    return preferred;
+  }
+  const creamRatio = contrastRatio(AppColors.cream, surface) ?? 0;
+  const inkRatio = contrastRatio(AppColors.ink, surface) ?? 0;
+  return creamRatio >= inkRatio ? AppColors.cream : AppColors.ink;
+}
+
+/**
  * Resolves the app's decorative background/accent/text colors from the user's saved theme
  * preferences, falling back to the fixed prototype palette when a field is unset. Theme fields
  * can only be set post-onboarding (Profile is onboarding-gated), so all fields are always
@@ -89,7 +114,17 @@ export function resolveTheme(preferences: ThemeColorPreferences): ResolvedTheme 
   const { buttonBackground, buttonBackgroundSecondary } =
     deriveAutomaticButtonBackgrounds(background);
 
-  return { background, accent, text, textMuted, buttonBackground, buttonBackgroundSecondary };
+  return {
+    background,
+    accent,
+    text,
+    textMuted,
+    buttonBackground,
+    buttonBackgroundSecondary,
+    onButton: deriveReadableForeground(buttonBackground, accent),
+    onButtonSecondary: deriveReadableForeground(buttonBackgroundSecondary, text),
+    onInk: deriveReadableForeground(AppColors.ink, accent),
+  };
 }
 
 export function useResolvedTheme(): ResolvedTheme {

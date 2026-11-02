@@ -10,7 +10,7 @@ jest.mock('@react-native-async-storage/async-storage', () =>
 
 import { AppColors } from '@/constants/theme';
 import { RAINBOW_THEME_PRESETS } from '@/features/profile/model/theme-presets';
-import { resolveTheme } from '@/features/profile/state/use-resolved-theme';
+import { deriveReadableForeground, resolveTheme } from '@/features/profile/state/use-resolved-theme';
 import { contrastRatio } from '@/shared/color/contrast';
 
 // A muted secondary text role is expected to have lower contrast than the primary text color --
@@ -135,4 +135,63 @@ describe('resolveTheme textMuted', () => {
       );
     },
   );
+});
+
+describe('themed control foregrounds', () => {
+  const cases: readonly (readonly [string, Parameters<typeof resolveTheme>[0]])[] = [
+    ['default', {}],
+    ['dark custom pair', { themeBackgroundColor: '#101418', themeAccentColor: '#1a1f24' }],
+    ['low-contrast text override', { themeTextColor: '#ff00ff' }],
+    ...RAINBOW_THEME_PRESETS.map(
+      (preset) =>
+        [
+          `preset ${preset.id}`,
+          { themeBackgroundColor: preset.backgroundColor, themeAccentColor: preset.accentColor },
+        ] as const,
+    ),
+  ];
+
+  it.each(cases)('keeps every control foreground at 4.5:1 or better: %s', (_name, preferences) => {
+    const theme = resolveTheme(preferences);
+
+    expect(contrastRatio(theme.onButton, theme.buttonBackground)).toBeGreaterThanOrEqual(4.5);
+    expect(
+      contrastRatio(theme.onButtonSecondary, theme.buttonBackgroundSecondary),
+    ).toBeGreaterThanOrEqual(4.5);
+    expect(contrastRatio(theme.onInk, AppColors.ink)).toBeGreaterThanOrEqual(4.5);
+    expect(theme.accent).toBe(preferences.themeAccentColor ?? AppColors.yellow);
+  });
+
+  it('characterizes the blue preset, where the raw accent fails on the ink surface', () => {
+    const blue = RAINBOW_THEME_PRESETS.find((preset) => preset.id === 'blue');
+    const theme = resolveTheme({
+      themeBackgroundColor: blue?.backgroundColor,
+      themeAccentColor: blue?.accentColor,
+    });
+
+    expect(contrastRatio(theme.accent, AppColors.ink)).toBeLessThan(4.5);
+    expect(theme.onInk).not.toBe(theme.accent);
+  });
+
+  it('keeps the decorative accent when it is already legible', () => {
+    const theme = resolveTheme({});
+
+    expect(theme.onButton).toBe(theme.accent);
+    expect(theme.onInk).toBe(theme.accent);
+  });
+});
+
+describe('deriveReadableForeground', () => {
+  it('passes through a legible preferred color', () => {
+    expect(deriveReadableForeground('#000000', '#ffffff')).toBe('#ffffff');
+  });
+
+  it('falls back to the higher-contrast neutral', () => {
+    expect(deriveReadableForeground('#000000', '#111111')).toBe(AppColors.cream);
+    expect(deriveReadableForeground('#ffffff', '#eeeeee')).toBe(AppColors.ink);
+  });
+
+  it('falls back without throwing on invalid hex', () => {
+    expect(() => deriveReadableForeground('#000000', 'nope')).not.toThrow();
+  });
 });

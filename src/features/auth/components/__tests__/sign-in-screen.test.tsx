@@ -483,7 +483,7 @@ describe('SignInScreen', () => {
       const root = await mountWithTheme();
 
       expect(resolvedButtonRootStyle(root, 'Sign in')?.backgroundColor).toBe(customTheme.buttonBackground);
-      expect(resolvedButtonLabelColor(root, 'Sign in')).toBe(customTheme.accent);
+      expect(resolvedButtonLabelColor(root, 'Sign in')).toBe(customTheme.onButton);
     } finally {
       restorePlatform();
     }
@@ -496,6 +496,9 @@ describe('SignInScreen', () => {
       textMuted: '#997755',
       buttonBackground: '#111111',
       buttonBackgroundSecondary: '#222222',
+      onButton: '#ffffff',
+      onButtonSecondary: '#ffffff',
+      onInk: '#ffffff',
     };
     let root!: ReactTestRenderer;
     await act(async () => {

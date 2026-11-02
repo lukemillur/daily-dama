@@ -133,15 +133,6 @@ _iOS Simulator audit activation — 2026-10-29, explicitly requested by the owne
 
 _Preparation prerequisite for native execution: the uncommitted simulator-enablement changes described in [outputs/ios-personal-build-setup.md](outputs/ios-personal-build-setup.md) must be present in the implementing checkout. If a fresh development checkout lacks the compatible Expo patch, scene support or generated iOS tooling, report that prerequisite instead of assuming the simulator build is already reproducible there._
 
-### [T283] Make themed control foregrounds readable
-
-- **Area:** Shared UI / theme roles
-- **Priority:** High
-- **Status:** Not started
-- **Planning:** Required
-- **Description:** Derive label/value foregrounds against the actual control surface instead of always using the decorative accent. The current blue theme makes primary buttons, selected Sesh format, the Laced control and Stats totals hard to read on dark green surfaces.
-- **Exit criteria:** Tests characterize the observed blue theme and existing presets, proving every affected control foreground reaches at least 4.5:1 against its actual surface in enabled/selected states; iOS Simulator inspection confirms primary buttons, selected Sesh format, Laced count and Stats values are readable, and existing web theme behavior passes relevant tests and full typechecking.
-- **Notes:** Source: DESLOPPIFY.md D022. Keep saved color preferences and persistence contracts unchanged; add semantic foreground roles rather than forbidding custom accent colors. Disabled treatment must remain distinguishable. No Android or physical-device validation in this iteration.
 
 ### [T284] Reserve native tab clearance for scroll content
 

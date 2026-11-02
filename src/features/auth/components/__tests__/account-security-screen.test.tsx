@@ -45,6 +45,9 @@ const customTheme: DefaultTheme = {
   textMuted: '#997755',
   buttonBackground: '#111111',
   buttonBackgroundSecondary: '#222222',
+  onButton: '#ffffff',
+  onButtonSecondary: '#fedcba',
+  onInk: '#ffffff',
 };
 
 function findByLabel(renderer: ReactTestRenderer, label: string) {
@@ -224,7 +227,7 @@ describe('AccountSecurityScreen', () => {
 
     const buttonStyle = resolvedStyle(root.root.findAll((node) => node.props.accessibilityLabel === 'Update email'));
     expect(buttonStyle?.backgroundColor).toBe(customTheme.buttonBackgroundSecondary);
-    expect(resolvedButtonLabelColor(root, 'Update email')).toBe(customTheme.text);
+    expect(resolvedButtonLabelColor(root, 'Update email')).toBe(customTheme.onButtonSecondary);
 
     await setInput(root, 'New email', 'not-an-email');
     await pressLabel(root, 'Update email');

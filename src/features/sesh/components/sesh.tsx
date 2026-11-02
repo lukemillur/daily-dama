@@ -1289,7 +1289,7 @@ const SecondaryButton = styled(Button).attrs({ size: 'medium' })`
 const PlanLabel = styled.Text`color: ${({ theme }) => theme.text}; font-size: 13px; font-weight: 900; letter-spacing: 1.2px; margin-top: 30px; text-transform: uppercase;`;
 const PlanChoices = styled.View`flex-direction: row; gap: 10px; margin-top: 10px;`;
 const PlanChoice = styled(Pressable)<{ $selected: boolean }>`flex: 1; min-height: 94px; background-color: ${({ $selected }) => ($selected ? AppColors.ink : AppColors.paper)}; border: 2px solid ${AppColors.ink}; padding: 15px;`;
-const PlanChoiceTitle = styled.Text<{ $selected: boolean }>`color: ${({ $selected, theme }) => ($selected ? theme.accent : theme.text)}; font-size: 17px; font-weight: 900;`;
+const PlanChoiceTitle = styled.Text<{ $selected: boolean }>`color: ${({ $selected, theme }) => ($selected ? theme.onInk : theme.text)}; font-size: 17px; font-weight: 900;`;
 const PlanChoiceCopy = styled.Text<{ $selected: boolean }>`color: ${({ $selected, theme }) => ($selected ? AppColors.cream : theme.text)}; font-size: 12px; font-weight: 600; line-height: 17px; margin-top: 5px;`;
 const DurationField = styled.View`margin-top: 16px;`;
 const DurationLabel = styled.Text`color: ${({ theme }) => theme.text}; font-size: 12px; font-weight: 900; margin-bottom: 6px; text-transform: uppercase;`;
@@ -1298,7 +1298,7 @@ const DurationHint = styled.Text<{ $invalid: boolean }>`color: ${({ $invalid, th
 const ChallengeField = styled.View`margin-top: 16px;`;
 const ChallengeChoices = styled.View`flex-direction: row; gap: 10px; margin-top: 10px;`;
 const ChallengeChoice = styled(Pressable)<{ $selected: boolean }>`flex: 1; min-height: 82px; background-color: ${({ $selected }) => ($selected ? AppColors.ink : AppColors.paper)}; border: 2px solid ${AppColors.ink}; padding: 15px;`;
-const ChallengeChoiceTitle = styled.Text<{ $selected: boolean }>`color: ${({ $selected, theme }) => ($selected ? theme.accent : theme.text)}; font-size: 15px; font-weight: 900;`;
+const ChallengeChoiceTitle = styled.Text<{ $selected: boolean }>`color: ${({ $selected, theme }) => ($selected ? theme.onInk : theme.text)}; font-size: 15px; font-weight: 900;`;
 const ChallengeChoiceCopy = styled.Text<{ $selected: boolean }>`color: ${({ $selected, theme }) => ($selected ? AppColors.cream : theme.text)}; font-size: 12px; font-weight: 600; line-height: 17px; margin-top: 5px;`;
 const TrickChoices = styled.View`gap: 10px; margin-top: 28px;`;
 const TrickChoice = styled(Pressable)<{ $disabled: boolean }>`min-height: 82px; justify-content: center; background-color: #f8f1dd; border: 2px solid #18382e; opacity: ${({ $disabled }) => ($disabled ? 0.45 : 1)}; padding: 15px 58px 15px 18px; position: relative;`;
@@ -1317,14 +1317,11 @@ const SequenceNumber = styled.Text`width: 22px; color: ${({ theme }) => theme.te
 const SequenceName = styled.Text`flex: 1; color: ${({ theme }) => theme.text}; font-size: 14px; font-weight: 800; line-height: 20px;`;
 const TimerLabel = styled.Text`color: ${({ theme }) => theme.text}; font-size: 12px; font-weight: 900; letter-spacing: 1.4px; margin-top: 22px; text-transform: uppercase;`;
 const Timer = styled.Text`color: #18382e; font-size: 78px; font-variant: tabular-nums; font-weight: 900; letter-spacing: -4px; margin: 4px 0 22px;`;
-// theme.buttonBackground is derived only against the page background (ink or paperStrong,
-// see deriveAutomaticButtonBackgrounds), so it can coincide with theme.text (also ink in the
-// default theme) and render invisibly. theme.accent is derived against background *and*
-// accent together and already pairs with a dark buttonBackground via Button's primary variant
-// (see button.tsx), so it's reused here instead of introducing a dedicated on-button-text token.
+// Foregrounds on theme.buttonBackground use theme.onButton, which is derived against that
+// surface; theme.text can coincide with the button background and theme.accent can fail contrast.
 const LacedButton = styled(Pressable)<{ $disabled: boolean; $extraTopSpacing?: boolean }>`width: 100%; min-height: 108px; flex-direction: row; align-items: center; justify-content: space-between; background-color: ${({ theme }) => theme.buttonBackground}; opacity: ${({ $disabled }) => ($disabled ? 0.45 : 1)}; padding: 22px 26px; border-radius: 6px; margin-top: ${({ $extraTopSpacing }) => ($extraTopSpacing ? '24px' : '0')};`;
-const LacedButtonText = styled.Text`color: ${({ theme }) => theme.accent}; font-size: 34px; font-weight: 900;`;
-const LacedCount = styled.Text`color: ${({ theme }) => theme.accent}; font-size: 40px; font-weight: 900;`;
+const LacedButtonText = styled.Text`color: ${({ theme }) => theme.onButton}; font-size: 34px; font-weight: 900;`;
+const LacedCount = styled.Text`color: ${({ theme }) => theme.onButton}; font-size: 40px; font-weight: 900;`;
 const ChallengeStatus = styled.Text<{ $beaten: boolean }>`width: 100%; text-align: center; margin-top: 12px; color: ${({ $beaten }) => ($beaten ? AppColors.red : AppColors.ink)}; font-size: 15px; font-weight: 900;`;
 const History = styled.View`width: 100%; margin-top: 28px;`;
 const HistoryTitle = styled.Text`color: #18382e; font-size: 14px; font-weight: 900; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 8px;`;
@@ -1385,7 +1382,7 @@ const NotePromptCopy = styled.Text`color: ${({ theme }) => theme.text}; font-siz
 const NOTE_INPUT_STYLE = { minHeight: 110, textAlignVertical: 'top' as const };
 const NotePromptActions = styled.View`flex-direction: row; gap: 10px; margin-top: 14px;`;
 const NotePromptButton = styled(Pressable)<{ $disabled?: boolean }>`min-height: 44px; flex: 1; align-items: center; justify-content: center; opacity: ${({ $disabled }) => ($disabled ? 0.45 : 1)}; background-color: ${AppColors.ink}; padding: 10px 18px; border-radius: 5px;`;
-const NotePromptButtonText = styled.Text`color: ${({ theme }) => theme.accent}; font-size: 14px; font-weight: 900;`;
+const NotePromptButtonText = styled.Text`color: ${({ theme }) => theme.onInk}; font-size: 14px; font-weight: 900;`;
 const NotePromptSecondaryButton = styled(Pressable)`min-height: 44px; flex: 1; align-items: center; justify-content: center; padding: 10px 18px; border: 2px solid ${AppColors.ink}; border-radius: 5px;`;
 const NotePromptSecondaryButtonText = styled.Text`color: ${({ theme }) => theme.text}; font-size: 14px; font-weight: 900;`;
 // Derives the overlay's background from theme.accent (following RankUpCelebrationModal's
