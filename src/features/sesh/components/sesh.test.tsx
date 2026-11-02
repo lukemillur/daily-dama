@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
 import type { ComponentProps, ReactElement } from 'react';
-import { Pressable, ScrollView, Text } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text } from 'react-native';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 import { ThemeProvider as StyledThemeProvider, type DefaultTheme } from 'styled-components/native';
 
@@ -3483,5 +3483,57 @@ describe("ActiveSesh sequence steps (T162.1)", () => {
     act(() => {
       root.unmount();
     });
+  });
+});
+
+describe('celebration banner width containment', () => {
+  const LONG_TRICK: PracticeTrick = { id: 'long-seq', name: 'Moshikame x10 or more, Spike' };
+
+  beforeEach(() => {
+    jest.useFakeTimers();
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  it('bounds the animated wrapper to its parent width so long first-lace titles wrap instead of overflowing', () => {
+    let root!: ReactTestRenderer;
+    act(() => {
+      root = create(
+        <ActiveSesh
+          trick={LONG_TRICK}
+          plan={PLAN}
+          startedAt={Date.now()}
+          landings={[landing(1000)]}
+          pausedDurationMs={0}
+          liveChallengeEnabled={false}
+          hadPriorLaceAtSeshStart={false}
+          onLaced={noop}
+          onPause={noop}
+          onResume={noop}
+          onEnd={noop}
+          onTimerElapsed={noop}
+        />,
+      );
+    });
+
+    const card = root.root.findAll(
+      (node) =>
+        (node.type as unknown) === 'View' &&
+        node.props.accessibilityLabel === `First lace ever on ${LONG_TRICK.name}`,
+    )[0];
+    let frame = card.parent;
+    while (frame && (frame.type as unknown) !== 'View') frame = frame.parent;
+    expect(StyleSheet.flatten(frame?.props.style)).toMatchObject({
+      width: '100%',
+      maxWidth: 500,
+      alignSelf: 'center',
+    });
+
+    const title = root.root.findAll(
+      (node) => (node.type as unknown) === 'Text' && StyleSheet.flatten(node.props.style)?.fontSize === 20,
+    )[0];
+    expect(StyleSheet.flatten(title.props.style)).toMatchObject({ maxWidth: '100%', flexShrink: 1 });
   });
 });
