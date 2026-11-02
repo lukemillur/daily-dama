@@ -373,7 +373,7 @@ describe('ForgotPasswordScreen', () => {
       const root = await mountWithTheme();
 
       expect(resolvedButtonRootStyle(root, 'Send reset link')?.backgroundColor).toBe(customTheme.buttonBackground);
-      expect(resolvedButtonLabelColor(root, 'Send reset link')).toBe(customTheme.accent);
+      expect(resolvedButtonLabelColor(root, 'Send reset link')).toBe(customTheme.onButton);
     } finally {
       restorePlatform();
     }
@@ -386,6 +386,9 @@ describe('ForgotPasswordScreen', () => {
       textMuted: '#997755',
       buttonBackground: '#111111',
       buttonBackgroundSecondary: '#222222',
+      onButton: '#ffffff',
+      onButtonSecondary: '#ffffff',
+      onInk: '#ffffff',
     };
     let root!: ReactTestRenderer;
     await act(async () => {

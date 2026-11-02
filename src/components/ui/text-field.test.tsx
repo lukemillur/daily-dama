@@ -13,6 +13,9 @@ const customTheme: DefaultTheme = {
   textMuted: '#997755',
   buttonBackground: '#111111',
   buttonBackgroundSecondary: '#222222',
+  onButton: '#ffffff',
+  onButtonSecondary: '#ffffff',
+  onInk: '#ffffff',
 };
 
 function flattenStyle(style: unknown) {

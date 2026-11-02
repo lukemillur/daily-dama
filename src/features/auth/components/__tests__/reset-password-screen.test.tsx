@@ -333,7 +333,7 @@ describe('ResetPasswordScreen', () => {
       expect(resolvedButtonRootStyle(root, 'Set new password')?.backgroundColor).toBe(
         customTheme.buttonBackground,
       );
-      expect(resolvedButtonLabelColor(root, 'Set new password')).toBe(customTheme.accent);
+      expect(resolvedButtonLabelColor(root, 'Set new password')).toBe(customTheme.onButton);
     } finally {
       restorePlatform();
     }
@@ -346,6 +346,9 @@ describe('ResetPasswordScreen', () => {
       textMuted: '#997755',
       buttonBackground: '#111111',
       buttonBackgroundSecondary: '#222222',
+      onButton: '#ffffff',
+      onButtonSecondary: '#ffffff',
+      onInk: '#ffffff',
     };
     mockAuthState = { status: 'passwordRecovery', session: recoverySession };
     let root!: ReactTestRenderer;

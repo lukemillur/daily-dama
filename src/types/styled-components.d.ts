@@ -8,5 +8,8 @@ declare module 'styled-components/native' {
     readonly textMuted: string;
     readonly buttonBackground: string;
     readonly buttonBackgroundSecondary: string;
+    readonly onButton: string;
+    readonly onButtonSecondary: string;
+    readonly onInk: string;
   }
 }

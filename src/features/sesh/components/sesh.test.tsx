@@ -828,6 +828,9 @@ describe('CompletedSesh signup invite', () => {
       textMuted: '#997755',
       buttonBackground: '#111111',
       buttonBackgroundSecondary: '#222222',
+      onButton: '#ffffff',
+      onButtonSecondary: '#ffffff',
+      onInk: '#ffffff',
     };
     const themeB: DefaultTheme = {
       background: '#000000',
@@ -836,6 +839,9 @@ describe('CompletedSesh signup invite', () => {
       textMuted: '#888888',
       buttonBackground: '#444444',
       buttonBackgroundSecondary: '#555555',
+      onButton: '#ffffff',
+      onButtonSecondary: '#ffffff',
+      onInk: '#ffffff',
     };
 
     for (const theme of [themeA, themeB]) {
@@ -3357,6 +3363,9 @@ describe('Sesh theming (T097)', () => {
     textMuted: '#997755',
     buttonBackground: '#111111',
     buttonBackgroundSecondary: '#222222',
+    onButton: '#ffffff',
+    onButtonSecondary: '#ffffff',
+    onInk: '#ffffff',
   };
 
   function resolvedHostStyle(matches: ReadonlyArray<{ props: { style?: unknown } }>) {
@@ -3392,7 +3401,7 @@ describe('Sesh theming (T097)', () => {
     });
   });
 
-  it("resolves the laced button's background from theme.buttonBackground and its text/count from theme.accent", () => {
+  it("resolves the laced button's background from theme.buttonBackground and its text/count from theme.onButton", () => {
     let root!: ReactTestRenderer;
     act(() => {
       root = create(
@@ -3419,10 +3428,10 @@ describe('Sesh theming (T097)', () => {
     expect(buttonStyle?.backgroundColor).toBe(customTheme.buttonBackground);
 
     const textStyle = resolvedHostStyle(root.root.findAll((node) => node.props.children === 'Laced.'));
-    expect(textStyle?.color).toBe(customTheme.accent);
+    expect(textStyle?.color).toBe(customTheme.onButton);
 
     const countStyle = resolvedHostStyle(root.root.findAll((node) => node.props.children === 0));
-    expect(countStyle?.color).toBe(customTheme.accent);
+    expect(countStyle?.color).toBe(customTheme.onButton);
 
     act(() => {
       root.unmount();
