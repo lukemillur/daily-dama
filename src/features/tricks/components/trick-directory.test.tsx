@@ -384,8 +384,11 @@ describe('TrickDirectory', () => {
     const spy = jest.spyOn(ReactNative, 'useWindowDimensions');
     const setWidth = (width: number) =>
       spy.mockReturnValue({ width, height: 800, scale: 1, fontScale: 1 });
+    const mounted: import('react-test-renderer').ReactTestRenderer[] = [];
     afterEach(() => {
       spy.mockReset();
+      // Unmount so VirtualizedList's batching timers don't fire after the test environment is torn down.
+      for (const root of mounted.splice(0)) act(() => root.unmount());
     });
 
     const tricks: readonly DirectoryTrick[] = [
@@ -413,6 +416,7 @@ describe('TrickDirectory', () => {
       act(() => {
         root = create(ui);
       });
+      mounted.push(root);
       return { root, ui };
     }
 
