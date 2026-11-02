@@ -168,7 +168,7 @@ _Preparation prerequisite for native execution: the uncommitted simulator-enable
 
 - **Area:** iOS verification
 - **Priority:** Medium
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** Resume the hands-on workflow matrix in DESLOPPIFY.md after restoring native computer-use access. Cover the flows left as source-only or unverified rather than interpreting the first successful native build as acceptance evidence.
 - **Exit criteria:** Every row of the existing iOS workflow matrix has a dated pass, reproduced finding with a task reference, or concrete blocked/deferred reason from simulator evidence; cover notes/goals, sequence creation/editing, multi-trick runs, Kentei assessment, Profile/theme/streak, laced/empty states, relaunch persistence and native accessibility checks, while account/service actions accurately reflect the guest-only scope. Record device/runtime and test data and leave no workflow marked passed solely from source inspection.
