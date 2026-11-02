@@ -148,7 +148,7 @@ _Preparation prerequisite for native execution: the uncommitted simulator-enable
 
 - **Area:** Sesh / celebration presentation
 - **Priority:** Medium
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** Bound the animated celebration wrapper to its parent content width and allow long messages to wrap without clipping. First-lace banners for “Moshikame x10 or more, Spike” visibly extended beyond both sides during practice and completion.
 - **Exit criteria:** In small and large iPhone simulators, first-lace, personal-best and achieved-goal banners with long trick/sequence names show the complete message within screen bounds during animation and at rest; focused regression coverage and full typechecking pass, with web celebrations preserved.
