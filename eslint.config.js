@@ -11,7 +11,7 @@ module.exports = defineConfig([
     // react-three-fiber renders three.js objects as JSX intrinsics
     // (mesh, cylinderGeometry, position, args, ...) that eslint-plugin-react
     // doesn't recognize as valid DOM/RN props.
-    files: ["src/features/trick-viz/**/*.tsx"],
+    files: ["src/features/trick-viz/**/*.tsx", "src/features/kendama-model/**/*.tsx"],
     rules: {
       "react/no-unknown-property": "off",
     },

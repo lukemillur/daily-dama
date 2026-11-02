@@ -6,6 +6,8 @@ Full project context (state boundaries, product shape, collaboration style) live
 
 **Changing how the kendama looks?** §5, §6 and §16. The last of those lists what is still weak and the rules a change must not break.
 
+**This system is no longer being developed.** The physics visualizer in `src/features/kendama-model/` replaces it; its handoff, including the catch principles learned landing its tricks, is [PHYSICS_VIZ_HANDOFF.md](PHYSICS_VIZ_HANDOFF.md). Read on here only for the keyframed `src/features/trick-viz/` code or its environment traps.
+
 ## 1. What this is
 
 Procedural 3D kendama trick visualizations — built from primitives, no licensed or imported assets, keyframed rather than physics-simulated. Rendered with `react-three-fiber` + `expo-gl`. Currently a standalone dev sandbox at `src/app/stats/trick-viz-sandbox.tsx`.
@@ -222,6 +224,7 @@ The string always runs ken-hole ↔ tama-hole, so `String.tsx` needs no per-tric
 10. **Sandbox access is gated.** Set `localStorage['daily-dama:user-profile']` to `{"version":1,"profile":{"hasCompletedOnboarding":true,"kenteiRank":1,"selectedTrickIds":[]}}` — the versioned wrapper is required and `kenteiRank` is a **number** 1–12. The route is nested under `/stats/` because the web tab router silently redirects unregistered top-level routes to Home.
 11. **`eslint.config.js` has a scoped `react/no-unknown-property` override** for `src/features/trick-viz/**/*.tsx`, needed because eslint-plugin-react does not know r3f's JSX intrinsics.
 12. **The colliders are coarser than the mesh.** `saradoBarRadius` is 0.08 while the lathed hub swells to ~0.10, so the string can graze the hub's widest point. Harmless at string thickness; widen the collider if a trick ever routes the string tightly across the sarado.
+13. **Files written under `src/` while the sandbox runs make Metro fast-refresh it**, remounting the scene and restarting the simulation mid-run. A scratch test there looks like the sim resetting itself. Keep scratch files out of `src/` while watching a run, or reload before judging one.
 
 ## 13. Adding a trick
 

@@ -112,6 +112,9 @@ export default function HomeScreen() {
           <Link href="/app/stats/sesh-sequence-sandbox" style={styles.devLinkSecondary}>
             Sesh sequence sandbox
           </Link>
+          <Link href="/app/stats/kendama-model-sandbox" style={styles.devLinkTertiary}>
+            Kendama model sandbox
+          </Link>
         </>
       ) : null}
     </Screen>
@@ -130,6 +133,13 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 8,
     right: 12,
+    fontSize: 11,
+    opacity: 0.5,
+  },
+  devLinkTertiary: {
+    position: 'absolute',
+    bottom: 8,
+    left: 12,
     fontSize: 11,
     opacity: 0.5,
   },

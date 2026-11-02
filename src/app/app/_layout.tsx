@@ -1,5 +1,6 @@
 import { usePathname } from "expo-router";
 import Head from "expo-router/head";
+import { Platform } from "react-native";
 
 import AppTabs from "@/components/app-tabs";
 import { LocalDurabilityWarningBanner } from "@/components/local-durability-warning-banner";
@@ -38,7 +39,7 @@ export default function AppShellLayout() {
 
   return (
     <>
-      {sectionTitle ? (
+      {Platform.OS === "web" && sectionTitle ? (
         <Head>
           <title>{`Daily Dama: ${sectionTitle}`}</title>
         </Head>
