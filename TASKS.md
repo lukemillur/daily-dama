@@ -148,7 +148,7 @@ _Preparation prerequisite for native execution: the uncommitted simulator-enable
 
 - **Area:** Feedback
 - **Priority:** High
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** For the current guest-only iOS build, replace the unusable feedback submission form with an explicit unavailable state and a visible return to Profile. Native getSupabaseClient returns null, so submission always fails, while the form currently gives generic retry guidance and no visible pre-submission exit.
 - **Exit criteria:** A native-platform component test proves the unavailable state offers Back to Profile and cannot submit feedback, iOS Simulator navigation from Profile reaches that state and returns successfully, and existing web feedback submission/error tests plus full typechecking pass unchanged.
