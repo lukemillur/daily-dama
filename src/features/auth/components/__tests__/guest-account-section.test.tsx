@@ -1,4 +1,5 @@
-import { beforeEach, describe, expect, it, jest } from '@jest/globals';
+import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
+import * as ReactNative from 'react-native';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 
 import type { AuthState } from '@/features/auth/model/auth-state';
@@ -39,10 +40,17 @@ async function mount() {
   return root;
 }
 
+const originalPlatformOS = ReactNative.Platform.OS;
+
 describe('GuestAccountSection', () => {
   beforeEach(() => {
+    ReactNative.Platform.OS = 'web';
     mockPush.mockReset();
     mockAuthState = { status: 'guest', reason: 'signedOut' };
+  });
+
+  afterEach(() => {
+    ReactNative.Platform.OS = originalPlatformOS;
   });
 
   it('renders nothing while initializing', async () => {
@@ -94,5 +102,28 @@ describe('GuestAccountSection', () => {
     });
 
     expect(mockPush).toHaveBeenCalledWith('/auth/sign-in');
+  });
+});
+
+describe('GuestAccountSection on native (guest-only)', () => {
+  beforeEach(() => {
+    mockPush.mockReset();
+    mockAuthState = { status: 'guest', reason: 'unconfigured' };
+    ReactNative.Platform.OS = 'ios';
+  });
+
+  afterEach(() => {
+    ReactNative.Platform.OS = originalPlatformOS;
+  });
+
+  it('withholds sign-up/sign-in and any backup promise, and states unavailability', async () => {
+    const root = await mount();
+
+    expect(findAllByLabel(root, 'Sign up').length).toBe(0);
+    expect(findAllByLabel(root, 'Sign in').length).toBe(0);
+    const text = JSON.stringify(root.toJSON());
+    expect(text).not.toMatch(/backed up/i);
+    expect(text).toMatch(/saved on this device only/i);
+    expect(mockPush).not.toHaveBeenCalled();
   });
 });

@@ -173,6 +173,8 @@ One consequence is that nested providers currently hydrate serially: a child pro
 
 Identity hydration sits above all five domain providers (`AuthProvider` → `IdentityProvider`, both in `src/features/auth/state` and `src/shared/persistence`) and is itself bounded rather than able to hang indefinitely: `AuthProvider` reads a persisted Supabase session directly from storage in parallel with the SDK's own refresh, so a returning user with a valid locally-cached session is authenticated immediately and never blocked behind a slow or hung background refresh. A client-side timeout forces an explicit `refreshFailed` status if neither a real auth event nor a cached session resolves in time; `IdentityProvider` renders a distinct recovery screen for that one case, with a retry action and a sign-out/guest escape hatch, rather than gating every domain provider behind the plain hydration fallback forever.
 
+Native builds are guest-only: `getSupabaseClient` returns `null` off web, so `AuthProvider` settles as a guest. `areAccountsAvailable` (`src/features/auth/model/account-availability.ts`) is the single presentation predicate paired with that guard. While it is false, Profile shows an on-device-only note instead of sign-up/sign-in, the landing header and the first/every-fifth-Sesh invitations render nothing, and `src/app/auth/_layout.tsx` replaces every `/auth/*` route with `AccountUnavailableScreen` (one "Back to app" action, no auth action mounted). Flip the predicate and delete these branches when native auth ships.
+
 ## Navigation architecture
 
 Expo Router route files are deliberately thin where possible. They read URL parameters and providers, calculate route-specific inputs, enforce access rules, and hand work to feature components.

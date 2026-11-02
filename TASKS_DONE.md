@@ -4,6 +4,16 @@ Completed entries move here from `TASKS.md`'s `Backlog`, in the same commit that
 
 Entries keep their content as it was at completion. Don't retroactively edit a description or exit criteria after the fact; if something about a completed task turns out to be wrong or misleading, note that in a new entry or in code, not by rewriting history here.
 
+### [T288] Withhold unsupported account promises from the native guest experience
+
+- **Area:** Guest account presentation
+- **Priority:** High
+- **Status:** Done
+- **Planning:** Required
+- **Description:** In the guest-only iOS build, remove or replace signup/signin prompts that imply native account backup already works. Cover Profile, landing account entry points and first/every-fifth-Sesh signup invitations; keep direct auth routes safely escapable with an accurate unavailable state.
+- **Exit criteria:** Native-platform presentation tests prove unsupported account CTAs and backup promises are withheld at each entry point, direct signup/signin/recovery routes explain unavailability and offer a safe return without executing auth actions, and simulator checks cover Profile, a completed guest Sesh and direct auth entry; web account/invitation tests and full typechecking pass.
+- **Notes:** Source: DESLOPPIFY.md S040 observation. This is temporary guest-only presentation, not promotion/implementation of the full Proposed S040 story. Preserve the native client guard, guest data and all web account behavior. Do not introduce SecureStore, native callbacks, identity transitions or cloud synchronization here; those require separate scoping and architecture approval. No test account creation or email sending is required.
+
 ### [T286] Contain Sesh celebration banners on phone screens
 
 - **Area:** Sesh / celebration presentation

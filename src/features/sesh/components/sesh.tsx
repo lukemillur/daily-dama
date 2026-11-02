@@ -44,6 +44,7 @@ import {
   type SeshSummary,
 } from '@/features/sesh/model/sesh';
 import { formatKenteiStanding, isTrickSummary, type PracticeTrick } from '@/features/tricks/model/trick';
+import { areAccountsAvailable } from '@/features/auth/model/account-availability';
 import type { AuthStatus } from '@/features/auth/model/auth-state';
 import {
   createPracticeSessionRecordId,
@@ -170,7 +171,10 @@ export function Sesh({
         return isGoalNewlyAchieved(goal, baseline.current, contribution);
       }),
     );
-    const inviteEligible = authStatus === 'guest' && isRegularSessionInviteEligible(sessions, origin);
+    const inviteEligible =
+      areAccountsAvailable(Platform.OS) &&
+      authStatus === 'guest' &&
+      isRegularSessionInviteEligible(sessions, origin);
     setShowSignupInvite(inviteEligible);
     setSignupInviteIsFirstOccurrence(inviteEligible && selectRegularSessions(sessions).length === 0);
     recordCompletedSesh(state.summary, origin);

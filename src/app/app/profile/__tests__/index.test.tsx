@@ -1,5 +1,6 @@
-import { beforeEach, describe, expect, it, jest } from '@jest/globals';
+import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as ReactNative from 'react-native';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 
 import ProfileScreen from '@/app/app/profile/index';
@@ -167,11 +168,32 @@ describe('ProfileScreen account section', () => {
   });
 });
 
+const originalPlatformOS = ReactNative.Platform.OS;
+
 describe('ProfileScreen guest account entry points', () => {
   beforeEach(async () => {
+    ReactNative.Platform.OS = 'web';
     await AsyncStorage.clear();
     mockAuthState = { status: 'guest', reason: 'unconfigured' };
     mockRouterPush.mockReset();
+  });
+
+  afterEach(() => {
+    ReactNative.Platform.OS = originalPlatformOS;
+  });
+
+  it('withholds guest account entry points on native', async () => {
+    ReactNative.Platform.OS = 'ios';
+    const root = await mountProfileScreen();
+
+    expect(
+      root.root.findAll((node) => ['Sign up', 'Sign in'].includes(node.props.accessibilityLabel)),
+    ).toHaveLength(0);
+    expect(JSON.stringify(root.toJSON())).not.toMatch(/backed up/i);
+
+    act(() => {
+      root.unmount();
+    });
   });
 
   it('lets an unauthenticated guest open sign-up and sign-in', async () => {
