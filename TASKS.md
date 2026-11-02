@@ -129,10 +129,9 @@ _Raw ideas land here — a name and a one-line description, nothing more. Discus
 
 ## Backlog
 
-_iOS Simulator audit activation — 2026-10-29, explicitly requested by the owner. Source: [DESLOPPIFY.md](DESLOPPIFY.md), scoped iOS audit and workflow matrix. D022 → T283; D023 → T284; D024 → T285; D025 → T286; D021 → T287; unsupported S040 guest affordances → T288; unfinished audit coverage → T289. Existing T042, T043/T043.1–T043.2 and T044/T044.1–T044.2 move here from TASKS_BACKLOG.md with their IDs preserved and iOS-only acceptance clarified. Full S040 authentication/sync remains Proposed in BACKLOG_STORIES.md; it is not activated by these presentation tickets. Android and physical devices remain deferred. These entries document work; this change does not claim, implement, publish or close them._
+_iOS Simulator audit activation — 2026-10-29, explicitly requested by the owner. Source: [DESLOPPIFY.md](DESLOPPIFY.md), scoped iOS audit and workflow matrix. D022 → T283; D023 → T284; D024 → T285; D025 → T286; D021 → T287; unsupported S040 guest affordances → T288; unfinished audit coverage → T289. Existing T042, T043/T043.1–T043.2 and T044/T044.1–T044.2 move here from TASKS_BACKLOG.md with their IDs preserved and iOS-only acceptance clarified. Full S040 authentication/sync remains Proposed in BACKLOG_STORIES.md; it is not activated by these presentation tickets. These entries document work; this change does not claim, implement, publish or close them._
 
-_Preparation prerequisite for native execution: the uncommitted simulator-enablement changes described in [outputs/ios-personal-build-setup.md](outputs/ios-personal-build-setup.md) must be present in the implementing checkout. If a fresh development checkout lacks the compatible Expo patch, scene support or generated iOS tooling, report that prerequisite instead of assuming the simulator build is already reproducible there._
-
+_Native execution prerequisite: the simulator-enablement changes described in [outputs/ios-personal-build-setup.md](outputs/ios-personal-build-setup.md) are on `development`. The generated `/ios` project and local CocoaPods workaround are not committed, so a fresh checkout may need `yarn ios` (prebuild and pod install) first. Report a tooling failure as a prerequisite rather than a passed check._
 
 ### [T284] Reserve native tab clearance for scroll content
 
@@ -144,25 +143,6 @@ _Preparation prerequisite for native execution: the uncommitted simulator-enable
 - **Exit criteria:** On small and large iPhone simulators, at maximum scroll every final row and primary action in Home, Sesh setup/completion, Stats, Tricks, custom forms, notes and goals is fully above the tab bar and tappable; focused layout coverage protects the shared convention, web layout remains unchanged, and full typechecking passes.
 - **Notes:** Source: DESLOPPIFY.md D023. Inspect the installed Expo Router native-tab behavior before choosing insets; avoid scattered fixed spacers or duplicating automatic safe-area padding. This ticket covers keyboard-closed layout; T044 owns keyboard-visible behavior. Audit automation's failed scroll attempts did not establish that user scrolling is broken. Native lifecycle/providers/persistence remain unchanged.
 
-### [T287] Provide an honest native feedback unavailable state and exit
-
-- **Area:** Feedback
-- **Priority:** High
-- **Status:** Not started
-- **Planning:** Required
-- **Description:** For the current guest-only iOS build, replace the unusable feedback submission form with an explicit unavailable state and a visible return to Profile. Native getSupabaseClient returns null, so submission always fails, while the form currently gives generic retry guidance and no visible pre-submission exit.
-- **Exit criteria:** A native-platform component test proves the unavailable state offers Back to Profile and cannot submit feedback, iOS Simulator navigation from Profile reaches that state and returns successfully, and existing web feedback submission/error tests plus full typechecking pass unchanged.
-- **Notes:** Source: DESLOPPIFY.md D021; source-confirmed, not simulator-reproduced during the interrupted audit. This scopes the smallest safe guest-only correction. Do not enable native Supabase, create a parallel transport, submit real feedback during verification, or claim native feedback delivery. Full native service support remains separate.
-
-### [T288] Withhold unsupported account promises from the native guest experience
-
-- **Area:** Guest account presentation
-- **Priority:** High
-- **Status:** Not started
-- **Planning:** Required
-- **Description:** In the guest-only iOS build, remove or replace signup/signin prompts that imply native account backup already works. Cover Profile, landing account entry points and first/every-fifth-Sesh signup invitations; keep direct auth routes safely escapable with an accurate unavailable state.
-- **Exit criteria:** Native-platform presentation tests prove unsupported account CTAs and backup promises are withheld at each entry point, direct signup/signin/recovery routes explain unavailability and offer a safe return without executing auth actions, and simulator checks cover Profile, a completed guest Sesh and direct auth entry; web account/invitation tests and full typechecking pass.
-- **Notes:** Source: DESLOPPIFY.md S040 observation. This is temporary guest-only presentation, not promotion/implementation of the full Proposed S040 story. Preserve the native client guard, guest data and all web account behavior. Do not introduce SecureStore, native callbacks, identity transitions or cloud synchronization here; those require separate scoping and architecture approval. No test account creation or email sending is required.
 
 ### [T289] Complete the interrupted iOS workflow audit
 
@@ -183,7 +163,7 @@ _Preparation prerequisite for native execution: the uncommitted simulator-enable
 - **Description:** Give Sesh, Tricks, Stats, and Profile distinct, subject-appropriate native tab icons rather than relying on incomplete or repeated icon treatment.
 - **Exit criteria:** Deliberate iOS Simulator checks confirm all five native tabs have distinct, route-appropriate icons that remain legible and unclipped in selected and unselected states, while the existing web navigation and its verified 320 px fit remain unchanged.
 - **Notes:** Source: iOS audit T042 in DESLOPPIFY.md. Only Home currently has an icon; also check that tab tint/selected treatment remains legible with the current app theme. This is navigation polish, not a navigation architecture change. Update navigation tests or snapshots where they provide useful regression protection.
-- **Platform scope:** Activated for iOS Simulator on 2026-10-29. Android and physical-device verification remain deferred; record those limits without claiming they passed.
+- **Platform scope:** Acceptance for this ticket runs on the iOS Simulator. Android and physical-device checks are not part of these exit criteria; record them as not run rather than passed.
 
 ### [T043] Harden active Sesh behavior across app backgrounding
 
@@ -192,7 +172,7 @@ _Preparation prerequisite for native execution: the uncommitted simulator-enable
 - **Status:** Not started
 - **Description:** Make timed, open-ended, paused, and multi-trick Sesh behavior reliable when the app moves between foreground and background.
 - **Notes:** Umbrella only — complete T043.1 and T043.2. Route-navigation and process-death recovery are intentionally out of scope for this task — they are a separate concern from foreground/background reconciliation and are not tracked anywhere in this file.
-- **Platform scope:** Activated for iOS Simulator on 2026-10-29. Android and physical-device verification remain deferred; record those limits without claiming they passed.
+- **Platform scope:** Acceptance for this ticket runs on the iOS Simulator. Android and physical-device checks are not part of these exit criteria; record them as not run rather than passed.
 
 ### [T043.1] Reconcile active Sesh state after foregrounding
 
@@ -204,7 +184,7 @@ _Preparation prerequisite for native execution: the uncommitted simulator-enable
 - **Exit criteria:** Automated state-transition tests confirm an overdue timed Sesh completes at its logical deadline, an open-ended Sesh reports correct elapsed active time, a paused Sesh remains paused without accruing active duration, and a multi-trick run retains coherent current-trick state after a background/foreground cycle.
 - **Dependencies:** None.
 - **Notes:** Keep timestamp acquisition and app-state effects outside the reducer, passing explicit timestamps through actions. Do not add persisted in-progress Sesh state.
-- **Platform scope:** Activated for iOS Simulator on 2026-10-29. Android and physical-device verification remain deferred; record those limits without claiming they passed.
+- **Platform scope:** Acceptance for this ticket runs on the iOS Simulator. Android and physical-device checks are not part of these exit criteria; record them as not run rather than passed.
 
 ### [T043.2] Verify backgrounded Sesh behavior in iOS Simulator
 
@@ -216,7 +196,7 @@ _Preparation prerequisite for native execution: the uncommitted simulator-enable
 - **Exit criteria:** Deliberate iOS Simulator checks cover timed, open-ended, paused, and multi-trick Sesh background/foreground cycles, confirm any overdue timer resolves at its logical deadline, and confirm the wake lock releases after completion or cancellation; any platform-specific regressions found are covered by an automated test where practical.
 - **Dependencies:** T043.1.
 - **Notes:** Source: iOS audit T043 in DESLOPPIFY.md; background correctness was not observed during the audit. This is native hardening of the lifecycle model established in T043.1, not process-death recovery or route-leave protection.
-- **Platform scope:** Activated for iOS Simulator on 2026-10-29. Android and physical-device verification remain deferred; record those limits without claiming they passed.
+- **Platform scope:** Acceptance for this ticket runs on the iOS Simulator. Android and physical-device checks are not part of these exit criteria; record them as not run rather than passed.
 
 ### [T044] Prevent mobile keyboards from obscuring form actions
 
@@ -225,7 +205,7 @@ _Preparation prerequisite for native execution: the uncommitted simulator-enable
 - **Status:** Not started
 - **Description:** Establish a reusable keyboard-aware form layout and apply it to custom-trick editing, notes, goals, Profile streak editing, and the access gate where reachable in the native build.
 - **Notes:** Umbrella only — complete T044.1 and T044.2. Use safe-area and keyboard behavior rather than fixed device-specific offsets; preserve existing web layouts.
-- **Platform scope:** Activated for iOS Simulator on 2026-10-29. Android and physical-device verification remain deferred; record those limits without claiming they passed.
+- **Platform scope:** Acceptance for this ticket runs on the iOS Simulator. Android and physical-device checks are not part of these exit criteria; record them as not run rather than passed.
 
 ### [T044.1] Establish a shared keyboard-aware form layout
 
@@ -237,7 +217,7 @@ _Preparation prerequisite for native execution: the uncommitted simulator-enable
 - **Exit criteria:** On representative small and large iPhone simulator viewports, the custom-trick form's final input and primary action remain reachable with the keyboard open, scrolling and keyboard dismissal behave predictably, safe-area and tab-bar insets do not overlap content, and the web layout remains unchanged.
 - **Dependencies:** Depends on T284.
 - **Notes:** Avoid fixed device-specific offsets. Keep the abstraction narrow enough to accommodate screen-specific headers and action layouts rather than forcing every form into an identical visual shell.
-- **Platform scope:** Activated for iOS Simulator on 2026-10-29. Android and physical-device verification remain deferred; record those limits without claiming they passed.
+- **Platform scope:** Acceptance for this ticket runs on the iOS Simulator. Android and physical-device checks are not part of these exit criteria; record them as not run rather than passed.
 
 ### [T044.2] Apply the keyboard-aware layout to remaining forms
 
@@ -249,4 +229,4 @@ _Preparation prerequisite for native execution: the uncommitted simulator-enable
 - **Exit criteria:** Focused checks on representative small and large iPhone simulator viewports confirm the final input and primary action remain reachable with the keyboard open on notes, goals, Profile streak, and any reachable access-gate form; scrolling, dismissal, safe-area, and tab-bar behavior are consistent and web rendering is unchanged. Explicitly record an unavailable access gate as not applicable rather than claiming it was tested.
 - **Dependencies:** T044.1.
 - **Notes:** Adapt the shared convention where a screen's structure requires it; do not introduce fixed offsets or unrelated form redesigns.
-- **Platform scope:** Activated for iOS Simulator on 2026-10-29. Android and physical-device verification remain deferred; record those limits without claiming they passed.
+- **Platform scope:** Acceptance for this ticket runs on the iOS Simulator. Android and physical-device checks are not part of these exit criteria; record them as not run rather than passed.

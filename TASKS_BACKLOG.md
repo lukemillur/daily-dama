@@ -10,10 +10,10 @@ Tickets selected for owner participation or external verification live separatel
 
 ---
 
-_T042, T043/T043.1–T043.2 and T044/T044.1–T044.2 moved to [TASKS.md](TASKS.md) on 2026-10-29 at the owner's explicit request to activate the iOS audit findings. IDs are preserved; current acceptance targets iOS Simulator. Original Android and physical-device checks remain deferred, not verified._
+_T042, T043/T043.1–T043.2 and T044/T044.1–T044.2 moved to [TASKS.md](TASKS.md) on 2026-10-29 at the owner's explicit request to activate the iOS audit findings. IDs are preserved; current acceptance targets iOS Simulator. Original Android and physical-device checks have not been verified._
 
 ---
 
-_T153–T162 came from S032–S039 and S041, refined from a pre-decision backend analysis (since removed; Supabase was selected and is now live in production) and initially scoped into this formal backlog on 2026-08-21. Every currently actionable backend-roadmap workstream has now moved phase by phase into the automated queue in [TASKS.md](TASKS.md), where T154 is ordered as the Phase 1/Phase 4 shared prerequisite for T158. No T153–T162 ticket remains in this file. S040 (native account hardening) remains `Proposed` in [BACKLOG_STORIES.md](BACKLOG_STORIES.md) because mobile hardening is explicitly deferred._
+_T153–T162 came from S032–S039 and S041, refined from a pre-decision backend analysis (since removed; Supabase was selected and is now live in production) and initially scoped into this formal backlog on 2026-08-21. Every currently actionable backend-roadmap workstream has now moved phase by phase into the automated queue in [TASKS.md](TASKS.md), where T154 is ordered as the Phase 1/Phase 4 shared prerequisite for T158. No T153–T162 ticket remains in this file. S040 (native account hardening) remains `Proposed` in [BACKLOG_STORIES.md](BACKLOG_STORIES.md) pending a product decision on native account support._
 
-_Phase 5 consideration: no ticket is added here or to [TASKS.md](TASKS.md). S040 remains `Proposed`, and its native PKCE, SecureStore, and iOS/Android verification scope stays deferred until the user explicitly resumes mobile hardening._
+_Phase 5 consideration: no ticket is added here or to [TASKS.md](TASKS.md). S040 remains `Proposed`, and its native PKCE, SecureStore, and iOS/Android verification scope needs a product decision before it is scoped._

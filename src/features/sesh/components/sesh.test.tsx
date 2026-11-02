@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
 import type { ComponentProps, ReactElement } from 'react';
+import * as ReactNative from 'react-native';
 import { Pressable, ScrollView, StyleSheet, Text } from 'react-native';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 import { ThemeProvider as StyledThemeProvider, type DefaultTheme } from 'styled-components/native';
@@ -1994,7 +1995,17 @@ describe('Sesh wiring - goal celebration ordering (regression)', () => {
   });
 });
 
+const originalPlatformOS = ReactNative.Platform.OS;
+
 describe('Sesh signup invite integration', () => {
+  beforeEach(() => {
+    ReactNative.Platform.OS = 'web';
+  });
+
+  afterEach(() => {
+    ReactNative.Platform.OS = originalPlatformOS;
+  });
+
   // Practice history persists to the shared AsyncStorage mock across every test in this file.
   // These tests assert on "is this the first ever regular session" from a clean slate, so they
   // need genuinely empty persisted history rather than whatever earlier tests left behind.
@@ -2266,6 +2277,24 @@ describe('Sesh signup invite integration', () => {
       repeatASesh(root);
       expect(findByAccessibilityLabel(root, 'Guest signup invitation').length).toBeGreaterThan(0);
       expect(findByAccessibilityLabel(root, 'session-count:11').length).toBeGreaterThan(0);
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it('never shows the invite on native, on the first or 6th regular sesh, and still records history', async () => {
+    ReactNative.Platform.OS = 'ios';
+    jest.useFakeTimers();
+    try {
+      const root = await mountSesh('guest');
+      completeASesh(root, `Start a sesh with ${TRICK.name}`);
+
+      expect(findByAccessibilityLabel(root, 'Guest signup invitation')).toHaveLength(0);
+      for (let session = 2; session <= 6; session += 1) {
+        repeatASesh(root);
+        expect(findByAccessibilityLabel(root, 'Guest signup invitation')).toHaveLength(0);
+      }
+      expect(findByAccessibilityLabel(root, 'session-count:6').length).toBeGreaterThan(0);
     } finally {
       jest.useRealTimers();
     }

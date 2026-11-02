@@ -39,7 +39,7 @@ Status values: `Ready`, `Wait`, `Existing ticket`, `Done`.
 - **Where:** `src/shared/supabase/supabase-client.ts:getSupabaseClient`; `src/features/auth/state/auth-provider.ts`; `GuestAccountSection`; Sesh guest signup invitations; `/auth/*`; Profile account/security/delete.
 - **Why it matters:** **Source-confirmed native gap, with an invitation observed in the simulator.** The shared client returns `null` on every non-web platform. Auth initializes as guest/unconfigured and account actions return configuration errors. Yet the first completed Sesh invites the user to sign up to preserve history. Native signup, signin, verification/reset/change-email callbacks, sync, conflicts, logout and deletion cannot be accepted as working. This is an account-enabled iOS release gate, not a blocker for local guest practice.
 - **Recommended change:** Keep S040 as the owner of native account hardening. For the guest-only iteration, withhold unavailable account promises/CTAs or explain availability accurately; enabling native accounts requires the planned storage, callback and lifecycle work and real boundary tests. Do not remove the native guard as a shortcut.
-- **Timing:** Decide the guest-only presentation now; schedule native Auth as a separate approved iteration. Android remains deferred.
+- **Timing:** Decide the guest-only presentation now; schedule native Auth as a separate approved iteration. Apply the same guest-only treatment on Android.
 
 
 ### [D001] Make “Discard and log out” fail closed when outbox persistence fails
@@ -153,7 +153,7 @@ Status values: `Ready`, `Wait`, `Existing ticket`, `Done`.
 - **Status:** Existing ticket (`TASKS.md`)
 - **Where:** `src/components/app-tabs.tsx`.
 - **Why it matters:** **Observed and source-confirmed.** Only Home has an icon; Sesh, Tricks, Stats and Profile have blank icon slots above their labels. Native tab colors come from `Colors`/system scheme rather than the saved app theme used in screens. Tab labels were visible, but individual items were not exposed in the captured AX tree; VoiceOver behavior needs a separate check before calling it broken.
-- **Recommended change:** Execute T042 for subject-appropriate icons and selected/unselected treatment. Check tint/theme coherence and VoiceOver names/states. Limit current verification to iOS; retain Android as deferred rather than claiming its ticket criteria passed.
+- **Recommended change:** Execute T042 for subject-appropriate icons and selected/unselected treatment. Check tint/theme coherence and VoiceOver names/states. Verify on iOS now; verify Android once its development build exists rather than claiming those criteria passed.
 - **Timing:** Safe focused work; no navigation architecture replacement is required just to add icons.
 
 ### [T044] Validate keyboard-aware layouts on actual software keyboards
@@ -162,7 +162,7 @@ Status values: `Ready`, `Wait`, `Existing ticket`, `Done`.
 - **Where:** custom tricks/sequences, notes, goals, streak settings and Sesh numeric fields; also include feedback/Auth availability paths in the matrix.
 - **Why it matters:** **Partial observation.** Showing the number pad on the Sesh duration field hides the lower trick choices/tab bar; tapping body copy dismissed it successfully. There is no numeric keyboard Done accessory, but the successful outside tap means this was not a proven keyboard trap. Custom-trick Save was already behind the tab bar without a keyboard. Remaining form/keyboard combinations were not reached before the control connection failed.
 - **Recommended change:** Run T044's actual software-keyboard cases on small and large iPhones, checking focused-input visibility, final actions, scrolling, dismissal and multiline input. Distinguish simulator hardware-keyboard mode from a passing mobile-keyboard test.
-- **Timing:** Execute with D023; no Android work is authorized yet.
+- **Timing:** Execute with D023 on iOS; repeat the Android keyboard cases once the Android development build exists.
 
 ### [T043] Verify app lifecycle, timer and wake-lock behavior
 
@@ -273,7 +273,7 @@ Status values: `Ready`, `Wait`, `Existing ticket`, `Done`.
 - **Where:** `src/components/ui/text-field.tsx:32-48`; Auth and feedback screens render async errors/success text without live-region semantics; destructive confirmations and screen swaps do not consistently move focus.
 - **Why it matters:** Labels and many Pressable roles are already present, but validation/async results can be invisible to screen-reader users unless focus happens to move. The shared `TextField` also does not expose invalid/described-by semantics as one coherent contract.
 - **Recommended change:** Extend shared form primitives with accessible error IDs/invalid state where React Native Web supports them, announce async status changes, and define focus targets for success/error/confirmation transitions. Verify on web keyboard plus one screen reader before claiming completion.
-- **Timing:** Safe now, but implementation details should follow the installed React Native Web/Expo behavior. Native validation remains deferred.
+- **Timing:** Safe now, but implementation details should follow the installed React Native Web/Expo behavior. Verify the same contract on iOS and Android.
 
 ### [D014] Remove confirmed Expo-starter remnants
 
@@ -313,7 +313,7 @@ Status values: `Ready`, `Wait`, `Existing ticket`, `Done`.
 - **Where:** `package.json` dependencies `expo-status-bar`, `expo-system-ui`, and `react-native-gesture-handler`.
 - **Why it matters:** A repository-wide import/config scan found no consumer for any of the three. `yarn why` reports each exists only because it is declared directly (gesture-handler is an optional Expo Router peer). None appears in the 2026-09-11 web bundle source map, so removal will reduce install surface and lockfile/native dependency inventory rather than the current web transfer size. `expo-font` and `react-native-screens` also have no direct app import but are transitive dependencies of `expo`/`expo-router`; deleting only their top-level declarations is manifest hygiene, not a real package or bundle saving. `expo-constants` and `expo-linking` satisfy Expo Router peers, while `expo-asset` is configured and also required transitively; keep those.
 - **Recommended change:** Remove only the three confirmed standalone declarations with Yarn, then run the configuration/dependency verification tier. Re-run `yarn why` and inspect the lockfile diff so a transitive consumer or native autolinking requirement is not silently lost. Treat `expo-font`/`react-native-screens` declaration cleanup separately and only if aligning the manifest with Expo's recommended dependency contract is worthwhile.
-- **Timing:** Safe for the active web target, but because dependency changes affect eventual native projects, perform this only while mobile remains explicitly deferred and record that native validation was not run.
+- **Timing:** Safe for the active web target, but because dependency changes affect eventual native projects, include iOS and Android builds in its verification.
 
 ### [D020] Archive unused source artwork without claiming bundle savings
 

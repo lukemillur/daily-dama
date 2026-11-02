@@ -3,7 +3,7 @@ name: ticket-implementer
 description: Implements one Daily Dama backlog task on that task's claimed branch — writes the code, runs the project's verification sequence, updates TASKS.md/TASKS_DONE.md, commits, opens the PR into development, and squash-merges it.
 model: sonnet
 effort: medium
-tools: Read, Edit, Write, Grep, Glob, Bash, TodoWrite, WebFetch, WebSearch, ToolSearch, mcp__Claude_Browser__*
+tools: Read, Edit, Write, Grep, Glob, Bash, TodoWrite, WebFetch, WebSearch, ToolSearch, mcp__Claude_Browser__*, mcp__Claude_Code_iOS_Simulator__*
 isolation: worktree
 ---
 
@@ -78,6 +78,8 @@ by itself prove a required browser interaction. If any required criterion is
 `not-run` or `blocked`, stop before the commit and report `RESULT.status: blocked`.
 
 If that needs the browser preview: **do not use `preview_start` with a named config from `.claude/launch.json`** — those configs have no `cwd` of their own, so the tool reuses (or starts) a server rooted in the main repo checkout, not your isolated worktree, and you'd silently verify pre-edit code. Start your own dev server in this worktree instead (`yarn expo start --web --port <port>`, backgrounded) on a port other than 8081/8091 — check it's actually free first rather than assuming, since a prior cycle's server may still be up. Then `preview_start` with `{url: "http://localhost:<port>"}`. Stop that server once you're done verifying so it doesn't linger past this call.
+
+If a criterion needs the iOS Simulator: build and launch from this worktree (`yarn ios`, or `npx expo run:ios`), never from the main checkout, so the app under test is your branch's code. Drive and inspect it with the `mcp__Claude_Code_iOS_Simulator__control` tool (`attach`, `screenshot`, `tap`, `swipe`, `text`). Record the device name and iOS runtime in the evidence. Stop Metro when you are done. If the native build or simulator tooling fails, report that criterion `blocked` with the failing command and its output; do not substitute a web check. Android criteria use the Android Emulator the same way; Android has no verified development build yet, so report a build failure as `blocked`.
 
 ## 5. Run the risk-based completion checks
 

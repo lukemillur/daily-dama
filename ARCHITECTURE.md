@@ -12,8 +12,8 @@ This guide covers the Daily Dama product application: onboarding, Home, Sesh, Tr
 
 ### iOS development setup (October 29, 2026)
 
-iOS hardening has resumed with a simulator-first milestone; Android remains
-deferred. Local builds use Xcode 27.1 and Expo SDK 57 with
+Web, iOS and Android are all active targets. iOS has a working simulator
+development build; Android does not yet have a verified development build. Local iOS builds use Xcode 27.1 and Expo SDK 57 with
 `expo-build-properties`'s `ios.enableSceneSupport` enabled. This generates the
 UIKit scene lifecycle required by the iOS 27 SDK without maintaining native
 project files manually. The generated `/ios` directory remains ignored.
@@ -22,7 +22,9 @@ launches the local iOS application. The configured bundle identifier is
 `com.dailydama.app`, provisional until physical-device signing is checked.
 
 Native account/sync and Sentry initialization remain disabled; a successful
-simulator build does not establish their native readiness. Setup checkpoints,
+simulator build does not establish their native readiness. Because native has
+no Supabase client, the `/feedback` route renders an unavailable state with a
+Back to Profile exit instead of the submission form. Setup checkpoints,
 local tooling workarounds, and remaining verification live in
 [`outputs/ios-personal-build-setup.md`](outputs/ios-personal-build-setup.md).
 Website metadata in the landing route and app layout renders only on web;
@@ -172,6 +174,8 @@ The providers also skip the first persistence effect after restoration. The rest
 One consequence is that nested providers currently hydrate serially: a child provider is not mounted until its parent renders children. With small local documents this is acceptable, but it is a startup-cost consideration if more domains or much larger data are added.
 
 Identity hydration sits above all five domain providers (`AuthProvider` → `IdentityProvider`, both in `src/features/auth/state` and `src/shared/persistence`) and is itself bounded rather than able to hang indefinitely: `AuthProvider` reads a persisted Supabase session directly from storage in parallel with the SDK's own refresh, so a returning user with a valid locally-cached session is authenticated immediately and never blocked behind a slow or hung background refresh. A client-side timeout forces an explicit `refreshFailed` status if neither a real auth event nor a cached session resolves in time; `IdentityProvider` renders a distinct recovery screen for that one case, with a retry action and a sign-out/guest escape hatch, rather than gating every domain provider behind the plain hydration fallback forever.
+
+Native builds are guest-only: `getSupabaseClient` returns `null` off web, so `AuthProvider` settles as a guest. `areAccountsAvailable` (`src/features/auth/model/account-availability.ts`) is the single presentation predicate paired with that guard. While it is false, Profile shows an on-device-only note instead of sign-up/sign-in, the landing header and the first/every-fifth-Sesh invitations render nothing, and `src/app/auth/_layout.tsx` replaces every `/auth/*` route with `AccountUnavailableScreen` (one "Back to app" action, no auth action mounted). Flip the predicate and delete these branches when native auth ships.
 
 ## Navigation architecture
 
@@ -608,7 +612,7 @@ yarn expo export --platform web --output-dir /tmp/daily-dama-web-export
 
 `.claude/scripts/verify.mjs` runs these steps in order. Workflow-tooling tests under `.claude/scripts/` are separate from the product application's Jest suite.
 
-The tests are strongest around domain logic and Sesh behavior. They do not replace deliberate browser checks for layout, route interaction, timer experience, or narrow viewport fit. iOS and Android validation is intentionally deferred under the current platform scope.
+The tests are strongest around domain logic and Sesh behavior. They do not replace deliberate browser checks for layout, route interaction, timer experience, or narrow viewport fit. Native behavior needs iOS Simulator and Android Emulator evidence on the affected platform; see the active platform scope in `AGENTS.md`.
 
 ## Architectural decisions and how to explain them
 
@@ -682,7 +686,7 @@ The reducer is cleanly isolated, but `sesh.tsx` owns a large amount of presentat
 
 ### 9. Current platform confidence is asymmetric
 
-React Native primitives and platform-specific navigation preserve an eventual cross-platform path, but web is the only deliberately verified target. Native tab behavior, keyboard handling, background Sesh behavior, and layout remain explicit hardening work rather than proven architecture guarantees.
+React Native primitives and platform-specific navigation give one code path across web, iOS and Android, and all three are active targets. Web has the longest verification history. Native tab behavior, keyboard handling, background Sesh behavior, and layout are active hardening work on iOS and Android rather than proven architecture guarantees.
 
 ## Safe extension rules
 

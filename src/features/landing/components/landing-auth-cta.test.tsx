@@ -1,4 +1,5 @@
-import { beforeEach, describe, expect, it, jest } from '@jest/globals';
+import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
+import * as ReactNative from 'react-native';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 
 import type { AuthState } from '@/features/auth/model/auth-state';
@@ -48,14 +49,21 @@ async function mount() {
   return root;
 }
 
+const originalPlatformOS = ReactNative.Platform.OS;
+
 describe('LandingAuthCta', () => {
   beforeEach(() => {
+    ReactNative.Platform.OS = 'web';
     mockPush.mockReset();
     mockSignOut.mockReset();
     mockSignOut.mockResolvedValue({ error: null });
     mockTrackAuthEvent.mockReset();
     mockLogAuthWarning.mockReset();
     mockAuthState = { status: 'guest', reason: 'signedOut' };
+  });
+
+  afterEach(() => {
+    ReactNative.Platform.OS = originalPlatformOS;
   });
 
   it('renders nothing while initializing', async () => {
@@ -170,5 +178,25 @@ describe('LandingAuthCta', () => {
     const button = findByLabel(root, 'Log out');
     expect(button.props.children).toBe('Log out');
     expect(button.props.disabled).toBe(false);
+  });
+});
+
+describe('LandingAuthCta on native (guest-only)', () => {
+  beforeEach(() => {
+    mockPush.mockReset();
+    mockAuthState = { status: 'guest', reason: 'unconfigured' };
+    ReactNative.Platform.OS = 'ios';
+  });
+
+  afterEach(() => {
+    ReactNative.Platform.OS = originalPlatformOS;
+  });
+
+  it('withholds the sign-up and sign-in entry points', async () => {
+    const root = await mount();
+
+    expect(findAllByLabel(root, 'Sign up').length).toBe(0);
+    expect(findAllByLabel(root, 'Sign in').length).toBe(0);
+    expect(mockPush).not.toHaveBeenCalled();
   });
 });
