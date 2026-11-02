@@ -2,6 +2,20 @@
 
 Reviewed 2026-09-04 against local `development` at `7bdeb7f`.
 
+**Scoped iOS UX audit: 2026-10-29**, local `feat/kendama-anatomy-model` at
+`6335ec7`, with uncommitted simulator-enablement changes in configuration,
+dependencies, route metadata, and architecture documentation. Those changes
+were preserved. This pass covers the iPhone 18 Pro simulator on iOS 27.0,
+Xcode 27.1, Expo 57.0.31, and the owner's selected pale-blue/blue-accent theme.
+It does not revalidate every historical cleanup item below.
+
+**Hands-on coverage is incomplete:** native computer-use failed with
+`Sky Computer Use native pipe closed before response` after custom-trick editing.
+Rebinding and resetting the runtime did not restore it. Remaining flows were
+inspected in source and are explicitly marked as unverified below. This is not
+an exhaustive native acceptance sign-off. See the iOS workflow matrix at the end.
+
+
 Critical-ticket reconciliation was repeated 2026-09-04 on clean, up-to-date `development` at `8979dca`. D001/D002 and the existing ownership of T226–T229 were rechecked for this ticketing pass; medium and nice-to-have findings retain the original scan's evidence and caveats until a full refresh.
 
 Bundle/dependency evidence was refreshed 2026-09-11 against clean local `development` at `059a13b` (one commit ahead of `origin/development`). This was a deliberately narrow refresh of D014/D015 plus new D019/D020, not a revalidation of every older finding.
@@ -19,6 +33,15 @@ Status values: `Ready`, `Wait`, `Existing ticket`, `Done`.
 
 ## 1. Critical issues
 
+### [S040] Finish or explicitly withhold native account workflows
+
+- **Status:** Existing ticket (planning story S040 in `BACKLOG_STORIES.md`, still Proposed; guest-only presentation tracked by T288 in `TASKS.md`)
+- **Where:** `src/shared/supabase/supabase-client.ts:getSupabaseClient`; `src/features/auth/state/auth-provider.ts`; `GuestAccountSection`; Sesh guest signup invitations; `/auth/*`; Profile account/security/delete.
+- **Why it matters:** **Source-confirmed native gap, with an invitation observed in the simulator.** The shared client returns `null` on every non-web platform. Auth initializes as guest/unconfigured and account actions return configuration errors. Yet the first completed Sesh invites the user to sign up to preserve history. Native signup, signin, verification/reset/change-email callbacks, sync, conflicts, logout and deletion cannot be accepted as working. This is an account-enabled iOS release gate, not a blocker for local guest practice.
+- **Recommended change:** Keep S040 as the owner of native account hardening. For the guest-only iteration, withhold unavailable account promises/CTAs or explain availability accurately; enabling native accounts requires the planned storage, callback and lifecycle work and real boundary tests. Do not remove the native guard as a shortcut.
+- **Timing:** Decide the guest-only presentation now; schedule native Auth as a separate approved iteration. Android remains deferred.
+
+
 ### [D001] Make “Discard and log out” fail closed when outbox persistence fails
 
 - **Status:** Done (T247)
@@ -27,45 +50,130 @@ Status values: `Ready`, `Wait`, `Existing ticket`, `Done`.
 
 ### [D002] Surface local persistence failures instead of acknowledging volatile state
 
-- **Status:** Existing ticket (`TASKS.md`; T248.1–T248.2 after T247)
+- **Status:** Done (T248.1–T248.2)
 - **Where:** `src/shared/persistence/use-identity-scoped-domain.ts:131-149`; the five providers' `onSaveFailed` callbacks, e.g. `src/features/profile/state/user-profile-provider.tsx:76-81`, `src/features/stats/state/practice-history-provider.tsx:57-62`, and their custom-trick/note/goal equivalents.
 - **Why it matters:** All five domains update the UI immediately, but a failed AsyncStorage write produces only `console.warn`. A guest can complete a Sesh, add a trick, note, or goal, see it in the UI, and lose it on reload with no warning or retry affordance. For a local-first product, silent local durability failure is a core data-integrity issue.
 - **Recommended change:** Add shared local-persistence status with retry semantics, retain the latest unsaved snapshot, and show a non-blocking but unmistakable app-level warning until the write succeeds. Keep local-persistence state distinct from cloud-sync state.
 - **Timing:** Execute the T248 umbrella after T247. T248.1 establishes the shared status model before T248.2 adds the app-level recovery surface.
 
+- **2026-10-29 reconciliation:** Completion is recorded in `TASKS_DONE.md`; the original description above is historical evidence, not a current open finding. D010's recovery surface was also seen during the initial simulator launch. No new hosted verification was performed in this audit.
+
 ### [T226] Close the signed-in feedback permission gap
 
-- **Status:** Existing ticket (`TASKS_COLLABORATIVE.md`; T225 reconciliation first)
+- **Status:** Done (T226)
 - **Where:** `src/features/feedback/persistence/submit-feedback.ts:39-53`; `supabase/migrations/20260902000000_add_feedback_table_with_anon_insert.sql:49-61`.
 - **Why it matters:** The persistent Supabase client carries an authenticated session for signed-in users, while the table grants/policy allow `anon` inserts only. The checked-in schema therefore rejects the Profile-linked feedback flow for authenticated users even though the client comment claims both identities use it.
 - **Recommended change:** Execute T226: grant `authenticated` the same narrow INSERT-only capability and validation, retain no client read/update/delete access, and verify guest and signed-in submission plus acknowledgment against the real stack.
 - **Timing:** Safe to fix now through the guided-ticket workflow; do not duplicate it as a D-ticket or treat a mocked component test as proof.
 
+- **2026-10-29 reconciliation:** Completion is recorded in `TASKS_DONE.md`; the original description above is historical evidence, not a current open finding. D010's recovery surface was also seen during the initial simulator launch. No new hosted verification was performed in this audit.
+
 ### [T227] Make every dynamic web route refresh-safe
 
-- **Status:** Existing ticket (`TASKS_COLLABORATIVE.md`; T225 reconciliation first)
+- **Status:** Done (T227)
 - **Where:** `vercel.json:4-9`; exported routes under `dist/app/tricks/[trickId]/...` and `dist/app/tricks/custom/[trickId]/...`.
 - **Why it matters:** Only `/app/stats/:trickId` has a host rewrite. Direct navigation or refresh on trick notes, goals, custom edit, and custom delete can 404 even though in-app navigation works. This is a release-breaking routing assumption hidden by client-side navigation.
 - **Recommended change:** Execute T227: define and test rewrites for every dynamic route shape on the actual host, including intentional missing-record behavior. Keep a route/rewrite contract test so new dynamic routes cannot silently omit hosting support.
 - **Timing:** Safe to fix now through the guided-ticket workflow; hosted verification is required.
 
+- **2026-10-29 reconciliation:** Completion is recorded in `TASKS_DONE.md`; the original description above is historical evidence, not a current open finding. D010's recovery surface was also seen during the initial simulator launch. No new hosted verification was performed in this audit.
+
 ### [T228] Stop the dependency-audit gate from reporting false success
 
-- **Status:** Existing ticket (`TASKS.md`; depends on T225)
+- **Status:** Done (T228)
 - **Where:** `security/scripts/check-dependency-audit.mjs:22-57`.
 - **Why it matters:** The wrapper ignores the child exit status/signal and treats malformed or incomplete NDJSON as “no high/critical advisories.” A network or registry failure can therefore make a security gate green without completing an audit.
 - **Recommended change:** Execute T228: require a valid completion summary, distinguish Yarn Classic's advisory bitmask from process/network/parser failures, and add spawn/error/signal/incomplete-output regression cases.
 - **Timing:** Safe to fix now after T225; do not add advisory exceptions merely to make the gate pass.
 
+- **2026-10-29 reconciliation:** Completion is recorded in `TASKS_DONE.md`; the original description above is historical evidence, not a current open finding. D010's recovery surface was also seen during the initial simulator launch. No new hosted verification was performed in this audit.
+
 ### [T229] Finish Sentry as a privacy-safe, CSP-compatible integration—or leave it disabled
 
-- **Status:** Existing ticket (`TASKS_COLLABORATIVE.md`)
+- **Status:** Done (T229)
 - **Where:** `src/shared/observability/sentry-client.ts:25-35`; `vercel.json:15-16`; `security/scripts/check-csp-headers.mjs:41`.
 - **Why it matters:** Sentry is initialized with a direct DSN, but production `connect-src` permits only self and Supabase. If enabled, normal delivery is blocked. Conversely, merely opening the CSP without sanitizing event URLs/breadcrumbs could expose Auth callback query or fragment secrets; Vercel Analytics has a URL sanitizer, Sentry currently does not.
 - **Recommended change:** Execute T229 with a narrowly allowed ingest origin and a `beforeSend`/breadcrumb policy that removes callback query/hash data and sensitive extras. Verify a safe synthetic event arrives and contains no credentials, email, session material, or callback tokens.
 - **Timing:** Wait for the guided hosted check. Keep the DSN unset until the full path is verified.
 
 ## 2. Medium cleanup items
+
+### [D021] Make native feedback usable and provide a safe exit
+
+- **Status:** Existing ticket (`TASKS.md`; T287)
+- **Where:** `/feedback`; `src/features/feedback/components/feedback-screen.tsx`; `src/features/feedback/persistence/submit-feedback.ts`; native guard in `getSupabaseClient`.
+- **Why it matters:** **Source-confirmed, not exercised in the simulator.** Profile links to the form, but every native submission returns failed because its client is `null`. The screen replaces that reason with generic retry guidance, so retry cannot succeed. The unsubmitted form also has no visible Back/Cancel action; it sits outside the tab tree and the root uses `Slot`, so a normal native stack header/back gesture is not established here. Do not assume the submitted-only Back to Profile button solves the failed path.
+- **Recommended change:** For this guest-only milestone, provide a visible return to Profile and accurately explain/withhold unavailable submission, or implement a deliberately scoped native feedback transport. Verify the real iOS submission/error/exit paths; do not add a second unreviewed backend client merely to bypass the native guard.
+- **Timing:** Safe to repair the availability/exit presentation now. A new native transport needs its own boundary decision.
+
+- **2026-10-29 scoping:** T287 is the authoritative implementation ticket; this audit entry retains the evidence.
+
+### [D022] Derive readable foreground colors for themed controls
+
+- **Status:** Existing ticket (`TASKS.md`; T283)
+- **Where:** `src/components/ui/button.tsx:ButtonLabel`; `src/features/profile/state/use-resolved-theme.ts:deriveAutomaticButtonBackgrounds`; Sesh `PlanChoiceTitle`, `LacedButtonText`/`LacedCount`; Stats summary values; custom rank/focus controls.
+- **Why it matters:** **Observed on iOS with the owner's current theme.** Blue accent labels/numbers sit on dark green primary surfaces in Timed selection, Laced, Stats totals, Define new trick, and custom-trick Save. These are markedly harder to read than the surrounding body copy. The theme resolver chooses button backgrounds against the page background but ignores the accent that Button uses as its label color. Existing text/background contrast readouts therefore do not guarantee readable controls. This likely also affects web; it is not attributed to an iOS rendering bug.
+- **Recommended change:** Add foreground roles derived against their actual control/card surfaces, preserve user-selected decorative colors, and characterize the observed blue theme plus all presets. Verify selected, disabled and pressed states in the simulator and web. Do not simply forbid the owner's chosen theme.
+- **Timing:** High-priority readability correction before visual polish; keep theme preference persistence unchanged.
+
+- **2026-10-29 scoping:** T283 is the authoritative implementation ticket; this audit entry retains the evidence.
+
+### [D023] Keep scroll content and primary actions clear of the native tab bar
+
+- **Status:** Existing ticket (`TASKS.md`; T284)
+- **Where:** `src/features/home/components/daily-home.tsx`; Sesh `SCROLL_CONTENT_PADDING`; `src/features/tricks/components/trick-directory.tsx`; `CustomTrickForm` in `src/app/app/tricks/index.tsx`; notes/goals scroll screens; native tabs.
+- **Why it matters:** **Overlap observed; complete reachability not proven.** Screenshots show the floating tab bar covering Sesh trick choices, completion/signup actions, the custom-trick Save action, Home's footer links and the Stats trick card. Multiple scroll containers reserve only 24 points beneath content while their Screens omit the bottom edge. Profile separately reserves a large fixed inset, so policy is inconsistent. Automation's wheel/drag attempts did not move several views; that may be a simulator-control limitation and is not proof that a user cannot scroll them.
+- **Recommended change:** Establish native tab/safe-area-aware bottom clearance in the owning layout/scroll conventions. Validate the final actionable row at maximum scroll, with and without the software keyboard, rather than adding an unexplained fixed spacer to every feature. Check Home, Sesh, Stats, directory, forms, notes and goals together.
+- **Timing:** Do before fine spacing polish. Coordinate keyboard cases with T044; preserve hydration/provider boundaries.
+
+- **2026-10-29 scoping:** T284 is the authoritative implementation ticket; this audit entry retains the evidence.
+
+### [D024] Recompose trick rows for phone widths
+
+- **Status:** Existing ticket (`TASKS.md`; T285)
+- **Where:** `src/features/tricks/components/trick-directory.tsx`: `identityLayout`, `TrickNameRow`, `RowActions`, and custom actions.
+- **Why it matters:** **Observed.** In the focused list, “Moshikame x10 or more, Spike” wraps into roughly six short lines beside NOTES / GOALS / PRACTICE and a checkbox. The row becomes difficult to scan; Edit/Delete add still more horizontal pressure for custom tricks. The identity has a minimum width and actions remain in the same row. Action labels are visually tiny, although source gives RowAction a 48-by-44 minimum target, so this audit does not claim those hit areas are undersized.
+- **Recommended change:** Give the name a full-width identity line on phones and put secondary actions into a separate row or intentional detail/action surface. Retain fast selection and direct practice, clear selected state, and accessible action labels. Verify long names, custom sequences, custom Edit/Delete and large text.
+- **Timing:** Safe after the shared tab/inset baseline. Reuse the correction in multi-trick/goal pickers that consume the directory.
+
+- **2026-10-29 scoping:** T285 is the authoritative implementation ticket; this audit entry retains the evidence.
+
+### [D025] Bound celebration banners to the available screen width
+
+- **Status:** Existing ticket (`TASKS.md`; T286)
+- **Where:** `src/features/sesh/components/sesh.tsx:CelebrationBanner`, `CelebrationBannerCard`, `CelebrationBannerTitle`, `FirstLaceBanner`.
+- **Why it matters:** **Observed during the first-lace event and again on completion.** The banner for “Moshikame x10 or more, Spike” extends beyond both sides of the phone and clips its sentence. Its card has width/max-width rules but the enclosing Animated.View does not establish a bounded width; animation overshoot may amplify the result. The exact layout cause is not yet isolated.
+- **Recommended change:** Constrain the wrapper to the parent's content width, allow the full message to wrap, and contain any scale overshoot. Check first-lace, personal-best and goal variants with long trick/sequence names, during animation and at rest.
+- **Timing:** Safe bounded visual correction after checking the wrapper's measured layout.
+
+- **2026-10-29 scoping:** T286 is the authoritative implementation ticket; this audit entry retains the evidence.
+
+### [T042] Complete native tab iconography and check theme coherence
+
+- **Status:** Existing ticket (`TASKS.md`)
+- **Where:** `src/components/app-tabs.tsx`.
+- **Why it matters:** **Observed and source-confirmed.** Only Home has an icon; Sesh, Tricks, Stats and Profile have blank icon slots above their labels. Native tab colors come from `Colors`/system scheme rather than the saved app theme used in screens. Tab labels were visible, but individual items were not exposed in the captured AX tree; VoiceOver behavior needs a separate check before calling it broken.
+- **Recommended change:** Execute T042 for subject-appropriate icons and selected/unselected treatment. Check tint/theme coherence and VoiceOver names/states. Limit current verification to iOS; retain Android as deferred rather than claiming its ticket criteria passed.
+- **Timing:** Safe focused work; no navigation architecture replacement is required just to add icons.
+
+### [T044] Validate keyboard-aware layouts on actual software keyboards
+
+- **Status:** Existing ticket (`TASKS.md`; T044.1–T044.2)
+- **Where:** custom tricks/sequences, notes, goals, streak settings and Sesh numeric fields; also include feedback/Auth availability paths in the matrix.
+- **Why it matters:** **Partial observation.** Showing the number pad on the Sesh duration field hides the lower trick choices/tab bar; tapping body copy dismissed it successfully. There is no numeric keyboard Done accessory, but the successful outside tap means this was not a proven keyboard trap. Custom-trick Save was already behind the tab bar without a keyboard. Remaining form/keyboard combinations were not reached before the control connection failed.
+- **Recommended change:** Run T044's actual software-keyboard cases on small and large iPhones, checking focused-input visibility, final actions, scrolling, dismissal and multiline input. Distinguish simulator hardware-keyboard mode from a passing mobile-keyboard test.
+- **Timing:** Execute with D023; no Android work is authorized yet.
+
+### [T043] Verify app lifecycle, timer and wake-lock behavior
+
+- **Status:** Existing ticket (`TASKS.md`; T043.1–T043.2)
+- **Where:** Sesh `useNow`, countdown/timer effects, keep-awake lifecycle, multi-trick and assessment runs.
+- **Why it matters:** **Unverified native boundary.** Foreground open-ended timing and pause/resume worked. Paused state survived switching Home then back to Sesh. These observations do not establish correctness through device lock/background/foreground or an overdue timed deadline. Sesh relies on interval/effect timing and no Sesh-owned AppState reconciliation was found in the source scan. Process-death recovery is separately absent by design.
+- **Recommended change:** Retain T043's timestamp-based cases and deliberate simulator/device lifecycle checks; test no-lace completion, paused sessions, multi-trick advancement and wake-lock release. Add a separate product decision for force-quit recovery if required.
+- **Timing:** Required before relying on the app for unattended timed practice. Do not infer correctness from foreground tests.
+
+
+- **2026-10-29 reconciliation:** Completion is recorded in `TASKS_DONE.md`; the original description above is historical evidence, not a current open finding. D010's recovery surface was also seen during the initial simulator launch. No new hosted verification was performed in this audit.
 
 ### [D015] Exclude dev-only sandbox routes from the release bundle
 
@@ -133,11 +241,13 @@ Status values: `Ready`, `Wait`, `Existing ticket`, `Done`.
 
 ### [D010] Add a user-facing unexpected-error recovery boundary
 
-- **Status:** Ready
+- **Status:** Done (T259)
 - **Where:** the route tree under `src/app/`; no route-level error boundary or equivalent recovery surface is present.
 - **Why it matters:** Runtime validation handles many external values, but an unexpected render/effect error can still leave a blank route with no recovery action. Sentry, even when working, observes a crash; it does not provide UX recovery.
 - **Recommended change:** Using the installed Expo Router version as the source of truth, add the narrowest supported root/app error boundary with safe copy, retry/home actions, and sanitized reporting. Add a component-level proof for fallback and reset behavior.
 - **Timing:** Safe to fix now. Keep it a recovery shell, not a generic catch-and-ignore mechanism.
+
+- **2026-10-29 reconciliation:** Completion is recorded in `TASKS_DONE.md`; the original description above is historical evidence, not a current open finding. D010's recovery surface was also seen during the initial simulator launch. No new hosted verification was performed in this audit.
 
 ### [D011] Repair architecture and deployment documentation drift
 
@@ -213,7 +323,69 @@ Status values: `Ready`, `Wait`, `Existing ticket`, `Done`.
 - **Recommended change:** Keep them if Git is the intentional design-source archive. Otherwise move the accepted source originals to an explicit design archive outside the application repository and remove the duplicate/unselected exports here. Do not remove `home@2x`/`home@3x` merely because they have no textual reference; React Native selects them implicitly from `home.png`. Keep configured icon/splash/favicon assets.
 - **Timing:** No release urgency because there is no measured web-bundle saving. Decide after D015 so the trick-viz fallback's future is clear.
 
-## Recommended execution order
+## iOS workflow coverage — 2026-10-29
+
+Continuation is tracked by T289 in `TASKS.md`; the rows below remain audit evidence, not completion claims.
+
+This is a resumption checklist, not a claim to have exercised every permutation.
+“Source only” means the path was traced but its mobile appearance/behavior was
+not accepted. No app code/configuration was changed during this audit.
+
+| Workflow | Evidence and result | Remaining check |
+| --- | --- | --- |
+| Onboarding | Owner completed it; agent previously saw entry and skill selection | Full retake, validation, trick selection and final-save loop on small iPhone |
+| Home | Viewed current frontier, rotation, practice links and zero-history summaries | Entire scroll range, returning after new history, shortcut destinations |
+| Five tabs | Switched Home/Sesh/Tricks/Stats; missing icons observed | Profile and repeated nested-tab behavior; VoiceOver; dark appearance |
+| Timed Sesh setup | Viewed Timed state, duration field, software number pad and successful outside-tap dismissal | Invalid/empty duration, minimum 1-minute deadline, audio, no-lace result and note prompt |
+| Open-ended Sesh | Countdown, first lace, pause, leave to Home/return paused, resume, early end and summary worked | Target-lace auto-completion, multiple laces, repeat/start-another actions |
+| Stats | Completed 12-second/one-lace session appeared in totals and per-trick detail | Several records, zero-lace records, sequence/history snapshots, empty-state checks after normal setup |
+| Practice list | Viewed selected standard tricks and the additional focused custom trick | Explicit deselect/reselect, no-selected-trick state, long directory scroll and laced-only screen |
+| Custom standalone | Created `IOS audit trick`, unranked and focused; returned to directory with four focused tricks | Rank-edit save was attempted but post-save state was interrupted by UI-control failure; verify rank and final state |
+| Custom editing/deletion | Edit form opened; source shows snapshot/reference-aware delete confirmation | Unsaved draft navigation, actual edit result, confirmation/cancel; no deletion was executed |
+| Custom sequence | Source only: name, ordered custom/existing steps, move/remove, existing-trick search, optional rank and focus | Create/edit/reorder validation, keyboard, reference snapshots, practice rendering, delete confirmation |
+| Notes | Source only: all-notes/trick-specific views, add/edit/save/cancel and inline delete confirmation | Keyboard, multiline, successful save/relaunch, Sesh note prompt and active notes, delete/cancel/focus |
+| Goals | Source only: all-goals trick picker, per-trick count/time creation, progress, practice link, delete confirmation | Count/time validation, completion banner, empty states, keyboard, delete/cancel |
+| Multi-trick | Source only: temporary selection, configure run, timed/open-ended, first-lace advance, shared sequencing core | Full run, manual next, pause, end, completion/back-to-Sesh, tab reselection mid-run |
+| Kentei assessment | Source only: full, from-rank, current-rank; skip/end/promotion through shared Sesh core | Actual native screens, rank picker on small viewport, interruption, completion and promotion dialog |
+| Profile/theme | Source only: presets, HSV gestures/hex inputs, contrast display, resets, streak setting | Native gesture behavior inside scroll, software keyboard, save/reset feedback, leave/return, dark mode and Dynamic Type |
+| Account/callbacks/sync | Source-confirmed unavailable on native (S040); signup invite seen after first completed Sesh | Resolve guest-only affordances; later real native signin/signup/reset/change-email/deletion/isolation/conflict checks |
+| Feedback | Source-confirmed unavailable native transport and no form-stage visible exit (D021) | Native presentation, safe exit and real result when transport is enabled; no feedback submitted |
+| Sandbox routes | Source and visible links; intentionally retained development tools (D015) | Inspect only under their handoffs; no claim that browser-oriented 3D views work on native |
+| Relaunch/offline/lifecycle | Source inspected; existing persistence tests are not a new simulator result | Cold launch retains onboarding/history/custom data; foreground/background/lock; offline mutation; durable-write failure UX |
+| Accessibility/device matrix | Screens expose many action names/states in AX; tab-item AX needs checking | VoiceOver, text scaling, Reduce Motion, smaller phone, landscape policy, iPad; Android and physical iPhone not tested |
+
+### Simulator data created by the audit
+
+- One completed open-ended Sesh for **Moshikame x10 or more, Spike**:
+  approximately **12 seconds, one lace**. It contributes to the simulator's Stats
+  and first-lace state; it is not evidence of the owner's real practice.
+- One focused standalone custom trick named **IOS audit trick**. A rank-4 edit
+  was attempted; confirm whether it saved after reconnecting.
+- No existing user record was deleted, no account was created/changed, no
+  feedback was sent, and no cloud mutation was intentionally performed.
+
+### iOS recommendation and audit limits
+
+1. Restore native computer-use connectivity and finish the matrix, beginning
+   with Profile, notes/goals, sequence forms and multi-trick/assessment runs.
+2. Make guest-only service availability truthful (S040 affordances and D021).
+3. Fix D022 readability, D023 insets with T044, and D024 directory composition.
+4. Complete T042 icons/theme treatment; fix D025 clipped celebrations.
+5. Run T043 lifecycle cases before treating timed sessions as dependable.
+6. Leave sandbox release exposure with D015 and native accounts with S040;
+   do not expand this UI pass into those implementations automatically.
+
+Evidence: live simulator AX/screenshot inspections and UI interactions; current
+route/component/provider source; `TASKS.md`, `TASKS_BACKLOG.md`,
+`TASKS_COLLABORATIVE.md`, relevant completed entries in `TASKS_DONE.md`, and S040.
+No app tests/builds were rerun for this documentation-only audit. The earlier
+simulator-enablement checks remain separate evidence. No timing, VoiceOver,
+physical-device, Android or hosted-backend sign-off is implied. Native capture
+failed repeatedly after edit-save; that is an automation failure, not evidence
+that Daily Dama crashed. Scrolling attempts that produced no movement are also
+not accepted as proof of a product defect.
+
+## Recommended execution order (historical broad cleanup queue)
 
 1. T247 (D001) — prevent discarded outboxes from surviving a failed durable write.
 2. T248.1–T248.2 (D002) — make all local persistence failures visible and retryable.
