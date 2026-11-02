@@ -138,7 +138,7 @@ _Preparation prerequisite for native execution: the uncommitted simulator-enable
 
 - **Area:** Shared UI / screen layout
 - **Priority:** High
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** Establish a shared iOS tab/safe-area clearance convention and apply it to tab-hosted scroll content. The floating tab bar visibly overlaps Sesh choices/completion actions, custom-trick Save, Home footer content and Stats rows; several screens reserve only 24 points below content.
 - **Exit criteria:** On small and large iPhone simulators, at maximum scroll every final row and primary action in Home, Sesh setup/completion, Stats, Tricks, custom forms, notes and goals is fully above the tab bar and tappable; focused layout coverage protects the shared convention, web layout remains unchanged, and full typechecking passes.
