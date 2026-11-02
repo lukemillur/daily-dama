@@ -174,17 +174,6 @@ _Preparation prerequisite for native execution: the uncommitted simulator-enable
 - **Exit criteria:** Every row of the existing iOS workflow matrix has a dated pass, reproduced finding with a task reference, or concrete blocked/deferred reason from simulator evidence; cover notes/goals, sequence creation/editing, multi-trick runs, Kentei assessment, Profile/theme/streak, laced/empty states, relaunch persistence and native accessibility checks, while account/service actions accurately reflect the guest-only scope. Record device/runtime and test data and leave no workflow marked passed solely from source inspection.
 - **Notes:** Source: DESLOPPIFY.md iOS workflow coverage, 2026-10-29. Documentation/verification only: write newly observed defects to Needs scoping instead of bundling fixes into this ticket. Timed lifecycle acceptance remains T043, keyboard acceptance T044, and hosted/native account support S040. Exclude Android, physical-device checks, intentional visualization sandboxes and destructive changes to owner data. Do not delete test data without the applicable authorization.
 
-### [T042] Complete native tab iconography
-
-- **Area:** Navigation
-- **Priority:** Medium
-- **Status:** In progress
-- **Planning:** Required
-- **Description:** Give Sesh, Tricks, Stats, and Profile distinct, subject-appropriate native tab icons rather than relying on incomplete or repeated icon treatment.
-- **Exit criteria:** Deliberate iOS Simulator checks confirm all five native tabs have distinct, route-appropriate icons that remain legible and unclipped in selected and unselected states, while the existing web navigation and its verified 320 px fit remain unchanged.
-- **Notes:** Source: iOS audit T042 in DESLOPPIFY.md. Only Home currently has an icon; also check that tab tint/selected treatment remains legible with the current app theme. This is navigation polish, not a navigation architecture change. Update navigation tests or snapshots where they provide useful regression protection.
-- **Platform scope:** Activated for iOS Simulator on 2026-10-29. Android and physical-device verification remain deferred; record those limits without claiming they passed.
-
 ### [T043] Harden active Sesh behavior across app backgrounding
 
 - **Area:** Sesh
