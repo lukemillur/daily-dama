@@ -1,6 +1,6 @@
 import { Link } from 'expo-router';
 import { type ReactElement, useMemo, useState } from 'react';
-import { Pressable, SectionList, type SectionListData } from 'react-native';
+import { Pressable, SectionList, type SectionListData, useWindowDimensions } from 'react-native';
 import { css, styled } from 'styled-components/native';
 
 import { TextField } from '@/components/ui/text-field';
@@ -78,6 +78,11 @@ const NO_SELECTED_TRICKS: readonly string[] = [];
 // (visual compactness over fully eliminating that scroll-transition overlap).
 const SECTION_BOUNDARY_HEIGHT = 8;
 
+// Row content width, not the app chrome breakpoint: below this the single-row layout leaves the
+// name column only ~60-110px beside up to five actions plus the checkbox, so rows stack into an
+// identity band and a wrapping action band. Wider windows keep the single-row layout.
+const COMPACT_ROW_MAX_WIDTH = 600;
+
 export function TrickDirectory({
   tricks,
   selection,
@@ -99,6 +104,8 @@ export function TrickDirectory({
   goalCountByTrickId,
   unlockedTrickIds,
 }: TrickDirectoryProps) {
+  const { width: windowWidth } = useWindowDimensions();
+  const compact = windowWidth < COMPACT_ROW_MAX_WIDTH;
   const selectedTrickIds = selection?.selectedTrickIds ?? NO_SELECTED_TRICKS;
   const sectioningTrickIds = focusedTrickIds ?? selectedTrickIds;
   const sections = useMemo(
@@ -143,6 +150,7 @@ export function TrickDirectory({
         notesAction,
         goalsAction,
         practiceAction,
+        compact,
       }}
       keyExtractor={(trick) => trick.id}
       stickySectionHeadersEnabled
@@ -174,6 +182,7 @@ export function TrickDirectory({
           noteCount={noteCountByTrickId?.get(item.id) ?? 0}
           goalCount={goalCountByTrickId?.get(item.id) ?? 0}
           isLaced={unlockedTrickIds?.has(item.id) ?? false}
+          compact={compact}
         />
       )}
       ListEmptyComponent={search?.query.trim() ? <SearchEmptyState>No tricks match your search.</SearchEmptyState> : null}
@@ -240,6 +249,7 @@ interface TrickRowProps {
   readonly noteCount?: number;
   readonly goalCount?: number;
   readonly isLaced?: boolean;
+  readonly compact?: boolean;
 }
 
 function TrickRow({
@@ -257,6 +267,7 @@ function TrickRow({
   noteCount = 0,
   goalCount = 0,
   isLaced = false,
+  compact = false,
 }: TrickRowProps) {
   const [pressed, setPressed] = useState(false);
   const customDescription = isCustomDirectoryTrick(trick)
@@ -290,6 +301,7 @@ function TrickRow({
 
   const identityElement = onToggle ? (
     <SelectableIdentity
+      $compact={compact}
       accessibilityLabel={[trick.name, customDescription, isSelected ? 'selected' : 'not selected']
         .filter(Boolean)
         .join(', ')}
@@ -302,11 +314,12 @@ function TrickRow({
       {identity}
     </SelectableIdentity>
   ) : (
-    <IdentityContainer>{identity}</IdentityContainer>
+    <IdentityContainer $compact={compact}>{identity}</IdentityContainer>
   );
 
   const selectionIndicatorElement = onToggle ? (
     <SelectionIndicatorButton
+      $compact={compact}
       accessibilityLabel={`${isSelected ? 'Deselect' : 'Select'} ${trick.name}`}
       accessibilityRole="checkbox"
       accessibilityState={{ checked: isSelected }}
@@ -323,7 +336,7 @@ function TrickRow({
   const hasRowActions = Boolean(onEdit && onDelete) || Boolean(onOpenNotes) || Boolean(onOpenGoals) || showPracticeAction;
 
   const rowActionsElement = (
-    <RowActions>
+    <RowActions $compact={compact} testID="trick-row-actions">
       {onEdit && onDelete ? (
         <>
           <RowAction
@@ -389,23 +402,48 @@ function TrickRow({
         $selected={isSelected}
         $laced={isLaced}
         $pressed={pressed}
+        $compact={compact}
         accessibilityLabel={`Choose ${trick.name}`}
         accessibilityRole="button"
         onPress={onActivate}
         onPressIn={() => setPressed(true)}
         onPressOut={() => setPressed(false)}>
-        {identityElement}
-        {hasRowActions ? rowActionsElement : null}
-        {selectionIndicatorElement}
+        {compact ? (
+          <>
+            <CompactIdentityLine>
+              {identityElement}
+              {selectionIndicatorElement}
+            </CompactIdentityLine>
+            {hasRowActions ? rowActionsElement : null}
+          </>
+        ) : (
+          <>
+            {identityElement}
+            {hasRowActions ? rowActionsElement : null}
+            {selectionIndicatorElement}
+          </>
+        )}
       </ActivatableTrickRowContainer>
     );
   }
 
   return (
-    <TrickRowContainer $selected={isSelected} $laced={isLaced}>
-      {identityElement}
-      {hasRowActions ? rowActionsElement : null}
-      {selectionIndicatorElement}
+    <TrickRowContainer $selected={isSelected} $laced={isLaced} $compact={compact}>
+      {compact ? (
+        <>
+          <CompactIdentityLine>
+            {identityElement}
+            {selectionIndicatorElement}
+          </CompactIdentityLine>
+          {hasRowActions ? rowActionsElement : null}
+        </>
+      ) : (
+        <>
+          {identityElement}
+          {hasRowActions ? rowActionsElement : null}
+          {selectionIndicatorElement}
+        </>
+      )}
     </TrickRowContainer>
   );
 }
@@ -494,16 +532,24 @@ const FocusedEmptyText = styled.Text`
   line-height: 20px;
 `;
 
-const trickRowLayout = css<{ readonly $selected: boolean; readonly $laced: boolean }>`
+const trickRowLayout = css<{
+  readonly $selected: boolean;
+  readonly $laced: boolean;
+  readonly $compact: boolean;
+}>`
   min-height: 66px;
-  flex-direction: row;
-  align-items: center;
+  flex-direction: ${({ $compact }) => ($compact ? 'column' : 'row')};
+  align-items: ${({ $compact }) => ($compact ? 'stretch' : 'center')};
   background-color: ${({ $selected, $laced }) => ($selected || $laced ? '#e5edcf' : '#f8f1dd')};
   border-left-width: ${({ $laced }) => ($laced ? '4px' : '0px')};
   border-left-color: ${({ $laced }) => ($laced ? '#274137' : 'transparent')};
 `;
 
-const TrickRowContainer = styled.View<{ readonly $selected: boolean; readonly $laced: boolean }>`
+const TrickRowContainer = styled.View<{
+  readonly $selected: boolean;
+  readonly $laced: boolean;
+  readonly $compact: boolean;
+}>`
   ${trickRowLayout}
 `;
 
@@ -511,25 +557,31 @@ const ActivatableTrickRowContainer = styled(Pressable)<{
   readonly $selected: boolean;
   readonly $laced: boolean;
   readonly $pressed: boolean;
+  readonly $compact: boolean;
 }>`
   ${trickRowLayout}
   opacity: ${({ $pressed }) => ($pressed ? 0.7 : 1)};
 `;
 
-const identityLayout = css`
-  min-width: 180px;
+const identityLayout = css<{ readonly $compact: boolean }>`
+  min-width: ${({ $compact }) => ($compact ? '0px' : '180px')};
   flex: 1;
   flex-direction: row;
   align-items: center;
-  gap: 18px;
-  padding: 15px 22px;
+  gap: ${({ $compact }) => ($compact ? '12px' : '18px')};
+  padding: ${({ $compact }) => ($compact ? '14px 4px 6px 16px' : '15px 22px')};
 `;
 
-const IdentityContainer = styled.View`
+const CompactIdentityLine = styled.View`
+  flex-direction: row;
+  align-items: center;
+`;
+
+const IdentityContainer = styled.View<{ readonly $compact: boolean }>`
   ${identityLayout}
 `;
 
-const SelectableIdentity = styled(Pressable)`
+const SelectableIdentity = styled(Pressable)<{ readonly $compact: boolean }>`
   ${identityLayout}
 `;
 
@@ -543,6 +595,7 @@ const Position = styled.Text<{ readonly $laced: boolean }>`
 
 const TrickIdentity = styled.View`
   flex: 1;
+  min-width: 0;
   gap: 3px;
 `;
 
@@ -553,6 +606,7 @@ const TrickNameRow = styled.View`
 `;
 
 const TrickName = styled.Text`
+  flex-shrink: 1;
   color: #18382e;
   font-size: 18px;
   font-weight: 750;
@@ -585,11 +639,11 @@ const LacedCountLabel = styled.Text`
   font-weight: 700;
 `;
 
-const SelectionIndicatorButton = styled(Pressable)`
+const SelectionIndicatorButton = styled(Pressable)<{ readonly $compact: boolean }>`
   flex-shrink: 0;
   align-items: center;
   justify-content: center;
-  padding: 12px 22px 12px 8px;
+  padding: ${({ $compact }) => ($compact ? '12px 16px 12px 8px' : '12px 22px 12px 8px')};
 `;
 
 const SelectionIndicator = styled.View<{ readonly $selected: boolean }>`
@@ -608,7 +662,16 @@ const SelectionMark = styled.Text`
   font-weight: 900;
 `;
 
-const RowActions = styled.View`flex-direction: row; align-self: stretch; align-items: center; gap: 4px; padding-right: 12px;`;
+// Compact padding-left aligns the action band under the name column (16px padding + 26px
+// position column + 12px gap).
+const RowActions = styled.View<{ readonly $compact: boolean }>`
+  flex-direction: row;
+  flex-wrap: ${({ $compact }) => ($compact ? 'wrap' : 'nowrap')};
+  align-self: stretch;
+  align-items: center;
+  gap: 4px;
+  padding: ${({ $compact }) => ($compact ? '0 12px 8px 54px' : '0 12px 0 0')};
+`;
 const RowAction = styled(Pressable)`min-width: 48px; min-height: 44px; align-items: center; justify-content: center; padding: 6px;`;
 const RowActionText = styled.Text`color: #18382e; font-size: 10px; font-weight: 900; text-transform: uppercase;`;
 const DeleteActionText = styled(RowActionText)`color: #d84929;`;
