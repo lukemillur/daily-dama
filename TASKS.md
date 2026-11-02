@@ -143,15 +143,6 @@ _Native execution prerequisite: the simulator-enablement changes described in [o
 - **Exit criteria:** On small and large iPhone simulators, at maximum scroll every final row and primary action in Home, Sesh setup/completion, Stats, Tricks, custom forms, notes and goals is fully above the tab bar and tappable; focused layout coverage protects the shared convention, web layout remains unchanged, and full typechecking passes.
 - **Notes:** Source: DESLOPPIFY.md D023. Inspect the installed Expo Router native-tab behavior before choosing insets; avoid scattered fixed spacers or duplicating automatic safe-area padding. This ticket covers keyboard-closed layout; T044 owns keyboard-visible behavior. Audit automation's failed scroll attempts did not establish that user scrolling is broken. Native lifecycle/providers/persistence remain unchanged.
 
-### [T287] Provide an honest native feedback unavailable state and exit
-
-- **Area:** Feedback
-- **Priority:** High
-- **Status:** Not started
-- **Planning:** Required
-- **Description:** For the current guest-only iOS build, replace the unusable feedback submission form with an explicit unavailable state and a visible return to Profile. Native getSupabaseClient returns null, so submission always fails, while the form currently gives generic retry guidance and no visible pre-submission exit.
-- **Exit criteria:** A native-platform component test proves the unavailable state offers Back to Profile and cannot submit feedback, iOS Simulator navigation from Profile reaches that state and returns successfully, and existing web feedback submission/error tests plus full typechecking pass unchanged.
-- **Notes:** Source: DESLOPPIFY.md D021; source-confirmed, not simulator-reproduced during the interrupted audit. This scopes the smallest safe guest-only correction. Do not enable native Supabase, create a parallel transport, submit real feedback during verification, or claim native feedback delivery. Full native service support remains separate.
 
 ### [T289] Complete the interrupted iOS workflow audit
 

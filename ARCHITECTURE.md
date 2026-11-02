@@ -22,7 +22,9 @@ launches the local iOS application. The configured bundle identifier is
 `com.dailydama.app`, provisional until physical-device signing is checked.
 
 Native account/sync and Sentry initialization remain disabled; a successful
-simulator build does not establish their native readiness. Setup checkpoints,
+simulator build does not establish their native readiness. Because native has
+no Supabase client, the `/feedback` route renders an unavailable state with a
+Back to Profile exit instead of the submission form. Setup checkpoints,
 local tooling workarounds, and remaining verification live in
 [`outputs/ios-personal-build-setup.md`](outputs/ios-personal-build-setup.md).
 Website metadata in the landing route and app layout renders only on web;
