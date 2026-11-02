@@ -178,7 +178,7 @@ _Preparation prerequisite for native execution: the uncommitted simulator-enable
 
 - **Area:** Navigation
 - **Priority:** Medium
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** Give Sesh, Tricks, Stats, and Profile distinct, subject-appropriate native tab icons rather than relying on incomplete or repeated icon treatment.
 - **Exit criteria:** Deliberate iOS Simulator checks confirm all five native tabs have distinct, route-appropriate icons that remain legible and unclipped in selected and unselected states, while the existing web navigation and its verified 320 px fit remain unchanged.
