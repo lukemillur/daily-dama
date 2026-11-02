@@ -158,7 +158,7 @@ _Preparation prerequisite for native execution: the uncommitted simulator-enable
 
 - **Area:** Guest account presentation
 - **Priority:** High
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** In the guest-only iOS build, remove or replace signup/signin prompts that imply native account backup already works. Cover Profile, landing account entry points and first/every-fifth-Sesh signup invitations; keep direct auth routes safely escapable with an accurate unavailable state.
 - **Exit criteria:** Native-platform presentation tests prove unsupported account CTAs and backup promises are withheld at each entry point, direct signup/signin/recovery routes explain unavailability and offer a safe return without executing auth actions, and simulator checks cover Profile, a completed guest Sesh and direct auth entry; web account/invitation tests and full typechecking pass.
