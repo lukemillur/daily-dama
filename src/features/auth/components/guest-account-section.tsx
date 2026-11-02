@@ -4,6 +4,10 @@ import { styled } from 'styled-components/native';
 import { Button } from '@/components/ui/button';
 import { BodyText, DisplayTitle } from '@/components/ui/typography';
 import { AppColors } from '@/constants/theme';
+import {
+  ACCOUNT_UNAVAILABLE_BODY,
+  useAccountsAvailable,
+} from '@/features/auth/model/account-availability';
 import { useAuthState } from '@/features/auth/state/auth-provider';
 
 /**
@@ -17,8 +21,19 @@ import { useAuthState } from '@/features/auth/state/auth-provider';
 export function GuestAccountSection() {
   const authState = useAuthState();
   const router = useRouter();
+  const accountsAvailable = useAccountsAvailable();
 
   if (authState.status !== 'guest') return null;
+
+  if (!accountsAvailable) {
+    return (
+      <Section>
+        <Divider />
+        <Title>Account</Title>
+        <Copy>{ACCOUNT_UNAVAILABLE_BODY}</Copy>
+      </Section>
+    );
+  }
 
   return (
     <Section>
