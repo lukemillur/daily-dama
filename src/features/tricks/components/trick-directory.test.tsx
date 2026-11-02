@@ -1,10 +1,13 @@
-import { describe, expect, it } from '@jest/globals';
-import { useState } from 'react';
-import { SectionList } from 'react-native';
+import { afterEach, describe, expect, it, jest } from '@jest/globals';
+import { cloneElement, useState } from 'react';
+import { SectionList, StyleSheet } from 'react-native';
 import { act, create } from 'react-test-renderer';
 
 import { TrickDirectory } from '@/features/tricks/components/trick-directory';
 import type { DirectoryTrick } from '@/features/tricks/model/trick-directory';
+// CommonJS require so the spy hits the same module object TrickDirectory's named import reads.
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const ReactNative = require('react-native') as typeof import('react-native');
 
 const FIXTURE_TRICKS: readonly DirectoryTrick[] = [
   { id: 'trick-1', name: 'Big Cup', kenteiRank: 1, kenteiLevel: 'Basic', kenteiClass: '3rd Class' },
@@ -375,5 +378,77 @@ describe('TrickDirectory', () => {
       chooseNode.props.onPress();
     });
     expect(activated).toEqual([customTricks[0]]);
+  });
+
+  describe('compact (phone-width) rows', () => {
+    const spy = jest.spyOn(ReactNative, 'useWindowDimensions');
+    const setWidth = (width: number) =>
+      spy.mockReturnValue({ width, height: 800, scale: 1, fontScale: 1 });
+    afterEach(() => {
+      spy.mockReset();
+    });
+
+    const tricks: readonly DirectoryTrick[] = [
+      {
+        id: 'std-1',
+        name: 'Moshikame x10 or more, Spike',
+        kenteiRank: 2,
+        kenteiLevel: 'Basic',
+        kenteiClass: '3rd Class',
+      },
+      { id: 'custom-1', name: 'Custom Trick', customKind: 'trick' } as unknown as DirectoryTrick,
+    ];
+
+    function renderDirectory(onToggle: (id: string) => void, edited: string[], deleted: string[]) {
+      const ui = (
+        <TrickDirectory
+          tricks={tricks}
+          selection={{ selectedTrickIds: [], onToggleTrick: onToggle }}
+          customActions={{ onEdit: (id) => edited.push(id), onDelete: (id) => deleted.push(id) }}
+          notesAction={{ onOpen: () => undefined }}
+          goalsAction={{ onOpen: () => undefined }}
+        />
+      );
+      let root!: import('react-test-renderer').ReactTestRenderer;
+      act(() => {
+        root = create(ui);
+      });
+      return { root, ui };
+    }
+
+    const labelled = (root: import('react-test-renderer').ReactTestRenderer, label: string) =>
+      root.root.find((node) => node.props.accessibilityLabel === label && typeof node.props.onPress === 'function');
+
+    it('keeps every control and label operable at 360px', () => {
+      setWidth(360);
+      const toggled: string[] = [];
+      const edited: string[] = [];
+      const deleted: string[] = [];
+      const { root } = renderDirectory((id) => toggled.push(id), edited, deleted);
+
+      expect(allText(root)).toContain('Moshikame x10 or more, Spike');
+      expect(root.root.findAll((n) => n.props.testID === 'trick-row-actions')).not.toHaveLength(0);
+      act(() => labelled(root, 'Edit Custom Trick').props.onPress());
+      act(() => labelled(root, 'Delete Custom Trick').props.onPress());
+      act(() => labelled(root, 'Select Moshikame x10 or more, Spike').props.onPress());
+      act(() => labelled(root, 'Notes for Custom Trick').props.onPress());
+      act(() => labelled(root, 'Goals for Custom Trick').props.onPress());
+      expect(edited).toEqual(['custom-1']);
+      expect(deleted).toEqual(['custom-1']);
+      expect(toggled).toEqual(['std-1']);
+    });
+
+    it('re-renders rows when the window width crosses the breakpoint', () => {
+      setWidth(360);
+      const { root, ui } = renderDirectory(() => undefined, [], []);
+      const wrapOf = () =>
+        root.root
+          .findAll((n) => n.props.testID === 'trick-row-actions' && typeof n.type === 'string')
+          .map((n) => StyleSheet.flatten(n.props.style).flexWrap);
+      expect(wrapOf()).toContain('wrap');
+      setWidth(900);
+      act(() => root.update(cloneElement(ui)));
+      expect(wrapOf()).not.toContain('wrap');
+    });
   });
 });

@@ -4,6 +4,16 @@ Completed entries move here from `TASKS.md`'s `Backlog`, in the same commit that
 
 Entries keep their content as it was at completion. Don't retroactively edit a description or exit criteria after the fact; if something about a completed task turns out to be wrong or misleading, note that in a new entry or in code, not by rewriting history here.
 
+### [T285] Recompose trick directory rows for phone widths
+
+- **Area:** Tricks / shared directory presentation
+- **Priority:** High
+- **Status:** Done
+- **Planning:** Required
+- **Description:** Give trick names usable width on phones and move secondary actions into a separate row or compact action surface. The focused-list name “Moshikame x10 or more, Spike” currently wraps into roughly six short lines beside Notes, Goals, Practice and selection controls.
+- **Exit criteria:** Small and large iPhone simulator checks of long standard names, custom tricks and custom sequences show no horizontal overflow or compressed word-column layout; selection, practice, notes, goals, edit/delete and picker activation remain operable with programmatic labels, existing action targets are not reduced, and relevant directory/consumer tests plus full typechecking pass with existing desktop web behavior preserved.
+- **Notes:** Source: DESLOPPIFY.md D024. Keep direct selection/practice fast and reuse the responsive layout in multi-trick/goal directory consumers. Do not alter trick identity, selection ownership or snapshots. Coordinate any concurrent changes to directory layout with T284. Completed on web: compact layout (below 600px window width) stacks an identity band (position, full-width name, selection checkbox) over a wrapping action band; action targets unchanged; desktop single-row layout unchanged. Verified at 320px and 1280px in the browser (no horizontal overflow, long standard name wraps to two lines) plus automated tests. The small/large iPhone simulator checks are DEFERRED (mobile hardening not resumed) and were not run.
+
 ### [T282] Retire the collaborative queue's remaining open tickets
 
 - **Area:** Documentation

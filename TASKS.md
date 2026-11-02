@@ -144,16 +144,6 @@ _Preparation prerequisite for native execution: the uncommitted simulator-enable
 - **Exit criteria:** On small and large iPhone simulators, at maximum scroll every final row and primary action in Home, Sesh setup/completion, Stats, Tricks, custom forms, notes and goals is fully above the tab bar and tappable; focused layout coverage protects the shared convention, web layout remains unchanged, and full typechecking passes.
 - **Notes:** Source: DESLOPPIFY.md D023. Inspect the installed Expo Router native-tab behavior before choosing insets; avoid scattered fixed spacers or duplicating automatic safe-area padding. This ticket covers keyboard-closed layout; T044 owns keyboard-visible behavior. Audit automation's failed scroll attempts did not establish that user scrolling is broken. Native lifecycle/providers/persistence remain unchanged.
 
-### [T285] Recompose trick directory rows for phone widths
-
-- **Area:** Tricks / shared directory presentation
-- **Priority:** High
-- **Status:** In progress
-- **Planning:** Required
-- **Description:** Give trick names usable width on phones and move secondary actions into a separate row or compact action surface. The focused-list name “Moshikame x10 or more, Spike” currently wraps into roughly six short lines beside Notes, Goals, Practice and selection controls.
-- **Exit criteria:** Small and large iPhone simulator checks of long standard names, custom tricks and custom sequences show no horizontal overflow or compressed word-column layout; selection, practice, notes, goals, edit/delete and picker activation remain operable with programmatic labels, existing action targets are not reduced, and relevant directory/consumer tests plus full typechecking pass with existing desktop web behavior preserved.
-- **Notes:** Source: DESLOPPIFY.md D024. Keep direct selection/practice fast and reuse the responsive layout in multi-trick/goal directory consumers. Do not alter trick identity, selection ownership or snapshots. Coordinate any concurrent changes to directory layout with T284.
-
 ### [T286] Contain Sesh celebration banners on phone screens
 
 - **Area:** Sesh / celebration presentation
