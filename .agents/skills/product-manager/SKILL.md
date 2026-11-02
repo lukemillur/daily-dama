@@ -43,7 +43,7 @@ Preserve the source document's hierarchy and traceability while reshaping it:
    - `Security control` for risk-reduction requirements with independently testable evidence.
    - `Launch gate` for an operational condition that must be met before release.
 4. Split an item when it contains two independently valuable outcomes or crosses roadmap phases with different readiness.
-5. Keep deferred native work at `Proposed` while the repository's active scope is web-only unless the user explicitly resumes mobile hardening.
+5. Web, iOS and Android are all active targets; native-only stories may move to `Ready for scoping` like any other.
 6. Mark an item `Ready for scoping` only when no open product decision would change what gets built.
 
 Prefer six to ten capability-level items for a substantial roadmap. A later scoping pass may legitimately fan one capability into several technical tickets.
