@@ -137,7 +137,7 @@ _Preparation prerequisite for native execution: the uncommitted simulator-enable
 
 - **Area:** Shared UI / theme roles
 - **Priority:** High
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** Derive label/value foregrounds against the actual control surface instead of always using the decorative accent. The current blue theme makes primary buttons, selected Sesh format, the Laced control and Stats totals hard to read on dark green surfaces.
 - **Exit criteria:** Tests characterize the observed blue theme and existing presets, proving every affected control foreground reaches at least 4.5:1 against its actual surface in enabled/selected states; iOS Simulator inspection confirms primary buttons, selected Sesh format, Laced count and Stats values are readable, and existing web theme behavior passes relevant tests and full typechecking.
