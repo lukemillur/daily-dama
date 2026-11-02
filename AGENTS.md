@@ -173,12 +173,12 @@ The minimum web UX baseline includes keyboard-operable controls; programmatic la
 
 ### Active platform scope
 
-Web is the only active implementation and verification target. iOS and Android are deliberately deferred until the user explicitly resumes mobile hardening in the current conversation.
+Web, iOS and Android are all active implementation and verification targets. Native work does not need a separate per-conversation authorization.
 
-- Do not launch or use an iOS simulator, Android emulator, Expo Go, a development build, or mobile-device tooling without that explicit instruction.
-- Do not make iOS- or Android-specific code, configuration, dependency, build, or native-project changes without that explicit instruction.
-- A task's mention of iOS, Android, native checks, or eventual cross-platform support does not itself authorize mobile work. For a web task with stale native verification wording, verify web and automated behavior only, then record native validation as deferred. For a task whose core purpose is native hardening, stop and report that it is deferred rather than claiming or implementing it.
-- Continue to keep React Native code portable where that is low-cost, but do not spend iteration time validating it on mobile platforms.
+- Verify behavior on the platform it affects. Platform-specific code, layout, navigation, keyboard, lifecycle or native-API changes need evidence from that platform: the iOS Simulator for iOS and the Android Emulator for Android. Web tests and browser checks do not stand in for native evidence.
+- When a ticket's exit criteria name a platform, that platform's check is required for completion. Record any platform or physical-device check that was not performed as not run, never as passed.
+- iOS uses a local development build (`expo-dev-client`, `yarn ios`); setup details are in `ARCHITECTURE.md` and `outputs/ios-personal-build-setup.md`. Android does not yet have a verified development build. Report that prerequisite rather than assuming an Android build works.
+- Keep shared React Native code portable, and keep platform-specific branches narrow and covered by platform-specific tests where practical.
 
 ## Active work
 

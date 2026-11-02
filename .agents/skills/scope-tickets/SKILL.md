@@ -45,7 +45,7 @@ For each planning item:
 - Make exit criteria executable or inspectable: tests, commands, negative security cases, migration rebuilds, or specific browser behavior.
 - Keep reducers unaware of network clients and preserve the repository's documented persistence ownership.
 
-Do not scope native-only work into the active queue while mobile hardening is deferred. Leave its planning item `Proposed`, unless the user explicitly requests a formally deferred native ticket in `TASKS_BACKLOG.md`.
+Native-only work can be scoped into the active queue. Name the platform(s) whose simulator or emulator evidence each exit criterion requires.
 
 Use the next unused task ID across `TASKS.md`, `TASKS_BACKLOG.md`, `TASKS_COLLABORATIVE.md` (when present), and `TASKS_DONE.md`.
 

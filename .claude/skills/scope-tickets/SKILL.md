@@ -34,7 +34,7 @@ For each story, work out:
 - **Size** — must fit one focused commit. If it can't, use an umbrella task plus numbered S-sized children for a genuinely sequential chain; don't force an oversized single task.
 - **Planning: Required vs Implementer** — `Required` for persistence/schema changes, state machines, concurrency, architectural boundaries, unfamiliar APIs, or expensive-to-undo work. `Implementer` only for genuinely local, low-risk work.
 - **Exit criteria** — mechanical and checkable: a test, a command, or a specific browser behavior. Never "looks right" alone.
-- **Platform scope** — web only. If the story's acceptance criteria can only be fulfilled with native work, stop and flag it rather than writing a task the repo's active scope forbids, unless the user has explicitly resumed mobile hardening in this conversation.
+- **Platform scope** — web, iOS and Android are all active. Name which platform(s) each exit criterion must be verified on (browser, iOS Simulator, Android Emulator).
 
 Follow `TASKS.md`'s own conventions exactly — ID sequence, `Needs scoping` vs `Backlog` placement, existing formatting — over anything written here if the two disagree; this file describes intent, `TASKS.md` is the format's source of truth.
 
