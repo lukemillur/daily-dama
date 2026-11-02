@@ -10,6 +10,25 @@
 
 This guide covers the Daily Dama product application: onboarding, Home, Sesh, Tricks, Stats, Profile, notes, goals, navigation, state, persistence, and verification.
 
+### iOS development setup (October 29, 2026)
+
+iOS hardening has resumed with a simulator-first milestone; Android remains
+deferred. Local builds use Xcode 27.1 and Expo SDK 57 with
+`expo-build-properties`'s `ios.enableSceneSupport` enabled. This generates the
+UIKit scene lifecycle required by the iOS 27 SDK without maintaining native
+project files manually. The generated `/ios` directory remains ignored.
+`expo-dev-client` provides the development launcher; `yarn ios` compiles and
+launches the local iOS application. The configured bundle identifier is
+`com.dailydama.app`, provisional until physical-device signing is checked.
+
+Native account/sync and Sentry initialization remain disabled; a successful
+simulator build does not establish their native readiness. Setup checkpoints,
+local tooling workarounds, and remaining verification live in
+[`outputs/ios-personal-build-setup.md`](outputs/ios-personal-build-setup.md).
+Website metadata in the landing route and app layout renders only on web;
+native Expo Router Head/handoff configuration is not enabled. The initial
+simulator build and landing-to-onboarding flow have been verified on iOS 27.0.
+
 The procedural trick-visualization experiment, its sandbox routes, and its supporting documentation are deliberately excluded. They should be evaluated as a separate subsystem if that work resumes.
 
 This is an **as-built architecture**, not a target architecture. Where the current implementation has a limitation or the repository's older prose has drifted from the code, this guide says so explicitly.

@@ -8,6 +8,7 @@
     "scheme": "dailydama",
     "userInterfaceStyle": "automatic",
     "ios": {
+      "bundleIdentifier": "com.dailydama.app",
       "icon": "./assets/expo.icon"
     },
     "android": {
@@ -26,6 +27,14 @@
     "plugins": [
       "expo-router",
       [
+        "expo-build-properties",
+        {
+          "ios": {
+            "enableSceneSupport": true
+          }
+        }
+      ],
+      [
         "expo-splash-screen",
         {
           "backgroundColor": "#dfe8ca",
@@ -41,7 +50,10 @@
           "project": "react-native",
           "organization": "luke-miller-technologies"
         }
-      ]
+      ],
+      "expo-audio",
+      "expo-font",
+      "expo-image"
     ],
     "experiments": {
       "typedRoutes": true,
