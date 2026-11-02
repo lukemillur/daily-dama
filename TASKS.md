@@ -148,7 +148,7 @@ _Preparation prerequisite for native execution: the uncommitted simulator-enable
 
 - **Area:** Tricks / shared directory presentation
 - **Priority:** High
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** Give trick names usable width on phones and move secondary actions into a separate row or compact action surface. The focused-list name “Moshikame x10 or more, Spike” currently wraps into roughly six short lines beside Notes, Goals, Practice and selection controls.
 - **Exit criteria:** Small and large iPhone simulator checks of long standard names, custom tricks and custom sequences show no horizontal overflow or compressed word-column layout; selection, practice, notes, goals, edit/delete and picker activation remain operable with programmatic labels, existing action targets are not reduced, and relevant directory/consumer tests plus full typechecking pass with existing desktop web behavior preserved.
