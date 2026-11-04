@@ -1,30 +1,30 @@
 [
   {
-    "id": 1138808,
+    "id": 1239765,
     "package": "image-size",
     "severity": "high",
-    "reason": "Metro/bundler build-time devDependency (transitive via expo), not shipped in the web bundle. Live advisory data as of 2026-09-04 still reports patched_versions \"<0.0.0\" -- no upstream patch exists. Revisit on next Expo/Metro upgrade.",
-    "reviewedAsOf": "2026-09-04"
+    "reason": "Metro build-time dependency (react-native > @react-native/community-cli-plugin > metro), not shipped in the web bundle; it only parses this repository's own image assets. The fix exists only in image-size 2.0.3, while metro 0.84 requires the 1.x API and 1.2.1 is the final 1.x release. Revisit on the next Expo/React Native upgrade.",
+    "reviewedAsOf": "2026-11-04"
   },
   {
-    "id": 1138809,
+    "id": 1239766,
     "package": "image-size",
     "severity": "high",
-    "reason": "Metro/bundler build-time devDependency (transitive via expo), not shipped in the web bundle. Live advisory data as of 2026-09-04 still reports patched_versions \"<0.0.0\" -- no upstream patch exists. Revisit on next Expo/Metro upgrade.",
-    "reviewedAsOf": "2026-09-04"
+    "reason": "Same dependency path and constraint as 1239765: build-time only, parses only this repository's assets, and the fix exists only in the 2.x major that metro 0.84 does not support. Revisit on the next Expo/React Native upgrade.",
+    "reviewedAsOf": "2026-11-04"
   },
   {
-    "id": 1139427,
-    "package": "nanoid",
+    "id": 1243066,
+    "package": "zod",
     "severity": "high",
-    "reason": "An upstream patch now exists (patched_versions \">=3.3.18\"), but the tree resolves nanoid@3.3.17 transitively through expo-router and postcss (Metro/bundler build-time only, not shipped in the web bundle). Bumping the resolved version is a yarn.lock change and is deliberately out of scope for this review; tracked as a follow-up dependency bump rather than closed here.",
-    "reviewedAsOf": "2026-09-04"
+    "reason": "Remaining copy is zod 3.25.76 required by @expo/cli (^3.25.76), a development CLI not shipped in the web bundle and not fed attacker-controlled input. The fix exists only in zod >=4.6.6; 3.25.76 is the final 3.x release, and forcing zod 4 into @expo/cli would change its validation API. The eslint-plugin-react-hooks copy was refreshed to 4.6.7. Revisit on the next Expo SDK upgrade.",
+    "reviewedAsOf": "2026-11-04"
   },
   {
-    "id": 1119441,
-    "package": "uuid",
-    "severity": "moderate",
-    "reason": "Documentation only -- moderate is below this gate's high/critical threshold and does not affect pass/fail. An upstream patch exists (patched_versions \">=11.1.1\"); the tree resolves uuid@7.0.3 transitively through the same build-time dependency chain as the other entries here.",
-    "reviewedAsOf": "2026-09-04"
+    "id": 1243857,
+    "package": "decode-uri-component",
+    "severity": "high",
+    "reason": "Shipped at runtime through expo-router > query-string@7 for URL parameter decoding. Impact is a quadratic-time slowdown in the visitor's own client when decoding a crafted URL, with no server or cross-user effect. The fix exists only in 0.5.1, which is ESM-only, while query-string 7 loads it with require(); 0.2.2 is the final 0.2.x release. Revisit when expo-router moves off query-string 7.",
+    "reviewedAsOf": "2026-11-04"
   }
 ]
