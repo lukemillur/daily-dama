@@ -79,7 +79,18 @@ by itself prove a required browser interaction. If any required criterion is
 
 If that needs the browser preview: **do not use `preview_start` with a named config from `.claude/launch.json`** — those configs have no `cwd` of their own, so the tool reuses (or starts) a server rooted in the main repo checkout, not your isolated worktree, and you'd silently verify pre-edit code. Start your own dev server in this worktree instead (`yarn expo start --web --port <port>`, backgrounded) on a port other than 8081/8091 — check it's actually free first rather than assuming, since a prior cycle's server may still be up. Then `preview_start` with `{url: "http://localhost:<port>"}`. Stop that server once you're done verifying so it doesn't linger past this call.
 
-If a criterion needs the iOS Simulator: build and launch from this worktree (`yarn ios`, or `npx expo run:ios`), never from the main checkout, so the app under test is your branch's code. Drive and inspect it with the `mcp__Claude_Code_iOS_Simulator__control` tool (`attach`, `screenshot`, `tap`, `swipe`, `text`). Record the device name and iOS runtime in the evidence. Stop Metro when you are done. If the native build or simulator tooling fails, report that criterion `blocked` with the failing command and its output; do not substitute a web check. Android criteria use the Android Emulator the same way; Android has no verified development build yet, so report a build failure as `blocked`.
+If a criterion needs the iOS Simulator: build and launch from this worktree (`yarn ios`, or `npx expo run:ios`), never from the main checkout, so the app under test is your branch's code.
+
+The installed dev client loads JavaScript from whichever Metro it connects to, and another Metro — the owner's, or a prior cycle's — may already be serving a different checkout on 8081 or a nearby port. Pin the bundle before recording any evidence:
+
+1. Start Metro from this worktree on a free port other than 8081/8091 (`yarn expo start --dev-client --port <port>`, backgrounded; check the port is free first). If you also rebuild with `npx expo run:ios`, pass the same `--port`.
+2. Confirm the listener on that port is your process with its working directory in this worktree: `lsof -tiTCP:<port> -sTCP:LISTEN`, then `lsof -p <pid> | awk '$4=="cwd"'`.
+3. Point every device at it explicitly: `xcrun simctl openurl <udid> "exp+daily-dama://expo-development-client/?url=http%3A%2F%2Flocalhost%3A<port>"`. Never connect a device to a Metro you did not start in this run.
+4. Confirm your Metro logged `iOS Bundled` after that open. Record the port and the branch HEAD SHA in the evidence for each device.
+
+If a device shows a different bundle, a dev-server error, or you can't complete these checks, that device's criteria are `blocked`. Evidence gathered before the pin is invalid, even if the screens look right.
+
+Drive and inspect it with the `mcp__Claude_Code_iOS_Simulator__control` tool (`attach`, `screenshot`, `tap`, `swipe`, `text`). Record the device name and iOS runtime in the evidence. Stop Metro when you are done. If the native build or simulator tooling fails, report that criterion `blocked` with the failing command and its output; do not substitute a web check. Android criteria use the Android Emulator the same way; Android has no verified development build yet, so report a build failure as `blocked`.
 
 ## 5. Run the risk-based completion checks
 
