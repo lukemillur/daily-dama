@@ -133,18 +133,6 @@ _iOS Simulator audit activation — 2026-10-29, explicitly requested by the owne
 
 _Native execution prerequisite: the simulator-enablement changes described in [outputs/ios-personal-build-setup.md](outputs/ios-personal-build-setup.md) are on `development`. The generated `/ios` project and local CocoaPods workaround are not committed, so a fresh checkout may need `yarn ios` (prebuild and pod install) first. Report a tooling failure as a prerequisite rather than a passed check._
 
-### [T290] Replace the floating native tab bar with a fixed bottom tab bar
-
-- **Area:** Navigation
-- **Priority:** High
-- **Status:** Not started
-- **Planning:** Required
-- **Description:** On iOS and Android, replace the floating Expo Router `NativeTabs` bar with a fixed, full-width bottom tab bar (for example Expo Router's JS `Tabs`). The bar follows the saved app theme rather than the system light/dark setting. Web keeps its current navigation.
-- **Exit criteria:** On small and large iPhone simulators the five tabs sit in a fixed bar at the bottom edge with no content scrolling underneath it; each tab keeps its T042 icon in selected and unselected states; the bar's background, icon and label colors change when the app theme preset changes, including with system dark appearance on; web navigation and its 320 px fit are unchanged; focused tests cover the platform split; full typechecking passes.
-- **Dependencies:** None.
-- **Notes:** Owner request 2026-11-04: the floating bar does not feel right. Fixes the observed mismatch where the native tab bar followed system appearance while screens followed the app theme. Carry the T042 SF Symbols across (e.g. `expo-symbols`). Once this lands, re-scope T284.1–T284.3, which assume a floating bar that overlaps content.
-- **Platform scope:** Acceptance for this ticket runs on the iOS Simulator. Android and physical-device checks are not part of these exit criteria; record them as not run rather than passed.
-
 ### [T291] Give nested native screens a themed stack header with back navigation
 
 - **Area:** Navigation
@@ -186,7 +174,7 @@ _Native execution prerequisite: the simulator-enablement changes described in [o
 - **Area:** Shared UI / screen layout
 - **Priority:** High
 - **Status:** Blocked — split into T284.1–T284.3 on 2026-11-02 because simulator verification of every screen did not fit one agent run.
-- **Description:** Establish a shared iOS tab/safe-area clearance convention and apply it to tab-hosted scroll content. The floating tab bar visibly overlaps Sesh choices/completion actions, custom-trick Save, Home footer content and Stats rows; several screens reserve only 24 points below content.
+- **Description:** Establish a shared iOS tab/safe-area clearance convention and apply it to tab-hosted scroll content. The (since replaced by T290) floating tab bar visibly overlapped Sesh choices/completion actions, custom-trick Save, Home footer content and Stats rows; several screens reserve only 24 points below content.
 - **Notes:** Umbrella only — complete T284.1, T284.2 and T284.3. Source: DESLOPPIFY.md D023. Keyboard-visible behavior belongs to T044. Native lifecycle/providers/persistence remain unchanged.
 - **Platform scope:** Acceptance for this ticket runs on the iOS Simulator. Android and physical-device checks are not part of these exit criteria; record them as not run rather than passed.
 
@@ -199,7 +187,7 @@ _Native execution prerequisite: the simulator-enablement changes described in [o
 - **Description:** Land the shared clearance convention in `Screen` and verify it on Tricks and the custom-trick and custom-sequence forms. Start from the unverified work in commit `f5e9a95` on `task/T284-reserve-native-tab-clearance-for-scroll` (`withNativeTabClearance`, `screen.test.tsx`, Profile padding, removed `BottomTabInset`).
 - **Exit criteria:** On small and large simulators at maximum scroll, the last Tricks row and the Save and Cancel actions of the new-custom-trick, edit-custom-trick and custom-sequence forms are fully above the tab bar and tappable; focused tests protect the convention; web layout is unchanged at 320 px; full typechecking passes.
 - **Dependencies:** T290.
-- **Notes:** Re-scope before starting: T290 replaces the floating tab bar, which may remove most of this overlap. Small = iPhone 17e, large = iPhone 18 Pro Max (iOS 27.0). The earlier run observed that Home and Sesh setup already cleared the bar before the change, and that Tricks showed the overlap. Avoid scattered fixed spacers or duplicated automatic safe-area padding.
+- **Notes:** T290 landed a fixed in-flow JS tab bar, so the floating-bar overlap this ticket assumed no longer exists; re-scope to confirming no clearance is needed and removing unused clearance work. Small = iPhone 17e, large = iPhone 18 Pro Max (iOS 27.0). The earlier run observed that Home and Sesh setup already cleared the bar before the change, and that Tricks showed the overlap. Avoid scattered fixed spacers or duplicated automatic safe-area padding.
 - **Platform scope:** Acceptance for this ticket runs on the iOS Simulator. Android and physical-device checks are not part of these exit criteria; record them as not run rather than passed.
 
 ### [T284.2] Verify tab clearance on Home, Sesh and Stats

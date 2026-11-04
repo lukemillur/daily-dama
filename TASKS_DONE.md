@@ -4,6 +4,26 @@ Completed entries move here from `TASKS.md`'s `Backlog`, in the same commit that
 
 Entries keep their content as it was at completion. Don't retroactively edit a description or exit criteria after the fact; if something about a completed task turns out to be wrong or misleading, note that in a new entry or in code, not by rewriting history here.
 
+### [T297] Cache Jest and Metro transforms for the CI verify job
+
+- **Area:** Tooling / CI
+- **Priority:** Medium
+- **Status:** Done
+- **Planning:** Implementer
+- **Description:** The `verify` CI job took about 6 minutes, mostly a cold Jest run (2m13s) and a cold web export (2m18s). Restore Jest and Metro transform caches in `verify`, and add a `build-cache.yml` workflow on pushes to `development` that saves them, because PR runs can only restore caches from their own ref, their base branch or the default branch.
+- **Exit criteria:** `verify` restores the caches without changing what it checks; `build-cache.yml` saves them on `development` pushes with pinned actions and `contents: read`; PR runs never save.
+- **Notes:** Owner request 2026-11-04. Measured locally: Jest cold 77s, warm 53s. Parallel Jest workers (cold 29s) were tried and dropped: one run of five had a single intermittent failure that was not reproduced. The CI speedup can only be measured once a `development` push has warmed the cache, so the first task PR after this lands is the real check. `yarn test:workflow` has one failure that already exists on `development` (`config.test.mjs` expects two ticket agents; `ticket-planner-burn` was added since); not addressed here.
+
+### [T296] Clear the failing dependency-audit CI gate
+
+- **Area:** Security / dependencies
+- **Priority:** High
+- **Status:** Done
+- **Planning:** Implementer
+- **Description:** The `dependency-audit` CI job failed on every PR, including current `development`, after new advisories were published (1 critical shell-quote, about 20 high). Refresh vulnerable transitive dependencies to patched versions where the dependent range allows it, and record dated acceptances only where no in-major patch exists.
+- **Exit criteria:** `node security/scripts/check-dependency-audit.mjs` exits 0 and its gate self-test passes; the complete app sequence passes; no direct dependency ranges change.
+- **Notes:** Owner request 2026-11-04 after T290 (PR #405) blocked at merge on this gate. Lockfile-only refresh: nanoid 3.3.20, brace-expansion 1.1.21 and 5.0.12, source-map-js 1.2.2, compression 1.8.2, shell-quote 1.12.0, node-forge 1.4.3, zod 4.6.7 (eslint-plugin-react-hooks copy). Accepted, with reasons in `security/accepted-dependency-advisories.json`: image-size 1239765/1239766 (metro needs 1.x; 1.2.1 is final), zod 1243066 (@expo/cli pins 3.x; 3.25.76 is final), decode-uri-component 1243857 (query-string 7 requires the CJS 0.2.x line; fix is ESM-only 0.5.1). Removed stale acceptances 1138808, 1138809, 1139427 and 1119441, which no longer appear. Evidence: audit exit 0, gate self-test 26/26, `verify.mjs` 4/4. No native packages changed, so no iOS rebuild or simulator check was needed; Android not run.
+
 ### [T042] Complete native tab iconography
 
 - **Area:** Navigation
@@ -14,6 +34,20 @@ Entries keep their content as it was at completion. Don't retroactively edit a d
 - **Exit criteria:** Deliberate iOS Simulator checks confirm all five native tabs have distinct, route-appropriate icons that remain legible and unclipped in selected and unselected states, while the existing web navigation and its verified 320 px fit remain unchanged.
 - **Notes:** Source: iOS audit T042 in DESLOPPIFY.md. Only Home currently has an icon; also check that tab tint/selected treatment remains legible with the current app theme. This is navigation polish, not a navigation architecture change. Update navigation tests or snapshots where they provide useful regression protection.
 - **Platform scope:** Activated for iOS Simulator on 2026-10-29. Android and physical-device verification remain deferred; record those limits without claiming they passed. Completion: all five native tabs now carry distinct SF Symbols (house, timer, list.bullet.rectangle, chart.bar, person.crop.circle; filled variants when selected where one exists) with `iconColor` matching the label states; `TAB_ICON_SYMBOLS` is covered by `src/components/app-tabs.test.tsx`. iOS Simulator evidence: iPhone 18 Pro, iOS 27.0, dev client against this branch's Metro; tapped Home, Sesh, Tricks, Stats and Profile in light appearance and each showed its icon and label unclipped with the selected pill; dark appearance showed white icons and labels legible on the dark tab bar. Dark system appearance does not follow the saved app theme (tab colors use `Colors` by system scheme, screens use the resolved theme); left unchanged as out of scope. Small-device (iPhone 17e) check NOT run: simulator access was not granted. Web navigation files untouched. Android and physical-device checks not run.
+
+
+### [T290] Replace the floating native tab bar with a fixed bottom tab bar
+
+- **Area:** Navigation
+- **Priority:** High
+- **Status:** Done
+- **Planning:** Required
+- **Description:** On iOS and Android, replace the floating Expo Router `NativeTabs` bar with a fixed, full-width bottom tab bar (for example Expo Router's JS `Tabs`). The bar follows the saved app theme rather than the system light/dark setting. Web keeps its current navigation.
+- **Exit criteria:** On small and large iPhone simulators the five tabs sit in a fixed bar at the bottom edge with no content scrolling underneath it; each tab keeps its T042 icon in selected and unselected states; the bar's background, icon and label colors change when the app theme preset changes, including with system dark appearance on; web navigation and its 320 px fit are unchanged; focused tests cover the platform split; full typechecking passes.
+- **Dependencies:** None.
+- **Notes:** Owner request 2026-11-04: the floating bar does not feel right. Fixes the observed mismatch where the native tab bar followed system appearance while screens followed the app theme. Carry the T042 SF Symbols across (e.g. `expo-symbols`). Once this lands, re-scope T284.1–T284.3, which assume a floating bar that overlaps content.
+- **Platform scope:** Acceptance for this ticket runs on the iOS Simulator. Android and physical-device checks are not part of these exit criteria; record them as not run rather than passed.
+- **Completion:** Native `app-tabs.tsx` now uses Expo Router JS `Tabs` (fixed, opaque, in-flow bar) with SF Symbols via `expo-symbols`; colors come from the saved app theme through `useResolvedTheme`. Verified on iPhone 18 Pro (iOS 27.0, system Dark Appearance on, theme switched Blue to Raw), iPhone 17e and iPhone 18 Pro Max. Android and physical device: not run.
 
 
 ### [T288] Withhold unsupported account promises from the native guest experience
