@@ -158,7 +158,7 @@ _Native execution prerequisite: the simulator-enablement changes described in [o
 
 - **Area:** iOS verification
 - **Priority:** Medium (inherited from parent T289)
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Implementer
 - **Description:** Cover the Multi-trick and Kentei assessment matrix rows.
 - **Exit criteria:** A full multi-trick run (first-lace advance, manual next, pause, early end, wrap-up) and a Kentei assessment from rank (skip, end, promotion) are each exercised on the small simulator, with layout spot-checked on the large one. Each named matrix row in DESLOPPIFY.md gets a dated pass, a reproduced finding written to Needs scoping, or a concrete blocked reason from simulator evidence, with device, runtime and test data recorded; nothing is marked passed from source inspection.
