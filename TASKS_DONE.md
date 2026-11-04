@@ -14,6 +14,18 @@ Entries keep their content as it was at completion. Don't retroactively edit a d
 - **Exit criteria:** `.claude/agents/ticket-implementer.md` states the pinning steps and that evidence gathered before pinning is invalid; `yarn test:workflow` passes; a corrective re-run of T289.3 is scoped as T289.6.
 - **Notes:** Owner request 2026-11-04. Also adds a `native-dev-client` launch configuration (Metro with `--dev-client` on 8081) for the owner's main-checkout dev server. The main checkout was fast-forwarded and its stale Metro stopped outside this change.
 
+### [T289.4] Audit onboarding, Home, Stats and Profile on iOS
+
+- **Area:** iOS verification
+- **Priority:** Medium (inherited from parent T289)
+- **Status:** Done
+- **Planning:** Implementer
+- **Description:** Cover the Onboarding, Home, Stats, Practice list, Timed Sesh setup and Profile/theme matrix rows, including laced and empty states.
+- **Exit criteria:** Each named row is exercised on the small simulator and spot-checked on the large one, covering empty and populated Stats, Profile theme presets, colour gestures, reset and the streak setting. Each named matrix row in DESLOPPIFY.md gets a dated pass, a reproduced finding written to Needs scoping, or a concrete blocked reason from simulator evidence, with device, runtime and test data recorded; nothing is marked passed from source inspection.
+- **Dependencies:** None.
+- **Notes:** Small = iPhone 17e, large = iPhone 18 Pro Max (iOS 27.0). Documentation/verification only — do not fix findings here. 
+- **Platform scope:** Acceptance for this ticket runs on the iOS Simulator. Android and physical-device checks are not part of these exit criteria; record them as not run rather than passed.
+
 ### [T289.6] Re-run the T289.3 multi-trick and Kentei rows on current code
 
 - **Area:** iOS verification
