@@ -15,6 +15,7 @@ import { PasswordInput } from '@/features/auth/components/password-input';
 import { PasswordVisibilityProvider } from '@/features/auth/components/password-visibility-context';
 import { logAuthWarning, trackAuthEvent } from '@/features/auth/observability/auth-observability';
 import { useAuthActions, useAuthState } from '@/features/auth/state/auth-provider';
+import { shouldShowInPageBack } from '@/shared/navigation/in-page-back';
 
 const PASSWORD_ERROR_COPY: Record<AuthErrorCategory, string> = {
   invalidCredentials: 'Your current password is incorrect.',
@@ -189,9 +190,11 @@ export function AccountSecurityScreen() {
         <Eyebrow>Account security</Eyebrow>
         <PageTitle>Manage your account.</PageTitle>
 
-        <BackLink accessibilityLabel="Back to Profile" accessibilityRole="link" onPress={handleBack}>
-          <BackLinkText>← Back to Profile</BackLinkText>
-        </BackLink>
+        {shouldShowInPageBack() ? (
+          <BackLink accessibilityLabel="Back to Profile" accessibilityRole="link" onPress={handleBack}>
+            <BackLinkText>← Back to Profile</BackLinkText>
+          </BackLink>
+        ) : null}
 
         <SectionLabel>Change password</SectionLabel>
 

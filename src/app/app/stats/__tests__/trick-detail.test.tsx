@@ -15,6 +15,7 @@ import {
 } from '@/features/stats/persistence/practice-history-persistence';
 import { PracticeHistoryProvider } from '@/features/stats/state/practice-history-provider';
 import { KENDAMA_KENTEI_TRICKS } from '@/features/tricks/data/kendama-kentei-tricks';
+import { setPlatformOS } from '@/shared/navigation/test-platform';
 
 const TRICK = KENDAMA_KENTEI_TRICKS[0]!;
 
@@ -126,6 +127,34 @@ describe('TrickDetailScreen excludes assessment-origin sessions', () => {
 
     await act(async () => {
       root.unmount();
+    });
+  });
+});
+
+describe('TrickDetailScreen in-page back link by platform', () => {
+  beforeEach(async () => {
+    await AsyncStorage.clear();
+    await seedProfile();
+  });
+
+  const backLinks = (root: ReactTestRenderer) =>
+    root.root.findAll((node) => node.props.children === '← Back to Stats');
+
+  describe('on web', () => {
+    setPlatformOS('web');
+
+    it('shows the Back to Stats link', async () => {
+      const root = await mountTrickDetailScreen();
+      expect(backLinks(root).length).toBeGreaterThan(0);
+    });
+  });
+
+  describe('on native', () => {
+    setPlatformOS('ios');
+
+    it('hides the Back to Stats link because the stack header replaces it', async () => {
+      const root = await mountTrickDetailScreen();
+      expect(backLinks(root)).toHaveLength(0);
     });
   });
 });

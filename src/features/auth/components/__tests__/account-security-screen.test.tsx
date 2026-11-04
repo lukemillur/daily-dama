@@ -9,6 +9,7 @@ import { networkFailure } from '@/features/auth/model/auth-test-fixtures';
 import { MIN_PASSWORD_LENGTH } from '@/features/auth/model/password-policy';
 
 import { AccountSecurityScreen } from '@/features/auth/components/account-security-screen';
+import { setPlatformOS } from '@/shared/navigation/test-platform';
 
 const mockPush = jest.fn();
 jest.mock('expo-router', () => ({ useRouter: () => ({ push: mockPush }) }));
@@ -141,6 +142,8 @@ async function pressLabel(root: ReactTestRenderer, label: string) {
 }
 
 describe('AccountSecurityScreen', () => {
+  setPlatformOS('web');
+
   beforeEach(() => {
     mockChangePassword.mockReset();
     mockChangeEmail.mockReset();
@@ -547,5 +550,16 @@ describe('AccountSecurityScreen', () => {
     expect(containsText(root, 'Your current password is incorrect.')).toBe(true);
     expect(findByLabel(root, 'New email').props.value).toBe('new-address@example.com');
     expect(mockChangeEmail).not.toHaveBeenCalled();
+  });
+});
+
+describe('AccountSecurityScreen on native', () => {
+  setPlatformOS('ios');
+
+  it('hides the in-page Back to Profile control because the stack header replaces it', async () => {
+    mockAuthState = authenticatedState();
+    const root = await mount();
+
+    expect(findAllByLabel(root, 'Back to Profile')).toHaveLength(0);
   });
 });

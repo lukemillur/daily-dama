@@ -16,6 +16,7 @@ import type { PracticeTrick } from '@/features/tricks/model/trick';
 import type { DirectoryTrick } from '@/features/tricks/model/trick-directory';
 import { GUEST_IDENTITY } from '@/shared/persistence/identity';
 import { physicalKey } from '@/shared/persistence/scoped-storage';
+import { setPlatformOS } from '@/shared/navigation/test-platform';
 
 // This test doesn't wrap providers in <IdentityProvider>, so GoalProvider hydrates against the
 // module's default guest handle -- writes land at the guest-namespaced physical key.
@@ -330,5 +331,25 @@ describe('AllTrickGoalsScreen', () => {
         expect.objectContaining({ trickId: 'big-cup', trickName: 'Big Cup', targetCount: 7 }),
       ]),
     );
+  });
+});
+
+describe('in-page back link by platform', () => {
+  describe('on web', () => {
+    setPlatformOS('web');
+
+    it('shows the in-page Back to Tricks control', async () => {
+      const root = await mountHarness();
+      expect(root.root.findAll((node) => node.props.accessibilityLabel === 'Back to Tricks').length).toBeGreaterThan(0);
+    });
+  });
+
+  describe('on native', () => {
+    setPlatformOS('ios');
+
+    it('hides the in-page Back to Tricks control because the stack header replaces it', async () => {
+      const root = await mountHarness();
+      expect(root.root.findAll((node) => node.props.accessibilityLabel === 'Back to Tricks').length).toBe(0);
+    });
   });
 });

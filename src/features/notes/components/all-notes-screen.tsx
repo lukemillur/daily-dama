@@ -9,6 +9,7 @@ import { AppColors } from '@/constants/theme';
 import { selectAllNotesSorted, type Note } from '@/features/notes/model/note';
 import { useNoteActions, useNotes } from '@/features/notes/state/note-provider';
 import { formatPracticeDate } from '@/features/stats/model/format-practice-date';
+import { shouldShowInPageBack } from '@/shared/navigation/in-page-back';
 
 interface AllNotesScreenProps {
   readonly onBack: () => void;
@@ -40,11 +41,13 @@ export function AllNotesScreen({ onBack }: AllNotesScreenProps) {
             : `${sortedNotes.length} ${sortedNotes.length === 1 ? 'note' : 'notes'} across your tricks.`}
         </Introduction>
 
-        <FormActions>
-          <Button accessibilityLabel="Back to Tricks" fill variant="secondary" onPress={onBack}>
-            Back to Tricks
-          </Button>
-        </FormActions>
+        {shouldShowInPageBack() ? (
+          <FormActions>
+            <Button accessibilityLabel="Back to Tricks" fill variant="secondary" onPress={onBack}>
+              Back to Tricks
+            </Button>
+          </FormActions>
+        ) : null}
 
         <NoteList>
           {sortedNotes.map((note) => (

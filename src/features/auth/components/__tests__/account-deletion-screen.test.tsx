@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, jest } from '@jest/globals';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 
 import { AccountDeletionScreen } from '@/features/auth/components/account-deletion-screen';
+import { setPlatformOS } from '@/shared/navigation/test-platform';
 
 const mockPush = jest.fn();
 const mockReplace = jest.fn();
@@ -34,6 +35,8 @@ async function flush() {
 }
 
 describe('AccountDeletionScreen', () => {
+  setPlatformOS('web');
+
   afterEach(() => {
     mockPush.mockReset();
     mockReplace.mockReset();
@@ -134,6 +137,18 @@ describe('AccountDeletionScreen', () => {
 
   it('does not show a Back to Profile control for a guest', async () => {
     mockAuthState = { status: 'guest' };
+    let root!: ReactTestRenderer;
+    await act(async () => { root = create(<AccountDeletionScreen />); });
+
+    expect(() => findByLabel(root, 'Back to Profile')).toThrow();
+  });
+});
+
+describe('AccountDeletionScreen on native', () => {
+  setPlatformOS('ios');
+
+  it('hides the in-page Back to Profile control because the stack header replaces it', async () => {
+    mockAuthState = { status: 'authenticated' };
     let root!: ReactTestRenderer;
     await act(async () => { root = create(<AccountDeletionScreen />); });
 

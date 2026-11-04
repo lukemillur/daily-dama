@@ -10,6 +10,7 @@ import {
   type DirectoryTrick,
   type TrickSection,
 } from '@/features/tricks/model/trick-directory';
+import { shouldShowInPageBack } from '@/shared/navigation/in-page-back';
 
 interface LacedTricksScreenProps {
   readonly tricks: readonly DirectoryTrick[];
@@ -36,11 +37,13 @@ export function LacedTricksScreen({
           automatically.
         </Introduction>
 
-        <FormActions>
-          <Button accessibilityLabel="Back to Tricks" fill variant="secondary" onPress={onBack}>
-            Back to Tricks
-          </Button>
-        </FormActions>
+        {shouldShowInPageBack() ? (
+          <FormActions>
+            <Button accessibilityLabel="Back to Tricks" fill variant="secondary" onPress={onBack}>
+              Back to Tricks
+            </Button>
+          </FormActions>
+        ) : null}
 
         <Sections>
           {sections.map((section) => (

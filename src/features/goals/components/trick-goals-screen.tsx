@@ -18,6 +18,7 @@ import {
 import { useGoalActions, useGoals } from '@/features/goals/state/goal-provider';
 import { formatDuration } from '@/features/sesh/model/sesh';
 import { usePracticeHistory } from '@/features/stats/state/practice-history-provider';
+import { shouldShowInPageBack } from '@/shared/navigation/in-page-back';
 
 interface TrickGoalsScreenProps {
   readonly trickId: string;
@@ -76,11 +77,13 @@ export function TrickGoalsScreen({ trickId, trickName, onBack }: TrickGoalsScree
           ))}
         </GoalList>
 
-        <FormActions>
-          <Button accessibilityLabel="Back to Tricks" fill variant="secondary" onPress={onBack}>
-            Back to Tricks
-          </Button>
-        </FormActions>
+        {shouldShowInPageBack() ? (
+          <FormActions>
+            <Button accessibilityLabel="Back to Tricks" fill variant="secondary" onPress={onBack}>
+              Back to Tricks
+            </Button>
+          </FormActions>
+        ) : null}
       </Content>
     </Scroll>
   );

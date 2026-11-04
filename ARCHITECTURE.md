@@ -203,6 +203,8 @@ The root navigator has platform-specific implementations selected by filename:
 - `app-tabs.web.tsx` uses `expo-router/ui` to render a responsive custom web tab bar;
 - `app-tabs.tsx` uses Expo Router's JS `Tabs` for native platforms: a fixed, opaque, full-width bottom bar whose colors come from the saved app theme (`useResolvedTheme`), never the system appearance, with SF Symbols drawn by `expo-symbols`.
 
+Nested native screens (every route under a tab section except its `index`) get a native stack header with a back control. `useNestedStackScreenOptions` and `useNestedScreenOptions` (`src/components/nested-stack-options.tsx`) derive the header from the saved app theme, never the system appearance, and are wired in each section's `_layout.tsx` (`tricks`, `profile`, `sesh`, `stats`); a route-drift test fails if a nested route file has no registered title. A stack with a single entry (deep link, auth-callback replace) gets a `HeaderBackFallback` that returns to the section index. `Screen` drops its `'top'` safe-area edge while a native header is visible so the inset is not applied twice. Web renders no header: in-page "Back to ..." links remain and are gated by `shouldShowInPageBack()` (`src/shared/navigation/in-page-back.ts`), which is false on native. Routes under the root `Slot` (`/auth/*`, `/feedback`, `/account-deleted`, `/`) are outside any tab stack and have no header.
+
 Both use the hydrated profile as the navigation gate. Until `hasCompletedOnboarding` is true and `kenteiRank` exists, the primary tabs are hidden and Home renders onboarding.
 
 The guard is intentionally redundant:

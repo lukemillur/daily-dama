@@ -1,6 +1,8 @@
 import { Stack, useNavigation, useRouter } from 'expo-router';
 import { useEffect } from 'react';
 
+import { useNestedScreenOptions, useNestedStackScreenOptions } from '@/components/nested-stack-options';
+
 export default function ProfileLayout() {
   const navigation = useNavigation();
   const router = useRouter();
@@ -19,5 +21,15 @@ export default function ProfileLayout() {
     });
   }, [navigation, router]);
 
-  return <Stack screenOptions={{ headerShown: false }} />;
+  const stackOptions = useNestedStackScreenOptions();
+  const screenOptions = useNestedScreenOptions({ href: '/app/profile', label: 'Profile' });
+
+  return (
+    <Stack screenOptions={stackOptions}>
+      <Stack.Screen name="index" options={{ headerShown: false }} />
+      <Stack.Screen name="kentei-assessment" options={screenOptions('Kentei assessment')} />
+      <Stack.Screen name="account/security" options={screenOptions('Account')} />
+      <Stack.Screen name="account/delete" options={screenOptions('Delete account')} />
+    </Stack>
+  );
 }

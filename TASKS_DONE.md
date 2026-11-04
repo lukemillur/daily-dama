@@ -4,6 +4,19 @@ Completed entries move here from `TASKS.md`'s `Backlog`, in the same commit that
 
 Entries keep their content as it was at completion. Don't retroactively edit a description or exit criteria after the fact; if something about a completed task turns out to be wrong or misleading, note that in a new entry or in code, not by rewriting history here.
 
+### [T291] Give nested native screens a themed stack header with back navigation
+
+- **Area:** Navigation
+- **Priority:** High
+- **Status:** Done
+- **Planning:** Required
+- **Description:** On iOS and Android, show a native stack header with a top-left back control on every nested screen (for example trick goals, trick notes, laced tricks and other screens under Tricks), and hide in-page "Back to …" links on native where the header replaces them. Web keeps its in-page links.
+- **Exit criteria:** A listed inventory of every nested native route exists in the ticket's PR; on small and large iPhone simulators each one shows a header whose back control returns to its parent; the header follows the saved app theme, including with system dark appearance on; in-page back links are hidden on native and still shown on web; focused tests cover the platform split; full typechecking passes.
+- **Dependencies:** T290.
+- **Notes:** Owner request 2026-11-04: nested screens can currently be left only by swipe-back, which is not discoverable. Depends on T290 so both changes share one native navigation structure.
+- **Platform scope:** Acceptance for this ticket runs on the iOS Simulator. Android and physical-device checks are not part of these exit criteria; record them as not run rather than passed.
+- **Outcome:** Native stack headers (themed from the saved theme, back control, single-entry fallback) on all 16 nested routes under the Tricks, Profile, Sesh and Stats stacks via `src/components/nested-stack-options.tsx`; `Screen` drops its top inset under a visible header; in-page parent-back links are web-only through `shouldShowInPageBack`. Verified on iPhone 18 Pro, iPhone 17e and iPhone 18 Pro Max (iOS 27.0) simulators. Routes under the root `Slot` (`/auth/*`, `/feedback`, `/account-deleted`) remain headerless.
+
 ### [T292] Replace the landing page with a native start screen
 
 - **Area:** Onboarding / navigation

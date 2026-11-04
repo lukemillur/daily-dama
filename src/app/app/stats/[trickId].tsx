@@ -12,6 +12,7 @@ import { useRequireOnboarding } from '@/features/onboarding/state/require-onboar
 import { formatDuration } from '@/features/sesh/model/sesh';
 import { getPersonalBest, selectRegularSessions } from '@/features/stats/model/practice-history';
 import { usePracticeHistory } from '@/features/stats/state/practice-history-provider';
+import { shouldShowInPageBack } from '@/shared/navigation/in-page-back';
 
 export default function TrickDetailScreen() {
   const isOnboardingComplete = useRequireOnboarding();
@@ -43,14 +44,18 @@ export default function TrickDetailScreen() {
     return (
       <Screen edges={['top', 'left', 'right']}>
         <EmptyContent>
-          <Link href="/app/stats" asChild>
-            <BackLink accessibilityRole="link">← Back to Stats</BackLink>
-          </Link>
+          {shouldShowInPageBack() ? (
+            <Link href="/app/stats" asChild>
+              <BackLink accessibilityRole="link">← Back to Stats</BackLink>
+            </Link>
+          ) : null}
           <StyledEyebrow>Trick history</StyledEyebrow>
           <CenteredTitle>No seshes{`\n`}on this trick yet.</CenteredTitle>
-          <Link href="/app/stats" asChild>
-            <StartButton accessibilityRole="link">Back to Stats</StartButton>
-          </Link>
+          {shouldShowInPageBack() ? (
+            <Link href="/app/stats" asChild>
+              <StartButton accessibilityRole="link">Back to Stats</StartButton>
+            </Link>
+          ) : null}
         </EmptyContent>
       </Screen>
     );
@@ -62,9 +67,11 @@ export default function TrickDetailScreen() {
     <Screen edges={['top', 'left', 'right']}>
       <DetailScroll contentContainerStyle={{ paddingBottom: 24 }}>
         <DetailContent>
-          <Link href="/app/stats" asChild>
-            <BackLink accessibilityRole="link">← Back to Stats</BackLink>
-          </Link>
+          {shouldShowInPageBack() ? (
+            <Link href="/app/stats" asChild>
+              <BackLink accessibilityRole="link">← Back to Stats</BackLink>
+            </Link>
+          ) : null}
           <StyledEyebrow>Trick history</StyledEyebrow>
           <Title>{trickName}</Title>
 

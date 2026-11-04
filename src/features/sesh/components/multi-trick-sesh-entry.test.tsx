@@ -16,6 +16,7 @@ import { MultiTrickSeshEntry } from '@/features/sesh/components/multi-trick-sesh
 import { Sesh } from '@/features/sesh/components/sesh';
 import { PracticeHistoryProvider, usePracticeHistory } from '@/features/stats/state/practice-history-provider';
 import { KENDAMA_KENTEI_TRICKS } from '@/features/tricks/data/kendama-kentei-tricks';
+import { setPlatformOS } from '@/shared/navigation/test-platform';
 
 // MultiTrickSeshEntry pulls in UserProfileProvider/CustomTrickProvider, which are backed by
 // AsyncStorage. Mock it the same way sesh.test.tsx does.
@@ -244,6 +245,8 @@ describe('MultiTrickSeshEntry focused section', () => {
 });
 
 describe('MultiTrickSeshEntry route completion', () => {
+  setPlatformOS('web');
+
   beforeEach(() => {
     jest.useFakeTimers();
     mockReplace.mockClear();
@@ -350,6 +353,20 @@ describe('MultiTrickSeshEntry route completion', () => {
     pressByAccessibilityLabel(root, 'Back to trick selection');
     expect(allText(root)).toContain('Pick your\nlineup.');
     expect(root.root.findAll((node) => node.props.accessibilityLabel === 'Back to Sesh').length).toBeGreaterThan(0);
+
+    await act(async () => {
+      root.unmount();
+    });
+  });
+});
+
+describe('MultiTrickSeshEntry on native', () => {
+  setPlatformOS('ios');
+
+  it('hides the in-page Back to Sesh link on selection because the stack header replaces it', async () => {
+    const root = await mountRouteHarness([KENDAMA_KENTEI_TRICKS[0]!.id]);
+
+    expect(root.root.findAll((node) => node.props.accessibilityLabel === 'Back to Sesh')).toHaveLength(0);
 
     await act(async () => {
       root.unmount();
