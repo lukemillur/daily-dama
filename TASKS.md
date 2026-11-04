@@ -162,7 +162,7 @@ _Native execution prerequisite: the simulator-enablement changes described in [o
 
 - **Area:** iOS verification
 - **Priority:** Medium (inherited from parent T289)
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Implementer
 - **Description:** Cover the Relaunch/offline/lifecycle, Accessibility/device matrix, Five tabs, Account/callbacks/sync, Feedback and Sandbox routes matrix rows.
 - **Exit criteria:** Cold relaunch keeps onboarding, history, custom tricks, notes and goals; VoiceOver labels on tabs and key controls, a large Dynamic Type size and Reduce Motion are each checked on at least one simulator; account and feedback rows reflect the guest-only scope. Each named matrix row in DESLOPPIFY.md gets a dated pass, a reproduced finding written to Needs scoping, or a concrete blocked reason from simulator evidence, with device, runtime and test data recorded; nothing is marked passed from source inspection.
