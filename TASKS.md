@@ -143,18 +143,6 @@ _Native execution prerequisite: the simulator-enablement changes described in [o
 - **Platform scope:** Acceptance for this ticket runs on the iOS Simulator. Android and physical-device checks are not part of these exit criteria; record them as not run rather than passed.
 
 
-### [T284.2] Verify tab clearance on Home, Sesh and Stats
-
-- **Area:** Shared UI / screen layout
-- **Priority:** High (inherited from parent T284)
-- **Status:** In progress
-- **Planning:** Implementer
-- **Description:** Apply or confirm the T284.1 convention on Home, Sesh setup, Sesh completion summary, multi-trick wrap-up and Stats (list and detail).
-- **Exit criteria:** On small and large simulators at maximum scroll, the final row and primary action of each screen named above is fully above the tab bar and tappable, with at least three completed practice records present so Stats and the completion summary have rows to scroll; web layout is unchanged.
-- **Dependencies:** T284.1.
-- **Notes:** Small = iPhone 17e, large = iPhone 18 Pro Max (iOS 27.0). Create the practice records on the simulator through ordinary Seshes; do not delete owner data. `CenteredPanel`'s 140 px bottom padding is shared with web.
-- **Platform scope:** Acceptance for this ticket runs on the iOS Simulator. Android and physical-device checks are not part of these exit criteria; record them as not run rather than passed.
-
 ### [T284.3] Verify tab clearance on notes and goals
 
 - **Area:** Shared UI / screen layout

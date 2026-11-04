@@ -4,6 +4,21 @@ Completed entries move here from `TASKS.md`'s `Backlog`, in the same commit that
 
 Entries keep their content as it was at completion. Don't retroactively edit a description or exit criteria after the fact; if something about a completed task turns out to be wrong or misleading, note that in a new entry or in code, not by rewriting history here.
 
+### [T284.2] Verify tab clearance on Home, Sesh and Stats
+
+- **Area:** Shared UI / screen layout
+- **Priority:** High (inherited from parent T284)
+- **Status:** Done
+- **Planning:** Implementer
+- **Description:** Apply or confirm the T284.1 convention on Home, Sesh setup, Sesh completion summary, multi-trick wrap-up and Stats (list and detail).
+- **Exit criteria:** On small and large simulators at maximum scroll, the final row and primary action of each screen named above is fully above the tab bar and tappable, with at least three completed practice records present so Stats and the completion summary have rows to scroll; web layout is unchanged.
+- **Dependencies:** T284.1.
+- **Notes:** Small = iPhone 17e, large = iPhone 18 Pro Max (iOS 27.0). Create the practice records on the simulator through ordinary Seshes; do not delete owner data. `CenteredPanel`'s 140 px bottom padding is shared with web.
+- **Platform scope:** Acceptance for this ticket runs on the iOS Simulator. Android and physical-device checks are not part of these exit criteria; record them as not run rather than passed.
+- **Outcome:** No code change; confirmed T284.1's finding that the fixed in-flow tab bar needs no extra clearance. iOS 27.0 Simulator, iPhone 17e (small) and iPhone 18 Pro Max (large), development build against this branch's Metro, four/three completed Sesh records respectively (one pre-existing owner record on the 17e, none deleted). At maximum scroll the final row and primary action sit fully above the tab bar (about 24 pt gap where content overflows): Home (See all stats) on both; Sesh setup last trick card on both; completion summary (Start another sesh, 9-lace timeline on 17e) on both; multi-trick picker Continue, timing screen and wrap-up Finish sesh on 17e; Stats list on both; Stats trick detail on 17e. Short content (large-device summary, 17e wrap-up and detail at default text size) does not overflow, so wrap-up and detail overflow was forced on the 17e with the accessibility-extra-extra-extra-large content size and restored afterwards; the large device's wrap-up and trick detail were not run separately and the Pro Max was checked at default and accessibility-large text only for Stats and Home. Finish sesh (17e) and Start another sesh, Repeat sesh, End Sesh and tab taps were exercised. Extreme text sizes clip some text and once rendered Home blank on the Pro Max until the size was reset; unrelated to clearance and not investigated. Web layout unchanged (no source change). Android and physical device not run.
+
+
+
 ### [T284.1] Establish the shared native tab-clearance convention
 
 - **Area:** Shared UI / screen layout
