@@ -174,7 +174,7 @@ _Native execution prerequisite: the simulator-enablement changes described in [o
 
 - **Area:** Sesh
 - **Priority:** High (inherited from parent T043)
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** Add explicit app-lifecycle coordination that reconciles timed, open-ended, paused, and multi-trick Sesh state against timestamps when the app returns to the foreground.
 - **Exit criteria:** Automated state-transition tests confirm an overdue timed Sesh completes at its logical deadline, an open-ended Sesh reports correct elapsed active time, a paused Sesh remains paused without accruing active duration, and a multi-trick run retains coherent current-trick state after a background/foreground cycle.
