@@ -4,6 +4,28 @@ Completed entries move here from `TASKS.md`'s `Backlog`, in the same commit that
 
 Entries keep their content as it was at completion. Don't retroactively edit a description or exit criteria after the fact; if something about a completed task turns out to be wrong or misleading, note that in a new entry or in code, not by rewriting history here.
 
+### [T284] Reserve native tab clearance for scroll content
+
+- **Area:** Shared UI / screen layout
+- **Priority:** High
+- **Status:** Done
+- **Description:** Establish a shared iOS tab/safe-area clearance convention and apply it to tab-hosted scroll content. The (since replaced by T290) floating tab bar visibly overlapped Sesh choices/completion actions, custom-trick Save, Home footer content and Stats rows; several screens reserve only 24 points below content.
+- **Notes:** Umbrella only — complete T284.1, T284.2 and T284.3. Source: DESLOPPIFY.md D023. Keyboard-visible behavior belongs to T044. Native lifecycle/providers/persistence remain unchanged.
+- **Platform scope:** Acceptance for this ticket runs on the iOS Simulator. Android and physical-device checks are not part of these exit criteria; record them as not run rather than passed.
+
+### [T284.3] Verify tab clearance on notes and goals
+
+- **Area:** Shared UI / screen layout
+- **Priority:** Medium (inherited from parent T284)
+- **Status:** Done
+- **Planning:** Implementer
+- **Description:** Apply or confirm the T284.1 convention on populated all-notes, trick-notes, all-goals and trick-goals screens, including the goal actions footer.
+- **Exit criteria:** On small and large simulators, with enough notes and goals to scroll, the final item and primary action of each screen named above is fully above the tab bar and tappable at maximum scroll; web layout is unchanged.
+- **Dependencies:** T284.1.
+- **Notes:** Small = iPhone 17e, large = iPhone 18 Pro Max (iOS 27.0). Test notes and goals created during verification may stay on the simulator.
+- **Platform scope:** Acceptance for this ticket runs on the iOS Simulator. Android and physical-device checks are not part of these exit criteria; record them as not run rather than passed.
+- **Outcome:** No code change. On iPhone 17e (small) and iPhone 18 Pro Max (large), iOS 27.0, with 4 Big cup notes and 4 Big cup goals created on each device, at maximum scroll the last card of trick notes, all notes, trick goals and all goals (including each card Delete action in the goal actions footer and the in-place delete confirmation) sits fully above the tab bar with clear space. Taps exercised: goal Delete and confirm-Cancel on 17e (trick and all goals) and 18 Pro Max (trick and all goals); note Edit on 18 Pro Max (trick and all notes) and trick-notes Edit on 17e. The 17e all-notes screen was reached and populated but its last-card edit tap was not separately run; it shares AllNotesScreen layout with the 18 Pro Max run. Add note and Add goal primary actions are at the top of each list and were tapped on both devices. Web layout unchanged (no files changed). Android and physical device not run. Parent T284 closed: T284.1 to T284.3 found T290 fixed in-flow tab bar needs no clearance helper.
+
 ### [T284.2] Verify tab clearance on Home, Sesh and Stats
 
 - **Area:** Shared UI / screen layout
