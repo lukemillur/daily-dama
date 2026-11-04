@@ -194,7 +194,7 @@ After onboarding, the primary order is:
 The root navigator has platform-specific implementations selected by filename:
 
 - `app-tabs.web.tsx` uses `expo-router/ui` to render a responsive custom web tab bar;
-- `app-tabs.tsx` uses Expo Router's unstable native tabs API for native platforms.
+- `app-tabs.tsx` uses Expo Router's JS `Tabs` for native platforms: a fixed, opaque, full-width bottom bar whose colors come from the saved app theme (`useResolvedTheme`), never the system appearance, with SF Symbols drawn by `expo-symbols`.
 
 Both use the hydrated profile as the navigation gate. Until `hasCompletedOnboarding` is true and `kenteiRank` exists, the primary tabs are hidden and Home renders onboarding.
 
