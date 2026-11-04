@@ -71,6 +71,55 @@ test('extracts every id in a multi-id "Depends on A, B, and C" clause, not just 
   assert.deepEqual(byId('T107').dependsOn, ['T099', 'T098', 'T900']);
 });
 
+test('reads the Dependencies field, not only "Depends on" prose', () => {
+  const backlog = parseBacklog(
+    [
+      '## Backlog',
+      '',
+      '### [T201] Bare id in the field',
+      '- **Dependencies:** T200.1.',
+      '',
+      '### [T202] Several ids in the field',
+      '- **Dependencies:** T200.1, T199 and T198.',
+      '',
+      '### [T203] Range in the field',
+      '- **Dependencies:** T200.1–T200.3.',
+      '',
+      '### [T204] None in the field',
+      '- **Dependencies:** None.',
+      '- **Notes:** Mentions T150 in passing without depending on it.',
+      '',
+      '### [T205] Field already worded as a clause',
+      '- **Dependencies:** Depends on T200.',
+      '',
+    ].join('\n'),
+  );
+  const parsed = (id) => backlog.find((task) => task.id === id);
+  assert.deepEqual(parsed('T201').dependsOn, ['T200.1']);
+  assert.deepEqual(parsed('T202').dependsOn, ['T200.1', 'T199', 'T198']);
+  assert.deepEqual(parsed('T203').dependsOnRanges, [['T200.1', 'T200.3']]);
+  assert.deepEqual(parsed('T204').dependsOn, []);
+  assert.deepEqual(parsed('T205').dependsOn, ['T200']);
+});
+
+test('a Dependencies-field dependency blocks selection until it is done', () => {
+  const backlog = parseBacklog(
+    [
+      '## Backlog',
+      '',
+      '### [T301] Child that needs its sibling',
+      '- **Status:** Not started',
+      '- **Exit criteria:** Something observable.',
+      '- **Dependencies:** T300.1.',
+      '',
+    ].join('\n'),
+  );
+  const blocked = selectTask({ tasks: backlog, doneIds: new Set(), claimedBranches: new Map() });
+  assert.notEqual(blocked.task?.id, 'T301');
+  const ready = selectTask({ tasks: backlog, doneIds: new Set(['T300.1']), claimedBranches: new Map() });
+  assert.equal(ready.task?.id, 'T301');
+});
+
 test('captures dependency ranges separately, for expansion once the full known-id set is available', () => {
   assert.deepEqual(byId('T108').dependsOnRanges, [['T104.1', 'T104.2']]);
   assert.deepEqual(byId('T109').dependsOnRanges, [['T100', 'T103']]);
