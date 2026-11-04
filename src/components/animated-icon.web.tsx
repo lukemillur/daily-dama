@@ -12,8 +12,8 @@ const DURATION = 300;
 const emptySubscribe = () => () => {};
 
 // Rendered on the server and on the very first client render (before
-// hydration can safely read `window.localStorage`); must match app.json's
-// static splash `backgroundColor` to avoid a visible seam.
+// hydration can safely read `window.localStorage`); the web default-theme baseline only.
+// Native splash colors are configured separately in app.json.
 const DEFAULT_SPLASH_BACKGROUND = resolveTheme({}).background;
 
 export function AnimatedSplashOverlay() {

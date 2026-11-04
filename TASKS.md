@@ -133,18 +133,6 @@ _iOS Simulator audit activation — 2026-10-29, explicitly requested by the owne
 
 _Native execution prerequisite: the simulator-enablement changes described in [outputs/ios-personal-build-setup.md](outputs/ios-personal-build-setup.md) are on `development`. The generated `/ios` project and local CocoaPods workaround are not committed, so a fresh checkout may need `yarn ios` (prebuild and pod install) first. Report a tooling failure as a prerequisite rather than a passed check._
 
-### [T293] Add a wordmark splash screen
-
-- **Area:** App shell
-- **Priority:** Medium
-- **Status:** In progress
-- **Planning:** Implementer
-- **Description:** Configure a branded splash screen on iOS and Android with `expo-splash-screen`: the Daily Dama wordmark on the yellow brand background, held until persisted state has hydrated so no blank or half-loaded screen shows.
-- **Exit criteria:** On an iPhone simulator, cold launch shows the wordmark splash and then the first real screen with no white flash or partially hydrated UI; the dev client is rebuilt with the config change; web is unaffected; full typechecking passes.
-- **Dependencies:** None.
-- **Notes:** Owner decision 2026-11-04: typography only, no artwork. This changes Expo config, so it needs a native rebuild (see `outputs/ios-personal-build-setup.md`). Keep the providers' existing hydration gate as the source of truth for hiding the splash.
-- **Platform scope:** Acceptance for this ticket runs on the iOS Simulator. Android and physical-device checks are not part of these exit criteria; record them as not run rather than passed.
-
 ### [T284] Reserve native tab clearance for scroll content
 
 - **Area:** Shared UI / screen layout

@@ -24,6 +24,8 @@ jest.mock('@/global.css', () => ({}), { virtual: true });
 // throws at import time under this Jest environment (unrelated to this test's behavior). Mock it
 // out, same as root-layout.test.tsx, since this test only needs the named ErrorBoundary export
 // to resolve, not AnimatedSplashOverlay's behavior.
+// holdNativeSplash schedules a real safety timer that would keep Jest alive.
+jest.mock('@/shared/splash/hide-native-splash', () => ({ holdNativeSplash: jest.fn() }));
 jest.mock('@/components/animated-icon', () => ({
   AnimatedSplashOverlay: () => null,
 }));

@@ -35,6 +35,8 @@ jest.mock('expo-router', () => ({
   useGlobalSearchParams: () => mockGlobalSearchParams,
 }));
 
+// holdNativeSplash schedules a real safety timer that would keep Jest alive.
+jest.mock('@/shared/splash/hide-native-splash', () => ({ holdNativeSplash: jest.fn() }));
 jest.mock('@/components/animated-icon', () => ({
   AnimatedSplashOverlay: () => null,
 }));

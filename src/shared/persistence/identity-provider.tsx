@@ -6,6 +6,7 @@ import { deriveIdentityFromAuthState } from '@/features/auth/model/identity-from
 import { useAuthActions, useAuthState } from '@/features/auth/state/auth-provider';
 import { createIdentityContext, type IdentityContext } from '@/shared/persistence/identity-context';
 import { GUEST_IDENTITY, type Identity } from '@/shared/persistence/identity';
+import { HideSplashWhenMounted } from '@/shared/splash/splash-ready';
 
 /**
  * The single source of truth every identity-scoped domain provider reads from. Owns one
@@ -114,6 +115,7 @@ function RefreshFailedRecovery() {
 
   return (
     <View style={styles.recoveryContainer} accessibilityRole="alert">
+      <HideSplashWhenMounted />
       <Text style={styles.wordmark}>Daily Dama</Text>
       <Text accessibilityRole="header" style={styles.recoveryHeading}>
         We couldn&apos;t confirm your sign-in

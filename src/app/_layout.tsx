@@ -11,7 +11,6 @@ import {
   usePathname,
   useRouter,
 } from 'expo-router';
-import * as SplashScreen from 'expo-splash-screen';
 import { useEffect, useRef, useState } from 'react';
 import { Platform } from 'react-native';
 
@@ -23,8 +22,9 @@ import { AuthProvider } from '@/features/auth/state/auth-provider';
 import { DefaultAppThemeProvider } from '@/features/profile/components/app-theme-provider';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { initSentry } from '@/shared/observability/sentry-client';
+import { holdNativeSplash } from '@/shared/splash/hide-native-splash';
 
-SplashScreen.preventAutoHideAsync();
+holdNativeSplash();
 
 // Root-level Expo Router `ErrorBoundary` export: catches any fatal render error thrown
 // anywhere beneath this layout's default export and renders a branded fallback instead of

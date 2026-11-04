@@ -8,6 +8,8 @@ import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 jest.mock('@/features/feedback/persistence/submit-feedback', () => ({
   submitFeedback: jest.fn(),
 }));
+// The release component schedules an animation frame that would outlive the test environment.
+jest.mock('@/shared/splash/splash-ready', () => ({ HideSplashWhenMounted: () => null }));
 jest.mock('expo-router', () => ({
   useRouter: () => ({ push: jest.fn() }),
 }));

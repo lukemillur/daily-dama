@@ -4,6 +4,19 @@ Completed entries move here from `TASKS.md`'s `Backlog`, in the same commit that
 
 Entries keep their content as it was at completion. Don't retroactively edit a description or exit criteria after the fact; if something about a completed task turns out to be wrong or misleading, note that in a new entry or in code, not by rewriting history here.
 
+### [T293] Add a wordmark splash screen
+
+- **Area:** App shell
+- **Priority:** Medium
+- **Status:** Done
+- **Planning:** Implementer
+- **Description:** Configure a branded splash screen on iOS and Android with `expo-splash-screen`: the Daily Dama wordmark on the yellow brand background, held until persisted state has hydrated so no blank or half-loaded screen shows.
+- **Exit criteria:** On an iPhone simulator, cold launch shows the wordmark splash and then the first real screen with no white flash or partially hydrated UI; the dev client is rebuilt with the config change; web is unaffected; full typechecking passes.
+- **Dependencies:** None.
+- **Notes:** Owner decision 2026-11-04: typography only, no artwork. This changes Expo config, so it needs a native rebuild (see `outputs/ios-personal-build-setup.md`). Keep the providers' existing hydration gate as the source of truth for hiding the splash.
+- **Platform scope:** Acceptance for this ticket runs on the iOS Simulator. Android and physical-device checks are not part of these exit criteria; record them as not run rather than passed.
+- **Outcome:** Native splash is now the Daily Dama wordmark (ink on `#f4c94d`, `assets/images/splash-wordmark.png`, generated from the web wordmark's system-ui 900 weight text) via the `expo-splash-screen` plugin; the template native overlay is removed. `holdNativeSplash()` holds it and `<HideSplashWhenMounted />` releases it from each post-hydration surface, with an 8 s safety release. Verified on iPhone 18 Pro (iOS 27.0) Simulator after rebuilding the dev client: cold launch shows wordmark on yellow then Home with no blank or Loading frame sampled; dark appearance keeps the yellow splash; web export and full verify pass. Auth deep link was checked only with the app already running (splash already released), so the cold-launch release on `/auth/*` is covered by unit tests and the safety timeout, not simulator evidence. Android and physical device not run.
+
 ### [T291] Give nested native screens a themed stack header with back navigation
 
 - **Area:** Navigation
