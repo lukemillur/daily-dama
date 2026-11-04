@@ -4,6 +4,19 @@ Completed entries move here from `TASKS.md`'s `Backlog`, in the same commit that
 
 Entries keep their content as it was at completion. Don't retroactively edit a description or exit criteria after the fact; if something about a completed task turns out to be wrong or misleading, note that in a new entry or in code, not by rewriting history here.
 
+### [T292] Replace the landing page with a native start screen
+
+- **Area:** Onboarding / navigation
+- **Priority:** Medium
+- **Status:** Done
+- **Planning:** Required
+- **Description:** On iOS and Android, a first launch shows a simple native start screen (wordmark plus Get started) instead of the web marketing landing page. Get started enters guest onboarding. Returning users who finished onboarding still go straight to Home. Web keeps its landing page.
+- **Exit criteria:** On a fresh iPhone simulator install the first screen is the start screen, not the landing page; Get started leads into onboarding; after onboarding a relaunch opens Home; the start screen follows the app theme; tests cover the native route decision; web landing behavior is unchanged; full typechecking passes.
+- **Dependencies:** None.
+- **Notes:** Owner request 2026-11-04. A Sign in action will be added here by the mobile-auth work planned in T295, so leave room for a second action, but do not add a non-working Sign in control now.
+- **Platform scope:** Acceptance for this ticket runs on the iOS Simulator. Android and physical-device checks are not part of these exit criteria; record them as not run rather than passed.
+- **Completion notes:** Root route splits by platform (`src/app/index.tsx`); `src/features/native-start/` holds the pure route decision, a one-read AsyncStorage hook (explicit `loading` state so returning users never see Start), and the Start screen inside `CachedAppThemeProvider`. Verified on iPhone 18 Pro, iOS 27.0: fresh data shows Start; Get started opens onboarding; after finishing onboarding (Blue theme) a relaunch opens Home. The Start screen cannot be seen with a custom theme in practice (themes are only set at the end of onboarding, after which Start redirects), so theme following rests on `CachedAppThemeProvider` reuse, not a simulator check. Android and physical device: not run.
+
 ### [T297] Cache Jest and Metro transforms for the CI verify job
 
 - **Area:** Tooling / CI

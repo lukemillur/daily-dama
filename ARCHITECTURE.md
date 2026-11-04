@@ -28,8 +28,15 @@ Back to Profile exit instead of the submission form. Setup checkpoints,
 local tooling workarounds, and remaining verification live in
 [`outputs/ios-personal-build-setup.md`](outputs/ios-personal-build-setup.md).
 Website metadata in the landing route and app layout renders only on web;
-native Expo Router Head/handoff configuration is not enabled. The initial
-simulator build and landing-to-onboarding flow have been verified on iOS 27.0.
+native Expo Router Head/handoff configuration is not enabled. The root route
+(`src/app/index.tsx`) splits by platform: web renders the marketing landing page,
+while iOS and Android render the native Start screen
+(`src/features/native-start/`). The Start screen shows the wordmark and a Get
+started action that opens `/app/home`, which hosts guest onboarding. A single
+AsyncStorage read of the guest profile decides between `loading` (render
+nothing), `redirect-home` (onboarding finished with a rank; `router.replace`
+to `/app/home`), and `show-start`. The simulator build and Start-to-onboarding
+flow have been verified on iOS 27.0.
 
 The procedural trick-visualization experiment, its sandbox routes, and its supporting documentation are deliberately excluded. They should be evaluated as a separate subsystem if that work resumes.
 

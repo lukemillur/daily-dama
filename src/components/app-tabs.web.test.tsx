@@ -1,6 +1,6 @@
-import { beforeEach, describe, expect, it, jest } from '@jest/globals';
+import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
-import { Text } from 'react-native';
+import { Platform, Text } from 'react-native';
 
 // RootRoute now transitively imports use-cached-onboarding-status.ts (T145), which imports
 // AsyncStorage directly for its native fallback path -- mock it before RootRoute is imported
@@ -89,12 +89,18 @@ async function mountTabList() {
 }
 
 async function mountRootRoute() {
+  // The root route renders the landing page only on web; Jest's default platform is ios.
+  jest.replaceProperty(Platform, 'OS', 'web');
   let root!: ReactTestRenderer;
   await act(async () => {
     root = create(<RootRoute />);
   });
   return root;
 }
+
+afterEach(() => {
+  jest.restoreAllMocks();
+});
 
 beforeEach(() => {
   mockRouter.push.mockClear();

@@ -145,18 +145,6 @@ _Native execution prerequisite: the simulator-enablement changes described in [o
 - **Notes:** Owner request 2026-11-04: nested screens can currently be left only by swipe-back, which is not discoverable. Depends on T290 so both changes share one native navigation structure.
 - **Platform scope:** Acceptance for this ticket runs on the iOS Simulator. Android and physical-device checks are not part of these exit criteria; record them as not run rather than passed.
 
-### [T292] Replace the landing page with a native start screen
-
-- **Area:** Onboarding / navigation
-- **Priority:** Medium
-- **Status:** Not started
-- **Planning:** Required
-- **Description:** On iOS and Android, a first launch shows a simple native start screen (wordmark plus Get started) instead of the web marketing landing page. Get started enters guest onboarding. Returning users who finished onboarding still go straight to Home. Web keeps its landing page.
-- **Exit criteria:** On a fresh iPhone simulator install the first screen is the start screen, not the landing page; Get started leads into onboarding; after onboarding a relaunch opens Home; the start screen follows the app theme; tests cover the native route decision; web landing behavior is unchanged; full typechecking passes.
-- **Dependencies:** None.
-- **Notes:** Owner request 2026-11-04. A Sign in action will be added here by the mobile-auth work planned in T295, so leave room for a second action, but do not add a non-working Sign in control now.
-- **Platform scope:** Acceptance for this ticket runs on the iOS Simulator. Android and physical-device checks are not part of these exit criteria; record them as not run rather than passed.
-
 ### [T293] Add a wordmark splash screen
 
 - **Area:** App shell
