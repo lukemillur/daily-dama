@@ -161,7 +161,7 @@ _Native execution prerequisite: the simulator-enablement changes described in [o
 
 - **Area:** Onboarding / navigation
 - **Priority:** Medium
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** On iOS and Android, a first launch shows a simple native start screen (wordmark plus Get started) instead of the web marketing landing page. Get started enters guest onboarding. Returning users who finished onboarding still go straight to Home. Web keeps its landing page.
 - **Exit criteria:** On a fresh iPhone simulator install the first screen is the start screen, not the landing page; Get started leads into onboarding; after onboarding a relaunch opens Home; the start screen follows the app theme; tests cover the native route decision; web landing behavior is unchanged; full typechecking passes.
