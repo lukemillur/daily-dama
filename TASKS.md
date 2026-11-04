@@ -133,6 +133,54 @@ _iOS Simulator audit activation — 2026-10-29, explicitly requested by the owne
 
 _Native execution prerequisite: the simulator-enablement changes described in [outputs/ios-personal-build-setup.md](outputs/ios-personal-build-setup.md) are on `development`. The generated `/ios` project and local CocoaPods workaround are not committed, so a fresh checkout may need `yarn ios` (prebuild and pod install) first. Report a tooling failure as a prerequisite rather than a passed check._
 
+### [T290] Replace the floating native tab bar with a fixed bottom tab bar
+
+- **Area:** Navigation
+- **Priority:** High
+- **Status:** Not started
+- **Planning:** Required
+- **Description:** On iOS and Android, replace the floating Expo Router `NativeTabs` bar with a fixed, full-width bottom tab bar (for example Expo Router's JS `Tabs`). The bar follows the saved app theme rather than the system light/dark setting. Web keeps its current navigation.
+- **Exit criteria:** On small and large iPhone simulators the five tabs sit in a fixed bar at the bottom edge with no content scrolling underneath it; each tab keeps its T042 icon in selected and unselected states; the bar's background, icon and label colors change when the app theme preset changes, including with system dark appearance on; web navigation and its 320 px fit are unchanged; focused tests cover the platform split; full typechecking passes.
+- **Dependencies:** None.
+- **Notes:** Owner request 2026-11-04: the floating bar does not feel right. Fixes the observed mismatch where the native tab bar followed system appearance while screens followed the app theme. Carry the T042 SF Symbols across (e.g. `expo-symbols`). Once this lands, re-scope T284.1–T284.3, which assume a floating bar that overlaps content.
+- **Platform scope:** Acceptance for this ticket runs on the iOS Simulator. Android and physical-device checks are not part of these exit criteria; record them as not run rather than passed.
+
+### [T291] Give nested native screens a themed stack header with back navigation
+
+- **Area:** Navigation
+- **Priority:** High
+- **Status:** Not started
+- **Planning:** Required
+- **Description:** On iOS and Android, show a native stack header with a top-left back control on every nested screen (for example trick goals, trick notes, laced tricks and other screens under Tricks), and hide in-page "Back to …" links on native where the header replaces them. Web keeps its in-page links.
+- **Exit criteria:** A listed inventory of every nested native route exists in the ticket's PR; on small and large iPhone simulators each one shows a header whose back control returns to its parent; the header follows the saved app theme, including with system dark appearance on; in-page back links are hidden on native and still shown on web; focused tests cover the platform split; full typechecking passes.
+- **Dependencies:** T290.
+- **Notes:** Owner request 2026-11-04: nested screens can currently be left only by swipe-back, which is not discoverable. Depends on T290 so both changes share one native navigation structure.
+- **Platform scope:** Acceptance for this ticket runs on the iOS Simulator. Android and physical-device checks are not part of these exit criteria; record them as not run rather than passed.
+
+### [T292] Replace the landing page with a native start screen
+
+- **Area:** Onboarding / navigation
+- **Priority:** Medium
+- **Status:** Not started
+- **Planning:** Required
+- **Description:** On iOS and Android, a first launch shows a simple native start screen (wordmark plus Get started) instead of the web marketing landing page. Get started enters guest onboarding. Returning users who finished onboarding still go straight to Home. Web keeps its landing page.
+- **Exit criteria:** On a fresh iPhone simulator install the first screen is the start screen, not the landing page; Get started leads into onboarding; after onboarding a relaunch opens Home; the start screen follows the app theme; tests cover the native route decision; web landing behavior is unchanged; full typechecking passes.
+- **Dependencies:** None.
+- **Notes:** Owner request 2026-11-04. A Sign in action will be added here by the mobile-auth work planned in T295, so leave room for a second action, but do not add a non-working Sign in control now.
+- **Platform scope:** Acceptance for this ticket runs on the iOS Simulator. Android and physical-device checks are not part of these exit criteria; record them as not run rather than passed.
+
+### [T293] Add a wordmark splash screen
+
+- **Area:** App shell
+- **Priority:** Medium
+- **Status:** Not started
+- **Planning:** Implementer
+- **Description:** Configure a branded splash screen on iOS and Android with `expo-splash-screen`: the Daily Dama wordmark on the yellow brand background, held until persisted state has hydrated so no blank or half-loaded screen shows.
+- **Exit criteria:** On an iPhone simulator, cold launch shows the wordmark splash and then the first real screen with no white flash or partially hydrated UI; the dev client is rebuilt with the config change; web is unaffected; full typechecking passes.
+- **Dependencies:** None.
+- **Notes:** Owner decision 2026-11-04: typography only, no artwork. This changes Expo config, so it needs a native rebuild (see `outputs/ios-personal-build-setup.md`). Keep the providers' existing hydration gate as the source of truth for hiding the splash.
+- **Platform scope:** Acceptance for this ticket runs on the iOS Simulator. Android and physical-device checks are not part of these exit criteria; record them as not run rather than passed.
+
 ### [T284] Reserve native tab clearance for scroll content
 
 - **Area:** Shared UI / screen layout
@@ -150,8 +198,8 @@ _Native execution prerequisite: the simulator-enablement changes described in [o
 - **Planning:** Implementer
 - **Description:** Land the shared clearance convention in `Screen` and verify it on Tricks and the custom-trick and custom-sequence forms. Start from the unverified work in commit `f5e9a95` on `task/T284-reserve-native-tab-clearance-for-scroll` (`withNativeTabClearance`, `screen.test.tsx`, Profile padding, removed `BottomTabInset`).
 - **Exit criteria:** On small and large simulators at maximum scroll, the last Tricks row and the Save and Cancel actions of the new-custom-trick, edit-custom-trick and custom-sequence forms are fully above the tab bar and tappable; focused tests protect the convention; web layout is unchanged at 320 px; full typechecking passes.
-- **Dependencies:** None.
-- **Notes:** Small = iPhone 17e, large = iPhone 18 Pro Max (iOS 27.0). The earlier run observed that Home and Sesh setup already cleared the bar before the change, and that Tricks showed the overlap. Avoid scattered fixed spacers or duplicated automatic safe-area padding.
+- **Dependencies:** T290.
+- **Notes:** Re-scope before starting: T290 replaces the floating tab bar, which may remove most of this overlap. Small = iPhone 17e, large = iPhone 18 Pro Max (iOS 27.0). The earlier run observed that Home and Sesh setup already cleared the bar before the change, and that Tricks showed the overlap. Avoid scattered fixed spacers or duplicated automatic safe-area padding.
 - **Platform scope:** Acceptance for this ticket runs on the iOS Simulator. Android and physical-device checks are not part of these exit criteria; record them as not run rather than passed.
 
 ### [T284.2] Verify tab clearance on Home, Sesh and Stats
