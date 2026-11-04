@@ -24,6 +24,7 @@ import {
   selectAvailablePracticeTricks,
 } from '@/features/tricks/model/trick-directory';
 import type { PracticeTrick } from '@/features/tricks/model/trick';
+import { shouldShowInPageBack } from '@/shared/navigation/in-page-back';
 
 type MultiTrickSeshEntryStep =
   | { readonly kind: 'choosingTricks' }
@@ -162,12 +163,14 @@ export function MultiTrickSeshEntry() {
           introduction: 'Select any tricks you want to work through, one after another, in one sesh.',
         }}
         headerAction={
-          <CompactBackLink
-            accessibilityLabel="Back to Sesh"
-            accessibilityRole="link"
-            onPress={() => router.replace('/app/sesh')}>
-            ← Back to Sesh
-          </CompactBackLink>
+          shouldShowInPageBack() ? (
+            <CompactBackLink
+              accessibilityLabel="Back to Sesh"
+              accessibilityRole="link"
+              onPress={() => router.replace('/app/sesh')}>
+              ← Back to Sesh
+            </CompactBackLink>
+          ) : undefined
         }
         footer={
           <FinishBackdrop $pinned={shouldPinSelectionChrome}>

@@ -5,6 +5,7 @@ import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 
 import { TrickNotesScreen } from '@/features/notes/components/trick-notes-screen';
 import { NoteProvider, useNoteActions } from '@/features/notes/state/note-provider';
+import { setPlatformOS } from '@/shared/navigation/test-platform';
 
 // NoteProvider persists through AsyncStorage. Mock the same way sibling screen tests do.
 jest.mock('@react-native-async-storage/async-storage', () =>
@@ -77,5 +78,25 @@ describe('TrickNotesScreen', () => {
     const mergedStyle = Object.assign({}, ...styleEntries);
     expect(mergedStyle).toMatchObject({ textAlign: 'right' });
     expect(mergedStyle.fontSize).toBeGreaterThanOrEqual(24);
+  });
+});
+
+describe('in-page back link by platform', () => {
+  describe('on web', () => {
+    setPlatformOS('web');
+
+    it('shows the in-page Back to Tricks control', async () => {
+      const root = await mountHarness();
+      expect(root.root.findAll((node) => node.props.accessibilityLabel === 'Back to Tricks').length).toBeGreaterThan(0);
+    });
+  });
+
+  describe('on native', () => {
+    setPlatformOS('ios');
+
+    it('hides the in-page Back to Tricks control because the stack header replaces it', async () => {
+      const root = await mountHarness();
+      expect(root.root.findAll((node) => node.props.accessibilityLabel === 'Back to Tricks').length).toBe(0);
+    });
   });
 });

@@ -133,18 +133,6 @@ _iOS Simulator audit activation — 2026-10-29, explicitly requested by the owne
 
 _Native execution prerequisite: the simulator-enablement changes described in [outputs/ios-personal-build-setup.md](outputs/ios-personal-build-setup.md) are on `development`. The generated `/ios` project and local CocoaPods workaround are not committed, so a fresh checkout may need `yarn ios` (prebuild and pod install) first. Report a tooling failure as a prerequisite rather than a passed check._
 
-### [T291] Give nested native screens a themed stack header with back navigation
-
-- **Area:** Navigation
-- **Priority:** High
-- **Status:** In progress
-- **Planning:** Required
-- **Description:** On iOS and Android, show a native stack header with a top-left back control on every nested screen (for example trick goals, trick notes, laced tricks and other screens under Tricks), and hide in-page "Back to …" links on native where the header replaces them. Web keeps its in-page links.
-- **Exit criteria:** A listed inventory of every nested native route exists in the ticket's PR; on small and large iPhone simulators each one shows a header whose back control returns to its parent; the header follows the saved app theme, including with system dark appearance on; in-page back links are hidden on native and still shown on web; focused tests cover the platform split; full typechecking passes.
-- **Dependencies:** T290.
-- **Notes:** Owner request 2026-11-04: nested screens can currently be left only by swipe-back, which is not discoverable. Depends on T290 so both changes share one native navigation structure.
-- **Platform scope:** Acceptance for this ticket runs on the iOS Simulator. Android and physical-device checks are not part of these exit criteria; record them as not run rather than passed.
-
 ### [T293] Add a wordmark splash screen
 
 - **Area:** App shell

@@ -1,6 +1,8 @@
 import { Stack, useNavigation, useRouter } from 'expo-router';
 import { useEffect } from 'react';
 
+import { useNestedScreenOptions, useNestedStackScreenOptions } from '@/components/nested-stack-options';
+
 export default function SeshLayout() {
   const navigation = useNavigation();
   const router = useRouter();
@@ -19,5 +21,13 @@ export default function SeshLayout() {
     });
   }, [navigation, router]);
 
-  return <Stack screenOptions={{ headerShown: false }} />;
+  const stackOptions = useNestedStackScreenOptions();
+  const screenOptions = useNestedScreenOptions({ href: '/app/sesh', label: 'Sesh' });
+
+  return (
+    <Stack screenOptions={stackOptions}>
+      <Stack.Screen name="index" options={{ headerShown: false }} />
+      <Stack.Screen name="multi-trick" options={screenOptions('Multi-trick sesh')} />
+    </Stack>
+  );
 }

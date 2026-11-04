@@ -1,6 +1,8 @@
 import { Stack, useNavigation, useRouter } from 'expo-router';
 import { useEffect } from 'react';
 
+import { useNestedScreenOptions, useNestedStackScreenOptions } from '@/components/nested-stack-options';
+
 export default function TricksLayout() {
   const navigation = useNavigation();
   const router = useRouter();
@@ -19,5 +21,20 @@ export default function TricksLayout() {
     });
   }, [navigation, router]);
 
-  return <Stack screenOptions={{ headerShown: false }} />;
+  const stackOptions = useNestedStackScreenOptions();
+  const screenOptions = useNestedScreenOptions({ href: '/app/tricks', label: 'Tricks' });
+
+  return (
+    <Stack screenOptions={stackOptions}>
+      <Stack.Screen name="index" options={{ headerShown: false }} />
+      <Stack.Screen name="goals" options={screenOptions('Goals')} />
+      <Stack.Screen name="notes" options={screenOptions('Notes')} />
+      <Stack.Screen name="laced" options={screenOptions('Laced tricks')} />
+      <Stack.Screen name="[trickId]/goals" options={screenOptions('Trick goals')} />
+      <Stack.Screen name="[trickId]/notes" options={screenOptions('Trick notes')} />
+      <Stack.Screen name="custom/new" options={screenOptions('New trick')} />
+      <Stack.Screen name="custom/[trickId]/edit" options={screenOptions('Edit trick')} />
+      <Stack.Screen name="custom/[trickId]/delete" options={screenOptions('Delete trick')} />
+    </Stack>
+  );
 }

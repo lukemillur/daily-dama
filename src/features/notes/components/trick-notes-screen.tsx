@@ -9,6 +9,7 @@ import { AppColors } from '@/constants/theme';
 import { selectNotesForTrick, type Note } from '@/features/notes/model/note';
 import { useNoteActions, useNotes } from '@/features/notes/state/note-provider';
 import { formatPracticeDate } from '@/features/stats/model/format-practice-date';
+import { shouldShowInPageBack } from '@/shared/navigation/in-page-back';
 
 interface TrickNotesScreenProps {
   readonly trickId: string;
@@ -70,11 +71,13 @@ export function TrickNotesScreen({ trickId, trickName, onBack }: TrickNotesScree
           ))}
         </NoteList>
 
-        <FormActions>
-          <Button accessibilityLabel="Back to Tricks" fill variant="secondary" onPress={onBack}>
-            Back to Tricks
-          </Button>
-        </FormActions>
+        {shouldShowInPageBack() ? (
+          <FormActions>
+            <Button accessibilityLabel="Back to Tricks" fill variant="secondary" onPress={onBack}>
+              Back to Tricks
+            </Button>
+          </FormActions>
+        ) : null}
       </Content>
     </Scroll>
   );

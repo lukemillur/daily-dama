@@ -14,6 +14,7 @@ import {
   type AccountDeletionErrorCategory,
 } from '@/features/auth/model/account-deletion-errors';
 import { useAuthActions, useAuthState } from '@/features/auth/state/auth-provider';
+import { shouldShowInPageBack } from '@/shared/navigation/in-page-back';
 
 const ERROR_COPY: Record<AccountDeletionErrorCategory, string> = {
   invalidCredentials: 'We could not verify your password or session. Check it and try again.',
@@ -107,9 +108,11 @@ export function AccountDeletionScreen() {
           <Eyebrow>Delete account</Eyebrow>
           <PageTitle>This is permanent.</PageTitle>
 
-          <BackLink accessibilityLabel="Back to Profile" accessibilityRole="link" onPress={handleBack}>
-            <BackLinkText>← Back to Profile</BackLinkText>
-          </BackLink>
+          {shouldShowInPageBack() ? (
+            <BackLink accessibilityLabel="Back to Profile" accessibilityRole="link" onPress={handleBack}>
+              <BackLinkText>← Back to Profile</BackLinkText>
+            </BackLink>
+          ) : null}
 
           <Introduction>
             Deleting your account happens immediately and permanently. Your account and sesh data will be removed.

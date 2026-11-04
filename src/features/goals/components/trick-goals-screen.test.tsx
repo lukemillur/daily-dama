@@ -4,6 +4,7 @@ import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 
 import { TrickGoalsScreen } from '@/features/goals/components/trick-goals-screen';
 import type { Goal } from '@/features/goals/model/goal';
+import { setPlatformOS } from '@/shared/navigation/test-platform';
 
 const mockAddGoal = jest.fn();
 const mockDeleteGoal = jest.fn();
@@ -36,6 +37,8 @@ function findText(root: ReactTestRenderer, text: string) {
 }
 
 describe('TrickGoalsScreen', () => {
+  setPlatformOS('web');
+
   beforeEach(() => {
     jest.clearAllMocks();
     mockAddGoal.mockReturnValue({ status: 'saved' });
@@ -300,5 +303,31 @@ describe('TrickGoalsScreen', () => {
     expect(ancestor).not.toBeNull();
     const rowStyle = StyleSheet.flatten(ancestor!.props.style) as { flexDirection?: string };
     expect(rowStyle.flexDirection).toBe('row');
+  });
+});
+
+describe('in-page back link by platform', () => {
+  describe('on web', () => {
+    setPlatformOS('web');
+
+    it('shows the in-page Back to Tricks control', async () => {
+      let root!: ReactTestRenderer;
+      await act(async () => {
+        root = create(<TrickGoalsScreen trickId="big-cup" trickName="Big Cup" onBack={jest.fn()} />);
+      });
+      expect(root.root.findAll((node) => node.props.accessibilityLabel === 'Back to Tricks').length).toBeGreaterThan(0);
+    });
+  });
+
+  describe('on native', () => {
+    setPlatformOS('ios');
+
+    it('hides the in-page Back to Tricks control because the stack header replaces it', async () => {
+      let root!: ReactTestRenderer;
+      await act(async () => {
+        root = create(<TrickGoalsScreen trickId="big-cup" trickName="Big Cup" onBack={jest.fn()} />);
+      });
+      expect(root.root.findAll((node) => node.props.accessibilityLabel === 'Back to Tricks').length).toBe(0);
+    });
   });
 });

@@ -15,6 +15,7 @@ import { usePracticeHistory } from '@/features/stats/state/practice-history-prov
 import { TrickDirectory } from '@/features/tricks/components/trick-directory';
 import { TrickDirectoryColumn } from '@/features/tricks/components/trick-directory-column';
 import type { DirectoryTrick } from '@/features/tricks/model/trick-directory';
+import { shouldShowInPageBack } from '@/shared/navigation/in-page-back';
 
 interface AllTrickGoalsScreenProps {
   readonly tricks: readonly DirectoryTrick[];
@@ -110,11 +111,13 @@ export function AllTrickGoalsScreen({
           ))}
         </Sections>
 
-        <FormActions>
-          <Button accessibilityLabel="Back to Tricks" fill variant="secondary" onPress={onBack}>
-            Back to Tricks
-          </Button>
-        </FormActions>
+        {shouldShowInPageBack() ? (
+          <FormActions>
+            <Button accessibilityLabel="Back to Tricks" fill variant="secondary" onPress={onBack}>
+              Back to Tricks
+            </Button>
+          </FormActions>
+        ) : null}
       </Content>
     </Scroll>
   );

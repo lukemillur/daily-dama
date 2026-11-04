@@ -7,6 +7,7 @@ import {
   type DirectoryTrick,
   selectEffectiveLacedTrickIds,
 } from '@/features/tricks/model/trick-directory';
+import { setPlatformOS } from '@/shared/navigation/test-platform';
 
 const FIXTURE_TRICKS: readonly DirectoryTrick[] = [
   { id: 'trick-1', name: 'Big Cup', kenteiRank: 1, kenteiLevel: 'Basic', kenteiClass: '3rd Class' },
@@ -71,5 +72,31 @@ describe('LacedTricksScreen', () => {
 
     expect(findCard(root, 'Small Cup, laced')).toBeTruthy();
     expect(findCard(root, 'Big Cup, unlaced')).toBeTruthy();
+  });
+});
+
+describe('in-page back link by platform', () => {
+  describe('on web', () => {
+    setPlatformOS('web');
+
+    it('shows the in-page Back to Tricks control', async () => {
+      let root!: ReactTestRenderer;
+      await act(async () => {
+        root = create(<Harness onToggleTrickId={() => undefined} />);
+      });
+      expect(root.root.findAll((node) => node.props.accessibilityLabel === 'Back to Tricks').length).toBeGreaterThan(0);
+    });
+  });
+
+  describe('on native', () => {
+    setPlatformOS('ios');
+
+    it('hides the in-page Back to Tricks control because the stack header replaces it', async () => {
+      let root!: ReactTestRenderer;
+      await act(async () => {
+        root = create(<Harness onToggleTrickId={() => undefined} />);
+      });
+      expect(root.root.findAll((node) => node.props.accessibilityLabel === 'Back to Tricks').length).toBe(0);
+    });
   });
 });
