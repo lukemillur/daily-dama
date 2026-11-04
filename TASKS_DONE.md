@@ -4,6 +4,19 @@ Completed entries move here from `TASKS.md`'s `Backlog`, in the same commit that
 
 Entries keep their content as it was at completion. Don't retroactively edit a description or exit criteria after the fact; if something about a completed task turns out to be wrong or misleading, note that in a new entry or in code, not by rewriting history here.
 
+### [T289.3] Audit multi-trick runs and Kentei assessment on iOS
+
+- **Area:** iOS verification
+- **Priority:** Medium (inherited from parent T289)
+- **Status:** Done
+- **Planning:** Implementer
+- **Description:** Cover the Multi-trick and Kentei assessment matrix rows.
+- **Exit criteria:** A full multi-trick run (first-lace advance, manual next, pause, early end, wrap-up) and a Kentei assessment from rank (skip, end, promotion) are each exercised on the small simulator, with layout spot-checked on the large one. Each named matrix row in DESLOPPIFY.md gets a dated pass, a reproduced finding written to Needs scoping, or a concrete blocked reason from simulator evidence, with device, runtime and test data recorded; nothing is marked passed from source inspection.
+- **Dependencies:** None.
+- **Notes:** Small = iPhone 17e, large = iPhone 18 Pro Max (iOS 27.0). Documentation/verification only — do not fix findings here. Background/foreground behavior is T043's.
+- **Platform scope:** Acceptance for this ticket runs on the iOS Simulator. Android and physical-device checks are not part of these exit criteria; record them as not run rather than passed.
+- **Outcome:** Documentation only. Multi-trick and Kentei assessment rows updated in DESLOPPIFY.md with 2026-11-04 evidence, plus a T289.3 additions section. iPhone 17e (iOS 27.0): multi-trick run with first-lace advance, manual next, pause/resume, early end, wrap-up and Stats record; assessment chooser, 12-rank picker, skip (preview and confirm), end (result copy, Go to Home) and a promotion from rank 1 to 2 (celebration dialog, wrap-up, Profile 02). iPhone 18 Pro Max (iOS 27.0, earlier bundle): setup, selection, run, wrap-up, chooser, picker and active assessment layout spot-checks. Two findings reproduced and written to Needs scoping as T299 (stale wrap-up in Profile tab) and T300 (Skip this rank under the tab bar). Not run: timed per-trick expiry, tab reselection mid-run, interruption (T043), restoring rank, Android, physical device. Simulator rank is now 2 and cannot be lowered from the UI.
+
 ### [T284] Reserve native tab clearance for scroll content
 
 - **Area:** Shared UI / screen layout
