@@ -15,6 +15,10 @@ jest.mock('@/features/landing/state/redirect-onboarded-visitor-home', () => ({
   useRedirectOnboardedVisitorHome: () => mockUseRedirectOnboardedVisitorHome(),
 }));
 
+const mockNativeStartRoute = jest.fn(() => null);
+jest.mock('@/features/native-start/components/native-start-route', () => ({
+  NativeStartRoute: () => mockNativeStartRoute(),
+}));
 jest.mock('@/features/landing/components/landing-page', () => ({ LandingPage: () => mockLandingPage() }));
 
 describe('RootRoute', () => {
@@ -22,6 +26,8 @@ describe('RootRoute', () => {
     mockUseRedirectOnboardedVisitorHome.mockReset();
     mockLandingPage.mockClear();
     mockHead.mockClear();
+    mockNativeStartRoute.mockClear();
+    jest.replaceProperty(Platform, 'OS', 'web');
   });
 
   afterEach(() => {
@@ -38,8 +44,11 @@ describe('RootRoute', () => {
         create(<RootRoute />);
       });
 
-      expect(mockHead).toHaveBeenCalledTimes(platform === 'web' ? 1 : 0);
-      expect(mockLandingPage).toHaveBeenCalledTimes(1);
+      const isWeb = platform === 'web';
+      expect(mockHead).toHaveBeenCalledTimes(isWeb ? 1 : 0);
+      expect(mockLandingPage).toHaveBeenCalledTimes(isWeb ? 1 : 0);
+      expect(mockNativeStartRoute).toHaveBeenCalledTimes(isWeb ? 0 : 1);
+      expect(mockUseRedirectOnboardedVisitorHome).toHaveBeenCalledTimes(isWeb ? 1 : 0);
     },
   );
 
