@@ -425,3 +425,77 @@ describe('shouldPromptSeshNote', () => {
     ).toBe(true);
   });
 });
+
+describe('sesh reducer app foregrounding', () => {
+  const timed = createTimedSeshPlan(5);
+  const TIMED_MS = 300_000;
+
+  function completedSummary(state: SeshState) {
+    if (state.status !== 'completed') throw new Error(`expected completed, got ${state.status}`);
+    return state.summary;
+  }
+
+  it('completes an overdue timed Sesh at its logical deadline, keeping landings', () => {
+    const laced = seshReducer(startSesh(timed), { type: 'trickLaced', now: 31_000 });
+    const summary = completedSummary(
+      seshReducer(laced, { type: 'appForegrounded', now: 1_000 + TIMED_MS + 300_000 }),
+    );
+
+    expect(summary.endedAt).toBe(1_000 + TIMED_MS);
+    expect(summary.durationMs).toBe(TIMED_MS);
+    expect(summary.landings).toHaveLength(1);
+  });
+
+  it('counts earlier pauses toward the deadline of an overdue timed Sesh', () => {
+    let state = startSesh(timed);
+    state = seshReducer(state, { type: 'seshPaused', now: 11_000 });
+    state = seshReducer(state, { type: 'seshResumed', now: 41_000 });
+    const summary = completedSummary(seshReducer(state, { type: 'appForegrounded', now: 9_999_999 }));
+
+    expect(summary.endedAt).toBe(1_000 + TIMED_MS + 30_000);
+    expect(summary.durationMs).toBe(TIMED_MS);
+  });
+
+  it('matches the interval path so both produce an identical completion', () => {
+    const active = startSesh(timed);
+    const now = 1_000 + TIMED_MS + 5_000;
+    expect(seshReducer(active, { type: 'appForegrounded', now })).toEqual(
+      seshReducer(active, { type: 'timerElapsed', now }),
+    );
+  });
+
+  it('leaves a timed Sesh that is not yet due untouched', () => {
+    const active = startSesh(timed);
+    expect(seshReducer(active, { type: 'appForegrounded', now: 1_000 + TIMED_MS - 1 })).toBe(active);
+  });
+
+  it('leaves an open-ended Sesh untouched and reports full elapsed time when ended', () => {
+    const active = startSesh();
+    const foregrounded = seshReducer(active, { type: 'appForegrounded', now: 3_601_000 });
+    expect(foregrounded).toBe(active);
+    expect(completedSummary(seshReducer(foregrounded, { type: 'seshEnded', now: 3_601_000 })).durationMs).toBe(
+      3_600_000,
+    );
+  });
+
+  it.each([
+    ['timed', timed],
+    ['open-ended', OPEN_ENDED_SESH_PLAN],
+  ])('keeps a paused %s Sesh paused without accruing active time', (_label, plan) => {
+    const paused = seshReducer(startSesh(plan), { type: 'seshPaused', now: 11_000 });
+    const foregrounded = seshReducer(paused, { type: 'appForegrounded', now: 9_000_000 });
+    expect(foregrounded).toBe(paused);
+
+    const resumed = seshReducer(foregrounded, { type: 'seshResumed', now: 9_000_000 });
+    const summary = completedSummary(seshReducer(resumed, { type: 'seshEnded', now: 9_005_000 }));
+    expect(summary.durationMs).toBe(10_000 + 5_000);
+  });
+
+  it('ignores foregrounding while choosing, counting down, or completed', () => {
+    const countdown = seshReducer(INITIAL_SESH_STATE, { type: 'trickSelected', trick: BIG_CUP, plan: timed });
+    const completed = seshReducer(startSesh(), { type: 'seshEnded', now: 5_000 });
+    for (const state of [INITIAL_SESH_STATE, countdown, completed]) {
+      expect(seshReducer(state, { type: 'appForegrounded', now: 99_999_999 })).toBe(state);
+    }
+  });
+});

@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { BodyText, DisplayTitle as BaseDisplayTitle, Eyebrow as BaseEyebrow } from '@/components/ui/typography';
 import { AppColors } from '@/constants/theme';
 import { ActiveSesh, Countdown } from '@/features/sesh/components/sesh';
+import { useAppForeground } from '@/features/sesh/hooks/use-app-foreground';
 import {
   formatDuration,
   INITIAL_SESH_STATE,
@@ -191,6 +192,9 @@ export function MultiTrickSesh({
   );
   const { recordCompletedSesh } = usePracticeHistoryActions();
   const { notes } = useNotes();
+  // Overdue time is not replayed onto later tricks: an overdue timed trick completes at its logical
+  // deadline through the normal completed effect below, and the next trick starts fresh.
+  useAppForeground((now) => dispatch({ type: 'appForegrounded', now }));
   const recordedSummaryId = useRef<string | undefined>(undefined);
   const endRunRequestedRef = useRef(false);
   const [summaries, setSummaries] = useState<SeshSummary[]>([]);

@@ -21,6 +21,7 @@ import {
   type Goal,
   type GoalProgress,
 } from '@/features/goals/model/goal';
+import { useAppForeground } from '@/features/sesh/hooks/use-app-foreground';
 import { useGoals } from '@/features/goals/state/goal-provider';
 import {
   createOpenEndedSeshPlan,
@@ -111,6 +112,10 @@ export function Sesh({
   const { recordCompletedSesh } = usePracticeHistoryActions();
   const { setLastSesh } = useUserProfileActions();
   const { notes } = useNotes();
+  // A foreground completion deliberately leaves `timerElapsedTransitionRef` unset so the chime is
+  // not played as a late surprise on return. It lands on the same deadline, hence the same record
+  // id, as the interval path, so the dedupe below still records it once.
+  useAppForeground((now) => dispatch({ type: 'appForegrounded', now }));
   const recordedSummaryId = useRef<string | undefined>(undefined);
   const timerCuePlayer = useAudioPlayer(require('@/assets/audio/sesh-timer-complete.wav'));
   const timerElapsedTransitionRef = useRef(false);
