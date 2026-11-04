@@ -4,6 +4,16 @@ Completed entries move here from `TASKS.md`'s `Backlog`, in the same commit that
 
 Entries keep their content as it was at completion. Don't retroactively edit a description or exit criteria after the fact; if something about a completed task turns out to be wrong or misleading, note that in a new entry or in code, not by rewriting history here.
 
+### [T297] Cache Jest and Metro transforms for the CI verify job
+
+- **Area:** Tooling / CI
+- **Priority:** Medium
+- **Status:** Done
+- **Planning:** Implementer
+- **Description:** The `verify` CI job took about 6 minutes, mostly a cold Jest run (2m13s) and a cold web export (2m18s). Restore Jest and Metro transform caches in `verify`, and add a `build-cache.yml` workflow on pushes to `development` that saves them, because PR runs can only restore caches from their own ref, their base branch or the default branch.
+- **Exit criteria:** `verify` restores the caches without changing what it checks; `build-cache.yml` saves them on `development` pushes with pinned actions and `contents: read`; PR runs never save.
+- **Notes:** Owner request 2026-11-04. Measured locally: Jest cold 77s, warm 53s. Parallel Jest workers (cold 29s) were tried and dropped: one run of five had a single intermittent failure that was not reproduced. The CI speedup can only be measured once a `development` push has warmed the cache, so the first task PR after this lands is the real check. `yarn test:workflow` has one failure that already exists on `development` (`config.test.mjs` expects two ticket agents; `ticket-planner-burn` was added since); not addressed here.
+
 ### [T296] Clear the failing dependency-audit CI gate
 
 - **Area:** Security / dependencies
