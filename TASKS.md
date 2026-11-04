@@ -137,22 +137,115 @@ _Native execution prerequisite: the simulator-enablement changes described in [o
 
 - **Area:** Shared UI / screen layout
 - **Priority:** High
-- **Status:** Not started
-- **Planning:** Required
+- **Status:** Blocked — split into T284.1–T284.3 on 2026-11-02 because simulator verification of every screen did not fit one agent run.
 - **Description:** Establish a shared iOS tab/safe-area clearance convention and apply it to tab-hosted scroll content. The floating tab bar visibly overlaps Sesh choices/completion actions, custom-trick Save, Home footer content and Stats rows; several screens reserve only 24 points below content.
-- **Exit criteria:** On small and large iPhone simulators, at maximum scroll every final row and primary action in Home, Sesh setup/completion, Stats, Tricks, custom forms, notes and goals is fully above the tab bar and tappable; focused layout coverage protects the shared convention, web layout remains unchanged, and full typechecking passes.
-- **Notes:** Source: DESLOPPIFY.md D023. Inspect the installed Expo Router native-tab behavior before choosing insets; avoid scattered fixed spacers or duplicating automatic safe-area padding. This ticket covers keyboard-closed layout; T044 owns keyboard-visible behavior. Audit automation's failed scroll attempts did not establish that user scrolling is broken. Native lifecycle/providers/persistence remain unchanged.
+- **Notes:** Umbrella only — complete T284.1, T284.2 and T284.3. Source: DESLOPPIFY.md D023. Keyboard-visible behavior belongs to T044. Native lifecycle/providers/persistence remain unchanged.
+- **Platform scope:** Acceptance for this ticket runs on the iOS Simulator. Android and physical-device checks are not part of these exit criteria; record them as not run rather than passed.
 
+### [T284.1] Establish the shared native tab-clearance convention
+
+- **Area:** Shared UI / screen layout
+- **Priority:** High (inherited from parent T284)
+- **Status:** Not started
+- **Planning:** Implementer
+- **Description:** Land the shared clearance convention in `Screen` and verify it on Tricks and the custom-trick and custom-sequence forms. Start from the unverified work in commit `f5e9a95` on `task/T284-reserve-native-tab-clearance-for-scroll` (`withNativeTabClearance`, `screen.test.tsx`, Profile padding, removed `BottomTabInset`).
+- **Exit criteria:** On small and large simulators at maximum scroll, the last Tricks row and the Save and Cancel actions of the new-custom-trick, edit-custom-trick and custom-sequence forms are fully above the tab bar and tappable; focused tests protect the convention; web layout is unchanged at 320 px; full typechecking passes.
+- **Dependencies:** None.
+- **Notes:** Small = iPhone 17e, large = iPhone 18 Pro Max (iOS 27.0). The earlier run observed that Home and Sesh setup already cleared the bar before the change, and that Tricks showed the overlap. Avoid scattered fixed spacers or duplicated automatic safe-area padding.
+- **Platform scope:** Acceptance for this ticket runs on the iOS Simulator. Android and physical-device checks are not part of these exit criteria; record them as not run rather than passed.
+
+### [T284.2] Verify tab clearance on Home, Sesh and Stats
+
+- **Area:** Shared UI / screen layout
+- **Priority:** High (inherited from parent T284)
+- **Status:** Not started
+- **Planning:** Implementer
+- **Description:** Apply or confirm the T284.1 convention on Home, Sesh setup, Sesh completion summary, multi-trick wrap-up and Stats (list and detail).
+- **Exit criteria:** On small and large simulators at maximum scroll, the final row and primary action of each screen named above is fully above the tab bar and tappable, with at least three completed practice records present so Stats and the completion summary have rows to scroll; web layout is unchanged.
+- **Dependencies:** T284.1.
+- **Notes:** Small = iPhone 17e, large = iPhone 18 Pro Max (iOS 27.0). Create the practice records on the simulator through ordinary Seshes; do not delete owner data. `CenteredPanel`'s 140 px bottom padding is shared with web.
+- **Platform scope:** Acceptance for this ticket runs on the iOS Simulator. Android and physical-device checks are not part of these exit criteria; record them as not run rather than passed.
+
+### [T284.3] Verify tab clearance on notes and goals
+
+- **Area:** Shared UI / screen layout
+- **Priority:** Medium (inherited from parent T284)
+- **Status:** Not started
+- **Planning:** Implementer
+- **Description:** Apply or confirm the T284.1 convention on populated all-notes, trick-notes, all-goals and trick-goals screens, including the goal actions footer.
+- **Exit criteria:** On small and large simulators, with enough notes and goals to scroll, the final item and primary action of each screen named above is fully above the tab bar and tappable at maximum scroll; web layout is unchanged.
+- **Dependencies:** T284.1.
+- **Notes:** Small = iPhone 17e, large = iPhone 18 Pro Max (iOS 27.0). Test notes and goals created during verification may stay on the simulator.
+- **Platform scope:** Acceptance for this ticket runs on the iOS Simulator. Android and physical-device checks are not part of these exit criteria; record them as not run rather than passed.
 
 ### [T289] Complete the interrupted iOS workflow audit
 
 - **Area:** iOS verification
 - **Priority:** Medium
+- **Status:** Blocked — split into T289.1–T289.5 on 2026-11-02 because the full matrix did not fit one agent run.
+- **Description:** Resume the hands-on workflow matrix in DESLOPPIFY.md and cover the flows left as source-only or unverified.
+- **Notes:** Umbrella only — complete T289.1–T289.5. A partial run record (commit `a975eb7` on `task/T289-complete-the-interrupted-ios-workflow`) covers part of T283, T285, T286, Open-ended Sesh, Profile account copy and Five tabs on iPhone 17e; children may carry its evidence into DESLOPPIFY.md rather than repeat it. Timed lifecycle stays with T043, keyboard with T044, native accounts with S040. Exclude Android, physical devices, visualization sandboxes and destructive changes to owner data.
+- **Platform scope:** Acceptance for this ticket runs on the iOS Simulator. Android and physical-device checks are not part of these exit criteria; record them as not run rather than passed.
+
+### [T289.1] Re-check merged T283, T285 and T286 on iOS
+
+- **Area:** iOS verification
+- **Priority:** Medium (inherited from parent T289)
 - **Status:** Not started
-- **Planning:** Required
-- **Description:** Resume the hands-on workflow matrix in DESLOPPIFY.md after restoring native computer-use access. Cover the flows left as source-only or unverified rather than interpreting the first successful native build as acceptance evidence.
-- **Exit criteria:** Every row of the existing iOS workflow matrix has a dated pass, reproduced finding with a task reference, or concrete blocked/deferred reason from simulator evidence; cover notes/goals, sequence creation/editing, multi-trick runs, Kentei assessment, Profile/theme/streak, laced/empty states, relaunch persistence and native accessibility checks, while account/service actions accurately reflect the guest-only scope. Record device/runtime and test data and leave no workflow marked passed solely from source inspection.
-- **Notes:** Source: DESLOPPIFY.md iOS workflow coverage, 2026-10-29. Documentation/verification only: write newly observed defects to Needs scoping instead of bundling fixes into this ticket. Timed lifecycle acceptance remains T043, keyboard acceptance T044, and hosted/native account support S040. Exclude Android, physical-device checks, intentional visualization sandboxes and destructive changes to owner data. Do not delete test data without the applicable authorization.
+- **Planning:** Implementer
+- **Description:** Give T283 (themed control foregrounds), T285 (trick directory rows) and T286 (Sesh celebration banners) their own matrix rows and check them against their archived exit criteria in TASKS_DONE.md.
+- **Exit criteria:** Each of the three rows is checked on both small and large simulators, including T283 on at least one non-default theme preset, T285 with a long custom trick name, and T286 with a personal-best or achieved-goal banner. Each named matrix row in DESLOPPIFY.md gets a dated pass, a reproduced finding written to Needs scoping, or a concrete blocked reason from simulator evidence, with device, runtime and test data recorded; nothing is marked passed from source inspection.
+- **Dependencies:** None.
+- **Notes:** Small = iPhone 17e, large = iPhone 18 Pro Max (iOS 27.0). Documentation/verification only — do not fix findings here. 
+- **Platform scope:** Acceptance for this ticket runs on the iOS Simulator. Android and physical-device checks are not part of these exit criteria; record them as not run rather than passed.
+
+### [T289.2] Audit notes, goals and custom tricks on iOS
+
+- **Area:** iOS verification
+- **Priority:** Medium (inherited from parent T289)
+- **Status:** Not started
+- **Planning:** Implementer
+- **Description:** Cover the Notes, Goals, Custom standalone, Custom editing/deletion and Custom sequence matrix rows.
+- **Exit criteria:** Notes add/edit/delete, goal count and time creation and completion, custom trick edit and delete confirmation, and custom sequence create, reorder and edit are each exercised on the small simulator, with layout spot-checked on the large one. Each named matrix row in DESLOPPIFY.md gets a dated pass, a reproduced finding written to Needs scoping, or a concrete blocked reason from simulator evidence, with device, runtime and test data recorded; nothing is marked passed from source inspection.
+- **Dependencies:** None.
+- **Notes:** Small = iPhone 17e, large = iPhone 18 Pro Max (iOS 27.0). Documentation/verification only — do not fix findings here. Keyboard-visible acceptance is T044's.
+- **Platform scope:** Acceptance for this ticket runs on the iOS Simulator. Android and physical-device checks are not part of these exit criteria; record them as not run rather than passed.
+
+### [T289.3] Audit multi-trick runs and Kentei assessment on iOS
+
+- **Area:** iOS verification
+- **Priority:** Medium (inherited from parent T289)
+- **Status:** Not started
+- **Planning:** Implementer
+- **Description:** Cover the Multi-trick and Kentei assessment matrix rows.
+- **Exit criteria:** A full multi-trick run (first-lace advance, manual next, pause, early end, wrap-up) and a Kentei assessment from rank (skip, end, promotion) are each exercised on the small simulator, with layout spot-checked on the large one. Each named matrix row in DESLOPPIFY.md gets a dated pass, a reproduced finding written to Needs scoping, or a concrete blocked reason from simulator evidence, with device, runtime and test data recorded; nothing is marked passed from source inspection.
+- **Dependencies:** None.
+- **Notes:** Small = iPhone 17e, large = iPhone 18 Pro Max (iOS 27.0). Documentation/verification only — do not fix findings here. Background/foreground behavior is T043's.
+- **Platform scope:** Acceptance for this ticket runs on the iOS Simulator. Android and physical-device checks are not part of these exit criteria; record them as not run rather than passed.
+
+### [T289.4] Audit onboarding, Home, Stats and Profile on iOS
+
+- **Area:** iOS verification
+- **Priority:** Medium (inherited from parent T289)
+- **Status:** Not started
+- **Planning:** Implementer
+- **Description:** Cover the Onboarding, Home, Stats, Practice list, Timed Sesh setup and Profile/theme matrix rows, including laced and empty states.
+- **Exit criteria:** Each named row is exercised on the small simulator and spot-checked on the large one, covering empty and populated Stats, Profile theme presets, colour gestures, reset and the streak setting. Each named matrix row in DESLOPPIFY.md gets a dated pass, a reproduced finding written to Needs scoping, or a concrete blocked reason from simulator evidence, with device, runtime and test data recorded; nothing is marked passed from source inspection.
+- **Dependencies:** None.
+- **Notes:** Small = iPhone 17e, large = iPhone 18 Pro Max (iOS 27.0). Documentation/verification only — do not fix findings here. 
+- **Platform scope:** Acceptance for this ticket runs on the iOS Simulator. Android and physical-device checks are not part of these exit criteria; record them as not run rather than passed.
+
+### [T289.5] Audit relaunch, accessibility and remaining rows on iOS
+
+- **Area:** iOS verification
+- **Priority:** Medium (inherited from parent T289)
+- **Status:** Not started
+- **Planning:** Implementer
+- **Description:** Cover the Relaunch/offline/lifecycle, Accessibility/device matrix, Five tabs, Account/callbacks/sync, Feedback and Sandbox routes matrix rows.
+- **Exit criteria:** Cold relaunch keeps onboarding, history, custom tricks, notes and goals; VoiceOver labels on tabs and key controls, a large Dynamic Type size and Reduce Motion are each checked on at least one simulator; account and feedback rows reflect the guest-only scope. Each named matrix row in DESLOPPIFY.md gets a dated pass, a reproduced finding written to Needs scoping, or a concrete blocked reason from simulator evidence, with device, runtime and test data recorded; nothing is marked passed from source inspection.
+- **Dependencies:** None.
+- **Notes:** Small = iPhone 17e, large = iPhone 18 Pro Max (iOS 27.0). Documentation/verification only — do not fix findings here. Run after T289.1–T289.4 so relaunch checks persisted data they created.
+- **Platform scope:** Acceptance for this ticket runs on the iOS Simulator. Android and physical-device checks are not part of these exit criteria; record them as not run rather than passed.
 
 ### [T043] Harden active Sesh behavior across app backgrounding
 
