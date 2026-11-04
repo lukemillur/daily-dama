@@ -96,7 +96,7 @@ Run cleanup on the planner's `WORKTREE` path (step 4) before moving on.
 
 ### 3. Implement
 
-Post `T0NN: implementing…`, then invoke `ticket-implementer` (`subagent_type: "ticket-implementer"`, `isolation: "worktree"`, `run_in_background: false`) with the task entry, the branch, and either the plan **file path** (never the plan text — it reads the file itself) or `PLANNING: implementer`.
+Post `T0NN: implementing…`, then invoke `ticket-implementer` (`subagent_type: "ticket-implementer"`, `isolation: "worktree"`, `run_in_background: false`) with the task entry, the branch, and either the plan **file path** (never the plan text — it reads the file itself) or `PLANNING: implementer`. Mobile task: add `First attach the iOS Simulator panel` (Android-specific: `First open the Android emulator`).
 
 - `RESULT.status: blocked` → post `T0NN: blocked during implementation — <reason>`; cycle ends `blocked`.
 - `RESULT.status: blocked-at-merge` → the code is done and the PR is open; only the merge was refused. Post `T0NN: blocked at merge (PR <URL>) — <the exact rejection>`; cycle ends `blocked`. **Do not attempt the merge yourself, with any flags.** The implementer is required to stop rather than force it, and you inherit that boundary. Diagnosing the underlying cause is a separate task, not part of finishing this cycle.
