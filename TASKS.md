@@ -137,7 +137,7 @@ _Native execution prerequisite: the simulator-enablement changes described in [o
 
 - **Area:** Navigation
 - **Priority:** High
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** On iOS and Android, replace the floating Expo Router `NativeTabs` bar with a fixed, full-width bottom tab bar (for example Expo Router's JS `Tabs`). The bar follows the saved app theme rather than the system light/dark setting. Web keeps its current navigation.
 - **Exit criteria:** On small and large iPhone simulators the five tabs sit in a fixed bar at the bottom edge with no content scrolling underneath it; each tab keeps its T042 icon in selected and unselected states; the bar's background, icon and label colors change when the app theme preset changes, including with system dark appearance on; web navigation and its 320 px fit are unchanged; focused tests cover the platform split; full typechecking passes.
