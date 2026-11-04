@@ -147,7 +147,7 @@ _Native execution prerequisite: the simulator-enablement changes described in [o
 
 - **Area:** Shared UI / screen layout
 - **Priority:** Medium (inherited from parent T284)
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Implementer
 - **Description:** Apply or confirm the T284.1 convention on populated all-notes, trick-notes, all-goals and trick-goals screens, including the goal actions footer.
 - **Exit criteria:** On small and large simulators, with enough notes and goals to scroll, the final item and primary action of each screen named above is fully above the tab bar and tappable at maximum scroll; web layout is unchanged.
