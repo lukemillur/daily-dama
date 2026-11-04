@@ -13,6 +13,19 @@ Entries keep their content as it was at completion. Don't retroactively edit a d
 - **Notes:** Umbrella only — complete T284.1, T284.2 and T284.3. Source: DESLOPPIFY.md D023. Keyboard-visible behavior belongs to T044. Native lifecycle/providers/persistence remain unchanged.
 - **Platform scope:** Acceptance for this ticket runs on the iOS Simulator. Android and physical-device checks are not part of these exit criteria; record them as not run rather than passed.
 
+### [T289.2] Audit notes, goals and custom tricks on iOS
+
+- **Area:** iOS verification
+- **Priority:** Medium (inherited from parent T289)
+- **Status:** Done
+- **Planning:** Implementer
+- **Description:** Cover the Notes, Goals, Custom standalone, Custom editing/deletion and Custom sequence matrix rows.
+- **Exit criteria:** Notes add/edit/delete, goal count and time creation and completion, custom trick edit and delete confirmation, and custom sequence create, reorder and edit are each exercised on the small simulator, with layout spot-checked on the large one. Each named matrix row in DESLOPPIFY.md gets a dated pass, a reproduced finding written to Needs scoping, or a concrete blocked reason from simulator evidence, with device, runtime and test data recorded; nothing is marked passed from source inspection.
+- **Dependencies:** None.
+- **Notes:** Small = iPhone 17e, large = iPhone 18 Pro Max (iOS 27.0). Documentation/verification only — do not fix findings here. Keyboard-visible acceptance is T044's.
+- **Platform scope:** Acceptance for this ticket runs on the iOS Simulator. Android and physical-device checks are not part of these exit criteria; record them as not run rather than passed.
+- **Outcome:** Documentation only. Rows updated in DESLOPPIFY.md with 2026-11-04 evidence. iPhone 17e (iOS 27.0): Notes add, multiline edit, edit-cancel, delete-cancel and delete-confirm; Goals count and time creation, count goal completed via a real open-ended Sesh and shown Achieved, delete-cancel and delete-confirm; custom standalone create (rank 3 radio picker); custom edit (name, rank 5 persisted), reference-aware delete copy, Keep and Delete; custom sequence create, reorder, existing-trick add, edit and rename. iPhone 18 Pro Max (iOS 27.0): layout spot-check of all notes, all goals, new sequence, edit standalone and delete confirmation on existing data. Not run: unranked standalone, unsaved-draft outcome, goal and sequence validation feedback, Sesh note prompt, sequence rendering in Sesh, relaunch, Android, physical device. No reproduced finding, so no Needs scoping section. Test data left: two Pull up spike goals and one Big cup Sesh record on the 17e.
+
 ### [T284.3] Verify tab clearance on notes and goals
 
 - **Area:** Shared UI / screen layout

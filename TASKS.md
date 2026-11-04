@@ -154,18 +154,6 @@ _Native execution prerequisite: the simulator-enablement changes described in [o
 - **Notes:** Small = iPhone 17e, large = iPhone 18 Pro Max (iOS 27.0). Documentation/verification only — do not fix findings here. 
 - **Platform scope:** Acceptance for this ticket runs on the iOS Simulator. Android and physical-device checks are not part of these exit criteria; record them as not run rather than passed.
 
-### [T289.2] Audit notes, goals and custom tricks on iOS
-
-- **Area:** iOS verification
-- **Priority:** Medium (inherited from parent T289)
-- **Status:** Not started
-- **Planning:** Implementer
-- **Description:** Cover the Notes, Goals, Custom standalone, Custom editing/deletion and Custom sequence matrix rows.
-- **Exit criteria:** Notes add/edit/delete, goal count and time creation and completion, custom trick edit and delete confirmation, and custom sequence create, reorder and edit are each exercised on the small simulator, with layout spot-checked on the large one. Each named matrix row in DESLOPPIFY.md gets a dated pass, a reproduced finding written to Needs scoping, or a concrete blocked reason from simulator evidence, with device, runtime and test data recorded; nothing is marked passed from source inspection.
-- **Dependencies:** None.
-- **Notes:** Small = iPhone 17e, large = iPhone 18 Pro Max (iOS 27.0). Documentation/verification only — do not fix findings here. Keyboard-visible acceptance is T044's.
-- **Platform scope:** Acceptance for this ticket runs on the iOS Simulator. Android and physical-device checks are not part of these exit criteria; record them as not run rather than passed.
-
 ### [T289.3] Audit multi-trick runs and Kentei assessment on iOS
 
 - **Area:** iOS verification
