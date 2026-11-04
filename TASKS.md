@@ -137,7 +137,7 @@ _Native execution prerequisite: the simulator-enablement changes described in [o
 
 - **Area:** App shell
 - **Priority:** Medium
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Implementer
 - **Description:** Configure a branded splash screen on iOS and Android with `expo-splash-screen`: the Daily Dama wordmark on the yellow brand background, held until persisted state has hydrated so no blank or half-loaded screen shows.
 - **Exit criteria:** On an iPhone simulator, cold launch shows the wordmark splash and then the first real screen with no white flash or partially hydrated UI; the dev client is rebuilt with the config change; web is unaffected; full typechecking passes.
