@@ -137,7 +137,7 @@ _Native execution prerequisite: the simulator-enablement changes described in [o
 
 - **Area:** Navigation
 - **Priority:** High
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** On iOS and Android, show a native stack header with a top-left back control on every nested screen (for example trick goals, trick notes, laced tricks and other screens under Tricks), and hide in-page "Back to …" links on native where the header replaces them. Web keeps its in-page links.
 - **Exit criteria:** A listed inventory of every nested native route exists in the ticket's PR; on small and large iPhone simulators each one shows a header whose back control returns to its parent; the header follows the saved app theme, including with system dark appearance on; in-page back links are hidden on native and still shown on web; focused tests cover the platform split; full typechecking passes.
