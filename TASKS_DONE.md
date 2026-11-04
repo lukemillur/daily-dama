@@ -4,6 +4,20 @@ Completed entries move here from `TASKS.md`'s `Backlog`, in the same commit that
 
 Entries keep their content as it was at completion. Don't retroactively edit a description or exit criteria after the fact; if something about a completed task turns out to be wrong or misleading, note that in a new entry or in code, not by rewriting history here.
 
+### [T284.1] Establish the shared native tab-clearance convention
+
+- **Area:** Shared UI / screen layout
+- **Priority:** High (inherited from parent T284)
+- **Status:** Done
+- **Planning:** Implementer
+- **Description:** Land the shared clearance convention in `Screen` and verify it on Tricks and the custom-trick and custom-sequence forms. Start from the unverified work in commit `f5e9a95` on `task/T284-reserve-native-tab-clearance-for-scroll` (`withNativeTabClearance`, `screen.test.tsx`, Profile padding, removed `BottomTabInset`).
+- **Exit criteria:** On small and large simulators at maximum scroll, the last Tricks row and the Save and Cancel actions of the new-custom-trick, edit-custom-trick and custom-sequence forms are fully above the tab bar and tappable; focused tests protect the convention; web layout is unchanged at 320 px; full typechecking passes.
+- **Dependencies:** T290.
+- **Notes:** T290 landed a fixed in-flow JS tab bar, so the floating-bar overlap this ticket assumed no longer exists; re-scope to confirming no clearance is needed and removing unused clearance work. Small = iPhone 17e, large = iPhone 18 Pro Max (iOS 27.0). The earlier run observed that Home and Sesh setup already cleared the bar before the change, and that Tricks showed the overlap. Avoid scattered fixed spacers or duplicated automatic safe-area padding.
+- **Platform scope:** Acceptance for this ticket runs on the iOS Simulator. Android and physical-device checks are not part of these exit criteria; record them as not run rather than passed.
+- **Outcome:** Re-scoped after T290 (in-flow JS tab bar): no shared clearance helper is needed, so `withNativeTabClearance` from `f5e9a95` was not landed. On iPhone 17e (small) and iPhone 18 Pro Max (large), iOS 27.0, at maximum scroll the last Tricks row clears the bar with generous space, and Save/Cancel of the new-trick form (both devices), the sequence form (17e) and the edit-trick form (18 Pro Max) sit fully above the bar; Save (18 Pro Max) and Cancel (17e) taps were exercised. The edit form on 17e and the sequence form on 18 Pro Max were not individually run (all forms share `FormScroll` and the same `Screen` edges). Removed the unused native spacer: Profile `paddingBottom` is now 120 on web (footer nav is absolutely positioned) and 24 on native, checked at max scroll on 18 Pro Max only. Added `Screen` tests documenting that tab screens get no bottom edge. Web layout unchanged by construction (the web branch keeps the same value); no browser measurement at 320 px was run. `CenteredContent`'s 120 padding was left alone (not shown to be a native spacer). Android and physical device not run. T284.2/T284.3 should expect no clearance change either, and only confirm.
+
+
 ### [T293] Add a wordmark splash screen
 
 - **Area:** App shell

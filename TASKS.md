@@ -142,17 +142,6 @@ _Native execution prerequisite: the simulator-enablement changes described in [o
 - **Notes:** Umbrella only — complete T284.1, T284.2 and T284.3. Source: DESLOPPIFY.md D023. Keyboard-visible behavior belongs to T044. Native lifecycle/providers/persistence remain unchanged.
 - **Platform scope:** Acceptance for this ticket runs on the iOS Simulator. Android and physical-device checks are not part of these exit criteria; record them as not run rather than passed.
 
-### [T284.1] Establish the shared native tab-clearance convention
-
-- **Area:** Shared UI / screen layout
-- **Priority:** High (inherited from parent T284)
-- **Status:** In progress
-- **Planning:** Implementer
-- **Description:** Land the shared clearance convention in `Screen` and verify it on Tricks and the custom-trick and custom-sequence forms. Start from the unverified work in commit `f5e9a95` on `task/T284-reserve-native-tab-clearance-for-scroll` (`withNativeTabClearance`, `screen.test.tsx`, Profile padding, removed `BottomTabInset`).
-- **Exit criteria:** On small and large simulators at maximum scroll, the last Tricks row and the Save and Cancel actions of the new-custom-trick, edit-custom-trick and custom-sequence forms are fully above the tab bar and tappable; focused tests protect the convention; web layout is unchanged at 320 px; full typechecking passes.
-- **Dependencies:** T290.
-- **Notes:** T290 landed a fixed in-flow JS tab bar, so the floating-bar overlap this ticket assumed no longer exists; re-scope to confirming no clearance is needed and removing unused clearance work. Small = iPhone 17e, large = iPhone 18 Pro Max (iOS 27.0). The earlier run observed that Home and Sesh setup already cleared the bar before the change, and that Tricks showed the overlap. Avoid scattered fixed spacers or duplicated automatic safe-area padding.
-- **Platform scope:** Acceptance for this ticket runs on the iOS Simulator. Android and physical-device checks are not part of these exit criteria; record them as not run rather than passed.
 
 ### [T284.2] Verify tab clearance on Home, Sesh and Stats
 

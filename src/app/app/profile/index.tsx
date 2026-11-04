@@ -35,7 +35,9 @@ export default function ProfileScreen() {
   return (
     <Screen edges={["top", "left", "right"]} includeWebHeaderInset={false}>
       <ProfileScroll
-        contentContainerStyle={{ paddingBottom: 120 }}
+        // Web's footer nav is absolutely positioned over the scene and needs the larger spacer.
+        // Native's in-flow tab bar already reserves its own space, so only breathing room is needed.
+        contentContainerStyle={{ paddingBottom: Platform.OS === "web" ? 120 : 24 }}
       >
         <Content>
           <Eyebrow>Your profile</Eyebrow>
