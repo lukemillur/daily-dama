@@ -26,6 +26,20 @@ Entries keep their content as it was at completion. Don't retroactively edit a d
 - **Platform scope:** Activated for iOS Simulator on 2026-10-29. Android and physical-device verification remain deferred; record those limits without claiming they passed. Completion: all five native tabs now carry distinct SF Symbols (house, timer, list.bullet.rectangle, chart.bar, person.crop.circle; filled variants when selected where one exists) with `iconColor` matching the label states; `TAB_ICON_SYMBOLS` is covered by `src/components/app-tabs.test.tsx`. iOS Simulator evidence: iPhone 18 Pro, iOS 27.0, dev client against this branch's Metro; tapped Home, Sesh, Tricks, Stats and Profile in light appearance and each showed its icon and label unclipped with the selected pill; dark appearance showed white icons and labels legible on the dark tab bar. Dark system appearance does not follow the saved app theme (tab colors use `Colors` by system scheme, screens use the resolved theme); left unchanged as out of scope. Small-device (iPhone 17e) check NOT run: simulator access was not granted. Web navigation files untouched. Android and physical-device checks not run.
 
 
+### [T290] Replace the floating native tab bar with a fixed bottom tab bar
+
+- **Area:** Navigation
+- **Priority:** High
+- **Status:** Done
+- **Planning:** Required
+- **Description:** On iOS and Android, replace the floating Expo Router `NativeTabs` bar with a fixed, full-width bottom tab bar (for example Expo Router's JS `Tabs`). The bar follows the saved app theme rather than the system light/dark setting. Web keeps its current navigation.
+- **Exit criteria:** On small and large iPhone simulators the five tabs sit in a fixed bar at the bottom edge with no content scrolling underneath it; each tab keeps its T042 icon in selected and unselected states; the bar's background, icon and label colors change when the app theme preset changes, including with system dark appearance on; web navigation and its 320 px fit are unchanged; focused tests cover the platform split; full typechecking passes.
+- **Dependencies:** None.
+- **Notes:** Owner request 2026-11-04: the floating bar does not feel right. Fixes the observed mismatch where the native tab bar followed system appearance while screens followed the app theme. Carry the T042 SF Symbols across (e.g. `expo-symbols`). Once this lands, re-scope T284.1–T284.3, which assume a floating bar that overlaps content.
+- **Platform scope:** Acceptance for this ticket runs on the iOS Simulator. Android and physical-device checks are not part of these exit criteria; record them as not run rather than passed.
+- **Completion:** Native `app-tabs.tsx` now uses Expo Router JS `Tabs` (fixed, opaque, in-flow bar) with SF Symbols via `expo-symbols`; colors come from the saved app theme through `useResolvedTheme`. Verified on iPhone 18 Pro (iOS 27.0, system Dark Appearance on, theme switched Blue to Raw), iPhone 17e and iPhone 18 Pro Max. Android and physical device: not run.
+
+
 ### [T288] Withhold unsupported account promises from the native guest experience
 
 - **Area:** Guest account presentation

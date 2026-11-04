@@ -1,14 +1,14 @@
-import { NativeTabs } from 'expo-router/unstable-native-tabs';
-import type { SFSymbol } from 'sf-symbols-typescript';
+import { Tabs } from 'expo-router';
+import { SymbolView, type SFSymbol } from 'expo-symbols';
 
-import { Colors } from '@/constants/theme';
 import { useUserProfile } from '@/features/profile/state/user-profile-provider';
-import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useResolvedTheme, type ResolvedTheme } from '@/features/profile/state/use-resolved-theme';
+import { blendHexColors } from '@/shared/color/blend';
 
 type TabRoute = 'home' | 'sesh' | 'tricks' | 'stats' | 'profile';
 
-// iOS SF Symbols are tinted by the system. Every route needs a distinct default symbol;
-// `timer` has no filled variant, so Sesh reuses it when selected.
+// Every route needs a distinct default symbol; `timer` has no filled variant, so Sesh reuses it
+// when selected.
 export const TAB_ICON_SYMBOLS: Record<TabRoute, { default: SFSymbol; selected: SFSymbol }> = {
   home: { default: 'house', selected: 'house.fill' },
   sesh: { default: 'timer', selected: 'timer' },
@@ -17,48 +17,63 @@ export const TAB_ICON_SYMBOLS: Record<TabRoute, { default: SFSymbol; selected: S
   profile: { default: 'person.crop.circle', selected: 'person.crop.circle.fill' },
 };
 
+const TAB_ROUTES: readonly { name: TabRoute; title: string }[] = [
+  { name: 'home', title: 'Home' },
+  { name: 'sesh', title: 'Sesh' },
+  { name: 'tricks', title: 'Tricks' },
+  { name: 'stats', title: 'Stats' },
+  { name: 'profile', title: 'Profile' },
+];
+
+/**
+ * Bar colors come from the saved app theme, never the system appearance, so the bar always
+ * matches the screens above it.
+ */
+export function deriveTabBarColors(theme: ResolvedTheme) {
+  return {
+    background: theme.background,
+    border: blendHexColors(theme.text, theme.background, 0.2),
+    active: theme.text,
+    inactive: theme.textMuted,
+  };
+}
+
 export default function AppTabs() {
-  const scheme = useColorScheme();
-  const colors = Colors[scheme === 'unspecified' ? 'light' : scheme];
+  const theme = useResolvedTheme();
+  const colors = deriveTabBarColors(theme);
   const profile = useUserProfile();
   const hasCompletedOnboarding = profile.hasCompletedOnboarding && profile.kenteiRank !== undefined;
 
   return (
-    <NativeTabs
-      hidden={!hasCompletedOnboarding}
-      backgroundColor={colors.background}
-      indicatorColor={colors.backgroundElement}
-      iconColor={{ default: colors.textSecondary, selected: colors.text }}
-      labelStyle={{ selected: { color: colors.text } }}>
-      <NativeTabs.Trigger name="home">
-        <NativeTabs.Trigger.Label>Home</NativeTabs.Trigger.Label>
-        {/* `src` remains as the Android fallback; iOS prefers `sf`. */}
-        <NativeTabs.Trigger.Icon
-          sf={TAB_ICON_SYMBOLS.home}
-          src={require('@/assets/images/tabIcons/home.png')}
-          renderingMode="template"
+    <Tabs
+      screenOptions={{
+        headerShown: false,
+        tabBarActiveTintColor: colors.active,
+        tabBarInactiveTintColor: colors.inactive,
+        // Opaque, in-flow bar: the scene sits above it, so content never scrolls underneath.
+        tabBarStyle: {
+          backgroundColor: colors.background,
+          borderTopColor: colors.border,
+          ...(hasCompletedOnboarding ? {} : { display: 'none' }),
+        },
+        sceneStyle: { backgroundColor: colors.background },
+      }}>
+      {TAB_ROUTES.map(({ name, title }) => (
+        <Tabs.Screen
+          key={name}
+          name={name}
+          options={{
+            title,
+            tabBarIcon: ({ color, focused }) => (
+              <SymbolView
+                name={focused ? TAB_ICON_SYMBOLS[name].selected : TAB_ICON_SYMBOLS[name].default}
+                tintColor={color}
+                size={24}
+              />
+            ),
+          }}
         />
-      </NativeTabs.Trigger>
-
-      <NativeTabs.Trigger hidden={!hasCompletedOnboarding} name="sesh">
-        <NativeTabs.Trigger.Label>Sesh</NativeTabs.Trigger.Label>
-        <NativeTabs.Trigger.Icon sf={TAB_ICON_SYMBOLS.sesh} />
-      </NativeTabs.Trigger>
-
-      <NativeTabs.Trigger hidden={!hasCompletedOnboarding} name="tricks">
-        <NativeTabs.Trigger.Label>Tricks</NativeTabs.Trigger.Label>
-        <NativeTabs.Trigger.Icon sf={TAB_ICON_SYMBOLS.tricks} />
-      </NativeTabs.Trigger>
-
-      <NativeTabs.Trigger hidden={!hasCompletedOnboarding} name="stats">
-        <NativeTabs.Trigger.Label>Stats</NativeTabs.Trigger.Label>
-        <NativeTabs.Trigger.Icon sf={TAB_ICON_SYMBOLS.stats} />
-      </NativeTabs.Trigger>
-
-      <NativeTabs.Trigger hidden={!hasCompletedOnboarding} name="profile">
-        <NativeTabs.Trigger.Label>Profile</NativeTabs.Trigger.Label>
-        <NativeTabs.Trigger.Icon sf={TAB_ICON_SYMBOLS.profile} />
-      </NativeTabs.Trigger>
-    </NativeTabs>
+      ))}
+    </Tabs>
   );
 }
