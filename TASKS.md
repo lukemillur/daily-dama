@@ -126,6 +126,8 @@ _Raw ideas land here — a name and a one-line description, nothing more. Discus
 - **Time-of-day success correlation** (Low) — surface whether the user lands more in morning vs. night seshes; what counts as a meaningful difference is undefined.
 - **Line generator** (Low) — random line of tricks; trick pool source (all / unlocked / selected) undecided.
 - **Collection management** (Low) — photos + metadata for physical kendama collection, with kendama-specific lace lists. Likely a new persistence domain; substantial scope on its own.
+- **T299 Assessment wrap-up stays in the Profile tab after Go to Home** (Low, from T289.3 audit) — on iPhone 17e iOS 27.0, finishing or ending a Kentei assessment and tapping Go to Home switches to Home, but returning to the Profile tab shows the old `Sesh complete` wrap-up again (reproduced three times: skip/end run, and the promotion run) until the Profile tab is tapped a second time. Open question: should Go to Home reset the Profile stack to its root?
+- **T300 Assessment Skip this rank link hidden by the tab bar** (Low, from T289.3 audit, related to T284/T290 clearance) — on iPhone 17e iOS 27.0, the active assessment screen for a trick with notes (Big cup) is not scrollable and the `Skip this rank` link sits partly under the tab bar (reproduced on two runs; hidden entirely in the second); a tap on the visible sliver still opened the skip preview. Open question: is bottom clearance for the assessment run screen part of T284's convention?
 
 ## Backlog
 
@@ -154,17 +156,6 @@ _Native execution prerequisite: the simulator-enablement changes described in [o
 - **Notes:** Small = iPhone 17e, large = iPhone 18 Pro Max (iOS 27.0). Documentation/verification only — do not fix findings here. 
 - **Platform scope:** Acceptance for this ticket runs on the iOS Simulator. Android and physical-device checks are not part of these exit criteria; record them as not run rather than passed.
 
-### [T289.3] Audit multi-trick runs and Kentei assessment on iOS
-
-- **Area:** iOS verification
-- **Priority:** Medium (inherited from parent T289)
-- **Status:** In progress
-- **Planning:** Implementer
-- **Description:** Cover the Multi-trick and Kentei assessment matrix rows.
-- **Exit criteria:** A full multi-trick run (first-lace advance, manual next, pause, early end, wrap-up) and a Kentei assessment from rank (skip, end, promotion) are each exercised on the small simulator, with layout spot-checked on the large one. Each named matrix row in DESLOPPIFY.md gets a dated pass, a reproduced finding written to Needs scoping, or a concrete blocked reason from simulator evidence, with device, runtime and test data recorded; nothing is marked passed from source inspection.
-- **Dependencies:** None.
-- **Notes:** Small = iPhone 17e, large = iPhone 18 Pro Max (iOS 27.0). Documentation/verification only — do not fix findings here. Background/foreground behavior is T043's.
-- **Platform scope:** Acceptance for this ticket runs on the iOS Simulator. Android and physical-device checks are not part of these exit criteria; record them as not run rather than passed.
 
 ### [T289.4] Audit onboarding, Home, Stats and Profile on iOS
 
