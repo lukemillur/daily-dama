@@ -133,28 +133,6 @@ _iOS Simulator audit activation — 2026-10-29, explicitly requested by the owne
 
 _Native execution prerequisite: the simulator-enablement changes described in [outputs/ios-personal-build-setup.md](outputs/ios-personal-build-setup.md) are on `development`. The generated `/ios` project and local CocoaPods workaround are not committed, so a fresh checkout may need `yarn ios` (prebuild and pod install) first. Report a tooling failure as a prerequisite rather than a passed check._
 
-### [T284] Reserve native tab clearance for scroll content
-
-- **Area:** Shared UI / screen layout
-- **Priority:** High
-- **Status:** Blocked — split into T284.1–T284.3 on 2026-11-02 because simulator verification of every screen did not fit one agent run.
-- **Description:** Establish a shared iOS tab/safe-area clearance convention and apply it to tab-hosted scroll content. The (since replaced by T290) floating tab bar visibly overlapped Sesh choices/completion actions, custom-trick Save, Home footer content and Stats rows; several screens reserve only 24 points below content.
-- **Notes:** Umbrella only — complete T284.1, T284.2 and T284.3. Source: DESLOPPIFY.md D023. Keyboard-visible behavior belongs to T044. Native lifecycle/providers/persistence remain unchanged.
-- **Platform scope:** Acceptance for this ticket runs on the iOS Simulator. Android and physical-device checks are not part of these exit criteria; record them as not run rather than passed.
-
-
-### [T284.3] Verify tab clearance on notes and goals
-
-- **Area:** Shared UI / screen layout
-- **Priority:** Medium (inherited from parent T284)
-- **Status:** In progress
-- **Planning:** Implementer
-- **Description:** Apply or confirm the T284.1 convention on populated all-notes, trick-notes, all-goals and trick-goals screens, including the goal actions footer.
-- **Exit criteria:** On small and large simulators, with enough notes and goals to scroll, the final item and primary action of each screen named above is fully above the tab bar and tappable at maximum scroll; web layout is unchanged.
-- **Dependencies:** T284.1.
-- **Notes:** Small = iPhone 17e, large = iPhone 18 Pro Max (iOS 27.0). Test notes and goals created during verification may stay on the simulator.
-- **Platform scope:** Acceptance for this ticket runs on the iOS Simulator. Android and physical-device checks are not part of these exit criteria; record them as not run rather than passed.
-
 ### [T289] Complete the interrupted iOS workflow audit
 
 - **Area:** iOS verification
