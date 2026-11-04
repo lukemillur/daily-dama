@@ -15,6 +15,8 @@ jest.mock('expo-router', () => {
     useRouter: () => ({ replace: mockReplace }),
   };
 });
+// The release component schedules an animation frame that would outlive the test environment.
+jest.mock('@/shared/splash/splash-ready', () => ({ HideSplashWhenMounted: () => null }));
 jest.mock('@/features/profile/components/app-theme-provider', () => ({
   CachedAppThemeProvider: ({ children }: { children: React.ReactNode }) => children,
 }));

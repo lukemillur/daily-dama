@@ -2,6 +2,7 @@ import type { ErrorBoundaryProps } from "expo-router";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
 import { AppColors, Spacing } from "@/constants/theme";
+import { HideSplashWhenMounted } from "@/shared/splash/splash-ready";
 
 /**
  * Branded, route-level recovery surface for fatal render errors caught by Expo Router's
@@ -16,6 +17,7 @@ import { AppColors, Spacing } from "@/constants/theme";
 export function FatalErrorFallback({ error, retry }: ErrorBoundaryProps) {
   return (
     <View style={styles.container}>
+      <HideSplashWhenMounted />
       <Text accessibilityRole="header" style={styles.heading}>
         Daily Dama hit a snag
       </Text>

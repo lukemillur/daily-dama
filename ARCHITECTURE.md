@@ -155,7 +155,7 @@ The root layout composes navigation inside a sequence of providers:
 
 ```mermaid
 flowchart TD
-    Theme["Expo navigation ThemeProvider"] --> Splash["Animated splash overlay"]
+    Theme["Expo navigation ThemeProvider"] --> Splash["Web splash overlay (native: none)"]
     Splash --> Custom["CustomTrickProvider"]
     Custom --> Profile["UserProfileProvider"]
     Profile --> History["PracticeHistoryProvider"]
@@ -177,6 +177,8 @@ Each persistent domain provider withholds its children until hydration completes
 2. server-rendered or first-render UI cannot expose a partially hydrated application.
 
 The providers also skip the first persistence effect after restoration. The restore action changes reducer state, but that change is not immediately written back as though it were a user edit.
+
+On iOS and Android the OS-level splash (wordmark on the brand yellow, configured by the `expo-splash-screen` plugin in `app.json`) is held by `holdNativeSplash()` in the root layout and released by `<HideSplashWhenMounted />` (`src/shared/splash`). The hydration gates above stay the source of truth: the release component is mounted only where real UI already shows, namely inside the innermost provider in `src/app/app/_layout.tsx`, the Start screen branch of `NativeStartRoute`, `src/app/auth/_layout.tsx`, `feedback.tsx`, `account-deleted.tsx`, `IdentityProvider`'s refresh-failure recovery, and `FatalErrorFallback`. Release is idempotent, and `holdNativeSplash()` schedules an 8 second safety release so a route that forgets the component cannot strand the user. Web keeps its own overlay (`animated-icon.web.tsx`) and the helpers are no-ops there. Splash config changes need a native rebuild.
 
 One consequence is that nested providers currently hydrate serially: a child provider is not mounted until its parent renders children. With small local documents this is acceptable, but it is a startup-cost consideration if more domains or much larger data are added.
 
