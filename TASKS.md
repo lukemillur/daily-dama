@@ -158,7 +158,7 @@ _Native execution prerequisite: the simulator-enablement changes described in [o
 
 - **Area:** Shared UI / screen layout
 - **Priority:** High (inherited from parent T284)
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Implementer
 - **Description:** Apply or confirm the T284.1 convention on Home, Sesh setup, Sesh completion summary, multi-trick wrap-up and Stats (list and detail).
 - **Exit criteria:** On small and large simulators at maximum scroll, the final row and primary action of each screen named above is fully above the tab bar and tappable, with at least three completed practice records present so Stats and the completion summary have rows to scroll; web layout is unchanged.
