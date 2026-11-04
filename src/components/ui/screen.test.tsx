@@ -34,3 +34,16 @@ describe('Screen top inset under a native header', () => {
     expect(renderEdges(undefined, ['top', 'left', 'right'])).toEqual(['top', 'left', 'right']);
   });
 });
+
+describe('Screen bottom inset on tab-hosted screens', () => {
+  // The native tab bar is in-flow (the scene ends above it), so tab screens must not add a bottom
+  // edge or clearance of their own; doing so would double the space under the bar.
+  it('passes explicit tab-screen edges through without adding a bottom edge', () => {
+    expect(renderEdges(0, ['top', 'left', 'right'])).toEqual(['top', 'left', 'right']);
+    expect(renderEdges(0, ['left', 'right'])).toEqual(['left', 'right']);
+  });
+
+  it('does not add a bottom edge under a stack header either', () => {
+    expect(renderEdges(96, ['top', 'left', 'right'])).not.toContain('bottom');
+  });
+});
