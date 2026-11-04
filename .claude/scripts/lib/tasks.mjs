@@ -119,14 +119,20 @@ function parseEntries(lines, offset) {
     current.status = current.fields.Status ?? '';
     const body = current.entry;
     const deps = new Set();
-    const ranges = [];
-    for (const clauseMatch of body.matchAll(DEPENDS_ON_CLAUSE)) {
-      const clause = clauseMatch[1];
-      for (const rangeMatch of clause.matchAll(DEPENDS_ON_RANGE)) ranges.push([rangeMatch[1], rangeMatch[2]]);
+    const ranges = new Map();
+    const collect = (clause) => {
+      for (const rangeMatch of clause.matchAll(DEPENDS_ON_RANGE)) {
+        ranges.set(`${rangeMatch[1]}–${rangeMatch[2]}`, [rangeMatch[1], rangeMatch[2]]);
+      }
       for (const idMatch of clause.matchAll(TASK_ID)) deps.add(idMatch[0]);
-    }
+    };
+    for (const clauseMatch of body.matchAll(DEPENDS_ON_CLAUSE)) collect(clauseMatch[1]);
+    // The Dependencies field is the structured place scoped tickets declare
+    // prerequisites ("T284.1.", "None."), usually without "depends on" prose.
+    // Every id it names is a dependency.
+    if (current.fields.Dependencies) collect(current.fields.Dependencies);
     current.dependsOn = [...deps].filter((id) => id !== current.id);
-    current.dependsOnRanges = ranges.filter(([start, end]) => start !== current.id && end !== current.id);
+    current.dependsOnRanges = [...ranges.values()].filter(([start, end]) => start !== current.id && end !== current.id);
     tasks.push(current);
     current = null;
   };

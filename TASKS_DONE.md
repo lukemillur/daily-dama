@@ -4,6 +4,16 @@ Completed entries move here from `TASKS.md`'s `Backlog`, in the same commit that
 
 Entries keep their content as it was at completion. Don't retroactively edit a description or exit criteria after the fact; if something about a completed task turns out to be wrong or misleading, note that in a new entry or in code, not by rewriting history here.
 
+### [T298] Honor the Dependencies field in ticket selection
+
+- **Area:** Tooling / workflow
+- **Priority:** High
+- **Status:** Done
+- **Planning:** Implementer
+- **Description:** `ticket-claim.mjs` recognized dependencies only from "Depends on T0NN" prose and ignored the `**Dependencies:**` field that scoped tickets use, so T284.2 was claimed on 2026-11-04 before its dependency T284.1 had merged. Read the field as well.
+- **Exit criteria:** Parser tests cover a bare id, several ids, a range, `None.` and a field worded as a "Depends on" clause; a selection test proves a field-declared dependency blocks claiming until it is done; `yarn test:workflow` passes; a dry-run claim against the live backlog skips T284.2 and T284.3 while T284.1 is unmerged.
+- **Notes:** Owner request 2026-11-04. Also updated `config.test.mjs`, which still expected two ticket agents after `ticket-planner-burn` was added to the newTicket skill. Evidence: `yarn test:workflow` 140/140; dry run skipped T284.2 and T284.3 with reason `dependency` and selected T289.1. T284.2 had already been claimed by the bug; its branch is held and will be resumed after T284.1 merges.
+
 ### [T284.1] Establish the shared native tab-clearance convention
 
 - **Area:** Shared UI / screen layout
@@ -16,7 +26,6 @@ Entries keep their content as it was at completion. Don't retroactively edit a d
 - **Notes:** T290 landed a fixed in-flow JS tab bar, so the floating-bar overlap this ticket assumed no longer exists; re-scope to confirming no clearance is needed and removing unused clearance work. Small = iPhone 17e, large = iPhone 18 Pro Max (iOS 27.0). The earlier run observed that Home and Sesh setup already cleared the bar before the change, and that Tricks showed the overlap. Avoid scattered fixed spacers or duplicated automatic safe-area padding.
 - **Platform scope:** Acceptance for this ticket runs on the iOS Simulator. Android and physical-device checks are not part of these exit criteria; record them as not run rather than passed.
 - **Outcome:** Re-scoped after T290 (in-flow JS tab bar): no shared clearance helper is needed, so `withNativeTabClearance` from `f5e9a95` was not landed. On iPhone 17e (small) and iPhone 18 Pro Max (large), iOS 27.0, at maximum scroll the last Tricks row clears the bar with generous space, and Save/Cancel of the new-trick form (both devices), the sequence form (17e) and the edit-trick form (18 Pro Max) sit fully above the bar; Save (18 Pro Max) and Cancel (17e) taps were exercised. The edit form on 17e and the sequence form on 18 Pro Max were not individually run (all forms share `FormScroll` and the same `Screen` edges). Removed the unused native spacer: Profile `paddingBottom` is now 120 on web (footer nav is absolutely positioned) and 24 on native, checked at max scroll on 18 Pro Max only. Added `Screen` tests documenting that tab screens get no bottom edge. Web layout unchanged by construction (the web branch keeps the same value); no browser measurement at 320 px was run. `CenteredContent`'s 120 padding was left alone (not shown to be a native spacer). Android and physical device not run. T284.2/T284.3 should expect no clearance change either, and only confirm.
-
 
 ### [T293] Add a wordmark splash screen
 
