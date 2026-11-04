@@ -160,7 +160,7 @@ _Native execution prerequisite: the simulator-enablement changes described in [o
 
 - **Area:** iOS verification
 - **Priority:** Medium (inherited from parent T289)
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Implementer
 - **Description:** Cover the Onboarding, Home, Stats, Practice list, Timed Sesh setup and Profile/theme matrix rows, including laced and empty states.
 - **Exit criteria:** Each named row is exercised on the small simulator and spot-checked on the large one, covering empty and populated Stats, Profile theme presets, colour gestures, reset and the streak setting. Each named matrix row in DESLOPPIFY.md gets a dated pass, a reproduced finding written to Needs scoping, or a concrete blocked reason from simulator evidence, with device, runtime and test data recorded; nothing is marked passed from source inspection.
