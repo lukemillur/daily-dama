@@ -127,6 +127,7 @@ export type SeshAction =
   | { readonly type: 'seshResumed'; readonly now: number }
   | { readonly type: 'seshEnded'; readonly now: number }
   | { readonly type: 'timerElapsed'; readonly now: number }
+  | { readonly type: 'appForegrounded'; readonly now: number }
   | { readonly type: 'seshReset' }
   | { readonly type: 'directPracticeRequested'; readonly trickId: string };
 
@@ -195,11 +196,12 @@ export function seshReducer(state: SeshState, action: SeshAction): SeshState {
       if (state.status !== 'active') return state;
       return completeSesh(state, Math.max(state.startedAt, action.now));
     case 'timerElapsed':
-      if (state.status !== 'active' || state.plan.kind !== 'timed' || state.pausedAt !== undefined) {
-        return state;
-      }
-      if (action.now < state.startedAt + state.plan.durationMs + state.pausedDurationMs) return state;
-      return completeSesh(state, state.startedAt + state.plan.durationMs + state.pausedDurationMs);
+    // Foregrounding reconciles against timestamps only: JS timers are suspended in the background,
+    // so a due timed Sesh must complete at its logical deadline, not at the (later) foreground time.
+    // Open-ended elapsed time and paused non-accrual are derived from timestamps, so they need no
+    // state change here.
+    case 'appForegrounded':
+      return completeIfDeadlinePassed(state, action.now);
     case 'seshReset':
       return INITIAL_SESH_STATE;
     case 'directPracticeRequested':
@@ -207,6 +209,14 @@ export function seshReducer(state: SeshState, action: SeshAction): SeshState {
         ? { status: 'choosing', directPracticeTrickId: action.trickId }
         : state;
   }
+}
+
+function completeIfDeadlinePassed(state: SeshState, now: number): SeshState {
+  if (state.status !== 'active' || state.plan.kind !== 'timed' || state.pausedAt !== undefined) {
+    return state;
+  }
+  const deadline = state.startedAt + state.plan.durationMs + state.pausedDurationMs;
+  return now < deadline ? state : completeSesh(state, deadline);
 }
 
 function completeSesh(state: Extract<SeshState, { status: 'active' }>, requestedEndAt: number): SeshState {

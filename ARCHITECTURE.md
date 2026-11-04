@@ -399,6 +399,7 @@ stateDiagram-v2
     active --> active: seshPaused(now) / seshResumed(now)
     active --> completed: seshEnded(now)
     active --> completed: timerElapsed(now at deadline)
+    active --> completed: appForegrounded(now past deadline)
     completed --> choosing: seshReset
     completed --> countdown: repeat via trickSelected
 ```
@@ -417,6 +418,9 @@ Important timing rules include:
 - paused duration is excluded from active practice duration;
 - an overdue timer completes at the exact logical deadline, not at the late callback time;
 - manually ending early records actual active duration;
+- foreground reconciliation: JS timers are suspended while the app is backgrounded, so `useAppForeground` (`src/features/sesh/hooks/use-app-foreground.ts`) dispatches `appForegrounded(now)` when `AppState` becomes `active`. It shares the deadline logic of `timerElapsed`: an overdue unpaused timed Sesh completes at its logical deadline, and every other state returns the same reference. Open-ended elapsed time and paused non-accrual are derived from timestamps, so they need no transition; the app never auto-pauses or auto-resumes. No in-progress Sesh state is persisted;
+- a foreground completion lands on the same deadline, hence the same `createPracticeSessionRecordId`, as the interval path, so the recorded-id guard and history reducer record it once in either order. It does not play the completion chime on return;
+- in a multi-trick run, overdue time is not replayed onto later tricks: the overdue trick completes at its deadline and the next starts fresh at foreground time. The between-tricks countdown remains `setTimeout`-based and is not timestamp-reconciled;
 - an open-ended target gates the primary end action in UI but remains part of the plan model.
 
 The component layer owns effects and experience state around the reducer:

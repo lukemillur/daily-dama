@@ -4167,3 +4167,16 @@ Completed entries live in [TASKS_DONE.md](TASKS_DONE.md) — not part of the top
 - **Exit criteria:** A native-platform component test proves the unavailable state offers Back to Profile and cannot submit feedback, iOS Simulator navigation from Profile reaches that state and returns successfully, and existing web feedback submission/error tests plus full typechecking pass unchanged.
 - **Notes:** Source: DESLOPPIFY.md D021; source-confirmed, not simulator-reproduced during the interrupted audit. This scopes the smallest safe guest-only correction. Do not enable native Supabase, create a parallel transport, submit real feedback during verification, or claim native feedback delivery. Full native service support remains separate.
 - **Outcome:** Added `FeedbackUnavailableScreen` (title, explanation, Back to Profile, no fields or submit control) and made `src/app/feedback.tsx` render it when `Platform.OS !== 'web'`; `FeedbackScreen` and `submitFeedback` are unchanged. Verified on iPhone 18 Pro (iOS 27.0) Simulator: Profile > Send feedback link reaches the unavailable screen and Back to Profile returns to Profile; no feedback was submitted. Android and physical device not run.
+
+### [T043.1] Reconcile active Sesh state after foregrounding
+
+- **Area:** Sesh
+- **Priority:** High (inherited from parent T043)
+- **Status:** Done
+- **Planning:** Required
+- **Description:** Add explicit app-lifecycle coordination that reconciles timed, open-ended, paused, and multi-trick Sesh state against timestamps when the app returns to the foreground.
+- **Exit criteria:** Automated state-transition tests confirm an overdue timed Sesh completes at its logical deadline, an open-ended Sesh reports correct elapsed active time, a paused Sesh remains paused without accruing active duration, and a multi-trick run retains coherent current-trick state after a background/foreground cycle.
+- **Dependencies:** None.
+- **Notes:** Keep timestamp acquisition and app-state effects outside the reducer, passing explicit timestamps through actions. Do not add persisted in-progress Sesh state.
+- **Platform scope:** Acceptance for this ticket runs on the iOS Simulator. Android and physical-device checks are not part of these exit criteria; record them as not run rather than passed.
+- **Outcome:** Added the `appForegrounded(now)` reducer action (shares deadline logic with `timerElapsed`) and a `useAppForeground` hook wired into `Sesh` and `MultiTrickSesh`. Reducer, hook, Sesh and multi-trick tests cover overdue completion at the deadline, open-ended elapsed time, paused non-accrual, and exactly-once history recording in both interval/foreground orders. Foreground completions do not play the chime; multi-trick overdue time is not replayed onto later tricks. iOS Simulator and Android not run (simulator cycles owned by T043.2).

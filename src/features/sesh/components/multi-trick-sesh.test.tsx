@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
 import type { ReactNode } from 'react';
-import { Text } from 'react-native';
+import { AppState, Text } from 'react-native';
 import type { ReactTestRenderer } from 'react-test-renderer';
 import { act, create } from 'react-test-renderer';
 
@@ -1165,6 +1165,139 @@ describe('MultiTrickSesh per-trick duration', () => {
     for (let index = 0; index < TRICKS.length; index += 1) {
       expect(findByAccessibilityLabel(root, `session-${index}-lace-count:0`).length).toBeGreaterThan(0);
     }
+
+    act(() => {
+      root.unmount();
+    });
+  });
+});
+
+describe('MultiTrickSesh app foreground reconciliation (T043.1)', () => {
+  const TEN_MINUTES_MS = 10 * 60_000;
+
+  beforeEach(async () => {
+    await AsyncStorage.clear();
+    jest.useFakeTimers();
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  // Moves the clock without firing timers, which is what a suspended JS runtime looks like when
+  // the app returns to the foreground.
+  function foregroundAfter(gapMs: number) {
+    const calls = (AppState.addEventListener as jest.Mock).mock.calls;
+    const handler = calls[calls.length - 1][1] as (state: string) => void;
+    jest.setSystemTime(Date.now() + gapMs);
+    act(() => {
+      handler('active');
+    });
+  }
+
+  it('records an overdue timed trick once at its deadline and advances exactly one trick', async () => {
+    const root = await mountMultiTrickSesh({ plan: createTimedSeshPlan(1), onFinished: jest.fn() });
+    advanceThroughCountdown();
+
+    foregroundAfter(TEN_MINUTES_MS);
+
+    expect(findByAccessibilityLabel(root, 'session-count:1').length).toBeGreaterThan(0);
+    expect(findSessionDurationMs(root, 0)).toBe(60_000);
+    expect(findByText(root, TRICKS[1].name).length).toBeGreaterThan(0);
+
+    // The stale interval path and a repeated foreground must not record the same trick again.
+    act(() => {
+      jest.advanceTimersByTime(1_000);
+    });
+    foregroundAfter(0);
+    expect(findByAccessibilityLabel(root, 'session-count:1').length).toBeGreaterThan(0);
+
+    // The next trick starts fresh; the overdue gap is not replayed onto it.
+    advanceThroughCountdown();
+    expect(findByAccessibilityLabel(root, 'session-count:1').length).toBeGreaterThan(0);
+    expect(findByText(root, 'Sesh in progress').length).toBeGreaterThan(0);
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  it('records once when the interval completes the trick before the foreground does', async () => {
+    const root = await mountMultiTrickSesh({ plan: createTimedSeshPlan(1), onFinished: jest.fn() });
+    advanceThroughCountdown();
+
+    act(() => {
+      jest.advanceTimersByTime(60_000);
+    });
+    foregroundAfter(TEN_MINUTES_MS);
+
+    expect(findByAccessibilityLabel(root, 'session-count:1').length).toBeGreaterThan(0);
+    expect(findByText(root, TRICKS[1].name).length).toBeGreaterThan(0);
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  it('starts the next trick straight in active, with a fresh start, when countdowns are skipped', async () => {
+    const root = await mountMultiTrickSesh({
+      plan: createTimedSeshPlan(1),
+      onFinished: jest.fn(),
+      skipCountdownBetweenTricks: true,
+    });
+    advanceThroughCountdown();
+
+    foregroundAfter(TEN_MINUTES_MS);
+
+    expect(findByAccessibilityLabel(root, 'session-count:1').length).toBeGreaterThan(0);
+    expect(findByText(root, 'Sesh in progress').length).toBeGreaterThan(0);
+    expect(findByText(root, TRICKS[1].name).length).toBeGreaterThan(0);
+    expect(findByAccessibilityLabel(root, 'session-count:2')).toHaveLength(0);
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  it('keeps the current trick and counts the gap as active time for an open-ended run', async () => {
+    const root = await mountMultiTrickSesh({ onFinished: jest.fn() });
+    advanceThroughCountdown();
+
+    foregroundAfter(TEN_MINUTES_MS);
+
+    expect(findByText(root, TRICKS[0].name).length).toBeGreaterThan(0);
+    expect(findByAccessibilityLabel(root, 'session-count:0').length).toBeGreaterThan(0);
+
+    act(() => {
+      pressByVisibleText(root, 'End Sesh');
+    });
+    expect(findSessionDurationMs(root, 0)).toBe(LACE_INPUT_LOCKOUT_MS + TEN_MINUTES_MS);
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  it('keeps a paused run on the same trick without accruing the background gap', async () => {
+    const root = await mountMultiTrickSesh({ plan: createTimedSeshPlan(1), onFinished: jest.fn() });
+    advanceThroughCountdown();
+    act(() => {
+      pressByVisibleText(root, 'Pause Sesh');
+    });
+
+    foregroundAfter(TEN_MINUTES_MS);
+
+    expect(findByText(root, 'Sesh paused').length).toBeGreaterThan(0);
+    expect(findByText(root, TRICKS[0].name).length).toBeGreaterThan(0);
+    expect(findByAccessibilityLabel(root, 'session-count:0').length).toBeGreaterThan(0);
+
+    act(() => {
+      pressByVisibleText(root, 'Resume Sesh');
+    });
+    act(() => {
+      pressByVisibleText(root, 'End Sesh');
+    });
+    expect(findSessionDurationMs(root, 0)).toBe(LACE_INPUT_LOCKOUT_MS);
 
     act(() => {
       root.unmount();
