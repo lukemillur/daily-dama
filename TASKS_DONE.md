@@ -16,6 +16,16 @@ Entries keep their content as it was at completion. Don't retroactively edit a d
 - **Platform scope:** Activated for iOS Simulator on 2026-10-29. Android and physical-device verification remain deferred; record those limits without claiming they passed. Completion: all five native tabs now carry distinct SF Symbols (house, timer, list.bullet.rectangle, chart.bar, person.crop.circle; filled variants when selected where one exists) with `iconColor` matching the label states; `TAB_ICON_SYMBOLS` is covered by `src/components/app-tabs.test.tsx`. iOS Simulator evidence: iPhone 18 Pro, iOS 27.0, dev client against this branch's Metro; tapped Home, Sesh, Tricks, Stats and Profile in light appearance and each showed its icon and label unclipped with the selected pill; dark appearance showed white icons and labels legible on the dark tab bar. Dark system appearance does not follow the saved app theme (tab colors use `Colors` by system scheme, screens use the resolved theme); left unchanged as out of scope. Small-device (iPhone 17e) check NOT run: simulator access was not granted. Web navigation files untouched. Android and physical-device checks not run.
 
 
+### [T288] Withhold unsupported account promises from the native guest experience
+
+- **Area:** Guest account presentation
+- **Priority:** High
+- **Status:** Done
+- **Planning:** Required
+- **Description:** In the guest-only iOS build, remove or replace signup/signin prompts that imply native account backup already works. Cover Profile, landing account entry points and first/every-fifth-Sesh signup invitations; keep direct auth routes safely escapable with an accurate unavailable state.
+- **Exit criteria:** Native-platform presentation tests prove unsupported account CTAs and backup promises are withheld at each entry point, direct signup/signin/recovery routes explain unavailability and offer a safe return without executing auth actions, and simulator checks cover Profile, a completed guest Sesh and direct auth entry; web account/invitation tests and full typechecking pass.
+- **Notes:** Source: DESLOPPIFY.md S040 observation. This is temporary guest-only presentation, not promotion/implementation of the full Proposed S040 story. Preserve the native client guard, guest data and all web account behavior. Do not introduce SecureStore, native callbacks, identity transitions or cloud synchronization here; those require separate scoping and architecture approval. No test account creation or email sending is required.
+
 ### [T286] Contain Sesh celebration banners on phone screens
 
 - **Area:** Sesh / celebration presentation
@@ -3940,3 +3950,14 @@ Completed entries live in [TASKS_DONE.md](TASKS_DONE.md) — not part of the top
 - **Exit criteria:** Tests characterize the observed blue theme and existing presets, proving every affected control foreground reaches at least 4.5:1 against its actual surface in enabled/selected states; iOS Simulator inspection confirms primary buttons, selected Sesh format, Laced count and Stats values are readable, and existing web theme behavior passes relevant tests and full typechecking.
 - **Notes:** Source: DESLOPPIFY.md D022. Keep saved color preferences and persistence contracts unchanged; add semantic foreground roles rather than forbidding custom accent colors. Disabled treatment must remain distinguishable. No Android or physical-device validation in this iteration.
 - **Outcome:** Added semantic `onButton`, `onButtonSecondary` and `onInk` roles to `ResolvedTheme`/`DefaultTheme`, derived by `deriveReadableForeground` (keeps the preferred color when it already reaches 4.5:1 against the real surface, otherwise cream or ink). Wired into `Button`, the Laced control, selected Sesh choices, the note-prompt button, Stats values and Home streak/momentum values. Saved preferences and persistence are unchanged. Tests cover default, dark custom, low-contrast text override, the blue preset and all rainbow presets. Remaining raw-accent text marks (tricks `ToggleMark`, goals `KindMark`, `AdvanceOnFirstLaceMark`, onboarding `RankNumber`) were left for a later audit. iOS Simulator inspection was deferred under the active platform scope and was not performed.
+
+### [T287] Provide an honest native feedback unavailable state and exit
+
+- **Area:** Feedback
+- **Priority:** High
+- **Status:** Done
+- **Planning:** Required
+- **Description:** For the current guest-only iOS build, replace the unusable feedback submission form with an explicit unavailable state and a visible return to Profile. Native getSupabaseClient returns null, so submission always fails, while the form currently gives generic retry guidance and no visible pre-submission exit.
+- **Exit criteria:** A native-platform component test proves the unavailable state offers Back to Profile and cannot submit feedback, iOS Simulator navigation from Profile reaches that state and returns successfully, and existing web feedback submission/error tests plus full typechecking pass unchanged.
+- **Notes:** Source: DESLOPPIFY.md D021; source-confirmed, not simulator-reproduced during the interrupted audit. This scopes the smallest safe guest-only correction. Do not enable native Supabase, create a parallel transport, submit real feedback during verification, or claim native feedback delivery. Full native service support remains separate.
+- **Outcome:** Added `FeedbackUnavailableScreen` (title, explanation, Back to Profile, no fields or submit control) and made `src/app/feedback.tsx` render it when `Platform.OS !== 'web'`; `FeedbackScreen` and `submitFeedback` are unchanged. Verified on iPhone 18 Pro (iOS 27.0) Simulator: Profile > Send feedback link reaches the unavailable screen and Back to Profile returns to Profile; no feedback was submitted. Android and physical device not run.

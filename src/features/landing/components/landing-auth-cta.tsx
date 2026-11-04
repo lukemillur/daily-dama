@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { AppColors, Spacing } from '@/constants/theme';
 import type { AuthErrorCategory } from '@/features/auth/model/auth-errors';
 import { categorizeAuthError } from '@/features/auth/model/auth-errors';
+import { useAccountsAvailable } from '@/features/auth/model/account-availability';
 import { LOG_OUT_ERROR_COPY } from '@/features/auth/model/log-out-error-copy';
 import { logAuthWarning, trackAuthEvent } from '@/features/auth/observability/auth-observability';
 import { useAuthActions, useAuthState } from '@/features/auth/state/auth-provider';
@@ -39,13 +40,14 @@ export function LandingAuthCta() {
   const authState = useAuthState();
   const router = useRouter();
   const { signOut } = useAuthActions();
+  const accountsAvailable = useAccountsAvailable();
   const [isSigningOut, setIsSigningOut] = useState(false);
   const [logOutError, setLogOutError] = useState<AuthErrorCategory | undefined>(undefined);
 
   const isGuest = authState.status === 'guest';
   const isAuthenticated = authState.status === 'authenticated';
 
-  if (!isGuest && !isAuthenticated) {
+  if ((!isGuest && !isAuthenticated) || (isGuest && !accountsAvailable)) {
     return null;
   }
 
