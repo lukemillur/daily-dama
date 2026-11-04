@@ -14,6 +14,19 @@ Entries keep their content as it was at completion. Don't retroactively edit a d
 - **Exit criteria:** `.claude/agents/ticket-implementer.md` states the pinning steps and that evidence gathered before pinning is invalid; `yarn test:workflow` passes; a corrective re-run of T289.3 is scoped as T289.6.
 - **Notes:** Owner request 2026-11-04. Also adds a `native-dev-client` launch configuration (Metro with `--dev-client` on 8081) for the owner's main-checkout dev server. The main checkout was fast-forwarded and its stale Metro stopped outside this change.
 
+### [T289.5] Audit relaunch, accessibility and remaining rows on iOS
+
+- **Area:** iOS verification
+- **Priority:** Medium (inherited from parent T289)
+- **Status:** Done
+- **Planning:** Implementer
+- **Description:** Cover the Relaunch/offline/lifecycle, Accessibility/device matrix, Five tabs, Account/callbacks/sync, Feedback and Sandbox routes matrix rows.
+- **Exit criteria:** Cold relaunch keeps onboarding, history, custom tricks, notes and goals; VoiceOver labels on tabs and key controls, a large Dynamic Type size and Reduce Motion are each checked on at least one simulator; account and feedback rows reflect the guest-only scope. Each named matrix row in DESLOPPIFY.md gets a dated pass, a reproduced finding written to Needs scoping, or a concrete blocked reason from simulator evidence, with device, runtime and test data recorded; nothing is marked passed from source inspection.
+- **Dependencies:** None.
+- **Notes:** Small = iPhone 17e, large = iPhone 18 Pro Max (iOS 27.0). Documentation/verification only — do not fix findings here. Run after T289.1–T289.4 so relaunch checks persisted data they created.
+- **Platform scope:** Acceptance for this ticket runs on the iOS Simulator. Android and physical-device checks are not part of these exit criteria; record them as not run rather than passed.
+- **Outcome (2026-11-04):** All six rows have a dated outcome in DESLOPPIFY.md (T289.5 additions). Five Tabs, Account/callbacks/sync, Feedback, Sandbox routes and Relaunch passed on the iPhone 17e (with dev-client caveats); the Accessibility row records Dynamic Type and Reduce Motion checks and findings T304 and T305. VoiceOver labels are BLOCKED: the simulator toggle engages once but no cursor, speech or Caption Panel output reaches the app, so no labels were read. Blank Home was not reproduced as blank. T289.1 remains open, so the T289 umbrella stays.
+
 ### [T289.4] Audit onboarding, Home, Stats and Profile on iOS
 
 - **Area:** iOS verification
