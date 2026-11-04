@@ -4,6 +4,16 @@ Completed entries move here from `TASKS.md`'s `Backlog`, in the same commit that
 
 Entries keep their content as it was at completion. Don't retroactively edit a description or exit criteria after the fact; if something about a completed task turns out to be wrong or misleading, note that in a new entry or in code, not by rewriting history here.
 
+### [T296] Clear the failing dependency-audit CI gate
+
+- **Area:** Security / dependencies
+- **Priority:** High
+- **Status:** Done
+- **Planning:** Implementer
+- **Description:** The `dependency-audit` CI job failed on every PR, including current `development`, after new advisories were published (1 critical shell-quote, about 20 high). Refresh vulnerable transitive dependencies to patched versions where the dependent range allows it, and record dated acceptances only where no in-major patch exists.
+- **Exit criteria:** `node security/scripts/check-dependency-audit.mjs` exits 0 and its gate self-test passes; the complete app sequence passes; no direct dependency ranges change.
+- **Notes:** Owner request 2026-11-04 after T290 (PR #405) blocked at merge on this gate. Lockfile-only refresh: nanoid 3.3.20, brace-expansion 1.1.21 and 5.0.12, source-map-js 1.2.2, compression 1.8.2, shell-quote 1.12.0, node-forge 1.4.3, zod 4.6.7 (eslint-plugin-react-hooks copy). Accepted, with reasons in `security/accepted-dependency-advisories.json`: image-size 1239765/1239766 (metro needs 1.x; 1.2.1 is final), zod 1243066 (@expo/cli pins 3.x; 3.25.76 is final), decode-uri-component 1243857 (query-string 7 requires the CJS 0.2.x line; fix is ESM-only 0.5.1). Removed stale acceptances 1138808, 1138809, 1139427 and 1119441, which no longer appear. Evidence: audit exit 0, gate self-test 26/26, `verify.mjs` 4/4. No native packages changed, so no iOS rebuild or simulator check was needed; Android not run.
+
 ### [T042] Complete native tab iconography
 
 - **Area:** Navigation
