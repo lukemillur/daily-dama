@@ -92,8 +92,8 @@ test('the newTicket skill restricts as well as pre-approves', () => {
   const allowed = toolList(fields['allowed-tools']);
   assert.deepEqual(
     allowed.filter((tool) => tool.startsWith('Agent')),
-    ['Agent(ticket-planner)', 'Agent(ticket-implementer)'],
-    'the orchestrator may spawn only the two ticket agents',
+    ['Agent(ticket-planner)', 'Agent(ticket-planner-burn)', 'Agent(ticket-implementer)'],
+    'the orchestrator may spawn only the ticket agents',
   );
   assert.equal(allowed.some((tool) => tool === 'Bash' || tool === 'Bash(*)'), false, 'generic Bash is not pre-approved');
 });

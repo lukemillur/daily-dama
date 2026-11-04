@@ -4,6 +4,16 @@ Completed entries move here from `TASKS.md`'s `Backlog`, in the same commit that
 
 Entries keep their content as it was at completion. Don't retroactively edit a description or exit criteria after the fact; if something about a completed task turns out to be wrong or misleading, note that in a new entry or in code, not by rewriting history here.
 
+### [T298] Honor the Dependencies field in ticket selection
+
+- **Area:** Tooling / workflow
+- **Priority:** High
+- **Status:** Done
+- **Planning:** Implementer
+- **Description:** `ticket-claim.mjs` recognized dependencies only from "Depends on T0NN" prose and ignored the `**Dependencies:**` field that scoped tickets use, so T284.2 was claimed on 2026-11-04 before its dependency T284.1 had merged. Read the field as well.
+- **Exit criteria:** Parser tests cover a bare id, several ids, a range, `None.` and a field worded as a "Depends on" clause; a selection test proves a field-declared dependency blocks claiming until it is done; `yarn test:workflow` passes; a dry-run claim against the live backlog skips T284.2 and T284.3 while T284.1 is unmerged.
+- **Notes:** Owner request 2026-11-04. Also updated `config.test.mjs`, which still expected two ticket agents after `ticket-planner-burn` was added to the newTicket skill. Evidence: `yarn test:workflow` 140/140; dry run skipped T284.2 and T284.3 with reason `dependency` and selected T289.1. T284.2 had already been claimed by the bug; its branch is held and will be resumed after T284.1 merges.
+
 ### [T293] Add a wordmark splash screen
 
 - **Area:** App shell
