@@ -248,6 +248,11 @@ is still read-only, so it doesn't change the "no write permissions" guarantee; P
 commenting (the one gitleaks-action feature that would need `pull-requests: write`)
 stays disabled via `GITLEAKS_ENABLE_COMMENTS: "false"`.
 
+`build-cache.yml` runs on pushes to `development` only, with the same pinned actions and
+`contents: read`, to save the Jest and Metro transform caches that `ci.yml`'s `verify`
+job restores. PR runs only restore, never save, so a PR cannot write a cache that
+another PR or `development` reads.
+
 **Running these locally** (the two Docker-based ones require Docker running locally,
 same as the local Supabase stack in `supabase/README.md`):
 

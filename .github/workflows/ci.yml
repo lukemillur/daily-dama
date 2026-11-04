@@ -74,8 +74,24 @@ jobs:
       - name: Install dependencies
         run: yarn install --frozen-lockfile
 
+      # Jest and Metro transform caches, saved by build-cache.yml on each push
+      # to development. Restore-only here: a PR run can only read caches from
+      # its own ref, its base branch, or the default branch, so caches saved
+      # by one task PR would never reach the next one. Both caches are keyed
+      # by file content internally, so a stale entry is a miss, not a wrong
+      # result.
+      - name: Restore build caches
+        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: |
+            /tmp/jest-cache
+            /tmp/metro-cache
+          key: app-build-${{ runner.os }}-${{ hashFiles('yarn.lock') }}-${{ github.sha }}
+          restore-keys: |
+            app-build-${{ runner.os }}-${{ hashFiles('yarn.lock') }}-
+
       - name: Test
-        run: yarn test
+        run: yarn test --ci --cacheDirectory /tmp/jest-cache
 
       - name: Lint
         run: yarn lint
