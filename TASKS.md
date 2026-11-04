@@ -146,7 +146,7 @@ _Native execution prerequisite: the simulator-enablement changes described in [o
 
 - **Area:** Shared UI / screen layout
 - **Priority:** High (inherited from parent T284)
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Implementer
 - **Description:** Land the shared clearance convention in `Screen` and verify it on Tricks and the custom-trick and custom-sequence forms. Start from the unverified work in commit `f5e9a95` on `task/T284-reserve-native-tab-clearance-for-scroll` (`withNativeTabClearance`, `screen.test.tsx`, Profile padding, removed `BottomTabInset`).
 - **Exit criteria:** On small and large simulators at maximum scroll, the last Tricks row and the Save and Cancel actions of the new-custom-trick, edit-custom-trick and custom-sequence forms are fully above the tab bar and tappable; focused tests protect the convention; web layout is unchanged at 320 px; full typechecking passes.
