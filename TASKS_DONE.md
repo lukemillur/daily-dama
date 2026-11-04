@@ -4,6 +4,18 @@ Completed entries move here from `TASKS.md`'s `Backlog`, in the same commit that
 
 Entries keep their content as it was at completion. Don't retroactively edit a description or exit criteria after the fact; if something about a completed task turns out to be wrong or misleading, note that in a new entry or in code, not by rewriting history here.
 
+### [T042] Complete native tab iconography
+
+- **Area:** Navigation
+- **Priority:** Medium
+- **Status:** Done
+- **Planning:** Required
+- **Description:** Give Sesh, Tricks, Stats, and Profile distinct, subject-appropriate native tab icons rather than relying on incomplete or repeated icon treatment.
+- **Exit criteria:** Deliberate iOS Simulator checks confirm all five native tabs have distinct, route-appropriate icons that remain legible and unclipped in selected and unselected states, while the existing web navigation and its verified 320 px fit remain unchanged.
+- **Notes:** Source: iOS audit T042 in DESLOPPIFY.md. Only Home currently has an icon; also check that tab tint/selected treatment remains legible with the current app theme. This is navigation polish, not a navigation architecture change. Update navigation tests or snapshots where they provide useful regression protection.
+- **Platform scope:** Activated for iOS Simulator on 2026-10-29. Android and physical-device verification remain deferred; record those limits without claiming they passed. Completion: all five native tabs now carry distinct SF Symbols (house, timer, list.bullet.rectangle, chart.bar, person.crop.circle; filled variants when selected where one exists) with `iconColor` matching the label states; `TAB_ICON_SYMBOLS` is covered by `src/components/app-tabs.test.tsx`. iOS Simulator evidence: iPhone 18 Pro, iOS 27.0, dev client against this branch's Metro; tapped Home, Sesh, Tricks, Stats and Profile in light appearance and each showed its icon and label unclipped with the selected pill; dark appearance showed white icons and labels legible on the dark tab bar. Dark system appearance does not follow the saved app theme (tab colors use `Colors` by system scheme, screens use the resolved theme); left unchanged as out of scope. Small-device (iPhone 17e) check NOT run: simulator access was not granted. Web navigation files untouched. Android and physical-device checks not run.
+
+
 ### [T288] Withhold unsupported account promises from the native guest experience
 
 - **Area:** Guest account presentation
