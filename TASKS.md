@@ -127,6 +127,8 @@ _Raw ideas land here — a name and a one-line description, nothing more. Discus
 - **Line generator** (Low) — random line of tricks; trick pool source (all / unlocked / selected) undecided.
 - **Collection management** (Low) — photos + metadata for physical kendama collection, with kendama-specific lace lists. Likely a new persistence domain; substantial scope on its own.
 - **T299 Assessment wrap-up stays in the Profile tab after Go to Home** (Low, from T289.3 audit; re-confirmed by T289.6 on the pinned current bundle, branch HEAD `78b15a4`) — on iPhone 17e and 18 Pro Max (iOS 27.0), finishing or ending a Kentei assessment and tapping Go to Home switches to Home, but tapping the Profile tab then shows the old `Sesh complete` wrap-up again until the Profile tab is tapped a second time. Reproduced after a skip/end run and after a promotion run on the 17e, and after an end run on the 18 Pro Max. Open question: should Go to Home reset the Profile stack to its root?
+- **T302 Fresh onboarding "Start practicing" button does nothing on iOS** (Medium, from T289.4 audit; reproduced twice, HEAD `61c3da3`) — on a fresh iPhone 17e (iOS 27.2 runtime), after Get started, Basic, one Not yet, rank reveal and Choose tricks, selecting 1 to 3 Rank 1 tricks enabled the Start practicing button, but tapping it (several positions, a long press and a touch_path; again after an app relaunch) never advanced to the duration step while checkbox taps worked. The duration and theme steps and onboarding completion were unreachable. Open question: is the press handler or the footer hit area blocked on native (the dev sandbox links sit over the bottom of this screen), or is a first-install state missing?
+- **T303 Colour spectrum drag also scrolls the Profile page on iOS** (Low, from T289.4 audit; three occurrences, HEAD `61c3da3`) — on iPhone 17e (iOS 27.0), dragging a finger down the Background colour spectrum moved the colour (hex and contrast ratio updated) but the surrounding Profile scroll view also scrolled, so the picker jumped away from under the finger. Open question: should the spectrum capture the gesture and lock scrolling while dragging?
 
 ## Backlog
 
@@ -155,18 +157,6 @@ _Native execution prerequisite: the simulator-enablement changes described in [o
 - **Notes:** Small = iPhone 17e, large = iPhone 18 Pro Max (iOS 27.0). Documentation/verification only — do not fix findings here. 
 - **Platform scope:** Acceptance for this ticket runs on the iOS Simulator. Android and physical-device checks are not part of these exit criteria; record them as not run rather than passed.
 
-
-### [T289.4] Audit onboarding, Home, Stats and Profile on iOS
-
-- **Area:** iOS verification
-- **Priority:** Medium (inherited from parent T289)
-- **Status:** Not started
-- **Planning:** Implementer
-- **Description:** Cover the Onboarding, Home, Stats, Practice list, Timed Sesh setup and Profile/theme matrix rows, including laced and empty states.
-- **Exit criteria:** Each named row is exercised on the small simulator and spot-checked on the large one, covering empty and populated Stats, Profile theme presets, colour gestures, reset and the streak setting. Each named matrix row in DESLOPPIFY.md gets a dated pass, a reproduced finding written to Needs scoping, or a concrete blocked reason from simulator evidence, with device, runtime and test data recorded; nothing is marked passed from source inspection.
-- **Dependencies:** None.
-- **Notes:** Small = iPhone 17e, large = iPhone 18 Pro Max (iOS 27.0). Documentation/verification only — do not fix findings here. 
-- **Platform scope:** Acceptance for this ticket runs on the iOS Simulator. Android and physical-device checks are not part of these exit criteria; record them as not run rather than passed.
 
 ### [T289.5] Audit relaunch, accessibility and remaining rows on iOS
 
