@@ -157,6 +157,18 @@ _Native execution prerequisite: the simulator-enablement changes described in [o
 - **Platform scope:** Acceptance for this ticket runs on the iOS Simulator. Android and physical-device checks are not part of these exit criteria; record them as not run rather than passed.
 
 
+### [T289.6] Re-run the T289.3 multi-trick and Kentei rows on current code
+
+- **Area:** iOS verification
+- **Priority:** High (inherited from parent T289; corrects invalid evidence)
+- **Status:** Not started
+- **Planning:** Implementer
+- **Description:** T289.3's iPhone 17e evidence was gathered against a stale Metro on port 8081 serving the main checkout at `85d94c1`, before T290–T298 merged. Redo the Multi-trick and Kentei assessment rows on the current branch bundle, using the bundle-pinning steps in `.claude/agents/ticket-implementer.md`, and re-test the two findings it produced.
+- **Exit criteria:** On iPhone 17e with the bundle pinned to this worktree (port and HEAD SHA recorded), the full multi-trick run (first-lace advance, manual next, pause, early end, wrap-up) and a Kentei assessment from rank (skip, end, promotion) are exercised, and the large simulator gets the same layout spot-check on the same pinned bundle. The DESLOPPIFY.md Multi-trick and Kentei rows are rewritten with the new dated outcome and state that the 2026-11-04 T289.3 17e evidence was invalid. T299 and T300 are each re-tested on current code: removed from Needs scoping with the evidence noted in DESLOPPIFY.md if they do not reproduce, or kept with updated reproduction details if they do. Nothing is marked passed from source inspection.
+- **Dependencies:** T301.
+- **Notes:** Small = iPhone 17e, large = iPhone 18 Pro Max (iOS 27.0). The 17e's stored Kentei rank is already 2 from T289.3, so promotion must start from rank 2 or be recorded as blocked with the reason. Documentation/verification only; do not fix findings here. T289.2 used its own Metro on port 8082 and is not in scope, but its `T289.2 v2` and `T289.2 seq B` records still appear on the 17e despite being recorded as deleted. Note in DESLOPPIFY.md whether they persist, and do not investigate further.
+- **Platform scope:** Acceptance for this ticket runs on the iOS Simulator. Android and physical-device checks are not part of these exit criteria; record them as not run rather than passed.
+
 ### [T289.4] Audit onboarding, Home, Stats and Profile on iOS
 
 - **Area:** iOS verification

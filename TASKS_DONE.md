@@ -4,6 +4,16 @@ Completed entries move here from `TASKS.md`'s `Backlog`, in the same commit that
 
 Entries keep their content as it was at completion. Don't retroactively edit a description or exit criteria after the fact; if something about a completed task turns out to be wrong or misleading, note that in a new entry or in code, not by rewriting history here.
 
+### [T301] Pin simulator evidence to the worktree bundle
+
+- **Area:** Tooling / workflow
+- **Priority:** High
+- **Status:** Done
+- **Planning:** Implementer
+- **Description:** T289.3 recorded iPhone 17e evidence from a dev client connected to a Metro on port 8081 serving the stale main checkout, not the ticket worktree. Require ticket implementers to start Metro from their worktree on their own port, prove the listener belongs to the worktree, point each device at it explicitly and record port and HEAD SHA before any simulator evidence counts.
+- **Exit criteria:** `.claude/agents/ticket-implementer.md` states the pinning steps and that evidence gathered before pinning is invalid; `yarn test:workflow` passes; a corrective re-run of T289.3 is scoped as T289.6.
+- **Notes:** Owner request 2026-11-04. Also adds a `native-dev-client` launch configuration (Metro with `--dev-client` on 8081) for the owner's main-checkout dev server. The main checkout was fast-forwarded and its stale Metro stopped outside this change.
+
 ### [T289.3] Audit multi-trick runs and Kentei assessment on iOS
 
 - **Area:** iOS verification
