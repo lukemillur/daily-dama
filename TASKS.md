@@ -149,7 +149,7 @@ _Native execution prerequisite: the simulator-enablement changes described in [o
 
 - **Area:** Forms / mobile layout
 - **Priority:** Medium (inherited from parent T044)
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** Create the smallest reusable layout primitive or convention needed to keep long mobile forms scrollable and their primary actions reachable while the keyboard is open, proving it through the custom-trick form.
 - **Exit criteria:** On representative small and large iPhone simulator viewports, the custom-trick form's final input and primary action remain reachable with the keyboard open, scrolling and keyboard dismissal behave predictably, safe-area and tab-bar insets do not overlap content, and the web layout remains unchanged.
