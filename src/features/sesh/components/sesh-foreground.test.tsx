@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
+import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
 import { AppState, Text } from 'react-native';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 
@@ -18,6 +19,11 @@ jest.mock('expo-audio', () => {
   const mockAudioPlayer = { play: jest.fn(), seekTo: jest.fn() };
   return { useAudioPlayer: jest.fn(() => mockAudioPlayer), __mockAudioPlayer: mockAudioPlayer };
 });
+
+jest.mock('expo-keep-awake', () => ({
+  activateKeepAwakeAsync: jest.fn(() => Promise.resolve()),
+  deactivateKeepAwake: jest.fn(() => Promise.resolve()),
+}));
 
 jest.mock('@react-native-async-storage/async-storage', () =>
   // eslint-disable-next-line @typescript-eslint/no-require-imports -- required by jest hoisting
@@ -192,6 +198,38 @@ describe('Sesh app foreground reconciliation (T043.1)', () => {
 
     act(() => {
       root.unmount();
+    });
+  });
+
+  it('releases the wake lock when an overdue timed Sesh completes on foregrounding and when ended early', async () => {
+    const activate = activateKeepAwakeAsync as jest.Mock;
+    const deactivate = deactivateKeepAwake as jest.Mock;
+    activate.mockClear();
+    deactivate.mockClear();
+
+    const root = await startSesh(createTimedSeshPlan(1));
+    advanceThroughCountdown();
+    expect(activate).toHaveBeenCalledWith('sesh-active');
+    deactivate.mockClear();
+
+    foregroundAfter(TEN_MINUTES_MS);
+    expect(deactivate).toHaveBeenCalledWith('sesh-active');
+
+    act(() => {
+      root.unmount();
+    });
+
+    // Ending an open-ended Sesh early also releases the lock.
+    deactivate.mockClear();
+    const second = await startSesh(OPEN_ENDED_SESH_PLAN);
+    advanceThroughCountdown();
+    deactivate.mockClear();
+    act(() => {
+      pressByVisibleText(second, 'End Sesh');
+    });
+    expect(deactivate).toHaveBeenCalledWith('sesh-active');
+    act(() => {
+      second.unmount();
     });
   });
 });
