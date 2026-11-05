@@ -4,6 +4,29 @@ Completed entries move here from `TASKS.md`'s `Backlog`, in the same commit that
 
 Entries keep their content as it was at completion. Don't retroactively edit a description or exit criteria after the fact; if something about a completed task turns out to be wrong or misleading, note that in a new entry or in code, not by rewriting history here.
 
+### [T044.2] Apply the keyboard-aware layout to remaining forms
+
+- **Area:** Forms / mobile layout
+- **Priority:** Medium (inherited from parent T044)
+- **Status:** Done
+- **Planning:** Required
+- **Description:** Apply T044.1's proven layout pattern to notes, goals, Profile streak editing, and the access gate where reachable in the native build. Depends on T044.1.
+- **Exit criteria:** Focused checks on representative small and large iPhone simulator viewports confirm the final input and primary action remain reachable with the keyboard open on notes, goals, Profile streak, and any reachable access-gate form; scrolling, dismissal, safe-area, and tab-bar behavior are consistent and web rendering is unchanged. Explicitly record an unavailable access gate as not applicable rather than claiming it was tested.
+- **Dependencies:** T044.1.
+- **Notes:** Adapt the shared convention where a screen's structure requires it; do not introduce fixed offsets or unrelated form redesigns.
+- **Platform scope:** Acceptance for this ticket runs on the iOS Simulator. Android and physical-device checks are not part of these exit criteria; record them as not run rather than passed.
+- **Outcome (2026-11-05):** Swapped the local `styled(ScrollView)` for `styled(KeyboardAwareScroll)` in `trick-notes-screen.tsx`, `all-notes-screen.tsx`, `trick-goals-screen.tsx` and `src/app/app/profile/index.tsx` (`ProfileScroll`, which also holds the hex field), and dropped the now-redundant `keyboardShouldPersistTaps` props and unused `ScrollView` imports. No fixed offsets, no layout redesign, no dependency change. `all-trick-goals-screen.tsx` has no text input and is unchanged. Access gate: not applicable (no access-gate form or route exists in `src`). Verified on iPhone 17e `31BF7946` (iOS 27.0, small) and iPhone 18 Pro Max `4582AC65` (iOS 27.2, large), Metro port 8123 from this worktree (lsof cwd matched; `iOS Bundled` logged after each pin), base HEAD `81570e5`, software keyboard shown (Connect Hardware Keyboard off). Small phone: trick note add form (field, Save note reachable; Cancel just under the keyboard and reachable by scrolling), all-notes edit form opened but a keyboard-open capture was not obtained on this phone (same component as the trick-notes form, covered on the large phone), trick goal add form (number-pad; field and Save goal visible, Cancel reachable by scrolling with the keyboard open; typing enables Save), Profile streak minutes (field and Save visible above number-pad after the field scrolled into view; value typed). Large phone: trick note add form and all-notes edit (field, Save, Cancel all above keyboard), trick goal add form (all visible above number-pad), Profile streak minutes (field and Save visible above number-pad, Save enabled after typing). Drag-down dismissal worked on small-phone notes and goals and on large-phone notes and Profile; after dismissal the content settled with no blank band and cleared the in-flow tab bar and home indicator. Tab bar was never covered. The Profile hex field was not exercised with the keyboard open. Web: own worktree dev server on port 8140 rendered /app/profile (Daily streak section, 5 inputs) and /app/tricks/notes normally with no console errors and no native-only props in the DOM. Jest: notes, goals, `src/app` and `src/components/ui` suites (42 suites, 339 tests) and full `verify.mjs --only test` pass; `yarn tsc --noEmit` and scoped eslint clean. Not run: Android, physical device. `ARCHITECTURE.md` now lists the four adopters; auth, feedback and deletion screens still use plain `ScrollView`.
+
+### [T044] Prevent mobile keyboards from obscuring form actions
+
+- **Area:** Forms / mobile layout
+- **Priority:** Medium
+- **Status:** Done
+- **Description:** Establish a reusable keyboard-aware form layout and apply it to custom-trick editing, notes, goals, Profile streak editing, and the access gate where reachable in the native build.
+- **Notes:** Umbrella only — complete T044.1 and T044.2. Use safe-area and keyboard behavior rather than fixed device-specific offsets; preserve existing web layouts.
+- **Platform scope:** Acceptance for this ticket runs on the iOS Simulator. Android and physical-device checks are not part of these exit criteria; record them as not run rather than passed.
+- **Outcome (2026-11-05):** Both children done: T044.1 established `KeyboardAwareScroll`; T044.2 applied it to notes, goals and Profile streak. Access gate: not applicable (no such form exists in the native build). Android and physical device: not run.
+
 ### [T044.1] Establish a shared keyboard-aware form layout
 
 - **Area:** Forms / mobile layout

@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
-import { Pressable, ScrollView } from 'react-native';
+import { Pressable } from 'react-native';
+import { KeyboardAwareScroll } from '@/components/ui/keyboard-aware-scroll';
 import { styled } from 'styled-components/native';
 
 import { Button } from '@/components/ui/button';
@@ -51,7 +52,7 @@ export function TrickNotesScreen({ trickId, trickName, onBack }: TrickNotesScree
   }
 
   return (
-    <Scroll keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: 24 }}>
+    <Scroll contentContainerStyle={{ paddingBottom: 24 }}>
       <Content>
         <Eyebrow>Notes</Eyebrow>
         <PageTitle>{trickName}</PageTitle>
@@ -167,7 +168,7 @@ function NoteForm({
   };
 
   return (
-    <Scroll keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: 24 }}>
+    <Scroll contentContainerStyle={{ paddingBottom: 24 }}>
       <Content>
         <Eyebrow>{title}</Eyebrow>
         <PageTitle>Write it down.</PageTitle>
@@ -193,7 +194,7 @@ function NoteForm({
   );
 }
 
-const Scroll = styled(ScrollView)`flex: 1; width: 100%;`;
+const Scroll = styled(KeyboardAwareScroll)`flex: 1; width: 100%;`;
 const Content = styled.View`width: 100%; max-width: 680px; align-self: center; padding: 38px 22px 0;`;
 const PageTitle = styled(DisplayTitle)`margin-top: 12px;`;
 const Introduction = styled(BodyText)`max-width: 580px; margin-top: 16px;`;

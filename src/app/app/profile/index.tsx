@@ -1,6 +1,7 @@
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import { Platform, ScrollView } from "react-native";
+import { Platform } from "react-native";
+import { KeyboardAwareScroll } from "@/components/ui/keyboard-aware-scroll";
 import { styled } from "styled-components/native";
 
 import { Button } from "@/components/ui/button";
@@ -140,7 +141,7 @@ function StreakSettings({
   );
 }
 
-const ProfileScroll = styled(ScrollView)`
+const ProfileScroll = styled(KeyboardAwareScroll)`
   flex: 1;
   width: 100%;
 `;

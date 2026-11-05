@@ -136,27 +136,6 @@ _iOS Simulator audit activation — 2026-10-29, explicitly requested by the owne
 _Native execution prerequisite: the simulator-enablement changes described in [outputs/ios-personal-build-setup.md](outputs/ios-personal-build-setup.md) are on `development`. The generated `/ios` project and local CocoaPods workaround are not committed, so a fresh checkout may need `yarn ios` (prebuild and pod install) first. Report a tooling failure as a prerequisite rather than a passed check._
 
 
-### [T044] Prevent mobile keyboards from obscuring form actions
-
-- **Area:** Forms / mobile layout
-- **Priority:** Medium
-- **Status:** Not started
-- **Description:** Establish a reusable keyboard-aware form layout and apply it to custom-trick editing, notes, goals, Profile streak editing, and the access gate where reachable in the native build.
-- **Notes:** Umbrella only — complete T044.1 and T044.2. Use safe-area and keyboard behavior rather than fixed device-specific offsets; preserve existing web layouts.
-- **Platform scope:** Acceptance for this ticket runs on the iOS Simulator. Android and physical-device checks are not part of these exit criteria; record them as not run rather than passed.
-
-### [T044.2] Apply the keyboard-aware layout to remaining forms
-
-- **Area:** Forms / mobile layout
-- **Priority:** Medium (inherited from parent T044)
-- **Status:** Not started
-- **Planning:** Required
-- **Description:** Apply T044.1's proven layout pattern to notes, goals, Profile streak editing, and the access gate where reachable in the native build. Depends on T044.1.
-- **Exit criteria:** Focused checks on representative small and large iPhone simulator viewports confirm the final input and primary action remain reachable with the keyboard open on notes, goals, Profile streak, and any reachable access-gate form; scrolling, dismissal, safe-area, and tab-bar behavior are consistent and web rendering is unchanged. Explicitly record an unavailable access gate as not applicable rather than claiming it was tested.
-- **Dependencies:** T044.1.
-- **Notes:** Adapt the shared convention where a screen's structure requires it; do not introduce fixed offsets or unrelated form redesigns.
-- **Platform scope:** Acceptance for this ticket runs on the iOS Simulator. Android and physical-device checks are not part of these exit criteria; record them as not run rather than passed.
-
 _Scoped 2026-11-05 from the T289.4/T289.5 iOS audit findings in Needs scoping (no BACKLOG_STORIES.md story). IDs keep their audit numbers._
 
 ### [T305] Keep display headlines and active Sesh controls intact at accessibility text sizes
