@@ -4216,3 +4216,26 @@ Completed entries live in [TASKS_DONE.md](TASKS_DONE.md) — not part of the top
 - **Notes:** Keep timestamp acquisition and app-state effects outside the reducer, passing explicit timestamps through actions. Do not add persisted in-progress Sesh state.
 - **Platform scope:** Acceptance for this ticket runs on the iOS Simulator. Android and physical-device checks are not part of these exit criteria; record them as not run rather than passed.
 - **Outcome:** Added the `appForegrounded(now)` reducer action (shares deadline logic with `timerElapsed`) and a `useAppForeground` hook wired into `Sesh` and `MultiTrickSesh`. Reducer, hook, Sesh and multi-trick tests cover overdue completion at the deadline, open-ended elapsed time, paused non-accrual, and exactly-once history recording in both interval/foreground orders. Foreground completions do not play the chime; multi-trick overdue time is not replayed onto later tricks. iOS Simulator and Android not run (simulator cycles owned by T043.2).
+
+### [T043] Harden active Sesh behavior across app backgrounding
+
+- **Area:** Sesh
+- **Priority:** High
+- **Status:** Done
+- **Description:** Make timed, open-ended, paused, and multi-trick Sesh behavior reliable when the app moves between foreground and background.
+- **Notes:** Umbrella only — complete T043.1 and T043.2. Route-navigation and process-death recovery are intentionally out of scope for this task — they are a separate concern from foreground/background reconciliation and are not tracked anywhere in this file.
+- **Platform scope:** Acceptance for this ticket runs on the iOS Simulator. Android and physical-device checks are not part of these exit criteria; record them as not run rather than passed.
+- **Outcome:** T043.1 (foreground reconciliation) and T043.2 (iOS Simulator verification) complete; see their outcomes.
+
+### [T043.2] Verify backgrounded Sesh behavior in iOS Simulator
+
+- **Area:** Sesh
+- **Priority:** High (inherited from parent T043)
+- **Status:** Done
+- **Planning:** Required
+- **Description:** Exercise T043.1's lifecycle behavior on iOS Simulator and fix any platform-specific integration defects without changing the Sesh domain model. Depends on T043.1.
+- **Exit criteria:** Deliberate iOS Simulator checks cover timed, open-ended, paused, and multi-trick Sesh background/foreground cycles, confirm any overdue timer resolves at its logical deadline, and confirm the wake lock releases after completion or cancellation; any platform-specific regressions found are covered by an automated test where practical.
+- **Dependencies:** T043.1.
+- **Notes:** Source: iOS audit T043 in DESLOPPIFY.md; background correctness was not observed during the audit. This is native hardening of the lifecycle model established in T043.1, not process-death recovery or route-leave protection.
+- **Platform scope:** Acceptance for this ticket runs on the iOS Simulator. Android and physical-device checks are not part of these exit criteria; record them as not run rather than passed.
+- **Outcome:** Verified on iPhone 17e `31BF7946` (iOS 27.0), Metro port 8087 from this worktree (lsof cwd matched, `iOS Bundled` logged after the pin), HEAD base `c2130a4`, with temporary wake-lock logs (removed). Background was simulated both with Home alone and with Home plus SIGSTOP on the app process (the Simulator does not suspend backgrounded apps, so SIGSTOP made timers truly overdue). Timed 1 min with 75 s suspended: completed at foreground with total time exactly 01:00, wake lock released, history recorded once (Stats 3 seshes / 03:00 after three 1-minute runs); timed not-yet-due (20 s): resumed at the correct remaining time; open-ended 60 s: elapsed included background time (01:09), End recorded 01:16 after a paused cycle; paused timed and open-ended (75 s / 40 s suspended): stayed paused, display frozen, no completion, lock held while paused (expected), Resume continued from the frozen value; multi-trick timed 3-trick run with 130 s suspended: trick 1 completed at its logical deadline, trick 2 started fresh at 01:00 (overdue time not replayed), one record per trick; multi-trick open-ended and paused (30 s suspended): frozen at 00:28, End recorded 00:15 and 00:28 per trick; lock/unlock and two rapid background/foreground cycles: no state change, no duplicate lock activations; wake lock released on completion and End in every case (activate/deactivate logs balanced). Between-tricks and first-run countdown after background (SIGSTOP 10 s): no defect, countdown completed on resume and the Sesh started once with startedAt at that moment; no Needs-scoping entry. Observation: switching tabs mid-Sesh keeps the Sesh mounted and the lock held (route-leave stays out of scope). One harness artifact: SIGSTOP immediately after Home triggered an iOS scene-update watchdog kill (0x8BADF00D); not an app defect. No platform defects found, so no code fix; added a Jest regression test asserting tag-matched `deactivateKeepAwake` on overdue completion and early End (`sesh-foreground.test.tsx`). Not run: Android, physical device, VoiceOver, actual screen dimming, iPhone 18 Pro Max spot-check.

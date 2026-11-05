@@ -135,26 +135,6 @@ _iOS Simulator audit activation — 2026-10-29, explicitly requested by the owne
 
 _Native execution prerequisite: the simulator-enablement changes described in [outputs/ios-personal-build-setup.md](outputs/ios-personal-build-setup.md) are on `development`. The generated `/ios` project and local CocoaPods workaround are not committed, so a fresh checkout may need `yarn ios` (prebuild and pod install) first. Report a tooling failure as a prerequisite rather than a passed check._
 
-### [T043] Harden active Sesh behavior across app backgrounding
-
-- **Area:** Sesh
-- **Priority:** High
-- **Status:** Not started
-- **Description:** Make timed, open-ended, paused, and multi-trick Sesh behavior reliable when the app moves between foreground and background.
-- **Notes:** Umbrella only — complete T043.1 and T043.2. Route-navigation and process-death recovery are intentionally out of scope for this task — they are a separate concern from foreground/background reconciliation and are not tracked anywhere in this file.
-- **Platform scope:** Acceptance for this ticket runs on the iOS Simulator. Android and physical-device checks are not part of these exit criteria; record them as not run rather than passed.
-
-### [T043.2] Verify backgrounded Sesh behavior in iOS Simulator
-
-- **Area:** Sesh
-- **Priority:** High (inherited from parent T043)
-- **Status:** Not started
-- **Planning:** Required
-- **Description:** Exercise T043.1's lifecycle behavior on iOS Simulator and fix any platform-specific integration defects without changing the Sesh domain model. Depends on T043.1.
-- **Exit criteria:** Deliberate iOS Simulator checks cover timed, open-ended, paused, and multi-trick Sesh background/foreground cycles, confirm any overdue timer resolves at its logical deadline, and confirm the wake lock releases after completion or cancellation; any platform-specific regressions found are covered by an automated test where practical.
-- **Dependencies:** T043.1.
-- **Notes:** Source: iOS audit T043 in DESLOPPIFY.md; background correctness was not observed during the audit. This is native hardening of the lifecycle model established in T043.1, not process-death recovery or route-leave protection.
-- **Platform scope:** Acceptance for this ticket runs on the iOS Simulator. Android and physical-device checks are not part of these exit criteria; record them as not run rather than passed.
 
 ### [T044] Prevent mobile keyboards from obscuring form actions
 
