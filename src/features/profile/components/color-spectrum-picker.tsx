@@ -15,6 +15,10 @@ const HUE_SIZE = 200;
 const HUE_BAR_HEIGHT = 24;
 const PUCK_SIZE = 14;
 
+// A drag that began on the picker must stay with it; otherwise the enclosing ScrollView takes
+// over the responder and scrolls the page out from under the finger.
+const refuseTermination = () => false;
+
 function clamp(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value));
 }
@@ -23,6 +27,7 @@ export function ColorSpectrumPicker({
   accessibilityLabelPrefix,
   liveHex,
   onChange,
+  onDragStateChange,
   persistedHex,
 }: {
   readonly accessibilityLabelPrefix: string;
@@ -33,6 +38,12 @@ export function ColorSpectrumPicker({
    */
   readonly liveHex?: string;
   readonly onChange: (hex: string) => void;
+  /**
+   * Reports whether a drag that began on this picker is in progress. iOS's native scroll pan can
+   * start regardless of JS responder negotiation, so the owner of the enclosing scroll view uses
+   * this to disable scrolling for the length of the drag.
+   */
+  readonly onDragStateChange?: (dragging: boolean) => void;
   readonly persistedHex?: string;
 }) {
   const rawId = useId();
@@ -85,6 +96,20 @@ export function ColorSpectrumPicker({
     }
   }
 
+  function handleSvGrant(evt: { nativeEvent: { locationX: number; locationY: number } }) {
+    onDragStateChange?.(true);
+    handleSvTouch(evt);
+  }
+
+  function handleHueGrant(evt: { nativeEvent: { locationX: number } }) {
+    onDragStateChange?.(true);
+    handleHueTouch(evt);
+  }
+
+  function endDrag() {
+    onDragStateChange?.(false);
+  }
+
   function handleSvTouch(evt: { nativeEvent: { locationX: number; locationY: number } }) {
     const x = clamp(evt.nativeEvent.locationX, 0, SV_SIZE);
     const y = clamp(evt.nativeEvent.locationY, 0, SV_SIZE);
@@ -109,10 +134,13 @@ export function ColorSpectrumPicker({
       <View
         accessibilityLabel={accessibilityLabelPrefix + " saturation and lightness"}
         style={{ width: SV_SIZE, height: SV_SIZE }}
-        onResponderGrant={handleSvTouch}
+        onResponderGrant={handleSvGrant}
         onResponderMove={handleSvTouch}
         onStartShouldSetResponder={() => true}
         onMoveShouldSetResponder={() => true}
+        onResponderTerminationRequest={refuseTermination}
+        onResponderRelease={endDrag}
+        onResponderTerminate={endDrag}
       >
         <Svg height={SV_SIZE} width={SV_SIZE}>
           <Defs>
@@ -142,10 +170,13 @@ export function ColorSpectrumPicker({
       <HueBarWrapper
         accessibilityLabel={accessibilityLabelPrefix + " hue"}
         style={{ width: HUE_SIZE, height: HUE_BAR_HEIGHT }}
-        onResponderGrant={handleHueTouch}
+        onResponderGrant={handleHueGrant}
         onResponderMove={handleHueTouch}
         onStartShouldSetResponder={() => true}
         onMoveShouldSetResponder={() => true}
+        onResponderTerminationRequest={refuseTermination}
+        onResponderRelease={endDrag}
+        onResponderTerminate={endDrag}
       >
         <Svg height={HUE_BAR_HEIGHT} width={HUE_SIZE}>
           <Defs>
