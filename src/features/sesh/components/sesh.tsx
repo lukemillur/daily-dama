@@ -2,12 +2,12 @@ import { useAudioPlayer } from 'expo-audio';
 import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
 import { Link, useRouter } from 'expo-router';
 import { useEffect, useLayoutEffect, useMemo, useReducer, useRef, useState, type ReactNode } from 'react';
-import { Animated, Platform, Pressable, ScrollView, TextInput } from 'react-native';
+import { Animated, Platform, Pressable, ScrollView, TextInput, useWindowDimensions } from 'react-native';
 import { styled } from 'styled-components/native';
 
 import { Button } from '@/components/ui/button';
 import { TextField } from '@/components/ui/text-field';
-import { BodyText, DisplayTitle as BaseDisplayTitle, Eyebrow as BaseEyebrow } from '@/components/ui/typography';
+import { BodyText, DisplayText, DisplayTitle as BaseDisplayTitle, Eyebrow as BaseEyebrow } from '@/components/ui/typography';
 import { AppColors, hexToRgba } from '@/constants/theme';
 import {
   formatGoalProgress,
@@ -358,6 +358,7 @@ function TrickPicker({
   ) => void;
   readonly onCancel?: () => void;
 }) {
+  const stackPlanChoices = useStackControls();
   const isDirectPractice = onCancel !== undefined;
   const [planKind, setPlanKind] = useState<SeshPlan['kind']>(initialPlan?.kind ?? 'timed');
   const [durationMinutes, setDurationMinutes] = useState(
@@ -411,11 +412,12 @@ function TrickPicker({
           </>
         )}
         <PlanLabel>Practice format</PlanLabel>
-        <PlanChoices>
+        <PlanChoices $stacked={stackPlanChoices}>
           <PlanChoice
             accessibilityRole="radio"
             accessibilityState={{ checked: planKind === 'timed' }}
             $selected={planKind === 'timed'}
+            $stacked={stackPlanChoices}
             onPress={() => setPlanKind('timed')}>
             <PlanChoiceTitle $selected={planKind === 'timed'}>Timed</PlanChoiceTitle>
             <PlanChoiceCopy $selected={planKind === 'timed'}>Count down to a defined finish.</PlanChoiceCopy>
@@ -424,6 +426,7 @@ function TrickPicker({
             accessibilityRole="radio"
             accessibilityState={{ checked: planKind === 'openEnded' }}
             $selected={planKind === 'openEnded'}
+            $stacked={stackPlanChoices}
             onPress={() => setPlanKind('openEnded')}>
             <PlanChoiceTitle $selected={planKind === 'openEnded'}>Open-ended</PlanChoiceTitle>
             <PlanChoiceCopy $selected={planKind === 'openEnded'}>Count your laces</PlanChoiceCopy>
@@ -612,6 +615,13 @@ export function Countdown({
   );
 }
 
+const STACK_FONT_SCALE = 1.5;
+
+// Side-by-side controls cannot hold whole words at accessibility text sizes, so callers stack them.
+function useStackControls() {
+  return useWindowDimensions().fontScale >= STACK_FONT_SCALE;
+}
+
 export function ActiveSesh({
   trick,
   plan,
@@ -659,6 +669,7 @@ export function ActiveSesh({
   readonly hideTimer?: boolean;
   readonly showRankStanding?: boolean;
 }) {
+  const stackSecondaryActions = useStackControls();
   const rankStanding = showRankStanding && isTrickSummary(trick) ? formatKenteiStanding(trick) : undefined;
   const notesToShow = trickNotes ?? [];
   const showChallenge = liveChallengeEnabled && personalBest !== undefined;
@@ -763,8 +774,9 @@ export function ActiveSesh({
             <NextTrickButtonText>Next trick</NextTrickButtonText>
           </NextTrickButton>
         ) : null}
-        <SecondaryActions>
+        <SecondaryActions $stacked={stackSecondaryActions}>
           <PauseButton
+            $stacked={stackSecondaryActions}
             accessibilityRole="button"
             onPress={isPaused ? onResume : onPause}>
             <PauseButtonText>{isPaused ? 'Resume Sesh' : 'Pause Sesh'}</PauseButtonText>
@@ -774,6 +786,7 @@ export function ActiveSesh({
             accessibilityState={{ disabled: !targetMet }}
             disabled={!targetMet}
             $disabled={!targetMet}
+            $stacked={stackSecondaryActions}
             onPress={onEnd}>
             <EndButtonText>{endActionLabel}</EndButtonText>
           </EndButton>
@@ -1300,8 +1313,8 @@ const SecondaryButton = styled(Button).attrs({ size: 'medium' })`
   border-radius: 5px;
 `;
 const PlanLabel = styled.Text`color: ${({ theme }) => theme.text}; font-size: 13px; font-weight: 900; letter-spacing: 1.2px; margin-top: 30px; text-transform: uppercase;`;
-const PlanChoices = styled.View`flex-direction: row; gap: 10px; margin-top: 10px;`;
-const PlanChoice = styled(Pressable)<{ $selected: boolean }>`flex: 1; min-height: 94px; background-color: ${({ $selected }) => ($selected ? AppColors.ink : AppColors.paper)}; border: 2px solid ${AppColors.ink}; padding: 15px;`;
+const PlanChoices = styled.View<{ $stacked: boolean }>`flex-direction: ${({ $stacked }) => ($stacked ? 'column' : 'row')}; gap: 10px; margin-top: 10px;`;
+const PlanChoice = styled(Pressable)<{ $selected: boolean; $stacked: boolean }>`${({ $stacked }) => ($stacked ? 'align-self: stretch;' : 'flex: 1;')} min-height: 94px; background-color: ${({ $selected }) => ($selected ? AppColors.ink : AppColors.paper)}; border: 2px solid ${AppColors.ink}; padding: 15px;`;
 const PlanChoiceTitle = styled.Text<{ $selected: boolean }>`color: ${({ $selected, theme }) => ($selected ? theme.onInk : theme.text)}; font-size: 17px; font-weight: 900;`;
 const PlanChoiceCopy = styled.Text<{ $selected: boolean }>`color: ${({ $selected, theme }) => ($selected ? AppColors.cream : theme.text)}; font-size: 12px; font-weight: 600; line-height: 17px; margin-top: 5px;`;
 const DurationField = styled.View`margin-top: 16px;`;
@@ -1311,7 +1324,7 @@ const DurationHint = styled.Text<{ $invalid: boolean }>`color: ${({ $invalid, th
 const ChallengeField = styled.View`margin-top: 16px;`;
 const ChallengeChoices = styled.View`flex-direction: row; gap: 10px; margin-top: 10px;`;
 const ChallengeChoice = styled(Pressable)<{ $selected: boolean }>`flex: 1; min-height: 82px; background-color: ${({ $selected }) => ($selected ? AppColors.ink : AppColors.paper)}; border: 2px solid ${AppColors.ink}; padding: 15px;`;
-const ChallengeChoiceTitle = styled.Text<{ $selected: boolean }>`color: ${({ $selected, theme }) => ($selected ? theme.onInk : theme.text)}; font-size: 15px; font-weight: 900;`;
+const ChallengeChoiceTitle = styled.Text<{ $selected: boolean }>`color: ${({ $selected, theme }) => ($selected ? theme.onInk : theme.text)}; font-size: 15px; font-weight: 900; text-align: center;`;
 const ChallengeChoiceCopy = styled.Text<{ $selected: boolean }>`color: ${({ $selected, theme }) => ($selected ? AppColors.cream : theme.text)}; font-size: 12px; font-weight: 600; line-height: 17px; margin-top: 5px;`;
 const TrickChoices = styled.View`gap: 10px; margin-top: 28px;`;
 const TrickChoice = styled(Pressable)<{ $disabled: boolean }>`min-height: 82px; justify-content: center; background-color: #f8f1dd; border: 2px solid #18382e; opacity: ${({ $disabled }) => ($disabled ? 0.45 : 1)}; padding: 15px 58px 15px 18px; position: relative;`;
@@ -1319,23 +1332,23 @@ const ChoiceMeta = styled.Text<{ $preferred: boolean }>`color: ${({ $preferred, 
 const ChoiceName = styled.Text`color: ${({ theme }) => theme.text}; font-size: 20px; font-weight: 800; margin-top: 5px;`;
 const ChoiceBest = styled.Text`color: ${({ theme }) => theme.text}; font-size: 12px; font-weight: 800; margin-top: 6px;`;
 const CompactSequence = styled.Text`color: ${({ theme }) => theme.text}; font-size: 11px; font-weight: 700; line-height: 16px; margin-top: 5px;`;
-const ChoiceArrow = styled.Text`position: absolute; right: 20px; color: ${AppColors.ink}; font-size: 28px; font-weight: 900;`;
-const CountdownTrick = styled.Text`max-width: 560px; color: #18382e; font-size: 26px; font-weight: 900; text-align: center;`;
-const CountdownNumber = styled.Text`color: ${({ theme }) => theme.accent}; font-size: 156px; font-weight: 900; line-height: 180px; text-align: center;`;
-const ActiveTrick = styled.Text`color: #18382e; font-size: 30px; font-weight: 900; text-align: center;`;
+const ChoiceArrow = styled(DisplayText)`position: absolute; right: 20px; color: ${AppColors.ink}; font-size: 28px; font-weight: 900;`;
+const CountdownTrick = styled(DisplayText)`max-width: 560px; color: #18382e; font-size: 26px; font-weight: 900; text-align: center;`;
+const CountdownNumber = styled(DisplayText)`color: ${({ theme }) => theme.accent}; font-size: 156px; font-weight: 900; line-height: 180px; text-align: center;`;
+const ActiveTrick = styled(DisplayText)`color: #18382e; font-size: 30px; font-weight: 900; text-align: center;`;
 const SequenceBlock = styled.View<{ readonly $prominent: boolean }>`width: 100%; max-width: 500px; gap: 4px; background-color: ${({ $prominent }) => $prominent ? '#e5edcf' : 'transparent'}; border-left-width: ${({ $prominent }) => $prominent ? '5px' : '0'}; border-left-color: ${AppColors.red}; margin-top: 16px; padding: ${({ $prominent }) => $prominent ? '14px 16px' : '0'};`;
 const SequenceLabel = styled.Text`color: ${({ theme }) => theme.text}; font-size: 10px; font-weight: 900; letter-spacing: 1.2px; margin-bottom: 3px; text-transform: uppercase;`;
 const SequenceRow = styled.View`flex-direction: row; align-items: baseline; gap: 10px;`;
 const SequenceNumber = styled.Text`width: 22px; color: ${({ theme }) => theme.text}; font-size: 10px; font-weight: 900;`;
 const SequenceName = styled.Text`flex: 1; color: ${({ theme }) => theme.text}; font-size: 14px; font-weight: 800; line-height: 20px;`;
 const TimerLabel = styled.Text`color: ${({ theme }) => theme.text}; font-size: 12px; font-weight: 900; letter-spacing: 1.4px; margin-top: 22px; text-transform: uppercase;`;
-const Timer = styled.Text`color: #18382e; font-size: 78px; font-variant: tabular-nums; font-weight: 900; letter-spacing: -4px; margin: 4px 0 22px;`;
+const Timer = styled(DisplayText)`color: #18382e; font-size: 78px; font-variant: tabular-nums; font-weight: 900; letter-spacing: -4px; margin: 4px 0 22px;`;
 // Foregrounds on theme.buttonBackground use theme.onButton, which is derived against that
 // surface; theme.text can coincide with the button background and theme.accent can fail contrast.
-const LacedButton = styled(Pressable)<{ $disabled: boolean; $extraTopSpacing?: boolean }>`width: 100%; min-height: 108px; flex-direction: row; align-items: center; justify-content: space-between; background-color: ${({ theme }) => theme.buttonBackground}; opacity: ${({ $disabled }) => ($disabled ? 0.45 : 1)}; padding: 22px 26px; border-radius: 6px; margin-top: ${({ $extraTopSpacing }) => ($extraTopSpacing ? '24px' : '0')};`;
-const LacedButtonText = styled.Text`color: ${({ theme }) => theme.onButton}; font-size: 34px; font-weight: 900;`;
-const LacedCount = styled.Text`color: ${({ theme }) => theme.onButton}; font-size: 40px; font-weight: 900;`;
-const ChallengeStatus = styled.Text<{ $beaten: boolean }>`width: 100%; text-align: center; margin-top: 12px; color: ${({ $beaten }) => ($beaten ? AppColors.red : AppColors.ink)}; font-size: 15px; font-weight: 900;`;
+const LacedButton = styled(Pressable)<{ $disabled: boolean; $extraTopSpacing?: boolean }>`width: 100%; min-height: 108px; flex-direction: row; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; background-color: ${({ theme }) => theme.buttonBackground}; opacity: ${({ $disabled }) => ($disabled ? 0.45 : 1)}; padding: 22px 26px; border-radius: 6px; margin-top: ${({ $extraTopSpacing }) => ($extraTopSpacing ? '24px' : '0')};`;
+const LacedButtonText = styled(DisplayText)`color: ${({ theme }) => theme.onButton}; font-size: 34px; font-weight: 900;`;
+const LacedCount = styled(DisplayText)`color: ${({ theme }) => theme.onButton}; font-size: 40px; font-weight: 900;`;
+const ChallengeStatus = styled.Text<{ $beaten: boolean }>`width: 100%; text-align: center; margin-top: 12px; color: ${({ $beaten }) => ($beaten ? AppColors.red : AppColors.ink)}; font-size: 15px; font-weight: 900; text-align: center;`;
 const History = styled.View`width: 100%; margin-top: 28px;`;
 const HistoryTitle = styled.Text`color: #18382e; font-size: 14px; font-weight: 900; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 8px;`;
 const HistoryEmpty = styled.Text`width: 100%; color: #71807a; font-size: 15px; text-align: center; padding: 30px 0 12px;`;
@@ -1351,11 +1364,11 @@ const GoalsKind = styled.Text`color: ${({ theme }) => theme.text}; font-size: 11
 const GoalsAchievedBadge = styled.Text`overflow: hidden; padding: 4px 8px; color: ${AppColors.paper}; background-color: ${AppColors.ink}; border-radius: 3px; font-size: 10px; font-weight: 900; letter-spacing: 0.8px; text-transform: uppercase;`;
 const GoalsTarget = styled.Text`color: ${({ theme }) => theme.text}; font-size: 16px; font-weight: 650; line-height: 23px; margin-top: 6px;`;
 const GoalsProgress = styled.Text`color: #53635d; font-size: 13px; font-weight: 700; margin-top: 6px;`;
-const SecondaryActions = styled.View`flex-direction: row; gap: 10px; margin-top: 28px;`;
-const PauseButton = styled(Pressable)`min-height: 48px; flex: 1; align-items: center; justify-content: center; padding: 12px 24px; background-color: #18382e; border: 2px solid #18382e; border-radius: 5px;`;
-const PauseButtonText = styled.Text`color: #f4c94d; font-size: 15px; font-weight: 900;`;
-const EndButton = styled(Pressable)<{ $disabled: boolean }>`min-height: 48px; flex: 1; align-items: center; justify-content: center; opacity: ${({ $disabled }) => ($disabled ? 0.45 : 1)}; padding: 12px 24px; border: 2px solid #18382e; border-radius: 5px;`;
-const EndButtonText = styled.Text`color: #18382e; font-size: 15px; font-weight: 900;`;
+const SecondaryActions = styled.View<{ $stacked: boolean }>`flex-direction: ${({ $stacked }) => ($stacked ? 'column' : 'row')}; gap: 10px; margin-top: 28px;`;
+const PauseButton = styled(Pressable)<{ $stacked: boolean }>`min-height: 48px; ${({ $stacked }) => ($stacked ? 'align-self: stretch;' : 'flex: 1;')} align-items: center; justify-content: center; padding: 12px 24px; background-color: #18382e; border: 2px solid #18382e; border-radius: 5px;`;
+const PauseButtonText = styled.Text`color: #f4c94d; font-size: 15px; font-weight: 900; text-align: center;`;
+const EndButton = styled(Pressable)<{ $disabled: boolean; $stacked: boolean }>`min-height: 48px; ${({ $stacked }) => ($stacked ? 'align-self: stretch;' : 'flex: 1;')} align-items: center; justify-content: center; opacity: ${({ $disabled }) => ($disabled ? 0.45 : 1)}; padding: 12px 24px; border: 2px solid #18382e; border-radius: 5px;`;
+const EndButtonText = styled.Text`color: #18382e; font-size: 15px; font-weight: 900; text-align: center;`;
 const EndAnywayButton = styled(Pressable)`min-height: 40px; align-items: center; justify-content: center; margin-top: 10px; padding: 8px 24px;`;
 const EndAnywayButtonText = styled.Text`color: ${({ theme }) => theme.text}; font-size: 13px; font-weight: 800; text-decoration-line: underline;`;
 const AttemptsReminder = styled.Text`width: 100%; text-align: center; color: ${({ theme }) => theme.text}; font-size: 12px; font-weight: 800; letter-spacing: 0.4px; margin-top: 10px; text-transform: uppercase;`;
@@ -1380,8 +1393,8 @@ const MultiTrickAction = styled(Pressable)`
 `;
 const MultiTrickActionTitle = styled.Text`color: ${({ theme }) => theme.text}; font-size: 18px; font-weight: 900;`;
 const MultiTrickActionCopy = styled.Text`color: ${({ theme }) => theme.text}; font-size: 13px; font-weight: 650; line-height: 18px; margin-top: 4px;`;
-const TargetStatus = styled.Text<{ $met: boolean }>`width: 100%; text-align: center; margin-top: 12px; color: ${({ $met }) => ($met ? AppColors.red : AppColors.ink)}; font-size: 15px; font-weight: 900;`;
-const ResultBanner = styled.Text<{ $beaten: boolean }>`width: 100%; text-align: center; margin-top: 18px; padding: 12px 16px; background-color: ${({ $beaten }) => ($beaten ? '#e5edcf' : '#f8f1dd')}; border-left-width: 5px; border-left-color: ${({ $beaten }) => ($beaten ? AppColors.red : AppColors.ink)}; color: ${AppColors.ink}; font-size: 15px; font-weight: 900;`;
+const TargetStatus = styled.Text<{ $met: boolean }>`width: 100%; text-align: center; margin-top: 12px; color: ${({ $met }) => ($met ? AppColors.red : AppColors.ink)}; font-size: 15px; font-weight: 900; text-align: center;`;
+const ResultBanner = styled.Text<{ $beaten: boolean }>`width: 100%; text-align: center; margin-top: 18px; padding: 12px 16px; background-color: ${({ $beaten }) => ($beaten ? '#e5edcf' : '#f8f1dd')}; border-left-width: 5px; border-left-color: ${({ $beaten }) => ($beaten ? AppColors.red : AppColors.ink)}; color: ${AppColors.ink}; font-size: 15px; font-weight: 900; text-align: center;`;
 const CelebrationBannerCard = styled.View`width: 100%; align-items: center; background-color: ${({ theme }) => theme.accent}; border: 3px solid ${AppColors.ink}; border-radius: 6px; padding: 18px 20px; margin-bottom: 20px;`;
 const CelebrationBannerEyebrow = styled.Text`color: ${({ theme }) => theme.text}; font-size: 12px; font-weight: 900; letter-spacing: 1.6px; text-transform: uppercase; max-width: 100%; text-align: center; flex-shrink: 1;`;
 const CelebrationBannerTitle = styled.Text`color: ${({ theme }) => theme.text}; font-size: 20px; font-weight: 900; text-align: center; margin-top: 6px; line-height: 26px; max-width: 100%; flex-shrink: 1;`;

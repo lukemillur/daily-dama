@@ -4,6 +4,7 @@ import { Pressable, SectionList, type SectionListData, useWindowDimensions } fro
 import { css, styled } from 'styled-components/native';
 
 import { TextField } from '@/components/ui/text-field';
+import { DisplayText } from '@/components/ui/typography';
 import {
   createTrickSections,
   type DirectoryTrick,
@@ -475,7 +476,7 @@ const Eyebrow = styled.Text`
   text-transform: uppercase;
 `;
 
-const Title = styled.Text`
+const Title = styled(DisplayText)`
   max-width: 640px;
   color: #142f27;
   font-size: 48px;
@@ -586,7 +587,8 @@ const SelectableIdentity = styled(Pressable)<{ readonly $compact: boolean }>`
 `;
 
 const Position = styled.Text<{ readonly $laced: boolean }>`
-  width: 26px;
+  min-width: 26px;
+  flex-shrink: 0;
   color: ${({ $laced }) => ($laced ? '#274137' : '#d84929')};
   font-size: 13px;
   font-weight: 900;
