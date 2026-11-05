@@ -62,7 +62,12 @@ export function AssessmentEntry() {
         plan={OPEN_ENDED_SESH_PLAN}
         origin="assessment"
         suppressTransientCompletionFallback
-        onFinished={() => router.navigate('/app/home')}
+        onFinished={() => {
+          // The wrap-up has no further actions, so reset Profile's stack to its root before
+          // leaving; otherwise the next Profile tab tap shows the stale wrap-up.
+          router.replace('/app/profile');
+          router.navigate('/app/home');
+        }}
         finishButtonLabel="Go to Home"
         onCancelRun={() => setStep({ kind: 'choosingFlow' })}
         showAttemptsReminder

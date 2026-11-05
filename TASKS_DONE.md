@@ -4,6 +4,18 @@ Completed entries move here from `TASKS.md`'s `Backlog`, in the same commit that
 
 Entries keep their content as it was at completion. Don't retroactively edit a description or exit criteria after the fact; if something about a completed task turns out to be wrong or misleading, note that in a new entry or in code, not by rewriting history here.
 
+### [T299] Reset the Profile stack when an assessment ends with Go to Home
+
+- **Area:** Navigation / Kentei assessment
+- **Priority:** Low
+- **Status:** Done
+- **Planning:** Implementer
+- **Description:** After a Kentei assessment wrap-up, Go to Home (`AssessmentEntry` → `router.navigate('/app/home')`) leaves the Profile stack on `kentei-assessment`, so the next Profile tab tap shows the stale `Sesh complete` wrap-up until a second tap. Go to Home should leave Profile at its root, so one Profile tap shows the Profile screen.
+- **Exit criteria:** After finishing or ending an assessment and tapping Go to Home, a single Profile tab tap shows the Profile root screen, not the wrap-up. This is checked on iPhone 17e (iOS 27.0) with the bundle pinned and in the web browser. A route/component test covers it. Full `yarn tsc --noEmit` passes.
+- **Dependencies:** None.
+- **Notes:** Scoping decision: yes, reset the Profile stack to its root. The wrap-up has no further actions, so returning to it has no value. Keep the existing `tabPress` → `router.replace('/app/profile')` listener in `src/app/app/profile/_layout.tsx` unless the fix replaces it. Reproduced by T289.3/T289.6 (HEAD `78b15a4`) on iPhone 17e and 18 Pro Max after skip/end and promotion runs.
+- **Platform scope:** Acceptance runs on the iOS Simulator and web. Android and physical-device checks are not part of these exit criteria; record them as not run rather than passed.
+
 ### [T305] Keep display headlines and active Sesh controls intact at accessibility text sizes
 
 - **Area:** Typography / Sesh layout
