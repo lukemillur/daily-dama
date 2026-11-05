@@ -143,7 +143,7 @@ _Scoped 2026-11-05 from the T289.4/T289.5 iOS audit findings in Needs scoping (n
 
 - **Area:** Profile / theme customization
 - **Priority:** Low
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Implementer
 - **Description:** On iPhone 17e, dragging down the Background colour spectrum updates the colour but also scrolls the Profile page, so the picker jumps out from under the finger. The spectrum and hue strip in `src/features/profile/components/color-spectrum-picker.tsx` use responder handlers without refusing termination. Make them keep the gesture (e.g. `onResponderTerminationRequest={() => false}`) so the page doesn't scroll during a drag that started on the picker.
 - **Exit criteria:** On iPhone 17e (iOS 27.0) with the bundle pinned, a vertical drag that starts on the spectrum square or the hue strip changes the colour without scrolling the Profile page, and a drag that starts outside the picker still scrolls the page. Web picker dragging is unchanged. A component test asserts that the picker refuses responder termination. Full `yarn tsc --noEmit` passes.
