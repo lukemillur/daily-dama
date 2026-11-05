@@ -1,5 +1,6 @@
 import { styled } from 'styled-components/native';
 
+import { DisplayText } from '@/components/ui/typography';
 import type { TrickSummary } from '@/features/tricks/model/trick';
 
 interface TrickCardProps {
@@ -36,5 +37,5 @@ const RankWatermark = styled.Text`position: absolute; right: -14px; bottom: -55p
 const MetadataRow = styled.View`flex-direction: row; align-items: center; justify-content: space-between; gap: 16px;`;
 const RankBadge = styled.Text`overflow: hidden; padding: 7px 11px; color: #fffaf0; background-color: #de4b2a; border-radius: 3px; font-size: 13px; font-weight: 800; letter-spacing: 0.8px; text-transform: uppercase;`;
 const LevelLabel = styled.Text`flex-shrink: 1; color: #274137; font-size: 14px; font-weight: 700; text-align: right;`;
-const TrickName = styled.Text`max-width: 570px; color: #142f27; font-size: 46px; font-weight: 900; letter-spacing: -1.6px; line-height: 52px;`;
+const TrickName = styled(DisplayText)`max-width: 570px; color: #142f27; font-size: 46px; font-weight: 900; letter-spacing: -1.6px; line-height: 52px;`;
 const ProgressLabel = styled.Text`color: #53675f; font-size: 13px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase;`;

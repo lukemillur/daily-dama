@@ -1,13 +1,13 @@
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import { Platform } from "react-native";
+import { Platform, useWindowDimensions } from "react-native";
 import { KeyboardAwareScroll } from "@/components/ui/keyboard-aware-scroll";
 import { styled } from "styled-components/native";
 
 import { Button } from "@/components/ui/button";
 import { Screen } from "@/components/ui/screen";
 import { TextField } from "@/components/ui/text-field";
-import { BodyText, DisplayTitle, Eyebrow } from "@/components/ui/typography";
+import { BodyText, DisplayText, DisplayTitle, Eyebrow } from "@/components/ui/typography";
 import { AppColors } from "@/constants/theme";
 import { AccountSection } from "@/features/auth/components/account-section";
 import { GuestAccountSection } from "@/features/auth/components/guest-account-section";
@@ -30,6 +30,8 @@ export default function ProfileScreen() {
   const router = useRouter();
   const { kenteiRank, selectedTrickIds, streakThresholdMs } = useUserProfile();
   const { setStreakThresholdMs } = useUserProfileActions();
+  // Beside the rank numeral the label column is too narrow for whole words at accessibility sizes.
+  const stackRank = useWindowDimensions().fontScale >= 1.5;
 
   if (!isOnboardingComplete || !kenteiRank) return null;
 
@@ -42,9 +44,9 @@ export default function ProfileScreen() {
       >
         <Content>
           <Eyebrow>Your profile</Eyebrow>
-          <RankLine>
+          <RankLine $stacked={stackRank}>
             <RankNumber>{String(kenteiRank).padStart(2, "0")}</RankNumber>
-            <RankIdentity>
+            <RankIdentity $stacked={stackRank}>
               <RankLabel>Assessed Kentei rank</RankLabel>
               <RankContext>
                 Your current frontier, with {selectedTrickIds.length}{" "}
@@ -154,21 +156,22 @@ const Content = styled.View`
   align-self: center;
   padding: ${Platform.OS === "web" ? 40 + 88 : 40}px 22px 0;
 `;
-const RankLine = styled.View`
-  flex-direction: row;
-  align-items: center;
+const RankLine = styled.View<{ $stacked: boolean }>`
+  flex-direction: ${({ $stacked }) => ($stacked ? "column" : "row")};
+  align-items: ${({ $stacked }) => ($stacked ? "flex-start" : "center")};
   gap: 22px;
   margin-top: 18px;
 `;
-const RankNumber = styled.Text`
+const RankNumber = styled(DisplayText)`
+  flex-shrink: 0;
   color: ${({ theme }) => theme.text};
   font-size: 78px;
   font-weight: 900;
   letter-spacing: -5px;
   line-height: 84px;
 `;
-const RankIdentity = styled.View`
-  flex: 1;
+const RankIdentity = styled.View<{ $stacked: boolean }>`
+  ${({ $stacked }) => ($stacked ? "align-self: stretch;" : "flex: 1;")}
 `;
 const RankLabel = styled.Text`
   color: ${({ theme }) => theme.text};

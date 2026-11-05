@@ -1,11 +1,11 @@
 import { Link, useRouter } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Pressable, ScrollView } from 'react-native';
+import { Pressable, ScrollView, useWindowDimensions } from 'react-native';
 import { styled } from 'styled-components/native';
 
 import { Button } from '@/components/ui/button';
 import { Screen } from '@/components/ui/screen';
-import { BodyText, DisplayTitle, Eyebrow } from '@/components/ui/typography';
+import { BodyText, DisplayText, DisplayTitle, Eyebrow } from '@/components/ui/typography';
 import { AppColors } from '@/constants/theme';
 import { useCustomTricks } from '@/features/custom-tricks/state/custom-trick-provider';
 import { isGuestImportPendingResolution } from '@/features/guest-import/model/guest-import';
@@ -132,6 +132,8 @@ function PopulatedStats({
   readonly neglectedTricks: readonly NeglectedTrick<{ readonly id: string; readonly name: string }>[];
   readonly stats: Stats;
 }) {
+  // Side-by-side metric tiles cannot hold whole labels at accessibility text sizes, so one per row.
+  const stackOverview = useWindowDimensions().fontScale >= 1.5;
   const router = useRouter();
 
   return (
@@ -141,15 +143,15 @@ function PopulatedStats({
         <Title>You&apos;re putting in the work.</Title>
 
         <Overview>
-          <OverviewMetric>
+          <OverviewMetric $stacked={stackOverview}>
             <OverviewValue>{stats.totalLaces}</OverviewValue>
             <OverviewLabel>Total laces</OverviewLabel>
           </OverviewMetric>
-          <OverviewMetric>
+          <OverviewMetric $stacked={stackOverview}>
             <OverviewValue>{formatDuration(stats.totalPracticeMs)}</OverviewValue>
             <OverviewLabel>Practice time</OverviewLabel>
           </OverviewMetric>
-          <OverviewMetric>
+          <OverviewMetric $stacked={stackOverview}>
             <OverviewValue>{stats.sessionCount}</OverviewValue>
             <OverviewLabel>{stats.sessionCount === 1 ? 'Sesh' : 'Seshes'}</OverviewLabel>
           </OverviewMetric>
@@ -200,8 +202,8 @@ const CenteredTitle = styled(DisplayTitle)`text-align: center;`;
 const CenteredBody = styled(BodyText)`max-width: 480px; text-align: center; margin-top: 18px;`;
 const StartButton = styled(Button).attrs({ size: 'medium' })`margin-top: 28px;`;
 const Overview = styled.View`flex-direction: row; flex-wrap: wrap; gap: 10px; margin-top: 30px;`;
-const OverviewMetric = styled.View`min-width: 150px; flex: 1; background-color: ${AppColors.ink}; padding: 20px; border-radius: 4px;`;
-const OverviewValue = styled.Text`color: ${({ theme }) => theme.onInk}; font-size: 30px; font-weight: 900; font-variant: tabular-nums;`;
+const OverviewMetric = styled.View<{ $stacked: boolean }>`min-width: ${({ $stacked }) => ($stacked ? '100%' : '150px')}; flex: 1; background-color: ${AppColors.ink}; padding: 20px; border-radius: 4px;`;
+const OverviewValue = styled(DisplayText)`color: ${({ theme }) => theme.onInk}; font-size: 30px; font-weight: 900; font-variant: tabular-nums;`;
 const OverviewLabel = styled.Text`color: ${AppColors.cream}; font-size: 12px; font-weight: 800; margin-top: 4px; text-transform: uppercase;`;
 const SectionLabel = styled.Text`color: ${({ theme }) => theme.text}; font-size: 13px; font-weight: 900; letter-spacing: 1.8px; margin: 38px 0 12px; text-transform: uppercase;`;
 const TrickList = styled.View`gap: 12px;`;

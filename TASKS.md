@@ -138,18 +138,6 @@ _Native execution prerequisite: the simulator-enablement changes described in [o
 
 _Scoped 2026-11-05 from the T289.4/T289.5 iOS audit findings in Needs scoping (no BACKLOG_STORIES.md story). IDs keep their audit numbers._
 
-### [T305] Keep display headlines and active Sesh controls intact at accessibility text sizes
-
-- **Area:** Typography / Sesh layout
-- **Priority:** Medium
-- **Status:** In progress
-- **Planning:** Required
-- **Description:** At accessibility-extra-extra-extra-large Dynamic Type on iPhone 17e, display headlines break mid-word (`Wha/t are/we`, `You'/re`), Profile's rank `03` stacks one digit per line, and the active Sesh `Laced.` label and lace count clip off the right edge while `Pause Sesh` / `End Sesh` split mid-word. Cap font scaling on display-sized type (the shared `DisplayTitle` and route-local display/numeral styles, e.g. Profile rank, Sesh timer, countdown and Laced) with `maxFontSizeMultiplier`, and let the active Sesh controls grow in height or wrap at word boundaries instead of clipping. Body text and control labels keep full Dynamic Type scaling.
-- **Exit criteria:** On iPhone 17e (iOS 27.0) at accessibility-extra-extra-extra-large, with the bundle pinned and the app cold-launched at that size, the Home, Sesh, Tricks, Stats and Profile headlines and an active single-trick Sesh show no word broken across lines, Profile's rank reads as one line, `Laced.` and the lace count stay fully inside the button, `Pause Sesh` and `End Sesh` each keep whole words, and the trick-card arrow does not overlap the trick name. The same screens at the default text size are visually unchanged on iOS and web. A component test asserts the scaling cap on the shared display typography. Full `yarn tsc --noEmit` passes.
-- **Dependencies:** None.
-- **Notes:** Scoping decision (owner may override in review): cap display-sized type, don't reflow it. Words such as `What` at 42px × ~3 cannot fit a 375 pt width, and reflowing would mean a different headline layout at each size. Pick a multiplier (around 1.3–1.5) that keeps the largest headline word on one line at 375 pt, and record the chosen value with its reason. Don't cap body text, form inputs or tab labels. The live text-size change bug (re-measure without relaunch) is T304 and is out of scope here. Source: T289.5 Accessibility/device matrix row in DESLOPPIFY.md, HEAD `1809425`.
-- **Platform scope:** Acceptance runs on the iOS Simulator plus a default-size web check for no change. Android and physical-device checks are not part of these exit criteria; record them as not run rather than passed.
-
 ### [T299] Reset the Profile stack when an assessment ends with Go to Home
 
 - **Area:** Navigation / Kentei assessment

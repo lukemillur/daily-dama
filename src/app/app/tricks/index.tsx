@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { KeyboardAwareScroll } from '@/components/ui/keyboard-aware-scroll';
 import { Screen } from '@/components/ui/screen';
 import { TextField } from '@/components/ui/text-field';
-import { BodyText, DisplayTitle, Eyebrow } from '@/components/ui/typography';
+import { BodyText, DisplayText, DisplayTitle, Eyebrow } from '@/components/ui/typography';
 import { AppColors } from '@/constants/theme';
 import {
   type CustomTrick,
@@ -534,7 +534,7 @@ const TypeChoice = styled(Pressable)`min-width: 260px; flex: 1; min-height: 190p
 const TypeNumber = styled.Text`color: ${({ theme }) => theme.text}; font-size: 12px; font-weight: 900; letter-spacing: 1.5px;`;
 const TypeTitle = styled.Text`color: ${({ theme }) => theme.text}; font-size: 23px; font-weight: 900; margin-top: 14px;`;
 const TypeCopy = styled.Text`color: ${({ theme }) => theme.text}; font-size: 14px; font-weight: 600; line-height: 21px; margin-top: 8px;`;
-const TypeArrow = styled.Text`position: absolute; right: 20px; bottom: 18px; color: ${AppColors.ink}; font-size: 28px; font-weight: 900;`;
+const TypeArrow = styled(DisplayText)`position: absolute; right: 20px; bottom: 18px; color: ${AppColors.ink}; font-size: 28px; font-weight: 900;`;
 const CancelButton = styled(Button)`margin-top: 24px;`;
 const FormScroll = styled(KeyboardAwareScroll)`flex: 1; width: 100%;`;
 const FormContent = styled.View`width: 100%; max-width: 680px; align-self: center; padding: 38px 22px 0;`;

@@ -3,7 +3,7 @@ import { Text } from 'react-native';
 import { act, create } from 'react-test-renderer';
 import { ThemeProvider as StyledThemeProvider, type DefaultTheme } from 'styled-components/native';
 
-import { BodyText, DisplayTitle, Eyebrow } from '@/components/ui/typography';
+import { BodyText, DISPLAY_MAX_FONT_SIZE_MULTIPLIER, DisplayTitle, Eyebrow } from '@/components/ui/typography';
 
 // Custom theme distinct from the fixed AppColors palette, so a test failure that falls back to a
 // hardcoded constant is distinguishable from a pass on this theme's tokens.
@@ -64,5 +64,15 @@ describe('typography', () => {
     const root = await mountTypography();
     const style = resolvedTextStyle(root, 'body-text');
     expect(style?.color).toBe(customTheme.textMuted);
+  });
+
+  it('caps font scaling on DisplayTitle but not on body or eyebrow text', async () => {
+    const root = await mountTypography();
+    const multiplier = (label: string) =>
+      root.root.findAll((n) => n.type === Text && n.props.accessibilityLabel === label)[0]?.props
+        .maxFontSizeMultiplier;
+    expect(multiplier('display-title')).toBe(DISPLAY_MAX_FONT_SIZE_MULTIPLIER);
+    expect(multiplier('body-text')).toBeUndefined();
+    expect(multiplier('eyebrow')).toBeUndefined();
   });
 });
