@@ -185,7 +185,7 @@ _Native execution prerequisite: the simulator-enablement changes described in [o
 
 - **Area:** Sesh
 - **Priority:** High (inherited from parent T043)
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** Exercise T043.1's lifecycle behavior on iOS Simulator and fix any platform-specific integration defects without changing the Sesh domain model. Depends on T043.1.
 - **Exit criteria:** Deliberate iOS Simulator checks cover timed, open-ended, paused, and multi-trick Sesh background/foreground cycles, confirm any overdue timer resolves at its logical deadline, and confirm the wake lock releases after completion or cancellation; any platform-specific regressions found are covered by an automated test where practical.
