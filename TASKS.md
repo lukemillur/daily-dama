@@ -149,7 +149,7 @@ _Native execution prerequisite: the simulator-enablement changes described in [o
 
 - **Area:** Forms / mobile layout
 - **Priority:** Medium (inherited from parent T044)
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** Apply T044.1's proven layout pattern to notes, goals, Profile streak editing, and the access gate where reachable in the native build. Depends on T044.1.
 - **Exit criteria:** Focused checks on representative small and large iPhone simulator viewports confirm the final input and primary action remain reachable with the keyboard open on notes, goals, Profile streak, and any reachable access-gate form; scrolling, dismissal, safe-area, and tab-bar behavior are consistent and web rendering is unchanged. Explicitly record an unavailable access gate as not applicable rather than claiming it was tested.
