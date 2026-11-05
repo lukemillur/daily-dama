@@ -703,6 +703,8 @@ The reducer is cleanly isolated, but `sesh.tsx` owns a large amount of presentat
 
 React Native primitives and platform-specific navigation give one code path across web, iOS and Android, and all three are active targets. Web has the longest verification history. Native tab behavior, keyboard handling, background Sesh behavior, and layout are active hardening work on iOS and Android rather than proven architecture guarantees.
 
+Keyboard-aware forms: long forms use `KeyboardAwareScroll` (`src/components/ui/keyboard-aware-scroll.tsx`), a `ScrollView` wrapper that on iOS sets `automaticallyAdjustKeyboardInsets` and interactive dismissal so UIKit grows the bottom inset by the real keyboard overlap. This absorbs the in-flow tab bar and safe area without device-specific offsets and leaves headers and action layout to each screen. Only the custom-trick form uses it so far; notes, goals, auth and feedback screens still use plain `ScrollView` and are the planned adopters. Verified on the iOS Simulator only; Android and physical devices are unverified.
+
 ## Safe extension rules
 
 When adding functionality, preserve these rules unless there is a deliberate architecture change:

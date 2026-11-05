@@ -1,9 +1,10 @@
 import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { Pressable, ScrollView, TextInput } from 'react-native';
+import { Pressable, TextInput } from 'react-native';
 import { styled } from 'styled-components/native';
 
 import { Button } from '@/components/ui/button';
+import { KeyboardAwareScroll } from '@/components/ui/keyboard-aware-scroll';
 import { Screen } from '@/components/ui/screen';
 import { TextField } from '@/components/ui/text-field';
 import { BodyText, DisplayTitle, Eyebrow } from '@/components/ui/typography';
@@ -243,7 +244,7 @@ export function CustomTrickForm({
   };
 
   return (
-    <FormScroll keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: 24 }}>
+    <FormScroll contentContainerStyle={{ paddingBottom: 24 }}>
       <FormContent>
         <Eyebrow>{initialTrick ? 'Edit' : 'New'} {kind === 'sequence' ? 'sequence' : 'standalone trick'}</Eyebrow>
         <PageTitle>{initialTrick ? 'Refine the trick.' : 'Name the trick.'}</PageTitle>
@@ -535,7 +536,7 @@ const TypeTitle = styled.Text`color: ${({ theme }) => theme.text}; font-size: 23
 const TypeCopy = styled.Text`color: ${({ theme }) => theme.text}; font-size: 14px; font-weight: 600; line-height: 21px; margin-top: 8px;`;
 const TypeArrow = styled.Text`position: absolute; right: 20px; bottom: 18px; color: ${AppColors.ink}; font-size: 28px; font-weight: 900;`;
 const CancelButton = styled(Button)`margin-top: 24px;`;
-const FormScroll = styled(ScrollView)`flex: 1; width: 100%;`;
+const FormScroll = styled(KeyboardAwareScroll)`flex: 1; width: 100%;`;
 const FormContent = styled.View`width: 100%; max-width: 680px; align-self: center; padding: 38px 22px 0;`;
 const Field = styled.View`margin-top: 28px;`;
 const FieldLabel = styled.Text`color: ${({ theme }) => theme.text}; font-size: 13px; font-weight: 900; letter-spacing: 1px; text-transform: uppercase;`;
