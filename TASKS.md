@@ -142,7 +142,7 @@ _Scoped 2026-11-05 from the T289.4/T289.5 iOS audit findings in Needs scoping (n
 
 - **Area:** Typography / Sesh layout
 - **Priority:** Medium
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** At accessibility-extra-extra-extra-large Dynamic Type on iPhone 17e, display headlines break mid-word (`Wha/t are/we`, `You'/re`), Profile's rank `03` stacks one digit per line, and the active Sesh `Laced.` label and lace count clip off the right edge while `Pause Sesh` / `End Sesh` split mid-word. Cap font scaling on display-sized type (the shared `DisplayTitle` and route-local display/numeral styles, e.g. Profile rank, Sesh timer, countdown and Laced) with `maxFontSizeMultiplier`, and let the active Sesh controls grow in height or wrap at word boundaries instead of clipping. Body text and control labels keep full Dynamic Type scaling.
 - **Exit criteria:** On iPhone 17e (iOS 27.0) at accessibility-extra-extra-extra-large, with the bundle pinned and the app cold-launched at that size, the Home, Sesh, Tricks, Stats and Profile headlines and an active single-trick Sesh show no word broken across lines, Profile's rank reads as one line, `Laced.` and the lace count stay fully inside the button, `Pause Sesh` and `End Sesh` each keep whole words, and the trick-card arrow does not overlap the trick name. The same screens at the default text size are visually unchanged on iOS and web. A component test asserts the scaling cap on the shared display typography. Full `yarn tsc --noEmit` passes.
