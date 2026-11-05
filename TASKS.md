@@ -138,17 +138,6 @@ _Native execution prerequisite: the simulator-enablement changes described in [o
 
 _Scoped 2026-11-05 from the T289.4/T289.5 iOS audit findings in Needs scoping (no BACKLOG_STORIES.md story). IDs keep their audit numbers._
 
-### [T299] Reset the Profile stack when an assessment ends with Go to Home
-
-- **Area:** Navigation / Kentei assessment
-- **Priority:** Low
-- **Status:** Not started
-- **Planning:** Implementer
-- **Description:** After a Kentei assessment wrap-up, Go to Home (`AssessmentEntry` → `router.navigate('/app/home')`) leaves the Profile stack on `kentei-assessment`, so the next Profile tab tap shows the stale `Sesh complete` wrap-up until a second tap. Go to Home should leave Profile at its root, so one Profile tap shows the Profile screen.
-- **Exit criteria:** After finishing or ending an assessment and tapping Go to Home, a single Profile tab tap shows the Profile root screen, not the wrap-up. This is checked on iPhone 17e (iOS 27.0) with the bundle pinned and in the web browser. A route/component test covers it. Full `yarn tsc --noEmit` passes.
-- **Dependencies:** None.
-- **Notes:** Scoping decision: yes, reset the Profile stack to its root. The wrap-up has no further actions, so returning to it has no value. Keep the existing `tabPress` → `router.replace('/app/profile')` listener in `src/app/app/profile/_layout.tsx` unless the fix replaces it. Reproduced by T289.3/T289.6 (HEAD `78b15a4`) on iPhone 17e and 18 Pro Max after skip/end and promotion runs.
-- **Platform scope:** Acceptance runs on the iOS Simulator and web. Android and physical-device checks are not part of these exit criteria; record them as not run rather than passed.
 
 ### [T303] Stop the Profile page scrolling while dragging the colour spectrum on iOS
 

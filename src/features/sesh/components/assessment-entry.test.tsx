@@ -34,11 +34,12 @@ jest.mock('react-native-reanimated', () =>
   require('react-native-reanimated/mock'),
 );
 const mockNavigate = jest.fn();
+const mockReplace = jest.fn();
 
 // AssessmentEntry calls useRouter() directly for the post-run route reset. Keep the mock shared
 // so the completion test can verify Home is navigated to only by its explicit wrap-up action.
 jest.mock('expo-router', () => ({
-  useRouter: () => ({ navigate: mockNavigate, replace: jest.fn(), push: jest.fn() }),
+  useRouter: () => ({ navigate: mockNavigate, replace: mockReplace, push: jest.fn() }),
 }));
 
 const RANK_1_TRICK_IDS = KENDAMA_KENTEI_TRICKS.filter((trick) => trick.kenteiRank === 1).map(
@@ -127,6 +128,7 @@ describe('AssessmentEntry result copy', () => {
   beforeEach(async () => {
     await AsyncStorage.clear();
     mockNavigate.mockClear();
+    mockReplace.mockClear();
     jest.useFakeTimers();
   });
 
@@ -205,6 +207,11 @@ describe('AssessmentEntry result copy', () => {
 
     expect(mockNavigate).toHaveBeenCalledTimes(1);
     expect(mockNavigate).toHaveBeenCalledWith('/app/home');
+    // Profile's stack is reset to its root so one Profile tab tap shows Profile, not the wrap-up.
+    expect(mockReplace).toHaveBeenCalledWith('/app/profile');
+    expect(mockReplace.mock.invocationCallOrder[0]).toBeLessThan(
+      mockNavigate.mock.invocationCallOrder[0],
+    );
 
     act(() => {
       root.unmount();
