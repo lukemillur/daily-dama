@@ -4,6 +4,19 @@ Completed entries move here from `TASKS.md`'s `Backlog`, in the same commit that
 
 Entries keep their content as it was at completion. Don't retroactively edit a description or exit criteria after the fact; if something about a completed task turns out to be wrong or misleading, note that in a new entry or in code, not by rewriting history here.
 
+### [T303] Stop the Profile page scrolling while dragging the colour spectrum on iOS
+
+- **Area:** Profile / theme customization
+- **Priority:** Low
+- **Status:** Done
+- **Planning:** Implementer
+- **Description:** On iPhone 17e, dragging down the Background colour spectrum updates the colour but also scrolls the Profile page, so the picker jumps out from under the finger. The spectrum and hue strip in `src/features/profile/components/color-spectrum-picker.tsx` use responder handlers without refusing termination. Make them keep the gesture (e.g. `onResponderTerminationRequest={() => false}`) so the page doesn't scroll during a drag that started on the picker.
+- **Exit criteria:** On iPhone 17e (iOS 27.0) with the bundle pinned, a vertical drag that starts on the spectrum square or the hue strip changes the colour without scrolling the Profile page, and a drag that starts outside the picker still scrolls the page. Web picker dragging is unchanged. A component test asserts that the picker refuses responder termination. Full `yarn tsc --noEmit` passes.
+- **Dependencies:** None.
+- **Notes:** Scoping decision: the picker captures the gesture and the page doesn't scroll while dragging. Reproduced three times by T289.4 (HEAD `61c3da3`). The owner confirmed on 2026-11-05 that it still reproduces after T044.2 (`9422089`), which swapped the Profile scroll view for `KeyboardAwareScroll`. Verify the fix against that scroll view. Keep the change local to the picker. Don't add a gesture library for this.
+- **Platform scope:** Acceptance runs on the iOS Simulator plus a web check for no change. Android and physical-device checks are not part of these exit criteria; record them as not run rather than passed.
+- **Outcome:** The responder-termination refusal alone did not stop the scroll on iPhone 17e: UIKit's scroll pan still took the drag. The fix keeps it and adds `onDragStateChange` on `ColorSpectrumPicker`, forwarded through `ThemeColorPicker`, so Profile sets `scrollEnabled={false}` for the length of a picker drag.
+
 ### [T299] Reset the Profile stack when an assessment ends with Go to Home
 
 - **Area:** Navigation / Kentei assessment

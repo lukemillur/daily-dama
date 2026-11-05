@@ -109,4 +109,57 @@ describe("ColorSpectrumPicker", () => {
 
     act(() => root.unmount());
   });
+
+  it.each([
+    ["saturation and lightness square", "Background color saturation and lightness"],
+    ["hue strip", "Background color hue"],
+  ])("refuses responder termination on the %s so the page cannot take over a drag", async (_name, label) => {
+    let root!: ReactTestRenderer;
+    await act(async () => {
+      root = create(
+        <ColorSpectrumPicker
+          accessibilityLabelPrefix="Background color"
+          persistedHex="#ff0000"
+          onChange={jest.fn()}
+        />,
+      );
+    });
+
+    const responder = findByLabel(root, label);
+    expect(responder).toBeDefined();
+    expect(typeof responder!.props.onResponderTerminationRequest).toBe("function");
+    expect(responder!.props.onResponderTerminationRequest()).toBe(false);
+
+    act(() => root.unmount());
+  });
+
+  it("reports drag start on grant and drag end on release or terminate so the page can stop scrolling", async () => {
+    const onDragStateChange = jest.fn();
+    let root!: ReactTestRenderer;
+    await act(async () => {
+      root = create(
+        <ColorSpectrumPicker
+          accessibilityLabelPrefix="Background color"
+          persistedHex="#ff0000"
+          onChange={jest.fn()}
+          onDragStateChange={onDragStateChange}
+        />,
+      );
+    });
+
+    const svSquare = findByLabel(root, "Background color saturation and lightness");
+    const hueBar = findByLabel(root, "Background color hue");
+    fireResponder(svSquare, 10, 10);
+    expect(onDragStateChange).toHaveBeenLastCalledWith(true);
+    act(() => svSquare!.props.onResponderRelease());
+    expect(onDragStateChange).toHaveBeenLastCalledWith(false);
+
+    fireResponder(hueBar, 10);
+    expect(onDragStateChange).toHaveBeenLastCalledWith(true);
+    act(() => hueBar!.props.onResponderTerminate());
+    expect(onDragStateChange).toHaveBeenLastCalledWith(false);
+    expect(onDragStateChange).toHaveBeenCalledTimes(4);
+
+    act(() => root.unmount());
+  });
 });

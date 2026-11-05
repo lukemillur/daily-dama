@@ -14,7 +14,11 @@ import {
 } from "@/features/profile/state/user-profile-provider";
 import { contrastRatio, WCAG_AA_MIN_CONTRAST_RATIO } from "@/shared/color/contrast";
 
-export function ThemeColorPicker() {
+export function ThemeColorPicker({
+  onDragStateChange,
+}: {
+  readonly onDragStateChange?: (dragging: boolean) => void;
+}) {
   const { themeBackgroundColor, themeAccentColor, themeTextColor } = useUserProfile();
   const { setThemeColors, setThemeTextColor } = useUserProfileActions();
   const resolvedTheme = useResolvedTheme();
@@ -29,6 +33,7 @@ export function ThemeColorPicker() {
         Pick a background, accent, and text color to make the app your own.
       </Copy>
       <ColorField
+        onDragStateChange={onDragStateChange}
         accessibilityLabel="Background color hex"
         fallbackColor={resolvedTheme.background}
         label="Background color"
@@ -37,6 +42,7 @@ export function ThemeColorPicker() {
         onSave={(hex) => setThemeColors(hex, themeAccentColor)}
       />
       <ColorField
+        onDragStateChange={onDragStateChange}
         accessibilityLabel="Accent color hex"
         fallbackColor={resolvedTheme.accent}
         label="Accent color"
@@ -52,6 +58,7 @@ export function ThemeColorPicker() {
         Reset background & accent
       </ResetButton>
       <ColorField
+        onDragStateChange={onDragStateChange}
         accessibilityLabel="Text color hex"
         fallbackColor={resolvedTheme.text}
         label="Text color"
@@ -74,10 +81,12 @@ function ColorField({
   accessibilityLabel,
   fallbackColor,
   label,
+  onDragStateChange,
   onSave,
   persistedValue,
   referenceColor,
 }: {
+  readonly onDragStateChange?: (dragging: boolean) => void;
   readonly accessibilityLabel: string;
   /**
    * The app's current resolved color for this field (from `useResolvedTheme()`), used to seed
@@ -126,6 +135,7 @@ function ColorField({
         liveHex={isValidHex ? hexText : undefined}
         persistedHex={persistedValue ?? fallbackColor}
         onChange={setHexText}
+        onDragStateChange={onDragStateChange}
       />
       <HexFieldWrapper>
         <TextField

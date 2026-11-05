@@ -139,14 +139,3 @@ _Native execution prerequisite: the simulator-enablement changes described in [o
 _Scoped 2026-11-05 from the T289.4/T289.5 iOS audit findings in Needs scoping (no BACKLOG_STORIES.md story). IDs keep their audit numbers._
 
 
-### [T303] Stop the Profile page scrolling while dragging the colour spectrum on iOS
-
-- **Area:** Profile / theme customization
-- **Priority:** Low
-- **Status:** Not started
-- **Planning:** Implementer
-- **Description:** On iPhone 17e, dragging down the Background colour spectrum updates the colour but also scrolls the Profile page, so the picker jumps out from under the finger. The spectrum and hue strip in `src/features/profile/components/color-spectrum-picker.tsx` use responder handlers without refusing termination. Make them keep the gesture (e.g. `onResponderTerminationRequest={() => false}`) so the page doesn't scroll during a drag that started on the picker.
-- **Exit criteria:** On iPhone 17e (iOS 27.0) with the bundle pinned, a vertical drag that starts on the spectrum square or the hue strip changes the colour without scrolling the Profile page, and a drag that starts outside the picker still scrolls the page. Web picker dragging is unchanged. A component test asserts that the picker refuses responder termination. Full `yarn tsc --noEmit` passes.
-- **Dependencies:** None.
-- **Notes:** Scoping decision: the picker captures the gesture and the page doesn't scroll while dragging. Reproduced three times by T289.4 (HEAD `61c3da3`). The owner confirmed on 2026-11-05 that it still reproduces after T044.2 (`9422089`), which swapped the Profile scroll view for `KeyboardAwareScroll`. Verify the fix against that scroll view. Keep the change local to the picker. Don't add a gesture library for this.
-- **Platform scope:** Acceptance runs on the iOS Simulator plus a web check for no change. Android and physical-device checks are not part of these exit criteria; record them as not run rather than passed.

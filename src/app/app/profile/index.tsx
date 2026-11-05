@@ -33,11 +33,15 @@ export default function ProfileScreen() {
   // Beside the rank numeral the label column is too narrow for whole words at accessibility sizes.
   const stackRank = useWindowDimensions().fontScale >= 1.5;
 
+  // Disabled while a colour-picker drag is active so iOS's native scroll pan cannot take the gesture.
+  const [pickerDragging, setPickerDragging] = useState(false);
+
   if (!isOnboardingComplete || !kenteiRank) return null;
 
   return (
     <Screen edges={["top", "left", "right"]} includeWebHeaderInset={false}>
       <ProfileScroll
+        scrollEnabled={!pickerDragging}
         // Web's footer nav is absolutely positioned over the scene and needs the larger spacer.
         // Native's in-flow tab bar already reserves its own space, so only breathing room is needed.
         contentContainerStyle={{ paddingBottom: Platform.OS === "web" ? 120 : 24 }}
@@ -73,7 +77,7 @@ export default function ProfileScreen() {
           <Divider />
           <RainbowThemePresets />
           <Divider />
-          <ThemeColorPicker />
+          <ThemeColorPicker onDragStateChange={setPickerDragging} />
           <Divider />
           <StreakSettings
             streakThresholdMs={streakThresholdMs}
