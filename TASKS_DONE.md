@@ -4,6 +4,42 @@ Completed entries move here from `TASKS.md`'s `Backlog`, in the same commit that
 
 Entries keep their content as it was at completion. Don't retroactively edit a description or exit criteria after the fact; if something about a completed task turns out to be wrong or misleading, note that in a new entry or in code, not by rewriting history here.
 
+### [T302] Make "Start practicing" complete onboarding on iOS
+
+- **Area:** Onboarding
+- **Priority:** High
+- **Status:** Done
+- **Planning:** Required
+- **Description:** On a fresh iOS install, tapping Start practicing at the end of onboarding does nothing, so a new iPhone user cannot finish onboarding (from T289.4, reproduced twice at HEAD `61c3da3`; owner confirmed by hand on 2026-11-05). Find whether the press handler runs at all, or runs and then fails to persist or navigate, and fix the cause.
+- **Exit criteria:** On a fresh iPhone 17e simulator install (iOS 27.0), with the bundle pinned per `.claude/agents/ticket-implementer.md`, a user goes from the Start screen through onboarding; Start practicing completes onboarding and the app lands on Home with the chosen tricks selected. A cold relaunch then opens Home, not the Start screen. A regression test covers the cause. Web onboarding is unchanged. Full `yarn tsc --noEmit` passes.
+- **Dependencies:** None.
+- **Notes:** Leads are evidence, not conclusions: (1) T289.4 saw the development sandbox links overlap the bottom of the onboarding trick list — check whether an overlay takes the tap; (2) T292 (start-screen route decision) and T293 (splash hold/release) both changed onboarding entry on 2026-11-04 — check whether either blocks the touch or the navigation; (3) T290 hides the tab bar during onboarding — check the layout around the button; (4) the button is `FinishButton` in `src/features/onboarding/components/onboarding-selection-step.tsx`. Follow AGENTS.md durability rules for the onboarding save: report success only after the write succeeds, and give actionable feedback on failure. Stop and ask the owner if the cause needs a change to the persisted onboarding/profile schema, the provider hydration gate, or the T292 route decision beyond a narrow fix, or if a fix would change web onboarding. Note the T289.4 repro ran an iOS 27.2 runtime label on the 17e; acceptance uses iOS 27.0.
+- **Platform scope:** Acceptance runs on the iOS Simulator plus a web onboarding check for no change. Android and physical-device checks are not part of these exit criteria; record them as not run rather than passed.
+- **Outcome (2026-11-05):** Closed as not reproducible, per the owner. The T302 implementer used fresh installs on iPhone 17e `31BF7946` (iOS 27.0) and `617CA090` (iOS 27.2), with the bundle pinned to its own Metro on port 8095 at HEAD `c72e558`. Instrumented logs showed Start practicing's pressIn, press and onFinish firing on both devices. Onboarding went through the duration and theme steps to Finish onboarding, then landed on Sesh with the chosen tricks. A cold relaunch opened Home, not the Start screen. The dev sandbox links end above the button (button about y=744–798 pt, links from about y=805), so they don't overlap it. The only failed taps were made while the trick list was still decelerating, when iOS uses the tap to stop the scroll. That likely explains the T289.4 report. The owner confirmed by hand on 2026-11-05 that Start practicing works. No code changed. Two notes on the ticket's wording: Start practicing only opens the duration step, and onboarding then goes to Sesh, not Home, on both web and native. The onboarding save is not awaited before navigation; that gap is filed as T306.
+
+### [T289.1] Re-check merged T283, T285 and T286 on iOS
+
+- **Area:** iOS verification
+- **Priority:** Medium (inherited from parent T289)
+- **Status:** Done
+- **Planning:** Implementer
+- **Description:** Give T283 (themed control foregrounds), T285 (trick directory rows) and T286 (Sesh celebration banners) their own matrix rows and check them against their archived exit criteria in TASKS_DONE.md.
+- **Exit criteria:** Each of the three rows is checked on both small and large simulators, including T283 on at least one non-default theme preset, T285 with a long custom trick name, and T286 with a personal-best or achieved-goal banner. Each named matrix row in DESLOPPIFY.md gets a dated pass, a reproduced finding written to Needs scoping, or a concrete blocked reason from simulator evidence, with device, runtime and test data recorded; nothing is marked passed from source inspection.
+- **Dependencies:** None.
+- **Notes:** Small = iPhone 17e, large = iPhone 18 Pro Max (iOS 27.0). Documentation/verification only — do not fix findings here. 
+- **Platform scope:** Acceptance for this ticket runs on the iOS Simulator. Android and physical-device checks are not part of these exit criteria; record them as not run rather than passed.
+- **Outcome (2026-11-05):** Closed without a dedicated re-run, per the owner. Later audits on the current code with pinned bundles covered most of its rows. T283 themed foregrounds: T289.4 Profile/theme applied the Indigo preset on the 17e, and Raw and Indigo on the 18 Pro Max (iOS 27.0). Controls on other screens under a non-default theme were not checked one by one. T285 directory rows: T289.4 showed the long custom trick name wrapping in Home's rotation list and Stats' Needs attention on the 17e, and exercised custom edit and delete from the directory. The Tricks directory row with a long name was not checked on the 18 Pro Max. T286 celebration banners: T289.5 saw the first-lace banner in the Sesh wrap-up on the 17e, also with Reduce Motion on. Personal-best and achieved-goal banners were not seen on either device. Not re-checked: T283 control foregrounds beyond Profile, T285 on the large device, T286 personal-best/goal banners. The claim branch `task/T289.1-re-check-merged-t283-t285-and-t286-on` held only its claim and plan commits and no PR, so it is safe to delete. Deletion is left to the owner.
+
+### [T289] Complete the interrupted iOS workflow audit
+
+- **Area:** iOS verification
+- **Priority:** Medium
+- **Status:** Done
+- **Description:** Resume the hands-on workflow matrix in DESLOPPIFY.md and cover the flows left as source-only or unverified.
+- **Notes:** Umbrella only — complete T289.1–T289.5. A partial run record (commit `a975eb7` on `task/T289-complete-the-interrupted-ios-workflow`) covers part of T283, T285, T286, Open-ended Sesh, Profile account copy and Five tabs on iPhone 17e; children may carry its evidence into DESLOPPIFY.md rather than repeat it. Timed lifecycle stays with T043, keyboard with T044, native accounts with S040. Exclude Android, physical devices, visualization sandboxes and destructive changes to owner data.
+- **Platform scope:** Acceptance for this ticket runs on the iOS Simulator. Android and physical-device checks are not part of these exit criteria; record them as not run rather than passed.
+- **Outcome (2026-11-05):** All children are Done: T289.1 (closed without a re-run), and T289.2–T289.6.
+
 ### [T301] Pin simulator evidence to the worktree bundle
 
 - **Area:** Tooling / workflow

@@ -126,51 +126,14 @@ _Raw ideas land here — a name and a one-line description, nothing more. Discus
 - **Time-of-day success correlation** (Low) — surface whether the user lands more in morning vs. night seshes; what counts as a meaningful difference is undefined.
 - **Line generator** (Low) — random line of tricks; trick pool source (all / unlocked / selected) undecided.
 - **Collection management** (Low) — photos + metadata for physical kendama collection, with kendama-specific lace lists. Likely a new persistence domain; substantial scope on its own.
-- **T299 Assessment wrap-up stays in the Profile tab after Go to Home** (Low, from T289.3 audit; re-confirmed by T289.6 on the pinned current bundle, branch HEAD `78b15a4`) — on iPhone 17e and 18 Pro Max (iOS 27.0), finishing or ending a Kentei assessment and tapping Go to Home switches to Home, but tapping the Profile tab then shows the old `Sesh complete` wrap-up again until the Profile tab is tapped a second time. Reproduced after a skip/end run and after a promotion run on the 17e, and after an end run on the 18 Pro Max. Open question: should Go to Home reset the Profile stack to its root?
-- **T303 Colour spectrum drag also scrolls the Profile page on iOS** (Low, from T289.4 audit; three occurrences, HEAD `61c3da3`) — on iPhone 17e (iOS 27.0), dragging a finger down the Background colour spectrum moved the colour (hex and contrast ratio updated) but the surrounding Profile scroll view also scrolled, so the picker jumped away from under the finger. Open question: should the spectrum capture the gesture and lock scrolling while dragging?
-- **T304 Changing Dynamic Type while the app runs leaves a stale layout on iOS** (Medium, from T289.5 audit; reproduced on both simulators, HEAD `1809425`) — on iPhone 18 Pro Max (iOS 27.0), changing the text size with `xcrun simctl ui <udid> content_size` while the app is foregrounded, then moving Sesh to Home, left Home with clipped text at accessibility-large (`CURRENT FRONTIER · RA`, `Clearar`, `Run it bac`) and huge vertical gaps inside the hero at accessibility-medium (`Last sesh` far below the title); on iPhone 17e (iOS 27.0) the same happened to an active Sesh after accessibility-extra-extra-extra-large to large. A cold relaunch at the same size laid out correctly, and a relaunched session did not reproduce it. This is the closest reproduction of the earlier blank-Home sighting; no blank Home appeared. Open question: should layouts re-measure on font-scale change, or is this a Simulator-only artifact?
-- **T305 Accessibility text sizes break headlines and Sesh controls on iOS** (Medium, from T289.5 audit; HEAD `1809425`) — at accessibility-extra-extra-extra-large on iPhone 17e (iOS 27.0), the Sesh, Tricks and Stats headlines break mid-word (`Wha/t are/we`, `You'/re`), Profile's rank `03` stacks one digit per line, and in an active Sesh `Laced.` and the lace count `0` clip off the right edge while `Pause Sesh` and `End Sesh` split mid-word; the Sesh trick card arrow overlaps the trick name. Content stays reachable by scrolling and the five tab labels stay small. Open question: cap the scaling on display headlines and fixed-height controls, or reflow them?
+- **T304 Changing Dynamic Type while the app runs leaves a stale layout on iOS** (Medium, from T289.5 audit; reproduced on both simulators, HEAD `1809425`) — on iPhone 18 Pro Max (iOS 27.0), changing the text size with `xcrun simctl ui <udid> content_size` while the app is foregrounded, then moving Sesh to Home, left Home with clipped text at accessibility-large (`CURRENT FRONTIER · RA`, `Clearar`, `Run it bac`) and huge vertical gaps inside the hero at accessibility-medium (`Last sesh` far below the title); on iPhone 17e (iOS 27.0) the same happened to an active Sesh after accessibility-extra-extra-extra-large to large. A cold relaunch at the same size laid out correctly, and a relaunched session did not reproduce it. This is the closest reproduction of the earlier blank-Home sighting; no blank Home appeared. Open question: should layouts re-measure on font-scale change, or is this a Simulator-only artifact? Scoping note (2026-11-05): re-check after T305 lands, because capped display type may remove most of the visible clipping; scope a fix only if it still reproduces on a pinned bundle.
+- **T306 Onboarding completion navigates before the profile write succeeds** (Medium, from T302, 2026-11-05) — `completeOnboarding` is a fire-and-forget dispatch, and `finishOnboarding` calls `router.replace('/app/sesh')` without waiting for the persisted profile write. A failed write would therefore report success, which breaks AGENTS.md's durability rules. Open question: give the profile provider a typed write outcome for onboarding completion (a provider API change), or accept the current behavior for a local-only write?
 
 ## Backlog
 
 _iOS Simulator audit activation — 2026-10-29, explicitly requested by the owner. Source: [DESLOPPIFY.md](DESLOPPIFY.md), scoped iOS audit and workflow matrix. D022 → T283; D023 → T284; D024 → T285; D025 → T286; D021 → T287; unsupported S040 guest affordances → T288; unfinished audit coverage → T289. Existing T042, T043/T043.1–T043.2 and T044/T044.1–T044.2 move here from TASKS_BACKLOG.md with their IDs preserved and iOS-only acceptance clarified. Full S040 authentication/sync remains Proposed in BACKLOG_STORIES.md; it is not activated by these presentation tickets. These entries document work; this change does not claim, implement, publish or close them._
 
 _Native execution prerequisite: the simulator-enablement changes described in [outputs/ios-personal-build-setup.md](outputs/ios-personal-build-setup.md) are on `development`. The generated `/ios` project and local CocoaPods workaround are not committed, so a fresh checkout may need `yarn ios` (prebuild and pod install) first. Report a tooling failure as a prerequisite rather than a passed check._
-
-### [T302] Make "Start practicing" complete onboarding on iOS
-
-- **Area:** Onboarding
-- **Priority:** High
-- **Status:** Not started
-- **Planning:** Required
-- **Description:** On a fresh iOS install, tapping Start practicing at the end of onboarding does nothing, so a new iPhone user cannot finish onboarding (from T289.4, reproduced twice at HEAD `61c3da3`; owner confirmed by hand on 2026-11-05). Find whether the press handler runs at all, or runs and then fails to persist or navigate, and fix the cause.
-- **Exit criteria:** On a fresh iPhone 17e simulator install (iOS 27.0), with the bundle pinned per `.claude/agents/ticket-implementer.md`, a user goes from the Start screen through onboarding; Start practicing completes onboarding and the app lands on Home with the chosen tricks selected. A cold relaunch then opens Home, not the Start screen. A regression test covers the cause. Web onboarding is unchanged. Full `yarn tsc --noEmit` passes.
-- **Dependencies:** None.
-- **Notes:** Leads are evidence, not conclusions: (1) T289.4 saw the development sandbox links overlap the bottom of the onboarding trick list — check whether an overlay takes the tap; (2) T292 (start-screen route decision) and T293 (splash hold/release) both changed onboarding entry on 2026-11-04 — check whether either blocks the touch or the navigation; (3) T290 hides the tab bar during onboarding — check the layout around the button; (4) the button is `FinishButton` in `src/features/onboarding/components/onboarding-selection-step.tsx`. Follow AGENTS.md durability rules for the onboarding save: report success only after the write succeeds, and give actionable feedback on failure. Stop and ask the owner if the cause needs a change to the persisted onboarding/profile schema, the provider hydration gate, or the T292 route decision beyond a narrow fix, or if a fix would change web onboarding. Note the T289.4 repro ran an iOS 27.2 runtime label on the 17e; acceptance uses iOS 27.0.
-- **Platform scope:** Acceptance runs on the iOS Simulator plus a web onboarding check for no change. Android and physical-device checks are not part of these exit criteria; record them as not run rather than passed.
-
-### [T289] Complete the interrupted iOS workflow audit
-
-- **Area:** iOS verification
-- **Priority:** Medium
-- **Status:** Blocked — split into T289.1–T289.5 on 2026-11-02 because the full matrix did not fit one agent run.
-- **Description:** Resume the hands-on workflow matrix in DESLOPPIFY.md and cover the flows left as source-only or unverified.
-- **Notes:** Umbrella only — complete T289.1–T289.5. A partial run record (commit `a975eb7` on `task/T289-complete-the-interrupted-ios-workflow`) covers part of T283, T285, T286, Open-ended Sesh, Profile account copy and Five tabs on iPhone 17e; children may carry its evidence into DESLOPPIFY.md rather than repeat it. Timed lifecycle stays with T043, keyboard with T044, native accounts with S040. Exclude Android, physical devices, visualization sandboxes and destructive changes to owner data.
-- **Platform scope:** Acceptance for this ticket runs on the iOS Simulator. Android and physical-device checks are not part of these exit criteria; record them as not run rather than passed.
-
-### [T289.1] Re-check merged T283, T285 and T286 on iOS
-
-- **Area:** iOS verification
-- **Priority:** Medium (inherited from parent T289)
-- **Status:** Not started
-- **Planning:** Implementer
-- **Description:** Give T283 (themed control foregrounds), T285 (trick directory rows) and T286 (Sesh celebration banners) their own matrix rows and check them against their archived exit criteria in TASKS_DONE.md.
-- **Exit criteria:** Each of the three rows is checked on both small and large simulators, including T283 on at least one non-default theme preset, T285 with a long custom trick name, and T286 with a personal-best or achieved-goal banner. Each named matrix row in DESLOPPIFY.md gets a dated pass, a reproduced finding written to Needs scoping, or a concrete blocked reason from simulator evidence, with device, runtime and test data recorded; nothing is marked passed from source inspection.
-- **Dependencies:** None.
-- **Notes:** Small = iPhone 17e, large = iPhone 18 Pro Max (iOS 27.0). Documentation/verification only — do not fix findings here. 
-- **Platform scope:** Acceptance for this ticket runs on the iOS Simulator. Android and physical-device checks are not part of these exit criteria; record them as not run rather than passed.
-
-
 
 ### [T043] Harden active Sesh behavior across app backgrounding
 
@@ -225,3 +188,41 @@ _Native execution prerequisite: the simulator-enablement changes described in [o
 - **Dependencies:** T044.1.
 - **Notes:** Adapt the shared convention where a screen's structure requires it; do not introduce fixed offsets or unrelated form redesigns.
 - **Platform scope:** Acceptance for this ticket runs on the iOS Simulator. Android and physical-device checks are not part of these exit criteria; record them as not run rather than passed.
+
+_Scoped 2026-11-05 from the T289.4/T289.5 iOS audit findings in Needs scoping (no BACKLOG_STORIES.md story). IDs keep their audit numbers._
+
+### [T305] Keep display headlines and active Sesh controls intact at accessibility text sizes
+
+- **Area:** Typography / Sesh layout
+- **Priority:** Medium
+- **Status:** Not started
+- **Planning:** Required
+- **Description:** At accessibility-extra-extra-extra-large Dynamic Type on iPhone 17e, display headlines break mid-word (`Wha/t are/we`, `You'/re`), Profile's rank `03` stacks one digit per line, and the active Sesh `Laced.` label and lace count clip off the right edge while `Pause Sesh` / `End Sesh` split mid-word. Cap font scaling on display-sized type (the shared `DisplayTitle` and route-local display/numeral styles, e.g. Profile rank, Sesh timer, countdown and Laced) with `maxFontSizeMultiplier`, and let the active Sesh controls grow in height or wrap at word boundaries instead of clipping. Body text and control labels keep full Dynamic Type scaling.
+- **Exit criteria:** On iPhone 17e (iOS 27.0) at accessibility-extra-extra-extra-large, with the bundle pinned and the app cold-launched at that size, the Home, Sesh, Tricks, Stats and Profile headlines and an active single-trick Sesh show no word broken across lines, Profile's rank reads as one line, `Laced.` and the lace count stay fully inside the button, `Pause Sesh` and `End Sesh` each keep whole words, and the trick-card arrow does not overlap the trick name. The same screens at the default text size are visually unchanged on iOS and web. A component test asserts the scaling cap on the shared display typography. Full `yarn tsc --noEmit` passes.
+- **Dependencies:** None.
+- **Notes:** Scoping decision (owner may override in review): cap display-sized type, don't reflow it. Words such as `What` at 42px × ~3 cannot fit a 375 pt width, and reflowing would mean a different headline layout at each size. Pick a multiplier (around 1.3–1.5) that keeps the largest headline word on one line at 375 pt, and record the chosen value with its reason. Don't cap body text, form inputs or tab labels. The live text-size change bug (re-measure without relaunch) is T304 and is out of scope here. Source: T289.5 Accessibility/device matrix row in DESLOPPIFY.md, HEAD `1809425`.
+- **Platform scope:** Acceptance runs on the iOS Simulator plus a default-size web check for no change. Android and physical-device checks are not part of these exit criteria; record them as not run rather than passed.
+
+### [T299] Reset the Profile stack when an assessment ends with Go to Home
+
+- **Area:** Navigation / Kentei assessment
+- **Priority:** Low
+- **Status:** Not started
+- **Planning:** Implementer
+- **Description:** After a Kentei assessment wrap-up, Go to Home (`AssessmentEntry` → `router.navigate('/app/home')`) leaves the Profile stack on `kentei-assessment`, so the next Profile tab tap shows the stale `Sesh complete` wrap-up until a second tap. Go to Home should leave Profile at its root, so one Profile tap shows the Profile screen.
+- **Exit criteria:** After finishing or ending an assessment and tapping Go to Home, a single Profile tab tap shows the Profile root screen, not the wrap-up. This is checked on iPhone 17e (iOS 27.0) with the bundle pinned and in the web browser. A route/component test covers it. Full `yarn tsc --noEmit` passes.
+- **Dependencies:** None.
+- **Notes:** Scoping decision: yes, reset the Profile stack to its root. The wrap-up has no further actions, so returning to it has no value. Keep the existing `tabPress` → `router.replace('/app/profile')` listener in `src/app/app/profile/_layout.tsx` unless the fix replaces it. Reproduced by T289.3/T289.6 (HEAD `78b15a4`) on iPhone 17e and 18 Pro Max after skip/end and promotion runs.
+- **Platform scope:** Acceptance runs on the iOS Simulator and web. Android and physical-device checks are not part of these exit criteria; record them as not run rather than passed.
+
+### [T303] Stop the Profile page scrolling while dragging the colour spectrum on iOS
+
+- **Area:** Profile / theme customization
+- **Priority:** Low
+- **Status:** Not started
+- **Planning:** Implementer
+- **Description:** On iPhone 17e, dragging down the Background colour spectrum updates the colour but also scrolls the Profile page, so the picker jumps out from under the finger. The spectrum and hue strip in `src/features/profile/components/color-spectrum-picker.tsx` use responder handlers without refusing termination. Make them keep the gesture (e.g. `onResponderTerminationRequest={() => false}`) so the page doesn't scroll during a drag that started on the picker.
+- **Exit criteria:** On iPhone 17e (iOS 27.0) with the bundle pinned, a vertical drag that starts on the spectrum square or the hue strip changes the colour without scrolling the Profile page, and a drag that starts outside the picker still scrolls the page. Web picker dragging is unchanged. A component test asserts that the picker refuses responder termination. Full `yarn tsc --noEmit` passes.
+- **Dependencies:** None.
+- **Notes:** Scoping decision: the picker captures the gesture and the page doesn't scroll while dragging. Reproduced three times by T289.4 (HEAD `61c3da3`). Keep the change local to the picker. Don't add a gesture library for this.
+- **Platform scope:** Acceptance runs on the iOS Simulator plus a web check for no change. Android and physical-device checks are not part of these exit criteria; record them as not run rather than passed.
