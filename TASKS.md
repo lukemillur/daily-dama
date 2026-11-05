@@ -142,7 +142,7 @@ _Scoped 2026-11-05 from the T289.4/T289.5 iOS audit findings in Needs scoping (n
 
 - **Area:** Navigation / Kentei assessment
 - **Priority:** Low
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Implementer
 - **Description:** After a Kentei assessment wrap-up, Go to Home (`AssessmentEntry` → `router.navigate('/app/home')`) leaves the Profile stack on `kentei-assessment`, so the next Profile tab tap shows the stale `Sesh complete` wrap-up until a second tap. Go to Home should leave Profile at its root, so one Profile tap shows the Profile screen.
 - **Exit criteria:** After finishing or ending an assessment and tapping Go to Home, a single Profile tab tap shows the Profile root screen, not the wrap-up. This is checked on iPhone 17e (iOS 27.0) with the bundle pinned and in the web browser. A route/component test covers it. Full `yarn tsc --noEmit` passes.
