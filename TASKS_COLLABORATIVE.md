@@ -21,14 +21,14 @@ Tickets requiring owner decisions, dashboard actions, or external verification. 
 
 - **Area:** Tricks / UX design
 - **Priority:** Medium
-- **Status:** Not started
+- **Status:** In progress
 - **Execution:** Owner-in-loop
-- **Checkpoint:** Preparing
+- **Checkpoint:** Awaiting owner action
 - **Description:** The Tricks screen reads as a web page on iOS. Produce two or three design directions for a native-feeling Tricks screen (for example grouped rank sections, header search, swipe or context actions for notes and goals, a per-trick detail screen), with mockups, for the owner to choose from.
 - **Owner gates:** The owner picks one direction (or a combination) before any build ticket is written.
 - **Automation boundary:** The agent researches, mocks up and recommends; it does not change app code. After the owner's pick, it scopes the build into `TASKS.md` entries.
 - **Exit criteria:** Two or three directions with mockups and tradeoffs are recorded in the execution guide; the owner's choice is recorded; the chosen direction is scoped into mechanically verifiable `TASKS.md` tickets.
-- **Notes:** Owner request 2026-11-04. Respect the custom-trick and rank invariants in AGENTS.md. Web layout stays out of scope unless the owner chooses otherwise.
+- **Notes:** Owner request 2026-11-04. Respect the custom-trick and rank invariants in AGENTS.md. Web layout stays out of scope unless the owner chooses otherwise. Guide: [outputs/guided-tickets/T294.md](outputs/guided-tickets/T294.md).
 
 ### [T295] Plan email/password accounts on iOS and Android
 
