@@ -250,3 +250,86 @@ _Scoped 2026-11-09 from T294 (owner chose Direction A, a quiet native list, plus
 - **Dependencies:** T312.4.
 - **Notes:** Low priority: swipe and VoiceOver actions already cover every action; the menu adds labelled discoverability. Drop this ticket rather than build a custom JS menu if no Expo-compatible native menu works in the installed SDK.
 - **Platform scope:** Acceptance runs on the iOS Simulator, plus the web regression check. Record Android as not run.
+
+_Scoped 2026-11-09 from T295 (owner approved decisions D1–D10 the same day). Source story: S040. Plan, inspected seams and decision reasoning: [outputs/guided-tickets/T295.md](outputs/guided-tickets/T295.md). Email and password only; no Apple or Google sign-in. Order: T313.1 first; then T313.2, T313.3 and T313.5 in any order; then T313.4; T313.6 last._
+
+### [T313] Email/password accounts on iOS and Android
+
+- **Area:** Auth / native
+- **Priority:** High
+- **Status:** Not started
+- **Description:** Umbrella for replacing the native "accounts are not available" state with working email/password accounts, backup and sync. Close it when T313.1–T313.6 are all `Done`.
+- **Exit criteria:** T313.1–T313.6 are all `Done`.
+- **Notes:** No feature flag (D9): the native app ships only as a personal development build, so each child can enable its part directly.
+
+### [T313.1] Give native a Supabase client with secure session storage
+
+- **Area:** Auth / native / persistence
+- **Priority:** High
+- **Status:** Not started
+- **Planning:** Required
+- **Description:** `getSupabaseClient` returns `null` on iOS and Android, and `areAccountsAvailable` is web-only. Create the native client from the same factory with a per-platform storage adapter: SecureStore on native (add `expo-secure-store`), AsyncStorage unchanged on web. Keep PKCE and `detectSessionInUrl: false`. On native, start and stop GoTrue auto-refresh on AppState changes. Route `AuthProvider`'s optimistic cached-session read through the same adapter. Replace the `window.location.reload()` in `IdentityProvider`'s refresh-failed "Try again" with an auth re-initialisation that works on native. Then enable `areAccountsAvailable` and the client on iOS and Android together.
+- **Exit criteria:** Unit tests prove: (a) on `ios` and `android` the session is written through SecureStore, or through the encrypted-blob scheme below, and the plaintext refresh token never reaches AsyncStorage; (b) on `web` the client still uses AsyncStorage and `resolveGoTrueStorageKey` returns its current value for the production URL; (c) the optimistic cached-session read returns a stored session on native; (d) AppState `background` stops and `active` starts auto-refresh on native, and web is unaffected; (e) a rejected storage write during sign-in produces a structured failure and the user is not left signed in; (f) refresh-failed "Try again" re-initialises auth on native without `window`. `areAccountsAvailable('ios')` and `areAccountsAvailable('android')` return true. On iPhone 17e (iOS 27.0) with local Supabase, signing in with a local test account and cold-relaunching the app keeps the user signed in. The execution notes record the measured serialized session size against the installed SecureStore's documented value limit. ARCHITECTURE.md and AGENTS.md describe the native client and storage. Full `yarn tsc --noEmit`, the auth suite, and the shared persistence/sync contract tests pass.
+- **Dependencies:** None.
+- **Notes:** D2: check the size limit in the installed `expo-secure-store` docs before choosing. If a real session exceeds it, use Supabase's documented pattern (random AES key in SecureStore, encrypted session in AsyncStorage). Do not split the session across several keychain items; a partial write corrupts it. Do not set an explicit `storageKey`; doing so signs out every web user (see `getGoTrueStorageKey`'s comment). Needs a native rebuild (`yarn ios`). Logout keeps the logout guard and the fail-closed discard rules.
+- **Platform scope:** Acceptance runs on the iOS Simulator. Android has no verified development build; record Android checks as not run.
+
+### [T313.2] Complete email links in the app
+
+- **Area:** Auth / native / deep linking
+- **Priority:** High
+- **Status:** Not started
+- **Planning:** Required
+- **Description:** `AuthProvider` builds every `redirectTo` from `window.location.origin` (sign-up, resend, password reset, email change), which fails on native. Add one platform-aware callback URL builder: unchanged `https://<origin>/auth/callback` on web, `dailydama://auth/callback` on native via `expo-linking`'s `createURL`, keeping `?flow=email_change` for email change. The existing `/auth/callback` route handles the deep link. Add the native callback to `additional_redirect_urls` in `supabase/config.toml`.
+- **Exit criteria:** Unit tests prove the builder returns the current web URLs, returns `dailydama://auth/callback` (with `?flow=email_change` where used) on `ios` and `android`, and never reads `window` on native. Auth-provider tests prove all four email flows pass the builder's URL. On iPhone 17e (iOS 27.0) with local Supabase and Mailpit, opening the link with `xcrun simctl openurl`: a sign-up confirmation link signs the user in and reaches Home while the app is running and from a cold start; a password-reset link opens the reset-password screen; an already-used link shows the expired-link copy; a link whose PKCE verifier is missing shows the existing `missingVerifier` copy. The ticket records the hosted Supabase redirect allow-list addition as owner-applied, with its date.
+- **Dependencies:** T313.1.
+- **Notes:** D3. Universal Links and App Links are deferred: they need the Associated Domains capability, which the personal-team iOS build cannot have, plus a hosted AASA file. **Owner gate:** the agent prepares the exact allow-list value; the owner adds it in the hosted Supabase dashboard. Do not change hosted Auth settings without that authorization. Hosted email delivery on a device stays not run until observed.
+- **Platform scope:** Acceptance runs on the iOS Simulator. Record Android and physical-device checks as not run.
+
+### [T313.3] Make the sign-up and sign-in screens work on native
+
+- **Area:** Auth / native / forms
+- **Priority:** High
+- **Status:** Not started
+- **Planning:** Implementer
+- **Description:** With accounts enabled on native, the existing sign-up, sign-in, check-email and forgot-password screens render on iOS and Android for the first time. Make them usable there: keyboard avoidance so the submit button stays visible, password-manager hints (`textContentType`, `autoComplete`), focus order between fields, and safe areas.
+- **Exit criteria:** Route tests render each of the four screens with `Platform.OS = 'ios'` and assert the password fields' `textContentType` (`password` on sign-in, `newPassword` on sign-up). On iPhone 17e (iOS 27.0) with local Supabase: sign-up reaches check-email; sign-in with valid credentials reaches Home; invalid credentials show the existing error message; with the keyboard open, the submit button of each form is visible without scrolling the keyboard away. Full `yarn tsc --noEmit` passes.
+- **Dependencies:** T313.1.
+- **Notes:** The web-only keydown handlers in the sign-in and sign-up screens are already guarded by `Platform.OS`. T311 owns autocorrection; do not change it here.
+- **Platform scope:** Acceptance runs on the iOS Simulator. Record Android checks as not run.
+
+### [T313.4] Let existing accounts sign in from the Start screen without redoing onboarding
+
+- **Area:** Auth / native-start / onboarding
+- **Priority:** High
+- **Status:** Not started
+- **Planning:** Required
+- **Description:** Add a Sign in action next to Get started on `NativeStartScreen` (T292 left room for it). Two gaps must close with it. `useNativeOnboardingStatus` reads only the guest profile, so a signed-in relaunch shows the Start screen; make the root route use the active identity. Home guards onboarding only while a guest import is pending, so a signed-in identity with no import can show onboarding before its first profile pull; hold the onboarding decision until that pull settles, and show a retry state if it fails (fail closed).
+- **Exit criteria:** Tests prove: (a) the Start screen shows a Sign in action beside Get started, and it opens `/auth/sign-in`; (b) a signed-in identity whose profile has completed onboarding goes to Home on launch and the Start screen never renders; (c) after sign-in, onboarding does not render while the first profile pull is in flight; (d) a failed first pull shows a retry state, not onboarding, and retrying re-runs the pull; (e) a new account with no completed cloud profile reaches onboarding after the pull; (f) a guest with local data who signs in still enters the existing guest-import flow. On iPhone 17e (iOS 27.0) with local Supabase, an account that completed onboarding on web signs in from the Start screen and lands on Home showing its rank, with no onboarding frame seen. Full `yarn tsc --noEmit` and the native-start, onboarding and guest-import suites pass.
+- **Dependencies:** T313.1, T313.3.
+- **Notes:** D6. Owner decision 2026-11-04: an existing account signing in on mobile must not redo onboarding. Keep `resolveNativeStartDecision` pure; pass identity and pull state in.
+- **Platform scope:** Acceptance runs on the iOS Simulator. Record Android checks as not run.
+
+### [T313.5] Send feedback from the native app
+
+- **Area:** Feedback / native
+- **Priority:** Medium
+- **Status:** Not started
+- **Planning:** Implementer
+- **Description:** `src/app/feedback.tsx` shows `FeedbackUnavailableScreen` on native only because native had no Supabase client (T287). Show `FeedbackScreen` on every platform. Guests may send feedback, matching web: the `anon` insert policy exists and the server forces `email` to null for guests. Remove `FeedbackUnavailableScreen` and its tests once nothing references it.
+- **Exit criteria:** A route test renders the feedback form with `Platform.OS = 'ios'`. A `submitFeedback` test covers the native client path. No reference to `FeedbackUnavailableScreen` remains under `src/`. On iPhone 17e (iOS 27.0) with local Supabase, one guest submission and one signed-in submission each insert one `api.feedback` row; the guest row's `email` is null and the signed-in row's `email` is the account's address. With the network unavailable, submitting shows the existing failure feedback and the form keeps the message. Full `yarn tsc --noEmit` passes.
+- **Dependencies:** T313.1.
+- **Notes:** D7. Owner request 2026-11-09. No migration is needed.
+- **Platform scope:** Acceptance runs on the iOS Simulator. Record Android checks as not run.
+
+### [T313.6] Verify backup, sync and account lifecycle on iOS and Android
+
+- **Area:** Sync / auth / native
+- **Priority:** High
+- **Status:** Not started
+- **Planning:** Required
+- **Description:** Native sync treats the device as always online, because online state comes from `window` events. Add native online state with `expo-network`'s network-state listener so `SyncStatus` can show offline and reconnection starts a sync. Then run S040's cross-platform acceptance pass on both platforms, including logout, account deletion and email change, which appear on native once accounts are enabled.
+- **Exit criteria:** Tests prove native network-state changes update `SyncStatus.online` and that going back online starts a sync; web keeps its `window` listeners. On the iOS Simulator and the Android Emulator, the execution notes record, per platform: a mutation made offline syncs after reconnection and appears on web for the same account; a second account signed in on the same device sees none of the first account's data; an active Sesh survives sign-in and a token refresh; logout with pending changes is blocked by the logout guard; account deletion purges the local namespace and returns to guest; an email change completes through the native callback. Any check not performed is recorded as not run, never passed.
+- **Dependencies:** T313.2, T313.3, T313.4, T313.5, and an Android development build.
+- **Notes:** D5, D8, D10. Apple requires in-app account deletion for apps that allow account creation (App Review Guideline 5.1.1(v)); do not hide deletion on native. If the Android build is still missing, this ticket is Blocked on it; do not substitute iOS evidence.
+- **Platform scope:** iOS Simulator and Android Emulator are both required.

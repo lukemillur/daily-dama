@@ -6,7 +6,7 @@ Product outcomes, technical enablers, security controls, and launch gates awaiti
 
 _S001–S022 came from the user's 2026-08-21 QA pass on T122–T131 (landing page and trick goals), compiled via the `qa-handoff` artifact and refined by `product-manager`. S001–S005 and S007–S022 were scoped in this pass into T132–T152 (see `TASKS.md`) and removed from this file per the usual promotion cleanup. S006 was held back pending confirmation and later closed (see the S042–S062 note below)._
 
-_S032–S041 were refined from a pre-decision backend analysis (since removed; Supabase was selected and is now live in production) on 2026-08-21 using the Codex `product-manager` workflow. S032–S039 and S041 were scoped into umbrellas T153–T162 and removed from this file; T153 was later activated in [TASKS.md](TASKS.md), while T154–T162 remain in [TASKS_BACKLOG.md](TASKS_BACKLOG.md). S040 remains proposed pending a product decision on native account support._
+_S032–S041 were refined from a pre-decision backend analysis (since removed; Supabase was selected and is now live in production) on 2026-08-21 using the Codex `product-manager` workflow. S032–S039 and S041 were scoped into umbrellas T153–T162 and removed from this file; T153 was later activated in [TASKS.md](TASKS.md), while T154–T162 remain in [TASKS_BACKLOG.md](TASKS_BACKLOG.md). S040 got its native-account product decisions on 2026-11-04 and 2026-11-09 and was scoped into T313 (T313.1–T313.6) by T295 on 2026-11-09. It stays here as the source of the cross-platform acceptance criteria until T313 closes._
 
 _S042–S062 came from the user's 2026-08-25 QA pass on the Full-Batch of PR #158–223 (three items were follow-up gaps on already-`Done` tickets T144/T146/T153.12; the rest were general feedback, mostly Auth/Account UI). 19 were scoped into T163–T181 (see `TASKS.md`) and removed from this file. S051 and S006 were confirmed working in the live app by the user on 2026-08-26 and removed per the usual promotion cleanup. S057 was rejected by the user on 2026-08-26: its acceptance criteria contradicted the deliberate anti-enumeration design in `sign-up-screen.tsx`, which intentionally routes a duplicate-account signup through the identical success path as a real signup, so the current anti-enumeration behavior was kept and the story rejected._
 
@@ -62,9 +62,9 @@ _S138–S139 came from the user's 2026-09-11 QA pass on T267–T271 (the batch c
 
 - **Type:** User outcome
 - **Beneficiary:** Mobile practitioners
-- **Outcome:** The same account, callback, secure credential storage, offline sync, conflicts, logout, and deletion behavior works across web, iOS, and Android.
-- **Evidence:** Cross-platform hardening was scoped as the final phase of the original backend rollout, covering native PKCE callbacks, SecureStore-backed Auth storage, and cross-platform offline sync/conflict verification.
-- **Priority:** Medium
-- **Status:** Proposed
-- **Acceptance criteria:** Independent platform verification covers native PKCE callbacks, SecureStore-backed Auth storage, Auth email links, offline mutation and reconnection, account isolation, and active-Sesh safety on both iOS and Android.
-- **Notes:** iOS and Android are now active targets, so this story can be refined. It still needs a product decision on native account support before it is `Ready for scoping`.
+- **Outcome:** People can create an account, sign in, and back up and sync their practice from the iOS and Android apps with email and password, and the same account, callback, secure credential storage, offline sync, logout and deletion behavior works across web, iOS and Android.
+- **Evidence:** Cross-platform hardening was scoped as the final phase of the original backend rollout. T295 (2026-11-09) traced the native gaps: no native Supabase client, `window`-based email-link URLs, a guest-only native start route, no wait for the first profile pull, and `window`-only online detection.
+- **Priority:** High
+- **Status:** Scoped → T313
+- **Acceptance criteria:** Independent platform verification covers native PKCE callbacks through `dailydama://auth/callback`, SecureStore-backed Auth storage, Auth email links, Sign in from the Start screen without redoing onboarding, native feedback, offline mutation and reconnection, account isolation, logout and deletion, and active-Sesh safety on both iOS and Android.
+- **Notes:** Owner decisions: email and password only, with no Apple or Google sign-in (2026-11-04); an existing account signing in on mobile must not redo onboarding (2026-11-04); native feedback must work, including for guests (2026-11-09). Architecture approved 2026-11-09 in [outputs/guided-tickets/T295.md](outputs/guided-tickets/T295.md). Scoped into T313 (T313.1–T313.6) in TASKS.md. Universal Links and App Links are deferred until the iOS build has the Associated Domains capability.

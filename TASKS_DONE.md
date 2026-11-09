@@ -4,6 +4,20 @@ Completed entries move here from `TASKS.md`'s `Backlog`, in the same commit that
 
 Entries keep their content as it was at completion. Don't retroactively edit a description or exit criteria after the fact; if something about a completed task turns out to be wrong or misleading, note that in a new entry or in code, not by rewriting history here.
 
+### [T295] Plan email/password accounts on iOS and Android
+
+- **Area:** Auth / native
+- **Priority:** High
+- **Status:** Done
+- **Execution:** Owner-in-loop
+- **Checkpoint:** Complete
+- **Description:** Replace the native "sign up, sign in and backup are not available here yet" state with working email/password accounts. This ticket produces the architecture plan for S040, limited to email and password, and splits the build into child tickets after owner approval.
+- **Owner gates:** The owner approves the auth architecture plan (native Supabase client, SecureStore session storage, email-link callbacks into the app, identity switching, guest import and sync on native) before any implementation ticket is written.
+- **Automation boundary:** The agent writes the plan and child-ticket drafts; it does not implement auth or change Supabase or production configuration.
+- **Exit criteria:** An approved plan is recorded in the execution guide; S040 in BACKLOG_STORIES.md is updated to match; child tickets in `TASKS.md` cover the native auth client and storage, the email confirmation callback, sign-up and sign-in screens, a Sign in action on the T292 start screen that skips onboarding for existing accounts, native feedback submission (replacing T287's unavailable state, which exists only because native has no Supabase client), and backup/sync verification, each with mechanical exit criteria.
+- **Notes:** Owner request 2026-11-09: native feedback must work once the native Supabase client exists. Decide in the plan whether guests can send feedback before signing in. Owner decisions 2026-11-04: email and password only for now (no Apple or Google sign-in); an existing web account signing in on mobile must not redo onboarding. Follow AGENTS.md durability and fail-closed rules for identity-changing workflows. Execution guide: [outputs/guided-tickets/T295.md](outputs/guided-tickets/T295.md).
+- **Evidence:** Owner approved decisions D1–D10 on 2026-11-09 ("Approve all"). Child tickets T313 and T313.1–T313.6 are in TASKS.md; S040 is updated to `Scoped`. Guide: [outputs/guided-tickets/T295.md](outputs/guided-tickets/T295.md).
+
 ### [T294] Design native-feeling options for the Tricks screen
 
 - **Area:** Tricks / UX design
