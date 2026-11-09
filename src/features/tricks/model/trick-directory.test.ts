@@ -51,6 +51,54 @@ describe('profile trick directory', () => {
     expect(rankOne?.data.slice(0, -1)).toHaveLength(5);
   });
 
+  describe('laced progress per section', () => {
+    const tricks = createProfileDirectoryTricks(KENDAMA_KENTEI_TRICKS, CUSTOM_TRICKS);
+    const rankOneIds = KENDAMA_KENTEI_TRICKS.filter((trick) => trick.kenteiRank === 1).map(
+      (trick) => trick.id,
+    );
+    const lacedCountFor = (laced: ReadonlySet<string>, rank: number) => {
+      const section = createTrickSections(tricks, undefined, laced).find(
+        (candidate) => candidate.kind === 'ranked' && candidate.rank === rank,
+      );
+      return section?.kind === 'ranked' ? section.lacedCount : undefined;
+    };
+
+    it('counts zero for a section with no laced tricks', () => {
+      expect(lacedCountFor(new Set(), 1)).toBe(0);
+    });
+
+    it('counts a partly laced section', () => {
+      expect(lacedCountFor(new Set(rankOneIds.slice(0, 2)), 1)).toBe(2);
+    });
+
+    it('counts a fully laced section, including its ranked custom trick', () => {
+      expect(lacedCountFor(new Set([...rankOneIds, 'custom-ranked']), 1)).toBe(
+        rankOneIds.length + 1,
+      );
+    });
+
+    it('counts a ranked custom trick in its rank section', () => {
+      expect(lacedCountFor(new Set(['custom-ranked']), 1)).toBe(1);
+    });
+
+    it('counts a manually unlocked trick as laced', () => {
+      const effective = selectEffectiveLacedTrickIds(new Set(), [rankOneIds[0]]);
+      expect(lacedCountFor(effective, 1)).toBe(1);
+    });
+
+    it('counts the Custom section and omits progress for Focused and when no set is given', () => {
+      const sections = createTrickSections(tricks, ['big-cup'], new Set(['custom-sequence']));
+      expect(sections.find((section) => section.kind === 'custom')).toMatchObject({
+        lacedCount: 1,
+      });
+      expect(sections.find((section) => section.kind === 'focused')).not.toHaveProperty(
+        'lacedCount',
+      );
+      const bare = createTrickSections(tricks);
+      expect(bare.every((section) => !('lacedCount' in section))).toBe(true);
+    });
+  });
+
   it('places unranked tricks in a Custom section at the bottom', () => {
     const sections = createTrickSections(
       createProfileDirectoryTricks(KENDAMA_KENTEI_TRICKS, CUSTOM_TRICKS),

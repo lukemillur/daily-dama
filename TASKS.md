@@ -166,18 +166,6 @@ _Scoped 2026-11-09 from T294 (owner chose Direction A, a quiet native list, plus
 - **Dependencies:** None.
 - **Notes:** Keep the custom-trick and rank invariants in AGENTS.md unchanged. `TrickDirectory` is also the goal picker (`onActivate`) and the Sesh multi-trick picker; every child must leave those lists working. Prefer one route-level prop that chooses the native presentation over `Platform.OS` checks scattered through `trick-directory.tsx`.
 
-### [T312.2] Show laced progress in each rank section header
-
-- **Area:** Tricks
-- **Priority:** Medium
-- **Status:** Not started
-- **Planning:** Implementer
-- **Description:** Add a laced count to each rank section header and the Custom section header, for example `4 / 5`: tricks in that section that are laced (the effective laced set, including manually unlocked tricks) over the section's trick count. Compute it in `src/features/tricks/model/trick-directory.ts`, not in the component. The Focused section keeps its current `N in rotation` label and gets no progress.
-- **Exit criteria:** Model tests cover a section with no laced tricks, a partly laced section, a fully laced section, a ranked custom trick counted in its rank's section, and a manually unlocked trick counted as laced. `trick-directory.test.tsx` asserts the header text and an accessibility label such as `4 of 5 laced`. On iPhone 17e (iOS 27.0) with the bundle pinned, and at 390 px on web, each rank header shows the count without truncating the rank or class label. Full `yarn tsc --noEmit` passes.
-- **Dependencies:** None.
-- **Notes:** Shown on web too: it is a shared header label, and a web-only exception would add a platform branch for no product reason. The goal picker and Sesh picker may hide it if it adds noise there; record the choice.
-- **Platform scope:** Acceptance runs on the iOS Simulator and web. Record Android as not run.
-
 ### [T312.3] Move Tricks row actions into swipe actions on iOS
 
 - **Area:** Tricks
