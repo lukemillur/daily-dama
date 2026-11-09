@@ -11,13 +11,20 @@ import {
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AuthError } from '@supabase/supabase-js';
+import { Platform } from 'react-native';
 
 import { parseCachedSession } from '@/features/auth/model/cached-session';
 import { deriveAuthState, INITIALIZING_AUTH_STATE, type AuthState } from '@/features/auth/model/auth-state';
 import { logAuthWarning } from '@/features/auth/observability/auth-observability';
 import { purgeIdentityNamespace } from '@/shared/persistence/account-purge';
 import { createUserIdentity } from '@/shared/persistence/identity';
-import { getGoTrueStorageKey, getSupabaseClient } from '@/shared/supabase/supabase-client';
+import {
+  discardSupabaseClient,
+  getGoTrueStorageKey,
+  getSupabaseClient,
+  getSupabaseSessionStorage,
+} from '@/shared/supabase/supabase-client';
+import { useAuthAutoRefresh } from '@/features/auth/state/use-auth-auto-refresh';
 
 // Comfortably above any realistic successful refresh round-trip, well under GoTrue's own
 // internal ~30s retry ceiling (`AUTO_REFRESH_TICK_DURATION_MS`, auth-js 2.112.3
@@ -56,6 +63,10 @@ interface AuthActions {
   // removes the persisted session directly so the app proceeds as guest. Designed for the
   // `refreshFailed` screen but harmless to call from other states too.
   readonly abandonAuthAndContinueAsGuest: () => Promise<{ error: Error | null }>;
+  // "Try again" on the `refreshFailed` screen. Native: discards the (possibly hung) client and
+  // re-initialises auth against a fresh one. Web: reloads the page, which also resets a hung
+  // browser GoTrue lock.
+  readonly retryAuthInitialisation: () => void;
 }
 
 const AuthStateContext = createContext<AuthState | undefined>(undefined);
@@ -63,11 +74,15 @@ const AuthActionsContext = createContext<AuthActions | undefined>(undefined);
 
 export function AuthProvider({ children }: PropsWithChildren) {
   const [state, setState] = useState<AuthState>(INITIALIZING_AUTH_STATE);
+  // Bumped by `retryAuthInitialisation` so the init effect re-runs against a fresh client.
+  const [initAttempt, setInitAttempt] = useState(0);
   const stateRef = useRef(state);
 
   useEffect(() => {
     stateRef.current = state;
   }, [state]);
+
+  useAuthAutoRefresh(initAttempt);
 
   useEffect(() => {
     const client = getSupabaseClient();
@@ -103,7 +118,8 @@ export function AuthProvider({ children }: PropsWithChildren) {
       // cached session ahead of a hung refresh.
       const storageKey = getGoTrueStorageKey();
       if (storageKey) {
-        AsyncStorage.getItem(storageKey)
+        // `Promise.resolve` because supabase-js's storage contract allows sync or async reads.
+        Promise.resolve(getSupabaseSessionStorage().getItem(storageKey))
           .then((raw) => {
             if (settled) return;
             const cached = parseCachedSession(raw);
@@ -140,6 +156,19 @@ export function AuthProvider({ children }: PropsWithChildren) {
       Promise.resolve().then(() => setState({ status: 'guest', reason: 'error' }));
       return undefined;
     }
+  }, [initAttempt]);
+
+  const retryAuthInitialisation = useCallback(() => {
+    if (Platform.OS === 'web') {
+      if (typeof window !== 'undefined') {
+        window.location.reload();
+      }
+      return;
+    }
+
+    discardSupabaseClient();
+    setState(INITIALIZING_AUTH_STATE);
+    setInitAttempt((attempt) => attempt + 1);
   }, []);
 
   // Escape hatch for the `refreshFailed` recovery screen -- fails closed per AGENTS.md's
@@ -151,7 +180,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
 
     try {
       if (storageKey) {
-        await AsyncStorage.removeItem(storageKey);
+        await getSupabaseSessionStorage().removeItem(storageKey);
       }
     } catch (error) {
       return { error: error instanceof Error ? error : new Error('Unable to clear the local session.') };
@@ -168,8 +197,29 @@ export function AuthProvider({ children }: PropsWithChildren) {
       return { error: new AuthError('Supabase is not configured.') };
     }
 
-    const { error } = await client.auth.signInWithPassword({ email, password });
-    return { error };
+    try {
+      const { error } = await client.auth.signInWithPassword({ email, password });
+      return { error };
+    } catch (error) {
+      // supabase-js rethrows non-AuthError failures, which includes a rejected session-storage
+      // write. SIGNED_IN is only notified after a successful save, so auth state is still guest;
+      // clear any partial local session so the user is not left half signed in.
+      logAuthWarning('Unable to persist the Supabase session during sign-in.', error);
+      try {
+        await client.auth.signOut({ scope: 'local' });
+      } catch (signOutError) {
+        logAuthWarning('Unable to sign out after a failed sign-in save.', signOutError);
+      }
+      try {
+        const storageKey = getGoTrueStorageKey();
+        if (storageKey) await getSupabaseSessionStorage().removeItem(storageKey);
+      } catch (removeError) {
+        logAuthWarning('Unable to clear the session after a failed sign-in save.', removeError);
+      }
+      return {
+        error: new AuthError('We could not save your sign-in on this device. Please try again.'),
+      };
+    }
   }, []);
 
   const signOut = useCallback(async () => {
@@ -411,6 +461,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
       changeEmail,
       deleteAccount,
       abandonAuthAndContinueAsGuest,
+      retryAuthInitialisation,
     }),
     [
       signInWithPassword,
@@ -424,6 +475,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
       changeEmail,
       deleteAccount,
       abandonAuthAndContinueAsGuest,
+      retryAuthInitialisation,
     ],
   );
 

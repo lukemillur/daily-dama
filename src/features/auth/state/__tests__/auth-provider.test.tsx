@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, jest } from '@jest/globals';
+import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
 import type { AuthChangeEvent, Session, SupabaseClient } from '@supabase/supabase-js';
 import { useEffect } from 'react';
 import { Text } from 'react-native';
@@ -18,11 +18,19 @@ import {
   useAuthState,
 } from '@/features/auth/state/auth-provider';
 
+import { createEncryptedSessionStorage } from '@/shared/supabase/session-storage';
+
 const STORAGE_KEY = 'sb-example-auth-token';
 const mockGetSupabaseClient = jest.fn();
+const mockDiscardSupabaseClient = jest.fn();
+// The adapter under test is whatever the client was built with; these tests inject AsyncStorage
+// as that adapter (web behavior) and use `mockSessionStorage` to inject native-style adapters.
+let mockSessionStorage: unknown;
 jest.mock('@/shared/supabase/supabase-client', () => ({
   getSupabaseClient: () => mockGetSupabaseClient(),
   getGoTrueStorageKey: () => 'sb-example-auth-token',
+  getSupabaseSessionStorage: () => mockSessionStorage,
+  discardSupabaseClient: () => mockDiscardSupabaseClient(),
 }));
 
 const DELETION_USER_ID = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa';
@@ -65,6 +73,8 @@ function createFakeClient(overrides?: { onAuthStateChangeImpl?: (cb: AuthCallbac
       resetPasswordForEmail,
       signUp,
       resend,
+      startAutoRefresh: jest.fn(async () => undefined),
+      stopAutoRefresh: jest.fn(async () => undefined),
     },
     functions: { invoke },
   } as unknown as SupabaseClient;
@@ -114,8 +124,13 @@ async function mount() {
 }
 
 describe('AuthProvider', () => {
+  beforeEach(() => {
+    mockSessionStorage = AsyncStorage;
+  });
+
   afterEach(async () => {
     mockGetSupabaseClient.mockReset();
+    mockDiscardSupabaseClient.mockReset();
     captured.state = undefined;
     captured.actions = undefined;
     await AsyncStorage.clear();
@@ -405,6 +420,122 @@ describe('AuthProvider', () => {
     expect(captured.state).toEqual({ status: 'initializing' });
     act(() => {
       root.unmount();
+    });
+  });
+
+  describe('native session storage', () => {
+    function createNativeAdapter(overrides?: { blobSetItem?: () => Promise<void> }) {
+      const secure = new Map<string, string>();
+      const blobs = new Map<string, string>();
+      let counter = 0;
+      const adapter = createEncryptedSessionStorage({
+        keyStore: {
+          getItem: async (key) => secure.get(key) ?? null,
+          setItem: async (key, value) => void secure.set(key, value),
+          removeItem: async (key) => void secure.delete(key),
+        },
+        blobStore: {
+          getItem: async (key) => blobs.get(key) ?? null,
+          setItem: overrides?.blobSetItem ?? (async (key, value) => void blobs.set(key, value)),
+          removeItem: async (key) => void blobs.delete(key),
+        },
+        randomBytes: (length) => new Uint8Array(length).fill((counter += 1)),
+      });
+      return { adapter, blobs };
+    }
+
+    it('(c) optimistically resolves a session stored through the native adapter', async () => {
+      const { adapter } = createNativeAdapter();
+      const cachedSession = { access_token: 'cached', refresh_token: 'r', user: { id: 'u1' } } as unknown as Session;
+      await adapter.setItem(STORAGE_KEY, JSON.stringify(cachedSession));
+      mockSessionStorage = adapter;
+      const fake = createFakeClient(); // never emits
+      mockGetSupabaseClient.mockReturnValue(fake.client);
+
+      let root!: ReturnType<typeof create>;
+      await act(async () => {
+        root = create(
+          <AuthProvider>
+            <Harness />
+          </AuthProvider>,
+        );
+        await new Promise((resolve) => setTimeout(resolve, 0));
+      });
+
+      expect(captured.state).toEqual({
+        status: 'authenticated',
+        session: cachedSession,
+        lastEvent: 'INITIAL_SESSION',
+      });
+      act(() => {
+        root.unmount();
+      });
+    });
+
+    it('(e) returns a structured failure and stays guest when the session write rejects during sign-in', async () => {
+      const { adapter, blobs } = createNativeAdapter({
+        blobSetItem: async () => {
+          throw new Error('disk full');
+        },
+      });
+      mockSessionStorage = adapter;
+      const fake = createFakeClient();
+      // supabase-js rethrows the storage rejection out of signInWithPassword.
+      fake.signInWithPassword.mockImplementationOnce(async () => {
+        await adapter.setItem(STORAGE_KEY, 'session-json');
+        return { error: null };
+      });
+      mockGetSupabaseClient.mockReturnValue(fake.client);
+
+      const root = await mount();
+
+      let result: { error: { message: string } | null } | undefined;
+      await act(async () => {
+        result = await captured.actions!.signInWithPassword('a@b.com', 'secret');
+      });
+
+      expect(result?.error?.message).toMatch(/could not save your sign-in/i);
+      expect(fake.signOut).toHaveBeenCalledWith({ scope: 'local' });
+      expect(blobs.has(STORAGE_KEY)).toBe(false);
+      expect(captured.state).toEqual({ status: 'initializing' });
+      act(() => {
+        root.unmount();
+      });
+    });
+
+    it('(f) retryAuthInitialisation discards the client and re-subscribes against a fresh one on native, without touching window', async () => {
+      const first = createFakeClient();
+      const second = createFakeClient();
+      let current = first.client;
+      mockGetSupabaseClient.mockImplementation(() => current);
+      mockDiscardSupabaseClient.mockImplementation(() => {
+        current = second.client;
+      });
+      const reload = jest.fn();
+      const originalLocation = window.location;
+      Object.defineProperty(window, 'location', { value: { reload }, configurable: true });
+
+      const root = await mount();
+      expect(first.unsubscribe).not.toHaveBeenCalled();
+
+      await act(async () => {
+        captured.actions!.retryAuthInitialisation();
+      });
+
+      expect(mockDiscardSupabaseClient).toHaveBeenCalledTimes(1);
+      expect(first.unsubscribe).toHaveBeenCalledTimes(1);
+      expect(second.client.auth.onAuthStateChange).toHaveBeenCalledTimes(1);
+      expect(reload).not.toHaveBeenCalled();
+
+      await act(async () => {
+        second.emit('INITIAL_SESSION', null);
+      });
+      expect(captured.state).toEqual({ status: 'guest', reason: 'signedOut' });
+
+      Object.defineProperty(window, 'location', { value: originalLocation, configurable: true });
+      act(() => {
+        root.unmount();
+      });
     });
   });
 

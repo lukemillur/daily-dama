@@ -4,6 +4,57 @@ Completed entries move here from `TASKS.md`'s `Backlog`, in the same commit that
 
 Entries keep their content as it was at completion. Don't retroactively edit a description or exit criteria after the fact; if something about a completed task turns out to be wrong or misleading, note that in a new entry or in code, not by rewriting history here.
 
+### [T313.5] Send feedback from the native app
+
+- **Area:** Feedback / native
+- **Priority:** Medium
+- **Status:** Done
+- **Planning:** Implementer
+- **Description:** `src/app/feedback.tsx` shows `FeedbackUnavailableScreen` on native only because native had no Supabase client (T287). Show `FeedbackScreen` on every platform. Guests may send feedback, matching web: the `anon` insert policy exists and the server forces `email` to null for guests. Remove `FeedbackUnavailableScreen` and its tests once nothing references it.
+- **Exit criteria:** A route test renders the feedback form with `Platform.OS = 'ios'`. A `submitFeedback` test covers the native client path. No reference to `FeedbackUnavailableScreen` remains under `src/`. On iPhone 17e (iOS 27.0) with local Supabase, one guest submission and one signed-in submission each insert one `api.feedback` row; the guest row's `email` is null and the signed-in row's `email` is the account's address. With the network unavailable, submitting shows the existing failure feedback and the form keeps the message. Full `yarn tsc --noEmit` passes.
+- **Dependencies:** T313.1.
+- **Notes:** D7. Owner request 2026-11-09. No migration is needed.
+- **Platform scope:** Acceptance runs on the iOS Simulator. Record Android checks as not run.
+
+### [T313.1] Give native a Supabase client with secure session storage
+
+- **Area:** Auth / native / persistence
+- **Priority:** High
+- **Status:** Done
+- **Planning:** Required
+- **Description:** `getSupabaseClient` returns `null` on iOS and Android, and `areAccountsAvailable` is web-only. Create the native client from the same factory with a per-platform storage adapter: SecureStore on native (add `expo-secure-store`), AsyncStorage unchanged on web. Keep PKCE and `detectSessionInUrl: false`. On native, start and stop GoTrue auto-refresh on AppState changes. Route `AuthProvider`'s optimistic cached-session read through the same adapter. Replace the `window.location.reload()` in `IdentityProvider`'s refresh-failed "Try again" with an auth re-initialisation that works on native. Then enable `areAccountsAvailable` and the client on iOS and Android together.
+- **Exit criteria:** Unit tests prove: (a) on `ios` and `android` the session is written through SecureStore, or through the encrypted-blob scheme below, and the plaintext refresh token never reaches AsyncStorage; (b) on `web` the client still uses AsyncStorage and `resolveGoTrueStorageKey` returns its current value for the production URL; (c) the optimistic cached-session read returns a stored session on native; (d) AppState `background` stops and `active` starts auto-refresh on native, and web is unaffected; (e) a rejected storage write during sign-in produces a structured failure and the user is not left signed in; (f) refresh-failed "Try again" re-initialises auth on native without `window`. `areAccountsAvailable('ios')` and `areAccountsAvailable('android')` return true. On iPhone 17e (iOS 27.0) with local Supabase, signing in with a local test account and cold-relaunching the app keeps the user signed in. The execution notes record the measured serialized session size against the installed SecureStore's documented value limit. ARCHITECTURE.md and AGENTS.md describe the native client and storage. Full `yarn tsc --noEmit`, the auth suite, and the shared persistence/sync contract tests pass.
+- **Dependencies:** None.
+- **Notes:** D2: check the size limit in the installed `expo-secure-store` docs before choosing. If a real session exceeds it, use Supabase's documented pattern (random AES key in SecureStore, encrypted session in AsyncStorage). Do not split the session across several keychain items; a partial write corrupts it. Do not set an explicit `storageKey`; doing so signs out every web user (see `getGoTrueStorageKey`'s comment). Needs a native rebuild (`yarn ios`). Logout keeps the logout guard and the fail-closed discard rules.
+- **Platform scope:** Acceptance runs on the iOS Simulator. Android has no verified development build; record Android checks as not run.
+- **Completion notes:** Encrypted-blob scheme chosen (`src/shared/supabase/session-storage.ts`, `aes-js` plus `expo-crypto` `getRandomBytes`; `expo-secure-store` holds only the AES key). Measured session (local GoTrue, minimal test user, `JSON.stringify` of the stored session shape): 1890 characters, 1890 UTF-8 bytes. The installed `expo-secure-store` 57.0.4 README, typings and native source document no value-size limit; the historical iOS limit was about 2048 bytes, so 1890 leaves under 10% margin and grows with user metadata, which is why the blob scheme was kept. Cold relaunch on iPhone 17e (iOS 27.0, Metro on port 8099, branch HEAD 012efc1 plus uncommitted work): after sign-in the app relaunched still signed in (Profile shows the sync panel, not Sign up/Sign in); the AsyncStorage manifest holds the GoTrue key as an encrypted blob and no file contains `refresh_token` or `access_token`. Android not run. Native "Try again" re-initialises auth (`retryAuthInitialisation`, fresh client); web keeps `window.location.reload()` because a reload also clears a hung browser GoTrue lock (one-line change if re-init is preferred everywhere). `exchangeCodeForSession` is not wrapped in the sign-in storage-failure handler (T313.2 owns it); sign-up, resend, password reset and email change still return an error on native because they derive `redirectTo` from `window` (T313.2). Existing "native is unavailable" tests moved to the `windows` platform string so the withholding branches stay covered until T313.3/T313.6 remove them. Auth e2e (`yarn test:e2e:auth`): 24 passed, 12 failed; the identical 12 fail on an unmodified `origin/development` checkout (specs call `getByLabel('Confirm password')`/`'Current password'`, which now also match the "Show ... password" buttons), so they are pre-existing and not caused by this change. A prebuild side effect rewrote the `android` script in `package.json`; it was reverted.
+
+### [T312.2] Show laced progress in each rank section header
+
+- **Area:** Tricks
+- **Priority:** Medium
+- **Status:** Done
+- **Planning:** Implementer
+- **Description:** Add a laced count to each rank section header and the Custom section header, for example `4 / 5`: tricks in that section that are laced (the effective laced set, including manually unlocked tricks) over the section's trick count. Compute it in `src/features/tricks/model/trick-directory.ts`, not in the component. The Focused section keeps its current `N in rotation` label and gets no progress.
+- **Exit criteria:** Model tests cover a section with no laced tricks, a partly laced section, a fully laced section, a ranked custom trick counted in its rank's section, and a manually unlocked trick counted as laced. `trick-directory.test.tsx` asserts the header text and an accessibility label such as `4 of 5 laced`. On iPhone 17e (iOS 27.0) with the bundle pinned, and at 390 px on web, each rank header shows the count without truncating the rank or class label. Full `yarn tsc --noEmit` passes.
+- **Dependencies:** None.
+- **Notes:** Shown on web too: it is a shared header label, and a web-only exception would add a platform branch for no product reason. The goal picker and Sesh picker may hide it if it adds noise there; record the choice.
+- **Platform scope:** Acceptance runs on the iOS Simulator and web. Record Android as not run.
+- **Completion notes:** Section `lacedCount` is computed in `createTrickSections` (optional third argument, the effective laced set). Only the Tricks screen passes `unlockedTrickIds`, so the goal picker, Sesh picker and onboarding picker show no progress; recorded choice: hidden there as noise. Verified on iPhone 17e (iOS 27.0, Metro port 8123) and web at 390 px (port 8124). Android not run.
+
+### [T312.1] Give the Tricks index a native large-title header with search and menus on iOS
+
+- **Area:** Tricks / navigation
+- **Priority:** Medium
+- **Status:** Done
+- **Planning:** Required
+- **Description:** The Tricks index sets `headerShown: false`, so its eyebrow, title, introduction and four buttons scroll as list content under the status bar. On native, show the stack header instead: large title `Tricks`, a native header search bar that filters the list through `TrickDirectory`'s existing `search` filtering (without also rendering the in-list `TextField`), a `＋` button that opens Define new trick, and a `⋯` menu with Trick goals, Trick notes and Laced tricks. Remove the in-list header block and buttons on native only. Use Expo Router's own header APIs in the installed version (`Stack.SearchBar` / `Stack.Toolbar` menus, or `headerSearchBarOptions`); confirm them against the versioned docs.
+- **Exit criteria:** On iPhone 17e (iOS 27.0) with the bundle pinned, the Tricks tab shows a large `Tricks` title that collapses on scroll, and no list row draws under the status bar. Typing `cup` in the header search shows only tricks whose names contain `cup`, and clearing it restores the Focused and rank sections. `＋` opens New trick; the `⋯` menu items open Goals, Notes and Laced tricks. Tapping the Tricks tab from a pushed screen still returns to the index. VoiceOver reads the `＋` and `⋯` buttons with labels. At 390 px and wide widths on web, the Tricks screen is unchanged from HEAD at claim time (same header block and four buttons). Route tests cover the native header options and the web fallback. Full `yarn tsc --noEmit` passes.
+- **Dependencies:** None.
+- **Notes:** Header colours come from `deriveNestedHeaderColors` like the other nested screens. The selected-count introduction (`N tricks ready…`) is dropped on native; the Focused section header already shows the count.
+- **Platform scope:** Acceptance runs on the iOS Simulator and web. Android has no verified development build; record Android as not run.
+- **Resolution:** Native uses `headerLargeTitleEnabled`, `headerSearchBarOptions` and `unstable_headerRightItems` (a `button` item and a `menu` item, both with `accessibilityLabel`); `Stack.SearchBar`/`Stack.Toolbar` do not exist in expo-router 57.0.29. The stack's opaque `headerStyle` background hides the large title on iOS 26, so the index overrides it with `transparent`. VoiceOver speech was not exercised (Simulator cannot drive it); the labels are set in the route options and react-native-screens applies them to `UIBarButtonItem.accessibilityLabel`. Android not run.
+
 ### [T310] Tighten the Tricks list rows and section headers
 
 - **Area:** Tricks / layout

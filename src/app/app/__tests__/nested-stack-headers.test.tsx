@@ -8,6 +8,7 @@ import ProfileLayout from '@/app/app/profile/_layout';
 import SeshLayout from '@/app/app/sesh/_layout';
 import StatsLayout from '@/app/app/stats/_layout';
 import TricksLayout from '@/app/app/tricks/_layout';
+import { deriveTricksIndexScreenOptions } from '@/components/nested-stack-options';
 
 interface CapturedScreen {
   readonly name: string;
@@ -76,13 +77,26 @@ describe('nested native stack headers', () => {
 
     for (const screen of mockScreens) {
       const options = optionsFor(screen);
-      if (screen.name === 'index') {
+      if (screen.name === 'index' && section === 'tricks') {
+        expect(options).toMatchObject({ title: 'Tricks', headerLargeTitleEnabled: true });
+      } else if (screen.name === 'index') {
         expect(options).toEqual({ headerShown: false });
       } else {
         expect(typeof options.title).toBe('string');
         expect((options.title as string).length).toBeGreaterThan(0);
       }
     }
+  });
+
+  it('derives the Tricks index header per platform', () => {
+    const theme = { background: '#000000', text: '#ffffff' } as never;
+    expect(deriveTricksIndexScreenOptions(theme, 'web')).toEqual({ headerShown: false });
+    expect(deriveTricksIndexScreenOptions(theme, 'ios')).toMatchObject({
+      title: 'Tricks',
+      headerLargeTitleEnabled: true,
+      headerLargeTitleStyle: { color: '#ffffff' },
+      headerStyle: { backgroundColor: 'transparent' },
+    });
   });
 
   it('supplies a fallback back control only when the stack holds a single entry', () => {

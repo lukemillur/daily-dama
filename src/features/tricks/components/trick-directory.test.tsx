@@ -132,6 +132,37 @@ describe('TrickDirectory', () => {
     });
   });
 
+  it('with nativeHeader renders no in-list header or search field yet still filters by the supplied query', () => {
+    const render = (query: string) => {
+      let root!: import('react-test-renderer').ReactTestRenderer;
+      act(() => {
+        root = create(
+          <TrickDirectory
+            tricks={FIXTURE_TRICKS}
+            showFocusedSection
+            focusedTrickIds={['trick-3']}
+            nativeHeader
+            search={{ query, onChangeText: () => undefined }}
+          />,
+        );
+      });
+      return root;
+    };
+
+    const filtered = render('cup');
+    expect(filtered.root.findAllByProps({ accessibilityLabel: 'Search tricks' })).toHaveLength(0);
+    expect(allText(filtered)).toEqual(expect.arrayContaining(['Big Cup', 'Small Cup']));
+    expect(allText(filtered)).not.toContain('Spike');
+    expect(allText(filtered)).not.toContain('Focused tricks');
+    act(() => filtered.unmount());
+
+    const cleared = render('');
+    expect(allText(cleared)).toContain('Focused tricks');
+    expect(allText(cleared)).toContain('Spike');
+    expect(cleared.root.findByType(SectionList).props.contentInsetAdjustmentBehavior).toBe('automatic');
+    act(() => cleared.unmount());
+  });
+
   it('renders no Practice action when practiceAction is absent', () => {
     let root!: import('react-test-renderer').ReactTestRenderer;
     act(() => {
@@ -170,6 +201,36 @@ describe('TrickDirectory', () => {
     expect(joined).toContain('3 laces');
     expect(flatTexts).toContain('✓');
     expect(root.root.findAll((node) => node.props.accessibilityRole === 'switch')).toHaveLength(0);
+  });
+
+  it('shows laced progress and an accessibility label in rank headers, but not without a laced set or in Focused', () => {
+    let root!: import('react-test-renderer').ReactTestRenderer;
+    act(() => {
+      root = create(
+        <TrickDirectory
+          tricks={FIXTURE_TRICKS}
+          showFocusedSection
+          focusedTrickIds={['trick-3']}
+          unlockedTrickIds={new Set(['trick-1'])}
+        />,
+      );
+    });
+
+    const texts = allText(root);
+    expect(texts).toContain('1 / 2');
+    expect(texts).toContain('0 / 1');
+    expect(texts).toContain('1 in rotation');
+    const labels = root.root
+      .findAll((node) => typeof node.props.accessibilityLabel === 'string')
+      .map((node) => node.props.accessibilityLabel as string);
+    expect(labels).toContain('Rank 1, 1 of 2 laced');
+    expect(labels).toContain('Rank 2, 0 of 1 laced');
+
+    act(() => {
+      root.update(<TrickDirectory tricks={FIXTURE_TRICKS} />);
+    });
+    expect(allText(root).some((text) => /^\d+ \/ \d+$/.test(text))).toBe(false);
+    act(() => root.unmount());
   });
 
   it('renders no laced treatment or laced-count line for an unlaced trick with zero laces', () => {

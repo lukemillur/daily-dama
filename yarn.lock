@@ -2152,6 +2152,11 @@
   dependencies:
     tslib "^2.4.0"
 
+"@types/aes-js@^3.1.4":
+  version "3.1.4"
+  resolved "https://registry.yarnpkg.com/@types/aes-js/-/aes-js-3.1.4.tgz#90afb62e69b0365a392d2e79579a6f424b772792"
+  integrity sha512-v3D66IptpUqh+pHKVNRxY8yvp2ESSZXe0rTzsGdzUhEwag7ljVfgCllkWv2YgiYXDhWFBrEywll4A5JToyTNFA==
+
 "@types/babel__core@^7.1.14":
   version "7.20.5"
   resolved "https://registry.yarnpkg.com/@types/babel__core/-/babel__core-7.20.5.tgz#3df15f27ba85319caa07ba08d0721889bb39c017"
@@ -2622,6 +2627,11 @@ acorn@^8.1.0, acorn@^8.11.0, acorn@^8.15.0, acorn@^8.8.1:
   version "8.18.0"
   resolved "https://registry.yarnpkg.com/acorn/-/acorn-8.18.0.tgz#4faf01b2d6d326bfeed97aea1f52220b5f4c1940"
   integrity sha512-lGq+9yr1/GuAWaVYIHRjvvySG5/4VfKIvC8EWxStPdcDh/Ka7FG3twP6v4d5BkravUilhIAsG4Qj83t02LWUPQ==
+
+aes-js@^3.1.2:
+  version "3.1.2"
+  resolved "https://registry.yarnpkg.com/aes-js/-/aes-js-3.1.2.tgz#db9aabde85d5caabbfc0d4f2a4446960f627146a"
+  integrity sha512-e5pEa2kBnBOgR4Y/p20pskXI74UEz7de8ZGVo58asOtvSVG5YAbJeELPZxOmt+Bnz3rX753YKhfIn4X4l1PPRQ==
 
 agent-base@6:
   version "6.0.2"
@@ -4239,6 +4249,11 @@ expo-constants@~57.0.22:
   dependencies:
     "@expo/env" "~2.4.3"
 
+expo-crypto@~57.0.4:
+  version "57.0.4"
+  resolved "https://registry.yarnpkg.com/expo-crypto/-/expo-crypto-57.0.4.tgz#323dd2d7bffc978886c687e9da7f4637116abe43"
+  integrity sha512-LqMMs/N6wvwZyw4deVmcl3AgXgqMwCVQ9WyWf2eaWyrk99TXSKk5da3QspiLOOjnn5Qv9f8C50cDNuoyLThpdw==
+
 expo-dev-client@~57.0.20:
   version "57.0.20"
   resolved "https://registry.yarnpkg.com/expo-dev-client/-/expo-dev-client-57.0.20.tgz#a679b0b4844ed7df1b5a3ee8f916d568683d97e4"
@@ -4383,6 +4398,11 @@ expo-router@~57.0.29:
     shallowequal "^1.1.0"
     standard-navigation "^0.0.5"
     vaul "^1.1.2"
+
+expo-secure-store@~57.0.4:
+  version "57.0.4"
+  resolved "https://registry.yarnpkg.com/expo-secure-store/-/expo-secure-store-57.0.4.tgz#a5eefc7490d1de26fd62e83bc5fdceacd94f5342"
+  integrity sha512-7zBA1RThURTXdP4w65kBzZNbcSsfArqVd+p+ETAnPRWXO8J296Qd0YaCVyRpJ0HSwlCnGdvOnqO+NgSreHsOhA==
 
 expo-server@^57.0.3:
   version "57.0.3"

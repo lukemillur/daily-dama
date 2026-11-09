@@ -29,6 +29,11 @@ export interface TrickDirectoryProps {
     readonly onChangeText: (query: string) => void;
     readonly placeholder?: string;
   };
+  /**
+   * The route supplies the title, search and actions through the native navigation header, so the
+   * list renders no in-list header (including the search field; `search` still drives filtering).
+   */
+  readonly nativeHeader?: true;
   readonly onActivate?: (trick: DirectoryTrick) => void;
   readonly customActions?: {
     readonly onEdit: (trickId: string) => void;
@@ -80,6 +85,7 @@ export function TrickDirectory({
   header,
   headerAction,
   search,
+  nativeHeader,
   onActivate,
   customActions,
   notesAction,
@@ -106,9 +112,13 @@ export function TrickDirectory({
         ? tricks
         : tricks.filter((trick) => trick.name.toLowerCase().includes(normalizedQuery));
       const shouldSectionByFocus = showFocusedSection && normalizedQuery.length === 0;
-      return createTrickSections(visibleTricks, shouldSectionByFocus ? sectioningTrickIds : undefined);
+      return createTrickSections(
+        visibleTricks,
+        shouldSectionByFocus ? sectioningTrickIds : undefined,
+        unlockedTrickIds,
+      );
     },
-    [tricks, search?.query, showFocusedSection, sectioningTrickIds],
+    [tricks, search?.query, showFocusedSection, sectioningTrickIds, unlockedTrickIds],
   );
   const selectedTrickIdSet = useMemo(() => new Set(selectedTrickIds), [selectedTrickIds]);
   const directoryHeader = (
@@ -151,7 +161,9 @@ export function TrickDirectory({
       // The list still scrolls by wheel, trackpad, touch drag, and keyboard.
       showsVerticalScrollIndicator={false}
       contentContainerStyle={{ paddingBottom: fixedFooter ? 0 : 24 }}
-      ListHeaderComponent={fixedHeader ? undefined : directoryHeader}
+      ListHeaderComponent={fixedHeader || nativeHeader ? undefined : directoryHeader}
+      // Lets the iOS large title collapse with the list and keeps rows clear of the status bar.
+      contentInsetAdjustmentBehavior={nativeHeader ? 'automatic' : undefined}
       ListFooterComponent={fixedFooter ? undefined : footer}
       renderSectionHeader={({ section }) => <SectionHeader section={section} />}
       renderSectionFooter={({ section }) =>
@@ -198,8 +210,21 @@ function SectionHeader({
   readonly section: SectionListData<DirectoryTrick, TrickSection>;
 }) {
   const isCustom = section.kind === 'custom';
+  const lacedCount = section.kind === 'focused' ? undefined : section.lacedCount;
+  const progress =
+    lacedCount === undefined ? undefined : `${lacedCount} / ${section.data.length}`;
+  const sectionName =
+    section.kind === 'custom' ? 'Custom' : section.kind === 'focused' ? '' : `Rank ${section.rank}`;
   return (
-    <SectionHeaderContainer $custom={isCustom}>
+    <SectionHeaderContainer
+      $custom={isCustom}
+      accessible={progress !== undefined}
+      accessibilityLabel={
+        progress === undefined
+          ? undefined
+          : `${sectionName}, ${lacedCount} of ${section.data.length} laced`
+      }
+    >
       <RankLabel $custom={isCustom}>
         {section.kind === 'custom' ? 'Custom' : section.kind === 'focused' ? 'Focused tricks' : `Rank ${section.rank}`}
       </RankLabel>
@@ -210,6 +235,7 @@ function SectionHeader({
             ? `${section.data.length} in rotation`
             : `${section.level} · ${section.className}`}
       </LevelLabel>
+      {progress === undefined ? null : <ProgressLabel $custom={isCustom}>{progress}</ProgressLabel>}
     </SectionHeaderContainer>
   );
 }
@@ -504,6 +530,13 @@ const LevelLabel = styled.Text<{ readonly $custom: boolean }>`
   font-weight: 800;
   text-align: right;
   text-transform: uppercase;
+`;
+
+const ProgressLabel = styled.Text<{ readonly $custom: boolean }>`
+  color: ${({ $custom }) => ($custom ? '#fff8e5' : '#18382e')};
+  font-size: 13px;
+  font-weight: 900;
+  font-variant: tabular-nums;
 `;
 
 const FocusedEmptyContainer = styled.View`

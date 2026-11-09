@@ -33,6 +33,31 @@ export function deriveNestedStackScreenOptions(
   };
 }
 
+/**
+ * Tricks index header: web keeps the in-list header block, native shows a large title that
+ * collapses with the list. Search and header buttons are supplied by the route (they need state).
+ */
+export function deriveTricksIndexScreenOptions(
+  theme: ResolvedTheme,
+  platformOS: string = Platform.OS,
+): NativeStackNavigationOptions {
+  if (platformOS === 'web') return { headerShown: false };
+  const colors = deriveNestedHeaderColors(theme);
+  return {
+    title: 'Tricks',
+    headerLargeTitleEnabled: true,
+    headerLargeTitleStyle: { color: colors.title },
+    // iOS 26 hides the large title when the header has an opaque background colour; the screen's
+    // own `contentStyle` background shows through the translucent bar instead.
+    headerStyle: { backgroundColor: 'transparent' },
+    headerLargeTitleShadowVisible: false,
+  };
+}
+
+export function useTricksIndexScreenOptions(): NativeStackNavigationOptions {
+  return deriveTricksIndexScreenOptions(useResolvedTheme());
+}
+
 export function useNestedStackScreenOptions(): NativeStackNavigationOptions {
   return deriveNestedStackScreenOptions(useResolvedTheme());
 }
