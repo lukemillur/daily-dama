@@ -140,21 +140,8 @@ _Native execution prerequisite: the simulator-enablement changes described in [o
 
 _Scoped 2026-11-05 from the T289.4/T289.5 iOS audit findings in Needs scoping (no BACKLOG_STORIES.md story). IDs keep their audit numbers._
 
-
-
 _Scoped 2026-11-09 from the owner's iOS Simulator walkthrough (no BACKLOG_STORIES.md story)._
 
-### [T309] Give the native tab bar a theme-derived background distinct from the screen
-
-- **Area:** Navigation / theme
-- **Priority:** Medium
-- **Status:** Not started
-- **Planning:** Implementer
-- **Description:** `deriveTabBarColors` in `src/components/app-tabs.tsx` sets the tab bar background to `theme.background`, so the bar blends into most screens. Give the bar its own background derived from the resolved theme, so it stays distinct for light, dark and custom themes. Either blend the theme's text colour into its background by a fixed amount, or use the theme accent. Pick one and record why. Active and inactive icon and label colours must stay readable on the new background.
-- **Exit criteria:** `app-tabs.test.tsx` asserts that the bar background differs from `theme.background` for the default light theme, the dark theme and at least one custom theme, and that active and inactive tint colours reach at least 4.5:1 and 3:1 contrast against it. On iPhone 17e (iOS 27.0) with the bundle pinned, Home, Sesh, Tricks, Stats and Profile show a bar visibly distinct from the screen above it, in the light and dark themes. Full `yarn tsc --noEmit` passes.
-- **Dependencies:** None.
-- **Notes:** Owner request 2026-11-09. Keep the top border unless the new background makes it redundant. Keep `sceneStyle.backgroundColor` tied to the screen background, not the new bar colour. Owner decided tab-button hit slop needs no change.
-- **Platform scope:** Acceptance runs on the iOS Simulator. Android and physical-device checks are not part of these exit criteria; record them as not run rather than passed.
 
 ### [T310] Tighten the Tricks list rows and section headers
 
