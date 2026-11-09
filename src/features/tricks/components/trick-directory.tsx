@@ -69,16 +69,6 @@ const DEFAULT_HEADER = {
 
 const NO_SELECTED_TRICKS: readonly string[] = [];
 
-// react-native-web implements `stickySectionHeadersEnabled` with CSS `position: sticky` applied to
-// each section header individually, not to a wrapper spanning the whole section. A stuck header
-// never truly hands off to the next one — it stays glued to the top and is simply painted over once
-// a later header also becomes stuck — so a section's own trailing row can still be laid out in the
-// same on-screen band its still-stuck header occupies. Right at a section boundary that can produce
-// a visibly squeezed frame: the outgoing header covering the last row's text while the incoming
-// header is already visible just below. This gap is intentionally kept shorter than a header
-// (visual compactness over fully eliminating that scroll-transition overlap).
-const SECTION_BOUNDARY_HEIGHT = 8;
-
 // Row content width, not the app chrome breakpoint: below this the single-row layout leaves the
 // name column only ~60-110px beside up to five actions plus the checkbox, so rows stack into an
 // identity band and a wrapping action band. Wider windows keep the single-row layout.
@@ -188,7 +178,6 @@ export function TrickDirectory({
       )}
       ListEmptyComponent={search?.query.trim() ? <SearchEmptyState>No tricks match your search.</SearchEmptyState> : null}
       ItemSeparatorComponent={ItemSeparator}
-      SectionSeparatorComponent={SectionSeparator}
     />
   );
 
@@ -278,7 +267,6 @@ function TrickRow({
     : undefined;
   const identity = (
     <>
-      <Position $laced={isLaced}>{isLaced ? '✓' : String(position).padStart(2, '0')}</Position>
       <TrickIdentity>
         <TrickNameRow>
           <TrickName>{trick.name}</TrickName>
@@ -397,54 +385,51 @@ function TrickRow({
     </RowActions>
   );
 
+  const positionElement = (
+    <Position $compact={compact} $laced={isLaced}>
+      {isLaced ? '✓' : String(position).padStart(2, '0')}
+    </Position>
+  );
+
+  // Position and the checkbox are row-level siblings so `align-items: center` centres them on the
+  // whole row; in compact mode the identity and its action band share one body column.
+  const rowContent = compact ? (
+    <>
+      {positionElement}
+      <CompactBody $hasActions={hasRowActions}>
+        {identityElement}
+        {hasRowActions ? rowActionsElement : null}
+      </CompactBody>
+      {selectionIndicatorElement}
+    </>
+  ) : (
+    <>
+      {positionElement}
+      {identityElement}
+      {hasRowActions ? rowActionsElement : null}
+      {selectionIndicatorElement}
+    </>
+  );
+
   if (onActivate) {
     return (
       <ActivatableTrickRowContainer
         $selected={isSelected}
         $laced={isLaced}
         $pressed={pressed}
-        $compact={compact}
         accessibilityLabel={`Choose ${trick.name}`}
         accessibilityRole="button"
         onPress={onActivate}
         onPressIn={() => setPressed(true)}
         onPressOut={() => setPressed(false)}>
-        {compact ? (
-          <>
-            <CompactIdentityLine>
-              {identityElement}
-              {selectionIndicatorElement}
-            </CompactIdentityLine>
-            {hasRowActions ? rowActionsElement : null}
-          </>
-        ) : (
-          <>
-            {identityElement}
-            {hasRowActions ? rowActionsElement : null}
-            {selectionIndicatorElement}
-          </>
-        )}
+        {rowContent}
       </ActivatableTrickRowContainer>
     );
   }
 
   return (
-    <TrickRowContainer $selected={isSelected} $laced={isLaced} $compact={compact}>
-      {compact ? (
-        <>
-          <CompactIdentityLine>
-            {identityElement}
-            {selectionIndicatorElement}
-          </CompactIdentityLine>
-          {hasRowActions ? rowActionsElement : null}
-        </>
-      ) : (
-        <>
-          {identityElement}
-          {hasRowActions ? rowActionsElement : null}
-          {selectionIndicatorElement}
-        </>
-      )}
+    <TrickRowContainer $selected={isSelected} $laced={isLaced}>
+      {rowContent}
     </TrickRowContainer>
   );
 }
@@ -529,27 +514,26 @@ const FocusedEmptyContainer = styled.View`
 const FocusedEmptyText = styled.Text`
   color: #53635d;
   font-size: 14px;
-  font-weight: 650;
+  font-weight: 600;
   line-height: 20px;
 `;
 
 const trickRowLayout = css<{
   readonly $selected: boolean;
   readonly $laced: boolean;
-  readonly $compact: boolean;
 }>`
-  min-height: 66px;
-  flex-direction: ${({ $compact }) => ($compact ? 'column' : 'row')};
-  align-items: ${({ $compact }) => ($compact ? 'stretch' : 'center')};
+  min-height: 52px;
+  flex-direction: row;
+  align-items: center;
   background-color: ${({ $selected, $laced }) => ($selected || $laced ? '#e5edcf' : '#f8f1dd')};
-  border-left-width: ${({ $laced }) => ($laced ? '4px' : '0px')};
+  /* Always reserve the laced border so the number column aligns with and without it. */
+  border-left-width: 4px;
   border-left-color: ${({ $laced }) => ($laced ? '#274137' : 'transparent')};
 `;
 
 const TrickRowContainer = styled.View<{
   readonly $selected: boolean;
   readonly $laced: boolean;
-  readonly $compact: boolean;
 }>`
   ${trickRowLayout}
 `;
@@ -558,7 +542,6 @@ const ActivatableTrickRowContainer = styled(Pressable)<{
   readonly $selected: boolean;
   readonly $laced: boolean;
   readonly $pressed: boolean;
-  readonly $compact: boolean;
 }>`
   ${trickRowLayout}
   opacity: ${({ $pressed }) => ($pressed ? 0.7 : 1)};
@@ -566,16 +549,17 @@ const ActivatableTrickRowContainer = styled(Pressable)<{
 
 const identityLayout = css<{ readonly $compact: boolean }>`
   min-width: ${({ $compact }) => ($compact ? '0px' : '180px')};
-  flex: 1;
+  /* Compact identity sits in a column body: flex: 1 would collapse its height on web. */
+  flex: ${({ $compact }) => ($compact ? 'none' : 1)};
   flex-direction: row;
   align-items: center;
-  gap: ${({ $compact }) => ($compact ? '12px' : '18px')};
-  padding: ${({ $compact }) => ($compact ? '14px 4px 6px 16px' : '15px 22px')};
+  padding: ${({ $compact }) => ($compact ? '0 4px 0 0' : '10px 22px 10px 0')};
 `;
 
-const CompactIdentityLine = styled.View`
-  flex-direction: row;
-  align-items: center;
+const CompactBody = styled.View<{ readonly $hasActions: boolean }>`
+  flex: 1;
+  min-width: 0;
+  padding: ${({ $hasActions }) => ($hasActions ? '8px 0 0' : '8px 0')};
 `;
 
 const IdentityContainer = styled.View<{ readonly $compact: boolean }>`
@@ -586,8 +570,10 @@ const SelectableIdentity = styled(Pressable)<{ readonly $compact: boolean }>`
   ${identityLayout}
 `;
 
-const Position = styled.Text<{ readonly $laced: boolean }>`
+const Position = styled.Text<{ readonly $compact: boolean; readonly $laced: boolean }>`
   min-width: 26px;
+  margin-left: ${({ $compact }) => ($compact ? '12px' : '18px')};
+  margin-right: ${({ $compact }) => ($compact ? '12px' : '18px')};
   flex-shrink: 0;
   color: ${({ $laced }) => ($laced ? '#274137' : '#d84929')};
   font-size: 13px;
@@ -598,7 +584,7 @@ const Position = styled.Text<{ readonly $laced: boolean }>`
 const TrickIdentity = styled.View`
   flex: 1;
   min-width: 0;
-  gap: 3px;
+  gap: 1px;
 `;
 
 const TrickNameRow = styled.View`
@@ -611,8 +597,8 @@ const TrickName = styled.Text`
   flex-shrink: 1;
   color: #18382e;
   font-size: 18px;
-  font-weight: 750;
-  line-height: 24px;
+  font-weight: 800;
+  line-height: 22px;
 `;
 
 const TrickMetaRow = styled.View`
@@ -645,7 +631,9 @@ const SelectionIndicatorButton = styled(Pressable)<{ readonly $compact: boolean 
   flex-shrink: 0;
   align-items: center;
   justify-content: center;
-  padding: ${({ $compact }) => ($compact ? '12px 16px 12px 8px' : '12px 22px 12px 8px')};
+  min-height: 44px;
+  min-width: 44px;
+  padding: ${({ $compact }) => ($compact ? '0 16px 0 8px' : '0 22px 0 8px')};
 `;
 
 const SelectionIndicator = styled.View<{ readonly $selected: boolean }>`
@@ -664,15 +652,12 @@ const SelectionMark = styled.Text`
   font-weight: 900;
 `;
 
-// Compact padding-left aligns the action band under the name column (16px padding + 26px
-// position column + 12px gap).
 const RowActions = styled.View<{ readonly $compact: boolean }>`
   flex-direction: row;
   flex-wrap: ${({ $compact }) => ($compact ? 'wrap' : 'nowrap')};
   align-self: stretch;
   align-items: center;
-  gap: 4px;
-  padding: ${({ $compact }) => ($compact ? '0 12px 8px 54px' : '0 12px 0 0')};
+  padding: ${({ $compact }) => ($compact ? '0' : '0 12px 0 0')};
 `;
 const RowAction = styled(Pressable)`min-width: 48px; min-height: 44px; align-items: center; justify-content: center; padding: 6px;`;
 const RowActionText = styled.Text`color: #18382e; font-size: 10px; font-weight: 900; text-transform: uppercase;`;
@@ -682,16 +667,10 @@ const SearchEmptyState = styled.Text`
   padding: 22px;
   color: #53635d;
   font-size: 15px;
-  font-weight: 650;
+  font-weight: 600;
 `;
 
 const ItemSeparator = styled.View`
   height: 1px;
-  margin-left: 66px;
   background-color: #d8cfb7;
-`;
-
-const SectionSeparator = styled.View`
-  height: ${SECTION_BOUNDARY_HEIGHT}px;
-  background-color: #f8f1dd;
 `;

@@ -143,18 +143,6 @@ _Scoped 2026-11-05 from the T289.4/T289.5 iOS audit findings in Needs scoping (n
 _Scoped 2026-11-09 from the owner's iOS Simulator walkthrough (no BACKLOG_STORIES.md story)._
 
 
-### [T310] Tighten the Tricks list rows and section headers
-
-- **Area:** Tricks / layout
-- **Priority:** Medium
-- **Status:** In progress
-- **Planning:** Implementer
-- **Description:** The Tricks list in `src/features/tricks/components/trick-directory.tsx` looks loose on iOS (compact rows). Fix five things: (1) the rank position number (`01`) and (2) the selection checkbox are pinned to the name line, not vertically centred on the whole row; centre both on the row. (3) The trick name renders at regular weight on iOS because `font-weight: 750` is not a weight iOS's system font supports; make it clearly bold (e.g. `700` or `800`), and check other non-standard weights in this file the same way. (4) Rows are much taller than they need to be; cut the vertical padding and gaps so each row is noticeably shorter, while the Notes/Goals/Practice actions keep a 44 pt touch target. (5) `ItemSeparator` starts 66 px in (`margin-left: 66px`); make it span the full row width. Also remove the blank band above and below each rank section header (for example `Rank 1 · Basic · 3rd class`), which comes from `SectionSeparatorComponent`, so headers sit directly against the rows.
-- **Exit criteria:** On iPhone 17e (iOS 27.0) with the bundle pinned, on the Tricks tab: the position number and checkbox are vertically centred on each row (centre within 2 pt of the row centre, measured from a screenshot); the trick name renders visibly bold; a standard trick row with one action line is at least 25% shorter than at HEAD `ff6d971`; separators run from the row's left edge to its right edge; and no blank band shows between a section's last row and the next section header, or between a header and its first row. Notes, Goals and Practice still open their screens, and each action keeps a hit area of at least 44 pt. The sticky section header still pins correctly while scrolling. The same checks pass in a 390 px-wide web browser, and the wide web layout has no regressions. `trick-directory.test.tsx` passes, updated if needed. Full `yarn tsc --noEmit` passes.
-- **Dependencies:** None.
-- **Notes:** Owner request 2026-11-09. T294 (in `TASKS_COLLABORATIVE.md`) may later redesign this screen; keep this change to spacing, alignment, weight and separators so it is cheap either way. Laced rows have a 4 px left border; keep the number column aligned with and without it. `trick-directory.tsx` also renders the goal-picker list (`onActivate`), so check that list too.
-- **Platform scope:** Acceptance runs on the iOS Simulator and web. Android and physical-device checks are not part of these exit criteria; record them as not run rather than passed.
-
 ### [T311] Turn off autocorrection in every text field
 
 - **Area:** Forms / text input
