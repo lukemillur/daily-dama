@@ -141,3 +141,41 @@ _Native execution prerequisite: the simulator-enablement changes described in [o
 _Scoped 2026-11-05 from the T289.4/T289.5 iOS audit findings in Needs scoping (no BACKLOG_STORIES.md story). IDs keep their audit numbers._
 
 
+
+_Scoped 2026-11-09 from the owner's iOS Simulator walkthrough (no BACKLOG_STORIES.md story)._
+
+### [T309] Give the native tab bar a theme-derived background distinct from the screen
+
+- **Area:** Navigation / theme
+- **Priority:** Medium
+- **Status:** Not started
+- **Planning:** Implementer
+- **Description:** `deriveTabBarColors` in `src/components/app-tabs.tsx` sets the tab bar background to `theme.background`, so the bar blends into most screens. Give the bar its own background derived from the resolved theme, so it stays distinct for light, dark and custom themes. Either blend the theme's text colour into its background by a fixed amount, or use the theme accent. Pick one and record why. Active and inactive icon and label colours must stay readable on the new background.
+- **Exit criteria:** `app-tabs.test.tsx` asserts that the bar background differs from `theme.background` for the default light theme, the dark theme and at least one custom theme, and that active and inactive tint colours reach at least 4.5:1 and 3:1 contrast against it. On iPhone 17e (iOS 27.0) with the bundle pinned, Home, Sesh, Tricks, Stats and Profile show a bar visibly distinct from the screen above it, in the light and dark themes. Full `yarn tsc --noEmit` passes.
+- **Dependencies:** None.
+- **Notes:** Owner request 2026-11-09. Keep the top border unless the new background makes it redundant. Keep `sceneStyle.backgroundColor` tied to the screen background, not the new bar colour. Owner decided tab-button hit slop needs no change.
+- **Platform scope:** Acceptance runs on the iOS Simulator. Android and physical-device checks are not part of these exit criteria; record them as not run rather than passed.
+
+### [T310] Tighten the Tricks list rows and section headers
+
+- **Area:** Tricks / layout
+- **Priority:** Medium
+- **Status:** Not started
+- **Planning:** Implementer
+- **Description:** The Tricks list in `src/features/tricks/components/trick-directory.tsx` looks loose on iOS (compact rows). Fix five things: (1) the rank position number (`01`) and (2) the selection checkbox are pinned to the name line, not vertically centred on the whole row; centre both on the row. (3) The trick name renders at regular weight on iOS because `font-weight: 750` is not a weight iOS's system font supports; make it clearly bold (e.g. `700` or `800`), and check other non-standard weights in this file the same way. (4) Rows are much taller than they need to be; cut the vertical padding and gaps so each row is noticeably shorter, while the Notes/Goals/Practice actions keep a 44 pt touch target. (5) `ItemSeparator` starts 66 px in (`margin-left: 66px`); make it span the full row width. Also remove the blank band above and below each rank section header (for example `Rank 1 · Basic · 3rd class`), which comes from `SectionSeparatorComponent`, so headers sit directly against the rows.
+- **Exit criteria:** On iPhone 17e (iOS 27.0) with the bundle pinned, on the Tricks tab: the position number and checkbox are vertically centred on each row (centre within 2 pt of the row centre, measured from a screenshot); the trick name renders visibly bold; a standard trick row with one action line is at least 25% shorter than at HEAD `ff6d971`; separators run from the row's left edge to its right edge; and no blank band shows between a section's last row and the next section header, or between a header and its first row. Notes, Goals and Practice still open their screens, and each action keeps a hit area of at least 44 pt. The sticky section header still pins correctly while scrolling. The same checks pass in a 390 px-wide web browser, and the wide web layout has no regressions. `trick-directory.test.tsx` passes, updated if needed. Full `yarn tsc --noEmit` passes.
+- **Dependencies:** None.
+- **Notes:** Owner request 2026-11-09. T294 (in `TASKS_COLLABORATIVE.md`) may later redesign this screen; keep this change to spacing, alignment, weight and separators so it is cheap either way. Laced rows have a 4 px left border; keep the number column aligned with and without it. `trick-directory.tsx` also renders the goal-picker list (`onActivate`), so check that list too.
+- **Platform scope:** Acceptance runs on the iOS Simulator and web. Android and physical-device checks are not part of these exit criteria; record them as not run rather than passed.
+
+### [T311] Turn off autocorrection in every text field
+
+- **Area:** Forms / text input
+- **Priority:** Medium
+- **Status:** Not started
+- **Planning:** Implementer
+- **Description:** Text fields autocorrect on iOS. Owner decision: no field in the app should autocorrect. Default `autoCorrect={false}` and `spellCheck={false}` in the shared `TextField` (`src/components/ui/text-field.tsx`) so callers can't forget it, and set the same on the raw `TextInput`s that don't use `TextField` (currently `src/app/app/tricks/index.tsx`, `src/features/sesh/components/sesh.tsx` and `src/features/profile/components/color-spectrum-picker.tsx`; the auth screens already set it). Keep autocapitalisation behaviour as it is.
+- **Exit criteria:** A `TextField` test asserts the `autoCorrect={false}` and `spellCheck={false}` defaults. A repository test or lint check fails if any `TextInput` or `TextField` usage under `src/` enables autocorrect, so new fields can't regress. On iPhone 17e (iOS 27.0) with the bundle pinned, typing `teh` and a space into the trick search, the custom-trick name field and a note field leaves `teh` unchanged. Full `yarn tsc --noEmit` passes.
+- **Dependencies:** None.
+- **Notes:** Owner request 2026-11-09. On web, `autoCorrect` maps to the `autocorrect` attribute (Safari only) and `spellCheck` to `spellcheck`. Keep the existing numeric-field `autoComplete` default from T251 in `TextField`.
+- **Platform scope:** Acceptance runs on the iOS Simulator. Android and physical-device checks are not part of these exit criteria; record them as not run rather than passed.
