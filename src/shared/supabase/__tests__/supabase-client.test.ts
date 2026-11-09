@@ -1,8 +1,10 @@
 import { afterEach, describe, expect, it, jest } from '@jest/globals';
 import { Platform } from 'react-native';
 import {
+  discardSupabaseClient,
   getGoTrueStorageKey,
   getSupabaseClient,
+  getSupabaseSessionStorage,
   resetSupabaseClientForTests,
   resolveGoTrueStorageKey,
 } from '@/shared/supabase/supabase-client';
@@ -30,13 +32,39 @@ describe('getSupabaseClient', () => {
     resetSupabaseClientForTests();
   });
 
-  it('never constructs a client on native platforms regardless of config', () => {
-    Platform.OS = 'ios';
-    process.env.EXPO_PUBLIC_SUPABASE_URL = 'https://example.supabase.co';
-    process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY = 'anon-key';
+  it.each(['ios', 'android'] as const)(
+    '(a) constructs the client on %s with the native storage adapter, pkce, no url detection, and no explicit storageKey',
+    (os) => {
+      Platform.OS = os;
+      process.env.EXPO_PUBLIC_SUPABASE_URL = 'http://127.0.0.1:54321';
+      process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY = 'anon-key';
 
-    expect(getSupabaseClient()).toBeNull();
-    expect(mockCreateClient).not.toHaveBeenCalled();
+      expect(getSupabaseClient()).not.toBeNull();
+
+      const options = mockCreateClient.mock.calls[0]?.[2] as { auth: Record<string, unknown> };
+      expect(options.auth).toMatchObject({ flowType: 'pkce', detectSessionInUrl: false });
+      expect('storageKey' in options.auth).toBe(false);
+      // eslint-disable-next-line @typescript-eslint/no-require-imports -- match the module under test's import
+      const AsyncStorage = require('@react-native-async-storage/async-storage');
+      expect(options.auth.storage).not.toBe(AsyncStorage);
+      expect(options.auth.storage).toBe(getSupabaseSessionStorage());
+    },
+  );
+
+  it('discardSupabaseClient stops auto-refresh and lets the next call build a fresh client', () => {
+    Platform.OS = 'ios';
+    process.env.EXPO_PUBLIC_SUPABASE_URL = 'http://127.0.0.1:54321';
+    process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY = 'anon-key';
+    const stopAutoRefresh = jest.fn(async () => undefined);
+    mockCreateClient.mockReturnValueOnce({ auth: { stopAutoRefresh } });
+
+    const first = getSupabaseClient();
+    discardSupabaseClient();
+    const second = getSupabaseClient();
+
+    expect(stopAutoRefresh).toHaveBeenCalledTimes(1);
+    expect(second).not.toBe(first);
+    expect(mockCreateClient).toHaveBeenCalledTimes(2);
   });
 
   it('never constructs a client when configuration is missing', () => {
@@ -87,6 +115,7 @@ describe('getSupabaseClient', () => {
     // eslint-disable-next-line @typescript-eslint/no-require-imports -- match the module under test's import
     const AsyncStorage = require('@react-native-async-storage/async-storage');
     expect(options.auth.storage).toBe(AsyncStorage);
+    expect('storageKey' in options.auth).toBe(false);
   });
 });
 
@@ -94,6 +123,14 @@ describe('resolveGoTrueStorageKey', () => {
   it('derives the key from the project ref subdomain of a realistic project URL', () => {
     expect(resolveGoTrueStorageKey('https://abcdefghijklmno.supabase.co')).toBe(
       'sb-abcdefghijklmno-auth-token',
+    );
+  });
+
+  it('(b) keeps the web key stable for the production project URL (changing it signs every web user out)', () => {
+    // Representative production-shaped ref: DEPLOYMENT_HANDOFF.md does not record the real ref.
+    // The derivation is pinned, which is what protects existing sessions.
+    expect(resolveGoTrueStorageKey('https://wxyzabcdefghijklmnop.supabase.co')).toBe(
+      'sb-wxyzabcdefghijklmnop-auth-token',
     );
   });
 

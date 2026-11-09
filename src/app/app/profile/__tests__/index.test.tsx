@@ -182,8 +182,8 @@ describe('ProfileScreen guest account entry points', () => {
     ReactNative.Platform.OS = originalPlatformOS;
   });
 
-  it('withholds guest account entry points on native', async () => {
-    ReactNative.Platform.OS = 'ios';
+  it('withholds guest account entry points on a platform without accounts', async () => {
+    ReactNative.Platform.OS = 'windows';
     const root = await mountProfileScreen();
 
     expect(

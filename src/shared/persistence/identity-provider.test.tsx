@@ -19,9 +19,15 @@ import { IdentityProvider, useIdentityHandle } from '@/shared/persistence/identi
 
 const STORAGE_KEY = 'sb-example-auth-token';
 const mockGetSupabaseClient = jest.fn();
+const mockDiscardSupabaseClient = jest.fn();
 jest.mock('@/shared/supabase/supabase-client', () => ({
   getSupabaseClient: () => mockGetSupabaseClient(),
   getGoTrueStorageKey: () => 'sb-example-auth-token',
+  // The storage the client was built with; these tests use AsyncStorage (the web adapter).
+  getSupabaseSessionStorage: () =>
+    // eslint-disable-next-line @typescript-eslint/no-require-imports -- jest.mock factories cannot reference imports
+    require('@react-native-async-storage/async-storage'),
+  discardSupabaseClient: () => mockDiscardSupabaseClient(),
 }));
 
 const USER_A_ID = '11111111-1111-1111-1111-111111111111';
@@ -37,7 +43,13 @@ function createFakeClient() {
     return { data: { subscription: { unsubscribe } } };
   });
 
-  const client = { auth: { onAuthStateChange } } as unknown as SupabaseClient;
+  const client = {
+    auth: {
+      onAuthStateChange,
+      startAutoRefresh: jest.fn(async () => undefined),
+      stopAutoRefresh: jest.fn(async () => undefined),
+    },
+  } as unknown as SupabaseClient;
 
   return {
     client,
@@ -154,6 +166,60 @@ describe('IdentityProvider', () => {
     expect(captured.identityKey).toBe(`user:${USER_A_ID}`);
     expect(root.root.findAllByType(Text).some((node) => node.props.children === 'guest')).toBe(false);
 
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  it('(f) Try again on native re-initialises auth against a fresh client without using window, and recovers', async () => {
+    jest.useFakeTimers();
+    const first = createFakeClient(); // hangs: never emits
+    const second = createFakeClient();
+    let current = first.client;
+    mockGetSupabaseClient.mockImplementation(() => current);
+    mockDiscardSupabaseClient.mockImplementation(() => {
+      current = second.client;
+    });
+    const reload = jest.fn();
+    const originalLocation = window.location;
+    Object.defineProperty(window, 'location', { value: { reload }, configurable: true });
+
+    let root!: ReactTestRenderer;
+    await act(async () => {
+      root = create(
+        <AuthProvider>
+          <IdentityProvider>
+            <Harness />
+          </IdentityProvider>
+        </AuthProvider>,
+      );
+    });
+    await act(async () => {
+      await jest.advanceTimersByTimeAsync(10_000);
+    });
+
+    const tryAgain = root.root
+      .findAllByProps({ accessibilityRole: 'button' })
+      .find((node) => node.findAllByType(Text).some((textNode) => textNode.props.children === 'Try again'));
+    expect(tryAgain).toBeDefined();
+
+    await act(async () => {
+      tryAgain!.props.onPress();
+    });
+
+    expect(reload).not.toHaveBeenCalled();
+    expect(mockDiscardSupabaseClient).toHaveBeenCalledTimes(1);
+    // Back to initializing: recovery screen is gone while the fresh client is awaited.
+    expect(
+      root.root.findAllByType(Text).some((node) => node.props.children === 'Try again'),
+    ).toBe(false);
+
+    await act(async () => {
+      second.emit('INITIAL_SESSION', null);
+    });
+    expect(captured.identityKey).toBe('guest');
+
+    Object.defineProperty(window, 'location', { value: originalLocation, configurable: true });
     act(() => {
       root.unmount();
     });

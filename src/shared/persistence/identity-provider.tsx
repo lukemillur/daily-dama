@@ -86,19 +86,13 @@ export function IdentityProvider({ children }: PropsWithChildren) {
 /**
  * Recovery screen for a genuine refresh failure with no usable cached session. This is
  * the one visible case per the ticket's owner-approved direction -- destructive/identity-changing
- * transitions must fail closed, so this stays up until "Try again" reloads the page or
+ * transitions must fail closed, so this stays up until "Try again" re-initialises auth (a page reload on web) or
  * "Continue as guest" durably succeeds.
  */
 function RefreshFailedRecovery() {
-  const { abandonAuthAndContinueAsGuest } = useAuthActions();
+  const { abandonAuthAndContinueAsGuest, retryAuthInitialisation } = useAuthActions();
   const [isContinuing, setIsContinuing] = useState(false);
   const [continueError, setContinueError] = useState<string | undefined>(undefined);
-
-  const handleTryAgain = useCallback(() => {
-    if (typeof window !== 'undefined') {
-      window.location.reload();
-    }
-  }, []);
 
   const handleContinueAsGuest = useCallback(async () => {
     setIsContinuing(true);
@@ -135,7 +129,7 @@ function RefreshFailedRecovery() {
       ) : null}
       <Pressable
         accessibilityRole="button"
-        onPress={handleTryAgain}
+        onPress={retryAuthInitialisation}
         style={({ pressed }) => [styles.recoveryButton, pressed && styles.recoveryButtonPressed]}
       >
         <Text style={styles.recoveryButtonText}>Try again</Text>

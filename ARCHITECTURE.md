@@ -21,10 +21,12 @@ project files manually. The generated `/ios` directory remains ignored.
 launches the local iOS application. The configured bundle identifier is
 `com.dailydama.app`, provisional until physical-device signing is checked.
 
-Native account/sync and Sentry initialization remain disabled; a successful
-simulator build does not establish their native readiness. Because native has
-no Supabase client, the `/feedback` route renders an unavailable state with a
-Back to Profile exit instead of the submission form. Setup checkpoints,
+Native sync and Sentry initialization remain disabled, and native account
+flows beyond password sign-in are unfinished; a successful simulator build does
+not establish their native readiness. The `/feedback` route keeps its own
+`Platform.OS === 'web'` gate and still renders an unavailable state with a Back
+to Profile exit on native, even though native now builds a Supabase client (see
+the native auth paragraph below). Setup checkpoints,
 local tooling workarounds, and remaining verification live in
 [`outputs/ios-personal-build-setup.md`](outputs/ios-personal-build-setup.md).
 Website metadata in the landing route and app layout renders only on web;
@@ -184,7 +186,7 @@ One consequence is that nested providers currently hydrate serially: a child pro
 
 Identity hydration sits above all five domain providers (`AuthProvider` → `IdentityProvider`, both in `src/features/auth/state` and `src/shared/persistence`) and is itself bounded rather than able to hang indefinitely: `AuthProvider` reads a persisted Supabase session directly from storage in parallel with the SDK's own refresh, so a returning user with a valid locally-cached session is authenticated immediately and never blocked behind a slow or hung background refresh. A client-side timeout forces an explicit `refreshFailed` status if neither a real auth event nor a cached session resolves in time; `IdentityProvider` renders a distinct recovery screen for that one case, with a retry action and a sign-out/guest escape hatch, rather than gating every domain provider behind the plain hydration fallback forever.
 
-Native builds are guest-only: `getSupabaseClient` returns `null` off web, so `AuthProvider` settles as a guest. `areAccountsAvailable` (`src/features/auth/model/account-availability.ts`) is the single presentation predicate paired with that guard. While it is false, Profile shows an on-device-only note instead of sign-up/sign-in, the landing header and the first/every-fifth-Sesh invitations render nothing, and `src/app/auth/_layout.tsx` replaces every `/auth/*` route with `AccountUnavailableScreen` (one "Back to app" action, no auth action mounted). Flip the predicate and delete these branches when native auth ships.
+iOS and Android construct the same Supabase client as web (`getSupabaseClient`, `flowType: 'pkce'`, `detectSessionInUrl: false`, no explicit `storageKey`), and `areAccountsAvailable` (`src/features/auth/model/account-availability.ts`) is true on web, iOS and Android. The client persists its session through `getSessionStorage()` (`src/shared/supabase/session-storage.ts`): web keeps plain AsyncStorage, unchanged; native uses Supabase's documented encrypted-blob scheme. A random 256-bit AES key lives in SecureStore (`AFTER_FIRST_UNLOCK`, so background refresh works while locked) and the AES-CTR-encrypted session lives in AsyncStorage under the unchanged GoTrue key, so the plaintext refresh token never reaches AsyncStorage. The blob scheme is used because a real serialized session is about 1.9 KB for a minimal test user and grows with user metadata, which is too close to the historical 2 KB iOS SecureStore limit (the installed SDK 57 `expo-secure-store` documents no value limit); the session is never split across keychain items because a partial write would corrupt it. A missing key or undecryptable blob reads as signed out and never throws. `AuthProvider`'s optimistic cached-session read and its guest-escape removal go through `getSupabaseSessionStorage()`, the same instance the client was built with. A rejected session write during `signInWithPassword` (supabase-js rethrows it) returns a structured `AuthError`, clears any partial local session, and leaves auth state as guest. `useAuthAutoRefresh` starts and stops GoTrue auto-refresh on AppState `active`/`background` on native only (`inactive` is ignored). The refresh-failed "Try again" calls `retryAuthInitialisation`: native discards the client (`discardSupabaseClient`) and re-initialises against a fresh one; web still reloads the page. The native sign-up, resend, password-reset, and email-change flows still return an error because they derive `redirectTo` from `window`; the native auth tickets after T313.1 finish them, and the withholding branches (`AccountUnavailableScreen`, Profile and landing notes) are retired there. `EXPO_PUBLIC_SUPABASE_URL` is inlined into native bundles too; the simulator reaches local Supabase at `http://127.0.0.1:54321`.
 
 ## Navigation architecture
 

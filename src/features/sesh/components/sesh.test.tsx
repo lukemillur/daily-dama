@@ -2282,8 +2282,8 @@ describe('Sesh signup invite integration', () => {
     }
   });
 
-  it('never shows the invite on native, on the first or 6th regular sesh, and still records history', async () => {
-    ReactNative.Platform.OS = 'ios';
+  it('never shows the invite on a platform without accounts, on the first or 6th regular sesh, and still records history', async () => {
+    ReactNative.Platform.OS = 'windows';
     jest.useFakeTimers();
     try {
       const root = await mountSesh('guest');
