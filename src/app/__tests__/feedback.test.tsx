@@ -1,5 +1,4 @@
-// The feedback route picks the form on web and the honest unavailable state
-// on native; FeedbackScreen itself stays platform-agnostic.
+// The feedback route shows the same form on every platform.
 
 import { afterEach, describe, expect, it, jest } from '@jest/globals';
 import { Platform } from 'react-native';
@@ -26,22 +25,13 @@ describe('FeedbackRoute', () => {
     Platform.OS = originalOS;
   });
 
-  it('shows the unavailable state on native', () => {
-    Platform.OS = 'ios';
-    let tree!: ReactTestRenderer;
-    act(() => {
-      tree = create(<FeedbackRoute />);
-    });
-    expect(labels(tree, 'Back to Profile').length).toBeGreaterThan(0);
-    expect(labels(tree, 'Send feedback')).toHaveLength(0);
-  });
-
-  it('shows the form on web', () => {
-    Platform.OS = 'web';
+  it.each(['ios', 'android', 'web'] as const)('shows the form on %s', (os) => {
+    Platform.OS = os;
     let tree!: ReactTestRenderer;
     act(() => {
       tree = create(<FeedbackRoute />);
     });
     expect(labels(tree, 'Send feedback').length).toBeGreaterThan(0);
+    expect(labels(tree, 'Back to Profile')).toHaveLength(0);
   });
 });
