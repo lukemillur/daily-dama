@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'expo-router';
-import { Platform, ScrollView, TextInput } from 'react-native';
+import { Platform, TextInput } from 'react-native';
 import { styled } from 'styled-components/native';
 
 import { Button } from '@/components/ui/button';
@@ -11,6 +11,7 @@ import { AppColors } from '@/constants/theme';
 import { categorizeAuthError, type AuthErrorCategory } from '@/features/auth/model/auth-errors';
 import { resolveGuestBackButtonLabel } from '@/features/auth/model/guest-back-button';
 import { PASSWORD_REQUIREMENTS_HINT } from '@/features/auth/model/password-policy';
+import { AuthFormScroll } from '@/features/auth/components/auth-form-scroll';
 import { PasswordInput } from '@/features/auth/components/password-input';
 import { PasswordVisibilityProvider } from '@/features/auth/components/password-visibility-context';
 import { validateSignUpFields } from '@/features/auth/model/signup-validation';
@@ -79,9 +80,14 @@ export function SignUpScreen() {
 
     isSubmittingRef.current = true;
     setIsSubmitting(true);
-    const { error } = await signUp(trimmedEmail, password);
-    isSubmittingRef.current = false;
-    setIsSubmitting(false);
+    let error: Awaited<ReturnType<typeof signUp>>['error'];
+    try {
+      ({ error } = await signUp(trimmedEmail, password));
+    } finally {
+      // An unexpected provider rejection must not leave the button stuck on "Creating account...".
+      isSubmittingRef.current = false;
+      setIsSubmitting(false);
+    }
 
     // A duplicate account must take the identical path as a true success -- otherwise the
     // distinct branch itself becomes the enumeration oracle that categorizeAuthError's dedicated
@@ -135,7 +141,7 @@ export function SignUpScreen() {
 
   return (
     <Screen>
-      <FormScroll keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: 24 }}>
+      <AuthFormScroll>
         <FormContent>
           <Eyebrow>Sign up</Eyebrow>
           <PageTitle>Create your account.</PageTitle>
@@ -146,6 +152,7 @@ export function SignUpScreen() {
           <TextField
             accessibilityLabel="Email"
             autoCapitalize="none"
+            autoComplete="email"
             autoCorrect={false}
             blurOnSubmit={false}
             error={errors.email}
@@ -207,15 +214,11 @@ export function SignUpScreen() {
             </Button>
           </FormActions>
         </FormContent>
-      </FormScroll>
+      </AuthFormScroll>
     </Screen>
   );
 }
 
-const FormScroll = styled(ScrollView)`
-  flex: 1;
-  width: 100%;
-`;
 const FormContent = styled.View`
   width: 100%;
   max-width: 680px;

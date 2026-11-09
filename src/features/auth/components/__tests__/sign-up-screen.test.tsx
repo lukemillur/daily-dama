@@ -366,6 +366,23 @@ describe('SignUpScreen', () => {
     expect(mockReplace).not.toHaveBeenCalledWith('/auth/check-email');
   });
 
+  it('re-enables the button when the provider rejects unexpectedly', async () => {
+    mockSignUp.mockRejectedValue(new Error('boom'));
+    const root = await mount();
+
+    await act(async () => {
+      findByLabel(root, 'Email').props.onChangeText('person@example.com');
+      findByLabel(root, 'Password').props.onChangeText('Str0ng!Password');
+      findByLabel(root, 'Confirm password').props.onChangeText('Str0ng!Password');
+    });
+    await act(async () => {
+      await findByLabel(root, 'Sign up').props.onPress().catch(() => undefined);
+    });
+
+    expect(findByLabel(root, 'Sign up').props.disabled).toBeFalsy();
+    expect(mockReplace).not.toHaveBeenCalledWith('/auth/check-email');
+  });
+
   it('calls signUp exactly once on a rapid double-submit', async () => {
     let resolveFn: (value: { error: unknown }) => void;
     mockSignUp.mockImplementation(

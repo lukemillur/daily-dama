@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'expo-router';
-import { Platform, ScrollView, TextInput } from 'react-native';
+import { Platform, TextInput } from 'react-native';
 import { styled } from 'styled-components/native';
 
 import { Button } from '@/components/ui/button';
@@ -11,6 +11,7 @@ import { AppColors } from '@/constants/theme';
 import { categorizeAuthError, type AuthErrorCategory } from '@/features/auth/model/auth-errors';
 import { resolveGuestBackButtonLabel } from '@/features/auth/model/guest-back-button';
 import { validateSignInFields } from '@/features/auth/model/sign-in-validation';
+import { AuthFormScroll } from '@/features/auth/components/auth-form-scroll';
 import { PasswordInput } from '@/features/auth/components/password-input';
 import { logAuthWarning, trackAuthEvent } from '@/features/auth/observability/auth-observability';
 import { useAuthActions, useAuthState } from '@/features/auth/state/auth-provider';
@@ -122,7 +123,7 @@ export function SignInScreen() {
 
   return (
     <Screen>
-      <FormScroll keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: 24 }}>
+      <AuthFormScroll>
         <FormContent>
           <Eyebrow>Sign in</Eyebrow>
           <PageTitle>Welcome back.</PageTitle>
@@ -131,6 +132,7 @@ export function SignInScreen() {
           <TextField
             accessibilityLabel="Email"
             autoCapitalize="none"
+            autoComplete="email"
             autoCorrect={false}
             blurOnSubmit={false}
             error={errors.email}
@@ -184,15 +186,11 @@ export function SignInScreen() {
             </Button>
           </FormActions>
         </FormContent>
-      </FormScroll>
+      </AuthFormScroll>
     </Screen>
   );
 }
 
-const FormScroll = styled(ScrollView)`
-  flex: 1;
-  width: 100%;
-`;
 const FormContent = styled.View`
   width: 100%;
   max-width: 680px;

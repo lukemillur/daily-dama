@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Pressable, ScrollView } from 'react-native';
+import { Pressable } from 'react-native';
 import { styled } from 'styled-components/native';
 
+import { AuthFormScroll } from '@/features/auth/components/auth-form-scroll';
 import { Button } from '@/components/ui/button';
 import { Screen } from '@/components/ui/screen';
 import { TextField } from '@/components/ui/text-field';
@@ -142,7 +143,7 @@ export function ForgotPasswordScreen() {
 
   return (
     <Screen>
-      <FormScroll keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: 24 }}>
+      <AuthFormScroll>
         <FormContent>
           <Eyebrow>Forgot password</Eyebrow>
           <PageTitle>Reset your password.</PageTitle>
@@ -154,12 +155,15 @@ export function ForgotPasswordScreen() {
           <TextField
             accessibilityLabel="Email"
             autoCapitalize="none"
+            autoComplete="email"
             autoCorrect={false}
             error={errors.email}
             keyboardType="email-address"
             label="Email"
             onChangeText={setEmail}
+            onSubmitEditing={() => void submit()}
             placeholder="Email"
+            returnKeyType="send"
             textContentType="username"
             value={email}
           />
@@ -187,15 +191,11 @@ export function ForgotPasswordScreen() {
             ) : null}
           </FormActions>
         </FormContent>
-      </FormScroll>
+      </AuthFormScroll>
     </Screen>
   );
 }
 
-const FormScroll = styled(ScrollView)`
-  flex: 1;
-  width: 100%;
-`;
 const FormContent = styled.View`
   width: 100%;
   max-width: 680px;
