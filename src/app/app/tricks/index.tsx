@@ -609,7 +609,7 @@ const RankCheck = styled.Text<{ readonly $darkText: boolean }>`position: absolut
 const Steps = styled.View`gap: 10px; margin-top: 10px;`;
 const StepRow = styled.View`flex-direction: row; align-items: center; gap: 8px;`;
 const StepNumber = styled.Text`width: 24px; color: ${({ theme }) => theme.text}; font-size: 11px; font-weight: 900;`;
-const StepInput = styled(TextInput)`min-width: 120px; flex: 1; min-height: 48px; background-color: ${AppColors.paper}; border: 2px solid ${AppColors.ink}; color: ${AppColors.ink}; font-size: 15px; font-weight: 750; padding: 9px 11px;`;
+const StepInput = styled(TextInput).attrs({ autoCorrect: false, spellCheck: false })`min-width: 120px; flex: 1; min-height: 48px; background-color: ${AppColors.paper}; border: 2px solid ${AppColors.ink}; color: ${AppColors.ink}; font-size: 15px; font-weight: 750; padding: 9px 11px;`;
 const ReferencedStep = styled.View`min-width: 120px; flex: 1; min-height: 48px; justify-content: center; background-color: #e5edcf; border: 2px solid ${AppColors.ink}; padding: 7px 11px;`;
 const ReferencedMeta = styled.Text`color: ${({ theme }) => theme.text}; font-size: 9px; font-weight: 900; letter-spacing: 0.8px; text-transform: uppercase;`;
 const ReferencedName = styled.Text`color: ${({ theme }) => theme.text}; font-size: 15px; font-weight: 800; margin-top: 2px;`;

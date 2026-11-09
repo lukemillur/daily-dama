@@ -143,18 +143,6 @@ _Scoped 2026-11-05 from the T289.4/T289.5 iOS audit findings in Needs scoping (n
 _Scoped 2026-11-09 from the owner's iOS Simulator walkthrough (no BACKLOG_STORIES.md story)._
 
 
-### [T311] Turn off autocorrection in every text field
-
-- **Area:** Forms / text input
-- **Priority:** Medium
-- **Status:** Not started
-- **Planning:** Implementer
-- **Description:** Text fields autocorrect on iOS. Owner decision: no field in the app should autocorrect. Default `autoCorrect={false}` and `spellCheck={false}` in the shared `TextField` (`src/components/ui/text-field.tsx`) so callers can't forget it, and set the same on the raw `TextInput`s that don't use `TextField` (currently `src/app/app/tricks/index.tsx`, `src/features/sesh/components/sesh.tsx` and `src/features/profile/components/color-spectrum-picker.tsx`; the auth screens already set it). Keep autocapitalisation behaviour as it is.
-- **Exit criteria:** A `TextField` test asserts the `autoCorrect={false}` and `spellCheck={false}` defaults. A repository test or lint check fails if any `TextInput` or `TextField` usage under `src/` enables autocorrect, so new fields can't regress. On iPhone 17e (iOS 27.0) with the bundle pinned, typing `teh` and a space into the trick search, the custom-trick name field and a note field leaves `teh` unchanged. Full `yarn tsc --noEmit` passes.
-- **Dependencies:** None.
-- **Notes:** Owner request 2026-11-09. On web, `autoCorrect` maps to the `autocorrect` attribute (Safari only) and `spellCheck` to `spellcheck`. Keep the existing numeric-field `autoComplete` default from T251 in `TextField`.
-- **Platform scope:** Acceptance runs on the iOS Simulator. Android and physical-device checks are not part of these exit criteria; record them as not run rather than passed.
-
 _Scoped 2026-11-09 from T294 (owner chose Direction A, a quiet native list, plus Direction C's laced progress in rank headers). Mockups and reasoning: [outputs/guided-tickets/T294.md](outputs/guided-tickets/T294.md). Web keeps its current Tricks layout unless an entry says otherwise._
 
 ### [T312] Make the Tricks tab a native-feeling list on iOS
@@ -249,18 +237,6 @@ _Scoped 2026-11-09 from T295 (owner approved decisions D1–D10 the same day). S
 - **Exit criteria:** Tests prove: (a) the Start screen shows a Sign in action beside Get started, and it opens `/auth/sign-in`; (b) a signed-in identity whose profile has completed onboarding goes to Home on launch and the Start screen never renders; (c) after sign-in, onboarding does not render while the first profile pull is in flight; (d) a failed first pull shows a retry state, not onboarding, and retrying re-runs the pull; (e) a new account with no completed cloud profile reaches onboarding after the pull; (f) a guest with local data who signs in still enters the existing guest-import flow. On iPhone 17e (iOS 27.0) with local Supabase, an account that completed onboarding on web signs in from the Start screen and lands on Home showing its rank, with no onboarding frame seen. Full `yarn tsc --noEmit` and the native-start, onboarding and guest-import suites pass.
 - **Dependencies:** T313.1, T313.3.
 - **Notes:** D6. Owner decision 2026-11-04: an existing account signing in on mobile must not redo onboarding. Keep `resolveNativeStartDecision` pure; pass identity and pull state in.
-- **Platform scope:** Acceptance runs on the iOS Simulator. Record Android checks as not run.
-
-### [T313.5] Send feedback from the native app
-
-- **Area:** Feedback / native
-- **Priority:** Medium
-- **Status:** Not started
-- **Planning:** Implementer
-- **Description:** `src/app/feedback.tsx` shows `FeedbackUnavailableScreen` on native only because native had no Supabase client (T287). Show `FeedbackScreen` on every platform. Guests may send feedback, matching web: the `anon` insert policy exists and the server forces `email` to null for guests. Remove `FeedbackUnavailableScreen` and its tests once nothing references it.
-- **Exit criteria:** A route test renders the feedback form with `Platform.OS = 'ios'`. A `submitFeedback` test covers the native client path. No reference to `FeedbackUnavailableScreen` remains under `src/`. On iPhone 17e (iOS 27.0) with local Supabase, one guest submission and one signed-in submission each insert one `api.feedback` row; the guest row's `email` is null and the signed-in row's `email` is the account's address. With the network unavailable, submitting shows the existing failure feedback and the form keeps the message. Full `yarn tsc --noEmit` passes.
-- **Dependencies:** T313.1.
-- **Notes:** D7. Owner request 2026-11-09. No migration is needed.
 - **Platform scope:** Acceptance runs on the iOS Simulator. Record Android checks as not run.
 
 ### [T313.6] Verify backup, sync and account lifecycle on iOS and Android

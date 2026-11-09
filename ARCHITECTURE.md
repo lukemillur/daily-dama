@@ -23,10 +23,9 @@ launches the local iOS application. The configured bundle identifier is
 
 Native sync and Sentry initialization remain disabled, and native account
 flows beyond password sign-in are unfinished; a successful simulator build does
-not establish their native readiness. The `/feedback` route keeps its own
-`Platform.OS === 'web'` gate and still renders an unavailable state with a Back
-to Profile exit on native, even though native now builds a Supabase client (see
-the native auth paragraph below). Setup checkpoints,
+not establish their native readiness. The `/feedback` route renders the same
+form on every platform; guests may submit, and the database trigger owns the
+stored email. Setup checkpoints,
 local tooling workarounds, and remaining verification live in
 [`outputs/ios-personal-build-setup.md`](outputs/ios-personal-build-setup.md).
 Website metadata in the landing route and app layout renders only on web;
@@ -708,6 +707,8 @@ The reducer is cleanly isolated, but `sesh.tsx` owns a large amount of presentat
 React Native primitives and platform-specific navigation give one code path across web, iOS and Android, and all three are active targets. Web has the longest verification history. Native tab behavior, keyboard handling, background Sesh behavior, and layout are active hardening work on iOS and Android rather than proven architecture guarantees.
 
 Keyboard-aware forms: long forms use `KeyboardAwareScroll` (`src/components/ui/keyboard-aware-scroll.tsx`), a `ScrollView` wrapper that on iOS sets `automaticallyAdjustKeyboardInsets` and interactive dismissal so UIKit grows the bottom inset by the real keyboard overlap. This absorbs the in-flow tab bar and safe area without device-specific offsets and leaves headers and action layout to each screen. Adopters: the custom-trick form, trick and all-notes screens, trick goals, and Profile (streak and theme fields). Auth, feedback and deletion screens still use plain `ScrollView` and have not adopted it. Verified on the iOS Simulator only; Android and physical devices are unverified.
+
+No-autocorrect invariant: no text field autocorrects or spell-checks. `TextField` defaults `autoCorrect={false}` and `spellCheck={false}`; raw `styled(TextInput)` wrappers set the same through `.attrs`. `src/shared/forms/no-autocorrect.test.ts` walks `src/` and fails on any `TextField`/`TextInput` that enables either prop.
 
 ## Safe extension rules
 
