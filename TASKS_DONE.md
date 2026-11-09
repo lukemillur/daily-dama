@@ -4,6 +4,18 @@ Completed entries move here from `TASKS.md`'s `Backlog`, in the same commit that
 
 Entries keep their content as it was at completion. Don't retroactively edit a description or exit criteria after the fact; if something about a completed task turns out to be wrong or misleading, note that in a new entry or in code, not by rewriting history here.
 
+### [T313.5] Send feedback from the native app
+
+- **Area:** Feedback / native
+- **Priority:** Medium
+- **Status:** Done
+- **Planning:** Implementer
+- **Description:** `src/app/feedback.tsx` shows `FeedbackUnavailableScreen` on native only because native had no Supabase client (T287). Show `FeedbackScreen` on every platform. Guests may send feedback, matching web: the `anon` insert policy exists and the server forces `email` to null for guests. Remove `FeedbackUnavailableScreen` and its tests once nothing references it.
+- **Exit criteria:** A route test renders the feedback form with `Platform.OS = 'ios'`. A `submitFeedback` test covers the native client path. No reference to `FeedbackUnavailableScreen` remains under `src/`. On iPhone 17e (iOS 27.0) with local Supabase, one guest submission and one signed-in submission each insert one `api.feedback` row; the guest row's `email` is null and the signed-in row's `email` is the account's address. With the network unavailable, submitting shows the existing failure feedback and the form keeps the message. Full `yarn tsc --noEmit` passes.
+- **Dependencies:** T313.1.
+- **Notes:** D7. Owner request 2026-11-09. No migration is needed.
+- **Platform scope:** Acceptance runs on the iOS Simulator. Record Android checks as not run.
+
 ### [T313.1] Give native a Supabase client with secure session storage
 
 - **Area:** Auth / native / persistence

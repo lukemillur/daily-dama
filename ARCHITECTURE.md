@@ -23,10 +23,9 @@ launches the local iOS application. The configured bundle identifier is
 
 Native sync and Sentry initialization remain disabled, and native account
 flows beyond password sign-in are unfinished; a successful simulator build does
-not establish their native readiness. The `/feedback` route keeps its own
-`Platform.OS === 'web'` gate and still renders an unavailable state with a Back
-to Profile exit on native, even though native now builds a Supabase client (see
-the native auth paragraph below). Setup checkpoints,
+not establish their native readiness. The `/feedback` route renders the same
+form on every platform; guests may submit, and the database trigger owns the
+stored email. Setup checkpoints,
 local tooling workarounds, and remaining verification live in
 [`outputs/ios-personal-build-setup.md`](outputs/ios-personal-build-setup.md).
 Website metadata in the landing route and app layout renders only on web;
