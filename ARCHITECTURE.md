@@ -708,6 +708,8 @@ React Native primitives and platform-specific navigation give one code path acro
 
 Keyboard-aware forms: long forms use `KeyboardAwareScroll` (`src/components/ui/keyboard-aware-scroll.tsx`), a `ScrollView` wrapper that on iOS sets `automaticallyAdjustKeyboardInsets` and interactive dismissal so UIKit grows the bottom inset by the real keyboard overlap. This absorbs the in-flow tab bar and safe area without device-specific offsets and leaves headers and action layout to each screen. Adopters: the custom-trick form, trick and all-notes screens, trick goals, and Profile (streak and theme fields). Auth, feedback and deletion screens still use plain `ScrollView` and have not adopted it. Verified on the iOS Simulator only; Android and physical devices are unverified.
 
+No-autocorrect invariant: no text field autocorrects or spell-checks. `TextField` defaults `autoCorrect={false}` and `spellCheck={false}`; raw `styled(TextInput)` wrappers set the same through `.attrs`. `src/shared/forms/no-autocorrect.test.ts` walks `src/` and fails on any `TextField`/`TextInput` that enables either prop.
+
 ## Safe extension rules
 
 When adding functionality, preserve these rules unless there is a deliberate architecture change:

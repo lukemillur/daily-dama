@@ -1319,7 +1319,7 @@ const PlanChoiceTitle = styled.Text<{ $selected: boolean }>`color: ${({ $selecte
 const PlanChoiceCopy = styled.Text<{ $selected: boolean }>`color: ${({ $selected, theme }) => ($selected ? AppColors.cream : theme.text)}; font-size: 12px; font-weight: 600; line-height: 17px; margin-top: 5px;`;
 const DurationField = styled.View`margin-top: 16px;`;
 const DurationLabel = styled.Text`color: ${({ theme }) => theme.text}; font-size: 12px; font-weight: 900; margin-bottom: 6px; text-transform: uppercase;`;
-const DurationInput = styled(TextInput)`height: 54px; width: 110px; background-color: ${AppColors.paper}; border: 2px solid ${AppColors.ink}; color: ${AppColors.ink}; font-size: 24px; font-weight: 900; padding: 8px 12px;`;
+const DurationInput = styled(TextInput).attrs({ autoCorrect: false, spellCheck: false })`height: 54px; width: 110px; background-color: ${AppColors.paper}; border: 2px solid ${AppColors.ink}; color: ${AppColors.ink}; font-size: 24px; font-weight: 900; padding: 8px 12px;`;
 const DurationHint = styled.Text<{ $invalid: boolean }>`color: ${({ $invalid, theme }) => ($invalid ? AppColors.red : theme.text)}; font-size: 12px; font-weight: 700; margin-top: 7px;`;
 const ChallengeField = styled.View`margin-top: 16px;`;
 const ChallengeChoices = styled.View`flex-direction: row; gap: 10px; margin-top: 10px;`;

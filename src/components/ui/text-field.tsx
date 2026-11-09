@@ -72,6 +72,10 @@ export const TextField = forwardRef<TextInput, TextFieldProps>(function TextFiel
           ref={ref}
           accessibilityLabel={accessibilityLabel ?? label}
           autoComplete={resolvedAutoComplete}
+          // Product rule: no field autocorrects. Defaults precede `{...props}` only so the type
+          // stays permissive; the no-autocorrect guard test rejects any caller that enables them.
+          autoCorrect={false}
+          spellCheck={false}
           inputMode={inputMode}
           keyboardType={keyboardType}
           $hasAccessory={rightAccessory !== undefined}
