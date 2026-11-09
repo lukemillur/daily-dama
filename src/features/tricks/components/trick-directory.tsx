@@ -112,9 +112,13 @@ export function TrickDirectory({
         ? tricks
         : tricks.filter((trick) => trick.name.toLowerCase().includes(normalizedQuery));
       const shouldSectionByFocus = showFocusedSection && normalizedQuery.length === 0;
-      return createTrickSections(visibleTricks, shouldSectionByFocus ? sectioningTrickIds : undefined);
+      return createTrickSections(
+        visibleTricks,
+        shouldSectionByFocus ? sectioningTrickIds : undefined,
+        unlockedTrickIds,
+      );
     },
-    [tricks, search?.query, showFocusedSection, sectioningTrickIds],
+    [tricks, search?.query, showFocusedSection, sectioningTrickIds, unlockedTrickIds],
   );
   const selectedTrickIdSet = useMemo(() => new Set(selectedTrickIds), [selectedTrickIds]);
   const directoryHeader = (
@@ -206,8 +210,21 @@ function SectionHeader({
   readonly section: SectionListData<DirectoryTrick, TrickSection>;
 }) {
   const isCustom = section.kind === 'custom';
+  const lacedCount = section.kind === 'focused' ? undefined : section.lacedCount;
+  const progress =
+    lacedCount === undefined ? undefined : `${lacedCount} / ${section.data.length}`;
+  const sectionName =
+    section.kind === 'custom' ? 'Custom' : section.kind === 'focused' ? '' : `Rank ${section.rank}`;
   return (
-    <SectionHeaderContainer $custom={isCustom}>
+    <SectionHeaderContainer
+      $custom={isCustom}
+      accessible={progress !== undefined}
+      accessibilityLabel={
+        progress === undefined
+          ? undefined
+          : `${sectionName}, ${lacedCount} of ${section.data.length} laced`
+      }
+    >
       <RankLabel $custom={isCustom}>
         {section.kind === 'custom' ? 'Custom' : section.kind === 'focused' ? 'Focused tricks' : `Rank ${section.rank}`}
       </RankLabel>
@@ -218,6 +235,7 @@ function SectionHeader({
             ? `${section.data.length} in rotation`
             : `${section.level} · ${section.className}`}
       </LevelLabel>
+      {progress === undefined ? null : <ProgressLabel $custom={isCustom}>{progress}</ProgressLabel>}
     </SectionHeaderContainer>
   );
 }
@@ -512,6 +530,13 @@ const LevelLabel = styled.Text<{ readonly $custom: boolean }>`
   font-weight: 800;
   text-align: right;
   text-transform: uppercase;
+`;
+
+const ProgressLabel = styled.Text<{ readonly $custom: boolean }>`
+  color: ${({ $custom }) => ($custom ? '#fff8e5' : '#18382e')};
+  font-size: 13px;
+  font-weight: 900;
+  font-variant: tabular-nums;
 `;
 
 const FocusedEmptyContainer = styled.View`

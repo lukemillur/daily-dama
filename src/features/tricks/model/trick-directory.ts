@@ -24,11 +24,14 @@ export interface RankedTrickSection {
   readonly level: KenteiLevel;
   readonly className: KenteiClass;
   readonly data: DirectoryTrick[];
+  /** Tricks in this section that are laced; present only when a laced set was supplied. */
+  readonly lacedCount?: number;
 }
 
 export interface CustomTrickSection {
   readonly kind: 'custom';
   readonly data: DirectoryTrick[];
+  readonly lacedCount?: number;
 }
 
 export interface FocusedTrickSection {
@@ -73,7 +76,13 @@ export function createProfileDirectoryTricks(
 export function createTrickSections(
   tricks: readonly DirectoryTrick[],
   focusedTrickIds?: readonly string[],
+  effectiveLacedTrickIds?: ReadonlySet<string>,
 ): TrickSection[] {
+  const countLaced = (data: readonly DirectoryTrick[]) =>
+    effectiveLacedTrickIds === undefined
+      ? {}
+      : { lacedCount: data.filter((trick) => effectiveLacedTrickIds.has(trick.id)).length };
+
   const focusedSection: FocusedTrickSection[] =
     focusedTrickIds === undefined
       ? []
@@ -119,12 +128,13 @@ export function createTrickSections(
       data: section.data.sort((first, second) => {
         return Number(isCustomDirectoryTrick(first)) - Number(isCustomDirectoryTrick(second));
       }),
+      ...countLaced(section.data),
     }));
 
   const trailingSections: TrickSection[] =
     unrankedCustomTricks.length === 0
       ? rankedSections
-      : [...rankedSections, { kind: 'custom', data: unrankedCustomTricks }];
+      : [...rankedSections, { kind: 'custom', data: unrankedCustomTricks, ...countLaced(unrankedCustomTricks) }];
 
   return [...focusedSection, ...trailingSections];
 }
