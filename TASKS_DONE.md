@@ -17,6 +17,44 @@ Entries keep their content as it was at completion. Don't retroactively edit a d
 - **Platform scope:** Acceptance runs on the iOS Simulator. Record Android checks as not run.
 - **Completion notes:** `AuthFormScroll` (iOS `automaticallyAdjustKeyboardInsets`, scroll-to-end on `keyboardDidShow`) replaces the three duplicated form ScrollViews; `autoComplete` hints added (PasswordInput derives `new-password`/`current-password` from `textContentType`); forgot-password gets `returnKeyType=send` and submits from the keyboard. iPhone 17e (iOS 27.0), Metro on port 8093 from the task worktree, branch HEAD 38c2c0b, local Supabase: sign-up reached check-email; invalid credentials showed 'Incorrect email or password. Try again.'; valid sign-in reached Home and iOS offered Save Password; return key moved email to password; with the keyboard open the primary button was visible on sign-in and sign-up. The forgot-password screen was covered by route tests only (not driven on the device). Android not run. Observed, out of scope: the floating settings button overlaps the password visibility toggle on native.
 
+### [T313.2] Complete email links in the app
+
+- **Area:** Auth / native / deep linking
+- **Priority:** High
+- **Status:** Done
+- **Planning:** Required
+- **Description:** `AuthProvider` builds every `redirectTo` from `window.location.origin` (sign-up, resend, password reset, email change), which fails on native. Add one platform-aware callback URL builder: unchanged `https://<origin>/auth/callback` on web, `dailydama://auth/callback` on native via `expo-linking`'s `createURL`, keeping `?flow=email_change` for email change. The existing `/auth/callback` route handles the deep link. Add the native callback to `additional_redirect_urls` in `supabase/config.toml`.
+- **Exit criteria:** Unit tests prove the builder returns the current web URLs, returns `dailydama://auth/callback` (with `?flow=email_change` where used) on `ios` and `android`, and never reads `window` on native. Auth-provider tests prove all four email flows pass the builder's URL. On iPhone 17e (iOS 27.0) with local Supabase and Mailpit, opening the link with `xcrun simctl openurl`: a sign-up confirmation link signs the user in and reaches Home while the app is running and from a cold start; a password-reset link opens the reset-password screen; an already-used link shows the expired-link copy; a link whose PKCE verifier is missing shows the existing `missingVerifier` copy. The ticket records the hosted Supabase redirect allow-list addition as owner-applied, with its date.
+- **Dependencies:** T313.1.
+- **Notes:** D3. Universal Links and App Links are deferred: they need the Associated Domains capability, which the personal-team iOS build cannot have, plus a hosted AASA file. **Owner gate:** the agent prepares the exact allow-list value; the owner adds it in the hosted Supabase dashboard. Do not change hosted Auth settings without that authorization. Hosted email delivery on a device stays not run until observed.
+- **Platform scope:** Acceptance runs on the iOS Simulator. Record Android and physical-device checks as not run.
+- **Execution notes (2026-11-09):** Builder `src/features/auth/model/auth-callback-url.ts`; all four `AuthProvider` flows use it. Local `additional_redirect_urls` now holds `dailydama://auth/callback`. Unit and provider tests pass. iPhone 17e (iOS 27.0), Metro on port 8093 started from this worktree, local Supabase and Mailpit; each email link was resolved with `curl -i` on the GoTrue verify URL and the `Location` value opened with `xcrun simctl openurl` (Safari handoff not needed). Sign-up email carried `redirect_to=dailydama://auth/callback`. Passed: sign-up link while running (signed in, Home gate reached; a new account lands in onboarding first), sign-up link from cold start (dev launcher forwards the pending link; `last_sign_in_at` set), password-reset link (reset-password screen), consumed link (expired-link copy), missing PKCE verifier (`missingVerifier` copy, which still says "browser" and is left to T313.5). Not run: email-change landing, Android, physical device, hosted email delivery.
+- **Owner-applied allow-list (2026-11-09):** the owner added exactly `dailydama://auth/callback` and `dailydama://auth/callback?flow=email_change` to the hosted production project `daily.ama` (`lnudjcpotidplbjqcfcx`), Authentication > URL Configuration > Redirect URLs. Verified the same day with `POST /auth/v1/recover` against that project and the email's `redirect_to`: the plain entry alone accepted `dailydama://auth/callback` but sent `?flow=email_change` to the Site URL (hosted matches the custom scheme's query string, unlike local GoTrue); after the second entry, `redirect_to` kept `dailydama://auth/callback?flow=email_change`. Local `config.toml` now lists both for parity. Not applied: the `Daily Dama Dev` project (`ylyoqswauqyesuwmetnl`). Still not run: email-change landing in the app, Android, physical device, hosted email delivery on a device.
+
+### [T311] Turn off autocorrection in every text field
+
+- **Area:** Forms / text input
+- **Priority:** Medium
+- **Status:** Done
+- **Planning:** Implementer
+- **Description:** Text fields autocorrect on iOS. Owner decision: no field in the app should autocorrect. Default `autoCorrect={false}` and `spellCheck={false}` in the shared `TextField` (`src/components/ui/text-field.tsx`) so callers can't forget it, and set the same on the raw `TextInput`s that don't use `TextField` (currently `src/app/app/tricks/index.tsx`, `src/features/sesh/components/sesh.tsx` and `src/features/profile/components/color-spectrum-picker.tsx`; the auth screens already set it). Keep autocapitalisation behaviour as it is.
+- **Exit criteria:** A `TextField` test asserts the `autoCorrect={false}` and `spellCheck={false}` defaults. A repository test or lint check fails if any `TextInput` or `TextField` usage under `src/` enables autocorrect, so new fields can't regress. On iPhone 17e (iOS 27.0) with the bundle pinned, typing `teh` and a space into the trick search, the custom-trick name field and a note field leaves `teh` unchanged. Full `yarn tsc --noEmit` passes.
+- **Dependencies:** None.
+- **Notes:** Owner request 2026-11-09. On web, `autoCorrect` maps to the `autocorrect` attribute (Safari only) and `spellCheck` to `spellcheck`. Keep the existing numeric-field `autoComplete` default from T251 in `TextField`.
+- **Platform scope:** Acceptance runs on the iOS Simulator. Android and physical-device checks are not part of these exit criteria; record them as not run rather than passed.
+
+### [T313.5] Send feedback from the native app
+
+- **Area:** Feedback / native
+- **Priority:** Medium
+- **Status:** Done
+- **Planning:** Implementer
+- **Description:** `src/app/feedback.tsx` shows `FeedbackUnavailableScreen` on native only because native had no Supabase client (T287). Show `FeedbackScreen` on every platform. Guests may send feedback, matching web: the `anon` insert policy exists and the server forces `email` to null for guests. Remove `FeedbackUnavailableScreen` and its tests once nothing references it.
+- **Exit criteria:** A route test renders the feedback form with `Platform.OS = 'ios'`. A `submitFeedback` test covers the native client path. No reference to `FeedbackUnavailableScreen` remains under `src/`. On iPhone 17e (iOS 27.0) with local Supabase, one guest submission and one signed-in submission each insert one `api.feedback` row; the guest row's `email` is null and the signed-in row's `email` is the account's address. With the network unavailable, submitting shows the existing failure feedback and the form keeps the message. Full `yarn tsc --noEmit` passes.
+- **Dependencies:** T313.1.
+- **Notes:** D7. Owner request 2026-11-09. No migration is needed.
+- **Platform scope:** Acceptance runs on the iOS Simulator. Record Android checks as not run.
+
 ### [T313.1] Give native a Supabase client with secure session storage
 
 - **Area:** Auth / native / persistence

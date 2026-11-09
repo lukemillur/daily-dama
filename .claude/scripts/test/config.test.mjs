@@ -86,8 +86,17 @@ test('the newTicket skill restricts as well as pre-approves', () => {
   const skill = fs.readFileSync(path.join(repoRoot, '.claude/skills/newTicket/SKILL.md'), 'utf8');
   const fields = parseFrontmatter(skill);
   const disallowed = toolList(fields['disallowed-tools']);
-  for (const tool of ['Edit', 'Write', 'NotebookEdit', 'Read', 'Grep', 'Glob', 'WebFetch', 'WebSearch']) {
+  for (const tool of ['Artifact', 'AskUserQuestion', 'NotebookEdit', 'Skill', 'SendMessage']) {
     assert.ok(disallowed.includes(tool), `${tool} must be removed from the orchestrator's pool`);
+  }
+  // A skill's disallowed-tools is inherited by the subagents it spawns, so it
+  // must never remove a tool a ticket agent is granted (this once left the
+  // planner without Write and unable to commit its plan).
+  for (const agent of ['ticket-planner', 'ticket-planner-burn', 'ticket-implementer']) {
+    const definition = fs.readFileSync(path.join(repoRoot, `.claude/agents/${agent}.md`), 'utf8');
+    const granted = toolList(parseFrontmatter(definition).tools);
+    const stripped = granted.filter((tool) => disallowed.includes(tool));
+    assert.deepEqual(stripped, [], `newTicket disallowed-tools would strip ${stripped.join(', ')} from ${agent}`);
   }
   const allowed = toolList(fields['allowed-tools']);
   assert.deepEqual(

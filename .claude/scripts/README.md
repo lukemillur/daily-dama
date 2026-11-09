@@ -158,4 +158,4 @@ whether a merge was attempted, exact command evidence, and reconciliation.
 
 Static check of `.claude/agents/*.md` and `.claude/skills/*/SKILL.md` frontmatter against Claude Code 2.1.x: known fields only, valid `model`/`effort`/`isolation`, tool names that actually resolve, and no `Agent` on a subagent. Exits non-zero on any error.
 
-Note the asymmetry it encodes: on a **subagent**, `tools:` is a real allowlist. On a **skill**, `allowed-tools` only pre-approves — `disallowed-tools` is what removes tools from the pool.
+Note the asymmetry it encodes: on a **subagent**, `tools:` is a real allowlist. On a **skill**, `allowed-tools` only pre-approves — `disallowed-tools` is what removes tools from the pool. A skill's `disallowed-tools` is also inherited by every subagent the skill spawns, overriding the agent's own `tools:`, so the `newTicket` skill must not disallow any tool a ticket agent needs; `config.test.mjs` enforces that.

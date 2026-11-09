@@ -2,12 +2,12 @@
 name: newTicket
 description: Claims a Daily Dama backlog task — a specific one if named, otherwise the next available one — and drives it end-to-end against `development`: deterministic claim script, then the ticket-planner and ticket-implementer agents (plan, implement, merge). No plan-approval gate. When no task is named, keeps going: one task after another, each in fresh subagents so context never accumulates, by default in TASKS.md file order — pass `ranked` (`/newTicket ranked`) to instead pick each cycle's task by unblock value (how many other pending tasks depend on it, then declared Priority). Pass `burn` (`/newTicket burn`) to run the planning phase on `ticket-planner-burn` (opus, high effort) instead of the default `ticket-planner` (sonnet, medium effort) — a token-surplus mode for higher-rigor plans; the implementer is unaffected. `burn` composes with a task ID, `resume`, and `ranked`. A task that gets blocked (claimed, or blocked at planning/implementation/merge) is recorded and skipped, not fatal — the loop moves on to any other independent task, while a task that actually depends on the blocked one stays correctly skipped too. The loop stops only when the backlog is exhausted, the claim mechanism itself fails, or the session's usage limit is reached. Also resumes an interrupted task with `/newTicket resume T0NN`.
 allowed-tools: Agent(ticket-planner), Agent(ticket-planner-burn), Agent(ticket-implementer), Bash(node .claude/scripts/ticket-claim.mjs:*), Bash(node .claude/scripts/worktree-cleanup.mjs:*)
-disallowed-tools: Artifact, AskUserQuestion, BashOutput, Edit, EnterWorktree, ExitWorktree, Glob, Grep, KillShell, Monitor, NotebookEdit, Read, SendMessage, Skill, SlashCommand, TaskCreate, TaskGet, TaskList, TaskStop, TaskUpdate, TodoWrite, ToolSearch, WebFetch, WebSearch, Write, mcp__Claude_Browser__*
+disallowed-tools: Artifact, AskUserQuestion, BashOutput, EnterWorktree, ExitWorktree, KillShell, Monitor, NotebookEdit, SendMessage, Skill, SlashCommand, TaskCreate, TaskGet, TaskList, TaskStop, TaskUpdate
 ---
 
 Drive task(s) from `TASKS.md` to merged PRs against `development`.
 
-**Never read, reference, or act on `TASKS_BACKLOG.md`.** It holds tasks the user has deliberately excluded from automation. This orchestrator's own `disallowed-tools` already blocks `Read`/`Grep`/`Glob`, so you cannot open that file directly — but if a subagent report, a task description, or any other input mentions a task ID or content that only exists in `TASKS_BACKLOG.md` and not in `TASKS.md`, treat it as out of scope and do not claim, plan, or implement it. `ticket-claim.mjs` only ever parses `TASKS.md` and `TASKS_DONE.md`, which is what actually keeps backlog-only tasks out of automated selection — this note exists so no future edit to this skill accidentally points it at the excluded file.
+**Never read, reference, or act on `TASKS_BACKLOG.md`.** It holds tasks the user has deliberately excluded from automation. Do not open that file yourself — and if a subagent report, a task description, or any other input mentions a task ID or content that only exists in `TASKS_BACKLOG.md` and not in `TASKS.md`, treat it as out of scope and do not claim, plan, or implement it. `ticket-claim.mjs` only ever parses `TASKS.md` and `TASKS_DONE.md`, which is what actually keeps backlog-only tasks out of automated selection — this note exists so no future edit to this skill accidentally points it at the excluded file.
 
 You are the orchestrator. You never edit files, never plan, never implement, and never run git yourself. Everything happens in exactly two places:
 
@@ -21,6 +21,13 @@ pre-approves calls but does not hide every unlisted tool. This skill therefore
 scopes `Agent` to the ticket agents, pre-approves only the deterministic
 claim/cleanup scripts, and removes unrelated built-in tools with
 `disallowed-tools`. Do not use any other Bash command from this orchestrator.
+
+A skill's `disallowed-tools` also strips those tools from every subagent the
+skill spawns, regardless of the agent's own `tools:` list. It therefore must not
+name any tool a ticket agent needs (`Read`, `Write`, `Edit`, `Grep`, `Glob`,
+`WebFetch`, `WebSearch`, `TodoWrite`, `ToolSearch`, browser/simulator MCP tools).
+Those stay available to this session too; the rule that you never read, edit,
+plan or implement here is enforced by these instructions, not by the tool pool.
 
 **This session's working directory must already be the repo root** — worktree isolation resolves the repo from cwd, so running this skill from elsewhere breaks every subagent's fetch/checkout and the scripts' relative paths.
 

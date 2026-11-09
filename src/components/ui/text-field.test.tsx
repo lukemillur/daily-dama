@@ -52,6 +52,16 @@ async function mountField(props: Record<string, unknown> = {}) {
   return root;
 }
 describe('TextField', () => {
+  it('disables autocorrect and spellcheck by default', async () => {
+    const root = await mountField();
+    const input = root.root.find(
+      (node) => node.props.accessibilityLabel === 'Email' && 'autoCorrect' in node.props,
+    );
+
+    expect(input.props.autoCorrect).toBe(false);
+    expect(input.props.spellCheck).toBe(false);
+  });
+
   it('renders the label, hint, and error text', async () => {
     const root = await mountField({ error: 'Enter a valid email.', hint: 'We will never share this.' });
 
