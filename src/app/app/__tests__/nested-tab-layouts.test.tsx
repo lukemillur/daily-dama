@@ -21,6 +21,7 @@ const mockNavigation = { getParent: () => mockTabNavigation };
 jest.mock('@/components/nested-stack-options', () => ({
   useNestedStackScreenOptions: () => ({}),
   useNestedScreenOptions: () => () => ({}),
+  useTricksIndexScreenOptions: () => ({}),
 }));
 jest.mock('expo-router', () => ({
   Stack: Object.assign(() => null, { Screen: () => null }),

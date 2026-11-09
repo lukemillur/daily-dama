@@ -1,10 +1,11 @@
-import { useRouter } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { Pressable, TextInput } from 'react-native';
+import { Platform, Pressable, TextInput } from 'react-native';
 import { styled } from 'styled-components/native';
 
 import { Button } from '@/components/ui/button';
 import { KeyboardAwareScroll } from '@/components/ui/keyboard-aware-scroll';
+import { deriveNestedHeaderColors } from '@/components/nested-stack-options';
 import { Screen } from '@/components/ui/screen';
 import { TextField } from '@/components/ui/text-field';
 import { BodyText, DisplayText, DisplayTitle, Eyebrow } from '@/components/ui/typography';
@@ -27,6 +28,7 @@ import {
   useUserProfile,
   useUserProfileActions,
 } from '@/features/profile/state/user-profile-provider';
+import { useResolvedTheme } from '@/features/profile/state/use-resolved-theme';
 import { usePracticeHistory } from '@/features/stats/state/practice-history-provider';
 import { TrickDirectory } from '@/features/tricks/components/trick-directory';
 import { KENDAMA_KENTEI_TRICKS } from '@/features/tricks/data/kendama-kentei-tricks';
@@ -39,6 +41,48 @@ import {
   selectLacedTrickIds,
   selectNoteCountByTrickId,
 } from '@/features/tricks/model/trick-directory';
+
+function TricksNativeHeader({ onChangeQuery }: { readonly onChangeQuery: (query: string) => void }) {
+  const router = useRouter();
+  const colors = deriveNestedHeaderColors(useResolvedTheme());
+  return (
+    <Stack.Screen
+      options={{
+        headerSearchBarOptions: {
+          placeholder: 'Search tricks',
+          autoCapitalize: 'none',
+          hideWhenScrolling: false,
+          tintColor: colors.tint,
+          textColor: colors.title,
+          onChangeText: (event) => onChangeQuery(event.nativeEvent.text),
+          onCancelButtonPress: () => onChangeQuery(''),
+        },
+        unstable_headerRightItems: () => [
+          {
+            type: 'button',
+            label: 'Define new trick',
+            icon: { type: 'sfSymbol', name: 'plus' },
+            accessibilityLabel: 'Define new trick',
+            onPress: () => router.push('/app/tricks/custom/new'),
+          },
+          {
+            type: 'menu',
+            label: 'More trick actions',
+            icon: { type: 'sfSymbol', name: 'ellipsis' },
+            accessibilityLabel: 'More trick actions',
+            menu: {
+              items: [
+                { type: 'action', label: 'Trick goals', onPress: () => router.push('/app/tricks/goals') },
+                { type: 'action', label: 'Trick notes', onPress: () => router.push('/app/tricks/notes') },
+                { type: 'action', label: 'Laced tricks', onPress: () => router.push('/app/tricks/laced') },
+              ],
+            },
+          },
+        ],
+      }}
+    />
+  );
+}
 
 export default function TricksScreen() {
   const isOnboardingComplete = useRequireOnboarding();
@@ -62,11 +106,15 @@ export default function TricksScreen() {
   );
 
   const router = useRouter();
+  const [query, setQuery] = useState('');
+  // Native shows title, search and actions in the navigation header; web keeps the list header.
+  const usesNativeHeader = Platform.OS !== 'web';
 
   if (!isOnboardingComplete) return null;
 
   return (
     <Screen align="center" edges={['left', 'right']} includeWebHeaderInset={false}>
+      {usesNativeHeader ? <TricksNativeHeader onChangeQuery={setQuery} /> : null}
       <DirectoryContent>
         <TrickDirectory
           tricks={directoryTricks}
@@ -88,7 +136,9 @@ export default function TricksScreen() {
               router.push({ pathname: '/app/tricks/[trickId]/goals', params: { trickId: trick.id } }),
           }}
           practiceAction
-          header={{
+          nativeHeader={usesNativeHeader ? true : undefined}
+          search={usesNativeHeader ? { query, onChangeText: setQuery } : undefined}
+          header={usesNativeHeader ? undefined : {
             eyebrow: 'Your trick library',
             title: 'What\'s up next?',
             introduction:
@@ -96,7 +146,7 @@ export default function TricksScreen() {
                 ? 'Build your practice list from the Kentei library or define something entirely your own.'
                 : `${selectedTrickIds.length} ${selectedTrickIds.length === 1 ? 'trick' : 'tricks'} ready for focused practice.`,
           }}
-          headerAction={
+          headerAction={usesNativeHeader ? undefined :
             <HeaderActions>
               <DefineButton onPress={() => router.push('/app/tricks/custom/new')}>Define new trick</DefineButton>
               <TrickGoalsButton variant="secondary" onPress={() => router.push('/app/tricks/goals')}>

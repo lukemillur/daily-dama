@@ -29,6 +29,11 @@ export interface TrickDirectoryProps {
     readonly onChangeText: (query: string) => void;
     readonly placeholder?: string;
   };
+  /**
+   * The route supplies the title, search and actions through the native navigation header, so the
+   * list renders no in-list header (including the search field; `search` still drives filtering).
+   */
+  readonly nativeHeader?: true;
   readonly onActivate?: (trick: DirectoryTrick) => void;
   readonly customActions?: {
     readonly onEdit: (trickId: string) => void;
@@ -80,6 +85,7 @@ export function TrickDirectory({
   header,
   headerAction,
   search,
+  nativeHeader,
   onActivate,
   customActions,
   notesAction,
@@ -151,7 +157,9 @@ export function TrickDirectory({
       // The list still scrolls by wheel, trackpad, touch drag, and keyboard.
       showsVerticalScrollIndicator={false}
       contentContainerStyle={{ paddingBottom: fixedFooter ? 0 : 24 }}
-      ListHeaderComponent={fixedHeader ? undefined : directoryHeader}
+      ListHeaderComponent={fixedHeader || nativeHeader ? undefined : directoryHeader}
+      // Lets the iOS large title collapse with the list and keeps rows clear of the status bar.
+      contentInsetAdjustmentBehavior={nativeHeader ? 'automatic' : undefined}
       ListFooterComponent={fixedFooter ? undefined : footer}
       renderSectionHeader={({ section }) => <SectionHeader section={section} />}
       renderSectionFooter={({ section }) =>

@@ -166,18 +166,6 @@ _Scoped 2026-11-09 from T294 (owner chose Direction A, a quiet native list, plus
 - **Dependencies:** None.
 - **Notes:** Keep the custom-trick and rank invariants in AGENTS.md unchanged. `TrickDirectory` is also the goal picker (`onActivate`) and the Sesh multi-trick picker; every child must leave those lists working. Prefer one route-level prop that chooses the native presentation over `Platform.OS` checks scattered through `trick-directory.tsx`.
 
-### [T312.1] Give the Tricks index a native large-title header with search and menus on iOS
-
-- **Area:** Tricks / navigation
-- **Priority:** Medium
-- **Status:** In progress
-- **Planning:** Required
-- **Description:** The Tricks index sets `headerShown: false`, so its eyebrow, title, introduction and four buttons scroll as list content under the status bar. On native, show the stack header instead: large title `Tricks`, a native header search bar that filters the list through `TrickDirectory`'s existing `search` filtering (without also rendering the in-list `TextField`), a `＋` button that opens Define new trick, and a `⋯` menu with Trick goals, Trick notes and Laced tricks. Remove the in-list header block and buttons on native only. Use Expo Router's own header APIs in the installed version (`Stack.SearchBar` / `Stack.Toolbar` menus, or `headerSearchBarOptions`); confirm them against the versioned docs.
-- **Exit criteria:** On iPhone 17e (iOS 27.0) with the bundle pinned, the Tricks tab shows a large `Tricks` title that collapses on scroll, and no list row draws under the status bar. Typing `cup` in the header search shows only tricks whose names contain `cup`, and clearing it restores the Focused and rank sections. `＋` opens New trick; the `⋯` menu items open Goals, Notes and Laced tricks. Tapping the Tricks tab from a pushed screen still returns to the index. VoiceOver reads the `＋` and `⋯` buttons with labels. At 390 px and wide widths on web, the Tricks screen is unchanged from HEAD at claim time (same header block and four buttons). Route tests cover the native header options and the web fallback. Full `yarn tsc --noEmit` passes.
-- **Dependencies:** None.
-- **Notes:** Header colours come from `deriveNestedHeaderColors` like the other nested screens. The selected-count introduction (`N tricks ready…`) is dropped on native; the Focused section header already shows the count.
-- **Platform scope:** Acceptance runs on the iOS Simulator and web. Android has no verified development build; record Android as not run.
-
 ### [T312.2] Show laced progress in each rank section header
 
 - **Area:** Tricks
