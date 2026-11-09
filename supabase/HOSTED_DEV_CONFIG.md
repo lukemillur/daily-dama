@@ -5,7 +5,9 @@
 single hosted development project referenced by `EXPO_PUBLIC_SUPABASE_URL` /
 `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY` in each developer's own gitignored
 `.env.local` per `.env.example`. No production project was created as part of
-this task; that remains reserved for a later ticket.
+this task. Production now exists separately as `daily.ama`
+(`lnudjcpotidplbjqcfcx`); see `DEPLOYMENT_HANDOFF.md`. This record covers only
+`Daily Dama Dev`.
 
 This record intentionally contains no secrets. The project ref, anon/publishable
 key, service-role key, and DB password all live only in `.env.local` files and

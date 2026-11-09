@@ -201,18 +201,6 @@ _Scoped 2026-11-09 from T295 (owner approved decisions D1–D10 the same day). S
 - **Exit criteria:** T313.1–T313.6 are all `Done`.
 - **Notes:** No feature flag (D9): the native app ships only as a personal development build, so each child can enable its part directly.
 
-### [T313.2] Complete email links in the app
-
-- **Area:** Auth / native / deep linking
-- **Priority:** High
-- **Status:** Not started
-- **Planning:** Required
-- **Description:** `AuthProvider` builds every `redirectTo` from `window.location.origin` (sign-up, resend, password reset, email change), which fails on native. Add one platform-aware callback URL builder: unchanged `https://<origin>/auth/callback` on web, `dailydama://auth/callback` on native via `expo-linking`'s `createURL`, keeping `?flow=email_change` for email change. The existing `/auth/callback` route handles the deep link. Add the native callback to `additional_redirect_urls` in `supabase/config.toml`.
-- **Exit criteria:** Unit tests prove the builder returns the current web URLs, returns `dailydama://auth/callback` (with `?flow=email_change` where used) on `ios` and `android`, and never reads `window` on native. Auth-provider tests prove all four email flows pass the builder's URL. On iPhone 17e (iOS 27.0) with local Supabase and Mailpit, opening the link with `xcrun simctl openurl`: a sign-up confirmation link signs the user in and reaches Home while the app is running and from a cold start; a password-reset link opens the reset-password screen; an already-used link shows the expired-link copy; a link whose PKCE verifier is missing shows the existing `missingVerifier` copy. The ticket records the hosted Supabase redirect allow-list addition as owner-applied, with its date.
-- **Dependencies:** T313.1.
-- **Notes:** D3. Universal Links and App Links are deferred: they need the Associated Domains capability, which the personal-team iOS build cannot have, plus a hosted AASA file. **Owner gate:** the agent prepares the exact allow-list value; the owner adds it in the hosted Supabase dashboard. Do not change hosted Auth settings without that authorization. Hosted email delivery on a device stays not run until observed.
-- **Platform scope:** Acceptance runs on the iOS Simulator. Record Android and physical-device checks as not run.
-
 ### [T313.3] Make the sign-up and sign-in screens work on native
 
 - **Area:** Auth / native / forms
