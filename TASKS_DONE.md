@@ -4,6 +4,18 @@ Completed entries move here from `TASKS.md`'s `Backlog`, in the same commit that
 
 Entries keep their content as it was at completion. Don't retroactively edit a description or exit criteria after the fact; if something about a completed task turns out to be wrong or misleading, note that in a new entry or in code, not by rewriting history here.
 
+### [T311] Turn off autocorrection in every text field
+
+- **Area:** Forms / text input
+- **Priority:** Medium
+- **Status:** Done
+- **Planning:** Implementer
+- **Description:** Text fields autocorrect on iOS. Owner decision: no field in the app should autocorrect. Default `autoCorrect={false}` and `spellCheck={false}` in the shared `TextField` (`src/components/ui/text-field.tsx`) so callers can't forget it, and set the same on the raw `TextInput`s that don't use `TextField` (currently `src/app/app/tricks/index.tsx`, `src/features/sesh/components/sesh.tsx` and `src/features/profile/components/color-spectrum-picker.tsx`; the auth screens already set it). Keep autocapitalisation behaviour as it is.
+- **Exit criteria:** A `TextField` test asserts the `autoCorrect={false}` and `spellCheck={false}` defaults. A repository test or lint check fails if any `TextInput` or `TextField` usage under `src/` enables autocorrect, so new fields can't regress. On iPhone 17e (iOS 27.0) with the bundle pinned, typing `teh` and a space into the trick search, the custom-trick name field and a note field leaves `teh` unchanged. Full `yarn tsc --noEmit` passes.
+- **Dependencies:** None.
+- **Notes:** Owner request 2026-11-09. On web, `autoCorrect` maps to the `autocorrect` attribute (Safari only) and `spellCheck` to `spellcheck`. Keep the existing numeric-field `autoComplete` default from T251 in `TextField`.
+- **Platform scope:** Acceptance runs on the iOS Simulator. Android and physical-device checks are not part of these exit criteria; record them as not run rather than passed.
+
 ### [T313.5] Send feedback from the native app
 
 - **Area:** Feedback / native
