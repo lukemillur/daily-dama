@@ -253,7 +253,7 @@ _Scoped 2026-11-09 from T295 (owner approved decisions D1–D10 the same day). S
 
 - **Area:** Feedback / native
 - **Priority:** Medium
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Implementer
 - **Description:** `src/app/feedback.tsx` shows `FeedbackUnavailableScreen` on native only because native had no Supabase client (T287). Show `FeedbackScreen` on every platform. Guests may send feedback, matching web: the `anon` insert policy exists and the server forces `email` to null for guests. Remove `FeedbackUnavailableScreen` and its tests once nothing references it.
 - **Exit criteria:** A route test renders the feedback form with `Platform.OS = 'ios'`. A `submitFeedback` test covers the native client path. No reference to `FeedbackUnavailableScreen` remains under `src/`. On iPhone 17e (iOS 27.0) with local Supabase, one guest submission and one signed-in submission each insert one `api.feedback` row; the guest row's `email` is null and the signed-in row's `email` is the account's address. With the network unavailable, submitting shows the existing failure feedback and the form keeps the message. Full `yarn tsc --noEmit` passes.
