@@ -179,3 +179,74 @@ _Scoped 2026-11-09 from the owner's iOS Simulator walkthrough (no BACKLOG_STORIE
 - **Dependencies:** None.
 - **Notes:** Owner request 2026-11-09. On web, `autoCorrect` maps to the `autocorrect` attribute (Safari only) and `spellCheck` to `spellcheck`. Keep the existing numeric-field `autoComplete` default from T251 in `TextField`.
 - **Platform scope:** Acceptance runs on the iOS Simulator. Android and physical-device checks are not part of these exit criteria; record them as not run rather than passed.
+
+_Scoped 2026-11-09 from T294 (owner chose Direction A, a quiet native list, plus Direction C's laced progress in rank headers). Mockups and reasoning: [outputs/guided-tickets/T294.md](outputs/guided-tickets/T294.md). Web keeps its current Tricks layout unless an entry says otherwise._
+
+### [T312] Make the Tricks tab a native-feeling list on iOS
+
+- **Area:** Tricks
+- **Priority:** Medium
+- **Status:** Not started
+- **Description:** Umbrella for T294 Direction A plus rank-header progress. Children run in order. The umbrella has no exit criteria of its own and is `Done` when every child is `Done`.
+- **Dependencies:** None.
+- **Notes:** Keep the custom-trick and rank invariants in AGENTS.md unchanged. `TrickDirectory` is also the goal picker (`onActivate`) and the Sesh multi-trick picker; every child must leave those lists working. Prefer one route-level prop that chooses the native presentation over `Platform.OS` checks scattered through `trick-directory.tsx`.
+
+### [T312.1] Give the Tricks index a native large-title header with search and menus on iOS
+
+- **Area:** Tricks / navigation
+- **Priority:** Medium
+- **Status:** Not started
+- **Planning:** Required
+- **Description:** The Tricks index sets `headerShown: false`, so its eyebrow, title, introduction and four buttons scroll as list content under the status bar. On native, show the stack header instead: large title `Tricks`, a native header search bar that filters the list through `TrickDirectory`'s existing `search` filtering (without also rendering the in-list `TextField`), a `＋` button that opens Define new trick, and a `⋯` menu with Trick goals, Trick notes and Laced tricks. Remove the in-list header block and buttons on native only. Use Expo Router's own header APIs in the installed version (`Stack.SearchBar` / `Stack.Toolbar` menus, or `headerSearchBarOptions`); confirm them against the versioned docs.
+- **Exit criteria:** On iPhone 17e (iOS 27.0) with the bundle pinned, the Tricks tab shows a large `Tricks` title that collapses on scroll, and no list row draws under the status bar. Typing `cup` in the header search shows only tricks whose names contain `cup`, and clearing it restores the Focused and rank sections. `＋` opens New trick; the `⋯` menu items open Goals, Notes and Laced tricks. Tapping the Tricks tab from a pushed screen still returns to the index. VoiceOver reads the `＋` and `⋯` buttons with labels. At 390 px and wide widths on web, the Tricks screen is unchanged from HEAD at claim time (same header block and four buttons). Route tests cover the native header options and the web fallback. Full `yarn tsc --noEmit` passes.
+- **Dependencies:** None.
+- **Notes:** Header colours come from `deriveNestedHeaderColors` like the other nested screens. The selected-count introduction (`N tricks ready…`) is dropped on native; the Focused section header already shows the count.
+- **Platform scope:** Acceptance runs on the iOS Simulator and web. Android has no verified development build; record Android as not run.
+
+### [T312.2] Show laced progress in each rank section header
+
+- **Area:** Tricks
+- **Priority:** Medium
+- **Status:** Not started
+- **Planning:** Implementer
+- **Description:** Add a laced count to each rank section header and the Custom section header, for example `4 / 5`: tricks in that section that are laced (the effective laced set, including manually unlocked tricks) over the section's trick count. Compute it in `src/features/tricks/model/trick-directory.ts`, not in the component. The Focused section keeps its current `N in rotation` label and gets no progress.
+- **Exit criteria:** Model tests cover a section with no laced tricks, a partly laced section, a fully laced section, a ranked custom trick counted in its rank's section, and a manually unlocked trick counted as laced. `trick-directory.test.tsx` asserts the header text and an accessibility label such as `4 of 5 laced`. On iPhone 17e (iOS 27.0) with the bundle pinned, and at 390 px on web, each rank header shows the count without truncating the rank or class label. Full `yarn tsc --noEmit` passes.
+- **Dependencies:** None.
+- **Notes:** Shown on web too: it is a shared header label, and a web-only exception would add a platform branch for no product reason. The goal picker and Sesh picker may hide it if it adds noise there; record the choice.
+- **Platform scope:** Acceptance runs on the iOS Simulator and web. Record Android as not run.
+
+### [T312.3] Move Tricks row actions into swipe actions on iOS
+
+- **Area:** Tricks
+- **Priority:** Medium
+- **Status:** Not started
+- **Planning:** Required
+- **Description:** On native, replace each row's inline Notes, Goals and Practice links (and Edit/Delete on custom tricks) with swipe actions: swipe right reveals Practice; swipe left reveals Notes and Goals, plus Edit and Delete for custom tricks. Define the row's actions once as a typed list (label, accessibility label, handler, destructive flag) that drives the swipe actions and the VoiceOver custom actions (`accessibilityActions`), so T312.5's menu can reuse it. Web keeps the inline actions. Use `react-native-gesture-handler`'s `ReanimatedSwipeable`, already installed.
+- **Exit criteria:** On iPhone 17e (iOS 27.0) with the bundle pinned, on the Tricks tab: no row shows inline Notes/Goals/Practice text; swiping right on a standard trick and tapping Practice starts a practice Sesh for that trick; swiping left and tapping Notes or Goals opens that trick's screen; a custom trick's left swipe also offers Edit and Delete, and Delete opens the existing confirmation. Opening one row's swipe closes any other open row. Vertical scrolling still works and does not open swipes. With VoiceOver on, the actions rotor on a row lists the same actions and each one works. Tapping a row still toggles focus. Tests cover the action list for standard and custom tricks. Web at 390 px and wide widths still shows the inline actions. The goal-picker list still selects a trick on tap. Full `yarn tsc --noEmit` passes.
+- **Dependencies:** T310 (same file; land the row tightening first).
+- **Notes:** Notes and Goals counts move to the row's meta line in T312.4 so they stay visible once the links are gone. Destructive actions use the existing red token and must not rely on colour alone (label text stays `Delete`).
+- **Platform scope:** Acceptance runs on the iOS Simulator, plus the web regression check. Record Android as not run.
+
+### [T312.4] Restyle Tricks rows as one-line native list rows on iOS
+
+- **Area:** Tricks / layout
+- **Priority:** Medium
+- **Status:** Not started
+- **Planning:** Implementer
+- **Description:** With inline actions gone on native, make each row one line plus an optional meta line: position number (or laced ✓), bold name, a quiet meta line (`3 laces · 2 notes · 1 goal`, omitting zero parts, plus `Custom trick` / `Custom sequence`), and a trailing round focus indicator in place of the square checkbox. Replace the full-row sage fill with the indicator alone. Group rows as inset sections under short uppercase rank headers instead of full-width orange bands. Web keeps its current rows.
+- **Exit criteria:** On iPhone 17e (iOS 27.0) with the bundle pinned, on the Tricks tab: a standard trick row with no meta line is 44–52 pt tall, and at least 9 rows fit on screen at the default text size; the focus indicator is round, shows a checkmark when focused, and keeps its `checkbox` role and checked state for VoiceOver; the meta line shows only non-zero counts; rank headers are short uppercase labels that still pin while scrolling; laced rows still show ✓ and the number column stays aligned with and without it. At the largest accessibility text size the name and meta line wrap rather than truncate. Web at 390 px and wide widths is unchanged. `trick-directory.test.tsx` passes, updated for the meta line and indicator. Full `yarn tsc --noEmit` passes.
+- **Dependencies:** T312.3.
+- **Notes:** Selection meaning must stay available through the indicator and its label, not colour alone (AGENTS.md). Keep the accent colour in the rank label so the brand stays visible.
+- **Platform scope:** Acceptance runs on the iOS Simulator, plus the web regression check. Record Android as not run.
+
+### [T312.5] Add a long-press context menu to Tricks rows on iOS
+
+- **Area:** Tricks
+- **Priority:** Low
+- **Status:** Not started
+- **Planning:** Required
+- **Description:** Long-pressing a row on iOS opens a native context menu with Practice, Add to focus / Remove from focus, Notes, Goals, and Trick history (the existing Stats trick screen), plus Edit and a destructive Delete for custom tricks, built from T312.3's typed action list. Expo Router's `Link.Menu` needs a navigating link as its trigger and rows toggle focus on tap, so this needs a non-link context menu; the expected choice is `@expo/ui`'s iOS `ContextMenu`, which adds a dependency — record the choice and why.
+- **Exit criteria:** On iPhone 17e (iOS 27.0) with the bundle pinned, long-pressing a standard trick opens a native menu with the listed items, and each item performs its action (Practice starts a practice Sesh; focus toggles and the row indicator updates; Notes, Goals and Trick history open the right screen). A custom trick's menu also has Edit and a red Delete that opens the existing confirmation. A short tap still toggles focus and swipes still work. Tests cover the menu's item list for standard and custom tricks. The complete app sequence (`node .claude/scripts/verify.mjs`) passes because a dependency changes. Web is unchanged.
+- **Dependencies:** T312.4.
+- **Notes:** Low priority: swipe and VoiceOver actions already cover every action; the menu adds labelled discoverability. Drop this ticket rather than build a custom JS menu if no Expo-compatible native menu works in the installed SDK.
+- **Platform scope:** Acceptance runs on the iOS Simulator, plus the web regression check. Record Android as not run.

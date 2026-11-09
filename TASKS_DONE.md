@@ -4,6 +4,19 @@ Completed entries move here from `TASKS.md`'s `Backlog`, in the same commit that
 
 Entries keep their content as it was at completion. Don't retroactively edit a description or exit criteria after the fact; if something about a completed task turns out to be wrong or misleading, note that in a new entry or in code, not by rewriting history here.
 
+### [T294] Design native-feeling options for the Tricks screen
+
+- **Area:** Tricks / UX design
+- **Priority:** Medium
+- **Status:** Done
+- **Checkpoint:** Complete
+- **Execution:** Owner-in-loop
+- **Description:** The Tricks screen reads as a web page on iOS. Produce two or three design directions for a native-feeling Tricks screen (for example grouped rank sections, header search, swipe or context actions for notes and goals, a per-trick detail screen), with mockups, for the owner to choose from.
+- **Owner gates:** The owner picks one direction (or a combination) before any build ticket is written.
+- **Automation boundary:** The agent researches, mocks up and recommends; it does not change app code. After the owner's pick, it scopes the build into `TASKS.md` entries.
+- **Exit criteria:** Two or three directions with mockups and tradeoffs are recorded in the execution guide; the owner's choice is recorded; the chosen direction is scoped into mechanically verifiable `TASKS.md` tickets. Met 2026-11-09: three directions (A quiet native list, B list plus trick detail, C rank ladder) with phone mockups and tradeoffs are in `outputs/guided-tickets/T294.md` and the owner's private mockup page; the owner chose A plus C's laced progress in rank headers; the build is scoped as T312 with children T312.1–T312.5 in `TASKS.md`. No app code changed.
+- **Notes:** Owner request 2026-11-04. Direction B (per-trick detail screen) is deferred until the visualizer or per-trick history needs a home; it overlaps `src/app/app/stats/[trickId].tsx`. Web keeps its current layout except the shared rank-header progress (T312.2). Guide: [outputs/guided-tickets/T294.md](outputs/guided-tickets/T294.md).
+
 ### [T303] Stop the Profile page scrolling while dragging the colour spectrum on iOS
 
 - **Area:** Profile / theme customization

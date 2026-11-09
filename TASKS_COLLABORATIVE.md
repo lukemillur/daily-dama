@@ -17,19 +17,6 @@ Tickets requiring owner decisions, dashboard actions, or external verification. 
 - Completion requires the ticket's actual exit criteria. Mark each criterion passed, failed, blocked, or not run with its source and environment. A guide written, local tests passed, or owner saying "saved" is not proof that a deployed flow works. Accept specific owner-observed evidence when the agent cannot observe it, labeling its source accurately.
 - Once all criteria pass, move the entry to `TASKS_DONE.md` as `Done`, retaining the guide/evidence link. Do not close other tickets or proceed to another ticket automatically. If delivery or deployment is part of the criteria, it must finish before closure; otherwise report local completion and any pending Git delivery distinctly.
 
-### [T294] Design native-feeling options for the Tricks screen
-
-- **Area:** Tricks / UX design
-- **Priority:** Medium
-- **Status:** In progress
-- **Execution:** Owner-in-loop
-- **Checkpoint:** Awaiting owner action
-- **Description:** The Tricks screen reads as a web page on iOS. Produce two or three design directions for a native-feeling Tricks screen (for example grouped rank sections, header search, swipe or context actions for notes and goals, a per-trick detail screen), with mockups, for the owner to choose from.
-- **Owner gates:** The owner picks one direction (or a combination) before any build ticket is written.
-- **Automation boundary:** The agent researches, mocks up and recommends; it does not change app code. After the owner's pick, it scopes the build into `TASKS.md` entries.
-- **Exit criteria:** Two or three directions with mockups and tradeoffs are recorded in the execution guide; the owner's choice is recorded; the chosen direction is scoped into mechanically verifiable `TASKS.md` tickets.
-- **Notes:** Owner request 2026-11-04. Respect the custom-trick and rank invariants in AGENTS.md. Web layout stays out of scope unless the owner chooses otherwise. Guide: [outputs/guided-tickets/T294.md](outputs/guided-tickets/T294.md).
-
 ### [T295] Plan email/password accounts on iOS and Android
 
 - **Area:** Auth / native
