@@ -135,7 +135,15 @@ export default function TricksScreen() {
             onOpen: (trick) =>
               router.push({ pathname: '/app/tricks/[trickId]/goals', params: { trickId: trick.id } }),
           }}
-          practiceAction
+          practiceAction={
+            usesNativeHeader
+              ? {
+                  onOpen: (trick) =>
+                    router.push({ pathname: '/app/sesh', params: { trickId: trick.id, mode: 'practice' } }),
+                }
+              : true
+          }
+          rowActionStyle={usesNativeHeader ? 'swipe' : 'inline'}
           nativeHeader={usesNativeHeader ? true : undefined}
           search={usesNativeHeader ? { query, onChangeText: setQuery } : undefined}
           header={usesNativeHeader ? undefined : {

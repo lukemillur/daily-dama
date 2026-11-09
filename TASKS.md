@@ -170,13 +170,14 @@ _Scoped 2026-11-09 from T294 (owner chose Direction A, a quiet native list, plus
 
 - **Area:** Tricks
 - **Priority:** Medium
-- **Status:** In progress
+- **Status:** Blocked
 - **Planning:** Required
 - **Description:** On native, replace each row's inline Notes, Goals and Practice links (and Edit/Delete on custom tricks) with swipe actions: swipe right reveals Practice; swipe left reveals Notes and Goals, plus Edit and Delete for custom tricks. Define the row's actions once as a typed list (label, accessibility label, handler, destructive flag) that drives the swipe actions and the VoiceOver custom actions (`accessibilityActions`), so T312.5's menu can reuse it. Web keeps the inline actions. Use `react-native-gesture-handler`'s `ReanimatedSwipeable`, already installed.
 - **Exit criteria:** On iPhone 17e (iOS 27.0) with the bundle pinned, on the Tricks tab: no row shows inline Notes/Goals/Practice text; swiping right on a standard trick and tapping Practice starts a practice Sesh for that trick; swiping left and tapping Notes or Goals opens that trick's screen; a custom trick's left swipe also offers Edit and Delete, and Delete opens the existing confirmation. Opening one row's swipe closes any other open row. Vertical scrolling still works and does not open swipes. With VoiceOver on, the actions rotor on a row lists the same actions and each one works. Tapping a row still toggles focus. Tests cover the action list for standard and custom tricks. Web at 390 px and wide widths still shows the inline actions. The goal-picker list still selects a trick on tap. Full `yarn tsc --noEmit` passes.
 - **Dependencies:** T310 (same file; land the row tightening first).
 - **Notes:** Notes and Goals counts move to the row's meta line in T312.4 so they stay visible once the links are gone. Destructive actions use the existing red token and must not rely on colour alone (label text stays `Delete`).
 - **Platform scope:** Acceptance runs on the iOS Simulator, plus the web regression check. Record Android as not run.
+- **Blocked:** Implementation and every other exit criterion passed (iPhone 17e, iOS 27.0, Metro pinned from this worktree). The VoiceOver actions rotor could not be driven in the Simulator and is not verified; `accessibilityActions`/`onAccessibilityAction` are covered only by Jest. Owner to confirm on a physical iPhone (VoiceOver on, focus a row, swipe up or down to the Actions rotor entry, run each action), then archive this ticket.
 
 ### [T312.4] Restyle Tricks rows as one-line native list rows on iOS
 

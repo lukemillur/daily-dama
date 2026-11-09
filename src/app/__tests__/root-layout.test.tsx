@@ -15,6 +15,11 @@ jest.mock('react-native-reanimated', () =>
   require('react-native-reanimated/mock'),
 );
 
+// The real GestureHandlerRootView installs the native gesture module, which Jest does not provide.
+jest.mock('react-native-gesture-handler', () => ({
+  GestureHandlerRootView: ({ children }: { children?: React.ReactNode }) => children,
+}));
+
 // _layout.tsx imports global.css directly (a web-only stylesheet with no runtime meaning under
 // Jest) -- mock it out rather than teaching the resolver a CSS transform just for this test.
 jest.mock('@/global.css', () => ({}), { virtual: true });

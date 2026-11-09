@@ -65,6 +65,13 @@ describe('Tricks index route', () => {
     expect(mockDirectoryProps?.header).toBeUndefined();
     expect(mockDirectoryProps?.headerAction).toBeUndefined();
     expect(mockDirectoryProps?.search.query).toBe('');
+    expect(mockDirectoryProps?.rowActionStyle).toBe('swipe');
+    act(() => mockDirectoryProps?.practiceAction.onOpen({ id: 't1', name: 'T' }));
+    expect(mockRouter.push).toHaveBeenLastCalledWith({
+      pathname: '/app/sesh',
+      params: { trickId: 't1', mode: 'practice' },
+    });
+    mockRouter.push.mockClear();
 
     const search = mockScreenOptions!.headerSearchBarOptions;
     act(() => search.onChangeText({ nativeEvent: { text: 'cup' } }));
@@ -92,6 +99,8 @@ describe('Tricks index route', () => {
     const root = mount('web');
 
     expect(mockScreenOptions).toBeUndefined();
+    expect(mockDirectoryProps?.rowActionStyle).toBe('inline');
+    expect(mockDirectoryProps?.practiceAction).toBe(true);
     expect(mockDirectoryProps?.nativeHeader).toBeUndefined();
     expect(mockDirectoryProps?.search).toBeUndefined();
     expect(mockDirectoryProps?.header).toMatchObject({ eyebrow: 'Your trick library', title: "What's up next?" });

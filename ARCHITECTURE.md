@@ -257,7 +257,7 @@ The guard is intentionally redundant:
 
 Nested Sesh, Tricks, Stats, and Profile routes use stack layouts with framework headers hidden. Back and Close actions therefore live in the product UI and usually use deterministic `router.replace(...)` destinations rather than depending on browser history.
 
-On iOS and Android the Tricks index shows a native large-title header (search bar, `＋` button and `⋯` menu via `headerSearchBarOptions` and `unstable_headerRightItems`) and `TrickDirectory` renders without its in-list header (`nativeHeader`); web keeps the in-list header block.
+On iOS and Android the Tricks index shows a native large-title header (search bar, `＋` button and `⋯` menu via `headerSearchBarOptions` and `unstable_headerRightItems`) and `TrickDirectory` renders without its in-list header (`nativeHeader`); web keeps the in-list header block. Native rows also drop the inline Practice, Notes, Goals, Edit and Delete links (`rowActionStyle="swipe"`): `buildTrickRowActions` (`src/features/tricks/model/trick-row-actions.ts`) defines the typed action list once, and it feeds both the `ReanimatedSwipeable` panels (`trick-row-swipeable.tsx`; Practice on the right-swipe, the rest on the left-swipe, one open row at a time) and the row's VoiceOver `accessibilityActions`. The app tree is wrapped in `GestureHandlerRootView` in `src/app/_layout.tsx`. Web keeps the inline row buttons.
 
 Tricks is the authority for trick browsing and management. Profile contains rank- and practice-policy concerns; it is not a second trick directory.
 

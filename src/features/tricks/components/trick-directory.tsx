@@ -1,16 +1,19 @@
 import { Link } from 'expo-router';
-import { type ReactElement, useMemo, useState } from 'react';
+import { type ReactElement, useCallback, useMemo, useRef, useState } from 'react';
 import { Pressable, SectionList, type SectionListData, useWindowDimensions } from 'react-native';
+import type { SwipeableMethods } from 'react-native-gesture-handler/ReanimatedSwipeable';
 import { css, styled } from 'styled-components/native';
 
 import { TextField } from '@/components/ui/text-field';
 import { DisplayText } from '@/components/ui/typography';
+import { TrickRowSwipeable } from '@/features/tricks/components/trick-row-swipeable';
 import {
   createTrickSections,
   type DirectoryTrick,
   isCustomDirectoryTrick,
   type TrickSection,
 } from '@/features/tricks/model/trick-directory';
+import { buildTrickRowActions } from '@/features/tricks/model/trick-row-actions';
 
 export interface TrickDirectoryProps {
   readonly tricks: readonly DirectoryTrick[];
@@ -45,7 +48,13 @@ export interface TrickDirectoryProps {
   readonly goalsAction?: {
     readonly onOpen: (trick: DirectoryTrick) => void;
   };
-  readonly practiceAction?: true;
+  /** `onOpen` is required for swipe rows, which cannot use the inline `Link`. */
+  readonly practiceAction?: true | { readonly onOpen: (trick: DirectoryTrick) => void };
+  /**
+   * `swipe` (native) moves Practice, Notes, Goals, Edit and Delete into swipe actions and
+   * VoiceOver custom actions; `inline` (default, web) renders them as row buttons.
+   */
+  readonly rowActionStyle?: 'inline' | 'swipe';
   readonly footer?: ReactElement;
   readonly fixedHeader?: boolean;
   readonly fixedFooter?: boolean;
@@ -91,6 +100,7 @@ export function TrickDirectory({
   notesAction,
   goalsAction,
   practiceAction,
+  rowActionStyle = 'inline',
   footer,
   fixedHeader = false,
   fixedFooter = false,
@@ -120,6 +130,17 @@ export function TrickDirectory({
     },
     [tricks, search?.query, showFocusedSection, sectioningTrickIds, unlockedTrickIds],
   );
+  // Only one row may stay open. A ref, not state: opening a row must not re-render the list.
+  const openSwipeableRef = useRef<SwipeableMethods | null>(null);
+  const handleSwipeWillOpen = useCallback((methods: SwipeableMethods) => {
+    if (openSwipeableRef.current && openSwipeableRef.current !== methods) {
+      openSwipeableRef.current.close();
+    }
+    openSwipeableRef.current = methods;
+  }, []);
+  const handleSwipeClosed = useCallback((methods: SwipeableMethods) => {
+    if (openSwipeableRef.current === methods) openSwipeableRef.current = null;
+  }, []);
   const selectedTrickIdSet = useMemo(() => new Set(selectedTrickIds), [selectedTrickIds]);
   const directoryHeader = (
     <DirectoryHeader $compact={fixedHeader}>
@@ -151,6 +172,7 @@ export function TrickDirectory({
         notesAction,
         goalsAction,
         practiceAction,
+        rowActionStyle,
         compact,
       }}
       keyExtractor={(trick) => trick.id}
@@ -181,6 +203,12 @@ export function TrickDirectory({
           onOpenGoals={goalsAction ? () => goalsAction.onOpen(item) : undefined}
           onActivate={onActivate ? () => onActivate(item) : undefined}
           showPracticeAction={Boolean(practiceAction)}
+          onPractice={
+            typeof practiceAction === 'object' ? () => practiceAction.onOpen(item) : undefined
+          }
+          swipeActions={rowActionStyle === 'swipe'}
+          onSwipeWillOpen={handleSwipeWillOpen}
+          onSwipeClosed={handleSwipeClosed}
           lacedCount={lacedCountByTrickId?.get(item.id) ?? 0}
           noteCount={noteCountByTrickId?.get(item.id) ?? 0}
           goalCount={goalCountByTrickId?.get(item.id) ?? 0}
@@ -261,6 +289,10 @@ interface TrickRowProps {
   readonly onOpenGoals?: () => void;
   readonly onActivate?: () => void;
   readonly showPracticeAction?: boolean;
+  readonly onPractice?: () => void;
+  readonly swipeActions?: boolean;
+  readonly onSwipeWillOpen?: (methods: SwipeableMethods) => void;
+  readonly onSwipeClosed?: (methods: SwipeableMethods) => void;
   readonly lacedCount?: number;
   readonly noteCount?: number;
   readonly goalCount?: number;
@@ -279,6 +311,10 @@ function TrickRow({
   onOpenGoals,
   onActivate,
   showPracticeAction = false,
+  onPractice,
+  swipeActions = false,
+  onSwipeWillOpen,
+  onSwipeClosed,
   lacedCount = 0,
   noteCount = 0,
   goalCount = 0,
@@ -314,8 +350,32 @@ function TrickRow({
     </>
   );
 
+  // Swipe mode: the same typed list drives the swipe panels and the VoiceOver rotor.
+  const swipeRowActions = swipeActions
+    ? buildTrickRowActions(trick.name, {
+        onPractice: showPracticeAction ? onPractice : undefined,
+        onOpenNotes,
+        onOpenGoals,
+        onEdit,
+        onDelete,
+      })
+    : [];
+  const accessibilityActionProps =
+    swipeRowActions.length > 0
+      ? {
+          accessibilityActions: swipeRowActions.map((action) => ({
+            name: action.id,
+            label: action.label,
+          })),
+          onAccessibilityAction: (event: { nativeEvent: { actionName: string } }) => {
+            swipeRowActions.find((action) => action.id === event.nativeEvent.actionName)?.onSelect();
+          },
+        }
+      : {};
+
   const identityElement = onToggle ? (
     <SelectableIdentity
+      {...accessibilityActionProps}
       $compact={compact}
       accessibilityLabel={[trick.name, customDescription, isSelected ? 'selected' : 'not selected']
         .filter(Boolean)
@@ -329,7 +389,12 @@ function TrickRow({
       {identity}
     </SelectableIdentity>
   ) : (
-    <IdentityContainer $compact={compact}>{identity}</IdentityContainer>
+    <IdentityContainer
+      {...(swipeRowActions.length > 0 ? { accessible: true, accessibilityLabel: trick.name } : {})}
+      {...accessibilityActionProps}
+      $compact={compact}>
+      {identity}
+    </IdentityContainer>
   );
 
   const selectionIndicatorElement = onToggle ? (
@@ -348,7 +413,7 @@ function TrickRow({
     </SelectionIndicatorButton>
   ) : null;
 
-  const hasRowActions = Boolean(onEdit && onDelete) || Boolean(onOpenNotes) || Boolean(onOpenGoals) || showPracticeAction;
+  const hasRowActions = !swipeActions && (Boolean(onEdit && onDelete) || Boolean(onOpenNotes) || Boolean(onOpenGoals) || showPracticeAction);
 
   const rowActionsElement = (
     <RowActions $compact={compact} testID="trick-row-actions">
@@ -453,11 +518,20 @@ function TrickRow({
     );
   }
 
-  return (
+  const row = (
     <TrickRowContainer $selected={isSelected} $laced={isLaced}>
       {rowContent}
     </TrickRowContainer>
   );
+
+  if (swipeRowActions.length > 0 && onSwipeWillOpen && onSwipeClosed) {
+    return (
+      <TrickRowSwipeable actions={swipeRowActions} onWillOpen={onSwipeWillOpen} onClosed={onSwipeClosed}>
+        {row}
+      </TrickRowSwipeable>
+    );
+  }
+  return row;
 }
 
 const DirectoryLayout = styled.View`
