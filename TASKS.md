@@ -213,18 +213,6 @@ _Scoped 2026-11-09 from T295 (owner approved decisions D1–D10 the same day). S
 - **Exit criteria:** T313.1–T313.6 are all `Done`.
 - **Notes:** No feature flag (D9): the native app ships only as a personal development build, so each child can enable its part directly.
 
-### [T313.1] Give native a Supabase client with secure session storage
-
-- **Area:** Auth / native / persistence
-- **Priority:** High
-- **Status:** In progress
-- **Planning:** Required
-- **Description:** `getSupabaseClient` returns `null` on iOS and Android, and `areAccountsAvailable` is web-only. Create the native client from the same factory with a per-platform storage adapter: SecureStore on native (add `expo-secure-store`), AsyncStorage unchanged on web. Keep PKCE and `detectSessionInUrl: false`. On native, start and stop GoTrue auto-refresh on AppState changes. Route `AuthProvider`'s optimistic cached-session read through the same adapter. Replace the `window.location.reload()` in `IdentityProvider`'s refresh-failed "Try again" with an auth re-initialisation that works on native. Then enable `areAccountsAvailable` and the client on iOS and Android together.
-- **Exit criteria:** Unit tests prove: (a) on `ios` and `android` the session is written through SecureStore, or through the encrypted-blob scheme below, and the plaintext refresh token never reaches AsyncStorage; (b) on `web` the client still uses AsyncStorage and `resolveGoTrueStorageKey` returns its current value for the production URL; (c) the optimistic cached-session read returns a stored session on native; (d) AppState `background` stops and `active` starts auto-refresh on native, and web is unaffected; (e) a rejected storage write during sign-in produces a structured failure and the user is not left signed in; (f) refresh-failed "Try again" re-initialises auth on native without `window`. `areAccountsAvailable('ios')` and `areAccountsAvailable('android')` return true. On iPhone 17e (iOS 27.0) with local Supabase, signing in with a local test account and cold-relaunching the app keeps the user signed in. The execution notes record the measured serialized session size against the installed SecureStore's documented value limit. ARCHITECTURE.md and AGENTS.md describe the native client and storage. Full `yarn tsc --noEmit`, the auth suite, and the shared persistence/sync contract tests pass.
-- **Dependencies:** None.
-- **Notes:** D2: check the size limit in the installed `expo-secure-store` docs before choosing. If a real session exceeds it, use Supabase's documented pattern (random AES key in SecureStore, encrypted session in AsyncStorage). Do not split the session across several keychain items; a partial write corrupts it. Do not set an explicit `storageKey`; doing so signs out every web user (see `getGoTrueStorageKey`'s comment). Needs a native rebuild (`yarn ios`). Logout keeps the logout guard and the fail-closed discard rules.
-- **Platform scope:** Acceptance runs on the iOS Simulator. Android has no verified development build; record Android checks as not run.
-
 ### [T313.2] Complete email links in the app
 
 - **Area:** Auth / native / deep linking

@@ -54,7 +54,8 @@
       ],
       "expo-audio",
       "expo-font",
-      "expo-image"
+      "expo-image",
+      "expo-secure-store"
     ],
     "experiments": {
       "typedRoutes": true,

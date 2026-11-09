@@ -53,8 +53,8 @@ describe('AuthLayout', () => {
     expect(JSON.stringify(root.toJSON())).toContain('auth-route-content');
   });
 
-  it('replaces every auth route with an unavailable state on native, running no auth action', async () => {
-    ReactNative.Platform.OS = 'ios';
+  it('replaces every auth route with an unavailable state on a platform without accounts, running no auth action', async () => {
+    ReactNative.Platform.OS = 'windows';
     const root = await mount();
 
     const json = JSON.stringify(root.toJSON());

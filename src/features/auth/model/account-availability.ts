@@ -2,12 +2,12 @@ import { Platform } from 'react-native';
 
 /**
  * Whether account sign-up/sign-in (and the backup promise that comes with it) works on this
- * platform. Must stay in lockstep with the `Platform.OS !== 'web'` guard in `getSupabaseClient`,
- * which makes native builds guest-only. When native auth is implemented, flip this one
- * predicate and delete the withholding branches that consume it.
+ * platform. Web, iOS and Android all construct a Supabase client (native persists the session
+ * through the encrypted storage adapter), so this is true on each. The withholding branches that
+ * consume it are retired by the remaining native-auth tickets.
  */
 export function areAccountsAvailable(platformOS: string): boolean {
-  return platformOS === 'web';
+  return platformOS === 'web' || platformOS === 'ios' || platformOS === 'android';
 }
 
 export function useAccountsAvailable(): boolean {

@@ -1,13 +1,17 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
-import { Platform } from 'react-native';
 
 import { logAuthWarning } from '@/features/auth/observability/auth-observability';
 import { resolveSupabaseConfig } from '@/features/auth/persistence/supabase-config';
 import type { Database } from '@/shared/supabase/database-types';
+import {
+  getSessionStorage,
+  resetSessionStorageForTests,
+  type SessionStorage,
+} from '@/shared/supabase/session-storage';
 
 let memoizedClient: SupabaseClient<Database, 'api'> | null | undefined;
 let memoizedStorageKey: string | null | undefined;
+let memoizedStorage: SessionStorage | undefined;
 
 /**
  * Replicates supabase-js 2.112.3's default GoTrue `storageKey` derivation
@@ -24,18 +28,13 @@ export function resolveGoTrueStorageKey(supabaseUrl: string): string {
 }
 
 /**
- * Lazily constructs and memoizes the browser-persistent Supabase client.
+ * Lazily constructs and memoizes the Supabase client, persisting its session through
+ * `getSessionStorage()` (AsyncStorage on web, encrypted at rest on native).
  * Must only ever be invoked from an effect (never at module scope or in a
  * render body) so Expo Router's Node static-render pass never runs it.
  */
 export function getSupabaseClient(): SupabaseClient<Database, 'api'> | null {
   if (memoizedClient !== undefined) {
-    return memoizedClient;
-  }
-
-  if (Platform.OS !== 'web') {
-    memoizedClient = null;
-    memoizedStorageKey = null;
     return memoizedClient;
   }
 
@@ -54,13 +53,14 @@ export function getSupabaseClient(): SupabaseClient<Database, 'api'> | null {
   }
 
   memoizedStorageKey = resolveGoTrueStorageKey(config.url);
+  memoizedStorage = getSessionStorage();
   memoizedClient = createClient<Database, 'api'>(config.url, config.publishableKey, {
     auth: {
       flowType: 'pkce',
       detectSessionInUrl: false,
       persistSession: true,
       autoRefreshToken: true,
-      storage: AsyncStorage,
+      storage: memoizedStorage,
     },
     db: { schema: 'api' },
   });
@@ -71,7 +71,7 @@ export function getSupabaseClient(): SupabaseClient<Database, 'api'> | null {
 /**
  * Returns the AsyncStorage key GoTrue itself persists the current session
  * under, or `null` when `getSupabaseClient()` would also return `null`
- * (unconfigured/malformed/non-web) -- shares the same memoization as
+ * (unconfigured/malformed) -- shares the same memoization as
  * `getSupabaseClient()` so the two can never disagree.
  *
  * This is an undocumented supabase-js internal default, deliberately not
@@ -88,8 +88,35 @@ export function getGoTrueStorageKey(): string | null {
   return memoizedStorageKey ?? null;
 }
 
+/**
+ * The storage instance the client was built with (or the platform storage when the client is
+ * unconfigured), so `AuthProvider`'s direct session reads and removals can never disagree with GoTrue.
+ */
+export function getSupabaseSessionStorage(): SessionStorage {
+  return memoizedStorage ?? getSessionStorage();
+}
+
+/**
+ * Stops the current client's auto-refresh and forgets it, so the next `getSupabaseClient()`
+ * builds a fresh client with a fresh GoTrue `initializePromise` (a hung first client would
+ * otherwise stay hung).
+ */
+export function discardSupabaseClient(): void {
+  const client = memoizedClient;
+  memoizedClient = undefined;
+  memoizedStorageKey = undefined;
+  memoizedStorage = undefined;
+  if (client) {
+    client.auth.stopAutoRefresh().catch((error: unknown) => {
+      logAuthWarning('Unable to stop auto-refresh on a discarded Supabase client.', error);
+    });
+  }
+}
+
 /** Test-only: clears the memoized client so each test scenario is isolated. */
 export function resetSupabaseClientForTests(): void {
   memoizedClient = undefined;
   memoizedStorageKey = undefined;
+  memoizedStorage = undefined;
+  resetSessionStorageForTests();
 }

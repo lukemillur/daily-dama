@@ -105,11 +105,11 @@ describe('GuestAccountSection', () => {
   });
 });
 
-describe('GuestAccountSection on native (guest-only)', () => {
+describe('GuestAccountSection on a platform without accounts', () => {
   beforeEach(() => {
     mockPush.mockReset();
     mockAuthState = { status: 'guest', reason: 'unconfigured' };
-    ReactNative.Platform.OS = 'ios';
+    ReactNative.Platform.OS = 'windows';
   });
 
   afterEach(() => {
