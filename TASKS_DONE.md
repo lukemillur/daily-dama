@@ -4,6 +4,19 @@ Completed entries move here from `TASKS.md`'s `Backlog`, in the same commit that
 
 Entries keep their content as it was at completion. Don't retroactively edit a description or exit criteria after the fact; if something about a completed task turns out to be wrong or misleading, note that in a new entry or in code, not by rewriting history here.
 
+### [T309] Give the native tab bar a theme-derived background distinct from the screen
+
+- **Area:** Navigation / theme
+- **Priority:** Medium
+- **Status:** Done
+- **Planning:** Implementer
+- **Description:** `deriveTabBarColors` in `src/components/app-tabs.tsx` sets the tab bar background to `theme.background`, so the bar blends into most screens. Give the bar its own background derived from the resolved theme, so it stays distinct for light, dark and custom themes. Either blend the theme's text colour into its background by a fixed amount, or use the theme accent. Pick one and record why. Active and inactive icon and label colours must stay readable on the new background.
+- **Exit criteria:** `app-tabs.test.tsx` asserts that the bar background differs from `theme.background` for the default light theme, the dark theme and at least one custom theme, and that active and inactive tint colours reach at least 4.5:1 and 3:1 contrast against it. On iPhone 17e (iOS 27.0) with the bundle pinned, Home, Sesh, Tricks, Stats and Profile show a bar visibly distinct from the screen above it, in the light and dark themes. Full `yarn tsc --noEmit` passes.
+- **Dependencies:** None.
+- **Notes:** Owner request 2026-11-09. Keep the top border unless the new background makes it redundant. Keep `sceneStyle.backgroundColor` tied to the screen background, not the new bar colour. Owner decided tab-button hit slop needs no change.
+- **Platform scope:** Acceptance runs on the iOS Simulator. Android and physical-device checks are not part of these exit criteria; record them as not run rather than passed.
+- **Resolution:** Bar background is the theme text colour blended 12% into the theme background (accent rejected: user-chosen, can sit close to a custom background, already fills buttons). Active tint is re-derived against the bar and inactive falls back to the active tint if the muted blend drops under 3:1. iPhone 17e (iOS 27.0), Metro port 8095 pinned to this worktree: bar distinct from the screen in the light theme on all five tabs and in a dark custom theme on Home, Tricks and Profile. Android and physical device: not run.
+
 ### [T295] Plan email/password accounts on iOS and Android
 
 - **Area:** Auth / native

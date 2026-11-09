@@ -4,6 +4,7 @@ import type { ReactNode } from 'react';
 
 import AppTabs, { TAB_ICON_SYMBOLS, deriveTabBarColors } from '@/components/app-tabs';
 import { resolveTheme } from '@/features/profile/state/use-resolved-theme';
+import { contrastRatio } from '@/shared/color/contrast';
 
 const mockState = {
   theme: resolveTheme({}),
@@ -55,6 +56,7 @@ function render(): ReactTestRenderer {
 
 type Options = {
   tabBarStyle: { backgroundColor: string; borderTopColor: string; display?: string };
+  sceneStyle: { backgroundColor: string };
   tabBarActiveTintColor: string;
   tabBarInactiveTintColor: string;
 };
@@ -112,8 +114,12 @@ describe('AppTabs native fixed bar', () => {
     const light = barOptions(render());
     mockState.theme = darkTheme;
     const dark = barOptions(render());
-    expect(light.tabBarStyle.backgroundColor).toBe(resolveTheme({}).background);
-    expect(dark.tabBarStyle.backgroundColor).toBe('#101820');
+    expect(light.tabBarStyle.backgroundColor).toBe(
+      deriveTabBarColors(resolveTheme({})).background,
+    );
+    expect(light.sceneStyle.backgroundColor).toBe(resolveTheme({}).background);
+    expect(dark.tabBarStyle.backgroundColor).toBe(deriveTabBarColors(darkTheme).background);
+    expect(dark.sceneStyle.backgroundColor).toBe('#101820');
     expect(dark.tabBarActiveTintColor).toBe('#f5f5f0');
     expect(dark.tabBarActiveTintColor).not.toBe(light.tabBarActiveTintColor);
     expect(dark.tabBarInactiveTintColor).not.toBe(light.tabBarInactiveTintColor);
@@ -135,9 +141,37 @@ describe('AppTabs native fixed bar', () => {
 
   it('derives bar colors from the theme', () => {
     expect(deriveTabBarColors(darkTheme)).toMatchObject({
-      background: '#101820',
+      screenBackground: '#101820',
       active: '#f5f5f0',
-      inactive: darkTheme.textMuted,
     });
+    expect(deriveTabBarColors(darkTheme).background).not.toBe('#101820');
+  });
+
+  const customTheme = resolveTheme({
+    themeBackgroundColor: '#4b2e83',
+    themeAccentColor: '#f2c14e',
+    themeTextColor: '#ffffff',
+  });
+  // Mid-grey with black text exercises the fallback path, where the theme's own muted text
+  // would not be readable on the tinted bar.
+  const midGreyTheme = resolveTheme({
+    themeBackgroundColor: '#808080',
+    themeAccentColor: '#f2c14e',
+    themeTextColor: '#000000',
+  });
+
+  it.each([
+    ['default light', resolveTheme({})],
+    ['dark', darkTheme],
+    ['custom purple', customTheme],
+    ['mid-grey fallback', midGreyTheme],
+  ])('gives the %s theme a distinct bar with readable tints', (_name, theme) => {
+    mockState.theme = theme;
+    const options = barOptions(render());
+    const bar = options.tabBarStyle.backgroundColor;
+    expect(bar).not.toBe(theme.background);
+    expect(options.sceneStyle.backgroundColor).toBe(theme.background);
+    expect(contrastRatio(options.tabBarActiveTintColor, bar)).toBeGreaterThanOrEqual(4.5);
+    expect(contrastRatio(options.tabBarInactiveTintColor, bar)).toBeGreaterThanOrEqual(3);
   });
 });
