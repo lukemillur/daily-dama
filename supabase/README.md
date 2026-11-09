@@ -66,9 +66,12 @@ stack is genuinely clean afterward.
 
 **Symptom:** a local-stack fix (e.g. the stop/start cycle above) resolves a
 `503` locally, but the same `503` -- or, once a function is deployed, a CORS
-preflight failure -- keeps happening against the hosted "Daily Dama Dev"
-project (the backend behind every developer's `EXPO_PUBLIC_SUPABASE_URL` and
-the live `dailydama.com` site).
+preflight failure -- keeps happening against a hosted project. There are two:
+
+| Dashboard name | Project ref | Backs |
+| --- | --- | --- |
+| `daily.ama` (production) | `lnudjcpotidplbjqcfcx` | the live `dailydama.com` site and release builds |
+| `Daily Dama Dev` | `ylyoqswauqyesuwmetnl` | `development`/staging deploys and developers' hosted `.env.local` config |
 
 **Cause:** this repository has no CI or deploy-pipeline step that pushes
 `supabase/functions/*` to the hosted project. Nothing in `git push`, CI, or
@@ -84,11 +87,14 @@ deployed functions the whole time.
 every change to an existing function's code:
 
 ```sh
+# Production (dailydama.com)
+npx supabase functions deploy <name> --project-ref lnudjcpotidplbjqcfcx
+# Development/staging
 npx supabase functions deploy <name> --project-ref ylyoqswauqyesuwmetnl
 ```
 
-Verify the deploy landed with `npx supabase functions list --project-ref
-ylyoqswauqyesuwmetnl` -- it should show the function `ACTIVE` with a fresh
+Deploy to each project the change must reach. Verify the deploy landed with
+`npx supabase functions list --project-ref <ref>` -- it should show the function `ACTIVE` with a fresh
 `version`/`updated_at`. Because the local stack auto-serves every function
 under `supabase/functions/<name>/`, local Jest/pgTAP suites passing is not
 evidence the hosted project has the current code; always re-verify against the
