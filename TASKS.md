@@ -148,7 +148,7 @@ _Scoped 2026-11-09 from the owner's iOS Simulator walkthrough (no BACKLOG_STORIE
 
 - **Area:** Navigation / theme
 - **Priority:** Medium
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Implementer
 - **Description:** `deriveTabBarColors` in `src/components/app-tabs.tsx` sets the tab bar background to `theme.background`, so the bar blends into most screens. Give the bar its own background derived from the resolved theme, so it stays distinct for light, dark and custom themes. Either blend the theme's text colour into its background by a fixed amount, or use the theme accent. Pick one and record why. Active and inactive icon and label colours must stay readable on the new background.
 - **Exit criteria:** `app-tabs.test.tsx` asserts that the bar background differs from `theme.background` for the default light theme, the dark theme and at least one custom theme, and that active and inactive tint colours reach at least 4.5:1 and 3:1 contrast against it. On iPhone 17e (iOS 27.0) with the bundle pinned, Home, Sesh, Tricks, Stats and Profile show a bar visibly distinct from the screen above it, in the light and dark themes. Full `yarn tsc --noEmit` passes.
