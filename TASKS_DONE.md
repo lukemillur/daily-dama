@@ -4,6 +4,19 @@ Completed entries move here from `TASKS.md`'s `Backlog`, in the same commit that
 
 Entries keep their content as it was at completion. Don't retroactively edit a description or exit criteria after the fact; if something about a completed task turns out to be wrong or misleading, note that in a new entry or in code, not by rewriting history here.
 
+### [T313.3] Make the sign-up and sign-in screens work on native
+
+- **Area:** Auth / native / forms
+- **Priority:** High
+- **Status:** Done
+- **Planning:** Implementer
+- **Description:** With accounts enabled on native, the existing sign-up, sign-in, check-email and forgot-password screens render on iOS and Android for the first time. Make them usable there: keyboard avoidance so the submit button stays visible, password-manager hints (`textContentType`, `autoComplete`), focus order between fields, and safe areas.
+- **Exit criteria:** Route tests render each of the four screens with `Platform.OS = 'ios'` and assert the password fields' `textContentType` (`password` on sign-in, `newPassword` on sign-up). On iPhone 17e (iOS 27.0) with local Supabase: sign-up reaches check-email; sign-in with valid credentials reaches Home; invalid credentials show the existing error message; with the keyboard open, the submit button of each form is visible without scrolling the keyboard away. Full `yarn tsc --noEmit` passes.
+- **Dependencies:** T313.1.
+- **Notes:** The web-only keydown handlers in the sign-in and sign-up screens are already guarded by `Platform.OS`. T311 owns autocorrection; do not change it here.
+- **Platform scope:** Acceptance runs on the iOS Simulator. Record Android checks as not run.
+- **Completion notes:** `AuthFormScroll` (iOS `automaticallyAdjustKeyboardInsets`, scroll-to-end on `keyboardDidShow`) replaces the three duplicated form ScrollViews; `autoComplete` hints added (PasswordInput derives `new-password`/`current-password` from `textContentType`); forgot-password gets `returnKeyType=send` and submits from the keyboard. iPhone 17e (iOS 27.0), Metro on port 8093 from the task worktree, branch HEAD 38c2c0b, local Supabase: sign-up reached check-email; invalid credentials showed 'Incorrect email or password. Try again.'; valid sign-in reached Home and iOS offered Save Password; return key moved email to password; with the keyboard open the primary button was visible on sign-in and sign-up. The forgot-password screen was covered by route tests only (not driven on the device). Android not run. Observed, out of scope: the floating settings button overlaps the password visibility toggle on native.
+
 ### [T313.1] Give native a Supabase client with secure session storage
 
 - **Area:** Auth / native / persistence

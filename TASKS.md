@@ -225,18 +225,6 @@ _Scoped 2026-11-09 from T295 (owner approved decisions D1–D10 the same day). S
 - **Notes:** D3. Universal Links and App Links are deferred: they need the Associated Domains capability, which the personal-team iOS build cannot have, plus a hosted AASA file. **Owner gate:** the agent prepares the exact allow-list value; the owner adds it in the hosted Supabase dashboard. Do not change hosted Auth settings without that authorization. Hosted email delivery on a device stays not run until observed.
 - **Platform scope:** Acceptance runs on the iOS Simulator. Record Android and physical-device checks as not run.
 
-### [T313.3] Make the sign-up and sign-in screens work on native
-
-- **Area:** Auth / native / forms
-- **Priority:** High
-- **Status:** In progress
-- **Planning:** Implementer
-- **Description:** With accounts enabled on native, the existing sign-up, sign-in, check-email and forgot-password screens render on iOS and Android for the first time. Make them usable there: keyboard avoidance so the submit button stays visible, password-manager hints (`textContentType`, `autoComplete`), focus order between fields, and safe areas.
-- **Exit criteria:** Route tests render each of the four screens with `Platform.OS = 'ios'` and assert the password fields' `textContentType` (`password` on sign-in, `newPassword` on sign-up). On iPhone 17e (iOS 27.0) with local Supabase: sign-up reaches check-email; sign-in with valid credentials reaches Home; invalid credentials show the existing error message; with the keyboard open, the submit button of each form is visible without scrolling the keyboard away. Full `yarn tsc --noEmit` passes.
-- **Dependencies:** T313.1.
-- **Notes:** The web-only keydown handlers in the sign-in and sign-up screens are already guarded by `Platform.OS`. T311 owns autocorrection; do not change it here.
-- **Platform scope:** Acceptance runs on the iOS Simulator. Record Android checks as not run.
-
 ### [T313.4] Let existing accounts sign in from the Start screen without redoing onboarding
 
 - **Area:** Auth / native-start / onboarding
