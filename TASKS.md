@@ -198,7 +198,6 @@ _Scoped 2026-11-09 from T295 (owner approved decisions D1–D10 the same day). S
 - **Priority:** High
 - **Status:** Not started
 - **Description:** Umbrella for replacing the native "accounts are not available" state with working email/password accounts, backup and sync. Close it when T313.1–T313.6 are all `Done`.
-- **Exit criteria:** T313.1–T313.6 are all `Done`.
 - **Notes:** No feature flag (D9): the native app ships only as a personal development build, so each child can enable its part directly.
 
 ### [T313.3] Make the sign-up and sign-in screens work on native
