@@ -223,3 +223,16 @@ _Scoped 2026-11-09 from T295 (owner approved decisions D1–D10 the same day). S
 - **Dependencies:** T313.2, T313.3, T313.4, T313.5, and an Android development build.
 - **Notes:** D5, D8, D10. Apple requires in-app account deletion for apps that allow account creation (App Review Guideline 5.1.1(v)); do not hide deletion on native. If the Android build is still missing, this ticket is Blocked on it; do not substitute iOS evidence.
 - **Platform scope:** iOS Simulator and Android Emulator are both required.
+
+_Scoped 2026-11-09 from the T313.3 follow-up simulator check (no BACKLOG_STORIES.md story)._
+
+### [T314] Replace "same browser" email-link guidance with device wording on native
+
+- **Area:** Auth / native / copy
+- **Priority:** Medium
+- **Status:** Not started
+- **Planning:** Implementer
+- **Description:** Three auth screens tell native users to open the email link "on this same browser": the guidance text on check-email and forgot-password (`SAME_BROWSER_GUIDANCE` in `check-email-screen.tsx` and `forgot-password-screen.tsx`) and the `missingVerifier` error on the callback screen (`auth-callback-screen.tsx`). On iOS and Android the link opens the app through `dailydama://auth/callback`, so "browser" is wrong; the real constraint is the same device. Show device wording on native and keep the current web wording unchanged.
+- **Exit criteria:** Component tests render check-email, forgot-password and the callback screen's `missingVerifier` state with `Platform.OS = 'ios'` and assert the guidance names this device and does not contain the word "browser"; the same tests with `Platform.OS = 'web'` assert the current web text is unchanged. On iPhone 17e (iOS 27.0), the forgot-password and check-email screens show the native wording. `yarn jest src/features/auth` and full `yarn tsc --noEmit` pass.
+- **Notes:** Choose the wording per platform in one place (for example, a small helper in `src/features/auth/model/`), not with an inline `Platform.OS` check repeated in each screen. `e2e/auth/04-real-email-flows.spec.ts` asserts the web text; it must keep passing without changes. Seen during the T313.3 check, not in scope here: the floating gear button at the top right of every native screen is the Expo dev-client menu button, which appears only in development builds; it is not app UI and needs no ticket.
+- **Platform scope:** Acceptance runs on the iOS Simulator. Record Android checks as not run.
