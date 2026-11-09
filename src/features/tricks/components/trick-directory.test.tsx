@@ -132,6 +132,37 @@ describe('TrickDirectory', () => {
     });
   });
 
+  it('with nativeHeader renders no in-list header or search field yet still filters by the supplied query', () => {
+    const render = (query: string) => {
+      let root!: import('react-test-renderer').ReactTestRenderer;
+      act(() => {
+        root = create(
+          <TrickDirectory
+            tricks={FIXTURE_TRICKS}
+            showFocusedSection
+            focusedTrickIds={['trick-3']}
+            nativeHeader
+            search={{ query, onChangeText: () => undefined }}
+          />,
+        );
+      });
+      return root;
+    };
+
+    const filtered = render('cup');
+    expect(filtered.root.findAllByProps({ accessibilityLabel: 'Search tricks' })).toHaveLength(0);
+    expect(allText(filtered)).toEqual(expect.arrayContaining(['Big Cup', 'Small Cup']));
+    expect(allText(filtered)).not.toContain('Spike');
+    expect(allText(filtered)).not.toContain('Focused tricks');
+    act(() => filtered.unmount());
+
+    const cleared = render('');
+    expect(allText(cleared)).toContain('Focused tricks');
+    expect(allText(cleared)).toContain('Spike');
+    expect(cleared.root.findByType(SectionList).props.contentInsetAdjustmentBehavior).toBe('automatic');
+    act(() => cleared.unmount());
+  });
+
   it('renders no Practice action when practiceAction is absent', () => {
     let root!: import('react-test-renderer').ReactTestRenderer;
     act(() => {
