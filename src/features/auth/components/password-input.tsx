@@ -16,6 +16,7 @@ export interface PasswordInputProps {
   readonly error?: string;
   readonly hint?: ReactNode;
   readonly textContentType?: NativeTextInputProps['textContentType'];
+  readonly autoComplete?: NativeTextInputProps['autoComplete'];
   readonly returnKeyType?: NativeTextInputProps['returnKeyType'];
   readonly blurOnSubmit?: NativeTextInputProps['blurOnSubmit'];
   readonly onSubmitEditing?: NativeTextInputProps['onSubmitEditing'];
@@ -52,6 +53,7 @@ export const PasswordInput = forwardRef<TextInput, PasswordInputProps>(function 
     error,
     hint,
     textContentType = 'password',
+    autoComplete = textContentType === 'newPassword' ? 'new-password' : 'current-password',
     returnKeyType,
     blurOnSubmit,
     onSubmitEditing,
@@ -76,6 +78,7 @@ export const PasswordInput = forwardRef<TextInput, PasswordInputProps>(function 
     <TextField
       ref={ref}
       autoCapitalize="none"
+      autoComplete={autoComplete}
       autoCorrect={false}
       blurOnSubmit={blurOnSubmit}
       error={error}
