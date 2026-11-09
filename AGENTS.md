@@ -202,7 +202,7 @@ Some areas have their own root-level handoff document. Read the relevant one bef
 - [PHYSICS_VIZ_HANDOFF.md](PHYSICS_VIZ_HANDOFF.md) — the physics trick visualizer (`src/features/kendama-model/`), the active one. The hand-controller model, each landed trick and what it taught, the catch principles for new tricks, and verification.
 - [TRICK_VIZ_HANDOFF.md](TRICK_VIZ_HANDOFF.md) — the older keyframed visualizer (`src/features/trick-viz/`), no longer developed. Verified kendama geometry, the ken-pose abstraction, keyframe/easing pitfalls, the verlet string, and environment traps (React Compiler, stale console buffers, sandbox access gating).
 - [DEPLOYMENT_HANDOFF.md](DEPLOYMENT_HANDOFF.md) — web deploy to dailydama.com.
-- [supabase/README.md](supabase/README.md) — local Supabase Auth CLI configuration: rebuild/reset workflow, local policy (verified email, 10-character password minimum, one-hour JWTs, fixed `localhost:8081/auth/callback` plus the native `dailydama://auth/callback`), and manual REST/Mailpit verification.
+- [supabase/README.md](supabase/README.md) — local Supabase Auth CLI configuration: rebuild/reset workflow, local policy (verified email, 10-character password minimum, one-hour JWTs, fixed `localhost:8081/auth/callback` plus the native `dailydama://auth/callback` and its `?flow=email_change` variant), and manual REST/Mailpit verification.
 - [security/README.md](security/README.md) — the report-only web Content Security Policy: policy rationale, the raw-HTML sink audit guard, and the header-check/Playwright/manual verification commands.
 
 # Git state expectations
