@@ -13,6 +13,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AuthError } from '@supabase/supabase-js';
 import { Platform } from 'react-native';
 
+import { buildAuthCallbackUrl } from '@/features/auth/model/auth-callback-url';
 import { parseCachedSession } from '@/features/auth/model/cached-session';
 import { deriveAuthState, INITIALIZING_AUTH_STATE, type AuthState } from '@/features/auth/model/auth-state';
 import { logAuthWarning } from '@/features/auth/observability/auth-observability';
@@ -273,15 +274,14 @@ export function AuthProvider({ children }: PropsWithChildren) {
       return { error: new AuthError('Supabase is not configured.') };
     }
 
-    if (typeof window === 'undefined') {
-      return { error: new AuthError('Unable to resolve the callback URL.') };
-    }
-
     // Fixed, non-attacker-influenceable redirect -- never accept a destination from a route
     // param or query string here (see the task's enumeration/redirect-safety requirement and
     // BACKEND_ROADMAP.md's "no wildcard production redirects" rule). Supabase's own server-side
     // redirect allowlist is the second layer of defense.
-    const redirectTo = `${window.location.origin}/auth/callback`;
+    const redirectTo = buildAuthCallbackUrl();
+    if (!redirectTo) {
+      return { error: new AuthError('Unable to resolve the callback URL.') };
+    }
     const { error } = await client.auth.resetPasswordForEmail(email, { redirectTo });
     return { error };
   }, []);
@@ -293,12 +293,11 @@ export function AuthProvider({ children }: PropsWithChildren) {
       return { error: new AuthError('Supabase is not configured.') };
     }
 
-    if (typeof window === 'undefined') {
+    // Same fixed, non-attacker-influenceable redirect pattern as requestPasswordReset above.
+    const redirectTo = buildAuthCallbackUrl();
+    if (!redirectTo) {
       return { error: new AuthError('Unable to resolve the callback URL.') };
     }
-
-    // Same fixed, non-attacker-influenceable redirect pattern as requestPasswordReset above.
-    const redirectTo = `${window.location.origin}/auth/callback`;
     const { error } = await client.auth.signUp({ email, password, options: { emailRedirectTo: redirectTo } });
     return { error };
   }, []);
@@ -310,11 +309,10 @@ export function AuthProvider({ children }: PropsWithChildren) {
       return { error: new AuthError('Supabase is not configured.') };
     }
 
-    if (typeof window === 'undefined') {
+    const redirectTo = buildAuthCallbackUrl();
+    if (!redirectTo) {
       return { error: new AuthError('Unable to resolve the callback URL.') };
     }
-
-    const redirectTo = `${window.location.origin}/auth/callback`;
     const { error } = await client.auth.resend({
       type: 'signup',
       email,
@@ -369,10 +367,6 @@ export function AuthProvider({ children }: PropsWithChildren) {
       return { error: new AuthError('Supabase is not configured.') };
     }
 
-    if (typeof window === 'undefined') {
-      return { error: new AuthError('Unable to resolve the callback URL.') };
-    }
-
     const email = stateRef.current.session.user.email;
     if (!email) {
       // Defensive only -- this app is email/password-only, so an authenticated user should
@@ -398,7 +392,10 @@ export function AuthProvider({ children }: PropsWithChildren) {
     // confirmation's redirect, which carries no code at all when double_confirm_changes is on --
     // the *second*-clicked link is the one that returns an exchangeable code, and by then
     // new_email has already been cleared from the returned session).
-    const redirectTo = window.location.origin + '/auth/callback?flow=email_change';
+    const redirectTo = buildAuthCallbackUrl({ flow: 'email_change' });
+    if (!redirectTo) {
+      return { error: new AuthError('Unable to resolve the callback URL.') };
+    }
     const { error } = await client.auth.updateUser({ email: newEmail }, { emailRedirectTo: redirectTo });
     return { error };
   }, []);

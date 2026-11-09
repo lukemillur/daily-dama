@@ -302,7 +302,8 @@ sanity check that the harness still fails closed.
 - JWTs expire after one hour (`jwt_expiry = 3600`), pinned explicitly so
   session lifetime is a deliberate, known value rather than Supabase's
   changeable default.
-- The only local redirect origin is `http://localhost:8081/auth/callback`
+- The only local redirect targets are `http://localhost:8081/auth/callback` (web) and
+  `dailydama://auth/callback` (native app deep link)
   (`site_url` and `additional_redirect_urls`). Use `localhost`, not
   `127.0.0.1`, everywhere in this workflow — browsers treat these as different
   origins for storage/PKCE purposes, and a mismatch here is the single most

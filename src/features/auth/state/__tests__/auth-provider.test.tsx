@@ -1,8 +1,15 @@
 import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
 import type { AuthChangeEvent, Session, SupabaseClient } from '@supabase/supabase-js';
 import { useEffect } from 'react';
-import { Text } from 'react-native';
+import { Platform, Text } from 'react-native';
 import { act, create } from 'react-test-renderer';
+
+// Jest has no app manifest; expo-linking's createURL needs one to resolve the scheme.
+jest.mock('expo-constants', () => ({
+  __esModule: true,
+  default: { expoConfig: { scheme: 'dailydama' }, executionEnvironment: 'standalone' },
+  ExecutionEnvironment: { Bare: 'bare', Standalone: 'standalone', StoreClient: 'storeClient' },
+}));
 
 jest.mock('@react-native-async-storage/async-storage', () =>
   // eslint-disable-next-line @typescript-eslint/no-require-imports -- required by jest hoisting
@@ -123,12 +130,21 @@ async function mount() {
   return root;
 }
 
+// The callback-URL builder reads Platform.OS; the web-origin cases below stub `window`, so they
+// must also present as web. Restored in afterEach.
+const platformRestores: (() => void)[] = [];
+function useWebPlatform() {
+  const replaced = jest.replaceProperty(Platform, 'OS', 'web');
+  platformRestores.push(() => replaced.restore());
+}
+
 describe('AuthProvider', () => {
   beforeEach(() => {
     mockSessionStorage = AsyncStorage;
   });
 
   afterEach(async () => {
+    platformRestores.splice(0).forEach((restore) => restore());
     mockGetSupabaseClient.mockReset();
     mockDiscardSupabaseClient.mockReset();
     captured.state = undefined;
@@ -754,6 +770,7 @@ describe('AuthProvider', () => {
 
     const originalWindow = (globalThis as { window?: unknown }).window;
     (globalThis as { window?: unknown }).window = { location: { origin: 'https://dailydama.com' } };
+    useWebPlatform();
 
     const root = await mount();
 
@@ -781,6 +798,7 @@ describe('AuthProvider', () => {
 
     const originalWindow = (globalThis as { window?: unknown }).window;
     (globalThis as { window?: unknown }).window = { location: { origin: 'https://dailydama.com' } };
+    useWebPlatform();
 
     const root = await mount();
 
@@ -1119,6 +1137,7 @@ describe('AuthProvider', () => {
 
     const originalWindow = (globalThis as { window?: unknown }).window;
     (globalThis as { window?: unknown }).window = { location: { origin: 'https://dailydama.com' } };
+    useWebPlatform();
 
     const root = await mount();
     act(() => {
@@ -1157,6 +1176,7 @@ describe('AuthProvider', () => {
 
     const originalWindow = (globalThis as { window?: unknown }).window;
     (globalThis as { window?: unknown }).window = { location: { origin: 'https://dailydama.com' } };
+    useWebPlatform();
 
     const root = await mount();
     act(() => {
@@ -1186,6 +1206,7 @@ describe('AuthProvider', () => {
 
     const originalWindow = (globalThis as { window?: unknown }).window;
     (globalThis as { window?: unknown }).window = { location: { origin: 'https://dailydama.com' } };
+    useWebPlatform();
 
     const root = await mount();
     act(() => {
@@ -1297,6 +1318,7 @@ describe('AuthProvider', () => {
 
     const originalWindow = (globalThis as { window?: unknown }).window;
     (globalThis as { window?: unknown }).window = { location: { origin: 'https://dailydama.com' } };
+    useWebPlatform();
 
     const root = await mount();
 
@@ -1326,6 +1348,7 @@ describe('AuthProvider', () => {
 
     const originalWindow = (globalThis as { window?: unknown }).window;
     (globalThis as { window?: unknown }).window = { location: { origin: 'https://dailydama.com' } };
+    useWebPlatform();
 
     const root = await mount();
 
@@ -1349,6 +1372,7 @@ describe('AuthProvider', () => {
 
     const originalWindow = (globalThis as { window?: unknown }).window;
     (globalThis as { window?: unknown }).window = { location: { origin: 'https://dailydama.com' } };
+    useWebPlatform();
 
     const root = await mount();
 
@@ -1378,6 +1402,7 @@ describe('AuthProvider', () => {
 
     const originalWindow = (globalThis as { window?: unknown }).window;
     (globalThis as { window?: unknown }).window = { location: { origin: 'https://dailydama.com' } };
+    useWebPlatform();
 
     const root = await mount();
 
@@ -1392,5 +1417,64 @@ describe('AuthProvider', () => {
       root.unmount();
     });
     (globalThis as { window?: unknown }).window = originalWindow;
+  });
+
+  describe('native email-link callback URLs (no window)', () => {
+    // Platform.OS is 'ios' under jest-expo; `window` carries no `location`, as on device.
+    it('passes dailydama://auth/callback to all four email flows', async () => {
+      const fake = createFakeClient();
+      mockGetSupabaseClient.mockReturnValue(fake.client);
+      const root = await mount();
+      act(() => {
+        fake.emit('SIGNED_IN', { access_token: 'a', user: { email: 'person@example.com' } } as unknown as Session);
+      });
+
+      await act(async () => {
+        await captured.actions!.signUp('person@example.com', 'a-long-enough-password');
+        await captured.actions!.resendSignupConfirmation('person@example.com');
+        await captured.actions!.requestPasswordReset('person@example.com');
+        await captured.actions!.changeEmail('new@example.com', 'old-password');
+      });
+
+      expect(fake.signUp).toHaveBeenCalledWith(
+        expect.objectContaining({ options: { emailRedirectTo: 'dailydama://auth/callback' } }),
+      );
+      expect(fake.resend).toHaveBeenCalledWith(
+        expect.objectContaining({ options: { emailRedirectTo: 'dailydama://auth/callback' } }),
+      );
+      expect(fake.resetPasswordForEmail).toHaveBeenCalledWith('person@example.com', {
+        redirectTo: 'dailydama://auth/callback',
+      });
+      expect(fake.updateUser).toHaveBeenCalledWith(
+        { email: 'new@example.com' },
+        { emailRedirectTo: 'dailydama://auth/callback?flow=email_change' },
+      );
+
+      act(() => {
+        root.unmount();
+      });
+    });
+
+    it('returns a typed error and makes no network call when no callback URL can be resolved', async () => {
+      const fake = createFakeClient();
+      mockGetSupabaseClient.mockReturnValue(fake.client);
+      const originalWindow = (globalThis as { window?: unknown }).window;
+      useWebPlatform();
+      (globalThis as { window?: unknown }).window = undefined;
+
+      const root = await mount();
+      let result: { error: unknown } | undefined;
+      await act(async () => {
+        result = await captured.actions!.signUp('person@example.com', 'a-long-enough-password');
+      });
+
+      expect((result?.error as { message?: string } | undefined)?.message).toBe('Unable to resolve the callback URL.');
+      expect(fake.signUp).not.toHaveBeenCalled();
+
+      act(() => {
+        root.unmount();
+      });
+      (globalThis as { window?: unknown }).window = originalWindow;
+    });
   });
 });

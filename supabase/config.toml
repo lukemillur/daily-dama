@@ -164,8 +164,10 @@ site_url = "http://localhost:8081"
 # query string -- a redirectTo of "http://localhost:8081/auth/callback?flow=email_change"
 # (AuthProvider.changeEmail's redirect, used to discriminate an email-change confirmation from a
 # signup confirmation in AuthCallbackScreen) is accepted without adding it as its own entry here.
-# Do not assume this also holds for the hosted project without the same live check.
-additional_redirect_urls = ["http://localhost:8081/auth/callback"]
+# The native entry "dailydama://auth/callback" is what buildAuthCallbackUrl returns on iOS and
+# Android. Do not assume the query-string rule holds for the hosted project, or for the custom
+# scheme, without the same live check.
+additional_redirect_urls = ["http://localhost:8081/auth/callback", "dailydama://auth/callback"]
 # How long tokens are valid for, in seconds. Defaults to 3600 (1 hour), maximum 604,800 (1 week).
 # Explicitly pinned to one hour per BACKEND_ROADMAP.md Phase 1 policy -- do not rely on the CLI default.
 jwt_expiry = 3600
