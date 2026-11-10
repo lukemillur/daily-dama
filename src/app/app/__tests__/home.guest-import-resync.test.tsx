@@ -43,6 +43,12 @@ jest.mock('expo-router', () => ({
   useRouter: () => mockRouter,
 }));
 
+// The first-profile-pull gate has its own coverage (home-first-pull.test.tsx); these suites render
+// Home without a SyncCoordinatorProvider and exercise other behavior.
+jest.mock('@/features/onboarding/state/use-first-profile-pull', () => ({
+  useFirstProfilePull: () => ({ status: 'not-applicable', retry: () => undefined }),
+}));
+
 const mockCountLocalGuestRecords = jest.fn<(...args: any[]) => any>();
 const mockCountCloudRecords = jest.fn<(...args: any[]) => any>();
 const mockBuildGuestImportTransports = jest.fn<(...args: any[]) => any>();
