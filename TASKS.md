@@ -270,7 +270,7 @@ _Android verification prerequisite: the first build was observed on Pixel_10 / A
 
 - **Area:** Theme / surface contrast
 - **Priority:** Medium
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** Add a semantic foreground role derived against the actual accent surface and apply it to Home hero text, Sesh first-lace/celebration text and the same accent-filled Sesh actions. Page-derived text and muted colors currently produce low contrast on the Red preset; extend T283's surface-role approach rather than changing saved preferences or forbidding colors.
 - **Exit criteria:** Theme tests show each new accent foreground reaches at least 4.5:1 against the actual accent for every supplied preset and representative light/dark custom colors, including a custom text override; secondary copy also meets its chosen surface contrast target. On Android, Red and Indigo Home hero/first-lace banners/action labels are readable, and Default retains hierarchy. Representative iOS and web checks show the same improvement. Tests for affected theme/Home/Sesh rendering, scoped lint and full typechecking pass; update current theme-role documentation in the same change.
