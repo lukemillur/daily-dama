@@ -246,7 +246,7 @@ _Android verification prerequisite: the first build was observed on Pixel_10 / A
 
 - **Area:** Tricks / navigation
 - **Priority:** High
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** Supply supported Android create and overflow controls in `TricksNativeHeader`. The current non-web branch removes in-list actions and relies on iOS-only `unstable_headerRightItems`, so Android loses its create and aggregate-screen entry points. Prefer Android `headerRight` controls with a small accessible menu while retaining the existing iOS header and web actions.
 - **Exit criteria:** From Tricks on Android, without deep links, Define new trick opens the standalone/sequence choice and the overflow menu opens Trick goals, Trick notes and Laced tricks; each destination returns using Android Back. Search filters the library and clearing it restores the list. Buttons/menu items have programmatic names and usable touch targets. Focused route/header tests exercise Android action handlers and platform branches; relevant Tricks tests, scoped lint and full typechecking pass. iOS create/menu/search and web actions remain operable; run a web export if routing or dependencies change.
