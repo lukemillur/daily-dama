@@ -284,7 +284,7 @@ _Android verification prerequisite: the first build was observed on Pixel_10 / A
 
 - **Area:** Android forms / keyboard handling
 - **Priority:** Medium
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** On Android the software keyboard (IME) overlays the window without resizing or panning the form scroll content, so with a text field focused the Save and Cancel buttons of the custom-trick forms (standalone, sequence and edit) are fully hidden behind the keyboard and the scroll view cannot scroll further. Observed on Pixel_10_API36 at 1080x2424/420 dpi (IME top y=1541, Save 1849-1996, Cancel 2022-2169, content already at maximum scroll) and at 720x1280/280 dpi (IME top y=699, Save 896-994). The note and goal forms behave the same at 720x1280 (Save 827-925, IME top 699) though they clear the keyboard at 1080x2424. The sequence form's `Search existing tricks` field also sits behind the keyboard when focused. `KeyboardAwareScroll` only handles iOS (`automaticallyAdjustKeyboardInsets`).
 - **Exit criteria:** On the Android Emulator at 1080x2424/420 dpi and 720x1280/280 dpi, with the software keyboard open and a text field focused, Save and Cancel of the standalone, sequence and edit custom-trick forms, the note forms and the goal forms are visible or reachable by a normal scroll, and the focused field stays visible. iOS and web behavior and the existing keyboard-aware tests are unchanged. Component tests for the Android keyboard-inset behavior where practical, scoped lint and full typechecking pass; update the `KeyboardAwareScroll` description in `ARCHITECTURE.md`.
