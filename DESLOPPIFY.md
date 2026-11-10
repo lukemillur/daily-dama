@@ -1,5 +1,23 @@
 # Daily Dama desloppify backlog
 
+**Scoped Android audit — 2026-11-09:** local `development` at `8f8a153`, with
+owner-owned Android build changes in `app.json` and `package.json` preserved.
+The running development build is `com.dailydama.app` 1.0.0 (installed today,
+target SDK 36), on `emulator-5554` / Pixel_10, Android 17 / API 37,
+1080×2424 at density 420, font scale 1.0. Both Daily Dama Metro processes
+(8081 and 8082) have this checkout as their cwd; the emulator already forwards
+8081. This is a scoped guest/UI pass, not full Android acceptance or a refresh
+of every older finding. Older iOS/guest-only statements below are historical;
+current native account enablement is tracked by T313 and its remaining children.
+
+Android audit findings were scoped into the active `TASKS.md` queue on
+2026-11-09 at the owner's request: D026 → T315, D027 → T316, D028 → T317,
+D029 → T318, D030 → T319, D031 → T320, D032 → T321, and D034 → T322–T324.
+D033 stays Superseded after the owner confirmed normal manual scrolling on
+Profile and the standalone-trick form; it has no implementation ticket.
+The D-items retain evidence and history; the T-items own execution and closure.
+See the Android workflow matrix at the end for observed versus unverified checks.
+
 Reviewed 2026-09-04 against local `development` at `7bdeb7f`.
 
 **Scoped iOS UX audit: 2026-10-29**, local `feat/kendama-anatomy-model` at
@@ -32,6 +50,22 @@ This is an audit and cleanup queue, not evidence that every existing product tic
 Status values: `Ready`, `Wait`, `Existing ticket`, `Done`.
 
 ## 1. Critical issues
+
+### [D026] Restore Android onboarding trick-selection scrolling
+
+- **Status:** Existing ticket (`TASKS.md`; T315; scoped 2026-11-09)
+- **Where:** `src/features/onboarding/components/onboarding-selection-step.tsx`; `src/features/tricks/components/trick-directory.tsx`; containing Home/Screen layout.
+- **Why it matters:** **Owner-reproduced on Android:** after the Kentei reveal, “Choose what to work on first” cannot scroll, restricting which rank-1 tricks can be selected. The audit started after onboarding was completed and did not clear the owner's emulator to replay it; independent fresh-onboarding reproduction remains required. Do not conflate this with completed iOS T302, which concerned a finish-button report and was closed as not reproducible.
+- **Recommended change:** Reproduce with a separate fresh test installation/user, identify the measured viewport/content/gesture cause, and make the full list and Start practicing control reachable by touch. Check the entire flow through duration, theme and Sesh, then relaunch and confirm onboarding stays complete. Exercise rank 1 and a longer-name higher rank on Android, plus an iOS and web regression check. Add a focused regression test for the actual cause rather than merely asserting a SectionList exists.
+- **Timing:** First Android usability fix. Preserve existing data and the profile hydration/persistence boundary. The owner confirmed normal manual scrolling on Profile and the standalone-trick form, so keep this investigation scoped to onboarding rather than assuming a shared scrolling defect.
+
+### [D027] Restore Android Tricks create and overflow actions
+
+- **Status:** Existing ticket (`TASKS.md`; T316; scoped 2026-11-09)
+- **Where:** `TricksNativeHeader` and `usesNativeHeader` in `src/app/app/tricks/index.tsx`; `src/components/nested-stack-options.tsx`.
+- **Why it matters:** **Emulator-observed and source-confirmed:** Tricks shows a title and search icon, but no create button or overflow menu. The component hides its in-list actions on every non-web platform, then supplies `unstable_headerRightItems`, whose installed Expo Router native-stack types explicitly mark it iOS-only. Users lose the normal entry points for creating standalone tricks/sequences and for aggregate goals, notes and laced views. Opening the custom-new route directly does render its choice and standalone form; this does not repair discoverability.
+- **Recommended change:** Keep the existing iOS presentation, supply supported Android header buttons/menu (or a deliberate in-list Android fallback), and retain accessible names. On Android, prove all four destinations are reachable from Tricks without a deep link; create one standalone and one sequence, exercise search and Android Back, and return from each aggregate screen. Cover Android options/rendering in focused route tests and run the full typecheck. Verify the existing iOS and web entry points remain available.
+- **Timing:** Fix immediately after or alongside D026; this unblocks ordinary custom-trick and aggregate-screen acceptance. Coordinate with T312.3–T312.5 in the same route/list area; their acceptance currently targets iOS.
 
 ### [S040] Finish or explicitly withhold native account workflows
 
@@ -97,6 +131,55 @@ Status values: `Ready`, `Wait`, `Existing ticket`, `Done`.
 - **Timing:** Wait for the guided hosted check. Keep the DSN unset until the full path is verified.
 
 ## 2. Medium cleanup items
+
+### [D028] Supply Android symbols for every bottom tab
+
+- **Status:** Existing ticket (`TASKS.md`; T317; scoped 2026-11-09)
+- **Where:** `src/components/app-tabs.tsx:TAB_ICON_SYMBOLS` and `SymbolView` props; `src/components/app-tabs.test.tsx`.
+- **Why it matters:** **Owner- and emulator-confirmed:** all five tab labels render with empty icon space. Each SymbolView receives an SF Symbol string. The installed `expo-symbols/src/SymbolView.tsx` returns only the fallback for a string on Android; no fallback is supplied. SDK-57 documentation likewise requires per-platform names. T042/T290 are completed iOS work, explicitly without Android acceptance, so this is a bounded Android follow-up.
+- **Recommended change:** Add typed per-platform Material Symbol names or an intentional portable icon fallback. Reuse the existing selected/unselected tint semantics. Verify every tab in both states on Android, including a cold launch (font loading), the current Red theme and another preset; preserve iOS symbols and web navigation. Test Android mappings, not just five SF Symbol strings.
+- **Timing:** Safe after the functional blockers; no navigation architecture change is needed. Reference: https://docs.expo.dev/versions/v57.0.0/sdk/symbols/.
+
+### [D029] Retune the native Kentei reveal and badge presentation
+
+- **Status:** Existing ticket (`TASKS.md`; T318; scoped 2026-11-09)
+- **Where:** `src/features/onboarding/components/onboarding-rank-reveal-step.tsx`; reused by `src/features/profile/components/rank-up-celebration-modal.tsx`.
+- **Why it matters:** **Owner-confirmed on Android; iOS recalled but not reverified:** the rank reveal is too abrupt and the circle looks poor compared with web. Source uses a fixed 220px circle, 100px numeral and `ZoomIn.duration(650).springify().damping(11)`. In the installed Reanimated `ComplexAnimationBuilder`, `springify(duration)` assigns `durationV = duration`, so calling it without an argument clears the preceding duration setting. This is a concrete timing lead, not proof that timing alone explains the visual complaint. No fresh reveal animation was replayed during this audit.
+- **Recommended change:** Review a recording on Android, choose explicit spring or timed motion, and give the rank a readable hold and an intentional responsive badge/numeral composition. Verify both onboarding and later promotion, ranks 1 and 12, Reduce Motion, and small-screen button reachability. Compare iOS deliberately and preserve the accepted web presentation. Test motion configuration where meaningful; native visual acceptance is required.
+- **Timing:** After D026; do not redesign assessment rules or rank persistence to solve a presentation defect.
+
+### [D030] Derive readable text for accent-filled surfaces
+
+- **Status:** Existing ticket (`TASKS.md`; T319; scoped 2026-11-09)
+- **Where:** `daily-home.tsx:Hero/HeroTitle/HeroMarker/HeroCopy`; `sesh.tsx` first-lace/celebration and accent-filled controls; `use-resolved-theme.ts` surface foreground roles.
+- **Why it matters:** **Emulator-observed with the existing Red preset:** the Home hero's dark headline and muted copy, and the first-lace banner's dark text, sit on saturated red and are hard to read. Red preset accent `#c0392b` against fixed ink `#18382e` is about 2.35:1. Page-derived text/muted colors do not establish contrast on the accent surface. T283 added onButton/onInk roles but does not cover this remaining surface. This is shared theme debt exposed on Android, not evidence of an Android rendering-only bug.
+- **Recommended change:** Derive a foreground for the actual accent surface and use it consistently for accent-filled hero, celebration, and action text; inspect secondary copy independently. Preserve saved color preferences. Add contrast tests across all supplied presets and verify Red/Indigo/Default on Android plus representative iOS/web checks. Avoid a repository-wide recoloring pass.
+- **Timing:** Safe bounded follow-up to T283; coordinate shared theme-token changes with D029.
+
+### [D031] Make Android status-bar foreground follow the visible surface
+
+- **Status:** Existing ticket (`TASKS.md`; T320; scoped 2026-11-09)
+- **Where:** root/native appearance configuration; nested stack status-bar options; light app and auth surfaces.
+- **Why it matters:** **Emulator-observed:** white clock/signal/battery icons remain over the pale Red page background, making OS status information faint. No application-owned StatusBar configuration was found in `src`. White on Red preset background `#fbdcd6` is about 1.29:1. The Expo dev-client floating gear is separate development UI, not a product finding.
+- **Recommended change:** Set an intentional Android status-bar icon style based on the actual visible background, including root tab scenes, nested routes and auth. Verify the current light theme and a dark custom background, navigation transitions and foregrounding; preserve Android edge-to-edge/safe-area behavior. Confirm with the installed Expo/native-stack APIs before implementation and rebuild if native configuration requires it.
+- **Timing:** Safe after the functional fixes. Do not disable edge-to-ed``ge or add arbitrary top padding as a workaround.
+
+### [D033] Verify scroll reachability across Android forms and Profile
+
+- **Status:** Superseded (2026-11-09 owner corroboration)
+- **Where:** `KeyboardAwareScroll`; custom-trick form; Profile scroll container; keyboard layouts, with D026 as the owner-confirmed onboarding case.
+- **Why it matters:** **Audit lead:** repeated injected drags left the standalone form at its upper content with Save below the viewport, and Profile did not move in the attempted drag. One form drag instead changed the draft rank. Keyboard text entry and note/goal saving did work. The emulator subsequently exited; its startup diagnostics reported hanging QEMU threads and forced software graphics on this API-37 image. These observations could reflect the emulator/automation path; they do not independently prove that every Android ScrollView is broken. An Android accessibility dump also failed with `null root node`, which is a tooling limit. No custom trick was saved.
+- **Recommended change:** No application scrolling fix is justified by these injected-drag failures. Preserve this evidence as an emulator/automation limitation. Remaining long-form and keyboard acceptance stays in D034.
+- **Timing:** Closed as an app-defect lead. D026 remains independently confirmed for onboarding.
+- **Resolution (2026-11-09):** In response to the audit's specific question about manually dragging Profile and the new standalone-trick form to the bottom, the owner answered “Those screens scroll normally.” This is owner-observed evidence, not a successful automated retest; it resolves this broader-scrolling lead without asserting that every keyboard/form scenario has passed.
+
+### [D034] Complete Android guest acceptance after the reachability fixes
+
+- **Status:** Existing ticket (`TASKS.md`; T322–T324; scoped 2026-11-09)
+- **Where:** Android workflow matrix below; guest onboarding, Sesh, custom tricks/sequences, notes, goals, Stats and Profile.
+- **Why it matters:** **Verification work, not an additional confirmed defect.** The first development build has narrow Android evidence; older completed native tickets generally accepted iOS only. Missing entry points and uncertain automated scrolling leave meaningful workflows unaccepted, so this audit must not become an Android-readiness sign-off.
+- **Recommended change:** Use a separate fresh guest environment for full onboarding and a persistent populated test environment for standalone/sequence create/edit (including snapshot behavior), notes/goals, single/multi-trick and assessment flows, timer/background/paused cases, Stats consistency, keyboard actions, cold relaunch, Android Back, TalkBack/large text and a second viewport. Record each result and any synthetic records. Preserve owner data; do not execute deletion scenarios without separate explicit authorization. Scope new defects from reproduced evidence. Keep account/sync acceptance owned by T313.6 rather than duplicating it here.
+- **Timing:** Finish after the confirmed navigation/scroll fixes. Testing known working web/iOS paths does not close this Android gate.
 
 ### [D021] Make native feedback usable and provide a safe exit
 
@@ -267,6 +350,14 @@ Status values: `Ready`, `Wait`, `Existing ticket`, `Done`.
 - **Timing:** Safe now as a dedicated tooling cleanup. Keep the first pass behavior-preserving.
 
 ## 3. Nice-to-have polish
+
+### [D032] Use device wording in native Sesh backup invitations
+
+- **Status:** Existing ticket (`TASKS.md`; T321; scoped 2026-11-09)
+- **Where:** `src/features/sesh/components/sesh.tsx` inline and periodic guest sign-up invitations.
+- **Why it matters:** **Emulator-observed after the first Sesh:** “Save this sesh for good” says progress can be lost if the user clears their browser. On Android this is a device/app-data boundary. Existing T314 owns the similar wording in three Auth screens, not these Sesh invitations.
+- **Recommended change:** Use platform-appropriate device/app-data wording in both Sesh invitations while keeping web wording accurate. Add native/web copy assertions and inspect the first-session and periodic invitations on Android. Coordinate copy with T314 rather than duplicating its Auth implementation.
+- **Timing:** After functional work; no persistence/auth behavior change.
 
 ### [D013] Add accessible announcement and focus behavior to form feedback
 
@@ -454,3 +545,67 @@ not accepted as proof of a product defect.
 - Did not run the full Jest suite, web export, local Supabase, or browser acceptance: this was a documentation-only audit on a dirty, behind checkout, and those runs would not resolve the hosted findings already assigned to T225-T229.
 - Existing T236-T246 UI tickets were not copied into this backlog. They remain the authoritative queue for already-reported product polish.
 - 2026-09-11 bundle refresh: searched package imports/configuration and every tracked `assets/`/`public/` filename; inspected Expo Router/React Three peer/transitive ownership with `yarn why` and installed manifests; generated a fresh production web export with external source maps; attributed generated bytes by source-map segment; and built an isolated `/tmp` scenario replacing only the trick-viz sandbox route with a redirect to measure D015. No repository source/config/package/assets were changed and no browser, hosted, iOS, or Android verification was performed.
+
+## Android workflow coverage — 2026-11-09
+
+This is the current scoped Android result. Older iOS rows above are not Android
+evidence. No application code, dependencies, task-queue statuses, or owner build
+configuration were changed. The source findings D026–D034 are retained here; T315–T324 in `TASKS.md`
+own execution after the owner-requested scoping pass. No work was claimed or
+published. Source references were checked against this checkout and
+the installed packages, including the SDK-57 Expo Symbols documentation.
+
+| Workflow | Evidence and result | Remaining acceptance |
+| --- | --- | --- |
+| Initial onboarding and reveal | Owner reports unscrollable trick selection and an abrupt/unattractive circular reveal on Android. Shared reveal/selection code inspected; the installed Reanimated spring builder clears the earlier duration setting when `springify()` has no duration argument. | Fresh replay was not run because the emulator had completed onboarding and its data was preserved. D026/D029 require a separate fresh test environment and iOS comparison. |
+| Home and tabs | Empty and populated Home observed in existing Red theme. All five tabs opened; labels work but every tab icon is absent. Home's normal Moshikame x5 Practice link ultimately showed the requested practice setup. A tentative stale-link concern was not filed as a defect. | Full lower-page shortcuts, another viewport and large font size not verified. D028/D030/D031 own observed icon/contrast issues. |
+| Tricks | Focused/rank rows and per-trick Notes opened. Android native search affordance is present. Create/overflow buttons are absent; installed native-stack types mark `unstable_headerRightItems` iOS-only. | Search query/filtering, deep library scrolling and full focus/laced editing not accepted. D027 owns missing entry points. Existing T312.3–T312.5 are iOS-scoped list work, not Android sign-off. |
+| Notes | Created and saved `Android audit note only` on Big cup using the Android software keyboard. List shows one note, and active practice displayed that note. | Editing, long/multiple notes, aggregate entry and relaunch persistence not yet verified. No note deleted. |
+| Goals | Opened Big cup goals, entered `3` with numeric keyboard, saved, and observed the `0 / 3 laces` card. Goal progress correctly starts after creation rather than counting the earlier audit Sesh. | Practice-time goals, completion celebrations, aggregate picker and relaunch persistence not yet verified. No goal deleted. |
+| Custom tricks/sequences | A direct app link opened the missing create destination. Choice screen and standalone form render; name input and visual rank selection respond. Draft `AndroidAudit` was not saved. Repeated injected drags did not expose lower Save controls, but the owner subsequently confirmed that the standalone form scrolls normally by hand; D033 superseded. | Standalone/sequence save/edit, keyboard reachability and snapshot behavior remain unverified. No existing trick deleted or edited. |
+| Open-ended Sesh | Format selection, automatic countdown, active note display, lace tap, pause, Home/foreground and End exercised. Foreground screenshot shows paused `00:31` with one lace; completion records `00:31`, one lace, first lace at `00:26`. A tap while paused did not add a lace. | Resume was invoked immediately before End without an intervening settled screenshot, so resumed elapsed-time progression is not accepted. Lock/unlock, wake-lock release, process death and full lifecycle permutations not verified. |
+| Timed Sesh | Home's Moshikame x5 Practice control reached the correct setup. Switched to Timed, entered `1`, observed `01:00` countdown copy and an active `00:46` remaining screen with zero laces. | The emulator exited during the subsequent background check. Timed completion/deadline, history recording and background recovery are **not accepted**. A completion record may have been written before the emulator exited; verify before counting or repeating this test. |
+| Stats | After the open-ended run, Stats shows exactly 1 Sesh, 1 lace and `00:31`; populated Home shows the same latest session. | Per-trick history details, date filters and restart persistence not yet accepted. |
+| Profile | Current theme preset chooser and assessment button render. Automated drag did not establish full-page reachability; the owner subsequently confirmed normal manual scrolling to the bottom. Existing Red preference preserved. | Theme changes, spectrum dragging, streak editing, keyboard reachability and assessment execution not accepted. No general Profile scrolling defect is filed. |
+| Account entry | Direct-linked sign-in renders email/password fields, visibility control, Sign in, Forgot password, Back to app and sign-up navigation. No credentials entered or requests submitted. | Real Auth callbacks, import/sync, offline/reconnection, account isolation, logout and deletion remain T313.6 acceptance, not passed by this UI audit. T313.4/T314 also remain authoritative open work. |
+
+### Android evidence, data and continuation
+
+- Screenshots were captured under `/tmp/dd-android-*.png` (temporary evidence,
+  not durable repository assets); the initial screen is
+  `/tmp/daily-dama-android-current.png`. Android UI hierarchy capture succeeded
+  once, then returned `null root node` on another attempt. The native emulator
+  window could not be bound through computer-use, so the platform's ADB tools
+  were used for screen capture and input. Delayed inputs/captures were checked
+  against settled screens; no responsiveness defect is inferred from that delay.
+- An inspected filtered Android log tail showed no error lines, but this is
+  not a complete crash/log audit. No app suite, web export, hosted service tests,
+  or native rebuild was rerun for these documentation-only findings.
+- The emulator process itself exited during the timed/background test; ADB
+  reported `error: closed`, followed by no devices and no QEMU process. Reopening
+  the existing Pixel_10 reported hung QEMU main/CPU threads and
+  `API level 37 requires GLES 3.1, forcing software rendering for GLES`.
+  The first reopen waited on a crash-report dialog and was interrupted. A
+  non-wiping cold boot (`-no-snapshot-load -crash-report-mode never`) restored
+  ADB and `sys.boot_completed=1`; Daily Dama's activity was launched and the
+  existing 8081 Metro reverse restored. Screen capture still stalled and was
+  interrupted, so app recovery/persistence was not visually accepted. No wipe,
+  uninstall, app-data clear, project cleanup, credential operation or existing
+  record deletion was performed. The emulator itself automatically discarded
+  its generated crash report when reporting mode was set to never; that was
+  not an app/user-data deletion. Compare API 36 before attributing gesture or
+  capture failures to application code. This is a concrete tooling limit, not
+  evidence of a Daily Dama crash.
+- Audit-created saved data: the Big cup note above, a three-lace Big cup goal,
+  and the open-ended Big cup Sesh above. The Sesh permanently establishes its
+  first real lace in this emulator's history. The goal was created afterward.
+  These are synthetic audit records, not owner practice. No data was deleted.
+- Remaining broad guest acceptance: full multi-trick/assessment run, sequence
+  creation/editing, keyboard reachability on all long forms, cold-launch
+  persistence, TalkBack/large text and a second Android viewport. Reachability
+  failures should be corroborated and fixed before signing these off. Auth and
+  destructive account operations require their existing dedicated acceptance;
+  this audit did not create an account, send feedback, or alter credentials.
+- Recommended order: T315; T316; T317; T319/T320; T318; T321; then
+  T322–T324 once their stated dependencies pass. T313.6 retains Android Auth/sync
+  acceptance. Do not reopen completed iOS tickets merely to imply Android coverage.
