@@ -246,7 +246,7 @@ _Android verification prerequisite: the first build was observed on Pixel_10 / A
 
 - **Area:** Navigation / iconography
 - **Priority:** Medium
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** Replace the SF-Symbol-only tab mapping in `app-tabs.tsx` with typed per-platform symbol names using the installed `expo-symbols` Android Material Symbols support. Preserve the existing selected/unselected tint derivation and iOS symbols; no new icon dependency is needed by default.
 - **Exit criteria:** After a cold launch on Android, Home, Sesh, Tricks, Stats and Profile each show a distinct route-appropriate icon in selected and unselected states, with no empty font-loading placeholder left indefinitely; all remain unclipped and legible in Default and Red themes. Tests assert Android mappings and props for all routes/states, relevant tab tests, scoped lint and full typechecking pass. iOS retains its symbols and the web five-link navigation still fits 320 px. If Android font loading fails in the tested setup, provide and verify an intentional visible fallback.
