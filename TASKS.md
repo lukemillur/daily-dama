@@ -204,7 +204,7 @@ _Scoped 2026-11-09 from T295 (owner approved decisions D1–D10 the same day). S
 
 - **Area:** Sync / auth / native
 - **Priority:** High
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** Native sync treats the device as always online, because online state comes from `window` events. Add native online state with `expo-network`'s network-state listener so `SyncStatus` can show offline and reconnection starts a sync. Then run S040's cross-platform acceptance pass on both platforms, including logout, account deletion and email change, which appear on native once accounts are enabled.
 - **Exit criteria:** Tests prove native network-state changes update `SyncStatus.online` and that going back online starts a sync; web keeps its `window` listeners. On the iOS Simulator and the Android Emulator, the execution notes record, per platform: a mutation made offline syncs after reconnection and appears on web for the same account; a second account signed in on the same device sees none of the first account's data; an active Sesh survives sign-in and a token refresh; logout with pending changes is blocked by the logout guard; account deletion purges the local namespace and returns to guest; an email change completes through the native callback. Any check not performed is recorded as not run, never passed.
