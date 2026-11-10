@@ -204,7 +204,7 @@ _Scoped 2026-11-09 from T295 (owner approved decisions D1–D10 the same day). S
 
 - **Area:** Auth / native-start / onboarding
 - **Priority:** High
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** Add a Sign in action next to Get started on `NativeStartScreen` (T292 left room for it). Two gaps must close with it. `useNativeOnboardingStatus` reads only the guest profile, so a signed-in relaunch shows the Start screen; make the root route use the active identity. Home guards onboarding only while a guest import is pending, so a signed-in identity with no import can show onboarding before its first profile pull; hold the onboarding decision until that pull settles, and show a retry state if it fails (fail closed).
 - **Exit criteria:** Tests prove: (a) the Start screen shows a Sign in action beside Get started, and it opens `/auth/sign-in`; (b) a signed-in identity whose profile has completed onboarding goes to Home on launch and the Start screen never renders; (c) after sign-in, onboarding does not render while the first profile pull is in flight; (d) a failed first pull shows a retry state, not onboarding, and retrying re-runs the pull; (e) a new account with no completed cloud profile reaches onboarding after the pull; (f) a guest with local data who signs in still enters the existing guest-import flow. On iPhone 17e (iOS 27.0) with local Supabase, an account that completed onboarding on web signs in from the Start screen and lands on Home showing its rank, with no onboarding frame seen. Full `yarn tsc --noEmit` and the native-start, onboarding and guest-import suites pass.
