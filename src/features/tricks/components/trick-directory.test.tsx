@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, jest } from '@jest/globals';
+import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { cloneElement, useState } from 'react';
 import { SectionList, StyleSheet } from 'react-native';
 import { act, create } from 'react-test-renderer';
@@ -514,6 +514,102 @@ describe('TrickDirectory', () => {
       setWidth(900);
       act(() => root.update(cloneElement(ui)));
       expect(wrapOf()).not.toContain('wrap');
+    });
+  });
+
+  describe('swipe row actions', () => {
+    // The compact-rows suite's spy is reset (returns undefined) once it has run, so pin a width.
+    beforeEach(() => {
+      jest
+        .spyOn(ReactNative, 'useWindowDimensions')
+        .mockReturnValue({ width: 390, height: 800, scale: 1, fontScale: 1 });
+    });
+    const mounted: import('react-test-renderer').ReactTestRenderer[] = [];
+    afterEach(() => {
+      for (const root of mounted.splice(0)) act(() => root.unmount());
+    });
+
+    const swipeTricks: readonly DirectoryTrick[] = [
+      { id: 'std-1', name: 'Big Cup', kenteiRank: 1, kenteiLevel: 'Basic', kenteiClass: '3rd Class' },
+      { id: 'custom-1', name: 'Custom Trick', customKind: 'trick' } as unknown as DirectoryTrick,
+    ];
+
+    function mountSwipe() {
+      const calls: string[] = [];
+      let root!: import('react-test-renderer').ReactTestRenderer;
+      act(() => {
+        root = create(
+          <TrickDirectory
+            tricks={swipeTricks}
+            rowActionStyle="swipe"
+            selection={{ selectedTrickIds: [], onToggleTrick: (id) => calls.push(`toggle:${id}`) }}
+            practiceAction={{ onOpen: (trick) => calls.push(`practice:${trick.id}`) }}
+            notesAction={{ onOpen: (trick) => calls.push(`notes:${trick.id}`) }}
+            goalsAction={{ onOpen: (trick) => calls.push(`goals:${trick.id}`) }}
+            customActions={{
+              onEdit: (id) => calls.push(`edit:${id}`),
+              onDelete: (id) => calls.push(`delete:${id}`),
+            }}
+          />,
+        );
+      });
+      mounted.push(root);
+      return { root, calls };
+    }
+
+    function identityFor(root: import('react-test-renderer').ReactTestRenderer, name: string) {
+      return root.root.find(
+        (node) =>
+          typeof node.props.accessibilityLabel === 'string' &&
+          node.props.accessibilityLabel.startsWith(`${name},`) &&
+          Array.isArray(node.props.accessibilityActions),
+      );
+    }
+
+    it('renders no inline row actions', () => {
+      const { root } = mountSwipe();
+      expect(root.root.findAll((node) => node.props.testID === 'trick-row-actions')).toHaveLength(0);
+      // The swipeable keeps its panels mounted off-screen, so they must be hidden from assistive tech.
+      const panels = root.root.findAll((node) => node.props.testID === 'trick-row-swipe-panel');
+      expect(panels.length).toBeGreaterThan(0);
+      for (const panel of panels) {
+        expect(panel.props.accessibilityElementsHidden).toBe(true);
+        expect(panel.props.importantForAccessibility).toBe('no-hide-descendants');
+      }
+    });
+
+    it('exposes the standard trick actions as VoiceOver custom actions that run their handlers', () => {
+      const { root, calls } = mountSwipe();
+      const identity = identityFor(root, 'Big Cup');
+      expect(identity.props.accessibilityActions).toEqual([
+        { name: 'practice', label: 'Practice' },
+        { name: 'notes', label: 'Notes' },
+        { name: 'goals', label: 'Goals' },
+      ]);
+      for (const name of ['practice', 'notes', 'goals']) {
+        act(() => identity.props.onAccessibilityAction({ nativeEvent: { actionName: name } }));
+      }
+      expect(calls).toEqual(['practice:std-1', 'notes:std-1', 'goals:std-1']);
+    });
+
+    it('adds Edit and Delete for a custom trick, and Delete reaches customActions.onDelete', () => {
+      const { root, calls } = mountSwipe();
+      const identity = identityFor(root, 'Custom Trick');
+      expect(identity.props.accessibilityActions.map((a: { name: string }) => a.name)).toEqual([
+        'practice',
+        'notes',
+        'goals',
+        'edit',
+        'delete',
+      ]);
+      act(() => identity.props.onAccessibilityAction({ nativeEvent: { actionName: 'delete' } }));
+      expect(calls).toEqual(['delete:custom-1']);
+    });
+
+    it('keeps row tap toggling the trick', () => {
+      const { root, calls } = mountSwipe();
+      act(() => identityFor(root, 'Big Cup').props.onPress({}));
+      expect(calls).toEqual(['toggle:std-1']);
     });
   });
 });

@@ -13,6 +13,7 @@ import {
 } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { Platform } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { AnimatedSplashOverlay } from '@/components/animated-icon';
 import { FatalErrorFallback } from '@/components/fatal-error-fallback';
@@ -94,6 +95,7 @@ export default function TabLayout() {
   }, [params]);
 
   return (
+    <GestureHandlerRootView style={{ flex: 1 }}>
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
       {Platform.OS === 'web' && <Analytics beforeSend={sanitizeAnalyticsEvent} />}
       <AnimatedSplashOverlay />
@@ -106,5 +108,6 @@ export default function TabLayout() {
         </AuthProvider>
       </DefaultAppThemeProvider>
     </ThemeProvider>
+    </GestureHandlerRootView>
   );
 }
