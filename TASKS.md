@@ -271,7 +271,7 @@ _Android verification prerequisite: the first build was observed on Pixel_10 / A
 
 - **Area:** Android QA / Tricks workflows
 - **Priority:** Medium
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** Finish D034's unverified trick-management journey using the normal UI after Android header actions are restored. This is an evidence-only acceptance ticket covering the directory and its authoring/annotation destinations, not an automatic refactor of the persistent domains.
 - **Exit criteria:** `outputs/android-audit/T322.md` records a responsive emulator, pinned checkout/build, fixtures, steps and outcomes for: search/clear, scrolling long names, focus toggling, laced-state display; standalone creation/name/rank editing; sequence creation with existing-trick and free-text steps, reordering and name snapshots after a source rename; per-trick and aggregate notes create/edit and goals create/progress views; Android Back/tab returns; and cold relaunch retaining saved fixtures. Long-form save/cancel remains reachable with the software keyboard open. Repeat reachability on a second smaller viewport. Every listed case must be executed and pass before completion; failures receive focused follow-up tickets and this check remains blocked until reverified. No deletion is required or authorized.
