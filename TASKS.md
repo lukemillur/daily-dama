@@ -282,7 +282,7 @@ _Android verification prerequisite: the first build was observed on Pixel_10 / A
 
 - **Area:** Android system chrome
 - **Priority:** Medium
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** Set an intentional Android status-bar foreground for root tab scenes, nested screens and Auth according to their visible background. White clock/signal/battery icons currently remain faint against the pale Red page. Use the installed Expo/native-stack status-bar APIs and keep configuration ownership coherent across route transitions.
 - **Exit criteria:** On Android, clock/signal/battery icons are legible against both the pale Red preset and a dark custom background on Home, a nested Tricks route and sign-in; switching routes, changing theme and background/foreground do not leave a stale icon style. Content still clears the status bar and Android edge-to-edge behavior is retained. Focused tests cover style selection and relevant route overrides, scoped lint and full typechecking pass. Follow AGENTS.md's complete configuration verification and rebuild/install the Android client if native configuration changes; otherwise run the checks appropriate to the source changes. iOS/web smoke checks show no introduced inset or appearance regression.
