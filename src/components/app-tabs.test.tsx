@@ -2,7 +2,10 @@ import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 import type { ReactNode } from 'react';
 
-import AppTabs, { TAB_ICON_SYMBOLS, deriveTabBarColors } from '@/components/app-tabs';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+
+import AppTabs,{ TAB_ICON_SYMBOLS, deriveTabBarColors } from '@/components/app-tabs';
 import { resolveTheme } from '@/features/profile/state/use-resolved-theme';
 import { contrastRatio } from '@/shared/color/contrast';
 
@@ -99,15 +102,56 @@ describe('AppTabs native fixed bar', () => {
           icon = create(screen.props.options.tabBarIcon({ color: '#123456', focused }));
         });
         const symbol = icon.root.findByType('symbol' as never);
-        expect(symbol.props.name).toBe(focused ? symbols.selected : symbols.default);
+        expect(symbol.props.name).toEqual(focused ? symbols.selected : symbols.default);
         expect(symbol.props.tintColor).toBe('#123456');
+        expect(symbol.props.size).toBe(24);
       }
     }
   });
 
-  it('uses a distinct default symbol per route', () => {
-    const names = Object.values(TAB_ICON_SYMBOLS).map((symbol) => symbol.default);
+  it('maps every route and state to the exact iOS and Android symbols', () => {
+    expect(TAB_ICON_SYMBOLS).toEqual({
+      home: {
+        default: { ios: 'house', android: 'home' },
+        selected: { ios: 'house.fill', android: 'home_filled' },
+      },
+      sesh: {
+        default: { ios: 'timer', android: 'timer' },
+        selected: { ios: 'timer', android: 'timer' },
+      },
+      tricks: {
+        default: { ios: 'list.bullet.rectangle', android: 'format_list_bulleted' },
+        selected: { ios: 'list.bullet.rectangle.fill', android: 'list_alt' },
+      },
+      stats: {
+        default: { ios: 'chart.bar', android: 'bar_chart' },
+        selected: { ios: 'chart.bar.fill', android: 'leaderboard' },
+      },
+      profile: {
+        default: { ios: 'person.crop.circle', android: 'person_outline' },
+        selected: { ios: 'person.crop.circle.fill', android: 'account_circle' },
+      },
+    });
+  });
+
+  it.each(['ios', 'android'] as const)('uses a distinct default %s symbol per route', (platform) => {
+    const names = Object.values(TAB_ICON_SYMBOLS).map((symbol) => symbol.default[platform]);
     expect(new Set(names).size).toBe(names.length);
+  });
+
+  it('only names Android glyphs that exist in the Material Symbols font', () => {
+    // Read from disk: the package `exports` map does not expose the JSON to the resolver.
+    const symbolGlyphs = JSON.parse(
+      readFileSync(
+        join(process.cwd(), 'node_modules/expo-symbols/build/android/symbols.json'),
+        'utf8',
+      ),
+    ) as Record<string, unknown>;
+    const glyphs = Object.keys(symbolGlyphs);
+    for (const { default: d, selected } of Object.values(TAB_ICON_SYMBOLS)) {
+      expect(glyphs).toContain(d.android);
+      expect(glyphs).toContain(selected.android);
+    }
   });
 
   it('follows the app theme and ignores the system appearance', () => {
