@@ -282,7 +282,7 @@ _Android verification prerequisite: the first build was observed on Pixel_10 / A
 
 - **Area:** Sesh / copy
 - **Priority:** Low
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Implementer
 - **Description:** Replace browser-specific loss-of-progress wording in both the first-Sesh inline sign-up invitation and the periodic invitation with device/app-data wording on iOS and Android. Keep existing browser wording on web and preserve invitation timing and behavior.
 - **Exit criteria:** Component tests render both invitation variants for Android, iOS and web and assert device/app-data wording on native with no “clear your browser” text, and unchanged browser wording on web. Android and iOS show the corrected first and periodic invitations with their existing actions; the web variants remain unchanged. Relevant Sesh tests, scoped lint and full typechecking pass.
