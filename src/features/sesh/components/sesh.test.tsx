@@ -781,6 +781,53 @@ describe('CompletedSesh signup invite', () => {
     expect(findByAccessibilityLabel(root, 'Guest signup invitation').length).toBeGreaterThan(0);
   });
 
+  describe('platform wording (T321)', () => {
+    const originalOS = ReactNative.Platform.OS;
+    afterEach(() => {
+      ReactNative.Platform.OS = originalOS;
+    });
+
+    const BROWSER_SENTENCE =
+      'Right now your practice history only lives on this device. Sign up to keep it if you switch devices or clear your browser.';
+    const NATIVE_SENTENCE =
+      "Right now your practice history only lives on this device. Sign up to keep it if you switch devices or delete the app's data.";
+
+    const platforms = ['android', 'ios', 'web'] as const;
+    const variants = [
+      { name: 'first-occurrence inline', first: true },
+      { name: 'periodic overlay', first: false },
+    ];
+
+    for (const os of platforms) {
+      for (const variant of variants) {
+        it(`${os} ${variant.name} invite shows the right wording and keeps its actions`, async () => {
+          ReactNative.Platform.OS = os;
+          const root = await mountWithNoteProvider(
+            <CompletedSesh
+              summary={summary}
+              isFirstLace={false}
+              showSignupInvite={true}
+              signupInviteIsFirstOccurrence={variant.first}
+              onReset={noop}
+              onRepeat={noop}
+            />,
+          );
+          const json = JSON.stringify(root.toJSON());
+
+          if (os === 'web') {
+            expect(json).toContain(BROWSER_SENTENCE);
+          } else {
+            expect(json).toContain(NATIVE_SENTENCE);
+            expect(json).not.toMatch(/clear your browser/i);
+          }
+          expect(json).toContain('Save this sesh for good.');
+          expect(json).toContain('Sign up');
+          expect(json).toContain('Dismiss signup invitation');
+        });
+      }
+    }
+  });
+
   it('renders the invite as an overlay outside the wrap-up scroll content, not inline (T183)', async () => {
     const root = await mountWithNoteProvider(
       <CompletedSesh
