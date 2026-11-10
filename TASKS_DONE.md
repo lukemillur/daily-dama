@@ -4,6 +4,18 @@ Completed entries move here from `TASKS.md`'s `Backlog`, in the same commit that
 
 Entries keep their content as it was at completion. Don't retroactively edit a description or exit criteria after the fact; if something about a completed task turns out to be wrong or misleading, note that in a new entry or in code, not by rewriting history here.
 
+### [T321] Use device wording in native Sesh backup invitations
+
+- **Area:** Sesh / copy
+- **Priority:** Low
+- **Status:** Done
+- **Planning:** Implementer
+- **Description:** Replace browser-specific loss-of-progress wording in both the first-Sesh inline sign-up invitation and the periodic invitation with device/app-data wording on iOS and Android. Keep existing browser wording on web and preserve invitation timing and behavior.
+- **Exit criteria:** Component tests render both invitation variants for Android, iOS and web and assert device/app-data wording on native with no “clear your browser” text, and unchanged browser wording on web. Android and iOS show the corrected first and periodic invitations with their existing actions; the web variants remain unchanged. Relevant Sesh tests, scoped lint and full typechecking pass.
+- **Dependencies:** None.
+- **Notes:** Source D032. T314 owns the similar guidance in Auth screens; do not duplicate or expand that ticket. Keep wording in a small shared Sesh copy helper or equivalent rather than duplicating conditions across both invitations. This is a copy change, not permission to alter signup, persistence or account promises.
+- **Platform scope:** Android Emulator and iOS Simulator, plus web copy regression.
+
 ### [T320] Match Android status-bar icon style to the visible background
 
 - **Area:** Android system chrome

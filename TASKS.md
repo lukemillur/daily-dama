@@ -278,18 +278,6 @@ _Android verification prerequisite: the first build was observed on Pixel_10 / A
 - **Notes:** Source D030; shared theme defect observed on Android, not an Android-only renderer bug. Scope to the listed accent-filled surfaces and new role; no unrelated recoloring, persisted schema change or new global state. Keep numerical contrast checks paired with actual rendered-surface inspection.
 - **Platform scope:** Android Emulator, representative iOS Simulator and web checks.
 
-### [T321] Use device wording in native Sesh backup invitations
-
-- **Area:** Sesh / copy
-- **Priority:** Low
-- **Status:** In progress
-- **Planning:** Implementer
-- **Description:** Replace browser-specific loss-of-progress wording in both the first-Sesh inline sign-up invitation and the periodic invitation with device/app-data wording on iOS and Android. Keep existing browser wording on web and preserve invitation timing and behavior.
-- **Exit criteria:** Component tests render both invitation variants for Android, iOS and web and assert device/app-data wording on native with no “clear your browser” text, and unchanged browser wording on web. Android and iOS show the corrected first and periodic invitations with their existing actions; the web variants remain unchanged. Relevant Sesh tests, scoped lint and full typechecking pass.
-- **Dependencies:** None.
-- **Notes:** Source D032. T314 owns the similar guidance in Auth screens; do not duplicate or expand that ticket. Keep wording in a small shared Sesh copy helper or equivalent rather than duplicating conditions across both invitations. This is a copy change, not permission to alter signup, persistence or account promises.
-- **Platform scope:** Android Emulator and iOS Simulator, plus web copy regression.
-
 ### [T322] Complete Android trick-management acceptance
 
 - **Area:** Android QA / Tricks workflows
