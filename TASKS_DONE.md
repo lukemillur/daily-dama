@@ -4,6 +4,19 @@ Completed entries move here from `TASKS.md`'s `Backlog`, in the same commit that
 
 Entries keep their content as it was at completion. Don't retroactively edit a description or exit criteria after the fact; if something about a completed task turns out to be wrong or misleading, note that in a new entry or in code, not by rewriting history here.
 
+### [T318] Give the native Kentei reveal deliberate pacing and a responsive badge
+
+- **Area:** Onboarding / rank presentation
+- **Priority:** Medium
+- **Status:** Done
+- **Planning:** Required
+- **Description:** Retune the shared rank-reveal component's native presentation for onboarding and rank promotion. Use a deliberate timed opacity/small-scale entrance around 800–1000 ms without the current exaggerated zoom/bounce, keep the rank visible until the user continues, and size/align the circular badge and numeral to the available viewport. Preserve the accepted web entrance.
+- **Exit criteria:** Android and iOS recordings of ranks 1 and 12 in onboarding and promotion show an intentional 800–1000 ms entrance with no clipped/distorted circle, numeral or continuation control; the settled rank remains until Continue/Nice is pressed once, and no automatic navigation occurs. At default and largest text settings on a small viewport, content remains readable and the primary control is reachable. Reduced motion shows a settled readable rank without zoom. Focused tests cover native/web motion configuration and continuation behavior; relevant onboarding/promotion tests, scoped lint and full typechecking pass, with a web reveal regression check.
+- **Dependencies:** None.
+- **Notes:** Source D029, owner-confirmed Android complaint; iOS was recalled rather than reverified. `ZoomIn.duration(650).springify().damping(11)` clears its duration when the installed spring builder receives no argument. Verify actual native frames rather than treating the duration literal as proof. Keep this a presentation change; rank rules and persistence do not change. T319 separately owns accent-surface contrast.
+- **Platform scope:** Android Emulator and iOS Simulator required, plus web visual regression check.
+- **Completion notes:** `src/features/onboarding/model/rank-reveal-motion.ts` selects motion and layout (web keeps the 650 ms spring; native uses a 900 ms ease-out quad fade with 0.92 to 1 scale, `ReduceMotion.System`); `OnboardingRankRevealStep` sizes badge/numeral/title from the window, stops the numeral scaling with OS font size, caps the title at 1.3x and wraps content in a ScrollView. Evidence and limits in `outputs/android-audit/T318/README.md`: native recordings were harness-driven (promotion reveal), not real onboarding or promotion flows. `NewAccountWelcomeOverlay` still has the same unbounded spring (follow-up).
+
 ### [T314] Replace "same browser" email-link guidance with device wording on native
 
 - **Area:** Auth / native / copy

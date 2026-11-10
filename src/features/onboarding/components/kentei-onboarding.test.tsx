@@ -3,7 +3,10 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 
 import { KenteiOnboarding } from '@/features/onboarding/components/kentei-onboarding';
-import { getCurrentAssessmentTrick } from '@/features/onboarding/model/kentei-assessment';
+import {
+  getCurrentAssessmentTrick,
+  getTricksForRank,
+} from '@/features/onboarding/model/kentei-assessment';
 import { RAINBOW_THEME_PRESETS } from '@/features/profile/model/theme-presets';
 import {
   deserializeUserProfile,
@@ -244,5 +247,63 @@ describe('KenteiOnboarding', () => {
 
     const profile = await readPersistedProfile();
     expect(profile?.streakThresholdMs).toBe(12 * 60_000);
+  });
+  describe('rank reveal', () => {
+    function hasText(root: ReactTestRenderer, text: string) {
+      return root.root.findAll((node) => node.props.children === text).length > 0;
+    }
+
+    function pressContinueCount(root: ReactTestRenderer) {
+      return root.root.findAll(
+        (node) => node.props.children === 'Choose tricks' && typeof node.props.onPress === 'function',
+      );
+    }
+
+    it('shows the settled rank 1, advances once on Continue and never navigates', async () => {
+      const root = await mountOnboarding();
+      act(() => pressByVisibleText(root, 'Get started'));
+      act(() =>
+        pressByAccessibilityLabel(
+          root,
+          'Basic. New to kendama or still building your cup and spike fundamentals.',
+        ),
+      );
+      act(() =>
+        pressByAccessibilityLabel(root, 'I cannot land ' + getCurrentAssessmentTrick(1, 0).name),
+      );
+
+      expect(hasText(root, 'Assessment complete')).toBe(true);
+      expect(root.root.findAll((node) => node.props.children === 1 && node.props.allowFontScaling === false).length).toBeGreaterThan(0);
+      expect(mockRouter.replace).not.toHaveBeenCalled();
+
+      const [continueNode] = pressContinueCount(root);
+      act(() => continueNode.props.onPress());
+      expect(hasText(root, 'Assessment complete')).toBe(false);
+      expect(mockRouter.replace).not.toHaveBeenCalled();
+      // The reveal is gone, so a second press has nothing to act on.
+      expect(pressContinueCount(root)).toHaveLength(0);
+    });
+
+    it('shows rank 12 after landing every trick and waits for Continue', async () => {
+      const root = await mountOnboarding();
+      act(() => pressByVisibleText(root, 'Get started'));
+      act(() =>
+        pressByAccessibilityLabel(
+          root,
+          'Basic. New to kendama or still building your cup and spike fundamentals.',
+        ),
+      );
+      for (let rank = 1; rank <= 12; rank += 1) {
+        for (let index = 0; index < getTricksForRank(rank).length; index += 1) {
+          act(() =>
+            pressByAccessibilityLabel(root, 'I can land ' + getCurrentAssessmentTrick(rank, index).name),
+          );
+        }
+      }
+
+      expect(hasText(root, 'Assessment complete')).toBe(true);
+      expect(root.root.findAll((node) => node.props.children === 12 && node.props.allowFontScaling === false).length).toBeGreaterThan(0);
+      expect(mockRouter.replace).not.toHaveBeenCalled();
+    });
   });
 });
