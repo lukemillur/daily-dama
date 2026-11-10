@@ -258,7 +258,7 @@ _Android verification prerequisite: the first build was observed on Pixel_10 / A
 
 - **Area:** Onboarding / rank presentation
 - **Priority:** Medium
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** Retune the shared rank-reveal component's native presentation for onboarding and rank promotion. Use a deliberate timed opacity/small-scale entrance around 800–1000 ms without the current exaggerated zoom/bounce, keep the rank visible until the user continues, and size/align the circular badge and numeral to the available viewport. Preserve the accepted web entrance.
 - **Exit criteria:** Android and iOS recordings of ranks 1 and 12 in onboarding and promotion show an intentional 800–1000 ms entrance with no clipped/distorted circle, numeral or continuation control; the settled rank remains until Continue/Nice is pressed once, and no automatic navigation occurs. At default and largest text settings on a small viewport, content remains readable and the primary control is reachable. Reduced motion shows a settled readable rank without zoom. Focused tests cover native/web motion configuration and continuation behavior; relevant onboarding/promotion tests, scoped lint and full typechecking pass, with a web reveal regression check.
