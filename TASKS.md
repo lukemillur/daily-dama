@@ -246,7 +246,7 @@ _Android verification prerequisite: the first build was observed on Pixel_10 / A
 
 - **Area:** Onboarding / layout
 - **Priority:** High
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** Reproduce and correct the Android-only reachability failure on “Choose what to work on first” after the Kentei reveal. Inspect the measured SectionList viewport, content and enclosing layout in `onboarding-selection-step.tsx`, `trick-directory.tsx` and Home/Screen; do not assume Profile or all ScrollViews are broken.
 - **Exit criteria:** On a fresh Android test environment, rank-1 selection scrolls to every trick including Pull up spike, each can be selected/deselected, and Start practicing is reachable and advances through duration/theme to Sesh; a cold relaunch retains the completed onboarding and selected tricks. Repeat selection at a higher rank with long names. A focused regression test characterizes the actual layout/gesture cause, relevant onboarding/directory tests and full `yarn tsc --noEmit` pass, and a web onboarding check plus an iOS selection/finish check show the same destinations remain reachable.
