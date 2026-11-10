@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'expo-router';
+import { Platform } from 'react-native';
 import { styled } from 'styled-components/native';
 
 import { Button } from '@/components/ui/button';
@@ -7,13 +8,10 @@ import { Screen } from '@/components/ui/screen';
 import { BodyText, DisplayTitle, Eyebrow } from '@/components/ui/typography';
 import { AppColors } from '@/constants/theme';
 import { categorizeAuthError, type AuthErrorCategory } from '@/features/auth/model/auth-errors';
+import { emailLinkGuidance } from '@/features/auth/model/email-link-guidance';
 import { trackAuthEvent } from '@/features/auth/observability/auth-observability';
 import { useAuthActions, useAuthState } from '@/features/auth/state/auth-provider';
 import { usePendingVerificationEmail } from '@/features/auth/state/pending-verification-email';
-
-const SAME_BROWSER_GUIDANCE =
-  'Open the email on this same browser, on this device, to finish creating your account. ' +
-  'Daily Dama cannot complete the confirmation if you open the link somewhere else.';
 
 const CONFIRMATION_COPY =
   'If that email is available, we have sent a link to confirm your account.';
@@ -96,7 +94,7 @@ export function CheckEmailScreen() {
           <Eyebrow>Check your email</Eyebrow>
           <PageTitle>Check your email.</PageTitle>
           <Introduction>{CONFIRMATION_COPY}</Introduction>
-          <Introduction>{SAME_BROWSER_GUIDANCE}</Introduction>
+          <Introduction>{emailLinkGuidance(Platform.OS, 'signUp')}</Introduction>
           <FormActions>
             <Button
               accessibilityLabel="Back to sign up"
@@ -116,7 +114,7 @@ export function CheckEmailScreen() {
         <Eyebrow>Check your email</Eyebrow>
         <PageTitle>Check your email.</PageTitle>
         <Introduction>{confirmationCopyWithEmail(pendingEmail)}</Introduction>
-        <Introduction>{SAME_BROWSER_GUIDANCE}</Introduction>
+        <Introduction>{emailLinkGuidance(Platform.OS, 'signUp')}</Introduction>
 
         {resendCategory ? <ErrorText>{RESEND_ERROR_COPY[resendCategory]}</ErrorText> : null}
 

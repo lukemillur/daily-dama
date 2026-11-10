@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Pressable } from 'react-native';
+import { Platform, Pressable } from 'react-native';
 import { styled } from 'styled-components/native';
 
 import { AuthFormScroll } from '@/features/auth/components/auth-form-scroll';
@@ -9,6 +9,7 @@ import { Screen } from '@/components/ui/screen';
 import { TextField } from '@/components/ui/text-field';
 import { BodyText, DisplayTitle, Eyebrow } from '@/components/ui/typography';
 import { AppColors } from '@/constants/theme';
+import { emailLinkGuidance } from '@/features/auth/model/email-link-guidance';
 import { categorizeAuthError, type AuthErrorCategory } from '@/features/auth/model/auth-errors';
 import { validateForgotPasswordEmail } from '@/features/auth/model/forgot-password-validation';
 import { logAuthWarning, trackAuthEvent } from '@/features/auth/observability/auth-observability';
@@ -31,10 +32,6 @@ const SUBMIT_ERROR_COPY: Record<AuthErrorCategory, string> = {
   missingVerifier: 'Something went wrong. Please try again.',
   unknown: 'Something went wrong. Please try again.',
 };
-
-const SAME_BROWSER_GUIDANCE =
-  'Open the email on this same browser, on this device, to finish resetting your password. ' +
-  "Daily Dama can't complete the reset if you open the link somewhere else.";
 
 const CONFIRMATION_COPY =
   "If an account exists for that email, we've sent a link to reset the password.";
@@ -115,7 +112,7 @@ export function ForgotPasswordScreen() {
           <Eyebrow>Forgot password</Eyebrow>
           <PageTitle>Check your email.</PageTitle>
           <Introduction>{CONFIRMATION_COPY}</Introduction>
-          <Guidance>{SAME_BROWSER_GUIDANCE}</Guidance>
+          <Guidance>{emailLinkGuidance(Platform.OS, 'passwordReset')}</Guidance>
           <FormActions>
             <Button accessibilityLabel="Resend" disabled={isSubmitting} fill onPress={submit}>
               {isSubmitting ? 'Sending...' : 'Resend'}
@@ -150,7 +147,7 @@ export function ForgotPasswordScreen() {
           <Introduction>
             Enter the email on your account and we&apos;ll send you a link to reset your password.
           </Introduction>
-          <Guidance>{SAME_BROWSER_GUIDANCE}</Guidance>
+          <Guidance>{emailLinkGuidance(Platform.OS, 'passwordReset')}</Guidance>
 
           <TextField
             accessibilityLabel="Email"

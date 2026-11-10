@@ -275,7 +275,34 @@ describe('AuthCallbackScreen', () => {
     const root = await mount();
 
     expect(mockReplace).not.toHaveBeenCalled();
-    expect(containsText(root, /browser and device you requested it from/i)).toBe(true);
+    expect(containsText(root, /only works on the device you requested it from/i)).toBe(true);
+    expect(containsText(root, /browser/i)).toBe(false);
+  });
+
+  it('keeps the web missing-verifier copy unchanged on web', async () => {
+    const originalPlatformOS = ReactNative.Platform.OS;
+    ReactNative.Platform.OS = 'web';
+    (globalThis as { window?: unknown }).window = globalThis;
+    Object.defineProperty(window, 'location', { value: { hash: '' }, configurable: true, writable: true });
+    try {
+      mockExchangeCodeForSession.mockResolvedValue({
+        redirectType: null,
+        error: { code: 'bad_code_verifier', message: 'mismatch' },
+      });
+      mockParams = { code: 'reused-code' };
+
+      const root = await mount();
+
+      expect(
+        containsText(
+          root,
+          'This link only works in the browser and device you requested it from. Open your email there, or go back and request a new link from that same browser.',
+        ),
+      ).toBe(true);
+    } finally {
+      ReactNative.Platform.OS = originalPlatformOS;
+      delete (globalThis as { window?: unknown }).window;
+    }
   });
 
   it('shows offline copy when the exchange resolves an offline-shaped error', async () => {
