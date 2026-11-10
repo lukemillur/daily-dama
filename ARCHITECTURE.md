@@ -612,6 +612,14 @@ Most layout remains feature-local through styled-components. This keeps a protot
 
 The navigation color theme and the product palette are separate. Expo's light/dark navigation colors style navigation chrome, while `AppColors` maintains Daily Dama's consistent visual identity. The product UI is therefore not currently a full dark-mode design system even though navigation responds to color scheme.
 
+### System chrome: the native status bar
+
+`AppStatusBar` (`src/components/app-status-bar.tsx`) sets the Android/iOS status-bar icon style from the page background visible behind it, using `deriveStatusBarStyle` (black or white, whichever contrasts more). The style is always explicit, never `auto`, so it follows the saved app theme rather than the system light/dark scheme. Edge-to-edge stays on and no fixed top padding compensates for it.
+
+- Exactly one bar is mounted per mutually exclusive route group: the `/app` shell layout (tabs and every nested stack, using `selectHomeSceneBackground`, the same rule Home paints with), the `/auth` layout (cached guest theme), and the fixed-palette routes `/` (native start), `/feedback` and `/account-deleted` (sage). The root layout never mounts one: React Native keeps a stack of bars where the last mounted wins, and children mount before parents, so a root bar would override the deeper ones.
+- Screens and `screenOptions` never set `statusBarStyle`. Once any native-stack screen does, react-native-screens re-applies a window style (defaulting to light) on every transition and would override `AppStatusBar`. `nested-stack-options.test.tsx` guards this.
+- Web renders nothing; the browser has no status bar.
+
 Responsive web behavior uses styled-components media queries and runtime width checks where behavior, rather than style alone, changes. The five-tab web navigation has a known 320 px fit constraint.
 
 ## Testing and verification architecture

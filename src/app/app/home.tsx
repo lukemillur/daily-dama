@@ -3,7 +3,6 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { StyleSheet } from 'react-native';
 
 import { Screen } from '@/components/ui/screen';
-import { AppColors } from '@/constants/theme';
 import { useCustomTricks } from '@/features/custom-tricks/state/custom-trick-provider';
 import { DailyHome } from '@/features/home/components/daily-home';
 import { HOME_CLOCK_INTERVAL_MS, useLiveClock } from '@/features/home/hooks/use-live-clock';
@@ -13,6 +12,8 @@ import { useGuestImport } from '@/features/guest-import/state/use-guest-import';
 import { FirstPullRetry } from '@/features/onboarding/components/first-pull-retry';
 import { KenteiOnboarding } from '@/features/onboarding/components/kentei-onboarding';
 import { useFirstProfilePull } from '@/features/onboarding/state/use-first-profile-pull';
+import { selectHomeSceneBackground } from '@/features/profile/state/select-scene-background';
+import { useResolvedTheme } from '@/features/profile/state/use-resolved-theme';
 import { useUserProfile, useUserProfileSync } from '@/features/profile/state/user-profile-provider';
 import { selectRegularSessions } from '@/features/stats/model/practice-history';
 import { usePracticeHistory } from '@/features/stats/state/practice-history-provider';
@@ -21,6 +22,7 @@ import { useIdentityHandle } from '@/shared/persistence/identity-provider';
 
 export default function HomeScreen() {
   const profile = useUserProfile();
+  const theme = useResolvedTheme();
   const { tricks: customTricks } = useCustomTricks();
   const { sessions } = usePracticeHistory();
   const { identity } = useIdentityHandle();
@@ -97,11 +99,7 @@ export default function HomeScreen() {
 
   return (
     <Screen
-      background={
-        blockingOnboardingRender || profile.hasCompletedOnboarding
-          ? undefined
-          : (profile.themeBackgroundColor ?? AppColors.yellow)
-      }
+      background={blockingOnboardingRender ? undefined : selectHomeSceneBackground(profile, theme)}
       edges={['top', 'left', 'right']}
       includeWebHeaderInset={false}
       webBottomInset={24}>

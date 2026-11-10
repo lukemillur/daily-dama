@@ -2,6 +2,7 @@ import { usePathname } from "expo-router";
 import Head from "expo-router/head";
 import { Platform } from "react-native";
 
+import { AppStatusBar } from "@/components/app-status-bar";
 import AppTabs from "@/components/app-tabs";
 import { LocalDurabilityWarningBanner } from "@/components/local-durability-warning-banner";
 import { CustomTrickProvider } from "@/features/custom-tricks/state/custom-trick-provider";
@@ -9,7 +10,12 @@ import { GoalProvider } from "@/features/goals/state/goal-provider";
 import { NoteProvider } from "@/features/notes/state/note-provider";
 import { AppThemeProvider } from "@/features/profile/components/app-theme-provider";
 import { KenteiRankAutoPromotion } from "@/features/profile/state/kentei-rank-auto-promotion";
-import { UserProfileProvider } from "@/features/profile/state/user-profile-provider";
+import { selectHomeSceneBackground } from "@/features/profile/state/select-scene-background";
+import { useResolvedTheme } from "@/features/profile/state/use-resolved-theme";
+import {
+  UserProfileProvider,
+  useUserProfile,
+} from "@/features/profile/state/user-profile-provider";
 import { PracticeHistoryProvider } from "@/features/stats/state/practice-history-provider";
 import { IdentityProvider } from "@/shared/persistence/identity-provider";
 import { HideSplashWhenMounted } from "@/shared/splash/splash-ready";
@@ -34,6 +40,16 @@ const SECTION_TITLES_BY_PATHNAME: Readonly<Record<string, string>> = {
   "/app/profile": "Profile",
 };
 
+/**
+ * The single status-bar owner for every `/app` route (tabs and nested stacks). Uses Home's own
+ * background rule so the pre-onboarding page gets icons that match what is visible.
+ */
+function ShellStatusBar() {
+  const profile = useUserProfile();
+  const theme = useResolvedTheme();
+  return <AppStatusBar background={selectHomeSceneBackground(profile, theme)} />;
+}
+
 export default function AppShellLayout() {
   const pathname = usePathname();
   const sectionTitle = SECTION_TITLES_BY_PATHNAME[pathname];
@@ -53,6 +69,7 @@ export default function AppShellLayout() {
                 <GoalProvider>
                   <SyncCoordinatorProvider>
                     <AppThemeProvider>
+                      <ShellStatusBar />
                       <KenteiRankAutoPromotion />
                       <LocalDurabilityWarningBanner />
                       <HideSplashWhenMounted />
