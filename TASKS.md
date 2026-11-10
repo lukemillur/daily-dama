@@ -230,7 +230,7 @@ _Scoped 2026-11-09 from the T313.3 follow-up simulator check (no BACKLOG_STORIES
 
 - **Area:** Auth / native / copy
 - **Priority:** Medium
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Implementer
 - **Description:** Three auth screens tell native users to open the email link "on this same browser": the guidance text on check-email and forgot-password (`SAME_BROWSER_GUIDANCE` in `check-email-screen.tsx` and `forgot-password-screen.tsx`) and the `missingVerifier` error on the callback screen (`auth-callback-screen.tsx`). On iOS and Android the link opens the app through `dailydama://auth/callback`, so "browser" is wrong; the real constraint is the same device. Show device wording on native and keep the current web wording unchanged.
 - **Exit criteria:** Component tests render check-email, forgot-password and the callback screen's `missingVerifier` state with `Platform.OS = 'ios'` and assert the guidance names this device and does not contain the word "browser"; the same tests with `Platform.OS = 'web'` assert the current web text is unchanged. On iPhone 17e (iOS 27.0), the forgot-password and check-email screens show the native wording. `yarn jest src/features/auth` and full `yarn tsc --noEmit` pass.
