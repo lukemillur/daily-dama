@@ -242,17 +242,6 @@ _Android verification prerequisite: the first build was observed on Pixel_10 / A
 - **Notes:** Source D026, owner-confirmed Android report; the audit did not replay fresh onboarding. T302's completed iOS finish-button investigation is a different report. Preserve profile hydration, persistence ordering and the provisional stored schema; the existing onboarding durability lead T306 stays separately scoped. If the report does not reproduce on a responsive pinned build, retain exact environment evidence and reconcile the owner reproduction rather than manufacture a fix.
 - **Platform scope:** Android Emulator required; iOS Simulator and web regression checks required. Physical devices not run unless explicitly recorded.
 
-### [T316] Restore Android Tricks create and overflow actions
-
-- **Area:** Tricks / navigation
-- **Priority:** High
-- **Status:** In progress
-- **Planning:** Required
-- **Description:** Supply supported Android create and overflow controls in `TricksNativeHeader`. The current non-web branch removes in-list actions and relies on iOS-only `unstable_headerRightItems`, so Android loses its create and aggregate-screen entry points. Prefer Android `headerRight` controls with a small accessible menu while retaining the existing iOS header and web actions.
-- **Exit criteria:** From Tricks on Android, without deep links, Define new trick opens the standalone/sequence choice and the overflow menu opens Trick goals, Trick notes and Laced tricks; each destination returns using Android Back. Search filters the library and clearing it restores the list. Buttons/menu items have programmatic names and usable touch targets. Focused route/header tests exercise Android action handlers and platform branches; relevant Tricks tests, scoped lint and full typechecking pass. iOS create/menu/search and web actions remain operable; run a web export if routing or dependencies change.
-- **Dependencies:** None.
-- **Notes:** Source D027; mechanism confirmed in installed Expo Router types. Consult installed-version Expo Router documentation for the Android header API. Keep this bounded to missing entry points; T312.3–T312.5 own the iOS row redesign and may touch the same file. Coordinate claims rather than add a dependency on unrelated unfinished row styling. T322 owns full authoring acceptance after these routes are reachable.
-- **Platform scope:** Android Emulator plus iOS Simulator/web navigation regression checks.
 
 ### [T317] Render Android icons for all five bottom tabs
 

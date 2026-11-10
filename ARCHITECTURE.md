@@ -266,7 +266,7 @@ The guard is intentionally redundant:
 
 Nested Sesh, Tricks, Stats, and Profile routes use stack layouts with framework headers hidden. Back and Close actions therefore live in the product UI and usually use deterministic `router.replace(...)` destinations rather than depending on browser history.
 
-On iOS and Android the Tricks index shows a native large-title header (search bar, `＋` button and `⋯` menu via `headerSearchBarOptions` and `unstable_headerRightItems`) and `TrickDirectory` renders without its in-list header (`nativeHeader`); web keeps the in-list header block.
+On iOS and Android the Tricks index shows a native large-title header (search bar via `headerSearchBarOptions`; the `＋` button and `⋯` menu via `unstable_headerRightItems` on iOS and `headerRight` (`TricksHeaderActions`, a Modal menu) on Android) and `TrickDirectory` renders without its in-list header (`nativeHeader`); web keeps the in-list header block.
 
 Tricks is the authority for trick browsing and management. Profile contains rank- and practice-policy concerns; it is not a second trick directory.
 
