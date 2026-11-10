@@ -211,6 +211,13 @@ _Scoped 2026-11-09 from T295 (owner approved decisions D1–D10 the same day). S
 - **Dependencies:** T313.2, T313.3, T313.4, T313.5, and an Android development build.
 - **Notes:** D5, D8, D10. Apple requires in-app account deletion for apps that allow account creation (App Review Guideline 5.1.1(v)); do not hide deletion on native. If the Android build is still missing, this ticket is Blocked on it; do not substitute iOS evidence.
 - **Platform scope:** iOS Simulator and Android Emulator are both required.
+- **Execution notes (2026-11-10, branch task/T313.6-*, commit 2ac190f; status stays In progress, NOT closed):**
+  - Code part done and verified: `src/shared/network/connectivity.ts` (expo-network on native, `window` events on web), provider and coordinator wired to it, tests added, full `node .claude/scripts/verify.mjs` passed, ARCHITECTURE.md updated. `expo-network@~57.0.3` added (native rebuild needed; done on both platforms below).
+  - Device runs: iPhone 17e iOS 27.0 (31BF7946...), Metro port 8097; Pixel_10 Android 17 (emulator-5554, GPU Apple M1 Max), Metro port 8098, both from this worktree. Android reaches local Supabase via `adb reverse tcp:54321` and Metro via `adb reverse tcp:8098`.
+  - Android passed: sign-in of synthetic account `t3136-and-a@example.test` (created by curl, confirmed via Mailpit link); sync reaches "Everything is synced"; with Wi-Fi and data disabled and the 54321 reverse removed the Profile sync panel shows "You are offline."; after re-enabling it leaves offline and shows a fresh "Last successful sync".
+  - Android inconclusive: offline mutation. Goals created while the UI showed offline still reached the server (kong log shows okhttp POST /rest/v1/goals while `nc 127.0.0.1:54321` from the shell was refused), so a genuinely unreachable server was not achieved and pending count never showed. Needs a method that really cuts the emulator-to-host path (owner-run).
+  - Not run: iOS offline status and offline mutation (needs host Wi-Fi off or Network Link Conditioner, owner-run); second-account isolation; Sesh survives sign-in and token refresh (needs temporary local `jwt_expiry` change, owner-approved); logout guard with pending changes (needs real offline); account deletion and namespace purge; email change via native callback; all on both platforms.
+  - Observation: first sign-in of account A on Android carried the owner's guest "Big cup 3 laces" goal into the account (guest data stayed in the guest namespace).
 
 _Scoped 2026-11-09 from the T313.3 follow-up simulator check (no BACKLOG_STORIES.md story)._
 
