@@ -271,13 +271,26 @@ _Android verification prerequisite: the first build was observed on Pixel_10 / A
 
 - **Area:** Android QA / Tricks workflows
 - **Priority:** Medium
-- **Status:** In progress
+- **Status:** Blocked
 - **Planning:** Required
 - **Description:** Finish D034's unverified trick-management journey using the normal UI after Android header actions are restored. This is an evidence-only acceptance ticket covering the directory and its authoring/annotation destinations, not an automatic refactor of the persistent domains.
 - **Exit criteria:** `outputs/android-audit/T322.md` records a responsive emulator, pinned checkout/build, fixtures, steps and outcomes for: search/clear, scrolling long names, focus toggling, laced-state display; standalone creation/name/rank editing; sequence creation with existing-trick and free-text steps, reordering and name snapshots after a source rename; per-trick and aggregate notes create/edit and goals create/progress views; Android Back/tab returns; and cold relaunch retaining saved fixtures. Long-form save/cancel remains reachable with the software keyboard open. Repeat reachability on a second smaller viewport. Every listed case must be executed and pass before completion; failures receive focused follow-up tickets and this check remains blocked until reverified. No deletion is required or authorized.
 - **Dependencies:** T316.
 - **Notes:** Source D034 (Tricks/authoring portion). D033 is superseded: the owner confirmed normal manual scrolling in Profile and the standalone form. Do not treat failed injected drags as product evidence without a working gesture control. Audit-created Big cup note, goal and practice records may already exist; record a baseline rather than clear them. A new emulator/test fixture is permitted without erasing an existing one. No app suite is required for evidence-only documentation; any subsequently authorized code fix follows its own ticket and verification tier.
 - **Platform scope:** Android Emulator only; document API, viewport, font scale and software keyboard. Preserve all existing records and owner files.
+- **Blocked:** Executed 2026-11-10; every listed case passed except software-keyboard reachability of Save/Cancel, which fails on Android (evidence and fixtures in `outputs/android-audit/T322.md`). Blocked on T325; reverify only that criterion (primary and small viewports) after T325 lands, then close.
+
+### [T325] Keep long-form Save and Cancel reachable above the Android software keyboard
+
+- **Area:** Android forms / keyboard handling
+- **Priority:** Medium
+- **Status:** Not started
+- **Planning:** Required
+- **Description:** On Android the software keyboard (IME) overlays the window without resizing or panning the form scroll content, so with a text field focused the Save and Cancel buttons of the custom-trick forms (standalone, sequence and edit) are fully hidden behind the keyboard and the scroll view cannot scroll further. Observed on Pixel_10_API36 at 1080x2424/420 dpi (IME top y=1541, Save 1849-1996, Cancel 2022-2169, content already at maximum scroll) and at 720x1280/280 dpi (IME top y=699, Save 896-994). The note and goal forms behave the same at 720x1280 (Save 827-925, IME top 699) though they clear the keyboard at 1080x2424. The sequence form's `Search existing tricks` field also sits behind the keyboard when focused. `KeyboardAwareScroll` only handles iOS (`automaticallyAdjustKeyboardInsets`).
+- **Exit criteria:** On the Android Emulator at 1080x2424/420 dpi and 720x1280/280 dpi, with the software keyboard open and a text field focused, Save and Cancel of the standalone, sequence and edit custom-trick forms, the note forms and the goal forms are visible or reachable by a normal scroll, and the focused field stays visible. iOS and web behavior and the existing keyboard-aware tests are unchanged. Component tests for the Android keyboard-inset behavior where practical, scoped lint and full typechecking pass; update the `KeyboardAwareScroll` description in `ARCHITECTURE.md`.
+- **Dependencies:** None.
+- **Notes:** Source T322 evidence. Likely fix is a keyboard-height inset (for example `Keyboard` events or `react-native-keyboard-controller` if an Expo-compatible choice is justified) applied inside `KeyboardAwareScroll`, not per-screen offsets. Check `android.softwareKeyboardLayoutMode` / edge-to-edge interaction first; do not add a second scrolling mechanism.
+- **Platform scope:** Android Emulator; regression checks on iOS Simulator and web.
 
 ### [T323] Complete Android practice and Stats acceptance
 
