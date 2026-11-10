@@ -8,8 +8,8 @@ import { CachedAppThemeProvider } from '@/features/profile/components/app-theme-
 
 /**
  * First screen on iOS and Android for anyone who has not finished onboarding. Get started opens
- * `/app/home`, which hosts guest onboarding. Actions share a gap column so a second action
- * (Sign in) can join Get started without a layout change.
+ * `/app/home`, which hosts guest onboarding. Sign in opens `/auth/sign-in` for existing
+ * accounts; after sign-in Home holds onboarding until the account's first profile pull settles.
  */
 export function NativeStartScreen() {
   const router = useRouter();
@@ -26,6 +26,13 @@ export function NativeStartScreen() {
               accessibilityLabel="Get started"
               onPress={() => router.replace('/app/home')}>
               Get started
+            </Button>
+            <Button
+              fill
+              variant="secondary"
+              accessibilityLabel="Sign in"
+              onPress={() => router.push('/auth/sign-in')}>
+              Sign in
             </Button>
           </Actions>
         </Content>

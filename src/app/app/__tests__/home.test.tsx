@@ -39,6 +39,12 @@ jest.mock('expo-router', () => ({
   useRouter: () => mockRouter,
 }));
 
+// The first-profile-pull gate has its own coverage (home-first-pull.test.tsx); these suites render
+// Home without a SyncCoordinatorProvider and exercise other behavior.
+jest.mock('@/features/onboarding/state/use-first-profile-pull', () => ({
+  useFirstProfilePull: () => ({ status: 'not-applicable', retry: () => undefined }),
+}));
+
 const STREAK_THRESHOLD_MS = 300_000; // matches DEFAULT_STREAK_THRESHOLD_MS
 
 function findByText(root: ReactTestRenderer, text: string | RegExp) {

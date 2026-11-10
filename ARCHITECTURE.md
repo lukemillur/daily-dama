@@ -32,11 +32,19 @@ Website metadata in the landing route and app layout renders only on web;
 native Expo Router Head/handoff configuration is not enabled. The root route
 (`src/app/index.tsx`) splits by platform: web renders the marketing landing page,
 while iOS and Android render the native Start screen
-(`src/features/native-start/`). The Start screen shows the wordmark and a Get
-started action that opens `/app/home`, which hosts guest onboarding. A single
-AsyncStorage read of the guest profile decides between `loading` (render
-nothing), `redirect-home` (onboarding finished with a rank; `router.replace`
-to `/app/home`), and `show-start`. The simulator build and Start-to-onboarding
+(`src/features/native-start/`). The Start screen shows the wordmark, a Get
+started action that opens `/app/home` (which hosts guest onboarding), and a
+Sign in action that opens `/auth/sign-in` for existing accounts.
+`resolveNativeStartDecision` is pure and takes the auth status plus the guest
+profile read: `initializing` and an unread guest profile give `loading` (render
+nothing); any signed-in status gives `redirect-home` (the Start screen never
+renders for an account); a guest gives `redirect-home` when onboarding finished
+with a rank, otherwise `show-start`. Home owns the identity-scoped onboarding
+decision: for a signed-in identity whose local profile has not finished
+onboarding it holds rendering until the sync coordinator reports the first
+profile pull for the current identity generation
+(`resolveFirstProfilePull`), shows a retry state if that pull fails, and only
+then lets onboarding render. The simulator build and Start-to-onboarding
 flow have been verified on iOS 27.0.
 
 The procedural trick-visualization experiment, its sandbox routes, and its supporting documentation are deliberately excluded. They should be evaluated as a separate subsystem if that work resumes.
