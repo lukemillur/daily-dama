@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { act, create } from 'react-test-renderer';
 
+import type { AuthStatus } from '@/features/auth/model/auth-state';
 import { USER_PROFILE_STORAGE_KEY } from '@/features/profile/persistence/user-profile-persistence';
 import { GUEST_IDENTITY } from '@/shared/persistence/identity';
 import { physicalKey } from '@/shared/persistence/scoped-storage';
@@ -16,6 +17,11 @@ jest.mock('@react-native-async-storage/async-storage', () =>
 
 const mockReplace = jest.fn();
 jest.mock('expo-router', () => ({ useRouter: () => ({ replace: mockReplace }) }));
+
+let mockAuthStatus: AuthStatus = 'guest';
+jest.mock('@/features/auth/state/auth-provider', () => ({
+  useAuthState: () => ({ status: mockAuthStatus }),
+}));
 
 const KEY = physicalKey(GUEST_IDENTITY, USER_PROFILE_STORAGE_KEY);
 
@@ -41,6 +47,7 @@ async function renderDecision(): Promise<NativeStartDecision[]> {
 describe('useNativeStartRoute', () => {
   beforeEach(async () => {
     mockReplace.mockClear();
+    mockAuthStatus = 'guest';
     await AsyncStorage.clear();
   });
 
@@ -63,6 +70,29 @@ describe('useNativeStartRoute', () => {
     jest.spyOn(AsyncStorage, 'getItem').mockRejectedValueOnce(new Error('boom'));
     const seen = await renderDecision();
     expect(seen.at(-1)).toBe('show-start');
+    expect(mockReplace).not.toHaveBeenCalled();
+  });
+
+  it('redirects a signed-in account Home and never shows Start, even with no guest data', async () => {
+    mockAuthStatus = 'authenticated';
+    const seen = await renderDecision();
+    expect(seen).not.toContain('show-start');
+    expect(seen.at(-1)).toBe('redirect-home');
+    expect(mockReplace).toHaveBeenCalledWith('/app/home');
+  });
+
+  it('redirects a signed-in account whose cached profile is complete', async () => {
+    mockAuthStatus = 'authenticated';
+    await AsyncStorage.setItem(KEY, profile({ hasCompletedOnboarding: true, kenteiRank: 2 }));
+    const seen = await renderDecision();
+    expect(seen).not.toContain('show-start');
+    expect(mockReplace).toHaveBeenCalledWith('/app/home');
+  });
+
+  it('stays loading while auth initializes', async () => {
+    mockAuthStatus = 'initializing';
+    const seen = await renderDecision();
+    expect(seen.every((d) => d === 'loading')).toBe(true);
     expect(mockReplace).not.toHaveBeenCalled();
   });
 });

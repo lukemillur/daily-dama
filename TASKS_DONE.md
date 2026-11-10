@@ -16,6 +16,19 @@ Entries keep their content as it was at completion. Don't retroactively edit a d
 - **Platform scope:** Acceptance runs on the iOS Simulator. Record Android checks as not run.
 - **Completion notes:** `emailLinkGuidance(platformOS, flow)` and `missingVerifierCopy(platformOS)` in `src/features/auth/model/email-link-guidance.ts` choose the wording in one place; web strings are unchanged, every other platform gets device wording. Component tests cover check-email, forgot-password (both render sites) and the callback `missingVerifier` state under `ios` and `web`. iPhone 17e (iOS 27.0), Metro on port 8123 from the task worktree: forgot-password showed 'Open the email on this device to finish resetting your password...' and check-email (no pending email branch, via deep link) showed the creating-your-account device wording; neither contained 'browser'. The pending-email check-email site is covered by the unit test only. No app data was cleared. Android not run.
 
+### [T313.4] Let existing accounts sign in from the Start screen without redoing onboarding
+
+- **Area:** Auth / native-start / onboarding
+- **Priority:** High
+- **Status:** Done
+- **Planning:** Required
+- **Description:** Add a Sign in action next to Get started on `NativeStartScreen` (T292 left room for it). Two gaps must close with it. `useNativeOnboardingStatus` reads only the guest profile, so a signed-in relaunch shows the Start screen; make the root route use the active identity. Home guards onboarding only while a guest import is pending, so a signed-in identity with no import can show onboarding before its first profile pull; hold the onboarding decision until that pull settles, and show a retry state if it fails (fail closed).
+- **Exit criteria:** Tests prove: (a) the Start screen shows a Sign in action beside Get started, and it opens `/auth/sign-in`; (b) a signed-in identity whose profile has completed onboarding goes to Home on launch and the Start screen never renders; (c) after sign-in, onboarding does not render while the first profile pull is in flight; (d) a failed first pull shows a retry state, not onboarding, and retrying re-runs the pull; (e) a new account with no completed cloud profile reaches onboarding after the pull; (f) a guest with local data who signs in still enters the existing guest-import flow. On iPhone 17e (iOS 27.0) with local Supabase, an account that completed onboarding on web signs in from the Start screen and lands on Home showing its rank, with no onboarding frame seen. Full `yarn tsc --noEmit` and the native-start, onboarding and guest-import suites pass.
+- **Dependencies:** T313.1, T313.3.
+- **Notes:** D6. Owner decision 2026-11-04: an existing account signing in on mobile must not redo onboarding. Keep `resolveNativeStartDecision` pure; pass identity and pull state in.
+- **Platform scope:** Acceptance runs on the iOS Simulator. Record Android checks as not run.
+- **Completion notes:** Root route now decides from auth status plus the guest profile (`resolveNativeStartDecision` stays pure); any signed-in status redirects Home. Home holds onboarding until `resolveFirstProfilePull` reports the profile pull for the current identity generation (pending/failed block; failed shows a retry state). Verified on iPhone 17e (iOS 27.0), Metro port 8093 from the task worktree, local Supabase: Start -> Sign in -> Home showing Rank 7, no onboarding frame in sampled frames; signed-in relaunch lands on Home. Retry path on device was not exercised (covered by tests). Android not run.
+
 ### [T313.3] Make the sign-up and sign-in screens work on native
 
 - **Area:** Auth / native / forms

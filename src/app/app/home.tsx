@@ -10,7 +10,9 @@ import { HOME_CLOCK_INTERVAL_MS, useLiveClock } from '@/features/home/hooks/use-
 import { createHomeSummary } from '@/features/home/model/home-summary';
 import { isGuestImportPendingResolution } from '@/features/guest-import/model/guest-import';
 import { useGuestImport } from '@/features/guest-import/state/use-guest-import';
+import { FirstPullRetry } from '@/features/onboarding/components/first-pull-retry';
 import { KenteiOnboarding } from '@/features/onboarding/components/kentei-onboarding';
+import { useFirstProfilePull } from '@/features/onboarding/state/use-first-profile-pull';
 import { useUserProfile, useUserProfileSync } from '@/features/profile/state/user-profile-provider';
 import { selectRegularSessions } from '@/features/stats/model/practice-history';
 import { usePracticeHistory } from '@/features/stats/state/practice-history-provider';
@@ -24,6 +26,7 @@ export default function HomeScreen() {
   const { identity } = useIdentityHandle();
   const { state: guestImportState } = useGuestImport();
   const { runSync } = useUserProfileSync();
+  const firstPull = useFirstProfilePull();
   // A signed-in identity with a pending or in-progress guest
   // import (nonzero-local awaitingConfirmation, or anything past it) must
   // never see onboarding a second time -- the import may still be writing
@@ -70,7 +73,10 @@ export default function HomeScreen() {
     };
   }, [identity, guestImportState.status, guestImportState.importId, runSync]);
 
-  const blockingOnboardingRender = importPending || isResyncingAfterImport;
+  // A signed-in account that has not finished onboarding locally may already have a cloud
+  // profile; hold the onboarding decision until the first pull settles (fail closed).
+  const blockingOnboardingRender =
+    importPending || isResyncingAfterImport || firstPull.status === 'pending' || firstPull.status === 'failed';
   const regularSessions = selectRegularSessions(sessions);
   const liveNow = useLiveClock(HOME_CLOCK_INTERVAL_MS);
   const summaryNow = regularSessions.reduce(
@@ -99,7 +105,9 @@ export default function HomeScreen() {
       edges={['top', 'left', 'right']}
       includeWebHeaderInset={false}
       webBottomInset={24}>
-      {blockingOnboardingRender ? null : profile.hasCompletedOnboarding && profile.kenteiRank ? (
+      {firstPull.status === 'failed' && !importPending && !isResyncingAfterImport ? (
+        <FirstPullRetry onRetry={firstPull.retry} />
+      ) : blockingOnboardingRender ? null : profile.hasCompletedOnboarding && profile.kenteiRank ? (
         <DailyHome summary={summary} />
       ) : (
         <KenteiOnboarding />
