@@ -4,6 +4,19 @@ Completed entries move here from `TASKS.md`'s `Backlog`, in the same commit that
 
 Entries keep their content as it was at completion. Don't retroactively edit a description or exit criteria after the fact; if something about a completed task turns out to be wrong or misleading, note that in a new entry or in code, not by rewriting history here.
 
+### [T325] Keep long-form Save and Cancel reachable above the Android software keyboard
+
+- **Area:** Android forms / keyboard handling
+- **Priority:** Medium
+- **Status:** Done
+- **Planning:** Required
+- **Description:** On Android the software keyboard (IME) overlays the window without resizing or panning the form scroll content, so with a text field focused the Save and Cancel buttons of the custom-trick forms (standalone, sequence and edit) are fully hidden behind the keyboard and the scroll view cannot scroll further. Observed on Pixel_10_API36 at 1080x2424/420 dpi (IME top y=1541, Save 1849-1996, Cancel 2022-2169, content already at maximum scroll) and at 720x1280/280 dpi (IME top y=699, Save 896-994). The note and goal forms behave the same at 720x1280 (Save 827-925, IME top 699) though they clear the keyboard at 1080x2424. The sequence form's `Search existing tricks` field also sits behind the keyboard when focused. `KeyboardAwareScroll` only handles iOS (`automaticallyAdjustKeyboardInsets`).
+- **Exit criteria:** On the Android Emulator at 1080x2424/420 dpi and 720x1280/280 dpi, with the software keyboard open and a text field focused, Save and Cancel of the standalone, sequence and edit custom-trick forms, the note forms and the goal forms are visible or reachable by a normal scroll, and the focused field stays visible. iOS and web behavior and the existing keyboard-aware tests are unchanged. Component tests for the Android keyboard-inset behavior where practical, scoped lint and full typechecking pass; update the `KeyboardAwareScroll` description in `ARCHITECTURE.md`.
+- **Dependencies:** None.
+- **Notes:** Source T322 evidence. Likely fix is a keyboard-height inset (for example `Keyboard` events or `react-native-keyboard-controller` if an Expo-compatible choice is justified) applied inside `KeyboardAwareScroll`, not per-screen offsets. Check `android.softwareKeyboardLayoutMode` / edge-to-edge interaction first; do not add a second scrolling mechanism.
+- **Platform scope:** Android Emulator; regression checks on iOS Simulator and web.
+- **Completion:** `KeyboardAwareScroll` now measures the real keyboard overlap on Android (`use-android-keyboard-overlap.ts`), adds a trailing spacer, and scrolls the focused field above the keyboard. Verified on Pixel_10_API36 at 1080x2424/420 (IME top 1541; goal form 1657) and 720x1280/280 (IME top 699; goal 776): standalone, sequence (including the search field), both edit forms, note and goal forms all had Save and Cancel above the IME. iOS and web render no spacer and subscribe to nothing (unit-tested); iOS Simulator and web visual regression not run.
+
 ### [T321] Use device wording in native Sesh backup invitations
 
 - **Area:** Sesh / copy
