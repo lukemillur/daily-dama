@@ -318,14 +318,39 @@ describe('ForgotPasswordScreen', () => {
     expect(mockRequestPasswordReset).toHaveBeenLastCalledWith('person@example.com');
   });
 
-  it('shows the same-browser/device guidance on both the form and the confirmation view', async () => {
-    const formRoot = await mount();
-    expect(containsText(formRoot, /same browser, on this device/i)).toBe(true);
+  it('shows the same-browser/device guidance on web on both the form and the confirmation view', async () => {
+    ReactNative.Platform.OS = 'web';
+    try {
+      const webText =
+        "Open the email on this same browser, on this device, to finish resetting your password. Daily Dama can't complete the reset if you open the link somewhere else.";
+      const formRoot = await mount();
+      expect(containsText(formRoot, webText)).toBe(true);
 
-    mockRequestPasswordReset.mockResolvedValue({ error: null });
-    await setEmail(formRoot, 'person@example.com');
-    await submit(formRoot);
-    expect(containsText(formRoot, /same browser, on this device/i)).toBe(true);
+      mockRequestPasswordReset.mockResolvedValue({ error: null });
+      await setEmail(formRoot, 'person@example.com');
+      await submit(formRoot);
+      expect(containsText(formRoot, webText)).toBe(true);
+    } finally {
+      restorePlatform();
+    }
+  });
+
+  it('shows device guidance without the word browser on native, on both the form and the confirmation view', async () => {
+    ReactNative.Platform.OS = 'ios';
+    try {
+      const nativeText = /Open the email on this device to finish resetting your password/;
+      const formRoot = await mount();
+      expect(containsText(formRoot, nativeText)).toBe(true);
+      expect(containsText(formRoot, /browser/i)).toBe(false);
+
+      mockRequestPasswordReset.mockResolvedValue({ error: null });
+      await setEmail(formRoot, 'person@example.com');
+      await submit(formRoot);
+      expect(containsText(formRoot, nativeText)).toBe(true);
+      expect(containsText(formRoot, /browser/i)).toBe(false);
+    } finally {
+      restorePlatform();
+    }
   });
 
   it('never exposes the raw email outside the controlled input value', async () => {

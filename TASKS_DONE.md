@@ -4,6 +4,18 @@ Completed entries move here from `TASKS.md`'s `Backlog`, in the same commit that
 
 Entries keep their content as it was at completion. Don't retroactively edit a description or exit criteria after the fact; if something about a completed task turns out to be wrong or misleading, note that in a new entry or in code, not by rewriting history here.
 
+### [T314] Replace "same browser" email-link guidance with device wording on native
+
+- **Area:** Auth / native / copy
+- **Priority:** Medium
+- **Status:** Done
+- **Planning:** Implementer
+- **Description:** Three auth screens tell native users to open the email link "on this same browser": the guidance text on check-email and forgot-password (`SAME_BROWSER_GUIDANCE` in `check-email-screen.tsx` and `forgot-password-screen.tsx`) and the `missingVerifier` error on the callback screen (`auth-callback-screen.tsx`). On iOS and Android the link opens the app through `dailydama://auth/callback`, so "browser" is wrong; the real constraint is the same device. Show device wording on native and keep the current web wording unchanged.
+- **Exit criteria:** Component tests render check-email, forgot-password and the callback screen's `missingVerifier` state with `Platform.OS = 'ios'` and assert the guidance names this device and does not contain the word "browser"; the same tests with `Platform.OS = 'web'` assert the current web text is unchanged. On iPhone 17e (iOS 27.0), the forgot-password and check-email screens show the native wording. `yarn jest src/features/auth` and full `yarn tsc --noEmit` pass.
+- **Notes:** Choose the wording per platform in one place (for example, a small helper in `src/features/auth/model/`), not with an inline `Platform.OS` check repeated in each screen. `e2e/auth/04-real-email-flows.spec.ts` asserts the web text; it must keep passing without changes. Seen during the T313.3 check, not in scope here: the floating gear button at the top right of every native screen is the Expo dev-client menu button, which appears only in development builds; it is not app UI and needs no ticket.
+- **Platform scope:** Acceptance runs on the iOS Simulator. Record Android checks as not run.
+- **Completion notes:** `emailLinkGuidance(platformOS, flow)` and `missingVerifierCopy(platformOS)` in `src/features/auth/model/email-link-guidance.ts` choose the wording in one place; web strings are unchanged, every other platform gets device wording. Component tests cover check-email, forgot-password (both render sites) and the callback `missingVerifier` state under `ios` and `web`. iPhone 17e (iOS 27.0), Metro on port 8123 from the task worktree: forgot-password showed 'Open the email on this device to finish resetting your password...' and check-email (no pending email branch, via deep link) showed the creating-your-account device wording; neither contained 'browser'. The pending-email check-email site is covered by the unit test only. No app data was cleared. Android not run.
+
 ### [T313.3] Make the sign-up and sign-in screens work on native
 
 - **Area:** Auth / native / forms

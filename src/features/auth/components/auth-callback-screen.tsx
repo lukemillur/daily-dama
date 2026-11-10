@@ -7,13 +7,13 @@ import { Button } from '@/components/ui/button';
 import { Screen } from '@/components/ui/screen';
 import { BodyText, DisplayTitle, Eyebrow } from '@/components/ui/typography';
 import { categorizeAuthError, type AuthErrorCategory } from '@/features/auth/model/auth-errors';
+import { missingVerifierCopy } from '@/features/auth/model/email-link-guidance';
 import { logAuthWarning, trackAuthEvent } from '@/features/auth/observability/auth-observability';
 import { useAuthActions } from '@/features/auth/state/auth-provider';
 
-const ERROR_COPY: Record<AuthErrorCategory, string> = {
+// missingVerifier is platform-specific and resolved at render time via missingVerifierCopy.
+const ERROR_COPY: Record<Exclude<AuthErrorCategory, 'missingVerifier'>, string> = {
   expiredOrInvalidLink: 'This link has expired or was already used. Request a new one and try again.',
-  missingVerifier:
-    'This link only works in the browser and device you requested it from. Open your email there, or go back and request a new link from that same browser.',
   offline: "You're offline. Check your connection and try again.",
   rateLimited: 'Too many attempts. Wait a moment and try again.',
   weakPassword: 'Something went wrong. Please try again.',
@@ -196,7 +196,7 @@ export function AuthCallbackScreen() {
         <Centered>
           <Eyebrow>Sign-in</Eyebrow>
           <PageTitle>This link is no longer valid.</PageTitle>
-          <Introduction>{ERROR_COPY[errorCategory]}</Introduction>
+          <Introduction>{errorCategory === 'missingVerifier' ? missingVerifierCopy(Platform.OS) : ERROR_COPY[errorCategory]}</Introduction>
           <FormActions>
             <Button accessibilityLabel="Back to home" onPress={() => router.replace('/')}>
               Back to home

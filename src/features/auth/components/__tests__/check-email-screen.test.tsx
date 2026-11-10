@@ -1,9 +1,14 @@
-import { beforeEach, describe, expect, it, jest } from '@jest/globals';
+import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 
 import type { AuthState } from '@/features/auth/model/auth-state';
 
 import { CheckEmailScreen } from '@/features/auth/components/check-email-screen';
+
+// See auth-callback-screen.test.tsx for why a CommonJS require is needed to mutate Platform.OS.
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const ReactNative = require('react-native') as typeof import('react-native');
+const originalPlatformOS = ReactNative.Platform.OS;
 
 const mockReplace = jest.fn();
 const mockPush = jest.fn();
@@ -51,6 +56,10 @@ async function mount() {
 }
 
 describe('CheckEmailScreen', () => {
+  afterEach(() => {
+    ReactNative.Platform.OS = originalPlatformOS;
+  });
+
   beforeEach(() => {
     mockResendSignupConfirmation.mockReset();
     mockReplace.mockReset();
@@ -65,11 +74,25 @@ describe('CheckEmailScreen', () => {
       mockPendingEmail = 'person@example.com';
     });
 
-    it('renders check-email guidance including the same-browser instruction', async () => {
+    it('renders native check-email guidance naming this device and never saying browser', async () => {
+      ReactNative.Platform.OS = 'ios';
       const root = await mount();
 
       expect(containsText(root, /Check your email\./)).toBe(true);
-      expect(containsText(root, /same browser, on this device/i)).toBe(true);
+      expect(containsText(root, /Open the email on this device to finish creating your account/)).toBe(true);
+      expect(containsText(root, /browser/i)).toBe(false);
+    });
+
+    it('keeps the web same-browser instruction unchanged', async () => {
+      ReactNative.Platform.OS = 'web';
+      const root = await mount();
+
+      expect(
+        containsText(
+          root,
+          'Open the email on this same browser, on this device, to finish creating your account. Daily Dama cannot complete the confirmation if you open the link somewhere else.',
+        ),
+      ).toBe(true);
     });
 
     it('shows the pending email address so the user can confirm it was entered correctly', async () => {
