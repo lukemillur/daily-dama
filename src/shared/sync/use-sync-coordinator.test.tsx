@@ -24,6 +24,16 @@ jest.mock("@react-native-async-storage/async-storage", () =>
   require("@react-native-async-storage/async-storage/jest/async-storage-mock"),
 );
 
+const mockNetworkListeners: ((state: { isConnected?: boolean; isInternetReachable?: boolean }) => void)[] = [];
+const mockNetworkRemove = jest.fn();
+jest.mock("expo-network", () => ({
+  getNetworkStateAsync: jest.fn(async () => ({ isConnected: true, isInternetReachable: true })),
+  addNetworkStateListener: jest.fn((listener: (state: { isConnected?: boolean; isInternetReachable?: boolean }) => void) => {
+    mockNetworkListeners.push(listener);
+    return { remove: mockNetworkRemove };
+  }),
+}));
+
 import { createIdentityContext } from "@/shared/persistence/identity-context";
 import { createUserIdentity, GUEST_IDENTITY, type Identity } from "@/shared/persistence/identity";
 import { IdentityHandleContext } from "@/shared/persistence/identity-provider";
@@ -413,6 +423,7 @@ describe("useSyncCoordinator", () => {
       await mountHarness({ hasHydrated: allDomains(false), localMutationTick: allDomains(0), runSyncMocks });
 
       await act(async () => {
+        listeners.offline?.forEach((handler) => handler(new Event("offline")));
         listeners.online?.forEach((handler) => handler(new Event("online")));
       });
       await flush();
@@ -424,6 +435,45 @@ describe("useSyncCoordinator", () => {
     } finally {
       ReactNative.Platform.OS = originalPlatformOS;
       delete (globalThis as { window?: unknown }).window;
+    }
+  });
+
+  it("native: fires exactly one reconnect run on offline-to-online, none for the initial state, and unsubscribes", async () => {
+    const originalPlatformOS = ReactNative.Platform.OS;
+    ReactNative.Platform.OS = "ios";
+    mockNetworkListeners.length = 0;
+    mockNetworkRemove.mockClear();
+    try {
+      const runSyncMocks = createSucceedingMocks();
+      const { root } = await mountHarness({ hasHydrated: allDomains(false), localMutationTick: allDomains(0), runSyncMocks });
+      expect(mockNetworkListeners).toHaveLength(1);
+      for (const domain of SYNC_DOMAINS) expect(runSyncMocks[domain]).not.toHaveBeenCalled();
+
+      await act(async () => {
+        mockNetworkListeners[0]({ isConnected: true, isInternetReachable: true });
+      });
+      await flush();
+      for (const domain of SYNC_DOMAINS) expect(runSyncMocks[domain]).not.toHaveBeenCalled();
+
+      await act(async () => {
+        mockNetworkListeners[0]({ isConnected: false, isInternetReachable: false });
+      });
+      await flush();
+      for (const domain of SYNC_DOMAINS) expect(runSyncMocks[domain]).not.toHaveBeenCalled();
+
+      await act(async () => {
+        mockNetworkListeners[0]({ isConnected: true, isInternetReachable: true });
+      });
+      await flush();
+      for (const domain of SYNC_DOMAINS) {
+        expect(runSyncMocks[domain]).toHaveBeenCalledTimes(1);
+        expect(runSyncMocks[domain]).toHaveBeenCalledWith("reconnect");
+      }
+
+      act(() => root.unmount());
+      expect(mockNetworkRemove).toHaveBeenCalledTimes(1);
+    } finally {
+      ReactNative.Platform.OS = originalPlatformOS;
     }
   });
 

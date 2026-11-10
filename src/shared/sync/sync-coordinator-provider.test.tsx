@@ -43,6 +43,16 @@ jest.mock("@/features/stats/persistence/practice-history-sync-transport", () => 
     mockCreatePracticeHistorySyncTransportAdapter(...args),
 }));
 
+type MockNetState = { isConnected?: boolean; isInternetReachable?: boolean };
+const mockNetworkListeners: ((state: MockNetState) => void)[] = [];
+jest.mock("expo-network", () => ({
+  getNetworkStateAsync: jest.fn(async () => ({ isConnected: true, isInternetReachable: true })),
+  addNetworkStateListener: jest.fn((listener: (state: MockNetState) => void) => {
+    mockNetworkListeners.push(listener);
+    return { remove: jest.fn() };
+  }),
+}));
+
 jest.mock("@/shared/supabase/supabase-client", () => ({
   getSupabaseClient: () => ({}),
 }));
@@ -193,6 +203,36 @@ describe("SyncCoordinatorProvider pendingCount/discardAllPending aggregation (fu
     await flush();
 
     expect(captured.status?.pendingCount).toBe(2);
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  it("native network-state events drive syncStatus.online (offline with and without pending work, then back online)", async () => {
+    mockNetworkListeners.length = 0;
+    const { root, captured } = await mountHarness();
+    await flush();
+    expect(captured.status?.syncStatus.online).toBe(true);
+    expect(mockNetworkListeners.length).toBeGreaterThan(0);
+    const emit = (state: MockNetState) => mockNetworkListeners.forEach((listener) => listener(state));
+
+    act(() => emit({ isConnected: false, isInternetReachable: false }));
+    await flush();
+    expect(captured.status?.syncStatus.online).toBe(false);
+    expect(captured.status?.syncStatus.kind).toBe("offline");
+
+    act(() => {
+      captured.addNote?.({ trickId: "big-cup", trickName: "Big cup", body: "Offline note" });
+    });
+    await flush();
+    expect(captured.status?.pendingCount).toBe(1);
+    expect(captured.status?.syncStatus.kind).toBe("offline");
+
+    act(() => emit({ isConnected: true, isInternetReachable: true }));
+    await flush();
+    expect(captured.status?.syncStatus.online).toBe(true);
+    expect(captured.status?.syncStatus.kind).not.toBe("offline");
 
     act(() => {
       root.unmount();

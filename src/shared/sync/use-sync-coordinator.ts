@@ -12,8 +12,9 @@
 // authority, generalized to this coordinator.
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useReducer, useRef } from "react";
-import { AppState, Platform } from "react-native";
+import { AppState } from "react-native";
 
+import { getInitialOnline, subscribeToConnectivity } from "@/shared/network/connectivity";
 import { useIdentityHandle } from "@/shared/persistence/identity-provider";
 import {
   createInitialCoordinatorState,
@@ -243,16 +244,30 @@ export function useSyncCoordinator(domains: SyncDomainHandles): UseSyncCoordinat
     };
   }, []);
 
-  // Reconnect (mount-once, web-only): a plain browser connectivity signal,
-  // not a Supabase Realtime subscription -- explicitly allowed despite this
-  // tasks do-not-add-Realtime-subscriptions constraint, which is about
-  // Realtime channels, not the browsers own online/offline events.
+  // Reconnect (mount-once): a connectivity signal (browser events on web,
+  // expo-network on native), not a Supabase Realtime subscription -- explicitly
+  // allowed despite this task's do-not-add-Realtime-subscriptions constraint,
+  // which is about Realtime channels. Only an offline-to-online transition
+  // starts a run; the initial state never does.
   useEffect(() => {
-    if (Platform.OS !== "web" || typeof window === "undefined") return undefined;
-    const handleOnline = () => requestSyncRef.current("reconnect");
-    window.addEventListener("online", handleOnline);
+    let wasOffline = false;
+    let cancelled = false;
+    const unsubscribe = subscribeToConnectivity((online) => {
+      if (!online) {
+        wasOffline = true;
+        return;
+      }
+      if (!wasOffline) return;
+      wasOffline = false;
+      requestSyncRef.current("reconnect");
+    });
+    // Launched while offline: the first online event is still a reconnection.
+    void getInitialOnline().then((initial) => {
+      if (!cancelled && !initial) wasOffline = true;
+    });
     return () => {
-      window.removeEventListener("online", handleOnline);
+      cancelled = true;
+      unsubscribe();
     };
   }, []);
 

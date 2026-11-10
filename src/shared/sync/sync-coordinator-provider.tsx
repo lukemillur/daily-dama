@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createContext, type PropsWithChildren, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { Platform } from 'react-native';
+import { getInitialOnline, subscribeToConnectivity } from '@/shared/network/connectivity';
 import { useCustomTrickSync } from '@/features/custom-tricks/state/custom-trick-provider';
 import { useGoalSync } from '@/features/goals/state/goal-provider';
 import { useNoteSync } from '@/features/notes/state/note-provider';
@@ -29,7 +29,7 @@ export function SyncCoordinatorProvider({ children }: PropsWithChildren) {
   const domains: SyncDomainHandles = useMemo(() => ({ profile, customTricks, practiceHistory, goals, notes }), [profile, customTricks, practiceHistory, goals, notes]);
   const coordinator = useSyncCoordinator(domains);
   const [lastSuccessfulSyncAt, setLastSuccessfulSyncAt] = useState<number | undefined>();
-  const [online, setOnline] = useState(() => Platform.OS !== 'web' || typeof window === 'undefined' || window.navigator === undefined ? true : window.navigator.onLine);
+  const [online, setOnline] = useState(true);
   const loadedGeneration = useRef<number | undefined>(undefined); const persistedRunId = useRef<string | undefined>(undefined);
   const writeStatus = useMemo(() => createWriteQueue(async (value: string) => AsyncStorage.setItem(statusStorageKey(identity), value)), [identity]);
   useEffect(() => {
@@ -47,10 +47,11 @@ export function SyncCoordinatorProvider({ children }: PropsWithChildren) {
     return () => { cancelled = true; };
   }, [context, generation, identity]);
   useEffect(() => {
-    if (Platform.OS !== 'web' || typeof window === 'undefined') return undefined;
-    const onOnline = () => setOnline(true); const onOffline = () => setOnline(false);
-    window.addEventListener('online', onOnline); window.addEventListener('offline', onOffline);
-    return () => { window.removeEventListener('online', onOnline); window.removeEventListener('offline', onOffline); };
+    // A listener event always wins over the one-time initial probe, which may resolve late.
+    let cancelled = false; let heardListener = false;
+    const unsubscribe = subscribeToConnectivity((next) => { heardListener = true; setOnline(next); });
+    void getInitialOnline().then((initial) => { if (!cancelled && !heardListener) setOnline(initial); });
+    return () => { cancelled = true; unsubscribe(); };
   }, []);
   useEffect(() => {
     if (coordinator.state.status !== 'idle' || !coordinator.state.lastRun || loadedGeneration.current !== generation) return;
