@@ -24,6 +24,8 @@ const customTheme: DefaultTheme = {
   onButton: '#ffffff',
   onButtonSecondary: '#ffffff',
   onInk: '#ffffff',
+  onAccent: '#000000',
+  onAccentMuted: '#222222',
 };
 
 // styled-components/native flattens ButtonRoot's template into a resolved RN style object on the

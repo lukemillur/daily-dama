@@ -1381,7 +1381,7 @@ const CancelButton = styled(Button)`margin-top: 14px;`;
 const CancelPracticeButton = styled(Button)`margin-top: 20px;`;
 const SkipRankButtonText = styled.Text`color: ${({ theme }) => theme.text}; font-size: 13px; font-weight: 800; text-decoration-line: underline;`;
 const NextTrickButton = styled(Pressable)`width: 100%; min-height: 52px; align-items: center; justify-content: center; margin-top: 20px; padding: 12px 24px; background-color: ${({ theme }) => theme.accent}; border: 2px solid ${AppColors.ink}; border-radius: 5px;`;
-const NextTrickButtonText = styled.Text`color: ${({ theme }) => theme.text}; font-size: 16px; font-weight: 900;`;
+const NextTrickButtonText = styled.Text`color: ${({ theme }) => theme.onAccent}; font-size: 16px; font-weight: 900;`;
 const MultiTrickAction = styled(Pressable)`
   min-height: 78px;
   justify-content: center;
@@ -1391,13 +1391,13 @@ const MultiTrickAction = styled(Pressable)`
   border: 2px solid ${AppColors.ink};
   border-radius: 5px;
 `;
-const MultiTrickActionTitle = styled.Text`color: ${({ theme }) => theme.text}; font-size: 18px; font-weight: 900;`;
-const MultiTrickActionCopy = styled.Text`color: ${({ theme }) => theme.text}; font-size: 13px; font-weight: 650; line-height: 18px; margin-top: 4px;`;
+const MultiTrickActionTitle = styled.Text`color: ${({ theme }) => theme.onAccent}; font-size: 18px; font-weight: 900;`;
+const MultiTrickActionCopy = styled.Text`color: ${({ theme }) => theme.onAccentMuted}; font-size: 13px; font-weight: 650; line-height: 18px; margin-top: 4px;`;
 const TargetStatus = styled.Text<{ $met: boolean }>`width: 100%; text-align: center; margin-top: 12px; color: ${({ $met }) => ($met ? AppColors.red : AppColors.ink)}; font-size: 15px; font-weight: 900; text-align: center;`;
 const ResultBanner = styled.Text<{ $beaten: boolean }>`width: 100%; text-align: center; margin-top: 18px; padding: 12px 16px; background-color: ${({ $beaten }) => ($beaten ? '#e5edcf' : '#f8f1dd')}; border-left-width: 5px; border-left-color: ${({ $beaten }) => ($beaten ? AppColors.red : AppColors.ink)}; color: ${AppColors.ink}; font-size: 15px; font-weight: 900; text-align: center;`;
 const CelebrationBannerCard = styled.View`width: 100%; align-items: center; background-color: ${({ theme }) => theme.accent}; border: 3px solid ${AppColors.ink}; border-radius: 6px; padding: 18px 20px; margin-bottom: 20px;`;
-const CelebrationBannerEyebrow = styled.Text`color: ${({ theme }) => theme.text}; font-size: 12px; font-weight: 900; letter-spacing: 1.6px; text-transform: uppercase; max-width: 100%; text-align: center; flex-shrink: 1;`;
-const CelebrationBannerTitle = styled.Text`color: ${({ theme }) => theme.text}; font-size: 20px; font-weight: 900; text-align: center; margin-top: 6px; line-height: 26px; max-width: 100%; flex-shrink: 1;`;
+const CelebrationBannerEyebrow = styled.Text`color: ${({ theme }) => theme.onAccent}; font-size: 12px; font-weight: 900; letter-spacing: 1.6px; text-transform: uppercase; max-width: 100%; text-align: center; flex-shrink: 1;`;
+const CelebrationBannerTitle = styled.Text`color: ${({ theme }) => theme.onAccent}; font-size: 20px; font-weight: 900; text-align: center; margin-top: 6px; line-height: 26px; max-width: 100%; flex-shrink: 1;`;
 const TrickNotesCard = styled.View`width: 100%; max-width: 500px; background-color: ${AppColors.paper}; border: 2px solid ${AppColors.ink}; padding: 16px 18px; margin-top: 16px;`;
 const TrickNotesTitle = styled.Text`color: ${({ theme }) => theme.text}; font-size: 11px; font-weight: 900; letter-spacing: 1.2px; margin-bottom: 8px; text-transform: uppercase;`;
 const TrickNoteBody = styled.Text`color: ${({ theme }) => theme.text}; font-size: 14px; font-weight: 650; line-height: 20px; margin-bottom: 8px;`;

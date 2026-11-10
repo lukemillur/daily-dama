@@ -17,6 +17,8 @@ const customTheme: DefaultTheme = {
   onButton: '#ffffff',
   onButtonSecondary: '#ffffff',
   onInk: '#ffffff',
+  onAccent: '#000000',
+  onAccentMuted: '#222222',
 };
 
 async function mountTypography() {

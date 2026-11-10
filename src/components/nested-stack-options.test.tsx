@@ -23,6 +23,8 @@ const darkTheme: ResolvedTheme = {
   onButton: '#000000',
   onButtonSecondary: '#ffffff',
   onInk: '#ffffff',
+  onAccent: '#000000',
+  onAccentMuted: '#222222',
 };
 const lightTheme: ResolvedTheme = { ...darkTheme, background: '#fff8e8', text: '#1a1a1a' };
 

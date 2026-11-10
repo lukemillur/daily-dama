@@ -349,6 +349,8 @@ describe('ResetPasswordScreen', () => {
       onButton: '#ffffff',
       onButtonSecondary: '#ffffff',
       onInk: '#ffffff',
+      onAccent: '#000000',
+      onAccentMuted: '#222222',
     };
     mockAuthState = { status: 'passwordRecovery', session: recoverySession };
     let root!: ReactTestRenderer;
