@@ -4,6 +4,19 @@ Completed entries move here from `TASKS.md`'s `Backlog`, in the same commit that
 
 Entries keep their content as it was at completion. Don't retroactively edit a description or exit criteria after the fact; if something about a completed task turns out to be wrong or misleading, note that in a new entry or in code, not by rewriting history here.
 
+### [T320] Match Android status-bar icon style to the visible background
+
+- **Area:** Android system chrome
+- **Priority:** Medium
+- **Status:** Done
+- **Planning:** Required
+- **Description:** Set an intentional Android status-bar foreground for root tab scenes, nested screens and Auth according to their visible background. White clock/signal/battery icons currently remain faint against the pale Red page. Use the installed Expo/native-stack status-bar APIs and keep configuration ownership coherent across route transitions.
+- **Exit criteria:** On Android, clock/signal/battery icons are legible against both the pale Red preset and a dark custom background on Home, a nested Tricks route and sign-in; switching routes, changing theme and background/foreground do not leave a stale icon style. Content still clears the status bar and Android edge-to-edge behavior is retained. Focused tests cover style selection and relevant route overrides, scoped lint and full typechecking pass. Follow AGENTS.md's complete configuration verification and rebuild/install the Android client if native configuration changes; otherwise run the checks appropriate to the source changes. iOS/web smoke checks show no introduced inset or appearance regression.
+- **Dependencies:** None.
+- **Notes:** Source D031. Do not disable edge-to-edge or add fixed top padding to hide the symptom. The floating Expo development-menu gear is development tooling and is not part of this ticket.
+- **Platform scope:** Android Emulator required; iOS Simulator/web smoke checks for shared changes.
+- **Completion notes:** `AppStatusBar` (`src/components/app-status-bar.tsx`) sets an explicit `expo-status-bar` style from `deriveStatusBarStyle` (black or white, whichever contrasts more), and is mounted once per route group: the `/app` shell (via `selectHomeSceneBackground`, the rule Home also paints with), `/auth` (cached guest theme), and the fixed-palette `/`, `/feedback`, `/account-deleted` routes. No `statusBarStyle` on any screen (tested), so react-native-screens never takes ownership; no native config changed, so no rebuild. Verified on Pixel_10 (Android 17, API 37, 1080x2424, GLES Apple M1 Max), user 10, Metro port 8123 from the task worktree: dark icons on pale Red and light icons on a custom #101820 background for Home, a nested Tricks notes route and sign-in; tab switching, push/pop, live theme change on Profile (no reload), background/foreground, and system night mode on/off left the style tied to the page. Content cleared the status bar and edge-to-edge was kept. User 10's theme was restored to the Red preset, night mode was restored to off, and the foreground user was returned to 0. iPhone 17e (iOS 27.0) Home and nested Tricks notes showed no inset change; web /auth/sign-in at 320 px and /app/home loaded with no console errors. Known limit: during the brief pre-onboarding first-pull hold, the shell bar follows the onboarding background while Home paints the theme background; not checked on device (do not replay onboarding).
+
 ### [T314] Replace "same browser" email-link guidance with device wording on native
 
 - **Area:** Auth / native / copy

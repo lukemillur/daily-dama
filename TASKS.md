@@ -278,18 +278,6 @@ _Android verification prerequisite: the first build was observed on Pixel_10 / A
 - **Notes:** Source D030; shared theme defect observed on Android, not an Android-only renderer bug. Scope to the listed accent-filled surfaces and new role; no unrelated recoloring, persisted schema change or new global state. Keep numerical contrast checks paired with actual rendered-surface inspection.
 - **Platform scope:** Android Emulator, representative iOS Simulator and web checks.
 
-### [T320] Match Android status-bar icon style to the visible background
-
-- **Area:** Android system chrome
-- **Priority:** Medium
-- **Status:** Not started
-- **Planning:** Required
-- **Description:** Set an intentional Android status-bar foreground for root tab scenes, nested screens and Auth according to their visible background. White clock/signal/battery icons currently remain faint against the pale Red page. Use the installed Expo/native-stack status-bar APIs and keep configuration ownership coherent across route transitions.
-- **Exit criteria:** On Android, clock/signal/battery icons are legible against both the pale Red preset and a dark custom background on Home, a nested Tricks route and sign-in; switching routes, changing theme and background/foreground do not leave a stale icon style. Content still clears the status bar and Android edge-to-edge behavior is retained. Focused tests cover style selection and relevant route overrides, scoped lint and full typechecking pass. Follow AGENTS.md's complete configuration verification and rebuild/install the Android client if native configuration changes; otherwise run the checks appropriate to the source changes. iOS/web smoke checks show no introduced inset or appearance regression.
-- **Dependencies:** None.
-- **Notes:** Source D031. Do not disable edge-to-edge or add fixed top padding to hide the symptom. The floating Expo development-menu gear is development tooling and is not part of this ticket.
-- **Platform scope:** Android Emulator required; iOS Simulator/web smoke checks for shared changes.
-
 ### [T321] Use device wording in native Sesh backup invitations
 
 - **Area:** Sesh / copy
