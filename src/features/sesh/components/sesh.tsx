@@ -45,6 +45,7 @@ import {
   type SeshSummary,
 } from '@/features/sesh/model/sesh';
 import { formatKenteiStanding, isTrickSummary, type PracticeTrick } from '@/features/tricks/model/trick';
+import { signupInviteBody } from '@/features/sesh/model/signup-invite-copy';
 import { areAccountsAvailable } from '@/features/auth/model/account-availability';
 import type { AuthStatus } from '@/features/auth/model/auth-state';
 import {
@@ -1102,10 +1103,7 @@ function InlineSignupInvite() {
   return (
     <InlineInviteCard accessibilityLabel="Guest signup invitation">
       <InviteTitle>Save this sesh for good.</InviteTitle>
-      <InviteCopy>
-        Right now your practice history only lives on this device. Sign up to keep it if you
-        switch devices or clear your browser.
-      </InviteCopy>
+      <InviteCopy>{signupInviteBody(Platform.OS)}</InviteCopy>
       <InviteActions>
         <Link href="/auth/sign-up" asChild>
           <InviteSignUpButton accessibilityRole="link">Sign up</InviteSignUpButton>
@@ -1134,10 +1132,7 @@ function PostSeshSignupInvite() {
     <InviteOverlay accessibilityLabel="Guest signup invitation">
       <InviteCard>
         <InviteTitle>Save this sesh for good.</InviteTitle>
-        <InviteCopy>
-          Right now your practice history only lives on this device. Sign up to keep it if you
-          switch devices or clear your browser.
-        </InviteCopy>
+        <InviteCopy>{signupInviteBody(Platform.OS)}</InviteCopy>
         <InviteActions>
           <InviteSignUpButton
             accessibilityRole="link"

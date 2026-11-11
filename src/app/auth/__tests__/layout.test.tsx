@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
+import { StatusBar } from 'expo-status-bar';
 import * as ReactNative from 'react-native';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 
@@ -19,6 +20,13 @@ jest.mock('expo-router', () => {
 jest.mock('@/shared/splash/splash-ready', () => ({ HideSplashWhenMounted: () => null }));
 jest.mock('@/features/profile/components/app-theme-provider', () => ({
   CachedAppThemeProvider: ({ children }: { children: React.ReactNode }) => children,
+}));
+let mockCachedBackground = '#fbdcd6';
+jest.mock('@/features/profile/state/use-cached-guest-theme', () => ({
+  useCachedGuestTheme: () => ({ background: mockCachedBackground }),
+}));
+jest.mock('expo-status-bar', () => ({
+  StatusBar: () => null,
 }));
 jest.mock('@/features/auth/state/pending-verification-email', () => ({
   PendingVerificationEmailProvider: ({ children }: { children: React.ReactNode }) => children,
@@ -51,6 +59,18 @@ describe('AuthLayout', () => {
     const root = await mount();
 
     expect(JSON.stringify(root.toJSON())).toContain('auth-route-content');
+  });
+
+  it('mounts exactly one status bar whose icons follow the cached theme background', async () => {
+    ReactNative.Platform.OS = 'android';
+    mockCachedBackground = '#fbdcd6';
+    const pale = await mount();
+    expect(pale.root.findAllByType(StatusBar)).toHaveLength(1);
+    expect(pale.root.findByType(StatusBar).props.style).toBe('dark');
+
+    mockCachedBackground = '#101820';
+    const dark = await mount();
+    expect(dark.root.findByType(StatusBar).props.style).toBe('light');
   });
 
   it('replaces every auth route with an unavailable state on a platform without accounts, running no auth action', async () => {
