@@ -180,6 +180,7 @@ Web, iOS and Android are all active implementation and verification targets. Nat
 - Verify behavior on the platform it affects. Platform-specific code, layout, navigation, keyboard, lifecycle or native-API changes need evidence from that platform: the iOS Simulator for iOS and the Android Emulator for Android. Web tests and browser checks do not stand in for native evidence.
 - When a ticket's exit criteria name a platform, that platform's check is required for completion. Record any platform or physical-device check that was not performed as not run, never as passed.
 - iOS uses a local development build (`expo-dev-client`, `yarn ios`); setup details are in `ARCHITECTURE.md` and `outputs/ios-personal-build-setup.md`. Android does not yet have a verified development build. Report that prerequisite rather than assuming an Android build works.
+- Keep at most one iOS Simulator and one Android Emulator booted, reuse them across consecutive tickets, and shut down the devices a session started when its device work is done. Never shut down devices that were running before the session started. `node .claude/scripts/devices.mjs` implements this (`snapshot`, `use-ios`, `use-android`, `release`); see `.claude/scripts/README.md`.
 - Keep shared React Native code portable, and keep platform-specific branches narrow and covered by platform-specific tests where practical.
 
 ## Active work

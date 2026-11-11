@@ -1,3 +1,5 @@
+import { AppStatusBar } from '@/components/app-status-bar';
+import { AppColors } from '@/constants/theme';
 import { FeedbackScreen } from '@/features/feedback/components/feedback-screen';
 import { HideSplashWhenMounted } from '@/shared/splash/splash-ready';
 
@@ -6,6 +8,7 @@ import { HideSplashWhenMounted } from '@/shared/splash/splash-ready';
 export default function FeedbackRoute() {
   return (
     <>
+      <AppStatusBar background={AppColors.sage} />
       <HideSplashWhenMounted />
       <FeedbackScreen />
     </>

@@ -212,7 +212,7 @@ After onboarding, the primary order is:
 The root navigator has platform-specific implementations selected by filename:
 
 - `app-tabs.web.tsx` uses `expo-router/ui` to render a responsive custom web tab bar;
-- `app-tabs.tsx` uses Expo Router's JS `Tabs` for native platforms: a fixed, opaque, full-width bottom bar whose colors come from the saved app theme (`useResolvedTheme`), never the system appearance, with SF Symbols drawn by `expo-symbols`.
+- `app-tabs.tsx` uses Expo Router's JS `Tabs` for native platforms: a fixed, opaque, full-width bottom bar whose colors come from the saved app theme (`useResolvedTheme`), never the system appearance, with icons drawn by `expo-symbols`: SF Symbols on iOS and Material Symbols on Android, both named in the typed `TAB_ICON_SYMBOLS` map (a string-only name renders nothing on Android).
 
 Nested native screens (every route under a tab section except its `index`) get a native stack header with a back control. `useNestedStackScreenOptions` and `useNestedScreenOptions` (`src/components/nested-stack-options.tsx`) derive the header from the saved app theme, never the system appearance, and are wired in each section's `_layout.tsx` (`tricks`, `profile`, `sesh`, `stats`); a route-drift test fails if a nested route file has no registered title. A stack with a single entry (deep link, auth-callback replace) gets a `HeaderBackFallback` that returns to the section index. `Screen` drops its `'top'` safe-area edge while a native header is visible so the inset is not applied twice. Web renders no header: in-page "Back to ..." links remain and are gated by `shouldShowInPageBack()` (`src/shared/navigation/in-page-back.ts`), which is false on native. Routes under the root `Slot` (`/auth/*`, `/feedback`, `/account-deleted`, `/`) are outside any tab stack and have no header.
 
@@ -266,7 +266,7 @@ The guard is intentionally redundant:
 
 Nested Sesh, Tricks, Stats, and Profile routes use stack layouts with framework headers hidden. Back and Close actions therefore live in the product UI and usually use deterministic `router.replace(...)` destinations rather than depending on browser history.
 
-On iOS and Android the Tricks index shows a native large-title header (search bar, `＋` button and `⋯` menu via `headerSearchBarOptions` and `unstable_headerRightItems`) and `TrickDirectory` renders without its in-list header (`nativeHeader`); web keeps the in-list header block.
+On iOS and Android the Tricks index shows a native large-title header (search bar via `headerSearchBarOptions`; the `＋` button and `⋯` menu via `unstable_headerRightItems` on iOS and `headerRight` (`TricksHeaderActions`, a Modal menu) on Android) and `TrickDirectory` renders without its in-list header (`nativeHeader`); web keeps the in-list header block.
 
 Tricks is the authority for trick browsing and management. Profile contains rank- and practice-policy concerns; it is not a second trick directory.
 
@@ -614,6 +614,14 @@ Theme surface roles: `resolveTheme` (`src/features/profile/state/use-resolved-th
 
 The navigation color theme and the product palette are separate. Expo's light/dark navigation colors style navigation chrome, while `AppColors` maintains Daily Dama's consistent visual identity. The product UI is therefore not currently a full dark-mode design system even though navigation responds to color scheme.
 
+### System chrome: the native status bar
+
+`AppStatusBar` (`src/components/app-status-bar.tsx`) sets the Android/iOS status-bar icon style from the page background visible behind it, using `deriveStatusBarStyle` (black or white, whichever contrasts more). The style is always explicit, never `auto`, so it follows the saved app theme rather than the system light/dark scheme. Edge-to-edge stays on and no fixed top padding compensates for it.
+
+- Exactly one bar is mounted per mutually exclusive route group: the `/app` shell layout (tabs and every nested stack, using `selectHomeSceneBackground`, the same rule Home paints with), the `/auth` layout (cached guest theme), and the fixed-palette routes `/` (native start), `/feedback` and `/account-deleted` (sage). The root layout never mounts one: React Native keeps a stack of bars where the last mounted wins, and children mount before parents, so a root bar would override the deeper ones.
+- Screens and `screenOptions` never set `statusBarStyle`. Once any native-stack screen does, react-native-screens re-applies a window style (defaulting to light) on every transition and would override `AppStatusBar`. `nested-stack-options.test.tsx` guards this.
+- Web renders nothing; the browser has no status bar.
+
 Responsive web behavior uses styled-components media queries and runtime width checks where behavior, rather than style alone, changes. The five-tab web navigation has a known 320 px fit constraint.
 
 ## Testing and verification architecture
@@ -716,7 +724,7 @@ The reducer is cleanly isolated, but `sesh.tsx` owns a large amount of presentat
 
 React Native primitives and platform-specific navigation give one code path across web, iOS and Android, and all three are active targets. Web has the longest verification history. Native tab behavior, keyboard handling, background Sesh behavior, and layout are active hardening work on iOS and Android rather than proven architecture guarantees.
 
-Keyboard-aware forms: long forms use `KeyboardAwareScroll` (`src/components/ui/keyboard-aware-scroll.tsx`), a `ScrollView` wrapper that on iOS sets `automaticallyAdjustKeyboardInsets` and interactive dismissal so UIKit grows the bottom inset by the real keyboard overlap. This absorbs the in-flow tab bar and safe area without device-specific offsets and leaves headers and action layout to each screen. Adopters: the custom-trick form, trick and all-notes screens, trick goals, and Profile (streak and theme fields). Auth, feedback and deletion screens still use plain `ScrollView` and have not adopted it. Verified on the iOS Simulator only; Android and physical devices are unverified.
+Keyboard-aware forms: long forms use `KeyboardAwareScroll` (`src/components/ui/keyboard-aware-scroll.tsx`), a `ScrollView` wrapper that on iOS sets `automaticallyAdjustKeyboardInsets` and interactive dismissal so UIKit grows the bottom inset by the real keyboard overlap. This absorbs the in-flow tab bar and safe area without device-specific offsets and leaves headers and action layout to each screen. Adopters: the custom-trick form, trick and all-notes screens, trick goals, and Profile (streak and theme fields). Auth, feedback and deletion screens still use plain `ScrollView` and have not adopted it. Verified on the iOS Simulator. On Android the IME overlays the edge-to-edge window without resizing it, so the wrapper listens to `Keyboard` events (`use-android-keyboard-overlap.ts`), measures the real overlap between the keyboard and the scroll view's window rectangle, renders a trailing spacer of that height so Save/Cancel can scroll above the keyboard, and scrolls the focused field into view when the keyboard shows. iOS and web render no spacer and subscribe to nothing. Physical devices are unverified.
 
 No-autocorrect invariant: no text field autocorrects or spell-checks. `TextField` defaults `autoCorrect={false}` and `spellCheck={false}`; raw `styled(TextInput)` wrappers set the same through `.attrs`. `src/shared/forms/no-autocorrect.test.ts` walks `src/` and fails on any `TextField`/`TextInput` that enables either prop.
 

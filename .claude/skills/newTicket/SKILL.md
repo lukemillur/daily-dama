@@ -1,7 +1,7 @@
 ---
 name: newTicket
 description: Claims a Daily Dama backlog task — a specific one if named, otherwise the next available one — and drives it end-to-end against `development`: deterministic claim script, then the ticket-planner and ticket-implementer agents (plan, implement, merge). No plan-approval gate. When no task is named, keeps going: one task after another, each in fresh subagents so context never accumulates, by default in TASKS.md file order — pass `ranked` (`/newTicket ranked`) to instead pick each cycle's task by unblock value (how many other pending tasks depend on it, then declared Priority). Pass `burn` (`/newTicket burn`) to run the planning phase on `ticket-planner-burn` (opus, high effort) instead of the default `ticket-planner` (sonnet, medium effort) — a token-surplus mode for higher-rigor plans; the implementer is unaffected. `burn` composes with a task ID, `resume`, and `ranked`. A task that gets blocked (claimed, or blocked at planning/implementation/merge) is recorded and skipped, not fatal — the loop moves on to any other independent task, while a task that actually depends on the blocked one stays correctly skipped too. The loop stops only when the backlog is exhausted, the claim mechanism itself fails, or the session's usage limit is reached. Also resumes an interrupted task with `/newTicket resume T0NN`.
-allowed-tools: Agent(ticket-planner), Agent(ticket-planner-burn), Agent(ticket-implementer), Bash(node .claude/scripts/ticket-claim.mjs:*), Bash(node .claude/scripts/worktree-cleanup.mjs:*)
+allowed-tools: Agent(ticket-planner), Agent(ticket-planner-burn), Agent(ticket-implementer), Bash(node .claude/scripts/ticket-claim.mjs:*), Bash(node .claude/scripts/worktree-cleanup.mjs:*), Bash(node .claude/scripts/devices.mjs:*)
 disallowed-tools: Artifact, AskUserQuestion, BashOutput, EnterWorktree, ExitWorktree, KillShell, Monitor, NotebookEdit, SendMessage, Skill, SlashCommand, TaskCreate, TaskGet, TaskList, TaskStop, TaskUpdate
 ---
 
@@ -62,6 +62,27 @@ implementation, or merge). Do not send the final report or wait for a new user
 message between those cycles. The only outcomes that end continuous mode are a
 claim-mechanism failure, a usage limit, or an exhausted backlog; the detailed
 rules are below.
+
+### Devices are run-scoped
+
+Simulators and emulators belong to the run, not to a cycle. Before the first
+claim of a run (single-task, resume, or continuous), record what is already
+booted:
+
+```sh
+node .claude/scripts/devices.mjs snapshot
+```
+
+Keep its `keep` list in your reply text, next to the worktree list. Do not shut
+devices down between cycles — the next ticket reuses whatever is booted. At the
+end of the run, whatever outcome ended it, release everything the run started:
+
+```sh
+node .claude/scripts/devices.mjs release --keep <each id from the snapshot>   # or --keep-none if it was empty
+```
+
+This leaves the owner's and other sessions' devices alone. Report what was
+closed, and anything that failed to close.
 
 ### 1. Claim
 
@@ -185,4 +206,4 @@ Each cycle's subagents are fresh, with no memory of prior cycles, by design.
 
 ## Report
 
-Single-task mode: which task, the branch, the PR URL — or the blocker/usage-limit detail. Resume mode: also say whether a durable plan was reused. Continuous mode: the full tally of every task's outcome and why the loop stopped. Always: any worktrees left behind and why.
+Single-task mode: which task, the branch, the PR URL — or the blocker/usage-limit detail. Resume mode: also say whether a durable plan was reused. Continuous mode: the full tally of every task's outcome and why the loop stopped. Always: any worktrees left behind and why, and the devices `release` closed or could not close.
