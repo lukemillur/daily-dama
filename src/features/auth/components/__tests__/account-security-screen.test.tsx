@@ -49,6 +49,8 @@ const customTheme: DefaultTheme = {
   onButton: '#ffffff',
   onButtonSecondary: '#fedcba',
   onInk: '#ffffff',
+  onAccent: '#000000',
+  onAccentMuted: '#222222',
 };
 
 function findByLabel(renderer: ReactTestRenderer, label: string) {

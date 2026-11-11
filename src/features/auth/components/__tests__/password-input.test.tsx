@@ -18,6 +18,8 @@ const customTheme: DefaultTheme = {
   onButton: '#ffffff',
   onButtonSecondary: '#ffffff',
   onInk: '#ffffff',
+  onAccent: '#000000',
+  onAccentMuted: '#222222',
 };
 
 function resolvedStyle(nodes: ReturnType<ReturnType<typeof create>['root']['findAll']>) {

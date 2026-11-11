@@ -231,42 +231,6 @@ _Android verification prerequisite: the first build was observed on Pixel_10 / A
 - **Platform scope:** Android Emulator required; iOS Simulator and web regression checks required. Physical devices not run unless explicitly recorded.
 
 
-### [T317] Render Android icons for all five bottom tabs
-
-- **Area:** Navigation / iconography
-- **Priority:** Medium
-- **Status:** Not started
-- **Planning:** Required
-- **Description:** Replace the SF-Symbol-only tab mapping in `app-tabs.tsx` with typed per-platform symbol names using the installed `expo-symbols` Android Material Symbols support. Preserve the existing selected/unselected tint derivation and iOS symbols; no new icon dependency is needed by default.
-- **Exit criteria:** After a cold launch on Android, Home, Sesh, Tricks, Stats and Profile each show a distinct route-appropriate icon in selected and unselected states, with no empty font-loading placeholder left indefinitely; all remain unclipped and legible in Default and Red themes. Tests assert Android mappings and props for all routes/states, relevant tab tests, scoped lint and full typechecking pass. iOS retains its symbols and the web five-link navigation still fits 320 px. If Android font loading fails in the tested setup, provide and verify an intentional visible fallback.
-- **Dependencies:** None.
-- **Notes:** Source D028. T042/T290 were completed with iOS acceptance, not Android. A string-only SymbolView name returns only its fallback on Android; use the SDK-57 symbol contract and retain accessibility labels rather than relying on icon shape alone.
-- **Platform scope:** Android Emulator required; iOS Simulator icon check and web 320 px navigation check.
-
-### [T318] Give the native Kentei reveal deliberate pacing and a responsive badge
-
-- **Area:** Onboarding / rank presentation
-- **Priority:** Medium
-- **Status:** Not started
-- **Planning:** Required
-- **Description:** Retune the shared rank-reveal component's native presentation for onboarding and rank promotion. Use a deliberate timed opacity/small-scale entrance around 800–1000 ms without the current exaggerated zoom/bounce, keep the rank visible until the user continues, and size/align the circular badge and numeral to the available viewport. Preserve the accepted web entrance.
-- **Exit criteria:** Android and iOS recordings of ranks 1 and 12 in onboarding and promotion show an intentional 800–1000 ms entrance with no clipped/distorted circle, numeral or continuation control; the settled rank remains until Continue/Nice is pressed once, and no automatic navigation occurs. At default and largest text settings on a small viewport, content remains readable and the primary control is reachable. Reduced motion shows a settled readable rank without zoom. Focused tests cover native/web motion configuration and continuation behavior; relevant onboarding/promotion tests, scoped lint and full typechecking pass, with a web reveal regression check.
-- **Dependencies:** None.
-- **Notes:** Source D029, owner-confirmed Android complaint; iOS was recalled rather than reverified. `ZoomIn.duration(650).springify().damping(11)` clears its duration when the installed spring builder receives no argument. Verify actual native frames rather than treating the duration literal as proof. Keep this a presentation change; rank rules and persistence do not change. T319 separately owns accent-surface contrast.
-- **Platform scope:** Android Emulator and iOS Simulator required, plus web visual regression check.
-
-### [T319] Derive readable foregrounds for accent-filled surfaces
-
-- **Area:** Theme / surface contrast
-- **Priority:** Medium
-- **Status:** Not started
-- **Planning:** Required
-- **Description:** Add a semantic foreground role derived against the actual accent surface and apply it to Home hero text, Sesh first-lace/celebration text and the same accent-filled Sesh actions. Page-derived text and muted colors currently produce low contrast on the Red preset; extend T283's surface-role approach rather than changing saved preferences or forbidding colors.
-- **Exit criteria:** Theme tests show each new accent foreground reaches at least 4.5:1 against the actual accent for every supplied preset and representative light/dark custom colors, including a custom text override; secondary copy also meets its chosen surface contrast target. On Android, Red and Indigo Home hero/first-lace banners/action labels are readable, and Default retains hierarchy. Representative iOS and web checks show the same improvement. Tests for affected theme/Home/Sesh rendering, scoped lint and full typechecking pass; update current theme-role documentation in the same change.
-- **Dependencies:** None.
-- **Notes:** Source D030; shared theme defect observed on Android, not an Android-only renderer bug. Scope to the listed accent-filled surfaces and new role; no unrelated recoloring, persisted schema change or new global state. Keep numerical contrast checks paired with actual rendered-surface inspection.
-- **Platform scope:** Android Emulator, representative iOS Simulator and web checks.
-
 ### [T322] Complete Android trick-management acceptance
 
 - **Area:** Android QA / Tricks workflows

@@ -212,7 +212,7 @@ After onboarding, the primary order is:
 The root navigator has platform-specific implementations selected by filename:
 
 - `app-tabs.web.tsx` uses `expo-router/ui` to render a responsive custom web tab bar;
-- `app-tabs.tsx` uses Expo Router's JS `Tabs` for native platforms: a fixed, opaque, full-width bottom bar whose colors come from the saved app theme (`useResolvedTheme`), never the system appearance, with SF Symbols drawn by `expo-symbols`.
+- `app-tabs.tsx` uses Expo Router's JS `Tabs` for native platforms: a fixed, opaque, full-width bottom bar whose colors come from the saved app theme (`useResolvedTheme`), never the system appearance, with icons drawn by `expo-symbols`: SF Symbols on iOS and Material Symbols on Android, both named in the typed `TAB_ICON_SYMBOLS` map (a string-only name renders nothing on Android).
 
 Nested native screens (every route under a tab section except its `index`) get a native stack header with a back control. `useNestedStackScreenOptions` and `useNestedScreenOptions` (`src/components/nested-stack-options.tsx`) derive the header from the saved app theme, never the system appearance, and are wired in each section's `_layout.tsx` (`tricks`, `profile`, `sesh`, `stats`); a route-drift test fails if a nested route file has no registered title. A stack with a single entry (deep link, auth-callback replace) gets a `HeaderBackFallback` that returns to the section index. `Screen` drops its `'top'` safe-area edge while a native header is visible so the inset is not applied twice. Web renders no header: in-page "Back to ..." links remain and are gated by `shouldShowInPageBack()` (`src/shared/navigation/in-page-back.ts`), which is false on native. Routes under the root `Slot` (`/auth/*`, `/feedback`, `/account-deleted`, `/`) are outside any tab stack and have no header.
 
@@ -609,6 +609,8 @@ Shared UI primitives are deliberately modest:
 - product tokens in `theme.ts` define the art-directed palette, spacing, radii, maximum content width, and tab inset.
 
 Most layout remains feature-local through styled-components. This keeps a prototype expressive without prematurely building a large design-system abstraction.
+
+Theme surface roles: `resolveTheme` (`src/features/profile/state/use-resolved-theme.ts`) derives, at render time and without persisting anything, one foreground per filled surface: `onButton` and `onButtonSecondary` (the derived button backgrounds), `onInk` (fixed ink surfaces such as Stats values), and `onAccent` plus `onAccentMuted` (accent fills: Home hero, Sesh celebration banners, accent-filled Sesh actions). Text on a filled surface must use the role derived against that surface, not page-derived `text` or `textMuted`, which are chosen against the page background. `onAccent` keeps `text` when it reaches 4.5:1 on the accent and otherwise falls back to cream, ink, then pure black/white; `onAccentMuted` is a lighter blend of `onAccent` that still meets 4.5:1.
 
 The navigation color theme and the product palette are separate. Expo's light/dark navigation colors style navigation chrome, while `AppColors` maintains Daily Dama's consistent visual identity. The product UI is therefore not currently a full dark-mode design system even though navigation responds to color scheme.
 
