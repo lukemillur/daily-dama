@@ -248,7 +248,7 @@ _Android verification prerequisite: the first build was observed on Pixel_10 / A
 
 - **Area:** Android QA / Profile and interaction
 - **Priority:** Medium
-- **Status:** Not started
+- **Status:** In progress
 - **Planning:** Required
 - **Description:** Complete D034's Profile/settings and native interaction checks once icon/contrast/system-chrome fixes land. Verify actual control reachability and semantics rather than reopening the disproven general scrolling lead.
 - **Exit criteria:** `outputs/android-audit/T324.md` records passed Android checks for theme presets/custom colors and their saved relaunch state; color-spectrum dragging versus page scrolling; valid/invalid streak-threshold edits and feedback/assessment entry and return; and long-form keyboard reachability. On representative small and larger viewports, at default and largest font scale, primary controls remain reachable without clipped labels. With TalkBack, all five tabs announce names/selection, focus controls announce checked state, form fields/errors have labels, and menus/back/confirmation cancellation return focus sensibly. Record original preferences and restore their values through normal controls; retain any created audit records. All cases must pass before completion; record precise failures as separate work and leave the ticket blocked until reverified. Do not send feedback, create/sign into accounts, modify credentials or delete data.
