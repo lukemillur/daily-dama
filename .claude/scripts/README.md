@@ -14,6 +14,7 @@ Every stage the workflow can perform mechanically is performed mechanically. A m
 | `pr-merge.mjs` | local worktree collisions and duplicate merge attempts during resume |
 | `pr-merge-status.mjs` | mistaking a post-merge local `gh` failure for a rejected remote merge |
 | `validate-agent-config.mjs` | discovering a broken agent definition at run time |
+| `devices.mjs` | simulators and emulators left booted for days after the work that needed them |
 
 ## `ticket-claim.mjs`
 
@@ -159,3 +160,22 @@ whether a merge was attempted, exact command evidence, and reconciliation.
 Static check of `.claude/agents/*.md` and `.claude/skills/*/SKILL.md` frontmatter against Claude Code 2.1.x: known fields only, valid `model`/`effort`/`isolation`, tool names that actually resolve, and no `Agent` on a subagent. Exits non-zero on any error.
 
 Note the asymmetry it encodes: on a **subagent**, `tools:` is a real allowlist. On a **skill**, `allowed-tools` only pre-approves — `disallowed-tools` is what removes tools from the pool. A skill's `disallowed-tools` is also inherited by every subagent the skill spawns, overriding the agent's own `tools:`, so the `newTicket` skill must not disallow any tool a ticket agent needs; `config.test.mjs` enforces that.
+
+## `devices.mjs`
+
+```sh
+node .claude/scripts/devices.mjs list                              # booted simulators and running emulators
+node .claude/scripts/devices.mjs snapshot                          # ids to keep at the end of the run
+node .claude/scripts/devices.mjs use-ios --udid <udid>             # close other iOS sims, boot this one
+node .claude/scripts/devices.mjs use-android --avd <name>          # close other emulators; startCommand if not running
+node .claude/scripts/devices.mjs release --keep <id> [--keep <id>] # close everything not in the snapshot
+node .claude/scripts/devices.mjs release --keep-none               # nothing was booted at snapshot time
+# add --dry-run to any of the above
+```
+
+Each booted iOS Simulator costs ~6–7 GB. Two rules keep that bounded:
+
+- **One device per platform.** `use-ios` / `use-android` close the previous device before switching, so a screen-size check swaps devices rather than stacking them. A paired watchOS simulator doesn't count toward the iOS limit.
+- **A run releases only what it started.** The orchestrator (a `newTicket` run, a `guided-ticket` session) takes a `snapshot` before its first device use, reuses devices across tickets, and calls `release` once at the end. Devices that were already booted — the owner's, or another session's — are kept. Agents doing one ticket inside a run never release.
+
+`release` refuses an empty keep list unless `--keep-none` is explicit, because forgetting the list would otherwise close every device on the machine. Physical Android devices are never listed or touched. Prints one JSON object; exits 1 when a boot or shutdown failed, 2 on bad arguments.

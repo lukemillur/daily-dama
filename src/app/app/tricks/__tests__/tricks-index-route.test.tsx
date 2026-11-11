@@ -41,7 +41,12 @@ jest.mock('@/features/tricks/components/trick-directory', () => ({
   },
 }));
 
-function mount(os: 'ios' | 'web'): ReactTestRenderer {
+jest.mock('react-native-safe-area-context', () => ({
+  ...jest.requireActual<object>('react-native-safe-area-context'),
+  useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
+}));
+
+function mount(os: 'ios' | 'android' | 'web'): ReactTestRenderer {
   jest.replaceProperty(Platform, 'OS', os);
   let root!: ReactTestRenderer;
   act(() => {
@@ -85,6 +90,48 @@ describe('Tricks index route', () => {
       '/app/tricks/notes',
       '/app/tricks/laced',
     ]);
+    act(() => root.unmount());
+  });
+
+  it('android: supplies headerRight actions that route to create, goals, notes and laced', () => {
+    const root = mount('android');
+    const search = mockScreenOptions!.headerSearchBarOptions;
+    act(() => search.onChangeText({ nativeEvent: { text: 'cup' } }));
+    expect(mockDirectoryProps?.search.query).toBe('cup');
+    act(() => search.onCancelButtonPress());
+    expect(mockDirectoryProps?.search.query).toBe('');
+
+    let header!: ReactTestRenderer;
+    act(() => {
+      header = create(mockScreenOptions!.headerRight());
+    });
+    const press = (label: string) =>
+      act(() => header.root.findAll((n) => n.props.accessibilityLabel === label && n.props.onPress)[0].props.onPress());
+    const menuItem = (index: number) =>
+      act(() =>
+        header.root
+          .findAll((n) => typeof n.props.onPress === 'function' && n.props.accessibilityRole === 'menuitem')
+          .filter((n, i, all) => all.findIndex((m) => m.props.onPress === n.props.onPress) === i)
+          [index].props.onPress(),
+      );
+    press('Define new trick');
+    [0, 1, 2].forEach((index) => {
+      press('More trick actions');
+      menuItem(index);
+    });
+    expect(mockRouter.push.mock.calls.map((call) => call[0])).toEqual([
+      '/app/tricks/custom/new',
+      '/app/tricks/goals',
+      '/app/tricks/notes',
+      '/app/tricks/laced',
+    ]);
+    act(() => header.unmount());
+    act(() => root.unmount());
+  });
+
+  it('ios: leaves headerRight to unstable_headerRightItems', () => {
+    const root = mount('ios');
+    expect(mockScreenOptions!.headerRight).toBeUndefined();
     act(() => root.unmount());
   });
 

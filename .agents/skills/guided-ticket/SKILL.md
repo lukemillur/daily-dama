@@ -61,6 +61,10 @@ Before every pause, persist the target/build, completed steps and evidence, rema
 
 Batch tracker and execution-guide edits with the related implementation or verification commit. Do not create a separate commit for every routine plan/evidence edit. A standalone checkpoint commit is appropriate only before an anticipated long owner/external gate or when a durable recovery point would otherwise be lost; record multiple completed steps together whenever practical.
 
+## Simulators and emulators
+
+Before booting a simulator or emulator for this ticket, record what is already running with `node .claude/scripts/devices.mjs snapshot`. Keep at most one iOS Simulator and one Android Emulator booted; switch devices with `devices.mjs use-ios --udid <udid>` or `use-android --avd <name>`, which close the previous one first. When the ticket closes or pauses at an owner gate, run `devices.mjs release --keep <each snapshot id>` (or `--keep-none`), unless the owner says more simulator work follows in this session.
+
 ## Verify and finish
 
 Apply the repository's risk-based verification tiers and relevant backend/security handoffs. When using a repository script, inspect its current interface rather than borrowing flags from another workflow. Use the available bundled runtime when the system runtime is broken.

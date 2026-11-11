@@ -1,6 +1,8 @@
 import Head from 'expo-router/head';
 import { Platform } from 'react-native';
 
+import { AppStatusBar } from '@/components/app-status-bar';
+import { AppColors } from '@/constants/theme';
 import { LandingPage } from '@/features/landing/components/landing-page';
 import { useRedirectOnboardedVisitorHome } from '@/features/landing/state/redirect-onboarded-visitor-home';
 import { NativeStartRoute } from '@/features/native-start/components/native-start-route';
@@ -12,7 +14,13 @@ const OG_SHARE_IMAGE_URL = `${PRODUCTION_HOST}/images/daily-dama-og-share-card.p
 
 /** Web keeps the marketing landing page; iOS and Android open the native Start screen. */
 export default function RootRoute() {
-  return Platform.OS === 'web' ? <WebLandingRoute /> : <NativeStartRoute />;
+  if (Platform.OS === 'web') return <WebLandingRoute />;
+  return (
+    <>
+      <AppStatusBar background={AppColors.sage} />
+      <NativeStartRoute />
+    </>
+  );
 }
 
 /**

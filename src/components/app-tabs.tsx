@@ -1,5 +1,5 @@
 import { Tabs } from 'expo-router';
-import { SymbolView, type SFSymbol } from 'expo-symbols';
+import { SymbolView, type AndroidSymbol, type SFSymbol } from 'expo-symbols';
 
 import { useUserProfile } from '@/features/profile/state/user-profile-provider';
 import {
@@ -12,14 +12,35 @@ import { WCAG_AA_MIN_CONTRAST_RATIO, contrastRatio } from '@/shared/color/contra
 
 type TabRoute = 'home' | 'sesh' | 'tricks' | 'stats' | 'profile';
 
-// Every route needs a distinct default symbol; `timer` has no filled variant, so Sesh reuses it
-// when selected.
-export const TAB_ICON_SYMBOLS: Record<TabRoute, { default: SFSymbol; selected: SFSymbol }> = {
-  home: { default: 'house', selected: 'house.fill' },
-  sesh: { default: 'timer', selected: 'timer' },
-  tricks: { default: 'list.bullet.rectangle', selected: 'list.bullet.rectangle.fill' },
-  stats: { default: 'chart.bar', selected: 'chart.bar.fill' },
-  profile: { default: 'person.crop.circle', selected: 'person.crop.circle.fill' },
+// A string `name` resolves to nothing on Android, so each state carries both platforms' glyphs.
+// Android uses Material Symbols, which have no FILL axis through expo-symbols: selected state is a
+// different glyph name where one exists (never a weight change, because the font file is chosen
+// once at mount) plus the tint.
+export type TabSymbol = { ios: SFSymbol; android: AndroidSymbol };
+
+// Every route needs a distinct default symbol; `timer` has no filled variant on either platform,
+// so Sesh reuses it when selected.
+export const TAB_ICON_SYMBOLS: Record<TabRoute, { default: TabSymbol; selected: TabSymbol }> = {
+  home: {
+    default: { ios: 'house', android: 'home' },
+    selected: { ios: 'house.fill', android: 'home_filled' },
+  },
+  sesh: {
+    default: { ios: 'timer', android: 'timer' },
+    selected: { ios: 'timer', android: 'timer' },
+  },
+  tricks: {
+    default: { ios: 'list.bullet.rectangle', android: 'format_list_bulleted' },
+    selected: { ios: 'list.bullet.rectangle.fill', android: 'list_alt' },
+  },
+  stats: {
+    default: { ios: 'chart.bar', android: 'bar_chart' },
+    selected: { ios: 'chart.bar.fill', android: 'leaderboard' },
+  },
+  profile: {
+    default: { ios: 'person.crop.circle', android: 'person_outline' },
+    selected: { ios: 'person.crop.circle.fill', android: 'account_circle' },
+  },
 };
 
 const TAB_ROUTES: readonly { name: TabRoute; title: string }[] = [
@@ -90,8 +111,7 @@ export default function AppTabs() {
             title,
             tabBarIcon: ({ color, focused }) => (
               <SymbolView
-                name={focused ? TAB_ICON_SYMBOLS[name].selected : TAB_ICON_SYMBOLS[name].default}
-                tintColor={color}
+                name={focused ? TAB_ICON_SYMBOLS[name].selected : TAB_ICON_SYMBOLS[name].default}                tintColor={color}
                 size={24}
               />
             ),
