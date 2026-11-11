@@ -4,6 +4,20 @@ Completed entries move here from `TASKS.md`'s `Backlog`, in the same commit that
 
 Entries keep their content as it was at completion. Don't retroactively edit a description or exit criteria after the fact; if something about a completed task turns out to be wrong or misleading, note that in a new entry or in code, not by rewriting history here.
 
+### [T322] Complete Android trick-management acceptance
+
+- **Area:** Android QA / Tricks workflows
+- **Priority:** Medium
+- **Status:** Done
+- **Planning:** Required
+- **Description:** Finish D034's unverified trick-management journey using the normal UI after Android header actions are restored. This is an evidence-only acceptance ticket covering the directory and its authoring/annotation destinations, not an automatic refactor of the persistent domains.
+- **Exit criteria:** `outputs/android-audit/T322.md` records a responsive emulator, pinned checkout/build, fixtures, steps and outcomes for: search/clear, scrolling long names, focus toggling, laced-state display; standalone creation/name/rank editing; sequence creation with existing-trick and free-text steps, reordering and name snapshots after a source rename; per-trick and aggregate notes create/edit and goals create/progress views; Android Back/tab returns; and cold relaunch retaining saved fixtures. Long-form save/cancel remains reachable with the software keyboard open. Repeat reachability on a second smaller viewport. Every listed case must be executed and pass before completion; failures receive focused follow-up tickets and this check remains blocked until reverified. No deletion is required or authorized.
+- **Dependencies:** T316, T325.
+- **Notes:** Source D034 (Tricks/authoring portion). D033 is superseded: the owner confirmed normal manual scrolling in Profile and the standalone form. Do not treat failed injected drags as product evidence without a working gesture control. Audit-created Big cup note, goal and practice records may already exist; record a baseline rather than clear them. A new emulator/test fixture is permitted without erasing an existing one. No app suite is required for evidence-only documentation; any subsequently authorized code fix follows its own ticket and verification tier.
+- **Platform scope:** Android Emulator only; document API, viewport, font scale and software keyboard. Preserve all existing records and owner files.
+- **Reverify scope:** Executed 2026-11-10; every listed case passed except software-keyboard reachability of Save/Cancel (evidence and fixtures in `outputs/android-audit/T322.md`). T325 has landed (PR #446). Reverify only that criterion at 1080x2424/420 dpi and 720x1280/280 dpi on a build from the current `development`, append the result to the evidence file, then close.
+- **Completion:** 2026-11-11. Reverified only the keyboard criterion after T325 on a pinned JS bundle from current `development` (HEAD 265964e, Metro port 8097, Pixel_10 API 37, Apple M1 Max GLES). Save/Cancel on standalone/sequence create and edit, note and goal forms were reachable above the software keyboard at 1080x2424/420 (IME top 1541) and 720x1280/280 (IME top 699); saves and cancels worked with the IME open. Cases 1-11 passed 2026-11-10. Fixtures and bounds in `outputs/android-audit/T322.md`. Evidence-only; no app code changed.
+
 ### [T319] Derive readable foregrounds for accent-filled surfaces
 
 - **Area:** Theme / surface contrast
