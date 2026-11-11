@@ -81,6 +81,8 @@ If that needs the browser preview: **do not use `preview_start` with a named con
 
 If a criterion needs the iOS Simulator: build and launch from this worktree (`yarn ios`, or `npx expo run:ios`), never from the main checkout, so the app under test is your branch's code.
 
+At most one iOS Simulator and one Android Emulator may be booted at a time — each costs several GB. Reuse an already-booted device when the criteria don't name a specific model or OS (`node .claude/scripts/devices.mjs list`). When they do — a screen-size check, for example — switch with `node .claude/scripts/devices.mjs use-ios --udid <udid>`, which shuts the previous simulator down before booting the new one (`use-android --avd <name>` does the same for emulators and returns a `startCommand` to run backgrounded if the target isn't up). Leave the device booted when you finish: the orchestrating run shuts down what it started once its last ticket is done, so the next ticket doesn't pay for a reboot.
+
 The installed dev client loads JavaScript from whichever Metro it connects to, and another Metro — the owner's, or a prior cycle's — may already be serving a different checkout on 8081 or a nearby port. Pin the bundle before recording any evidence:
 
 1. Start Metro from this worktree on a free port other than 8081/8091 (`yarn expo start --dev-client --port <port>`, backgrounded; check the port is free first). If you also rebuild with `npx expo run:ios`, pass the same `--port`.
