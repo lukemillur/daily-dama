@@ -177,6 +177,37 @@ describe('KenteiRankAutoPromotion celebration', () => {
     expect(hasAccessibilityLabel(root, 'Rank up celebration')).toBe(false);
   });
 
+  it('keeps the celebration mounted until Nice! is pressed once (no auto-dismiss)', async () => {
+    jest.useFakeTimers();
+    try {
+      const root = await mountAndHydrate();
+      act(() => {
+        pressByAccessibilityLabel(root, 'start-onboarding');
+      });
+      for (const trickId of RANK_1_TRICK_IDS) {
+        act(() => {
+          pressByAccessibilityLabel(root, `toggle-${trickId}`);
+        });
+      }
+      expect(hasAccessibilityLabel(root, 'Rank up celebration')).toBe(true);
+
+      act(() => {
+        jest.advanceTimersByTime(10_000);
+      });
+      expect(hasAccessibilityLabel(root, 'Rank up celebration')).toBe(true);
+
+      const [nice] = root.root.findAll(
+        (node) => node.props.children === 'Nice!' && typeof node.props.onPress === 'function',
+      );
+      act(() => {
+        nice.props.onPress();
+      });
+      expect(hasAccessibilityLabel(root, 'Rank up celebration')).toBe(false);
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
   it('does not render the celebration when hydrating an already-advanced profile', async () => {
     const advancedProfile = {
       hasCompletedOnboarding: true,
