@@ -4,6 +4,19 @@ Completed entries move here from `TASKS.md`'s `Backlog`, in the same commit that
 
 Entries keep their content as it was at completion. Don't retroactively edit a description or exit criteria after the fact; if something about a completed task turns out to be wrong or misleading, note that in a new entry or in code, not by rewriting history here.
 
+### [T319] Derive readable foregrounds for accent-filled surfaces
+
+- **Area:** Theme / surface contrast
+- **Priority:** Medium
+- **Status:** Done
+- **Planning:** Required
+- **Description:** Add a semantic foreground role derived against the actual accent surface and apply it to Home hero text, Sesh first-lace/celebration text and the same accent-filled Sesh actions. Page-derived text and muted colors currently produce low contrast on the Red preset; extend T283's surface-role approach rather than changing saved preferences or forbidding colors.
+- **Exit criteria:** Theme tests show each new accent foreground reaches at least 4.5:1 against the actual accent for every supplied preset and representative light/dark custom colors, including a custom text override; secondary copy also meets its chosen surface contrast target. On Android, Red and Indigo Home hero/first-lace banners/action labels are readable, and Default retains hierarchy. Representative iOS and web checks show the same improvement. Tests for affected theme/Home/Sesh rendering, scoped lint and full typechecking pass; update current theme-role documentation in the same change.
+- **Dependencies:** None.
+- **Notes:** Source D030; shared theme defect observed on Android, not an Android-only renderer bug. Scope to the listed accent-filled surfaces and new role; no unrelated recoloring, persisted schema change or new global state. Keep numerical contrast checks paired with actual rendered-surface inspection.
+- **Platform scope:** Android Emulator, representative iOS Simulator and web checks.
+- **Completion notes:** `resolveTheme` adds `onAccent` (keeps page `text` when it reaches 4.5:1 on the accent, else cream/ink, else pure black/white; the mid-luminance orange and green presets needed the black/white step) and `onAccentMuted` (80%/90% blend toward the accent, floor 4.5:1). Applied to the Home hero marker/title/copy/last-sesh line and the Sesh celebration banner, Next trick and multi-trick action text. Evidence: Android Pixel_10 API 37 (GLES Apple M1 Max, user 10, Metro port 8093) Red Home hero (no sesh and recent sesh), Red first-lace banner, Red multi-trick action, Indigo hero, Default hierarchy; iOS iPhone 17e Red and Default Home hero; web 320 px Red and desktop Default Home hero. Not run: iOS and web Sesh banner, Android Next trick label, Android/iOS custom colors. Adjacent finding: the red 7px hero border is faint against a Red accent (polish, left alone). Android user 10 left on Red and iOS on Default, as found.
+
 ### [T318] Give the native Kentei reveal deliberate pacing and a responsive badge
 
 - **Area:** Onboarding / rank presentation

@@ -414,6 +414,8 @@ describe('ForgotPasswordScreen', () => {
       onButton: '#ffffff',
       onButtonSecondary: '#ffffff',
       onInk: '#ffffff',
+      onAccent: '#000000',
+      onAccentMuted: '#222222',
     };
     let root!: ReactTestRenderer;
     await act(async () => {

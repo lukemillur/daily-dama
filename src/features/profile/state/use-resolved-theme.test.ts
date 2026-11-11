@@ -10,7 +10,11 @@ jest.mock('@react-native-async-storage/async-storage', () =>
 
 import { AppColors } from '@/constants/theme';
 import { RAINBOW_THEME_PRESETS } from '@/features/profile/model/theme-presets';
-import { deriveReadableForeground, resolveTheme } from '@/features/profile/state/use-resolved-theme';
+import {
+  deriveMutedOnSurface,
+  deriveReadableForeground,
+  resolveTheme,
+} from '@/features/profile/state/use-resolved-theme';
 import { contrastRatio } from '@/shared/color/contrast';
 
 // A muted secondary text role is expected to have lower contrast than the primary text color --
@@ -193,5 +197,58 @@ describe('deriveReadableForeground', () => {
 
   it('falls back without throwing on invalid hex', () => {
     expect(() => deriveReadableForeground('#000000', 'nope')).not.toThrow();
+  });
+});
+
+describe('accent surface foregrounds', () => {
+  const cases: readonly (readonly [string, Parameters<typeof resolveTheme>[0]])[] = [
+    ['default', {}],
+    ['light custom', { themeBackgroundColor: '#f5f5f0', themeAccentColor: '#ffe066' }],
+    ['dark custom', { themeBackgroundColor: '#101418', themeAccentColor: '#1a1f24' }],
+    ['mid custom', { themeBackgroundColor: '#8899aa', themeAccentColor: '#808080' }],
+    ['custom text failing on accent', { themeTextColor: '#ff00ff' }],
+    ['custom text passing on accent', { themeTextColor: '#111111' }],
+    ...RAINBOW_THEME_PRESETS.map(
+      (preset) =>
+        [
+          `preset ${preset.id}`,
+          { themeBackgroundColor: preset.backgroundColor, themeAccentColor: preset.accentColor },
+        ] as const,
+    ),
+  ];
+
+  it.each(cases)('keeps primary and secondary copy at 4.5:1 on the accent: %s', (_n, prefs) => {
+    const theme = resolveTheme(prefs);
+
+    expect(contrastRatio(theme.onAccent, theme.accent)).toBeGreaterThanOrEqual(4.5);
+    expect(contrastRatio(theme.onAccentMuted, theme.accent)).toBeGreaterThanOrEqual(4.5);
+    expect(theme.accent).toBe(prefs.themeAccentColor ?? AppColors.yellow);
+  });
+
+  it('keeps the page text and hierarchy on the default theme', () => {
+    const theme = resolveTheme({});
+
+    expect(theme.onAccent).toBe(theme.text);
+    expect(theme.onAccentMuted).not.toBe(theme.onAccent);
+  });
+
+  it('returns a custom text color verbatim when it already reads on the accent', () => {
+    expect(resolveTheme({ themeTextColor: '#111111' }).onAccent).toBe('#111111');
+  });
+
+  it('replaces page text that fails on the accent (red preset)', () => {
+    const red = RAINBOW_THEME_PRESETS.find((preset) => preset.id === 'red');
+    const theme = resolveTheme({
+      themeBackgroundColor: red?.backgroundColor,
+      themeAccentColor: red?.accentColor,
+    });
+
+    expect(contrastRatio(theme.text, theme.accent)).toBeLessThan(4.5);
+    expect(theme.onAccent).not.toBe(theme.text);
+  });
+
+  it('deriveMutedOnSurface falls back to the foreground when no blend reaches the target', () => {
+    expect(deriveMutedOnSurface('#ffffff', '#000000')).not.toBe('#ffffff');
+    expect(deriveMutedOnSurface('#777777', '#808080', 7)).toBe('#777777');
   });
 });

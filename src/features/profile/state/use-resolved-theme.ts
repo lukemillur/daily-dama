@@ -16,6 +16,10 @@ export interface ResolvedTheme {
   readonly onButtonSecondary: string;
   /** Label/value color for fixed `AppColors.ink` surfaces (Stats values, selected Sesh choices). */
   readonly onInk: string;
+  /** Primary text color for `accent`-filled surfaces (Home hero, celebration banners, accent actions). */
+  readonly onAccent: string;
+  /** Secondary copy color for `accent`-filled surfaces; same contrast floor, lighter weight. */
+  readonly onAccentMuted: string;
 }
 
 interface ThemeColorPreferences {
@@ -79,7 +83,7 @@ export function deriveMutedTextColor(text: string, background: string): string {
 /**
  * Returns `preferred` when it already meets `minRatio` against the actual control `surface`, so a
  * legible decorative color (e.g. the accent) is kept. Otherwise falls back to whichever of cream
- * or ink contrasts more with the surface. Invalid hex input falls back the same way.
+ * or ink contrasts more with the surface, or pure black/white when neither reaches `minRatio`. Invalid hex input falls back the same way.
  */
 export function deriveReadableForeground(
   surface: string,
@@ -92,7 +96,31 @@ export function deriveReadableForeground(
   }
   const creamRatio = contrastRatio(AppColors.cream, surface) ?? 0;
   const inkRatio = contrastRatio(AppColors.ink, surface) ?? 0;
-  return creamRatio >= inkRatio ? AppColors.cream : AppColors.ink;
+  const brand = creamRatio >= inkRatio ? AppColors.cream : AppColors.ink;
+  if (Math.max(creamRatio, inkRatio) >= minRatio || creamRatio + inkRatio === 0) return brand;
+  // Mid-luminance surfaces (e.g. the orange and green presets) sit between cream and ink, so
+  // neither brand neutral reaches the floor; pure black or white always does (>= 4.58:1).
+  const blackRatio = contrastRatio('#000000', surface) ?? 0;
+  const whiteRatio = contrastRatio('#ffffff', surface) ?? 0;
+  return blackRatio >= whiteRatio ? '#000000' : '#ffffff';
+}
+
+/**
+ * Secondary copy color for a filled `surface`: tries progressively stronger blends of
+ * `foreground` toward the surface (80% then 90% foreground) so hierarchy survives where it can,
+ * and returns the first that reaches `minRatio` against the surface, else `foreground` itself.
+ * Unlike `deriveMutedTextColor` this blends toward the surface the text sits on, not the page.
+ */
+export function deriveMutedOnSurface(
+  foreground: string,
+  surface: string,
+  minRatio: number = WCAG_AA_MIN_CONTRAST_RATIO,
+): string {
+  for (const weight of [0.8, 0.9]) {
+    const candidate = blendHexColors(foreground, surface, weight);
+    if ((contrastRatio(candidate, surface) ?? 0) >= minRatio) return candidate;
+  }
+  return foreground;
 }
 
 /**
@@ -114,6 +142,8 @@ export function resolveTheme(preferences: ThemeColorPreferences): ResolvedTheme 
   const { buttonBackground, buttonBackgroundSecondary } =
     deriveAutomaticButtonBackgrounds(background);
 
+  const onAccent = deriveReadableForeground(accent, text);
+
   return {
     background,
     accent,
@@ -124,6 +154,8 @@ export function resolveTheme(preferences: ThemeColorPreferences): ResolvedTheme 
     onButton: deriveReadableForeground(buttonBackground, accent),
     onButtonSecondary: deriveReadableForeground(buttonBackgroundSecondary, text),
     onInk: deriveReadableForeground(AppColors.ink, accent),
+    onAccent,
+    onAccentMuted: deriveMutedOnSurface(onAccent, accent),
   };
 }
 

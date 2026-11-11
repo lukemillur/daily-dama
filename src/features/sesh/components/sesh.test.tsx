@@ -11,7 +11,10 @@ import type { Goal, GoalProgress } from '@/features/goals/model/goal';
 import { useGoalActions, useGoals, GoalProvider } from '@/features/goals/state/goal-provider';
 import { NoteProvider, useNotes } from '@/features/notes/state/note-provider';
 import type { Note } from '@/features/notes/model/note';
+import { RAINBOW_THEME_PRESETS } from '@/features/profile/model/theme-presets';
+import { resolveTheme } from '@/features/profile/state/use-resolved-theme';
 import { UserProfileProvider } from '@/features/profile/state/user-profile-provider';
+import { contrastRatio } from '@/shared/color/contrast';
 import { Sesh, ActiveSesh, CompletedSesh, Countdown } from '@/features/sesh/components/sesh';
 import {
   createOpenEndedSeshPlan,
@@ -879,6 +882,8 @@ describe('CompletedSesh signup invite', () => {
       onButton: '#ffffff',
       onButtonSecondary: '#ffffff',
       onInk: '#ffffff',
+      onAccent: '#000000',
+      onAccentMuted: '#222222',
     };
     const themeB: DefaultTheme = {
       background: '#000000',
@@ -890,6 +895,8 @@ describe('CompletedSesh signup invite', () => {
       onButton: '#ffffff',
       onButtonSecondary: '#ffffff',
       onInk: '#ffffff',
+      onAccent: '#000000',
+      onAccentMuted: '#222222',
     };
 
     for (const theme of [themeA, themeB]) {
@@ -3442,6 +3449,8 @@ describe('Sesh theming (T097)', () => {
     onButton: '#ffffff',
     onButtonSecondary: '#ffffff',
     onInk: '#ffffff',
+    onAccent: '#000000',
+    onAccentMuted: '#222222',
   };
 
   function resolvedHostStyle(matches: ReadonlyArray<{ props: { style?: unknown } }>) {
@@ -3508,6 +3517,74 @@ describe('Sesh theming (T097)', () => {
 
     const countStyle = resolvedHostStyle(root.root.findAll((node) => node.props.children === 0));
     expect(countStyle?.color).toBe(customTheme.onButton);
+
+    act(() => {
+      root.unmount();
+    });
+  });
+});
+
+describe('Sesh accent-filled surface text (T319)', () => {
+  const redPreset = RAINBOW_THEME_PRESETS.find((preset) => preset.id === 'red');
+  const redTheme = resolveTheme({
+    themeBackgroundColor: redPreset?.backgroundColor,
+    themeAccentColor: redPreset?.accentColor,
+  });
+
+  beforeEach(() => {
+    jest.useFakeTimers();
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  function colorOfText(root: ReactTestRenderer, text: string): string | undefined {
+    const match = root.root.findAll(
+      (node) => (node.type as unknown) === 'Text' && node.props.children === text,
+    )[0];
+    const style = match?.props.style as { color?: string } | undefined;
+    return style?.color;
+  }
+
+  it('draws the first-lace banner and Next trick label in onAccent, which reads on Red', () => {
+    let root!: ReactTestRenderer;
+    act(() => {
+      root = create(
+        <StyledThemeProvider theme={redTheme}>
+          <ActiveSesh
+            trick={TRICK}
+            plan={PLAN}
+            startedAt={Date.now()}
+            landings={[landing(1000)]}
+            pausedDurationMs={0}
+            liveChallengeEnabled={false}
+            hadPriorLaceAtSeshStart={false}
+            onLaced={noop}
+            onPause={noop}
+            onResume={noop}
+            onEnd={noop}
+            onTimerElapsed={noop}
+            onNextTrick={noop}
+          />
+        </StyledThemeProvider>,
+      );
+    });
+
+    const nextTrick = colorOfText(root, 'Next trick');
+    expect(nextTrick).toBe(redTheme.onAccent);
+    expect(redTheme.onAccent).not.toBe(redTheme.text);
+    expect(contrastRatio(nextTrick ?? '', redTheme.accent)).toBeGreaterThanOrEqual(4.5);
+
+    const banner = findBanner(root)[0];
+    expect(banner).toBeDefined();
+    const bannerTexts = banner.findAll(
+      (node) => (node.type as unknown) === 'Text' && typeof node.props.style?.color === 'string',
+    );
+    expect(bannerTexts.length).toBeGreaterThan(0);
+    for (const node of bannerTexts) {
+      expect(node.props.style.color).toBe(redTheme.onAccent);
+    }
 
     act(() => {
       root.unmount();

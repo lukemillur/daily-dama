@@ -610,6 +610,8 @@ Shared UI primitives are deliberately modest:
 
 Most layout remains feature-local through styled-components. This keeps a prototype expressive without prematurely building a large design-system abstraction.
 
+Theme surface roles: `resolveTheme` (`src/features/profile/state/use-resolved-theme.ts`) derives, at render time and without persisting anything, one foreground per filled surface: `onButton` and `onButtonSecondary` (the derived button backgrounds), `onInk` (fixed ink surfaces such as Stats values), and `onAccent` plus `onAccentMuted` (accent fills: Home hero, Sesh celebration banners, accent-filled Sesh actions). Text on a filled surface must use the role derived against that surface, not page-derived `text` or `textMuted`, which are chosen against the page background. `onAccent` keeps `text` when it reaches 4.5:1 on the accent and otherwise falls back to cream, ink, then pure black/white; `onAccentMuted` is a lighter blend of `onAccent` that still meets 4.5:1.
+
 The navigation color theme and the product palette are separate. Expo's light/dark navigation colors style navigation chrome, while `AppColors` maintains Daily Dama's consistent visual identity. The product UI is therefore not currently a full dark-mode design system even though navigation responds to color scheme.
 
 ### System chrome: the native status bar
