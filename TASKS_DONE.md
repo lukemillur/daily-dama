@@ -4,6 +4,19 @@ Completed entries move here from `TASKS.md`'s `Backlog`, in the same commit that
 
 Entries keep their content as it was at completion. Don't retroactively edit a description or exit criteria after the fact; if something about a completed task turns out to be wrong or misleading, note that in a new entry or in code, not by rewriting history here.
 
+### [T317] Render Android icons for all five bottom tabs
+
+- **Area:** Navigation / iconography
+- **Priority:** Medium
+- **Status:** Done
+- **Planning:** Required
+- **Description:** Replace the SF-Symbol-only tab mapping in `app-tabs.tsx` with typed per-platform symbol names using the installed `expo-symbols` Android Material Symbols support. Preserve the existing selected/unselected tint derivation and iOS symbols; no new icon dependency is needed by default.
+- **Exit criteria:** After a cold launch on Android, Home, Sesh, Tricks, Stats and Profile each show a distinct route-appropriate icon in selected and unselected states, with no empty font-loading placeholder left indefinitely; all remain unclipped and legible in Default and Red themes. Tests assert Android mappings and props for all routes/states, relevant tab tests, scoped lint and full typechecking pass. iOS retains its symbols and the web five-link navigation still fits 320 px. If Android font loading fails in the tested setup, provide and verify an intentional visible fallback.
+- **Dependencies:** None.
+- **Notes:** Source D028. T042/T290 were completed with iOS acceptance, not Android. A string-only SymbolView name returns only its fallback on Android; use the SDK-57 symbol contract and retain accessibility labels rather than relying on icon shape alone.
+- **Platform scope:** Android Emulator required; iOS Simulator icon check and web 320 px navigation check.
+- **Completion notes:** `TAB_ICON_SYMBOLS` now carries `{ ios, android }` per route and state (Material Symbols: home/home_filled, timer, format_list_bulleted/list_alt, bar_chart/leaderboard, person_outline/account_circle); selected state is a different glyph plus tint, never a weight change. No fallback code added: on a cold launch on Pixel_10 / Android 17 API 37 (1080x2424, density 420, default font scale, GPU Apple M1 Max) all five icons rendered without a lasting placeholder, in Default and Red themes. Verified in a separate Android user (id 10, `t317test`) because the owner's install is signed out with guest onboarding incomplete; nothing was wiped. iOS 27.0 iPhone 17e shows unchanged SF Symbols; web nav at 320 px fits (links end at x=288). Forced font-failure test not run. Metro pinned at port 8093 from the worktree.
+
 ### [T325] Keep long-form Save and Cancel reachable above the Android software keyboard
 
 - **Area:** Android forms / keyboard handling
