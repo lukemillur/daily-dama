@@ -257,10 +257,10 @@ const StreakBadge = styled.View`flex-direction: row; align-items: baseline; gap:
 const StreakValue = styled.Text`color: ${({ theme }) => theme.onInk}; font-size: 18px; font-weight: 900; font-variant: tabular-nums;`;
 const StreakLabel = styled.Text`color: ${AppColors.cream}; font-size: 10px; font-weight: 800; text-transform: uppercase;`;
 const Hero = styled.View`min-height: 320px; justify-content: center; background-color: ${({ theme }) => theme.accent}; border-bottom-width: 7px; border-bottom-color: ${AppColors.red}; padding: 34px 26px 38px;`;
-const HeroMarker = styled(Eyebrow)`margin-bottom: 13px;`;
-const HeroTitle = styled(DisplayTitle)`max-width: 620px; font-size: 48px; line-height: 49px;`;
-const HeroCopy = styled(BodyText)`max-width: 500px; margin-top: 16px;`;
-const LastSeshLine = styled.Text`color: ${AppColors.inkSoft}; font-size: 15px; font-weight: 800; margin-top: 16px;`;
+const HeroMarker = styled(Eyebrow)`color: ${({ theme }) => theme.onAccentMuted}; margin-bottom: 13px;`;
+const HeroTitle = styled(DisplayTitle)`color: ${({ theme }) => theme.onAccent}; max-width: 620px; font-size: 48px; line-height: 49px;`;
+const HeroCopy = styled(BodyText)`color: ${({ theme }) => theme.onAccentMuted}; max-width: 500px; margin-top: 16px;`;
+const LastSeshLine = styled.Text`color: ${({ theme }) => theme.onAccentMuted}; font-size: 15px; font-weight: 800; margin-top: 16px;`;
 const HeroButton = styled(Button).attrs({ size: 'medium' })`align-self: flex-start; margin-top: 26px;`;
 const UnavailableAction = styled.View`align-items: flex-start;`;
 const UnavailableCopy = styled(BodyText)`max-width: 500px; margin-top: 16px;`;

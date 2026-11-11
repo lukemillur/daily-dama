@@ -11,5 +11,7 @@ declare module 'styled-components/native' {
     readonly onButton: string;
     readonly onButtonSecondary: string;
     readonly onInk: string;
+    readonly onAccent: string;
+    readonly onAccentMuted: string;
   }
 }

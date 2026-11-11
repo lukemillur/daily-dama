@@ -200,18 +200,6 @@ _Scoped 2026-11-09 from T295 (owner approved decisions D1–D10 the same day). S
 - **Description:** Umbrella for replacing the native "accounts are not available" state with working email/password accounts, backup and sync. Close it when T313.1–T313.6 are all `Done`.
 - **Notes:** No feature flag (D9): the native app ships only as a personal development build, so each child can enable its part directly.
 
-### [T313.4] Let existing accounts sign in from the Start screen without redoing onboarding
-
-- **Area:** Auth / native-start / onboarding
-- **Priority:** High
-- **Status:** Not started
-- **Planning:** Required
-- **Description:** Add a Sign in action next to Get started on `NativeStartScreen` (T292 left room for it). Two gaps must close with it. `useNativeOnboardingStatus` reads only the guest profile, so a signed-in relaunch shows the Start screen; make the root route use the active identity. Home guards onboarding only while a guest import is pending, so a signed-in identity with no import can show onboarding before its first profile pull; hold the onboarding decision until that pull settles, and show a retry state if it fails (fail closed).
-- **Exit criteria:** Tests prove: (a) the Start screen shows a Sign in action beside Get started, and it opens `/auth/sign-in`; (b) a signed-in identity whose profile has completed onboarding goes to Home on launch and the Start screen never renders; (c) after sign-in, onboarding does not render while the first profile pull is in flight; (d) a failed first pull shows a retry state, not onboarding, and retrying re-runs the pull; (e) a new account with no completed cloud profile reaches onboarding after the pull; (f) a guest with local data who signs in still enters the existing guest-import flow. On iPhone 17e (iOS 27.0) with local Supabase, an account that completed onboarding on web signs in from the Start screen and lands on Home showing its rank, with no onboarding frame seen. Full `yarn tsc --noEmit` and the native-start, onboarding and guest-import suites pass.
-- **Dependencies:** T313.1, T313.3.
-- **Notes:** D6. Owner decision 2026-11-04: an existing account signing in on mobile must not redo onboarding. Keep `resolveNativeStartDecision` pure; pass identity and pull state in.
-- **Platform scope:** Acceptance runs on the iOS Simulator. Record Android checks as not run.
-
 ### [T313.6] Verify backup, sync and account lifecycle on iOS and Android
 
 - **Area:** Sync / auth / native
@@ -225,18 +213,6 @@ _Scoped 2026-11-09 from T295 (owner approved decisions D1–D10 the same day). S
 - **Platform scope:** iOS Simulator and Android Emulator are both required.
 
 _Scoped 2026-11-09 from the T313.3 follow-up simulator check (no BACKLOG_STORIES.md story)._
-
-### [T314] Replace "same browser" email-link guidance with device wording on native
-
-- **Area:** Auth / native / copy
-- **Priority:** Medium
-- **Status:** Not started
-- **Planning:** Implementer
-- **Description:** Three auth screens tell native users to open the email link "on this same browser": the guidance text on check-email and forgot-password (`SAME_BROWSER_GUIDANCE` in `check-email-screen.tsx` and `forgot-password-screen.tsx`) and the `missingVerifier` error on the callback screen (`auth-callback-screen.tsx`). On iOS and Android the link opens the app through `dailydama://auth/callback`, so "browser" is wrong; the real constraint is the same device. Show device wording on native and keep the current web wording unchanged.
-- **Exit criteria:** Component tests render check-email, forgot-password and the callback screen's `missingVerifier` state with `Platform.OS = 'ios'` and assert the guidance names this device and does not contain the word "browser"; the same tests with `Platform.OS = 'web'` assert the current web text is unchanged. On iPhone 17e (iOS 27.0), the forgot-password and check-email screens show the native wording. `yarn jest src/features/auth` and full `yarn tsc --noEmit` pass.
-- **Notes:** Choose the wording per platform in one place (for example, a small helper in `src/features/auth/model/`), not with an inline `Platform.OS` check repeated in each screen. `e2e/auth/04-real-email-flows.spec.ts` asserts the web text; it must keep passing without changes. Seen during the T313.3 check, not in scope here: the floating gear button at the top right of every native screen is the Expo dev-client menu button, which appears only in development builds; it is not app UI and needs no ticket.
-- **Platform scope:** Acceptance runs on the iOS Simulator. Record Android checks as not run.
-
 
 _Android audit activation — 2026-11-09, explicitly requested by the owner. Source: [DESLOPPIFY.md](DESLOPPIFY.md), scoped Android audit and Android workflow matrix. D026 → T315; D027 → T316; D028 → T317; D029 → T318; D030 → T319; D031 → T320; D032 → T321; D034 → T322–T324. D033 remains Superseded after the owner confirmed manual scrolling on Profile and the standalone-trick form; no general scrolling repair is activated. This batch does not activate historical, unrelated desloppify items or duplicate T313.4/T313.6/T314. No BACKLOG_STORIES.md entries are consumed._
 
@@ -254,77 +230,6 @@ _Android verification prerequisite: the first build was observed on Pixel_10 / A
 - **Notes:** Source D026, owner-confirmed Android report; the audit did not replay fresh onboarding. T302's completed iOS finish-button investigation is a different report. Preserve profile hydration, persistence ordering and the provisional stored schema; the existing onboarding durability lead T306 stays separately scoped. If the report does not reproduce on a responsive pinned build, retain exact environment evidence and reconcile the owner reproduction rather than manufacture a fix.
 - **Platform scope:** Android Emulator required; iOS Simulator and web regression checks required. Physical devices not run unless explicitly recorded.
 
-### [T316] Restore Android Tricks create and overflow actions
-
-- **Area:** Tricks / navigation
-- **Priority:** High
-- **Status:** Not started
-- **Planning:** Required
-- **Description:** Supply supported Android create and overflow controls in `TricksNativeHeader`. The current non-web branch removes in-list actions and relies on iOS-only `unstable_headerRightItems`, so Android loses its create and aggregate-screen entry points. Prefer Android `headerRight` controls with a small accessible menu while retaining the existing iOS header and web actions.
-- **Exit criteria:** From Tricks on Android, without deep links, Define new trick opens the standalone/sequence choice and the overflow menu opens Trick goals, Trick notes and Laced tricks; each destination returns using Android Back. Search filters the library and clearing it restores the list. Buttons/menu items have programmatic names and usable touch targets. Focused route/header tests exercise Android action handlers and platform branches; relevant Tricks tests, scoped lint and full typechecking pass. iOS create/menu/search and web actions remain operable; run a web export if routing or dependencies change.
-- **Dependencies:** None.
-- **Notes:** Source D027; mechanism confirmed in installed Expo Router types. Consult installed-version Expo Router documentation for the Android header API. Keep this bounded to missing entry points; T312.3–T312.5 own the iOS row redesign and may touch the same file. Coordinate claims rather than add a dependency on unrelated unfinished row styling. T322 owns full authoring acceptance after these routes are reachable.
-- **Platform scope:** Android Emulator plus iOS Simulator/web navigation regression checks.
-
-### [T317] Render Android icons for all five bottom tabs
-
-- **Area:** Navigation / iconography
-- **Priority:** Medium
-- **Status:** Not started
-- **Planning:** Required
-- **Description:** Replace the SF-Symbol-only tab mapping in `app-tabs.tsx` with typed per-platform symbol names using the installed `expo-symbols` Android Material Symbols support. Preserve the existing selected/unselected tint derivation and iOS symbols; no new icon dependency is needed by default.
-- **Exit criteria:** After a cold launch on Android, Home, Sesh, Tricks, Stats and Profile each show a distinct route-appropriate icon in selected and unselected states, with no empty font-loading placeholder left indefinitely; all remain unclipped and legible in Default and Red themes. Tests assert Android mappings and props for all routes/states, relevant tab tests, scoped lint and full typechecking pass. iOS retains its symbols and the web five-link navigation still fits 320 px. If Android font loading fails in the tested setup, provide and verify an intentional visible fallback.
-- **Dependencies:** None.
-- **Notes:** Source D028. T042/T290 were completed with iOS acceptance, not Android. A string-only SymbolView name returns only its fallback on Android; use the SDK-57 symbol contract and retain accessibility labels rather than relying on icon shape alone.
-- **Platform scope:** Android Emulator required; iOS Simulator icon check and web 320 px navigation check.
-
-### [T318] Give the native Kentei reveal deliberate pacing and a responsive badge
-
-- **Area:** Onboarding / rank presentation
-- **Priority:** Medium
-- **Status:** Not started
-- **Planning:** Required
-- **Description:** Retune the shared rank-reveal component's native presentation for onboarding and rank promotion. Use a deliberate timed opacity/small-scale entrance around 800–1000 ms without the current exaggerated zoom/bounce, keep the rank visible until the user continues, and size/align the circular badge and numeral to the available viewport. Preserve the accepted web entrance.
-- **Exit criteria:** Android and iOS recordings of ranks 1 and 12 in onboarding and promotion show an intentional 800–1000 ms entrance with no clipped/distorted circle, numeral or continuation control; the settled rank remains until Continue/Nice is pressed once, and no automatic navigation occurs. At default and largest text settings on a small viewport, content remains readable and the primary control is reachable. Reduced motion shows a settled readable rank without zoom. Focused tests cover native/web motion configuration and continuation behavior; relevant onboarding/promotion tests, scoped lint and full typechecking pass, with a web reveal regression check.
-- **Dependencies:** None.
-- **Notes:** Source D029, owner-confirmed Android complaint; iOS was recalled rather than reverified. `ZoomIn.duration(650).springify().damping(11)` clears its duration when the installed spring builder receives no argument. Verify actual native frames rather than treating the duration literal as proof. Keep this a presentation change; rank rules and persistence do not change. T319 separately owns accent-surface contrast.
-- **Platform scope:** Android Emulator and iOS Simulator required, plus web visual regression check.
-
-### [T319] Derive readable foregrounds for accent-filled surfaces
-
-- **Area:** Theme / surface contrast
-- **Priority:** Medium
-- **Status:** Not started
-- **Planning:** Required
-- **Description:** Add a semantic foreground role derived against the actual accent surface and apply it to Home hero text, Sesh first-lace/celebration text and the same accent-filled Sesh actions. Page-derived text and muted colors currently produce low contrast on the Red preset; extend T283's surface-role approach rather than changing saved preferences or forbidding colors.
-- **Exit criteria:** Theme tests show each new accent foreground reaches at least 4.5:1 against the actual accent for every supplied preset and representative light/dark custom colors, including a custom text override; secondary copy also meets its chosen surface contrast target. On Android, Red and Indigo Home hero/first-lace banners/action labels are readable, and Default retains hierarchy. Representative iOS and web checks show the same improvement. Tests for affected theme/Home/Sesh rendering, scoped lint and full typechecking pass; update current theme-role documentation in the same change.
-- **Dependencies:** None.
-- **Notes:** Source D030; shared theme defect observed on Android, not an Android-only renderer bug. Scope to the listed accent-filled surfaces and new role; no unrelated recoloring, persisted schema change or new global state. Keep numerical contrast checks paired with actual rendered-surface inspection.
-- **Platform scope:** Android Emulator, representative iOS Simulator and web checks.
-
-### [T320] Match Android status-bar icon style to the visible background
-
-- **Area:** Android system chrome
-- **Priority:** Medium
-- **Status:** Not started
-- **Planning:** Required
-- **Description:** Set an intentional Android status-bar foreground for root tab scenes, nested screens and Auth according to their visible background. White clock/signal/battery icons currently remain faint against the pale Red page. Use the installed Expo/native-stack status-bar APIs and keep configuration ownership coherent across route transitions.
-- **Exit criteria:** On Android, clock/signal/battery icons are legible against both the pale Red preset and a dark custom background on Home, a nested Tricks route and sign-in; switching routes, changing theme and background/foreground do not leave a stale icon style. Content still clears the status bar and Android edge-to-edge behavior is retained. Focused tests cover style selection and relevant route overrides, scoped lint and full typechecking pass. Follow AGENTS.md's complete configuration verification and rebuild/install the Android client if native configuration changes; otherwise run the checks appropriate to the source changes. iOS/web smoke checks show no introduced inset or appearance regression.
-- **Dependencies:** None.
-- **Notes:** Source D031. Do not disable edge-to-edge or add fixed top padding to hide the symptom. The floating Expo development-menu gear is development tooling and is not part of this ticket.
-- **Platform scope:** Android Emulator required; iOS Simulator/web smoke checks for shared changes.
-
-### [T321] Use device wording in native Sesh backup invitations
-
-- **Area:** Sesh / copy
-- **Priority:** Low
-- **Status:** Not started
-- **Planning:** Implementer
-- **Description:** Replace browser-specific loss-of-progress wording in both the first-Sesh inline sign-up invitation and the periodic invitation with device/app-data wording on iOS and Android. Keep existing browser wording on web and preserve invitation timing and behavior.
-- **Exit criteria:** Component tests render both invitation variants for Android, iOS and web and assert device/app-data wording on native with no “clear your browser” text, and unchanged browser wording on web. Android and iOS show the corrected first and periodic invitations with their existing actions; the web variants remain unchanged. Relevant Sesh tests, scoped lint and full typechecking pass.
-- **Dependencies:** None.
-- **Notes:** Source D032. T314 owns the similar guidance in Auth screens; do not duplicate or expand that ticket. Keep wording in a small shared Sesh copy helper or equivalent rather than duplicating conditions across both invitations. This is a copy change, not permission to alter signup, persistence or account promises.
-- **Platform scope:** Android Emulator and iOS Simulator, plus web copy regression.
 
 ### [T322] Complete Android trick-management acceptance
 
@@ -334,9 +239,10 @@ _Android verification prerequisite: the first build was observed on Pixel_10 / A
 - **Planning:** Required
 - **Description:** Finish D034's unverified trick-management journey using the normal UI after Android header actions are restored. This is an evidence-only acceptance ticket covering the directory and its authoring/annotation destinations, not an automatic refactor of the persistent domains.
 - **Exit criteria:** `outputs/android-audit/T322.md` records a responsive emulator, pinned checkout/build, fixtures, steps and outcomes for: search/clear, scrolling long names, focus toggling, laced-state display; standalone creation/name/rank editing; sequence creation with existing-trick and free-text steps, reordering and name snapshots after a source rename; per-trick and aggregate notes create/edit and goals create/progress views; Android Back/tab returns; and cold relaunch retaining saved fixtures. Long-form save/cancel remains reachable with the software keyboard open. Repeat reachability on a second smaller viewport. Every listed case must be executed and pass before completion; failures receive focused follow-up tickets and this check remains blocked until reverified. No deletion is required or authorized.
-- **Dependencies:** T316.
+- **Dependencies:** T316, T325.
 - **Notes:** Source D034 (Tricks/authoring portion). D033 is superseded: the owner confirmed normal manual scrolling in Profile and the standalone form. Do not treat failed injected drags as product evidence without a working gesture control. Audit-created Big cup note, goal and practice records may already exist; record a baseline rather than clear them. A new emulator/test fixture is permitted without erasing an existing one. No app suite is required for evidence-only documentation; any subsequently authorized code fix follows its own ticket and verification tier.
 - **Platform scope:** Android Emulator only; document API, viewport, font scale and software keyboard. Preserve all existing records and owner files.
+- **Reverify scope:** Executed 2026-11-10; every listed case passed except software-keyboard reachability of Save/Cancel (evidence and fixtures in `outputs/android-audit/T322.md`). T325 has landed (PR #446). Reverify only that criterion at 1080x2424/420 dpi and 720x1280/280 dpi on a build from the current `development`, append the result to the evidence file, then close.
 
 ### [T323] Complete Android practice and Stats acceptance
 

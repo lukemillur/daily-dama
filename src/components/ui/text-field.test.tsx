@@ -16,6 +16,8 @@ const customTheme: DefaultTheme = {
   onButton: '#ffffff',
   onButtonSecondary: '#ffffff',
   onInk: '#ffffff',
+  onAccent: '#000000',
+  onAccentMuted: '#222222',
 };
 
 function flattenStyle(style: unknown) {

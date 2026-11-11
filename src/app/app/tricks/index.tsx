@@ -31,6 +31,7 @@ import {
 import { useResolvedTheme } from '@/features/profile/state/use-resolved-theme';
 import { usePracticeHistory } from '@/features/stats/state/practice-history-provider';
 import { TrickDirectory } from '@/features/tricks/components/trick-directory';
+import { TricksHeaderActions } from '@/features/tricks/components/tricks-header-actions';
 import { KENDAMA_KENTEI_TRICKS } from '@/features/tricks/data/kendama-kentei-tricks';
 import type { PracticeTrick } from '@/features/tricks/model/trick';
 import {
@@ -45,9 +46,25 @@ import {
 function TricksNativeHeader({ onChangeQuery }: { readonly onChangeQuery: (query: string) => void }) {
   const router = useRouter();
   const colors = deriveNestedHeaderColors(useResolvedTheme());
+  const openDefine = () => router.push('/app/tricks/custom/new');
+  const openGoals = () => router.push('/app/tricks/goals');
+  const openNotes = () => router.push('/app/tricks/notes');
+  const openLaced = () => router.push('/app/tricks/laced');
   return (
     <Stack.Screen
       options={{
+        // iOS replaces headerRight with unstable_headerRightItems below; Android only honours headerRight.
+        headerRight:
+          Platform.OS === 'android'
+            ? () => (
+                <TricksHeaderActions
+                  onDefine={openDefine}
+                  onOpenGoals={openGoals}
+                  onOpenNotes={openNotes}
+                  onOpenLaced={openLaced}
+                />
+              )
+            : undefined,
         headerSearchBarOptions: {
           placeholder: 'Search tricks',
           autoCapitalize: 'none',
@@ -63,7 +80,7 @@ function TricksNativeHeader({ onChangeQuery }: { readonly onChangeQuery: (query:
             label: 'Define new trick',
             icon: { type: 'sfSymbol', name: 'plus' },
             accessibilityLabel: 'Define new trick',
-            onPress: () => router.push('/app/tricks/custom/new'),
+            onPress: openDefine,
           },
           {
             type: 'menu',
@@ -72,9 +89,9 @@ function TricksNativeHeader({ onChangeQuery }: { readonly onChangeQuery: (query:
             accessibilityLabel: 'More trick actions',
             menu: {
               items: [
-                { type: 'action', label: 'Trick goals', onPress: () => router.push('/app/tricks/goals') },
-                { type: 'action', label: 'Trick notes', onPress: () => router.push('/app/tricks/notes') },
-                { type: 'action', label: 'Laced tricks', onPress: () => router.push('/app/tricks/laced') },
+                { type: 'action', label: 'Trick goals', onPress: openGoals },
+                { type: 'action', label: 'Trick notes', onPress: openNotes },
+                { type: 'action', label: 'Laced tricks', onPress: openLaced },
               ],
             },
           },

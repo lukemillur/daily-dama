@@ -5,6 +5,7 @@ import {
   deriveNestedHeaderColors,
   deriveNestedScreenOptions,
   deriveNestedStackScreenOptions,
+  deriveTricksIndexScreenOptions,
 } from './nested-stack-options';
 import type { ResolvedTheme } from '@/features/profile/state/use-resolved-theme';
 
@@ -23,6 +24,8 @@ const darkTheme: ResolvedTheme = {
   onButton: '#000000',
   onButtonSecondary: '#ffffff',
   onInk: '#ffffff',
+  onAccent: '#000000',
+  onAccentMuted: '#222222',
 };
 const lightTheme: ResolvedTheme = { ...darkTheme, background: '#fff8e8', text: '#1a1a1a' };
 
@@ -38,6 +41,15 @@ describe('nested stack options', () => {
       expect(options.headerShown).toBe(true);
       expect(options.headerTintColor).toBe('#f5f0e0');
       expect(options.headerStyle).toEqual({ backgroundColor: '#101820' });
+    }
+  });
+
+  // AppStatusBar is the only status-bar owner: any screen-level statusBarStyle would make
+  // react-native-screens re-apply its own style on every transition and override it.
+  it('never sets a screen-level statusBarStyle', () => {
+    for (const os of ['ios', 'android', 'web']) {
+      expect(deriveNestedStackScreenOptions(darkTheme, os)).not.toHaveProperty('statusBarStyle');
+      expect(deriveTricksIndexScreenOptions(darkTheme, os)).not.toHaveProperty('statusBarStyle');
     }
   });
 
